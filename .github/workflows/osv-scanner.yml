@@ -34,7 +34,7 @@ jobs:
     # Pinned to an exact immutable tag: `google/osv-scanner-action` publishes no
     # floating `v2` tag or branch, so `@v2` is an unresolvable ref (startup
     # failure, not a scan failure).
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.5.0
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.5.1
     with:
       scan-args: |-
         --lockfile=uv.lock
