@@ -14,7 +14,7 @@ dependencies = [
   "cyclopts>=4.22.2",
   "questionary>=2.0",
   "pydantic>=2.0",
-  "pydantic-settings>=2.0",
+  "pydantic-settings>=2.15.0",
   "rich>=13.0",
 ]
 
@@ -27,7 +27,7 @@ dev = [
   # CES-111 (test-order-randomization-pytest-randomly): random, reproducibly-seeded test
   # order on every run — catches state-leaking/order-dependent tests for free.
   "pytest-randomly>=4.1.0",
-  "ruff>=0.16.0",
+  "ruff>=0.16.3",
 ]
 
 # Version derived from git tags (vX.Y.Z) by hatch-vcs.
