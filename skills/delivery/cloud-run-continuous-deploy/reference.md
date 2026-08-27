@@ -13,8 +13,40 @@ runs before validation can reach WIF, an Environment, or a secret.
 **Prevents:** a tag pointing at arbitrary code that builds and runs with deploy
 credentials in scope.
 
-**Check:** the block above `deploy:` in `deploy-integration.yml` contains no
-`environment:`, no `google-github-actions/auth`, and no `${{ secrets.` reference.
+**Check:** three things, and the first two are not sufficient on their own.
+
+1. The block above `deploy:` in `deploy-integration.yml` contains no
+   `environment:`, no `google-github-actions/auth`, and no `${{ secrets.`
+   reference.
+2. The `deploy` job's `environment:` is exactly `integration` — not an
+   expression, not `prod`. It is the one job that builds and runs a PR author's
+   tree, so the Environment it binds decides which secrets that tree is built
+   alongside.
+3. **The `validate` job's control checkout reads `ref: {{DEV_BRANCH}}`,
+   literally, and no `${{ ... }}` expression in that step mentions `inputs.` or
+   `github.event`.**
+
+Check 3 is the one that is easy to lose, because checks 1 and 2 stay true
+without it. `validate` establishes its facts by running `scripts/review_tag.py`
+from the checked-out tree. Point that checkout at the review tag and the tag
+author supplies the validator: it can emit any `head_sha` it likes, exit 0, and
+the credentialed `deploy` job will build that code with WIF and the integration
+Environment's secrets in scope. The job is still credential-free, the ordering
+is still `deploy` after `validate` — and the boundary is gone. The ref is
+hardcoded to the trusted branch for exactly this reason, and the template
+carries a comment saying so.
+
+The same comment records the second, opposite-looking choice: the control
+checkout **keeps** its credentials, because the next step's `git fetch origin`
+needs a token to read the tag out of a private repo. Only the untrusted-head
+checkout in the `deploy` job sets `persist-credentials: false` (invariant 5). A
+blanket "add `persist-credentials: false` everywhere" pass breaks private-repo
+tag fetch and buys nothing, since this tree is trusted.
+
+`test_validate_control_checkout_pins_the_trusted_branch` and
+`test_deploy_job_binds_the_integration_environment` in
+`tests/test_cloud_run_deploy_skill.py` enforce checks 2 and 3, both scoped to
+the specific job and step rather than to the file as a whole.
 
 **This invariant is false without a deployment branch policy on the environment.**
 `deploy-integration.yml` binds `environment: integration` unconditionally, because
@@ -146,7 +178,19 @@ rather than from the tag.
 Into a subdirectory, with `persist-credentials: false`, only after validation.
 Trusted control code is checked out separately, from the trusted branch.
 
-**Prevents:** a token in the `.git/config` of attacker-controlled code.
+**Prevents:** a token in the `.git/config` of attacker-controlled code, and an
+attacker tree unpacked over the workspace root where it can shadow whatever the
+job runs next.
+
+**Check:** inside the `deploy` job's `Check out the validated pull request head`
+step — not anywhere in the file — both `persist-credentials: false` and
+`path: source` are present; and the `deploy` job contains exactly one
+`actions/checkout`. All three matter separately. A whole-file grep for
+`persist-credentials: false` is satisfied by that line sitting on the *trusted*
+control checkout instead, where it does not belong (invariant 1); dropping
+`path:` alone lands the attacker's tree in the workspace root; and an added
+second checkout is invisible to any check that only inspects the step it
+already knows about.
 
 ## 6. Resource inspection fails closed
 

@@ -32,6 +32,19 @@ jobs:
       short_sha: ${{ steps.review.outputs.short_sha }}
       review_tag: ${{ steps.review.outputs.review_tag }}
     steps:
+      # Two deliberate choices, both load-bearing:
+      #
+      # 1. `ref:` is the trusted branch, hardcoded. It must never be the review
+      #    tag, `inputs.*` or anything from `github.event`. The tagged tree is
+      #    attacker-controlled, so a checkout of it would let the tag author
+      #    supply scripts/review_tag.py itself and self-attest any head SHA --
+      #    which the credentialed job below then builds with WIF and the
+      #    integration Environment's secrets.
+      # 2. Credentials persist here on purpose. The next step's
+      #    `git fetch origin` needs them to read the tag from a private repo.
+      #    Do not add `persist-credentials: false` to this step as part of a
+      #    blanket sweep: this tree is trusted, and the untrusted checkout in
+      #    the job below is the one that must drop its token.
       - name: Check out trusted control code
         uses: actions/checkout@v4
         with:
@@ -179,6 +192,13 @@ jobs:
       - name: Write the deployment evidence artifact
         env:
           URL: ${{ steps.service.outputs.url }}
+          # Via the environment, never interpolated into the script body: an
+          # expression expanded inline is substituted before bash parses the
+          # line, so a hostile value would be executed rather than quoted. That
+          # this particular value happens to be constrained by review_tag.py's
+          # TAG_PATTERN is an argument living in another file; do not rely on it
+          # here.
+          REVIEW_TAG: ${{ needs.validate.outputs.review_tag }}
         run: |
           set -euo pipefail
           DIGEST="$(gcloud run services describe "$SERVICE" \
@@ -189,7 +209,7 @@ jobs:
           {
             "pr_number": "${PR_NUMBER}",
             "head_sha": "${HEAD_SHA}",
-            "review_tag": "${{ needs.validate.outputs.review_tag }}",
+            "review_tag": "${REVIEW_TAG}",
             "run_url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}",
             "service_url": "${URL}",
             "revision": "${DIGEST}",
