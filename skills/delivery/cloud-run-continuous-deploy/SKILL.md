@@ -22,19 +22,29 @@ reference is why you must not edit them into something more convenient.
 Stop and report if any of these fail. Do not work around them.
 
 ```bash
-gh auth status
-command -v gcloud                    # one per tool, on purpose
-command -v varlock
-command -v docker
-command -v python3
-git rev-parse --verify origin/dev && git rev-parse --verify origin/main
-ls .env.schema docker-compose.yml
+gh auth status || { echo "gh auth status failed" >&2; exit 1; }
+
+for tool in gcloud varlock docker python3; do
+  command -v "$tool" >/dev/null || { echo "missing required tool: $tool" >&2; exit 1; }
+done
+
+git rev-parse --verify origin/dev  >/dev/null || { echo "origin/dev not found" >&2; exit 1; }
+git rev-parse --verify origin/main >/dev/null || { echo "origin/main not found" >&2; exit 1; }
+
+ls .env.schema docker-compose.yml >/dev/null || { echo "missing .env.schema or docker-compose.yml" >&2; exit 1; }
 ```
 
-One `command -v` per tool is not verbosity. `command -v gcloud varlock docker
-python3` prints whichever names it resolves and **exits 0 if any single one of
-them resolves** — so it passes with `gcloud` and `varlock` both missing, and
-Phase 3 then fails in the operator's hands instead of here.
+Every check above ends its own line with `|| { …; exit 1; }` (the tool loop
+folds its four checks into one `||` per iteration) so each one fails loudly on
+its own, rather than a fenced block's exit status silently becoming whichever
+command happens to run last. That failure mode is exactly what a bare
+`command -v gcloud varlock docker python3` has: it prints whichever names it
+resolves and **exits 0 if any single one of them resolves**, so it passes with
+`gcloud` and `varlock` both missing — and, chained with `git rev-parse ... &&
+git rev-parse ...` followed by a trailing `ls`, a failed branch check or a
+missing tool gets overwritten by the next line's own exit code, so only the
+very last command in the fence can actually fail the block. Phase 3 then fails
+in the operator's hands instead of here.
 
 ## Phase 1 — Inventory and worksheet
 
@@ -167,7 +177,7 @@ Copy and substitute. Never overwrite: if a target path exists, stop and report i
 | `deploy.yml` | `.github/workflows/deploy.yml` |
 | `integration-tag.yml` | `.github/workflows/integration-tag.yml` |
 | `deploy-integration.yml` | `.github/workflows/deploy-integration.yml` |
-| `review_tag.py` | `scripts/review_tag.py` (verbatim — the only file with no placeholders) |
+| `review_tag.py` | `scripts/review_tag.py` (verbatim — no placeholders) |
 | `nginx.conf` | `deploy/nginx.conf` — substitute `{{API_PREFIX}}`, `{{API_PORT}}`, `{{WEB_PORT}}` (single-container only) |
 | `entrypoint.sh` | `deploy/entrypoint.sh` — substitute `{{API_COMMAND}}`, `{{WEB_COMMAND}}` (single-container only; the Dockerfile chmods it at build time) |
 | `Dockerfile.combined` | `deploy/Dockerfile` — **renamed**, not `deploy/Dockerfile.combined` (single-container only) |
@@ -225,10 +235,12 @@ is a runtime failure, not a generation-time one.
 | `{{MAX_INSTANCES}}` | `deploy.yml` | `--max` for `dev`/`prod`. Integration is hardcoded to 1. |
 | `{{SECRET_KEYS}}` | `bootstrap-gcp.sh` | A bash array body: the **already-kebabbed** keys, quoted and space-separated — `'database-url' 'session-secret'`. The line is `SECRET_KEYS=({{SECRET_KEYS}})` and the script appends `-<env>` to each, so passing `DATABASE_URL` here creates a secret literally named `DATABASE_URL-dev`. |
 | `{{SECRET_ENV_BLOCK}}` | `deploy.yml`, `deploy-integration.yml` | YAML `env:` entries mapping each bare key to its Environment secret: `DATABASE_URL: ${{ secrets.DATABASE_URL }}` in `deploy.yml`, `${{ secrets.DATABASE_URL_INTEGRATION }}` in `deploy-integration.yml`. |
-| `{{SYNC_SECRET_CALLS}}` | `deploy.yml`, `deploy-integration.yml` | One `sync_secret "<kebab>-<env>" "$KEY"` per key, e.g. `sync_secret "database-url-integration" "$DATABASE_URL"`. |
-| `{{RUNTIME_SECRETS}}` | `deploy.yml`, `deploy-integration.yml` | The `--set-secrets` value for the service: `KEY=<kebab>-<env>:latest`, comma-separated. `:latest` is a *secret version*, not an image tag — invariant 9 does not apply. |
-| `{{MIGRATE_SECRETS}}` | `deploy.yml` | Same form, for the migrate job. Usually just the database. |
-| `{{RESET_SECRETS}}` | `deploy-integration.yml` | Same form, `-integration` suffixed. This is the credential the PR author's image is handed; invariants 7 and 8 are what keep it harmless. |
+| `{{SYNC_SECRET_CALLS}}` in `deploy.yml` | `deploy.yml` | One `sync_secret "<kebab>-${ENV}" "$KEY"` per key — the name must interpolate the `$ENV` shell variable set earlier in the step, e.g. `sync_secret "database-url-${ENV}" "$DATABASE_URL"`. Never a fixed environment literal here. |
+| `{{SYNC_SECRET_CALLS}}` in `deploy-integration.yml` | `deploy-integration.yml` | One `sync_secret "<kebab>-integration" "$KEY"` per key, using the fixed `-integration` literal (this workflow only ever targets that one environment), e.g. `sync_secret "database-url-integration" "$DATABASE_URL"`. |
+| `{{RUNTIME_SECRETS}}` in `deploy.yml` | `deploy.yml` | The `--set-secrets` value for the service: `KEY=<kebab>-${ENV}:latest`, comma-separated, e.g. `DATABASE_URL=database-url-${ENV}:latest`. `:latest` is a *secret version*, not an image tag — invariant 9 does not apply. |
+| `{{RUNTIME_SECRETS}}` in `deploy-integration.yml` | `deploy-integration.yml` | Same form, with the fixed `-integration` literal in place of `${ENV}`: `DATABASE_URL=database-url-integration:latest`. |
+| `{{MIGRATE_SECRETS}}` | `deploy.yml` | Same form as `{{RUNTIME_SECRETS}}` in `deploy.yml` — `KEY=<kebab>-${ENV}:latest` — for the migrate job. Usually just the database. |
+| `{{RESET_SECRETS}}` | `deploy-integration.yml` | Same form as `{{RUNTIME_SECRETS}}` in `deploy-integration.yml`, `-integration` suffixed. This is the credential the PR author's image is handed; invariants 7 and 8 are what keep it harmless. |
 | `{{MIGRATE_ENTRYPOINT}}` | `deploy.yml` | The image command that runs migrations, e.g. `./migrate.sh`. |
 | `{{RESET_ENTRYPOINT}}` | `deploy-integration.yml` | `reset_entrypoint` from the worksheet. If it was omitted, delete the reset step instead of substituting — see Phase 1. |
 | `{{API_PREFIX}}` | `nginx.conf` | The `path_prefix` of the non-root HTTP service, without a trailing slash (`/api`). |
@@ -237,7 +249,19 @@ is a runtime failure, not a generation-time one.
 | `{{API_BASE_IMAGE}}`, `{{WEB_BASE_IMAGE}}` | `Dockerfile.combined` | The build-stage base image for each service. |
 | `{{API_CONTEXT}}`, `{{WEB_CONTEXT}}` | `Dockerfile.combined` | Each service's compose `build.context`, relative to the repo root. |
 | `{{API_BUILD_COMMAND}}`, `{{WEB_BUILD_COMMAND}}` | `Dockerfile.combined` | Each service's build step (`npm ci && npm run build`, `uv sync --frozen`). |
-| `{{RUNTIME_BASE_IMAGE}}` | `Dockerfile.combined` | The final-stage image both services run in. It must have `bash` and `gettext-base`; the Dockerfile installs them. |
+| `{{RUNTIME_BASE_IMAGE}}` | `Dockerfile.combined` | The final-stage image both services run in. `Dockerfile.combined` installs `bash` and `gettext-base` into it with `apt-get`, so it must be Debian/Ubuntu-derived — Alpine or a distroless image has no `apt-get` and fails the build. |
+
+**A hardcoded environment in `deploy.yml`'s secret names is a critical bug, not
+a style slip.** `deploy.yml` serves both `dev` and `prod` from one workflow, so
+`{{SYNC_SECRET_CALLS}}`, `{{RUNTIME_SECRETS}}` and `{{MIGRATE_SECRETS}}` must
+interpolate `${ENV}` there — never a literal like `-integration` or `-dev`. A
+fixed environment makes dev and prod share one Secret Manager secret; a fixed
+`-integration` is worse, because it hands the environment that runs an
+untrusted PR author's code whatever credential the last `deploy.yml` run
+synced — production's, if that run was the prod deploy. This mirrors what
+`test_runtime_service_account_derives_from_env` and
+`test_resource_names_interpolate_env` already enforce for the other
+`${ENV}`-derived names in `deploy.yml`.
 
 Under `per-service` topology, `nginx.conf`, `entrypoint.sh` and
 `Dockerfile.combined` are not generated at all, so their twelve container
@@ -253,10 +277,13 @@ Invariant 10's third gate is a marker row that must exist before the first
 integration reset succeeds. Nothing in the design writes it — deliberately: an
 automated marker write would let a misconfigured deploy mark production as
 disposable and then reset it. The **operator** runs this once, by hand, against
-the **dedicated integration database and no other**:
+the **dedicated integration database and no other**. `DATABASE_URL_INTEGRATION`
+is the GitHub Environment secret's name, not a shell variable anyone has
+exported — the operator supplies the integration DSN themselves, e.g. by
+substituting it directly or exporting it first:
 
 ```bash
-psql "$DATABASE_URL_INTEGRATION" -v ON_ERROR_STOP=1 -f resources/integration-marker.sql
+psql "<integration DSN>" -v ON_ERROR_STOP=1 -f resources/integration-marker.sql
 ```
 
 It is idempotent (`CREATE ... IF NOT EXISTS`, `ON CONFLICT DO NOTHING`), so a
@@ -272,9 +299,10 @@ Then the acceptance run, which is the only proof that counts:
 1. Open a harmless PR into `dev`, merge it, confirm the `dev` deploy.
 2. Merge `dev` into `main`, confirm the `prod` deploy.
 3. **Have the operator initialize the marker, once, against the integration
-   database** — `psql "$DATABASE_URL_INTEGRATION" -v ON_ERROR_STOP=1 -f
-   resources/integration-marker.sql`. Step 5's reset is gated on it (invariant
-   10) and fails without it. You do not run this; you do not hold the DSN.
+   database, supplying the integration DSN themselves** — `psql "<integration
+   DSN>" -v ON_ERROR_STOP=1 -f resources/integration-marker.sql`. Step 5's
+   reset is gated on it (invariant 10) and fails without it. You do not run
+   this; you do not hold the DSN.
 4. Open a PR into `dev`, tag its head `review/pr-<n>/<sha>`, push the tag.
 5. Confirm: the listener dispatches, `validate` passes without credentials, the
    integration environment deploys, smoke tests pass, and the evidence artifact
