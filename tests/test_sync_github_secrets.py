@@ -27,14 +27,15 @@ def fake_bin(tmp_path: Path) -> tuple[Path, Path]:
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     calls = tmp_path / "gh-calls.txt"
+    stdin_values = tmp_path / "gh-stdin.txt"
 
-    (bin_dir / "gh").write_text(
-        "#!/usr/bin/env bash\n"
-        'if [[ "$1" == "auth" ]]; then exit 0; fi\n'
-        f'printf "%s\\n" "$*" >> {json.dumps(str(calls))}\n'
-        "cat > /dev/null\n",
-        encoding="utf-8",
-    )
+    gh_script = f"""#!/usr/bin/env bash
+if [[ "$1" == "auth" ]]; then exit 0; fi
+printf "%s\\n" "$*" >> {json.dumps(str(calls))}
+cat >> {json.dumps(str(stdin_values))}
+printf "\\n" >> {json.dumps(str(stdin_values))}
+"""
+    (bin_dir / "gh").write_text(gh_script, encoding="utf-8")
     (bin_dir / "varlock").write_text(
         "#!/usr/bin/env bash\n" f"printf '%s' {json.dumps(json.dumps(SENSITIVE))}\n",
         encoding="utf-8",
@@ -94,3 +95,80 @@ def test_rejects_an_unknown_environment(fake_bin):
     result = _run(bin_dir, "staging", {"DATABASE_URL": "x", "API_KEY": "k"})
     assert result.returncode != 0
     assert "staging" in result.stderr
+
+
+def test_environment_collision(tmp_path: Path):
+    """A schema key named ENVIRONMENT must sync its actual injected value, not the CLI argument."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    calls = tmp_path / "gh-calls.txt"
+    stdin_values = tmp_path / "gh-stdin.txt"
+
+    gh_script = f"""#!/usr/bin/env bash
+if [[ "$1" == "auth" ]]; then exit 0; fi
+printf "%s\\n" "$*" >> {json.dumps(str(calls))}
+cat >> {json.dumps(str(stdin_values))}
+printf "\\n" >> {json.dumps(str(stdin_values))}
+"""
+    (bin_dir / "gh").write_text(gh_script, encoding="utf-8")
+    sensitive = {"config": {"ENVIRONMENT": {"value": "REDACTED"}, "API_KEY": {"value": "REDACTED"}}}
+    (bin_dir / "varlock").write_text(
+        "#!/usr/bin/env bash\n" f"printf '%s' {json.dumps(json.dumps(sensitive))}\n",
+        encoding="utf-8",
+    )
+    for name in ("gh", "varlock"):
+        (bin_dir / name).chmod(0o755)
+
+    result = _run(bin_dir, "dev", {"ENVIRONMENT": "injected_env_value", "API_KEY": "k"})
+    assert result.returncode == 0, result.stderr
+    recorded_argv = calls.read_text(encoding="utf-8")
+    recorded_stdin = stdin_values.read_text(encoding="utf-8")
+    # The injected value "injected_env_value" must be synced, not the CLI argument "dev"
+    assert "injected_env_value" in recorded_stdin
+    assert "secret set ENVIRONMENT --env dev" in recorded_argv
+
+
+def test_value_collision(tmp_path: Path):
+    """Keys API_KEY and value must each sync their own injected values."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    calls = tmp_path / "gh-calls.txt"
+    stdin_values = tmp_path / "gh-stdin.txt"
+
+    gh_script = f"""#!/usr/bin/env bash
+if [[ "$1" == "auth" ]]; then exit 0; fi
+printf "%s\\n" "$*" >> {json.dumps(str(calls))}
+cat >> {json.dumps(str(stdin_values))}
+printf "\\n" >> {json.dumps(str(stdin_values))}
+"""
+    (bin_dir / "gh").write_text(gh_script, encoding="utf-8")
+    sensitive = {"config": {"API_KEY": {"value": "REDACTED"}, "value": {"value": "REDACTED"}}}
+    (bin_dir / "varlock").write_text(
+        "#!/usr/bin/env bash\n" f"printf '%s' {json.dumps(json.dumps(sensitive))}\n",
+        encoding="utf-8",
+    )
+    for name in ("gh", "varlock"):
+        (bin_dir / name).chmod(0o755)
+
+    result = _run(bin_dir, "dev", {"API_KEY": "api_key_secret", "value": "value_secret"})
+    assert result.returncode == 0, result.stderr
+    recorded_argv = calls.read_text(encoding="utf-8")
+    recorded_stdin = stdin_values.read_text(encoding="utf-8")
+    # Each secret must be synced with its own value, not cross-contaminated
+    argv_lines = recorded_argv.strip().split("\n")
+    stdin_lines = recorded_stdin.strip().split("\n")
+
+    # Find the indices for API_KEY and value secrets
+    api_key_argv_idx = next(
+        i for i, line in enumerate(argv_lines) if "secret set API_KEY --env dev" in line
+    )
+    value_argv_idx = next(
+        i for i, line in enumerate(argv_lines) if "secret set value --env dev" in line
+    )
+
+    # Check that each secret syncs its own value
+    assert "api_key_secret" in stdin_lines[api_key_argv_idx]
+    assert "value_secret" in stdin_lines[value_argv_idx]
+    # Ensure no cross-contamination
+    assert "api_key_secret" not in stdin_lines[value_argv_idx]
+    assert "value_secret" not in stdin_lines[api_key_argv_idx]
