@@ -110,6 +110,26 @@ version of this Check) starts failing against correct, unmodified code. Before
 `${{`-only filter, run it against the shipped template and confirm it still
 passes.
 
+**The filter must also produce at least one survivor — zero is a failure, not
+a pass.** GitHub Actions accepts `environment:` in block form too:
+
+```yaml
+environment:
+  name: ${{ inputs.environment }}
+```
+
+Neither line of that form begins with `environment:` *and* contains `${{` on
+the same line, so this filter selects nothing from it. A regression rewritten
+into block form therefore produces empty grep output — and "every surviving
+line satisfies the rule" is vacuously true over an empty set, so a check that
+only inspects survivors reports a pass on a file where `environment:` derives
+from `inputs.environment` with no ref check at all. The test guards against
+this explicitly — `assert environment_lines, "deploy.yml declares no job
+environment expression"` — and this Check must be read the same way: empty
+output is not "the invariant holds unchallenged", it is "the filter did not
+find what it expects to find here", and the file must be inspected by hand
+before concluding anything.
+
 ## 4. The WIF condition pins repository and branch refs only
 
 `assertion.repository == '<repo>' && (assertion.ref == 'refs/heads/dev' || assertion.ref == 'refs/heads/main')`
