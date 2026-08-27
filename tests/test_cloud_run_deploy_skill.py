@@ -748,8 +748,10 @@ def test_envsubst_restriction_actually_works():
         )
 
         output = result.stdout
-        # PORT should be substituted
-        assert "9999" in output, f"PORT=9999 not substituted. Output: {output[:200]}"
+        # PORT should be substituted in the listen directive
+        assert "listen       9999" in output or "listen 9999" in output, (
+            f"PORT=9999 not substituted in listen directive. Output: {output[:200]}"
+        )
         # nginx variables should still be present (NOT substituted)
         assert "$host" in output, "$host was consumed by restricted envsubst"
         assert "$remote_addr" in output, "$remote_addr was consumed by restricted envsubst"
@@ -827,5 +829,70 @@ def test_dockerfile_installs_gettext_base_for_envsubst():
             )
             return
     raise AssertionError("apt-get install line not found in Dockerfile.combined")
+
+
+def test_wait_n_returns_on_first_child():
+    # Behavioral test: Extract the entrypoint structure and verify wait -n returns
+    # on first child death, not blocking for all children. Derived directly from
+    # the shipped template, not a hand-written copy.
+    entrypoint = _template("entrypoint.sh")
+
+    # Transform the template into a runnable script
+    runnable = entrypoint
+    # Substitute the two commands: one exits quickly (exit code 7), one sleeps 30s
+    runnable = runnable.replace(
+        "{{API_COMMAND}}", "bash -c 'sleep 0.2; exit 7'"
+    )
+    runnable = runnable.replace(
+        "{{WEB_COMMAND}}", "sleep 30"
+    )
+    # Replace envsubst block with a stub (we don't need nginx for this test)
+    # The envsubst block is multi-line with backslash continuation
+    lines = runnable.split("\n")
+    new_lines = []
+    skip_until_complete = False
+    for _i, line in enumerate(lines):
+        if skip_until_complete:
+            if not line.rstrip().endswith("\\"):
+                skip_until_complete = False
+            continue
+        if "envsubst" in line and not line.strip().startswith("#"):
+            # Skip this line and any continuation lines
+            skip_until_complete = line.rstrip().endswith("\\")
+            new_lines.append("# envsubst replaced with stub for test")
+            continue
+        # Replace nginx line with a stub (it doesn't need to run)
+        if "nginx -g 'daemon off;'" in line:
+            new_lines.append("# nginx stub for test")
+            continue
+        new_lines.append(line)
+    runnable = "\n".join(new_lines)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
+        f.write(runnable)
+        f.flush()
+        temp_path = f.name
+
+    try:
+        # wait -n should return in ~0.2s when API_COMMAND exits
+        # plain wait would block for 30s and exceed the timeout
+        # Use 10s timeout with 30s sleep to get a clear discrimination
+        try:
+            subprocess.run(
+                ["bash", temp_path],
+                timeout=10,
+                check=False,
+                start_new_session=True,  # Isolate process group
+            )
+            # If we reach here, wait -n returned promptly
+            # The exit code varies due to signal handling but that's OK - we're testing
+            # that the script returns quickly, not the exact exit code
+        except subprocess.TimeoutExpired as e:
+            raise AssertionError(
+                "wait -n did not return; script blocked past timeout (mutated to plain wait?)"
+            ) from e
+
+    finally:
+        Path(temp_path).unlink()
 
 
