@@ -75,16 +75,15 @@ def test_wif_condition_pins_repository_and_branch_refs():
 
 def test_describe_resource_aborts_on_empty_error():
     # Invariant 6: fail-closed on unrecognized errors. The function must abort
-    # when describe fails with unrecognized output.
+    # (call exit) when describe fails with unrecognized output — execution must not continue.
     describe_func = _extract_describe_resource()
 
     bash_code = f"""
-set -euo pipefail
 DESCRIBE_OUTPUT=""
 {describe_func}
 test_stub() {{ return 1; }}
-describe_resource test_stub 2>/dev/null || exit_code=$?
-exit "${{exit_code:-0}}"
+describe_resource test_stub 2>/dev/null && rc=0 || rc=$?
+echo "CONTINUED rc=$rc"
 """
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
@@ -96,23 +95,26 @@ exit "${{exit_code:-0}}"
         result = subprocess.run(
             ["bash", temp_path], capture_output=True, text=True, timeout=5, check=False
         )
-        assert result.returncode == 1, f"expected exit 1, got {result.returncode}"
+        # Abort means the script never reaches echo "CONTINUED"
+        assert "CONTINUED" not in result.stdout, (
+            f"describe_resource should abort, not return; stdout: {result.stdout}"
+        )
+        assert result.returncode != 0, f"expected non-zero exit from abort, got {result.returncode}"
     finally:
         Path(temp_path).unlink()
 
 
 def test_describe_resource_aborts_on_permission_denied():
     # Invariant 6: fail-closed on permission errors — these cannot be mistaken
-    # for resource absence.
+    # for resource absence. Execution must not continue.
     describe_func = _extract_describe_resource()
 
     bash_code = f"""
-set -euo pipefail
 DESCRIBE_OUTPUT=""
 {describe_func}
 test_stub() {{ echo "ERROR: permission denied" >&2; return 1; }}
-describe_resource test_stub 2>/dev/null || exit_code=$?
-exit "${{exit_code:-0}}"
+describe_resource test_stub 2>/dev/null && rc=0 || rc=$?
+echo "CONTINUED rc=$rc"
 """
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
@@ -124,7 +126,11 @@ exit "${{exit_code:-0}}"
         result = subprocess.run(
             ["bash", temp_path], capture_output=True, text=True, timeout=5, check=False
         )
-        assert result.returncode == 1, f"expected exit 1, got {result.returncode}"
+        # Abort means the script never reaches echo "CONTINUED"
+        assert "CONTINUED" not in result.stdout, (
+            f"describe_resource should abort on permission error; stdout: {result.stdout}"
+        )
+        assert result.returncode != 0, f"expected non-zero exit from abort, got {result.returncode}"
     finally:
         Path(temp_path).unlink()
 
@@ -132,17 +138,16 @@ exit "${{exit_code:-0}}"
 def test_describe_resource_aborts_on_invalid_grant():
     # Invariant 6 + Important 2: fail-closed on auth failures. The string
     # "invalid_grant: Not found or already used" contains "not found" but is an
-    # authentication failure, not resource absence. This guards the regression
-    # where auth errors were misclassified as absent.
+    # authentication failure, not resource absence. Without the auth-failure guard,
+    # this would wrongly return 1 (reporting absent). Must abort instead.
     describe_func = _extract_describe_resource()
 
     bash_code = f"""
-set -euo pipefail
 DESCRIBE_OUTPUT=""
 {describe_func}
 test_stub() {{ echo "invalid_grant: Not found or already used" >&2; return 1; }}
-describe_resource test_stub 2>/dev/null || exit_code=$?
-exit "${{exit_code:-0}}"
+describe_resource test_stub 2>/dev/null && rc=0 || rc=$?
+echo "CONTINUED rc=$rc"
 """
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
@@ -154,24 +159,30 @@ exit "${{exit_code:-0}}"
         result = subprocess.run(
             ["bash", temp_path], capture_output=True, text=True, timeout=5, check=False
         )
-        assert result.returncode == 1, f"expected exit 1, got {result.returncode}"
+        # Without auth guard, "invalid_grant: Not found..." matches the not-found branch
+        # and returns 1, causing "CONTINUED rc=1" to appear. The auth guard must abort.
+        assert "CONTINUED" not in result.stdout, (
+            f"auth failure guard missing; invalid_grant wrongly classified as absent; "
+            f"stdout: {result.stdout}"
+        )
+        assert result.returncode != 0, f"expected non-zero exit from abort, got {result.returncode}"
     finally:
         Path(temp_path).unlink()
 
 
 def test_describe_resource_returns_absent_on_genuine_not_found():
     # Invariant 6: recognize genuine resource-not-found and report it as absent
-    # (return 1) without aborting (not exiting the whole script).
+    # (return 1) without aborting. Execution MUST continue so the bootstrap can
+    # proceed to create the resource. This also catches if someone changes the
+    # absent return to exit.
     describe_func = _extract_describe_resource()
 
     bash_code = f"""
-set -euo pipefail
 DESCRIBE_OUTPUT=""
 {describe_func}
 test_stub() {{ echo "ERROR: Resource 'x' was not found" >&2; return 1; }}
-describe_resource test_stub 2>/dev/null || exit_code=$?
-# describe_resource returned (did not call exit), so we get its return value
-exit "${{exit_code:-0}}"
+describe_resource test_stub 2>/dev/null && rc=0 || rc=$?
+echo "CONTINUED rc=$rc"
 """
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
@@ -183,9 +194,14 @@ exit "${{exit_code:-0}}"
         result = subprocess.run(
             ["bash", temp_path], capture_output=True, text=True, timeout=5, check=False
         )
-        assert (
-            result.returncode == 1
-        ), f"expected return 1 (not abort), got {result.returncode}"
+        # For genuine not-found, describe_resource must return 1 (not exit).
+        # This means execution continues and we see "CONTINUED rc=1".
+        assert "CONTINUED rc=1" in result.stdout, (
+            f"describe_resource must return 1 for genuine not-found, not abort; "
+            f"stdout: {result.stdout}"
+        )
+        # The script exits with 0 because the echo succeeded
+        assert result.returncode == 0, f"expected exit 0 (echo succeeded), got {result.returncode}"
     finally:
         Path(temp_path).unlink()
 
