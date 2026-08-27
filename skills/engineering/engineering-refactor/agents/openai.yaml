@@ -1,0 +1,3 @@
+interface:
+  display_name: "Engineering Refactor"
+  short_description: "Move a repo toward the house standard without bulldozing it"

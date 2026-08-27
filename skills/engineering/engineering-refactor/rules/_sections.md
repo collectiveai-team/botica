@@ -77,9 +77,9 @@ through prek, line 100, latest Python.
 ## 7. Logging (log)
 
 **Scope:** general.
-**Description:** The get_logger + Rich convention; prod observability.
+**Description:** The house structlog get_logger convention; prod observability.
 
-- `log-get-logger-rich` — `get_logger(__name__)` = stdlib logging + RichHandler, level from `LOG_LEVEL`
+- `log-get-logger-structlog` — `get_logger(__name__)` = house structlog factory, level from `LOG_LEVEL`
 - `log-no-print` — libraries log, they don't `print`
 - `log-observability` — Logfire instrumentation in prod services
 

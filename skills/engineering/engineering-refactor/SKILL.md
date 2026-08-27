@@ -33,7 +33,7 @@ lockfiles, Makefiles, CI workflows, existing tests, package layout, `README`, `C
 and ADRs if present. Determine, citing evidence:
 
 - Package manager + build backend (`rules/py-package-manager.md`, `rules/py-build-backend.md`).
-- Toolchain era — modern uv+ruff+mypy or legacy poetry+black/isort (`rules/py-ruff-format-modern.md`, `rules/py-legacy-lint-stack.md`).
+- Toolchain era — the house stack (uv + ruff + ruff-format + pyrefly + ast-grep via prek) or a legacy poetry+black/isort/mypy setup (`rules/py-ruff-format-modern.md`, `rules/py-legacy-lint-stack.md`).
 - Python version, package layout, test layout, logging, runtime entrypoints, frontend (if any).
 
 Preserve the existing toolchain unless the user asked to migrate it (`rules/general-respect-local-repo.md`).
@@ -47,7 +47,7 @@ Read the architecture rules — `rules/arch-deep-modules.md`, `rules/arch-deleti
 - Logic spread across callers that should live behind one module interface.
 - Files over 400 lines receiving unrelated behavior; files over 700 lines (`rules/spaghetti-large-file-thresholds.md`).
 - Orchestration mixing transport, validation, domain logic, persistence, formatting (`rules/spaghetti-mixed-orchestration.md`).
-- Slices that don't match the conventions (`rules/pylayout-meta-slice.md`, `rules/pylayout-adapters-slices.md`, `rules/log-get-logger-rich.md`).
+- Slices that don't match the conventions (`rules/pylayout-meta-slice.md`, `rules/pylayout-adapters-slices.md`, `rules/log-get-logger-structlog.md`).
 - Tests asserting internals instead of behavior at the interface (`rules/test-through-interface.md`).
 
 Use the exact vocabulary from `rules/arch-vocabulary.md`: module, interface, implementation,

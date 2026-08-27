@@ -18,15 +18,16 @@ terminal output.
 **Prefer:**
 
 ```python
-from mypackage.logger import get_logger
-logger = get_logger(__name__)
+from mypackage.core.logger import get_logger
+
+log = get_logger(__name__)
 
 def run_task(name: str) -> None:
-    logger.info(f"Running task: {name}")
+    log.info("task_started", task=name)
     try:
         _execute(name)
-    except Exception as exc:
-        logger.error(f"Task {name} failed: {exc}", exc_info=True)
+    except Exception:
+        log.exception("task_failed", task=name)
         raise
 ```
 
@@ -41,5 +42,5 @@ def run_task(name: str) -> None:
         print(f"Error: {exc}")        # no stack trace, no level, no filtering
 ```
 
-Reference: `log-get-logger-rich` for the factory; CLI entrypoints are the one place
+Reference: `log-get-logger-structlog` for the factory; CLI entrypoints are the one place
 `print` / `typer.echo` is appropriate.

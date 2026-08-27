@@ -423,9 +423,6 @@ ruff format mypackage/adapters/sqs.py mypackage/adapters/gcp.py
 
 ## Or format the package, not the whole repo
 ruff format mypackage/
-
-## black equivalent
-black mypackage/streaming/
 ```
 
 **Avoid:**
@@ -1232,63 +1229,54 @@ dependency-free.
 
 ## 7. Logging
 
-<!-- rule: log-get-logger-rich -->
+<!-- rule: log-get-logger-structlog -->
 *scope: general · applies-to: all · status: current*
 
-### Use get_logger(__name__) — stdlib logging wrapped with RichHandler
+### Use get_logger(__name__) — the house structlog factory
 
-Ship a shared `get_logger(name)` factory: it calls `logging.basicConfig` with `RichHandler`,
-format `"%(message)s"`, datefmt `"[%X]"`, and level read from the `LOG_LEVEL` env var
-(default `"info"`). Call it once at module top with `__name__`; the returned standard
-`logging.Logger` is used everywhere below. Do not create a second `basicConfig` call or a
-bare `logging.getLogger`.
+Logging is configured in exactly one place: a `core/logger.py` module built on
+[structlog](https://www.structlog.org). Import `get_logger` from it and call it once at module
+top with `__name__`. Never call `logging.getLogger(...)` directly, and never add a second
+`logging.basicConfig`.
+
+Rendering follows the environment — structured JSON to stdout under `ENV=prod`/`production`,
+colored console rendering otherwise. The level is read once from `LOG_LEVEL` (default `INFO`,
+case-insensitive), and the stack configures lazily on the first `get_logger` call.
+
+Emit **events as key/value pairs**, not pre-formatted strings: that is what keeps a log
+queryable once it reaches a sink. Bind recurring context once with `.bind()` rather than
+threading it through every call site.
 
 **Prefer:**
 
 ```python
 ## any_module.py
-from mypackage.logger import get_logger
+from mypackage.core.logger import get_logger
 
-logger = get_logger(__name__)
+log = get_logger(__name__)
 
-def process(item: str) -> None:
-    logger.info(f"processing {item}")
-```
-
-```python
-## mypackage/logger/logger.py  — the factory
-import os
-import logging
-from rich.logging import RichHandler
-
-LOG_LEVEL = os.getenv("LOG_LEVEL", "info").lower()
-LOG_LEVEL_MAP = {
-    "debug": logging.DEBUG,
-    "info": logging.INFO,
-    "warning": logging.WARNING,
-    "error": logging.ERROR,
-}
-
-def get_logger(name: str) -> logging.Logger:
-    logging.basicConfig(
-        level=LOG_LEVEL_MAP[LOG_LEVEL],
-        format="%(message)s",
-        datefmt="[%X]",
-        handlers=[RichHandler(markup=True)],
-    )
-    return logging.getLogger(name)
+def process(item_id: str, request_id: str) -> None:
+    bound = log.bind(request_id=request_id)
+    bound.info("item_processing_started", item_id=item_id)
 ```
 
 **Avoid:**
 
 ```python
 import logging
-logging.basicConfig()                    # no Rich, wrong format
-logger = logging.getLogger("hardcoded")  # loses __name__ hierarchy
+from rich.logging import RichHandler
+
+logging.basicConfig(handlers=[RichHandler(markup=True)])  # a second config point
+logger = logging.getLogger("hardcoded")                   # bypasses the house factory
+logger.info(f"processing {item_id}")                      # a string, not a queryable event
 ```
 
-Reference: `log-no-print` (no bare print in library code); `log-observability` (Logfire
-layer added on top for production services).
+Rich remains the house presentation layer for CLI output (`pylayout-cli-typer-rich`); it is
+not the logging handler.
+
+Reference: the canonical factory ships as a drop-in snippet, `.agents/snippets/core/logger.py`
+(CES-74 · `core-logger`), which `log-get-logger` (CES-45) and `log-no-print` (CES-46) point at.
+See also `log-observability` (Logfire layer added on top for production services).
 
 <!-- rule: log-no-print -->
 *scope: general · applies-to: all · status: current*
@@ -1304,15 +1292,16 @@ terminal output.
 **Prefer:**
 
 ```python
-from mypackage.logger import get_logger
-logger = get_logger(__name__)
+from mypackage.core.logger import get_logger
+
+log = get_logger(__name__)
 
 def run_task(name: str) -> None:
-    logger.info(f"Running task: {name}")
+    log.info("task_started", task=name)
     try:
         _execute(name)
-    except Exception as exc:
-        logger.error(f"Task {name} failed: {exc}", exc_info=True)
+    except Exception:
+        log.exception("task_failed", task=name)
         raise
 ```
 
@@ -1327,7 +1316,7 @@ def run_task(name: str) -> None:
         print(f"Error: {exc}")        # no stack trace, no level, no filtering
 ```
 
-Reference: `log-get-logger-rich` for the factory; CLI entrypoints are the one place
+Reference: `log-get-logger-structlog` for the factory; CLI entrypoints are the one place
 `print` / `typer.echo` is appropriate.
 
 <!-- rule: log-observability -->
@@ -1387,7 +1376,7 @@ import logging
 logger = logging.getLogger(__name__)
 ```
 
-Reference: `log-get-logger-rich` for the base logging factory. Langfuse is appropriate
+Reference: `log-get-logger-structlog` for the base logging factory. Langfuse is appropriate
 for experiment and notebook tracing; Logfire is for production service observability.
 
 ## 8. FastAPI

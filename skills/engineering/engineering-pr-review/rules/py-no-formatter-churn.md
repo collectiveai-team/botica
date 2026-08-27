@@ -22,9 +22,6 @@ ruff format mypackage/adapters/sqs.py mypackage/adapters/gcp.py
 
 # Or format the package, not the whole repo
 ruff format mypackage/
-
-# black equivalent
-black mypackage/streaming/
 ```
 
 **Avoid:**
