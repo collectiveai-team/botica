@@ -86,6 +86,8 @@ ALL_TEMPLATE_NAMES += ["integration-tag.yml", "deploy-integration.yml"]
 
 ALL_TEMPLATE_NAMES += ["deploy.yml"]
 
+ALL_TEMPLATE_NAMES += ["nginx.conf", "entrypoint.sh", "Dockerfile.combined"]
+
 
 @pytest.mark.parametrize("name", ALL_TEMPLATE_NAMES)
 def test_no_template_creates_a_service_account_key(name: str):
@@ -654,3 +656,163 @@ echo "$ENV"
         assert (
             env_value == expected_env
         ), f"Expected ENV={expected_env}, got ENV={env_value}"
+
+
+def test_entrypoint_uses_bash_for_wait_n():
+    # `wait -n` is a bashism. Under dash it fails at runtime, inside a container,
+    # on the first deploy -- the most expensive place to discover it.
+    entrypoint = _template("entrypoint.sh")
+    assert entrypoint.startswith("#!/usr/bin/env bash")
+    assert "wait -n" in entrypoint
+
+
+def test_entrypoint_exits_when_any_child_exits():
+    # A supervisor that restarts children in place keeps a broken revision
+    # serving traffic; Cloud Run must be allowed to replace it.
+    entrypoint = _template("entrypoint.sh")
+    assert "trap" in entrypoint
+    assert re.search(r"wait -n\s*\n\s*exit", entrypoint)
+
+
+def test_envsubst_is_restricted_to_port():
+    # Unrestricted envsubst eats nginx's own $host and $remote_addr, and the
+    # resulting config is silently wrong rather than broken.
+    entrypoint = _template("entrypoint.sh")
+    assert "envsubst '${PORT}'" in entrypoint
+
+
+def test_nginx_listens_on_the_cloud_run_port():
+    conf = _template("nginx.conf")
+    assert "listen       ${PORT}" in conf or "listen ${PORT}" in conf
+
+
+def test_nginx_forwards_the_proxy_headers():
+    # Without X-Forwarded-Proto the apps generate http:// URLs behind Cloud Run's
+    # TLS terminator, which breaks redirects and cookies.
+    conf = _template("nginx.conf")
+    assert "X-Forwarded-Proto" in conf
+    assert "X-Forwarded-For" in conf
+
+
+def test_envsubst_restriction_actually_works():
+    # Behavioral test: write nginx.conf to a temp file, run actual envsubst
+    # with PORT=9999 and verify it substitutes PORT but preserves nginx variables.
+    import shutil
+
+    if shutil.which("envsubst") is None:
+        pytest.skip("envsubst not installed")
+
+    conf = _template("nginx.conf")
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".conf", delete=False) as f:
+        f.write(conf)
+        f.flush()
+        temp_path = f.name
+
+    try:
+        # Run restricted envsubst (what entrypoint.sh does)
+        result = subprocess.run(
+            ["bash", "-c", f"envsubst '${{PORT}}' < {temp_path}"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            env={"PORT": "9999"},
+            check=True,
+        )
+
+        output = result.stdout
+        # PORT should be substituted
+        assert "listen       9999" in output or "listen 9999" in output, (
+            f"PORT=9999 not substituted in output: {output[:200]}"
+        )
+        # nginx variables should still be present (NOT substituted)
+        assert "$host" in output, "$host was consumed by restricted envsubst"
+        assert "$remote_addr" in output, "$remote_addr was consumed by restricted envsubst"
+        assert "$proxy_add_x_forwarded_for" in output, "$proxy_add_x_forwarded_for was consumed"
+
+        # Now run unrestricted envsubst to prove the restriction matters
+        result_unrestricted = subprocess.run(
+            ["bash", "-c", f"envsubst < {temp_path}"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            env={"PORT": "9999"},
+            check=True,
+        )
+
+        unrestricted_output = result_unrestricted.stdout
+        # Unrestricted envsubst should destroy nginx's variables (they're undefined)
+        # They appear as empty strings or not at all
+        assert "$host" not in unrestricted_output, (
+            "unrestricted envsubst should destroy $host, but it survived"
+        )
+        assert "$remote_addr" not in unrestricted_output, (
+            "unrestricted envsubst should destroy $remote_addr, but it survived"
+        )
+
+    finally:
+        Path(temp_path).unlink()
+
+
+def test_dockerfile_installs_bash_for_wait_n():
+    # bash is required for wait -n in entrypoint.sh. Under dash or sh, the
+    # container fails at runtime on the first deploy (most expensive discovery).
+    dockerfile = _template("Dockerfile.combined")
+    assert "bash" in dockerfile, "bash must be installed for wait -n in entrypoint.sh"
+    # Verify it's in the apt-get install line, not just mentioned in a comment
+    lines = dockerfile.split("\n")
+    for line in lines:
+        if "apt-get install" in line:
+            install_block = []
+            idx = lines.index(line)
+            # Collect the complete multi-line install command (handles backslash continuation)
+            while idx < len(lines):
+                install_block.append(lines[idx])
+                if not lines[idx].rstrip().endswith("\\"):
+                    break
+                idx += 1
+            install_text = " ".join(install_block)
+            assert "bash" in install_text, (
+                "bash must be in apt-get install command, not just mentioned elsewhere"
+            )
+            return
+    raise AssertionError("apt-get install line not found in Dockerfile.combined")
+
+
+def test_bash_supports_wait_n():
+    # Behavioral test: verify bash actually supports `wait -n` (not sh or dash).
+    # This catches if someone accidentally changes the shebang.
+    test_script = """#!/usr/bin/env bash
+set -euo pipefail
+
+# Simple test: can we call wait -n?
+# Start a background process
+true &
+pid=$!
+
+# This syntax is invalid in sh/dash, only in bash
+wait -n 2>/dev/null || { echo "BASH_REQUIRED"; exit 1; }
+
+echo "wait_n_works"
+"""
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
+        f.write(test_script)
+        f.flush()
+        temp_path = f.name
+
+    try:
+        result = subprocess.run(
+            ["bash", temp_path],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+
+        # If bash supports wait -n, we see "wait_n_works"
+        assert "wait_n_works" in result.stdout, (
+            f"bash should support wait -n; output: {result.stdout}"
+        )
+
+    finally:
+        Path(temp_path).unlink()
