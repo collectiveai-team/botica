@@ -2228,10 +2228,37 @@ the agent deny-glob. If you need something that command cannot tell you, **ask
 the operator** — `.env.schema` is deny-listed on purpose and reading it around
 the rule is not an option.
 
+Create each environment **with a deployment branch policy naming only its trusted
+branch**. This is not optional. `deploy-integration.yml` binds
+`environment: integration` unconditionally, and a `workflow_dispatch` run executes
+the workflow file *from the dispatched ref* — so without the policy, anyone with
+push access can push a branch carrying a modified copy of that workflow (with
+`needs: validate` removed and a step that exfiltrates `${{ toJSON(secrets) }}`),
+dispatch it from the attacker-authored listener, and receive every integration
+secret. The WIF condition denies the GCP token for such a ref, but does nothing
+about GitHub Environment secrets, and the integration `DATABASE_URL` alone is
+enough. See the spec's §3.5 for the full attack sequence.
+
 ```bash
-gh api -X PUT "repos/$REPO/environments/dev"
-gh api -X PUT "repos/$REPO/environments/prod"
-gh api -X PUT "repos/$REPO/environments/integration"
+create_environment() {          # $1 = environment name, $2 = its only allowed branch
+  gh api -X PUT "repos/$REPO/environments/$1" \
+    -F 'deployment_branch_policy[protected_branches]=false' \
+    -F 'deployment_branch_policy[custom_branch_policies]=true'
+  gh api -X POST "repos/$REPO/environments/$1/deployment-branch-policies" \
+    -f "name=$2"
+}
+
+create_environment dev         "$DEV_BRANCH"
+create_environment prod        "$PROD_BRANCH"
+create_environment integration "$DEV_BRANCH"
+```
+
+Verify the policy took effect before continuing — an environment created without
+it looks identical in the API response that creates it:
+
+```bash
+gh api "repos/$REPO/environments/integration/deployment-branch-policies" \
+  --jq '.branch_policies[].name'      # must print the trusted branch, and only it
 ```
 
 Copy `templates/sync-github-secrets.sh` to `scripts/`, then run it once per
@@ -2320,7 +2347,28 @@ runs before validation can reach WIF, an Environment, or a secret.
 credentials in scope.
 
 **Check:** the block above `deploy:` in `deploy-integration.yml` contains no
-`environment:` and no `google-github-actions/auth`.
+`environment:`, no `google-github-actions/auth`, and no `${{ secrets.` reference.
+
+**This invariant is false without a deployment branch policy on the environment.**
+`deploy-integration.yml` binds `environment: integration` unconditionally, because
+it is only ever meant to be reached through `validate`. But a `workflow_dispatch`
+run executes the workflow file *from the dispatched ref*. Anyone with push access
+can push a branch carrying a modified copy — `needs: validate` deleted, a step
+added that exfiltrates `${{ toJSON(secrets) }}` — and dispatch it from the
+attacker-authored listener, which holds `actions: write`. The run binds
+`environment: integration` and receives every secret in it.
+
+The WIF attribute condition (invariant 4) denies the *GCP* token for such a ref,
+so no Google credential is issued — but it does nothing about GitHub Environment
+secrets, and the integration `DATABASE_URL` alone is enough. Phase 2's branch
+policy is what closes this. Nothing else in the design does, and no test in this
+repo can detect its absence, because it is server-side state rather than file
+content. Verify it by hand:
+
+```bash
+gh api "repos/$REPO/environments/integration/deployment-branch-policies" \
+  --jq '.branch_policies[].name'
+```
 
 ## 2. The listener is attacker-controlled code
 

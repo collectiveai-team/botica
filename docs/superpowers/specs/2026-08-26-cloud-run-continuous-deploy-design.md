@@ -265,12 +265,45 @@ secret (`DATABASE_URL_INTEGRATION`), and must give the operator that mapping.
 
 ### 3.5 Environment creation
 
+Three environments are created: `dev`, `prod`, `integration`. **Each is created with
+a deployment branch policy naming only its trusted branch.** The policy is not
+optional and not defence in depth — without it, invariant 1 is false.
+
 ```bash
-gh api -X PUT "repos/$REPO/environments/$ENV"
+create_environment() {          # $1 = environment name, $2 = its only allowed branch
+  gh api -X PUT "repos/$REPO/environments/$1" \
+    -F 'deployment_branch_policy[protected_branches]=false' \
+    -F 'deployment_branch_policy[custom_branch_policies]=true'
+  gh api -X POST "repos/$REPO/environments/$1/deployment-branch-policies" \
+    -f "name=$2"
+}
+
+create_environment dev         "$DEV_BRANCH"
+create_environment prod        "$PROD_BRANCH"
+create_environment integration "$DEV_BRANCH"
+
 gh variable set NAME --env "$ENV"     # non-secret configuration
 ```
 
-Three environments are created: `dev`, `prod`, `integration`.
+**Why the policy is load-bearing.** `deploy-integration.yml` binds
+`environment: integration` unconditionally, because it is only ever meant to be
+reached through the `validate` job. But a `workflow_dispatch` run executes the
+workflow file **from the dispatched ref**. Anyone with push access can therefore
+push a branch carrying a modified copy of that workflow — `needs: validate`
+deleted, a step added that exfiltrates `${{ toJSON(secrets) }}` — and dispatch it
+from the attacker-authored listener, which holds `actions: write`. The run binds
+`environment: integration` and receives every secret in it.
+
+The WIF attribute condition (§4, invariant 4) correctly denies the *GCP* token for
+a ref outside the trusted branches, so no Google credential is issued. It does
+nothing about GitHub Environment secrets, and the integration `DATABASE_URL`
+alone is enough. The branch policy is what closes this; nothing else in the
+design does.
+
+`deploy.yml` is not exposed the same way — its `environment:` is an expression
+over `github.ref_name` that yields `invalid` for any other ref (invariant 3) — but
+all three environments get the policy anyway, because relying on an expression to
+be written correctly forever is weaker than a server-side constraint.
 
 ---
 
