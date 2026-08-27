@@ -13,7 +13,10 @@ on:
 
 concurrency:
   group: deploy-${{ github.ref_name }}
-  cancel-in-progress: true
+  # Never cancel. Migrations run as a Cloud Run Job; `jobs execute --wait` only
+  # waits on work GCP runs independently, so cancelling this runner would start a
+  # second migration alongside the first, which is still running.
+  cancel-in-progress: false
 
 env:
   REGION: {{REGION}}

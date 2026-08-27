@@ -388,3 +388,99 @@ def test_branch_images_are_tagged_by_sha():
     workflow = _template("deploy.yml")
     assert "/app:latest" not in workflow
     assert "rev-parse --short=12" in workflow
+
+
+def test_case_statement_has_all_four_arms():
+    # Invariant 3 (extended): The case statement must explicitly enumerate the four
+    # legitimate combinations and reject everything else. Gutting the rejection arm
+    # to accept any ref is a critical vulnerability.
+    workflow = _template("deploy.yml")
+
+    # Extract the case statement
+    case_anchor = (
+        'case "${{ github.event_name }}:$GITHUB_REF_NAME:$REQUESTED_ENVIRONMENT" in'
+    )
+    case_start = workflow.find(case_anchor)
+    assert case_start != -1, "case statement anchor not found"
+
+    case_end = workflow.find("esac", case_start)
+    assert case_end != -1, "esac anchor not found after case"
+
+    case_block = workflow[case_start:case_end + len("esac")]
+
+    # All four expected patterns must be present
+    assert "push:{{DEV_BRANCH}}:|" in case_block, "push:{{DEV_BRANCH}}: missing"
+    dev_dispatch = "workflow_dispatch:{{DEV_BRANCH}}:dev)"
+    assert dev_dispatch in case_block, "DEV dispatch arm missing"
+    assert "push:{{PROD_BRANCH}}:|" in case_block, "push:{{PROD_BRANCH}}: missing"
+    prod_dispatch = "workflow_dispatch:{{PROD_BRANCH}}:prod)"
+    assert prod_dispatch in case_block, "PROD dispatch arm missing"
+
+    # The rejection arm must be present
+    assert "*)" in case_block, "rejection arm (*) missing"
+    assert "exit 1" in case_block, "rejection arm must exit with 1"
+
+    # ENV assignments must only happen in the case arms, not elsewhere
+    env_lines = [line for line in case_block.splitlines() if "ENV=" in line]
+    # Should have exactly 2 assignments (dev and prod arms)
+    assert len(env_lines) == 2, f"Expected 2 ENV assignments, got {len(env_lines)}"
+
+
+def test_runtime_service_account_derives_from_env():
+    # Invariant 8 (critical): dev and prod must have separate service accounts.
+    # Hardcoding `runtime_sa=${AR_REPO}-runtime-prod` would run dev as prod.
+    workflow = _template("deploy.yml")
+
+    # Find the runtime_sa assignment
+    sa_line_start = workflow.find('echo "runtime_sa=${AR_REPO}-runtime-${ENV}"')
+    assert sa_line_start != -1, "runtime_sa assignment line not found (must interpolate $ENV)"
+
+    # Verify it uses ${ENV}, not a literal
+    sa_section = workflow[max(0, sa_line_start - 100):sa_line_start + 100]
+    assert "${ENV}" in sa_section, "runtime_sa must interpolate ${ENV}"
+    assert "runtime-dev" not in sa_section, "runtime_sa must not hardcode 'dev'"
+    assert "runtime-prod" not in sa_section, "runtime_sa must not hardcode 'prod'"
+
+
+def test_resource_names_interpolate_env():
+    # Invariant 13: The migrate job name and Cloud Run service name must derive
+    # from $ENV to enforce environment isolation. Hardcoding one environment is
+    # a critical vulnerability.
+    workflow = _template("deploy.yml")
+
+    # Migrate job must use ${ENV}
+    migrate_start = workflow.find('gcloud run jobs deploy "migrate-${ENV}"')
+    assert migrate_start != -1, "migrate job must use migrate-${ENV}, not a literal"
+
+    # Service name must use ${ENV}
+    service_start = workflow.find('gcloud run deploy "${AR_REPO}-${ENV}"')
+    assert service_start != -1, "service must use ${AR_REPO}-${ENV}, not a literal"
+
+    # Smoke test URL should use the service output, not a hardcoded env
+    # (implicitly tested by the service name interpolation above)
+
+
+def test_gcp_project_id_validation_present():
+    # Invariant 14: GCP_PROJECT_ID must be validated to be a valid project ID
+    # before any gcloud commands run.
+    workflow = _template("deploy.yml")
+
+    regex_pattern = '[[ "$GCP_PROJECT_ID" =~ ^[a-z0-9-]+$ ]]'
+    validate_start = workflow.find(regex_pattern)
+    assert validate_start != -1, "GCP_PROJECT_ID regex validation not found"
+
+    # This validation must come before any gcloud command
+    validate_section = workflow.find("Validate deployment target")
+    first_gcloud = workflow.find("gcloud", validate_section)
+    first_validate = workflow.find("GCP_PROJECT_ID", validate_section)
+
+    assert first_validate < first_gcloud, "validation must happen before gcloud"
+
+
+def test_deploy_concurrency_never_cancels():
+    # Invariant 11 (extended to all envs): Migrations run as a Cloud Run Job.
+    # Cancelling the runner does not cancel the GCP-side execution, so a second
+    # push would start a second migration alongside the first, corrupting the database.
+    workflow = _template("deploy.yml")
+    assert "cancel-in-progress: false" in workflow, "cancel-in-progress must be false"
+    assert "cancel-in-progress: true" not in workflow, "cancel-in-progress must not be true"
