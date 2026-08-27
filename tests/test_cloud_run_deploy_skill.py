@@ -59,6 +59,8 @@ ALL_TEMPLATE_NAMES = [
 
 ALL_TEMPLATE_NAMES += ["integration-tag.yml", "deploy-integration.yml"]
 
+ALL_TEMPLATE_NAMES += ["deploy.yml"]
+
 
 @pytest.mark.parametrize("name", ALL_TEMPLATE_NAMES)
 def test_no_template_creates_a_service_account_key(name: str):
@@ -352,3 +354,37 @@ def test_integration_images_are_tagged_by_pr_and_sha():
             break
     else:
         raise AssertionError("IMAGE= assignment line not found")
+
+
+def test_environment_derives_from_the_ref_not_an_input():
+    # Invariant 3: `environment: ${{ inputs.environment }}` hands production
+    # secrets to anyone with workflow_dispatch rights.
+    #
+    # `${{` is required in the match because the workflow_dispatch input is
+    # itself NAMED `environment`, so its declaration line also strips to
+    # "environment:" -- matching on the prefix alone flags a false positive.
+    workflow = _template("deploy.yml")
+    environment_lines = [
+        line
+        for line in workflow.splitlines()
+        if line.strip().startswith("environment:") and "${{" in line
+    ]
+    assert environment_lines, "deploy.yml declares no job environment expression"
+    for line in environment_lines:
+        assert "github.ref_name" in line, line
+        assert "inputs." not in line, line
+
+
+def test_dispatch_input_is_cross_checked_against_the_ref():
+    # An input may narrow what a ref permits; it may never widen it.
+    workflow = _template("deploy.yml")
+    assert "REQUESTED_ENVIRONMENT" in workflow
+    assert "Deployments require" in workflow
+
+
+def test_branch_images_are_tagged_by_sha():
+    # Invariant 9. As above, only the image tag -- Secret Manager's `:latest`
+    # version reference is a different thing and is correct.
+    workflow = _template("deploy.yml")
+    assert "/app:latest" not in workflow
+    assert "rev-parse --short=12" in workflow
