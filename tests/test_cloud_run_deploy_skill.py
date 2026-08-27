@@ -391,9 +391,10 @@ def test_branch_images_are_tagged_by_sha():
 
 
 def test_case_statement_has_all_four_arms():
-    # Invariant 3 (extended): The case statement must explicitly enumerate the four
-    # legitimate combinations and reject everything else. Gutting the rejection arm
-    # to accept any ref is a critical vulnerability.
+    # Invariant 3 (extended): The case statement must map each pattern to exactly
+    # the correct environment value. A one-token edit changing `ENV=dev` to
+    # `ENV=prod` in a dev arm would be catastrophic (dev deploy as prod) and must
+    # be caught, not just by presence of patterns and count of assignments.
     workflow = _template("deploy.yml")
 
     # Extract the case statement
@@ -408,22 +409,41 @@ def test_case_statement_has_all_four_arms():
 
     case_block = workflow[case_start:case_end + len("esac")]
 
-    # All four expected patterns must be present
-    assert "push:{{DEV_BRANCH}}:|" in case_block, "push:{{DEV_BRANCH}}: missing"
-    dev_dispatch = "workflow_dispatch:{{DEV_BRANCH}}:dev)"
-    assert dev_dispatch in case_block, "DEV dispatch arm missing"
-    assert "push:{{PROD_BRANCH}}:|" in case_block, "push:{{PROD_BRANCH}}: missing"
-    prod_dispatch = "workflow_dispatch:{{PROD_BRANCH}}:prod)"
-    assert prod_dispatch in case_block, "PROD dispatch arm missing"
+    # Parse each arm and verify the mapping: pattern -> ENV value
+    # Arms are separated by ;; with patterns before ) and assignment after )
+    dev_patterns = [
+        "push:{{DEV_BRANCH}}:|workflow_dispatch:{{DEV_BRANCH}}:dev",
+    ]
+    prod_patterns = [
+        "push:{{PROD_BRANCH}}:|workflow_dispatch:{{PROD_BRANCH}}:prod",
+    ]
 
-    # The rejection arm must be present
-    assert "*)" in case_block, "rejection arm (*) missing"
-    assert "exit 1" in case_block, "rejection arm must exit with 1"
+    # Verify dev patterns map to ENV=dev
+    for pattern in dev_patterns:
+        pattern_line = pattern + ") ENV=dev"
+        assert pattern_line in case_block, (
+            f"dev pattern {pattern} must assign ENV=dev"
+        )
 
-    # ENV assignments must only happen in the case arms, not elsewhere
+    # Verify prod patterns map to ENV=prod
+    for pattern in prod_patterns:
+        pattern_line = pattern + ") ENV=prod"
+        assert pattern_line in case_block, (
+            f"prod pattern {pattern} must assign ENV=prod"
+        )
+
+    # Verify no extra arms assign ENV (only dev and prod should)
     env_lines = [line for line in case_block.splitlines() if "ENV=" in line]
-    # Should have exactly 2 assignments (dev and prod arms)
-    assert len(env_lines) == 2, f"Expected 2 ENV assignments, got {len(env_lines)}"
+    assert len(env_lines) == 2, f"Expected exactly 2 ENV assignments, got {len(env_lines)}"
+
+    # The rejection arm must be present and only in the rejection
+    assert "*) " in case_block or "*)" in case_block, "rejection arm missing"
+    # Extract rejection arm content
+    rejection_start = case_block.find("*)")
+    rejection_end = case_block.find(";;", rejection_start)
+    rejection_block = case_block[rejection_start:rejection_end]
+    assert "exit 1" in rejection_block, "rejection must exit, not assign ENV"
+    assert "ENV=" not in rejection_block, "rejection arm must not assign ENV"
 
 
 def test_runtime_service_account_derives_from_env():
@@ -470,9 +490,16 @@ def test_gcp_project_id_validation_present():
     assert validate_start != -1, "GCP_PROJECT_ID regex validation not found"
 
     # This validation must come before any gcloud command
-    validate_section = workflow.find("Validate deployment target")
+    validate_section_anchor = "Validate deployment target"
+    validate_section = workflow.find(validate_section_anchor)
+    assert validate_section != -1, (
+        f"{validate_section_anchor} section anchor not found"
+    )
+
     first_gcloud = workflow.find("gcloud", validate_section)
     first_validate = workflow.find("GCP_PROJECT_ID", validate_section)
+    assert first_validate != -1, "GCP_PROJECT_ID validation anchor not found"
+    assert first_gcloud != -1, "gcloud command anchor not found"
 
     assert first_validate < first_gcloud, "validation must happen before gcloud"
 
@@ -484,3 +511,35 @@ def test_deploy_concurrency_never_cancels():
     workflow = _template("deploy.yml")
     assert "cancel-in-progress: false" in workflow, "cancel-in-progress must be false"
     assert "cancel-in-progress: true" not in workflow, "cancel-in-progress must not be true"
+
+
+def test_secret_placeholders_not_substituted():
+    # Invariant 15: Secret placeholders must remain as {{...}} and never be
+    # replaced with literal values. A dev deploy could be pointed at prod
+    # secrets otherwise.
+    workflow = _template("deploy.yml")
+
+    # All four secret placeholders must be present exactly
+    assert "{{MIGRATE_SECRETS}}" in workflow, "MIGRATE_SECRETS placeholder missing"
+    assert "{{RUNTIME_SECRETS}}" in workflow, "RUNTIME_SECRETS placeholder missing"
+    assert "{{SECRET_ENV_BLOCK}}" in workflow, "SECRET_ENV_BLOCK placeholder missing"
+    assert "{{SYNC_SECRET_CALLS}}" in workflow, "SYNC_SECRET_CALLS placeholder missing"
+
+    # No --set-secrets lines can contain literal env suffixes
+    # Find all lines with --set-secrets
+    for line in workflow.splitlines():
+        if "--set-secrets" in line:
+            # These lines should only reference placeholders or $ENV vars
+            assert "-dev" not in line, f"--set-secrets line has literal -dev: {line}"
+            assert "-prod" not in line, f"--set-secrets line has literal -prod: {line}"
+
+    # Secret sync must interpolate ${ENV}, not hardcode
+    sync_start = workflow.find("sync_secret()")
+    assert sync_start != -1, "sync_secret function not found"
+
+    sync_end = workflow.find("{{SYNC_SECRET_CALLS}}", sync_start)
+    assert sync_end != -1, "SYNC_SECRET_CALLS placeholder not found"
+
+    sync_section = workflow[sync_start:sync_end + len("{{SYNC_SECRET_CALLS}}")]
+    # The sync calls should be a placeholder, not hardcoded
+    assert "{{SYNC_SECRET_CALLS}}" in sync_section, "SYNC_SECRET_CALLS not found"
