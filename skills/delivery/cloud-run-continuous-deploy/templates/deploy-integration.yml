@@ -1,0 +1,204 @@
+name: Deploy integration
+
+# Dispatched by integration-tag.yml, which is untrusted. Everything this
+# workflow believes about the tag it establishes itself, from the trusted
+# branch, before any credential exists in the job.
+on:
+  workflow_dispatch:
+    inputs:
+      review_tag:
+        description: "Immutable review tag (review/pr-<number>/<short-sha>)"
+        type: string
+        required: true
+
+env:
+  AR_REGION: {{REGION}}
+  REGION: {{INTEGRATION_REGION}}
+  AR_REPO: {{AR_REPO}}
+  SERVICE: {{AR_REPO}}-integration
+  RUNTIME_SA: {{AR_REPO}}-runtime-integration
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    outputs:
+      pr_number: ${{ steps.review.outputs.pr_number }}
+      head_sha: ${{ steps.review.outputs.head_sha }}
+      short_sha: ${{ steps.review.outputs.short_sha }}
+      review_tag: ${{ steps.review.outputs.review_tag }}
+    steps:
+      - name: Check out trusted control code
+        uses: actions/checkout@v4
+        with:
+          ref: {{DEV_BRANCH}}
+          path: control
+          fetch-depth: 1
+
+      - name: Validate review tag against its pull request
+        id: review
+        working-directory: control
+        env:
+          REVIEW_TAG: ${{ inputs.review_tag }}
+        run: |
+          set -euo pipefail
+          git fetch --force --no-tags origin "refs/tags/${REVIEW_TAG}:refs/tags/${REVIEW_TAG}"
+          python3 scripts/review_tag.py validate \
+            --tag "$REVIEW_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --base {{DEV_BRANCH}} \
+            --emit-github-output
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: integration
+    permissions:
+      id-token: write
+      contents: read
+    concurrency:
+      group: integration
+      cancel-in-progress: false
+    timeout-minutes: 45
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      PR_NUMBER: ${{ needs.validate.outputs.pr_number }}
+      HEAD_SHA: ${{ needs.validate.outputs.head_sha }}
+      SHORT_SHA: ${{ needs.validate.outputs.short_sha }}
+    steps:
+      - name: Validate deployment target
+        run: |
+          set -euo pipefail
+          [[ "$GCP_PROJECT_ID" =~ ^[a-z0-9-]+$ ]] ||
+            { echo "GCP_PROJECT_ID is malformed" >&2; exit 1; }
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] ||
+            { echo "head sha was not validated" >&2; exit 1; }
+
+      - name: Check out the validated pull request head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.head_sha }}
+          path: source
+          fetch-depth: 1
+          # This tree is attacker-controlled. A persisted token here is a token
+          # in attacker-controlled code.
+          persist-credentials: false
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: access_token
+          create_credentials_file: true
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: {{AR_REPO}}-deployer@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Log in to Artifact Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.AR_REGION }}-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Build and push the image
+        working-directory: source
+        run: |
+          set -euo pipefail
+          IMAGE="${AR_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${AR_REPO}/app:integration-pr-${PR_NUMBER}-${SHORT_SHA}"
+          docker build -f deploy/Dockerfile -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Sync integration secrets to Secret Manager
+        env:
+          {{SECRET_ENV_BLOCK}}
+        run: |
+          set -euo pipefail
+          sync_secret() {
+            local name="$1" value="$2"
+            if [[ -z "$value" ]]; then
+              echo "refusing to sync empty value into ${name}; the integration" \
+                   "Environment secret is missing or unset" >&2
+              exit 1
+            fi
+            printf '%s' "$value" | gcloud secrets versions add "$name" \
+              --data-file=- --project "$GCP_PROJECT_ID"
+          }
+          {{SYNC_SECRET_CALLS}}
+
+      - name: Reset, migrate and seed the integration database
+        run: |
+          set -euo pipefail
+          gcloud run jobs deploy "reset-integration" \
+            --image "$IMAGE" \
+            --region "$REGION" \
+            --project "$GCP_PROJECT_ID" \
+            --service-account "${RUNTIME_SA}@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
+            --command {{RESET_ENTRYPOINT}} \
+            --max-retries 0 \
+            --set-env-vars "DEPLOY_ENV=integration,ALLOW_DATABASE_RESET=true" \
+            --set-secrets "{{RESET_SECRETS}}"
+          gcloud run jobs execute "reset-integration" \
+            --region "$REGION" --project "$GCP_PROJECT_ID" --wait
+
+      - name: Deploy the integration service
+        id: service
+        run: |
+          set -euo pipefail
+          gcloud run deploy "$SERVICE" \
+            --image "$IMAGE" \
+            --region "$REGION" \
+            --project "$GCP_PROJECT_ID" \
+            --allow-unauthenticated \
+            --service-account "${RUNTIME_SA}@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
+            --cpu 1 --memory 1Gi --min 0 --max 1 \
+            --set-env-vars "DEPLOY_ENV=integration,EXPOSE_API_DOCS=true" \
+            --set-secrets "{{RUNTIME_SECRETS}}"
+          URL="$(gcloud run services describe "$SERVICE" \
+            --region "$REGION" --project "$GCP_PROJECT_ID" --format 'value(status.url)')"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test
+        env:
+          URL: ${{ steps.service.outputs.url }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 30 "${URL}{{HEALTH_PATH}}" >/dev/null
+          curl --fail --silent --show-error --max-time 30 --output /dev/null "$URL"
+
+      - name: Write the deployment evidence artifact
+        env:
+          URL: ${{ steps.service.outputs.url }}
+        run: |
+          set -euo pipefail
+          DIGEST="$(gcloud run services describe "$SERVICE" \
+            --region "$REGION" --project "$GCP_PROJECT_ID" \
+            --format 'value(status.latestReadyRevisionName)')"
+          # Non-secret facts only: no headers, no tokens, no environment dump.
+          cat > integration-deployment.json <<JSON
+          {
+            "pr_number": "${PR_NUMBER}",
+            "head_sha": "${HEAD_SHA}",
+            "review_tag": "${{ needs.validate.outputs.review_tag }}",
+            "run_url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}",
+            "service_url": "${URL}",
+            "revision": "${DIGEST}",
+            "image": "${IMAGE}"
+          }
+          JSON
+
+      - name: Upload the evidence artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-pr-${{ needs.validate.outputs.pr_number }}-${{ needs.validate.outputs.short_sha }}
+          path: integration-deployment.json

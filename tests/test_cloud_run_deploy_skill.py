@@ -7,6 +7,7 @@ production deploy. Every assertion names the invariant from the spec.
 
 from __future__ import annotations
 
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -55,6 +56,8 @@ ALL_TEMPLATE_NAMES = [
     "review_tag.py",
     "sync-github-secrets.sh",
 ]
+
+ALL_TEMPLATE_NAMES += ["integration-tag.yml", "deploy-integration.yml"]
 
 
 @pytest.mark.parametrize("name", ALL_TEMPLATE_NAMES)
@@ -230,3 +233,67 @@ def test_bootstrap_grants_no_project_level_role_to_a_runtime_account():
         assert "RUNTIME" not in invocation, invocation
         assert "runtime" not in invocation, invocation
         assert "DEPLOY_SA_EMAIL" in invocation, invocation
+
+
+def test_listener_never_receives_credentials():
+    # Invariant 1 and 2: this file is loaded from the tagged commit's own tree,
+    # so its author controls every line. It must be worth nothing to compromise.
+    listener = _template("integration-tag.yml")
+    assert "google-github-actions/auth" not in listener
+    assert "${{ secrets." not in listener
+    assert "environment:" not in listener
+
+
+def test_listener_documents_that_it_is_not_a_boundary():
+    # The comment is load-bearing: without it the next reader adds a check here
+    # and believes it protects something.
+    listener = _template("integration-tag.yml")
+    assert "not a security control" in listener.lower() or "never a boundary" in listener.lower()
+
+
+def test_validate_job_runs_before_any_credential():
+    # Invariant 1: ordering is the boundary. deploy must depend on validate.
+    workflow = _template("deploy-integration.yml")
+    assert re.search(r"needs:\s*validate", workflow)
+    validate_block = workflow.split("deploy:", 1)[0]
+    assert "google-github-actions/auth" not in validate_block
+    assert "environment:" not in validate_block
+
+
+def test_untrusted_head_checkout_drops_credentials():
+    # Invariant 5: a persisted token in a checkout of attacker-controlled code is
+    # a token in attacker-controlled code.
+    workflow = _template("deploy-integration.yml")
+    assert "persist-credentials: false" in workflow
+
+
+def test_integration_concurrency_does_not_cancel():
+    # Invariant 11: cancelling mid-reset leaves a half-migrated database.
+    workflow = _template("deploy-integration.yml")
+    assert "cancel-in-progress: false" in workflow
+
+
+def test_reset_requires_both_flags():
+    # Invariant 10, the two flags. The marker is asserted separately.
+    workflow = _template("deploy-integration.yml")
+    assert "ALLOW_DATABASE_RESET=true" in workflow
+    assert "DEPLOY_ENV=integration" in workflow
+
+
+def test_marker_lives_outside_the_dropped_schema():
+    # Invariant 10, the marker. A marker inside `public` is destroyed by the very
+    # reset it is supposed to authorise, so the second run would find none.
+    marker = _template("integration-marker.sql")
+    assert "review_control" in marker
+    assert "public." not in marker
+
+
+def test_integration_images_are_tagged_by_pr_and_sha():
+    # Invariant 9: a deployed revision must be traceable to one commit.
+    #
+    # Only the IMAGE tag is checked. Secret Manager references legitimately end
+    # in `:latest` -- that is a secret version, not an image tag, and asserting
+    # on a bare ":latest" would conflate the two.
+    workflow = _template("deploy-integration.yml")
+    assert "integration-pr-" in workflow
+    assert "/app:latest" not in workflow

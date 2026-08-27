@@ -1,0 +1,49 @@
+name: Integration review tag
+
+on:
+  push:
+    tags: ["{{REVIEW_TAG_PATTERN}}"]
+
+# This workflow is loaded from the TAGGED COMMIT'S OWN TREE. Whoever creates the
+# tag controls every line of this file, so this workflow is not a security control --
+# it is fail-fast ergonomics that keeps the trusted workflow's queue clean.
+# The real boundaries are the WIF attribute condition, which accepts branch refs
+# only, and the re-validation inside deploy-integration.yml. Both must hold with
+# this file assumed hostile.
+permissions:
+  contents: read
+  actions: write
+  pull-requests: read
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out trusted control code
+        uses: actions/checkout@v4
+        with:
+          ref: {{DEV_BRANCH}}
+          path: control
+          fetch-depth: 1
+
+      - name: Validate review tag
+        working-directory: control
+        run: |
+          set -euo pipefail
+          git fetch --force --no-tags origin \
+            "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+          python3 scripts/review_tag.py validate \
+            --tag "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --base {{DEV_BRANCH}}
+
+      - name: Dispatch trusted integration deployment
+        run: |
+          set -euo pipefail
+          gh workflow run deploy-integration.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref {{DEV_BRANCH}} \
+            -f "review_tag=$GITHUB_REF_NAME"
