@@ -89,7 +89,14 @@ MATTPOCOCK_SKILLS = [
     "grilling",
     "wait-what",
 ]
-LOCAL_SKILLS = ["ask-user", "journalist", "handoff", "test-smell-review"]
+LOCAL_SKILLS = [
+    "ask-user",
+    "journalist",
+    "handoff",
+    "test-smell-review",
+    "engineering-pr-review",
+    "engineering-refactor",
+]
 VARLOCK_SKILLS = ["varlock"]
 
 
