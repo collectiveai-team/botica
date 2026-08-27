@@ -78,8 +78,26 @@ against the ref — it may never be substituted for it.
 **Prevents:** anyone with `workflow_dispatch` rights selecting `prod` from a
 feature branch and receiving production secrets.
 
-**Check:** every `environment:` line in `deploy.yml` mentions `github.ref_name`
-and no line mentions `inputs.`.
+**Check:** `deploy.yml` declares a `workflow_dispatch` input **named**
+`environment`, so its declaration line also strips to `environment:` — matching
+on that prefix alone flags a false positive against the correct, unmodified
+template. Filter to lines that additionally contain `${{`, which excludes the
+input declaration and keeps only the job-level expressions:
+
+```bash
+grep 'environment:' deploy.yml | grep '\${{'
+```
+
+Every line that survives that filter must contain `github.ref_name` and must
+not contain `inputs.`. A line such as
+`REQUESTED_ENVIRONMENT: ${{ inputs.environment || '' }}` also mentions
+`inputs.` — that is expected and correct: it is the cross-check this invariant
+asks for, reading the input only to compare it against the ref, never to
+replace the ref. Reject a candidate check that fails on that line; it is
+testing the wrong thing. This mirrors
+`test_environment_derives_from_the_ref_not_an_input` in
+`tests/test_cloud_run_deploy_skill.py` — read that test before "simplifying"
+this check back to a bare `environment:` grep.
 
 ## 4. The WIF condition pins repository and branch refs only
 

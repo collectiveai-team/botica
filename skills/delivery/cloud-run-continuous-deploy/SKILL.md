@@ -137,12 +137,18 @@ Copy and substitute. Never overwrite: if a target path exists, stop and report i
 | `integration-tag.yml` | `.github/workflows/integration-tag.yml` |
 | `deploy-integration.yml` | `.github/workflows/deploy-integration.yml` |
 | `review_tag.py` | `scripts/review_tag.py` (verbatim, no substitution) |
-| `nginx.conf`, `entrypoint.sh`, `Dockerfile.combined` | `deploy/` (single-container only) |
+| `nginx.conf`, `entrypoint.sh` | `deploy/` unchanged (single-container only) |
+| `Dockerfile.combined` | `deploy/Dockerfile` — **renamed**, not `deploy/Dockerfile.combined` (single-container only) |
 | `integration-marker.sql` | `resources/integration-marker.sql` |
+
+The Dockerfile rename is required, not cosmetic: both `deploy.yml` and
+`deploy-integration.yml` hardcode `docker build -f deploy/Dockerfile .`. Copy
+`Dockerfile.combined` under its template name and the first build in Phase 5
+fails on a missing file.
 
 Then write `docs/cloud-deploy.md` recording: the Supabase or Cloud SQL instance
 per environment, the one-time marker initialization command, the GitHub
-Environment secret names, and the Secret Manager mapping from Phase 2.
+Environment secret names, and the Secret Manager mapping from Phase 3.
 
 ## Phase 5 — Verify
 
