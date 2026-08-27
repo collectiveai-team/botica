@@ -37,7 +37,7 @@ printf "\\n" >> {json.dumps(str(stdin_values))}
 """
     (bin_dir / "gh").write_text(gh_script, encoding="utf-8")
     (bin_dir / "varlock").write_text(
-        "#!/usr/bin/env bash\n" f"printf '%s' {json.dumps(json.dumps(SENSITIVE))}\n",
+        f"#!/usr/bin/env bash\nprintf '%s' {json.dumps(json.dumps(SENSITIVE))}\n",
         encoding="utf-8",
     )
     for name in ("gh", "varlock"):
@@ -113,7 +113,7 @@ printf "\\n" >> {json.dumps(str(stdin_values))}
     (bin_dir / "gh").write_text(gh_script, encoding="utf-8")
     sensitive = {"config": {"ENVIRONMENT": {"value": "REDACTED"}, "API_KEY": {"value": "REDACTED"}}}
     (bin_dir / "varlock").write_text(
-        "#!/usr/bin/env bash\n" f"printf '%s' {json.dumps(json.dumps(sensitive))}\n",
+        f"#!/usr/bin/env bash\nprintf '%s' {json.dumps(json.dumps(sensitive))}\n",
         encoding="utf-8",
     )
     for name in ("gh", "varlock"):
@@ -144,7 +144,7 @@ printf "\\n" >> {json.dumps(str(stdin_values))}
     (bin_dir / "gh").write_text(gh_script, encoding="utf-8")
     sensitive = {"config": {"API_KEY": {"value": "REDACTED"}, "value": {"value": "REDACTED"}}}
     (bin_dir / "varlock").write_text(
-        "#!/usr/bin/env bash\n" f"printf '%s' {json.dumps(json.dumps(sensitive))}\n",
+        f"#!/usr/bin/env bash\nprintf '%s' {json.dumps(json.dumps(sensitive))}\n",
         encoding="utf-8",
     )
     for name in ("gh", "varlock"):

@@ -350,9 +350,7 @@ def validate(
     try:
         payload = json.loads(run(["gh", "api", f"repos/{repo}/pulls/{parsed.pr_number}"]))
     except (subprocess.CalledProcessError, json.JSONDecodeError, OSError) as exc:
-        raise ValueError(
-            f"could not read pull request {parsed.pr_number} in {repo}"
-        ) from exc
+        raise ValueError(f"could not read pull request {parsed.pr_number} in {repo}") from exc
 
     if payload.get("state") != "open":
         raise ValueError(f"pull request {parsed.pr_number} is not open")
@@ -496,8 +494,7 @@ def fake_docker(tmp_path: Path) -> Path:
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     (bin_dir / "docker").write_text(
-        "#!/usr/bin/env bash\n"
-        f"cat {json.dumps(str(tmp_path / 'compose.json'))}\n",
+        f"#!/usr/bin/env bash\ncat {json.dumps(str(tmp_path / 'compose.json'))}\n",
         encoding="utf-8",
     )
     (bin_dir / "docker").chmod(0o755)
@@ -801,7 +798,7 @@ def fake_bin(tmp_path: Path) -> tuple[Path, Path]:
         encoding="utf-8",
     )
     (bin_dir / "varlock").write_text(
-        "#!/usr/bin/env bash\n" f"printf '%s' {json.dumps(json.dumps(SENSITIVE))}\n",
+        f"#!/usr/bin/env bash\nprintf '%s' {json.dumps(json.dumps(SENSITIVE))}\n",
         encoding="utf-8",
     )
     for name in ("gh", "varlock"):
@@ -984,8 +981,7 @@ from pathlib import Path
 import pytest
 
 TEMPLATES = (
-    Path(__file__).resolve().parent.parent
-    / "skills/delivery/cloud-run-continuous-deploy/templates"
+    Path(__file__).resolve().parent.parent / "skills/delivery/cloud-run-continuous-deploy/templates"
 )
 
 
