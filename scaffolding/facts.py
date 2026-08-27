@@ -43,6 +43,25 @@ def repo_visibility() -> str:
     return "unknown"
 
 
+def _git_ok(root: Path, args: list[str]) -> bool:
+    """Return True when `git <args>` exits 0; any failure to run git at all is False."""
+    try:
+        out = subprocess.run(
+            ["git", *args], cwd=root, capture_output=True, text=True, timeout=10, check=False
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return out.returncode == 0
+
+
+def gitignored(root: Path, rel: str) -> bool:
+    return _git_ok(root, ["check-ignore", "-q", rel])
+
+
+def git_tracked(root: Path, rel: str) -> bool:
+    return _git_ok(root, ["ls-files", "--error-unmatch", rel])
+
+
 def is_python_repo(root: Path) -> bool:
     if (root / "pyproject.toml").exists():
         return True

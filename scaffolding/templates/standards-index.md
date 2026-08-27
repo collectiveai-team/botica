@@ -7,8 +7,10 @@
 
 Each rule is a **CES — Collective Engineering Standard** (`CES-<issue#>` is the citable code;
 the kebab-case slug is the machine id used by tooling and `# ast-grep-ignore: <slug>`
-suppressions). `[ast-grep]` / `[prek]` rules are enforced automatically by `prek`; `[judgment]`
-rules are reviewer/agent judgment; `[snippet]` ships canonical drop-in code. Full convention:
+suppressions). `[ast-grep]` / `[prek]` rules are enforced automatically by `prek`; `[ci]` rules
+are enforced by a GitHub Actions workflow (no local hook); `[dependency]` rules ship as a
+dev-dependency that activates automatically, no separate check; `[judgment]` rules are
+reviewer/agent judgment; `[snippet]` ships canonical drop-in code. Full convention:
 `docs/engineering-standards.md`.
 
 ### Standards
@@ -20,6 +22,10 @@ rules are reviewer/agent judgment; `[snippet]` ships canonical drop-in code. Ful
 - **CES-71 · keep files small** `[prek]` — split a module before it grows; the
   `file-size-guard` hook warns at 400 lines and errors at 700. A persistently large file is a
   design smell, not a limit to raise. → `@.agents/rules/file-size-guard.md`
+- **CES-107 · track the skills manifest** `[script]` — commit `skills-lock.json`; `.agents/skills/`
+  is derived from it and stays gitignored. Install restores from the manifest. It pins no version
+  and verifies no hash, so call it a manifest, not a lock. Slug: `skills-manifest`. →
+  `@.agents/rules/skills-manifest.md`
 - **CES-45 · use the house get_logger** `[ast-grep]` — never call `logging.getLogger` directly;
   acquire loggers via `get_logger` from `core/logger.py`. Slug: `log-get-logger`. →
   `@.agents/rules/log-get-logger.md`
@@ -81,3 +87,32 @@ rules are reviewer/agent judgment; `[snippet]` ships canonical drop-in code. Ful
 - **CES-66 · coverage gaps are a signal** `[judgment]` — treat an uncovered branch as a missing
   test, dead code, or a seam to refactor — not a number to game. Slug: `test-coverage-gap`. →
   `@.agents/rules/test-coverage-gap.md`
+- **CES-91 · no AI co-authorship in commits** `[prek]` `[ci]` — commit messages must not carry
+  `Co-authored-by:`/`Generated with`/etc AI-attribution trailers; a commit-msg hook gives local
+  feedback, `commit-policy.yml` is the CI source of truth. Slug: `no-ai-coauthorship`. →
+  `@.agents/rules/no-ai-coauthorship.md`
+- **CES-109 · dependency hygiene** `[prek]` — declared `pyproject.toml` dependencies must match
+  the actual import graph (no unused/missing/misplaced deps), via `deptry`. Slug:
+  `dep-hygiene-deptry`. → `@.agents/rules/dep-hygiene-deptry.md`
+- **CES-110 · cognitive complexity** `[prek]` — a function's cognitive-complexity score (nesting
+  depth + control-flow breaks, distinct from ruff's cyclomatic `C90`) stays under 15, via
+  `complexipy`. Slug: `cognitive-complexity-complexipy`. →
+  `@.agents/rules/cognitive-complexity-complexipy.md`
+- **CES-111 · randomize test order** `[dependency]` — `pytest-randomly` runs every test suite in
+  a random, reproducibly-seeded order to catch state-leaking/order-dependent tests; activates
+  automatically, no separate hook. Slug: `test-order-randomization-pytest-randomly`. →
+  `@.agents/rules/test-order-randomization-pytest-randomly.md`
+- **CES-113 · dependency review on PRs** `[ci]` — `dependency-review-action` comments a
+  new-dependency/license/vulnerability summary on every PR that changes the dependency graph;
+  summary-only, not a merge gate. Slug: `dependency-review-action`. →
+  `@.agents/rules/dependency-review-action.md`
+- **CES-114 · Dockerfile lint** `[prek]` — `hadolint`, scoped to `^Dockerfile`; inert unless a
+  Dockerfile is present. Slug: `hadolint-dockerfile-lint`. →
+  `@.agents/rules/hadolint-dockerfile-lint.md`
+- **CES-118 · no copy-paste duplication** `[prek]` — near-verbatim duplicated code blocks above a
+  token threshold fail the build, via `jscpd` (polyglot, respects `.gitignore`). Slug:
+  `code-duplication-jscpd`. → `@.agents/rules/code-duplication-jscpd.md`
+- **CES-119 · dependency vulnerability scanning** `[ci]` — `osv-scanner` scans `uv.lock` (and any
+  other ecosystem lockfile) against the OSV.dev database on every push/PR/weekly schedule;
+  replaces `pip-audit.yml`. Slug: `osv-scanner-replace-pip-audit`. →
+  `@.agents/rules/osv-scanner-replace-pip-audit.md`

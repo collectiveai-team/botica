@@ -14,7 +14,7 @@ dependencies = [
   "cyclopts>=4.22.2",
   "questionary>=2.0",
   "pydantic>=2.0",
-  "pydantic-settings>=2.0",
+  "pydantic-settings>=2.15.0",
   "rich>=13.0",
 ]
 
@@ -22,7 +22,13 @@ dependencies = [
 scaffolding = "scaffolding.cli:app"
 
 [dependency-groups]
-dev = ["pytest>=8.0", "ruff>=0.16.0"]
+dev = [
+  "pytest>=8.0",
+  # CES-111 (test-order-randomization-pytest-randomly): random, reproducibly-seeded test
+  # order on every run — catches state-leaking/order-dependent tests for free.
+  "pytest-randomly>=4.1.0",
+  "ruff>=0.16.3",
+]
 
 # Version derived from git tags (vX.Y.Z) by hatch-vcs.
 [tool.hatch.version]
@@ -117,6 +123,8 @@ ban-relative-imports = "all"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "INP001"]
+# Maintainer scripts run as files, not as an importable package.
+"scripts/**" = ["INP001"]
 
 [tool.pyrefly]
 project-excludes = [
@@ -135,3 +143,10 @@ disable-project-excludes-heuristics = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+# CES-109 (dep-hygiene-deptry): declared deps must match the actual import graph. `review/` is
+# a separate distribution with its own pyproject/deps and `scaffolding/templates`/`skills` are
+# bundled/vendored payload shipped verbatim into target repos (same rationale as the ruff and
+# pyrefly excludes above) — none of the three belong to this tool's own import graph.
+[tool.deptry]
+extend_exclude = ["review", "scaffolding/templates", "skills"]

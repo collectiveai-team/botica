@@ -64,6 +64,17 @@ entry = "python -c \"import re,sys; msg=open(sys.argv[1],encoding='utf-8').readl
 language = "system"
 stages = ["commit-msg"]
 
+# MARK: no-ai-coauthorship
+# CES-91: commit metadata stays human-accountable — no AI co-authorship/attribution trailers
+# (`Co-authored-by: Claude <...>`, `Generated with Claude Code`, etc). Local feedback only; a
+# local hook can be bypassed with `--no-verify`, so CI (commit-policy.yml) is the source of truth.
+[[repos.hooks]]
+id = "no-ai-coauthorship"
+name = "no-ai-coauthorship (commit-msg)"
+entry = "python -c \"import re,sys; msg=open(sys.argv[1],encoding='utf-8').read(); tools='claude|anthropic|copilot|github copilot|chatgpt|openai|codex|cursor|windsurf|aider|gemini|devin|opencode'; pat=re.compile(r'(?im)^\\s*(co-authored-by:.*(' + tools + r')|generated[\\s-]+(with|by):?.*(' + tools + r')|ai-generated-by:?.*(' + tools + r')|assisted-by:?.*(' + tools + r'))'); m=pat.search(msg); sys.exit(0 if not m else not print(f'Error: CES-91 (no-ai-coauthorship): commit message must not carry AI co-authorship/attribution trailers. Found: {m.group(0)!r}'))\""
+language = "system"
+stages = ["commit-msg"]
+
 # MARK: validate-pyproject
 [[repos]]
 repo = "https://github.com/abravalheri/validate-pyproject"
@@ -119,4 +130,44 @@ name = "file-size-guard (400 large / 700 enormous)"
 entry = "python -c \"import sys; sys.exit(max([0] + [1 for f in sys.argv[1:] for n in [sum(1 for _ in open(f, errors='ignore'))] if (n >= 700 and not print(f'Error: {f} is too large ({n} lines, limit is 700)')) or (n >= 400 and not print(f'Warning: {f} is large ({n} lines, recommended limit is 400)') and False)]))\""
 language = "system"
 types = ["python"]
+priority = 2
+
+# MARK: deptry
+# CES-109: declared pyproject.toml dependencies must match the actual import graph.
+[[repos.hooks]]
+id = "deptry"
+name = "deptry (unused/missing/misplaced dependencies)"
+entry = "uvx deptry ."
+language = "system"
+types = ["python"]
+pass_filenames = false
+priority = 2
+
+# MARK: complexipy
+# CES-110: cognitive-complexity ceiling per function, complementing ruff's cyclomatic C90 check.
+[[repos.hooks]]
+id = "complexipy"
+name = "complexipy (cognitive complexity)"
+entry = "uvx complexipy --max-complexity-allowed 15"
+language = "system"
+types = ["python"]
+priority = 2
+
+# MARK: jscpd
+# CES-118: copy-pasted (near-verbatim) code blocks above a token threshold. Two deliberate
+# exemptions, not accidental duplication: `guide.md` mirrors README.md's bootstrap instructions
+# for the agentic-install flow (see AGENTS.md repo-layout notes), and `scaffolding/templates/**`
+# is the source-of-truth template payload this repo's own dogfooded config/docs are copied
+# *from* — comparing the two is comparing a template to its own intended output, same rationale
+# already used for the ruff/pyrefly/deptry excludes on that path. Threshold calibrated to this
+# repo's current baseline (~1.9%, mostly tests/test_engine.py fixture-style repetition); tighten
+# as that gets refactored, per the "flag, don't silently exempt" posture in CES-71. `--threshold`
+# alone is the gate; jscpd v5's separate `--exit-code` flag fails on ANY clone regardless of
+# threshold — do not combine the two or the threshold becomes inert.
+[[repos.hooks]]
+id = "jscpd"
+name = "jscpd (copy-paste duplication)"
+entry = "npx --yes jscpd@5 . --threshold 2.5 --ignore \"guide.md,scaffolding/templates/**\""
+language = "system"
+pass_filenames = false
 priority = 2

@@ -63,3 +63,38 @@ name = "agents-conventional-commits (commit-msg)"
 entry = "python -c \"import re,sys; msg=open(sys.argv[1],encoding='utf-8').readline().strip(); ok=bool(re.match(r'^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\\([a-z0-9._-]+\\))?!?: .+', msg)) or msg.startswith(('Merge ','Revert ','fixup! ')); sys.exit(0 if ok else not print(f'Error: CES-75 (agents-conventional-commits): commit subject must follow Conventional Commits (type(scope): description). Got: {msg!r}'))\""
 language = "system"
 stages = ["commit-msg"]
+
+# MARK: no-ai-coauthorship
+# CES-91: commit metadata stays human-accountable — no AI co-authorship/attribution trailers
+# (`Co-authored-by: Claude <...>`, `Generated with Claude Code`, etc). Local feedback only; a
+# local hook can be bypassed with `--no-verify`, so CI (commit-policy.yml) is the source of truth.
+[[repos.hooks]]
+id = "no-ai-coauthorship"
+name = "no-ai-coauthorship (commit-msg)"
+entry = "python -c \"import re,sys; msg=open(sys.argv[1],encoding='utf-8').read(); tools='claude|anthropic|copilot|github copilot|chatgpt|openai|codex|cursor|windsurf|aider|gemini|devin|opencode'; pat=re.compile(r'(?im)^\\s*(co-authored-by:.*(' + tools + r')|generated[\\s-]+(with|by):?.*(' + tools + r')|ai-generated-by:?.*(' + tools + r')|assisted-by:?.*(' + tools + r'))'); m=pat.search(msg); sys.exit(0 if not m else not print(f'Error: CES-91 (no-ai-coauthorship): commit message must not carry AI co-authorship/attribution trailers. Found: {m.group(0)!r}'))\""
+language = "system"
+stages = ["commit-msg"]
+
+# MARK: jscpd
+# CES-118: copy-pasted (near-verbatim) code blocks above a token threshold, complementary to
+# ast-grep (single declared pattern) — catches the "agent copies the nearest block instead of
+# extracting a shared helper" failure mode. Polyglot (tree-sitter, 223+ formats), so it lives
+# here rather than the Python-only hooks. Respects .gitignore by default. `--threshold` alone is
+# the gate (fails only over the percentage); jscpd v5's separate `--exit-code` flag fails on ANY
+# clone found regardless of threshold — do not combine the two or the threshold becomes inert.
+[[repos.hooks]]
+id = "jscpd"
+name = "jscpd (copy-paste duplication)"
+entry = "npx --yes jscpd@5 . --threshold 1"
+language = "system"
+pass_filenames = false
+priority = 2
+
+# MARK: hadolint-docker
+# CES-114: lint Dockerfile source (unpinned base images, missing --no-install-recommends, ADD
+# vs COPY misuse, running as root, etc). File-pattern-scoped, so it is inert unless a Dockerfile
+# is present — safe to ship unconditionally, same posture as repo-shape's placeholder scoping.
+[[repos]]
+repo = "https://github.com/hadolint/hadolint"
+rev = "v2.15.1"
+hooks = [{ id = "hadolint-docker", files = "^Dockerfile", priority = 2 }]

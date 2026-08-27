@@ -97,27 +97,121 @@ These are real skills you install once and use repeatedly. They land in the
 shared `.agents/skills` standard (read by opencode + codex); selecting
 `claude-code` bridges them via the `.claude/skills` → `.agents/skills` symlink.
 
-Install selected upstream skills from Matt Pocock:
+Which skills a repo uses is declared in **`skills-lock.json`, the tracked skills
+manifest** (CES-107). `.agents/skills/` is derived from it and stays gitignored.
+`scaffolding install` restores from the manifest rather than re-fetching a
+hardcoded list:
 
 ```bash
-npx skills add mattpocock/skills --agent opencode --yes --skill grill-with-docs triage improve-codebase-architecture setup-matt-pocock-skills to-spec to-tickets implement wayfinder prototype diagnosing-bugs research tdd domain-modeling codebase-design code-review resolving-merge-conflicts grill-me teach writing-great-skills grilling
+npx skills experimental_install
 ```
 
-Then install my local skills from this repo:
+Think `pyproject.toml` / `uv.lock`: the baseline below is the declared intent,
+`skills-lock.json` is the resolved set, `.agents/skills/` is the `.venv`. The
+analogy stops at the guarantee. Entries carry a `ref` only when the source was
+pinned (`owner/repo#v1.2.3`), tags are mutable, and the `computedHash` that is
+written is never verified on restore. So it reproduces *which skills, from where,
+at what ref* — not bytes. It is a manifest, not a lock.
 
-```bash
-npx skills add collectiveai-team/scaffolding --agent opencode --yes --skill ask-user journalist handoff
-```
+The `skills` CLI owns the file; scaffolding reads it and never writes it. Adding a
+skill is `npx skills add`, which records the source, ref and hash actually used.
 
-If installing from a checkout, run from this repo:
+Two states, and one refusal. A repo **with** a manifest restores from it — it is
+the source of truth, and is never topped up towards the house baseline, so a skill
+you removed stays removed. A repo **without** one gets the baseline seeded, which
+creates it. A manifest that exists but does not parse is deferred, never
+overwritten. If the manifest is gitignored, install offers to un-ignore it — the
+one consent this asks for, since it is the one file the repo owns that scaffolding
+edits.
 
-```bash
-npx skills add . --agent opencode --yes --skill ask-user journalist handoff --full-depth
-```
+The baseline it seeds is the curated upstream set from Matt Pocock, pinned to a
+release tag, plus this repo's local skills and varlock — the exact commands are
+below under [seeding by hand](#seeding-by-hand). The catalog and the tag live in
+`scaffolding/skills.py`; the `skills-drift` workflow reports renames, removals
+and newer tags.
 
 Skills install once into `.agents/skills`; claude-code reaches them via the
 `.claude/skills` symlink created by the bootstrap, so there is no need to re-run
 the installer with `--agent claude-code` / `--agent codex`.
+
+### Working with skills
+
+| Situation | What to run |
+| --- | --- |
+| New repo | `scaffolding install`, then commit `skills-lock.json` |
+| Existing repo, first adoption | `scaffolding install`, accept the un-ignore prompt, commit |
+| Fresh clone / CI | `scaffolding install` (or `npx skills experimental_install`) |
+| Add a skill | `npx skills add <source> --agent opencode --yes --skill <name>`, commit |
+| Remove a skill | delete the directory **and** the manifest entry, `scaffolding check`, commit |
+| Skills installed, no manifest | `scaffolding install`, then read the warnings — see below |
+
+`skills.py` is not part of any of these. It is the baseline for repos that have
+no manifest yet; changing a repo's skill set is always `npx skills`, and the CLI
+records the source, ref and hash it used.
+
+#### Skills installed, but no manifest
+
+The common migration case. Provenance is **not recoverable from disk**: an
+installed skill directory holds only `SKILL.md`, and with no manifest
+`skills list --json` reports `source: null`. So nothing is adopted or guessed —
+the baseline is seeded and install warns about both hazards before it runs:
+
+```
+[warn] skills-lock.json: our-private-skill
+       installed but not in the house baseline, and its source cannot be
+       recovered from disk — run `npx skills add <source> --skill our-private-skill`
+[warn] .agents/skills/tdd
+       already on disk and will be replaced by the seed — if it was edited by
+       hand, copy it out first; the derived tree is gitignored, so there is no
+       diff to recover it from
+```
+
+Afterwards `scaffolding check` names exactly what is left:
+
+```
+FAIL  installed skills declared  in .agents/skills but not in skills-lock.json:
+                                 our-private-skill
+```
+
+Declare it with its real source, or delete the directory. Either way the manifest
+and the tree end up agreeing, which is what the check enforces.
+
+#### Removing a skill
+
+`npx skills remove` **does not work** for projects using `.agents/skills/`. That
+directory is shared by ~15 agents, and the CLI keeps both the files and the
+manifest entry while any other detected agent still references the skill
+(`src/remove.ts:262-302`), so the command reports success and changes nothing.
+`--agent '*'` is documented but rejected at runtime. Until that is fixed upstream,
+remove by hand:
+
+```bash
+rm -rf .agents/skills/<name>
+# delete the "<name>" entry from skills-lock.json
+scaffolding check    # fails if you did only one of the two
+git add -A && git commit
+```
+
+`scaffolding check` compares the manifest and the tree in both directions
+precisely so a half-finished removal cannot pass silently. Because the baseline is
+never re-applied, a removed skill stays removed.
+
+#### Seeding by hand
+
+Instead of running the CLI:
+
+```bash
+npx skills add 'mattpocock/skills#v1.2.3' --agent opencode --yes --skill grill-with-docs triage improve-codebase-architecture setup-matt-pocock-skills to-spec to-tickets implement wayfinder prototype diagnosing-bugs research tdd domain-modeling codebase-design code-review resolving-merge-conflicts wizard grill-me teach writing-for-agents grilling wait-what
+npx skills add collectiveai-team/scaffolding --agent opencode --yes --skill ask-user journalist handoff test-smell-review
+npx skills add dmno-dev/varlock --agent opencode --yes
+```
+
+The `#<tag>` fragment is the only pin the `skills` CLI accepts — `owner/repo@tag`
+is silently parsed as a skill-name filter, and an unpinned install tracks the
+upstream default branch. Bump the tag in `scaffolding/skills.py`, never here.
+
+From a local checkout, install local skills with
+`npx skills add . --agent opencode --yes --skill ask-user journalist handoff test-smell-review --full-depth`.
 
 ## Upstream skills from Matt Pocock
 
@@ -130,11 +224,17 @@ Model-invoked engineering workflows:
 
 - `prototype`, `diagnosing-bugs`, `research`, `tdd`.
 - `domain-modeling`, `codebase-design`, `code-review`, `resolving-merge-conflicts`.
+- `wizard` — generates an interactive bash script for the steps only a human can
+  take (provisioning, credentials, CI secrets, dashboard clicks).
 
 Productivity workflows:
 
-- User-invoked: `grill-me`, `teach`, `writing-great-skills`.
-- Model-invoked: `grilling`.
+- User-invoked: `grill-me`, `teach`, `wait-what`.
+- Model-invoked: `grilling`, `writing-for-agents`.
+
+These land as editable files you own, but `npx skills add` / `skills update`
+overwrite them in place without a diff or a prompt, so keep local edits in this
+repo's own `skills/`, not in `.agents/skills`.
 
 ## What's in this repo
 
@@ -147,6 +247,9 @@ Productivity workflows:
 - `skills/productivity/journalist` — local daily session journals under `.journals/`.
 - `skills/productivity/handoff` — compact the current session into a temp-dir handoff for another agent.
 - `skills/productivity/ask-user` — route a situation to the smallest suitable installed workflow.
+- `skills/quality/test-smell-review` — review tests for false-green smells (pass without
+  protecting anything) using an in-context judgment protocol, adapted from
+  `falsegreen-skill` without its external LLM-CLI dependency.
 - `docs/engineering-standards.md` — **CES (Collective Engineering Standard)**: how house
   rules are coded, cited (`CES-<issue#>` + slug), and shipped. Single source of truth,
   referenced by `AGENTS.md`.

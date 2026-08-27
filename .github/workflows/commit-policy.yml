@@ -1,0 +1,64 @@
+name: commit-policy
+
+# CES-91 (no-ai-coauthorship): CI is the source of truth for the AI-co-authorship policy — the
+# local commit-msg prek hook helps developers, but can be bypassed with `git commit --no-verify`.
+# Every commit message reachable from the PR/push is checked (never interpolated into the shell:
+# read from a file, matched with a fixed Python pattern).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: commit-policy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  no-ai-coauthorship:
+    name: no-ai-coauthorship
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check commit messages
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import os, re, subprocess, sys
+
+          base = os.environ["BASE_SHA"]
+          head = os.environ["HEAD_SHA"]
+          rev_range = head if not base or set(base) == {"0"} else f"{base}..{head}"
+          out = subprocess.run(
+              ["git", "log", "--format=%B", rev_range],
+              capture_output=True, text=True, check=True,
+          )
+
+          tools = (
+              "claude|anthropic|copilot|github copilot|chatgpt|openai|codex|cursor|"
+              "windsurf|aider|gemini|devin|opencode"
+          )
+          pattern = re.compile(
+              r"(?im)^\s*(co-authored-by:.*(" + tools + r")"
+              r"|generated[\s-]+(with|by):?.*(" + tools + r")"
+              r"|ai-generated-by:?.*(" + tools + r")"
+              r"|assisted-by:?.*(" + tools + r"))"
+          )
+          match = pattern.search(out.stdout)
+          if match:
+              print(
+                  "::error::CES-91 (no-ai-coauthorship): commit message must not carry AI "
+                  f"co-authorship/attribution trailers. Found: {match.group(0)!r}"
+              )
+              sys.exit(1)
+          print("No AI co-authorship trailers found.")
+          PY

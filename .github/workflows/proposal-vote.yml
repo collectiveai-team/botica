@@ -1,0 +1,157 @@
+name: proposal-vote
+
+# Derive a proposal's review state from the reviewer vote.
+#
+# `state:approved` / `state:declined` are written ONLY here. Humans cast votes as
+# comments; this tallies them. `proposal-update.yml` is forbidden from touching
+# those labels, so an LLM can never talk itself into an approval.
+#
+#   /approve            cast (or re-cast) an approval
+#   /object <reason>    latch a veto — blocks approval until YOU /withdraw it
+#   /decline            vote to reject (needs quorum; silence never declines)
+#   /withdraw           retract your standing vote
+#
+# One vote per account: the tally keys votes by login and takes each account's
+# LAST command, so voting twice replaces rather than accumulates. Only accounts
+# with write access count, verified per-login and failing closed — this repo is
+# public, so anyone can type `/approve`.
+#
+# Three arms, one stateless tally (`scripts/proposal_vote.py` replays the whole
+# comment ledger every run, so a missed event or a hand-edited label self-heals):
+#   issue_comment -> someone voted
+#   issues.edited -> the body changed; dismiss approvals cast against old text
+#   schedule      -> "7 days elapsed" is not an event, so the clock needs a cron
+#
+# Notifications fire at two moments only: first approval ("ready for review") and
+# the day-5 lazy warning. Not per vote — a repo that pings on every event gets
+# muted, and a muted repo has no reviewers.
+#
+# PROPOSAL_NOTIFY_TEAM (repo variable) names the team to ask, e.g.
+# `collectiveai-team/botique`. The team decides WHO to notify; the electorate
+# (write access) still decides who MAY vote — those two sets are not the same.
+#
+# Delivery: a team mention authored by github-actions[bot] is not reliably
+# delivered, so the script prefers naming members individually. Listing team
+# members needs org scope, which GITHUB_TOKEN does not have — supply the optional
+# ORG_READ_TOKEN secret (a PAT/App token with `read:org`) to get individual
+# mentions in CI. Without it, it degrades to a raw `@org/team` mention.
+#
+# NB: a body rewritten by `proposal-update.yml` does NOT fire issues.edited —
+# GITHUB_TOKEN writes don't trigger workflows — so that workflow posts its own
+# reset marker inline.
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [edited]
+  schedule:
+    # Daily; only the lazy-consensus clock and the day-5 warning need it.
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+# Shared with proposal-update.yml so a vote is never tallied against a body
+# that is mid-rewrite.
+concurrency:
+  group: proposal-${{ github.event.issue.number || 'sweep' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  tally:
+    name: tally one proposal
+    # Real issues only, and only for something that could change the outcome.
+    if: |
+      github.event_name != 'schedule' &&
+      github.event_name != 'workflow_dispatch' &&
+      github.event.issue.pull_request == null &&
+      (
+        (github.event_name == 'issues' && github.event.changes.body != null) ||
+        contains(github.event.comment.body, '/approve') ||
+        contains(github.event.comment.body, '/object') ||
+        contains(github.event.comment.body, '/decline') ||
+        contains(github.event.comment.body, '/withdraw')
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: "0.11.12"
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      # A human edited the body in the UI. Approvals were cast against text that
+      # no longer exists, so dismiss them. Objections survive by design: only the
+      # objector may lift a veto, or an author could edit one away.
+      - name: Dismiss stale approvals
+        if: github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body \
+            '<!-- proposal-vote:reset -->
+          Body revised — approvals dismissed and the lazy-consensus clock restarted.
+          Re-cast with `/approve` after re-reading. Open objections are unaffected.'
+
+      - name: Tally
+        env:
+          GH_TOKEN: ${{ secrets.ORG_READ_TOKEN || github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          NOTIFY_TEAM: ${{ vars.PROPOSAL_NOTIFY_TEAM }}
+        shell: bash   # `bash -e` alone lacks pipefail; `| tee` would mask a failure
+        run: |
+          uv run python scripts/proposal_vote.py tally-issue \
+            --issue "$ISSUE_NUMBER" --repo "$REPO" --team "$NOTIFY_TEAM" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+
+  sweep:
+    name: lazy-consensus clock
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: "0.11.12"
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Re-tally every open proposal
+        env:
+          GH_TOKEN: ${{ secrets.ORG_READ_TOKEN || github.token }}
+          REPO: ${{ github.repository }}
+          NOTIFY_TEAM: ${{ vars.PROPOSAL_NOTIFY_TEAM }}
+        shell: bash   # `bash -e` alone lacks pipefail; `| tee` would mask a failure
+        run: |
+          uv run python scripts/proposal_vote.py sweep --repo "$REPO" --team "$NOTIFY_TEAM" \
+            | tee -a "$GITHUB_STEP_SUMMARY"

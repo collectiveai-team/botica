@@ -32,9 +32,14 @@ jobs:
           version: "0.11.12"
           enable-cache: true
 
+      # --strict-collection: without it, an input that fails schema validation is
+      # only WARNed about and then silently dropped from the audit, so a malformed
+      # workflow is never scanned and the run still reports success. It restores
+      # the pre-v1.7.0 default. Requires zizmor >= 1.7.0.
+      #
       # GH_TOKEN puts zizmor in online mode so it can resolve referenced
       # actions (e.g. for the unpinned-uses audit). contents: read is enough.
       - name: Run zizmor
-        run: uvx zizmor .
+        run: uvx zizmor --strict-collection .
         env:
           GH_TOKEN: ${{ github.token }}

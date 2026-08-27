@@ -17,8 +17,15 @@ from scaffolding.agent_config import (
     plan_agent_config,
     register_agents_decision,
 )
+from scaffolding.facts import gitignored
 from scaffolding.ops import write_if_absent
 from scaffolding.plan import Agent, Decision, Decisions, Disposition, Op
+from scaffolding.skills import (
+    MANIFEST_FILE,
+    SkillsPlanInput,
+    manifest_path,
+    plan_manifest_ops,
+)
 from scaffolding.templates_registry import template_text
 
 if TYPE_CHECKING:
@@ -28,7 +35,18 @@ if TYPE_CHECKING:
     from scaffolding.facts import Facts
     from scaffolding.settings import Settings
 
-GITIGNORE_ENTRIES = [".env", "!.env.schema", ".tmp/", ".scratch/", ".worktrees/", ".journals/"]
+# .agents/skills/ is DERIVED from the tracked skills manifest (CES-107), so it is
+# ignored. skills-lock.json itself must never appear here — it is the tracked
+# declaration, and the `skills` component will offer to un-ignore it if it is.
+GITIGNORE_ENTRIES = [
+    ".env",
+    "!.env.schema",
+    ".tmp/",
+    ".scratch/",
+    ".worktrees/",
+    ".journals/",
+    ".agents/skills/",
+]
 AGENTS_MARKER = "## Repo Workspace Defaults"
 # Marker-gated section the `standards` component owns in AGENTS.md (sibling to AGENTS_MARKER).
 STANDARDS_MARKER = "## Engineering Standards"
@@ -37,6 +55,7 @@ STANDARDS_MARKER = "## Engineering Standards"
 STANDARDS_RULE_DETAILS = [
     "no-dict",
     "file-size-guard",
+    "skills-manifest",
     "log-get-logger",
     "log-no-print",
     "core-logger",
@@ -56,6 +75,14 @@ STANDARDS_RULE_DETAILS = [
     "test-in-memory-adapters",
     "test-through-interface",
     "test-coverage-gap",
+    "no-ai-coauthorship",
+    "dep-hygiene-deptry",
+    "cognitive-complexity-complexipy",
+    "test-order-randomization-pytest-randomly",
+    "dependency-review-action",
+    "hadolint-dockerfile-lint",
+    "code-duplication-jscpd",
+    "osv-scanner-replace-pip-audit",
 ]
 # Canonical drop-in / comparison code shipped under snippets/ (may be nested, e.g. core/logger.py).
 STANDARDS_SNIPPETS = [
@@ -77,29 +104,8 @@ ASTGREP_RULES = [
     "cli-typed-framework",
     "arch-database-package",
 ]
-MATTPOCOCK_SKILLS = [
-    "grill-with-docs",
-    "triage",
-    "improve-codebase-architecture",
-    "setup-matt-pocock-skills",
-    "to-spec",
-    "to-tickets",
-    "implement",
-    "wayfinder",
-    "prototype",
-    "diagnosing-bugs",
-    "research",
-    "tdd",
-    "domain-modeling",
-    "codebase-design",
-    "code-review",
-    "resolving-merge-conflicts",
-    "grill-me",
-    "teach",
-    "writing-great-skills",
-    "grilling",
-]
-LOCAL_SKILLS = ["ask-user", "journalist", "handoff"]
+# MATTPOCOCK_REF / MATTPOCOCK_SKILLS / LOCAL_SKILLS now live in scaffolding/skills.py,
+# next to the manifest logic that consumes them (CES-107).
 DEFAULT_CI_PARTS = ["tests", "security", "docker"]
 # "opencode" is opt-in only (off by default): it needs repo secrets and the
 # OpenCode GitHub App installed, so it is never added unless explicitly chosen.
@@ -289,6 +295,105 @@ def plan_pyproject(ctx: Context) -> list[Op]:
     ]
 
 
+def _ci_workflow_op(ctx: Context, rel: str) -> Op:
+    return write_if_absent(
+        "ci",
+        ctx.root / f".github/{rel}",
+        template_text(f"github/{rel}"),
+        f".github/{rel}",
+        ctx.guide_url,
+    )
+
+
+def _ci_always_on_ops(ctx: Context) -> list[Op]:
+    # CES-75 / CES-91: Conventional Commits + no-ai-coauthorship PR checks ship whenever CI is
+    # set up, independent of parts (they mirror the always-on commit-msg prek hooks).
+    return [
+        _ci_workflow_op(ctx, "workflows/conventional-commits.yml"),
+        _ci_workflow_op(ctx, "workflows/commit-policy.yml"),
+    ]
+
+
+def _ci_dependency_review_ops(ctx: Context) -> list[Op]:
+    # CES-113: free for public repos (just needs "Dependency graph" enabled — a web-UI-only
+    # toggle, no API), but on PRIVATE/internal repos the action requires GitHub Advanced
+    # Security / Code Security, a paid tier. This tool is tier-agnostic (works on free public
+    # AND free private repos without assuming a paid upgrade — see docker.yml's identical GHCR
+    # billing skip below), so only ship it where it's actually free.
+    if ctx.facts.visibility in ("private", "internal"):
+        return [
+            Op(
+                "ci",
+                "noop",
+                ".github/workflows/dependency-review.yml",
+                Disposition.SKIP,
+                detail="repo non-public — dependency-review-action requires GitHub Advanced "
+                "Security/Code Security (paid) on private repos. Skipped; add manually if your "
+                "plan includes it.",
+            )
+        ]
+    return [_ci_workflow_op(ctx, "workflows/dependency-review.yml")]
+
+
+def _ci_security_ops(ctx: Context) -> list[Op]:
+    ops = [
+        _ci_workflow_op(ctx, "workflows/zizmor.yml"),
+        _ci_workflow_op(ctx, "zizmor.yml"),
+        *_ci_dependency_review_ops(ctx),
+    ]
+    # CES-119: osv-scanner reads uv.lock; gated on Python until a non-Python lockfile template
+    # exists (see the CES-119 detail file).
+    if ctx.facts.is_python:
+        ops.append(_ci_workflow_op(ctx, "workflows/osv-scanner.yml"))
+    return ops
+
+
+def _ci_tests_ops(ctx: Context) -> list[Op]:
+    if not ctx.facts.is_python:
+        return []
+    return [
+        _ci_workflow_op(ctx, "workflows/tests.yml"),
+        _ci_workflow_op(ctx, "dependabot.yml"),
+    ]
+
+
+def _ci_docker_ops(ctx: Context) -> list[Op]:
+    if not ctx.facts.has_dockerfile:
+        return []
+    if ctx.facts.visibility in ("private", "internal"):
+        return [
+            Op(
+                "ci",
+                "noop",
+                ".github/workflows/docker.yml",
+                Disposition.SKIP,
+                detail="repo non-public — docker.yml pushes to GHCR (bills private "
+                "packages past the free tier). Skipped; add manually if intended.",
+            )
+        ]
+    return [_ci_workflow_op(ctx, "workflows/docker.yml")]
+
+
+def _ci_publish_ops(ctx: Context) -> list[Op]:
+    return [_ci_workflow_op(ctx, f"workflows/{wf}") for wf in ("release.yml", "pypi.yml")]
+
+
+def _ci_opencode_ops(ctx: Context) -> list[Op]:
+    return [
+        _ci_workflow_op(ctx, f"workflows/{wf}") for wf in ("opencode.yml", "proposal-update.yml")
+    ]
+
+
+# Each entry ships only when its key is in the selected `ci_parts`.
+_CI_PART_PLANNERS: dict[str, Callable[[Context], list[Op]]] = {
+    "security": _ci_security_ops,
+    "tests": _ci_tests_ops,
+    "docker": _ci_docker_ops,
+    "publish": _ci_publish_ops,
+    "opencode": _ci_opencode_ops,
+}
+
+
 def plan_ci(ctx: Context) -> list[Op]:
     parts = ctx.decisions.ci_parts or DEFAULT_CI_PARTS
     ctx.add_decision(
@@ -299,108 +404,10 @@ def plan_ci(ctx: Context) -> list[Op]:
             ",".join(DEFAULT_CI_PARTS),
         )
     )
-    # CES-75: Conventional Commits PR check ships whenever CI is set up, independent of parts
-    # (it mirrors the always-on commit-msg prek hook).
-    ops: list[Op] = [
-        write_if_absent(
-            "ci",
-            ctx.root / ".github/workflows/conventional-commits.yml",
-            template_text("github/workflows/conventional-commits.yml"),
-            ".github/workflows/conventional-commits.yml",
-            ctx.guide_url,
-        )
-    ]
-    if "security" in parts:
-        ops.append(
-            write_if_absent(
-                "ci",
-                ctx.root / ".github/workflows/zizmor.yml",
-                template_text("github/workflows/zizmor.yml"),
-                ".github/workflows/zizmor.yml",
-                ctx.guide_url,
-            )
-        )
-        ops.append(
-            write_if_absent(
-                "ci",
-                ctx.root / ".github/zizmor.yml",
-                template_text("github/zizmor.yml"),
-                ".github/zizmor.yml",
-                ctx.guide_url,
-            )
-        )
-    if "tests" in parts and ctx.facts.is_python:
-        ops.append(
-            write_if_absent(
-                "ci",
-                ctx.root / ".github/workflows/tests.yml",
-                template_text("github/workflows/tests.yml"),
-                ".github/workflows/tests.yml",
-                ctx.guide_url,
-            )
-        )
-        ops.append(
-            write_if_absent(
-                "ci",
-                ctx.root / ".github/workflows/pip-audit.yml",
-                template_text("github/workflows/pip-audit.yml"),
-                ".github/workflows/pip-audit.yml",
-                ctx.guide_url,
-            )
-        )
-        ops.append(
-            write_if_absent(
-                "ci",
-                ctx.root / ".github/dependabot.yml",
-                template_text("github/dependabot.yml"),
-                ".github/dependabot.yml",
-                ctx.guide_url,
-            )
-        )
-    if "docker" in parts and ctx.facts.has_dockerfile:
-        if ctx.facts.visibility in ("private", "internal"):
-            ops.append(
-                Op(
-                    "ci",
-                    "noop",
-                    ".github/workflows/docker.yml",
-                    Disposition.SKIP,
-                    detail="repo non-public — docker.yml pushes to GHCR (bills private "
-                    "packages past the free tier). Skipped; add manually if intended.",
-                )
-            )
-        else:
-            ops.append(
-                write_if_absent(
-                    "ci",
-                    ctx.root / ".github/workflows/docker.yml",
-                    template_text("github/workflows/docker.yml"),
-                    ".github/workflows/docker.yml",
-                    ctx.guide_url,
-                )
-            )
-    if "publish" in parts:
-        ops += [
-            write_if_absent(
-                "ci",
-                ctx.root / f".github/workflows/{wf}",
-                template_text(f"github/workflows/{wf}"),
-                f".github/workflows/{wf}",
-                ctx.guide_url,
-            )
-            for wf in ("release.yml", "pypi.yml")
-        ]
-    if "opencode" in parts:
-        ops += [
-            write_if_absent(
-                "ci",
-                ctx.root / f".github/workflows/{wf}",
-                template_text(f"github/workflows/{wf}"),
-                f".github/workflows/{wf}",
-                ctx.guide_url,
-            )
-            for wf in ("opencode.yml", "proposal-update.yml")
-        ]
+    ops = _ci_always_on_ops(ctx)
+    for part, planner in _CI_PART_PLANNERS.items():
+        if part in parts:
+            ops += planner(ctx)
     if not ops:
         ops.append(Op("ci", "noop", "ci", Disposition.SKIP, detail="no applicable CI parts"))
     return ops
@@ -494,50 +501,51 @@ def plan_standards(ctx: Context) -> list[Op]:
     return ops
 
 
+def _decided(answer: bool | None, default: bool) -> bool:
+    """Unanswered decisions take their default — merging, per CES-107."""
+    return default if answer is None else answer
+
+
+def _register_skills_decisions(ctx: Context, *, ignored: bool) -> None:
+    """Ask before editing a file the repo owns (CES-30).
+
+    Exactly one question, and only when the repo is in the state that raises it.
+    There is nothing to ask about the skill set itself: if a lock file exists it is
+    the source of truth, and if it does not the repo is being seeded.
+    """
+    if ignored:
+        ctx.add_decision(
+            Decision(
+                2,
+                "skills_unignore",
+                f"Stop gitignoring {MANIFEST_FILE} so the skills manifest can be tracked?",
+                "yes",
+            )
+        )
+
+
 def plan_skills(ctx: Context) -> list[Op]:
     if ctx.settings.skip_skills:
         return [Op("skills", "noop", "skills", Disposition.SKIP, detail="SKIP_SKILLS set")]
     if not ctx.facts.has_npx:
         return [Op("skills", "noop", "skills", Disposition.SKIP, detail="npx not found")]
     register_agents_decision(ctx)
-    # Install ONCE into the shared .agents/skills standard (read by opencode + codex).
-    # Claude reaches the same skills via the .claude/skills -> .agents/skills symlink that
-    # the agent-config component creates when claude-code is selected.
-    install_agent = Agent.OPENCODE.value
-    cmds = [
-        [
-            "npx",
-            "skills",
-            "add",
-            "mattpocock/skills",
-            "--agent",
-            install_agent,
-            "--yes",
-            "--skill",
-            *MATTPOCOCK_SKILLS,
-        ],
-        [
-            "npx",
-            "skills",
-            "add",
-            "collectiveai-team/scaffolding",
-            "--agent",
-            install_agent,
-            "--yes",
-            "--skill",
-            *LOCAL_SKILLS,
-        ],
-        ["npx", "skills", "add", "dmno-dev/varlock", "--agent", install_agent, "--yes"],
-    ]
-    labels = [
-        f"matt pocock skills ({AGENTS_SKILLS_DIR})",
-        f"local skills: {' '.join(LOCAL_SKILLS)} ({AGENTS_SKILLS_DIR})",
-        f"dmno-dev/varlock skill ({AGENTS_SKILLS_DIR})",
-    ]
-    return [
-        Op("skills", "run", labels[i], Disposition.RUN, cmd=cmds[i], optional=True)
-        for i in range(len(cmds))
-    ]
+
+    ignored = manifest_path(ctx.root).exists() and gitignored(ctx.root, MANIFEST_FILE)
+    _register_skills_decisions(ctx, ignored=ignored)
+
+    # Skills install ONCE into the shared .agents/skills standard (read by opencode +
+    # codex). Claude reaches the same files via the .claude/skills -> .agents/skills
+    # symlink that agent-config creates, so this is never re-run per agent.
+    return plan_manifest_ops(
+        SkillsPlanInput(
+            root=ctx.root,
+            agent=Agent.OPENCODE.value,
+            skills_dir=AGENTS_SKILLS_DIR,
+            manifest_ignored=ignored,
+            unignore=_decided(ctx.decisions.skills_unignore, True),
+        )
+    )
 
 
 def plan_varlock(ctx: Context) -> list[Op]:

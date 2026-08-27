@@ -70,6 +70,65 @@ fix + code", that belongs in the detail file, not the message.
 (Rationale for index-in-AGENTS.md over packaged skills: passive always-on context outperforms
 on-demand retrieval for horizontal standards — see PRD #78.)
 
+## Managing a proposal (review workflow)
+
+A proposal's review state is **derived** from the vote recorded in its issue comments.
+`state:approved` and `state:declined` are written only by `scripts/proposal_vote.py`
+(via `.github/workflows/proposal-vote.yml`) — never by hand, and never by
+`/update-proposal`, which is barred from those labels.
+
+### Commands
+
+Comment one of these **on a line of its own**. The command must start the line, so
+quoting a colleague (`> /approve`) or inlining it (`lgtm /approve`) does not cast a vote.
+Case does not matter; a trailing word does not (`/approve looks good` counts).
+
+| Command | Effect |
+|---|---|
+| `/approve` | Support. **One vote per account** — re-running replaces your vote. |
+| `/object <reason>` | Veto. Blocks approval at any count. Only its author can lift it. |
+| `/withdraw` | Retract your standing vote. |
+| `/decline` | Vote to reject. Needs quorum; silence never declines. |
+| `/upvote` | Signal support. **Anyone** may upvote; it is advisory and never moves the state. |
+| `/update-proposal <instructions>` | Revise the proposal in place. Cannot approve or decline. |
+
+Markdown wrappers are tolerated — `` `/approve` `` and `**/approve**` count. Quoting does
+not: `> /approve` is a colleague's vote, not yours.
+
+### Rules
+
+- **Quorum is 2** approvals → `state:approved` + `approved:quorum`.
+- **Lazy consensus:** 1 approval and **7 days** with no objection → `state:approved` +
+  `approved:lazy`. The clock starts at the **first approval**, not the issue date, and a
+  warning is posted at day 5. `label:approved:lazy` is the audit query for standards
+  nobody read.
+- **Electorate:** accounts with write access to the repo. The repo is public, so
+  everyone else is ignored; the check fails closed.
+- **Revising the body dismisses approvals** (they were cast against text that no longer
+  exists). Objections survive a revision.
+- **Asymmetry — prefer the state that blocks.** An approval must be *earned* from the
+  ledger; a decline or an open objection is *preserved* when the ledger is silent. Being
+  wrong towards "blocked" costs a re-vote; being wrong towards "approved" ships a
+  standard nobody read.
+- **`state:declined` is terminal** (its number is burned). Reopening = remove the label
+  by hand.
+- **Shipped standards are out of scope.** Label an implemented proposal `as-built` (or
+  close it) and the tally leaves it alone — otherwise an empty ledger would revert a
+  live, enforced rule to `state:proposal`.
+- **Upvotes are interest, not authority.** `/upvote` and thumbs-up reactions both feed
+  `upvote:N`, deduped per account. The repo is public, so they are deliberately excluded
+  from the state machine: no number of upvotes approves anything.
+
+### Board states
+
+| Labels | Meaning | Waiting on |
+|---|---|---|
+| `state:proposal`, no `vote:*` | draft | author to declare it ready |
+| `state:proposal` + `waiting-review` | approved once, short of quorum | a second reviewer |
+| `state:had-comments` + `blocked` | objection open | author to revise, then objector to `/withdraw` |
+| `state:approved` | consensus recorded | implementer |
+| `state:approved` + `as-built` | shipped | nothing |
+
 ## Catalog of AS-BUILT codes
 
 Rules already shipped before the CES scheme, now coded via retroactive issues:
@@ -78,6 +137,7 @@ Rules already shipped before the CES scheme, now coded via retroactive issues:
 |---|---|---|
 | **CES-79** | `no-dict-return-annotation`, `no-dict-call-return`, `no-dict-literal-return`, `no-dict-alias` | ast-grep (`templates/ast-grep-rules/no-dict-*.yml`) |
 | **CES-71** | `file-size-guard` | prek hook (`templates/prek-python.toml`, 400 warn / 700 error) |
+| **CES-107** | `skills-manifest` | `scaffolding check` + the `skills` component (`scaffolding/skills.py`) |
 
 ## References
 

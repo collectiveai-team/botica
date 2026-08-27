@@ -35,7 +35,7 @@ class Op:
     """One planned operation. Plan computes everything; apply just executes."""
 
     component: str
-    kind: str  # write | append | symlink | run | noop
+    kind: str  # write | append | symlink | unignore | run | noop
     target: str
     disposition: Disposition
     detail: str = ""
@@ -43,6 +43,13 @@ class Op:
     content: str | None = None
     cmd: list[str] | None = None
     optional: bool = False
+    # Post-condition for a run op (CES-107): skill names that MUST exist on disk
+    # afterwards, and the directory to look in. Set => the op is fatal when it runs
+    # and does not deliver, because a silently-empty install is the failure mode
+    # this exists to catch. Asserted against the derived tree, not against the lock
+    # file — asking the tool to confirm its own bookkeeping verifies nothing.
+    expect_skills: list[str] | None = None
+    expect_dir: str | None = None
 
 
 @dataclass
@@ -63,6 +70,9 @@ class Decisions(BaseModel):
     pyproject_description: str | None = None
     ci_parts: list[str] | None = None
     varlock: bool | None = None
+    # CES-107. The only skills consent left: everything else is either the lock
+    # file's decision or the `skills` CLI's, and neither is ours to override.
+    skills_unignore: bool | None = None
 
 
 class OpView(BaseModel):
@@ -80,6 +90,10 @@ class PlanReport(BaseModel):
 
     facts: Facts
     clean_adds: list[OpView]
+    # Destructive edits to existing files, kept out of `clean_adds` so that field
+    # keeps meaning what it says. Today this is only the CES-107 unignore op; the
+    # ADR's promise is that you can enumerate them here.
+    edits: list[OpView]
     runs: list[OpView]
     skips: list[OpView]
     defers: list[OpView]
@@ -106,7 +120,7 @@ class Plan:
     def report(self) -> PlanReport:
         """Build the pydantic report consumed by ``plan --json``."""
 
-        def view(disp: Disposition) -> list[OpView]:
+        def view(disp: Disposition, *, kinds: set[str] | None = None) -> list[OpView]:
             return [
                 OpView(
                     component=o.component,
@@ -116,11 +130,14 @@ class Plan:
                     detail=o.detail,
                 )
                 for o in self.by(disp)
+                if kinds is None or o.kind in kinds
             ]
 
+        edits = {"unignore"}
         return PlanReport(
             facts=self.facts,
-            clean_adds=view(Disposition.ADD),
+            clean_adds=[o for o in view(Disposition.ADD) if o.kind not in edits],
+            edits=view(Disposition.ADD, kinds=edits),
             runs=view(Disposition.RUN),
             skips=view(Disposition.SKIP),
             defers=view(Disposition.DEFER),

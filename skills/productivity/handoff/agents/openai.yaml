@@ -1,0 +1,5 @@
+interface:
+  display_name: "Handoff"
+  short_description: "Compact a session into a handoff document"
+policy:
+  allow_implicit_invocation: false

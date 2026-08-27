@@ -1,0 +1,66 @@
+name: skills-drift
+
+# Guard the curated upstream skill catalog in scaffolding/skills.py.
+#
+# `npx skills add` skips unknown skill names without failing, so an upstream
+# rename lands as a silently missing skill in every scaffolded repo — which is
+# exactly how writing-great-skills -> writing-for-agents went unnoticed.
+#
+# On push/PR: assert the pinned tag still publishes every curated skill.
+# On schedule: also compare against the newest upstream tag, so a rename or
+# removal surfaces as a red run instead of at the next bump.
+#
+# Deliberately NOT paths:-filtered. A filter has to name every file the guard
+# depends on, and it silently stops firing the moment one of them moves — which
+# is exactly what happened when the catalog moved from components.py to
+# skills.py. The job is a `uv sync` plus one script, so filtering it buys
+# nothing and can only fail open. Do not re-add a paths: filter here.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly, so upstream renames surface without a code change here.
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: skills-drift-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    name: upstream skill catalog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        # Pinned to an exact immutable tag, not a major tag: setup-uv stopped
+        # publishing @v8 / @v8.x from v8.0.0 on, as supply-chain hardening.
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: "0.11.12"
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      # --check-upstream also clones the newest tag, so keep it off the hot path
+      # of ordinary PRs; the scheduled run is what watches upstream.
+      - name: Validate the pinned catalog
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        run: uv run python scripts/check_skill_drift.py | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Validate the pin and compare against the newest upstream tag
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: uv run python scripts/check_skill_drift.py --check-upstream | tee -a "$GITHUB_STEP_SUMMARY"

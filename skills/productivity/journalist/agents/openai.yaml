@@ -1,0 +1,3 @@
+interface:
+  display_name: "Journalist"
+  short_description: "Journal the session and query prior entries"

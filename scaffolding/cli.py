@@ -20,7 +20,8 @@ from scaffolding.settings import Settings
 app = App(
     name="scaffolding",
     help="Deterministic, clean-adds-only repo bootstrap. Existing files are never "
-    "edited or overwritten — merges are deferred to the agentic guide.",
+    "edited or overwritten — merges are deferred to the agentic guide. The one "
+    "exception is un-ignoring the skills manifest, which is asked for first.",
 )
 
 
@@ -76,6 +77,9 @@ def _resolve_decisions(plan: Plan, settings: Settings, decisions: Decisions) -> 
             value = prompts.checkbox(dec.question, ALL_CI_PARTS, DEFAULT_CI_PARTS, assume_yes=ay)
         elif dec.key == "varlock":
             value = prompts.confirm(dec.question, False, assume_yes=ay)
+        elif dec.key.startswith("skills_"):
+            # CES-107: merging is the default, but consent is always asked.
+            value = prompts.confirm(dec.question, dec.default == "yes", assume_yes=ay)
         else:
             continue
         setattr(decisions, dec.key, value)
@@ -163,7 +167,8 @@ def install(
 
     code = apply(plan, root)
     console.console.print(
-        f"\n[green]Done.[/green] Existing files left untouched; see \\[defer] notices and "
+        f"\n[green]Done.[/green] Existing files left untouched (bar a consented "
+        f"\\[edit]); see \\[defer] notices and "
         f"merge via the guide: {settings.raw_base}/guide.md"
     )
     if code:

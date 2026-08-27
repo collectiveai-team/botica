@@ -1,0 +1,3 @@
+interface:
+  display_name: "Test Smell Review"
+  short_description: "Find tests that pass without protecting anything"

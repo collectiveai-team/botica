@@ -21,6 +21,6 @@ Do not duplicate content already captured in other artifacts such as specs, plan
 
 Redact any sensitive information, such as API keys, passwords, or personally identifiable information.
 
-If the user passed arguments, treat them as the next session's focus and tailor the document accordingly.
+When `$ARGUMENTS` is non-empty, treat it as the next session's focus and tailor the document accordingly.
 
 After writing the file, respond with a short restart prompt that references the handoff path, states the immediate objective, and tells the next agent to inspect the referenced artifacts and current git state before editing. Do not reproduce the full handoff in chat.

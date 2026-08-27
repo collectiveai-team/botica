@@ -8,12 +8,22 @@
   (component registry), `templates/` (bundled package data). The CLI is the
   single deterministic engine; keep it **clean-adds-only** — it must never edit,
   merge, or overwrite existing target files (existing targets are deferred).
+  The one bounded exception is the `unignore` op, which may delete a literal line
+  listed in `UNIGNORE_WHITELIST` (`scaffolding/skills.py`) from `.gitignore`. It is
+  reported under `edits`, not `clean_adds`. Do not widen it, and do not remove it
+  as an invariant violation — see `docs/adr/0001-scoped-unignore-op.md`.
 - `install.sh` — thin bootstrap shim (ensure `uv`, then `uvx … scaffolding
   install`). Keep it minimal and keep its raw URL pointing at
   `collectiveai-team/scaffolding` on `main`.
 - `guide.md` — the agentic-install guide (judgment layer that drives the CLI and
   handles merges). Keep template raw URLs pointing at `collectiveai-team/scaffolding`.
-- `skills/` — actual installed skills (`ask-user`, `journalist`, `handoff`).
+- `skills/` — actual installed skills (`ask-user`, `journalist`, `handoff`). Each
+  carries Claude-style `SKILL.md` frontmatter **and** an `agents/openai.yaml`;
+  Codex reads only the latter, so `disable-model-invocation: true` must be paired
+  with `policy.allow_implicit_invocation: false` (and omitted for model-invoked
+  skills, which Codex otherwise filters out entirely).
+- `scripts/` — maintainer-only checks, not shipped. `check_skill_drift.py` guards
+  the curated upstream catalog; the `skills-drift` workflow runs it.
 
 Agent targets are multi-valued (`--agent`, repeatable: `opencode`/`claude-code`/
 `codex`). The `agent-config` component writes per-agent config — `opencode.jsonc`
@@ -30,11 +40,17 @@ After creating or editing any skill under `skills/`, validate its `SKILL.md`
 before committing:
 
 ```bash
-tessl skill review <SKILL.md>
+tessl review run <SKILL.md>
 ```
 
-Run it against each changed skill (e.g. `tessl skill review skills/productivity/journalist/SKILL.md`)
-and resolve the reported issues before publishing.
+Run it against each changed skill (e.g. `tessl review run skills/productivity/journalist/SKILL.md`)
+and resolve the reported issues before publishing. It needs `tessl login`.
+
+The upstream skill catalog (`MATTPOCOCK_SKILLS` in `scaffolding/skills.py`) is
+the single source of truth — `README.md` and `guide.md` only copy it, and
+`tests/test_skill_catalog.py` fails when a copy drifts. Bump `MATTPOCOCK_REF`
+there to take a new upstream release; never edit the install command in the docs
+by hand.
 
 
 ## Engineering Standards coding (CES)
@@ -79,6 +95,8 @@ judgment; `[snippet]` ships canonical code under `.agents/snippets/` (in target 
   `BaseModel`, never a raw `dict`. → `@.agents/rules/no-dict.md`
 - **CES-71 · keep files small** `[prek]` — `file-size-guard` warns at 400 lines, errors at 700.
   → `@.agents/rules/file-size-guard.md`
+- **CES-107 · track the skills manifest** `[script]` — commit `skills-lock.json`; `.agents/skills/`
+  is derived and gitignored; install restores from it. → `@.agents/rules/skills-manifest.md`
 - **CES-45 · use the house get_logger** `[ast-grep]` — no direct `logging.getLogger`. →
   `@.agents/rules/log-get-logger.md`
 - **CES-46 · libraries log, they don't print** `[ast-grep]` — no `print()` in library code;
@@ -114,6 +132,23 @@ judgment; `[snippet]` ships canonical code under `.agents/snippets/` (in target 
   (the `plan()`/`build_plan()` API), not internals. → `@.agents/rules/test-through-interface.md`
 - **CES-66 · coverage gaps are a signal** `[judgment]` — an untested branch is a missing test or
   dead code, not a number to game. → `@.agents/rules/test-coverage-gap.md`
+- **CES-91 · no AI co-authorship in commits** `[prek]` `[ci]` — no `Co-authored-by:`/`Generated
+  with`/etc AI-attribution trailers; commit-msg hook + `commit-policy.yml` CI. →
+  `@.agents/rules/no-ai-coauthorship.md`
+- **CES-109 · dependency hygiene** `[prek]` — declared deps must match the import graph
+  (`deptry`); `review`/`scaffolding/templates`/`skills` excluded (separate distribution / bundled
+  payload). → `@.agents/rules/dep-hygiene-deptry.md`
+- **CES-110 · cognitive complexity** `[prek]` — cognitive-complexity ceiling of 15 per function
+  (`complexipy`), distinct from ruff's cyclomatic `C90`. →
+  `@.agents/rules/cognitive-complexity-complexipy.md`
+- **CES-111 · randomize test order** `[dependency]` — `pytest-randomly` runs every suite in a
+  random, reproducibly-seeded order. → `@.agents/rules/test-order-randomization-pytest-randomly.md`
+- **CES-113 · dependency review on PRs** `[ci]` — `dependency-review-action`, summary-only, not a
+  merge gate. → `@.agents/rules/dependency-review-action.md`
+- **CES-118 · no copy-paste duplication** `[prek]` — `jscpd`; `guide.md` exempted (deliberately
+  mirrors `README.md`). → `@.agents/rules/code-duplication-jscpd.md`
+- **CES-119 · dependency vulnerability scanning** `[ci]` — `osv-scanner` on `uv.lock`; replaces
+  the old `pip-audit.yml`. → `@.agents/rules/osv-scanner-replace-pip-audit.md`
 
 ### Excluded here (don't apply to a pure-Python CLI)
 
@@ -121,6 +156,8 @@ judgment; `[snippet]` ships canonical code under `.agents/snippets/` (in target 
 - **CES-18 · arch-database-package** — no relational persistence layer.
 - **CES-76 · settings-module** — no `BaseSettings` config surface (CLI reads flags via Cyclopts).
 - **CES-17 · api-boundary-layout** — no inbound HTTP/`api` package.
+- **CES-114 · hadolint-dockerfile-lint** — no root `Dockerfile` / `docker` CI component in this
+  repo.
 
 ## Domain docs
 

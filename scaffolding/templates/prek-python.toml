@@ -55,6 +55,32 @@ language = "system"
 types = ["python"]
 priority = 2
 
+# MARK: deptry
+# CES-109: declared `pyproject.toml` dependencies must match the actual import graph — no
+# declared-but-unused deps, no imported-but-undeclared deps, no dev-vs-prod misplacement. Add
+# a `[tool.deptry]` config with `extend_exclude` if the repo has separate-distribution
+# subpackages or bundled/vendored payload (see this tool's own pyproject.toml for an example).
+[[repos.hooks]]
+id = "deptry"
+name = "deptry (unused/missing/misplaced dependencies)"
+entry = "uvx deptry ."
+language = "system"
+types = ["python"]
+pass_filenames = false
+priority = 2
+
+# MARK: complexipy
+# CES-110: cognitive-complexity ceiling per function — complements (not replaces) ruff's
+# cyclomatic `C90`/mccabe check by penalizing nesting depth and control-flow breaks, the metric
+# that tracks how hard a human actually finds a function to read.
+[[repos.hooks]]
+id = "complexipy"
+name = "complexipy (cognitive complexity)"
+entry = "uvx complexipy --max-complexity-allowed 15"
+language = "system"
+types = ["python"]
+priority = 2
+
 # MARK: no-utils
 # CES-63: catch-all module names (utils/helpers/aux/misc/common) hide grab-bags of unrelated
 # code. The hook only ever runs on files whose basename matches, so it always fails when invoked.

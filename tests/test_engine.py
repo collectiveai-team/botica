@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import subprocess
 from typing import TYPE_CHECKING
 
@@ -13,6 +14,7 @@ from scaffolding.engine import UnknownComponent, apply, build_plan, select_compo
 from scaffolding.facts import detect
 from scaffolding.plan import Agent, Decisions, Disposition
 from scaffolding.settings import Settings
+from scaffolding.skills import LOCAL_SKILLS
 from scaffolding.templates_registry import template_text
 
 if TYPE_CHECKING:
@@ -373,6 +375,113 @@ def test_conventional_commits_artifacts_are_ces_coded():
     assert "PR_TITLE: ${{ github.event.pull_request.title }}" in wf
 
 
+def test_ci_plan_ships_commit_policy_workflow(repo: Path):
+    # CES-91: commit-policy.yml ships unconditionally, mirroring conventional-commits.yml.
+    plan = build_plan(repo, _facts(repo), Settings(), requested=["ci"])
+    adds = {op.target for op in plan.by(Disposition.ADD) if op.component == "ci"}
+    assert ".github/workflows/commit-policy.yml" in adds
+
+
+def test_no_ai_coauthorship_artifacts_are_ces_coded():
+    prek = template_text("prek-generic.toml")
+    assert "CES-91 (no-ai-coauthorship)" in prek
+    assert 'id = "no-ai-coauthorship"' in prek
+    wf = template_text("github/workflows/commit-policy.yml")
+    assert "CES-91 (no-ai-coauthorship)" in wf
+    # base/head sha read from env, never interpolated into the shell (injection-safe).
+    assert "BASE_SHA: ${{ github.event_name" in wf
+
+
+def test_ci_plan_ships_security_workflows_for_python(repo: Path):
+    (repo / "app.py").write_text("x = 1\n")
+    decisions = Decisions(ci_parts=["security"])
+    plan = build_plan(repo, _facts(repo), Settings(), requested=["ci"], decisions=decisions)
+    adds = {op.target for op in plan.by(Disposition.ADD) if op.component == "ci"}
+    assert ".github/workflows/dependency-review.yml" in adds
+    # CES-119: osv-scanner replaces pip-audit — no pip-audit.yml target exists anymore.
+    assert ".github/workflows/osv-scanner.yml" in adds
+    assert ".github/workflows/pip-audit.yml" not in adds
+
+
+def test_ci_plan_skips_dependency_review_on_private_repos(repo: Path):
+    # CES-113: tier-agnostic — dependency-review-action needs a paid GitHub Advanced
+    # Security/Code Security tier on private/internal repos, so it's skipped there (same
+    # posture as docker.yml's GHCR-billing skip), not silently shipped broken.
+    decisions = Decisions(ci_parts=["security"])
+    facts = dataclasses.replace(_facts(repo), visibility="private")
+    plan = build_plan(repo, facts, Settings(), requested=["ci"], decisions=decisions)
+    adds = {op.target for op in plan.by(Disposition.ADD) if op.component == "ci"}
+    skips = {op.target for op in plan.by(Disposition.SKIP) if op.component == "ci"}
+    assert ".github/workflows/dependency-review.yml" not in adds
+    assert ".github/workflows/dependency-review.yml" in skips
+    # zizmor (no tier requirement) still ships.
+    assert ".github/workflows/zizmor.yml" in adds
+
+
+def test_ci_plan_skips_osv_scanner_for_nonpython_security(repo: Path):
+    # osv-scanner is currently gated on uv.lock (Python); non-Python repos get zizmor +
+    # dependency-review only, until a non-Python template exists (see CES-119's detail file).
+    decisions = Decisions(ci_parts=["security"])
+    plan = build_plan(repo, _facts(repo), Settings(), requested=["ci"], decisions=decisions)
+    adds = {op.target for op in plan.by(Disposition.ADD) if op.component == "ci"}
+    assert ".github/workflows/dependency-review.yml" in adds
+    assert ".github/workflows/osv-scanner.yml" not in adds
+
+
+def test_dependency_review_and_osv_scanner_are_ces_coded():
+    wf = template_text("github/workflows/dependency-review.yml")
+    assert "CES-113 (dependency-review-action)" in wf
+    assert "comment-summary-in-pr: always" in wf
+    # the action hard-fails (not a quiet no-op) when Dependency graph isn't enabled — this must
+    # never block a merge, since the whole point of the check is "summary-only".
+    assert "continue-on-error: true" in wf
+    wf2 = template_text("github/workflows/osv-scanner.yml")
+    assert "CES-119 (osv-scanner-replace-pip-audit)" in wf2
+    assert "--lockfile=uv.lock" in wf2
+
+
+def test_prek_plan_ships_deptry_and_complexipy_hooks(repo: Path):
+    (repo / "pyproject.toml").write_text("[project]\nname='x'\n")
+    plan = build_plan(repo, _facts(repo), Settings(), requested=["prek"])
+    prek_ops = [op for op in plan.by(Disposition.ADD) if op.target == "prek.toml"]
+    assert prek_ops, "expected a prek.toml ADD op"
+    content = prek_ops[0].content or ""
+    assert 'id = "deptry"' in content
+    assert 'id = "complexipy"' in content
+
+
+def test_deptry_and_complexipy_are_ces_coded():
+    prek = template_text("prek-python.toml")
+    assert "CES-109" in prek
+    assert 'id = "deptry"' in prek
+    assert "CES-110" in prek
+    assert 'id = "complexipy"' in prek
+
+
+def test_prek_plan_ships_jscpd_and_hadolint_hooks(repo: Path):
+    plan = build_plan(repo, _facts(repo), Settings(), requested=["prek"])
+    prek_ops = [op for op in plan.by(Disposition.ADD) if op.target == "prek.toml"]
+    assert prek_ops, "expected a prek.toml ADD op"
+    content = prek_ops[0].content or ""
+    assert 'id = "jscpd"' in content
+    assert 'id = "hadolint-docker"' in content
+
+
+def test_jscpd_and_hadolint_are_ces_coded():
+    prek = template_text("prek-generic.toml")
+    assert "CES-118" in prek
+    assert 'id = "jscpd"' in prek
+    assert "CES-114" in prek
+    # file-pattern-scoped: inert without a Dockerfile, same posture as repo-shape.
+    assert 'files = "^Dockerfile"' in prek
+
+
+def test_pytest_randomly_ships_in_dev_group():
+    body = template_text("pyproject-template.toml")
+    assert "CES-111" in body
+    assert "pytest-randomly" in body
+
+
 def test_standards_pyproject_layer_rules_add_details(repo: Path):
     (repo / "app.py").write_text("x = 1\n")
     plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
@@ -421,6 +530,24 @@ def test_standards_judgment_tier_details_and_snippet(repo: Path):
     ):
         assert f".agents/rules/{slug}.md" in adds
     assert ".agents/snippets/tests/in_memory_repository.py" in adds
+
+
+def test_standards_aug5_batch_adds_details(repo: Path):
+    (repo / "app.py").write_text("x = 1\n")
+    plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
+    disp = _standards_dispositions(plan)
+    adds = {t for t, d in disp.items() if d is Disposition.ADD}
+    for slug in (
+        "no-ai-coauthorship",
+        "dep-hygiene-deptry",
+        "cognitive-complexity-complexipy",
+        "test-order-randomization-pytest-randomly",
+        "dependency-review-action",
+        "hadolint-dockerfile-lint",
+        "code-duplication-jscpd",
+        "osv-scanner-replace-pip-audit",
+    ):
+        assert f".agents/rules/{slug}.md" in adds
 
 
 def test_judgment_tier_index_entries_marked_judgment():
@@ -526,3 +653,21 @@ def test_check_passes_for_codex_only_repo(repo: Path):
     assert "opencode.jsonc valid" not in names
     assert "CLAUDE.md -> AGENTS.md" not in names
     assert names["AGENTS.md section"].ok
+
+
+# --- local skills: every declared slug ships a real SKILL.md -----------------
+def test_local_skills_each_ship_a_skill_file():
+    """Guard the LOCAL_SKILLS -> skills/**/SKILL.md seam directly.
+
+    LOCAL_SKILLS drives `npx skills add collectiveai-team/scaffolding --skill
+    <slug>`; a slug with no matching skills/**/<slug>/SKILL.md would silently
+    fail at install time in every target repo.
+    """
+    from pathlib import Path as _Path
+
+    repo_root = _Path(__file__).resolve().parent.parent
+    skill_files = {p.parent.name: p for p in (repo_root / "skills").glob("*/*/SKILL.md")}
+    for slug in LOCAL_SKILLS:
+        assert slug in skill_files, f"LOCAL_SKILLS declares {slug!r} but no matching SKILL.md"
+        frontmatter = skill_files[slug].read_text(encoding="utf-8")
+        assert f"name: {slug}" in frontmatter
