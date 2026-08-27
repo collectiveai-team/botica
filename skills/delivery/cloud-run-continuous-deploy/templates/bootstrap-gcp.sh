@@ -69,6 +69,17 @@ describe_resource() {
     return 0
   fi
   shopt -s nocasematch
+  # Fail closed on authentication, credential, or reauth failures — these are never
+  # evidence that a resource is absent.
+  case "$output" in
+    *'invalid_grant'*|*'reauth'*|*'credential'*|*'unauthorized'*|*'access token'*)
+      shopt -u nocasematch
+      printf 'bootstrap-gcp: resource inspection failed; refusing to treat it as absent:\n%s\n' \
+        "${output:-<no diagnostic output>}" >&2
+      exit 1
+      ;;
+  esac
+  # Check for recognized not-found signatures.
   case "$output" in
     *'not_found'*|*'not found'*|*'does not exist'*|*'http 404'*|*'404 not found'*)
       shopt -u nocasematch
