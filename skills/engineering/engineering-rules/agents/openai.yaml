@@ -1,0 +1,3 @@
+interface:
+  display_name: "Engineering Rules"
+  short_description: "The house engineering ruleset, read by id on demand"

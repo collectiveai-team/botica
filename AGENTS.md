@@ -18,7 +18,8 @@
 - `guide.md` — the agentic-install guide (judgment layer that drives the CLI and
   handles merges). Keep template raw URLs pointing at `collectiveai-team/scaffolding`.
 - `skills/` — actual installed skills (`ask-user`, `journalist`, `handoff`,
-  `test-smell-review`, `engineering-pr-review`, `engineering-refactor`). Each
+  `test-smell-review`, `engineering-rules`, `engineering-pr-review`,
+  `engineering-refactor`). Each
   carries Claude-style `SKILL.md` frontmatter **and** an `agents/openai.yaml`;
   Codex reads only the latter, so `disable-model-invocation: true` must be paired
   with `policy.allow_implicit_invocation: false` (and omitted for model-invoked

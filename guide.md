@@ -286,12 +286,12 @@ directory.
 
 What a repo with no manifest gets seeded with — the curated upstream set, this
 repo's recurring local skills (`ask-user`, `journalist`, `handoff`,
-`test-smell-review`, `engineering-pr-review`, `engineering-refactor`), and
-varlock:
+`test-smell-review`, `engineering-rules`, `engineering-pr-review`,
+`engineering-refactor`), and varlock:
 
 ```bash
 npx skills add 'mattpocock/skills#v1.2.3' --agent opencode --yes --skill grill-with-docs triage improve-codebase-architecture setup-matt-pocock-skills to-spec to-tickets implement wayfinder prototype diagnosing-bugs research tdd domain-modeling codebase-design code-review resolving-merge-conflicts wizard grill-me teach writing-for-agents grilling wait-what
-npx skills add collectiveai-team/scaffolding --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-pr-review engineering-refactor
+npx skills add collectiveai-team/scaffolding --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor
 npx skills add dmno-dev/varlock --agent opencode --yes
 ```
 
@@ -301,7 +301,7 @@ and installs from the default branch instead. Bump the tag in
 `scaffolding/skills.py`, never here.
 
 From a local checkout, install local skills with
-`npx skills add . --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-pr-review engineering-refactor --full-depth`.
+`npx skills add . --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor --full-depth`.
 
 ### Changing a repo's skill set
 

@@ -94,10 +94,22 @@ LOCAL_SKILLS = [
     "journalist",
     "handoff",
     "test-smell-review",
+    "engineering-rules",
     "engineering-pr-review",
     "engineering-refactor",
 ]
 VARLOCK_SKILLS = ["varlock"]
+
+# Skills that are inert without another skill installed alongside them. The `skills`
+# CLI has no dependency concept — it will happily install a leaf on its own — so the
+# relationship is declared here and enforced by `check`. The two engineering workflows
+# carry a procedure and cite rule *ids*; `engineering-rules` owns the rule text those
+# ids resolve to. A leaf without it can only work from a remembered standard, which is
+# how a standard drifts.
+SKILL_DEPENDENCIES = {
+    "engineering-pr-review": "engineering-rules",
+    "engineering-refactor": "engineering-rules",
+}
 
 
 @dataclass(frozen=True)
