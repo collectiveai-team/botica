@@ -49,6 +49,31 @@ def _extract_describe_resource() -> str:
     return "".join(lines[start_idx : end_idx + 1])
 
 
+def _extract_case_block() -> str:
+    """Extract the case block from deploy.yml validation step."""
+    workflow = _template("deploy.yml")
+    lines = workflow.splitlines(keepends=True)
+
+    start_idx = None
+    for i, line in enumerate(lines):
+        if "case \"${{ github.event_name }}:$GITHUB_REF_NAME" in line:
+            start_idx = i
+            break
+
+    assert start_idx is not None, "case statement anchor not found"
+
+    # Find the matching esac
+    end_idx = None
+    for i in range(start_idx, len(lines)):
+        if lines[i].strip() == "esac":
+            end_idx = i
+            break
+
+    assert end_idx is not None, "esac anchor not found"
+
+    return "".join(lines[start_idx : end_idx + 1])
+
+
 # Only templates that exist as of this task. Tasks 6 and 7 append to this list
 # as they add templates, so every commit leaves the suite green.
 ALL_TEMPLATE_NAMES = [
@@ -516,7 +541,7 @@ def test_deploy_concurrency_never_cancels():
 def test_secret_placeholders_not_substituted():
     # Invariant 15: Secret placeholders must remain as {{...}} and never be
     # replaced with literal values. A dev deploy could be pointed at prod
-    # secrets otherwise.
+    # secrets otherwise. Extra secrets cannot be smuggled in as appended values.
     workflow = _template("deploy.yml")
 
     # All four secret placeholders must be present exactly
@@ -525,21 +550,107 @@ def test_secret_placeholders_not_substituted():
     assert "{{SECRET_ENV_BLOCK}}" in workflow, "SECRET_ENV_BLOCK placeholder missing"
     assert "{{SYNC_SECRET_CALLS}}" in workflow, "SYNC_SECRET_CALLS placeholder missing"
 
-    # No --set-secrets lines can contain literal env suffixes
-    # Find all lines with --set-secrets
+    # Each --set-secrets line must use exactly the placeholder with no appends
+    migrate_found = False
+    runtime_found = False
     for line in workflow.splitlines():
         if "--set-secrets" in line:
-            # These lines should only reference placeholders or $ENV vars
-            assert "-dev" not in line, f"--set-secrets line has literal -dev: {line}"
-            assert "-prod" not in line, f"--set-secrets line has literal -prod: {line}"
+            if "MIGRATE_SECRETS" in line:
+                migrate_found = True
+                # Must be exactly this value, not with appended secrets
+                assert '--set-secrets "{{MIGRATE_SECRETS}}"' in line, (
+                    f"MIGRATE_SECRETS must be exact placeholder: {line}"
+                )
+            if "RUNTIME_SECRETS" in line:
+                runtime_found = True
+                # Must be exactly this value, not with appended secrets
+                assert '--set-secrets "{{RUNTIME_SECRETS}}"' in line, (
+                    f"RUNTIME_SECRETS must be exact placeholder: {line}"
+                )
 
-    # Secret sync must interpolate ${ENV}, not hardcode
+    assert migrate_found, "MIGRATE_SECRETS --set-secrets line not found"
+    assert runtime_found, "RUNTIME_SECRETS --set-secrets line not found"
+
+    # SECRET_ENV_BLOCK must appear exactly
+    sync_start = workflow.find("env:")
+    assert sync_start != -1, "env section not found"
+
+    sync_start = workflow.find("{{SECRET_ENV_BLOCK}}", sync_start)
+    assert sync_start != -1, "SECRET_ENV_BLOCK not found"
+
+    # SYNC_SECRET_CALLS must appear exactly
     sync_start = workflow.find("sync_secret()")
     assert sync_start != -1, "sync_secret function not found"
 
     sync_end = workflow.find("{{SYNC_SECRET_CALLS}}", sync_start)
     assert sync_end != -1, "SYNC_SECRET_CALLS placeholder not found"
 
-    sync_section = workflow[sync_start:sync_end + len("{{SYNC_SECRET_CALLS}}")]
-    # The sync calls should be a placeholder, not hardcoded
-    assert "{{SYNC_SECRET_CALLS}}" in sync_section, "SYNC_SECRET_CALLS not found"
+
+@pytest.mark.parametrize(
+    ("event_name", "ref_name", "input_env", "expected_env"),
+    [
+        ("push", "dev", "", "dev"),
+        ("push", "main", "", "prod"),
+        ("workflow_dispatch", "dev", "dev", "dev"),
+        ("workflow_dispatch", "main", "prod", "prod"),
+        ("workflow_dispatch", "dev", "prod", "rejected"),
+        ("workflow_dispatch", "main", "dev", "rejected"),
+        ("push", "feature/x", "", "rejected"),
+        ("workflow_dispatch", "feature/x", "prod", "rejected"),
+        ("push", "dev", "prod", "rejected"),
+    ],
+)
+def test_case_statement_resolves_correctly(
+    event_name: str, ref_name: str, input_env: str, expected_env: str
+) -> None:
+    # Invariant 3 (behavioral): The case statement must correctly route all
+    # legitimate and illegitimate inputs to the right branch. Arm reordering,
+    # unreachable arms, swapped bindings, and mismatched dispatch inputs must
+    # all be caught by a test that actually executes the logic.
+    case_block = _extract_case_block()
+
+    # Substitute placeholders with concrete values
+    case_code = case_block.replace("{{DEV_BRANCH}}", "dev")
+    case_code = case_code.replace("{{PROD_BRANCH}}", "main")
+    # Replace GitHub Actions template syntax with actual values
+    case_code = case_code.replace(
+        "${{ github.event_name }}", event_name
+    )
+    case_code = case_code.replace(
+        "$GITHUB_REF_NAME", ref_name
+    )
+    case_code = case_code.replace(
+        "$REQUESTED_ENVIRONMENT", input_env
+    )
+
+    # Build a bash script that runs the case block and echoes ENV
+    bash_script = f"""
+set -euo pipefail
+{case_code}
+echo "$ENV"
+"""
+
+    result = subprocess.run(
+        ["bash", "-c", bash_script],
+        capture_output=True,
+        text=True,
+        timeout=5,
+        check=False,
+    )
+
+    if expected_env == "rejected":
+        # Expected to reject (exit non-zero)
+        assert result.returncode != 0, (
+            f"Expected rejection for event={event_name}, ref={ref_name}, "
+            f"input={input_env}, but case block succeeded with ENV={result.stdout.strip()}"
+        )
+    else:
+        # Expected to succeed with specific ENV value
+        assert result.returncode == 0, (
+            f"Case block failed for event={event_name}, ref={ref_name}, "
+            f"input={input_env}: {result.stderr}"
+        )
+        env_value = result.stdout.strip()
+        assert (
+            env_value == expected_env
+        ), f"Expected ENV={expected_env}, got ENV={env_value}"
