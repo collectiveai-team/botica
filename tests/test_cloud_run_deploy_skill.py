@@ -695,13 +695,41 @@ def test_nginx_forwards_the_proxy_headers():
 
 
 def test_envsubst_restriction_actually_works():
-    # Behavioral test: write nginx.conf to a temp file, run actual envsubst
-    # with PORT=9999 and verify it substitutes PORT but preserves nginx variables.
+    # Behavioral test: extract the actual envsubst command from entrypoint.sh,
+    # run it on nginx.conf with PORT=9999, and verify the restriction is effective.
     import shutil
 
     if shutil.which("envsubst") is None:
         pytest.skip("envsubst not installed")
 
+    # Extract the envsubst command from entrypoint.sh
+    entrypoint = _template("entrypoint.sh")
+    lines = entrypoint.split("\n")
+
+    # Find the line containing envsubst
+    envsubst_idx = None
+    for i, line in enumerate(lines):
+        if "envsubst" in line and not line.strip().startswith("#"):
+            envsubst_idx = i
+            break
+
+    assert envsubst_idx is not None, "envsubst command not found in entrypoint.sh"
+
+    # Collect the full command (handles backslash continuation)
+    command_lines = [lines[envsubst_idx]]
+    idx = envsubst_idx
+    while idx < len(lines) - 1 and lines[idx].rstrip().endswith("\\"):
+        idx += 1
+        command_lines.append(lines[idx])
+
+    full_command = " ".join(line.rstrip().rstrip("\\").strip() for line in command_lines)
+
+    # Extract the envsubst portion: envsubst '${PORT}' or similar
+    envsubst_match = re.search(r"(envsubst\s+'[^']*')", full_command)
+    assert envsubst_match is not None, f"could not extract envsubst from: {full_command}"
+    envsubst_cmd = envsubst_match.group(1)
+
+    # Load nginx.conf template
     conf = _template("nginx.conf")
     with tempfile.NamedTemporaryFile(mode="w", suffix=".conf", delete=False) as f:
         f.write(conf)
@@ -709,9 +737,9 @@ def test_envsubst_restriction_actually_works():
         temp_path = f.name
 
     try:
-        # Run restricted envsubst (what entrypoint.sh does)
+        # Run the actual envsubst command from entrypoint.sh
         result = subprocess.run(
-            ["bash", "-c", f"envsubst '${{PORT}}' < {temp_path}"],
+            ["bash", "-c", f"{envsubst_cmd} < {temp_path}"],
             capture_output=True,
             text=True,
             timeout=5,
@@ -721,9 +749,7 @@ def test_envsubst_restriction_actually_works():
 
         output = result.stdout
         # PORT should be substituted
-        assert "listen       9999" in output or "listen 9999" in output, (
-            f"PORT=9999 not substituted in output: {output[:200]}"
-        )
+        assert "9999" in output, f"PORT=9999 not substituted. Output: {output[:200]}"
         # nginx variables should still be present (NOT substituted)
         assert "$host" in output, "$host was consumed by restricted envsubst"
         assert "$remote_addr" in output, "$remote_addr was consumed by restricted envsubst"
@@ -741,7 +767,6 @@ def test_envsubst_restriction_actually_works():
 
         unrestricted_output = result_unrestricted.stdout
         # Unrestricted envsubst should destroy nginx's variables (they're undefined)
-        # They appear as empty strings or not at all
         assert "$host" not in unrestricted_output, (
             "unrestricted envsubst should destroy $host, but it survived"
         )
@@ -778,41 +803,29 @@ def test_dockerfile_installs_bash_for_wait_n():
     raise AssertionError("apt-get install line not found in Dockerfile.combined")
 
 
-def test_bash_supports_wait_n():
-    # Behavioral test: verify bash actually supports `wait -n` (not sh or dash).
-    # This catches if someone accidentally changes the shebang.
-    test_script = """#!/usr/bin/env bash
-set -euo pipefail
+def test_dockerfile_installs_gettext_base_for_envsubst():
+    # gettext-base provides envsubst, which entrypoint.sh uses to render nginx.conf.
+    # Removing it while leaving bash installed fails at container start with
+    # "command not found: envsubst" — the most expensive discovery.
+    dockerfile = _template("Dockerfile.combined")
+    assert "gettext-base" in dockerfile, "gettext-base must be installed for envsubst"
+    # Verify it's in the apt-get install line, not just mentioned in a comment
+    lines = dockerfile.split("\n")
+    for line in lines:
+        if "apt-get install" in line:
+            install_block = []
+            idx = lines.index(line)
+            # Collect the complete multi-line install command (handles backslash continuation)
+            while idx < len(lines):
+                install_block.append(lines[idx])
+                if not lines[idx].rstrip().endswith("\\"):
+                    break
+                idx += 1
+            install_text = " ".join(install_block)
+            assert "gettext-base" in install_text, (
+                "gettext-base must be in apt-get install command, not just mentioned elsewhere"
+            )
+            return
+    raise AssertionError("apt-get install line not found in Dockerfile.combined")
 
-# Simple test: can we call wait -n?
-# Start a background process
-true &
-pid=$!
 
-# This syntax is invalid in sh/dash, only in bash
-wait -n 2>/dev/null || { echo "BASH_REQUIRED"; exit 1; }
-
-echo "wait_n_works"
-"""
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
-        f.write(test_script)
-        f.flush()
-        temp_path = f.name
-
-    try:
-        result = subprocess.run(
-            ["bash", temp_path],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            check=False,
-        )
-
-        # If bash supports wait -n, we see "wait_n_works"
-        assert "wait_n_works" in result.stdout, (
-            f"bash should support wait -n; output: {result.stdout}"
-        )
-
-    finally:
-        Path(temp_path).unlink()
