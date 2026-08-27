@@ -297,13 +297,35 @@ def test_validate_checkout_pins_specific_sha():
     # anywhere in the deploy job.
     workflow = _template("deploy-integration.yml")
     deploy_block = workflow.split("deploy:", 1)[1]
-    # Find the checkout step in deploy and verify it references head_sha
-    assert "needs.validate.outputs.head_sha" in deploy_block, (
-        "deploy job checkout must reference needs.validate.outputs.head_sha"
-    )
+
+    # Verify inputs.review_tag is never used in the deploy job
     assert "inputs.review_tag" not in deploy_block, (
         "deploy job must not reference inputs.review_tag (would re-resolve the tag)"
     )
+
+    # Extract the checkout step ("Check out the validated pull request head")
+    # and verify its ref: line is exactly needs.validate.outputs.head_sha
+    checkout_start = deploy_block.find("- name: Check out the validated pull request head")
+    assert checkout_start != -1, "Checkout step not found in deploy job"
+
+    # Find the next step boundary
+    checkout_end = deploy_block.find("- name:", checkout_start + 1)
+    if checkout_end == -1:
+        checkout_step = deploy_block[checkout_start:]
+    else:
+        checkout_step = deploy_block[checkout_start:checkout_end]
+
+    # Find and validate the ref: line within the checkout step
+    for line in checkout_step.splitlines():
+        if "ref:" in line:
+            ref_line = line.strip()
+            expected = "ref: ${{ needs.validate.outputs.head_sha }}"
+            assert ref_line == expected, (
+                f"checkout ref must be exactly '{expected}', got '{ref_line}'"
+            )
+            return
+
+    raise AssertionError("ref: line not found in checkout step")
 
 
 def test_marker_lives_outside_the_dropped_schema():
