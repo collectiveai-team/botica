@@ -78,26 +78,37 @@ against the ref — it may never be substituted for it.
 **Prevents:** anyone with `workflow_dispatch` rights selecting `prod` from a
 feature branch and receiving production secrets.
 
-**Check:** `deploy.yml` declares a `workflow_dispatch` input **named**
-`environment`, so its declaration line also strips to `environment:` — matching
-on that prefix alone flags a false positive against the correct, unmodified
-template. Filter to lines that additionally contain `${{`, which excludes the
-input declaration and keeps only the job-level expressions:
+**Check:** a bare substring grep for `environment:` against `deploy.yml`
+produces two false positives on the correct, unmodified template — the
+`workflow_dispatch` input, which is itself **named** `environment` (its
+declaration line is `      environment:`), and the Summary step's
+`echo "- environment: ${{ steps.env.outputs.env }}"`, which reports the
+resolved value but does not derive it. Filtering that grep down to lines
+containing `${{` removes the input declaration (it has no expression on that
+line) but *not* the echo line, which also contains `${{` — so `${{` alone is
+not enough either.
+
+The filter that actually isolates the job-level expression is a **line
+anchor**: after stripping leading whitespace, the line must *begin with*
+`environment:`, and it must also contain `${{`. The echo line fails the
+anchor (it begins with `echo`, not `environment:`); the input declaration
+fails the `${{` test. Only the job-level line,
+`environment: ${{ github.ref_name == ... }}`, survives both:
 
 ```bash
-grep 'environment:' deploy.yml | grep '\${{'
+grep -E '^[[:space:]]*environment:.*\$\{\{' deploy.yml
 ```
 
-Every line that survives that filter must contain `github.ref_name` and must
-not contain `inputs.`. A line such as
-`REQUESTED_ENVIRONMENT: ${{ inputs.environment || '' }}` also mentions
-`inputs.` — that is expected and correct: it is the cross-check this invariant
-asks for, reading the input only to compare it against the ref, never to
-replace the ref. Reject a candidate check that fails on that line; it is
-testing the wrong thing. This mirrors
+Every line that survives must contain `github.ref_name` and must not contain
+`inputs.`. This is exactly what
 `test_environment_derives_from_the_ref_not_an_input` in
-`tests/test_cloud_run_deploy_skill.py` — read that test before "simplifying"
-this check back to a bare `environment:` grep.
+`tests/test_cloud_run_deploy_skill.py` does —
+`line.strip().startswith("environment:") and "${{" in line` — and the anchor
+is not incidental to that test: drop it, and the test (like a hand-rolled
+version of this Check) starts failing against correct, unmodified code. Before
+"simplifying" this check back to a bare `environment:` grep, or even to a
+`${{`-only filter, run it against the shipped template and confirm it still
+passes.
 
 ## 4. The WIF condition pins repository and branch refs only
 
