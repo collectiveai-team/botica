@@ -1796,7 +1796,10 @@ on:
 
 concurrency:
   group: deploy-${{ github.ref_name }}
-  cancel-in-progress: true
+  # Never cancel. Migrations run as a Cloud Run Job; `jobs execute --wait` only
+  # waits on work GCP runs independently, so cancelling this runner would start a
+  # second migration alongside the first, which is still running.
+  cancel-in-progress: false
 
 env:
   REGION: {{REGION}}
@@ -2469,12 +2472,22 @@ The marker is initialized once, by an operator, against the dedicated integratio
 database. Never automate it — an automated write lets a misconfigured deploy mark
 production as disposable and then reset it.
 
-## 11. Non-cancelling concurrency on shared environments
+## 11. Non-cancelling concurrency on every environment that runs migrations
 
-`concurrency: {group: integration, cancel-in-progress: false}`.
+`cancel-in-progress: false` on all three groups — `dev` and `prod` as well as
+`integration`.
 
-**Prevents:** a second review tag cancelling a run mid-reset and leaving a
-half-migrated database that the next deploy then builds on.
+**Prevents:** two concurrent migrations against one database.
+
+On `integration`, it stops a second review tag cancelling a run mid-reset and
+leaving a half-migrated database the next deploy builds on. On `dev` and `prod`
+the mechanism is less obvious and worse: migrations run as a **Cloud Run Job**,
+and `gcloud run jobs execute --wait` only waits on work GCP is running
+independently. Cancelling the runner does not cancel the execution on GCP's
+side — so a second push during a migration starts a second execution while the
+first is still running.
+
+**Accepted cost:** pushes queue rather than supersede each other.
 
 ## 12. Workload Identity Federation only
 

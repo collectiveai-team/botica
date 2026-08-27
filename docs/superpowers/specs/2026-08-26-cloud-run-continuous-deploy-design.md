@@ -362,9 +362,21 @@ it prevents; a template that violates one is a bug in the skill.
     one. Two environment variables alone are not sufficient — they travel with
     a misconfigured workflow; the marker travels with the database.
 
-11. **Non-cancelling concurrency on shared environments.** The integration
-    group sets `cancel-in-progress: false`. Cancelling mid-reset leaves a
-    half-migrated database.
+11. **Non-cancelling concurrency on every environment that runs migrations.**
+    All three groups set `cancel-in-progress: false` — `dev` and `prod` as well
+    as `integration`.
+
+    The reason generalises further than it first appears. Cancelling mid-reset
+    leaves a half-migrated database, which is why `integration` needs it. But
+    migrations run as a **Cloud Run Job**, and `gcloud run jobs execute --wait`
+    only *waits* on work that GCP is running independently. Cancelling the
+    GitHub Actions runner does not cancel the execution on GCP's side. So on
+    `dev` or `prod`, a second push during a migration cancels the first runner
+    and starts a second migration execution **concurrently with the first one,
+    which is still running**. Two concurrent migrations against one database is
+    a worse outcome than a queue.
+
+    The accepted cost is that pushes queue rather than supersede each other.
 
 12. **Workload Identity Federation only.** No service-account key is ever
     created, downloaded, stored in GitHub, or written to an operator machine.
