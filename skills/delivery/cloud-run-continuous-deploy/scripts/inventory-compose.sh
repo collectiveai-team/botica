@@ -135,6 +135,7 @@ print("# Starter deploy/cloud-run.map.yml. Every value below is a guess except t
 print("# service names. Confirm each one with the operator before generating.")
 print("project_id: CHANGEME")
 print("region: us-central1")
+print("integration_region: us-central1   # optional; defaults to region")
 print("ar_repo: CHANGEME")
 print("topology: single-container")
 print("branches:")
@@ -156,4 +157,12 @@ for name, role, port, _, service in rows:
     else:
         family = image_family(service.get("image") or "")
         print(f"    managed: {STATEFUL.get(family, 'CHANGEME')}")
+
+# Emitted as a guess like everything else, rather than left out. Absent from the
+# worksheet the key is invisible: the generator has no answer for
+# {{RESET_ENTRYPOINT}} and no prompt to ask the operator for one.
+print("reset_entrypoint: ./reset.sh   # optional; integration only. Delete this line")
+print("                               # if the repo has no reset entrypoint -- and then")
+print("                               # delete the reset step from deploy-integration.yml")
+print("                               # too. See SKILL.md Phase 1.")
 PY

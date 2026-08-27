@@ -38,8 +38,7 @@ def fake_docker(tmp_path: Path) -> Path:
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     (bin_dir / "docker").write_text(
-        "#!/usr/bin/env bash\n"
-        f"cat {json.dumps(str(tmp_path / 'compose.json'))}\n",
+        f"#!/usr/bin/env bash\ncat {json.dumps(str(tmp_path / 'compose.json'))}\n",
         encoding="utf-8",
     )
     (bin_dir / "docker").chmod(0o755)
@@ -89,6 +88,13 @@ def test_emits_a_worksheet_skeleton(tmp_path: Path, fake_docker: Path):
     assert "compose: api" in worksheet
     assert "role: http" in worksheet
     assert "review_tag_pattern:" in worksheet
+    # Every key a template placeholder needs an answer for must appear here, or
+    # the operator is never asked and the placeholder ships unsubstituted.
+    # `integration_region` feeds {{INTEGRATION_REGION}} in deploy-integration.yml
+    # and `bootstrap-gcp.sh --integration-region`; `reset_entrypoint` feeds
+    # {{RESET_ENTRYPOINT}}.
+    assert "integration_region:" in worksheet
+    assert "reset_entrypoint:" in worksheet
 
 
 def test_fails_clearly_without_docker(tmp_path: Path):
