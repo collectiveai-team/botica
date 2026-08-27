@@ -119,3 +119,21 @@ def test_validate_rejects_malformed_api_response():
 
     with pytest.raises(ValueError, match="could not read pull request"):
         review_tag.validate("review/pr-7/abcdef123456", "org/repo", "dev", run=run)
+
+
+def test_validate_rejects_api_response_with_array():
+    run = _runner([])
+    with pytest.raises(ValueError, match="could not read pull request"):
+        review_tag.validate("review/pr-7/abcdef123456", "org/repo", "dev", run=run)
+
+
+def test_validate_rejects_api_response_with_null():
+    run = _runner(None)
+    with pytest.raises(ValueError, match="could not read pull request"):
+        review_tag.validate("review/pr-7/abcdef123456", "org/repo", "dev", run=run)
+
+
+def test_validate_rejects_api_response_with_non_object_head():
+    run = _runner(_pr_payload(head="not-a-dict"))
+    with pytest.raises(ValueError, match="head"):
+        review_tag.validate("review/pr-7/abcdef123456", "org/repo", "dev", run=run)

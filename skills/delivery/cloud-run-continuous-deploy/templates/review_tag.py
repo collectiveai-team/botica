@@ -67,19 +67,34 @@ def validate(
             f"could not read pull request {parsed.pr_number} in {repo}"
         ) from exc
 
+    if not isinstance(payload, dict):
+        raise ValueError(
+            f"could not read pull request {parsed.pr_number} in {repo}"
+        )
+
     if payload.get("state") != "open":
         raise ValueError(f"pull request {parsed.pr_number} is not open")
     if payload.get("draft"):
         raise ValueError(f"pull request {parsed.pr_number} is a draft")
 
-    actual_base = (payload.get("base") or {}).get("ref")
+    base_obj = payload.get("base")
+    if not isinstance(base_obj, dict):
+        raise ValueError(
+            f"could not read pull request {parsed.pr_number} in {repo}"
+        )
+    actual_base = base_obj.get("ref")
     if actual_base != base:
         raise ValueError(
             f"pull request {parsed.pr_number} targets base branch {actual_base!r}, "
             f"expected {base!r}"
         )
 
-    head_sha = (payload.get("head") or {}).get("sha") or ""
+    head_obj = payload.get("head")
+    if not isinstance(head_obj, dict):
+        raise ValueError(
+            f"pull request {parsed.pr_number} head is malformed"
+        )
+    head_sha = head_obj.get("sha") or ""
     if not head_sha.startswith(parsed.short_sha):
         raise ValueError(
             f"tag short sha {parsed.short_sha!r} is not a prefix of the pull "
