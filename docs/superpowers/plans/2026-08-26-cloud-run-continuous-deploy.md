@@ -307,8 +307,8 @@ import os
 import re
 import subprocess
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 TAG_PATTERN = re.compile(r"^review/pr-([1-9][0-9]*)/([0-9a-f]{7,40})$")
 
@@ -484,6 +484,9 @@ COMPOSE = {
         "worker": {"build": {"context": "./backend"}, "command": "python -m app.worker"},
         "db": {"image": "postgres:16", "volumes": ["pgdata:/var/lib/postgresql/data"]},
         "cache": {"image": "redis:7"},
+        # Not a known stateful image, so this one exercises the named-volume
+        # branch rather than the image-family lookup.
+        "uploads": {"image": "acme/uploads:1", "volumes": ["updata:/data"]},
     }
 }
 
@@ -603,8 +606,11 @@ else
   CONFIG="$(docker compose config --format json)"
 fi
 
-printf '%s' "$CONFIG" | python3 - <<'PY'
+# The config travels in the environment, not on stdin: a heredoc already owns
+# stdin here, so a pipe would be swallowed and python would read this script.
+CONFIG="$CONFIG" python3 - <<'PY'
 import json
+import os
 import sys
 
 STATEFUL = {
@@ -654,7 +660,7 @@ def named_volumes(service):
     return names
 
 
-config = json.load(sys.stdin)
+config = json.loads(os.environ["CONFIG"])
 services = config.get("services") or {}
 
 rows = []
@@ -987,11 +993,10 @@ def _template(name: str) -> str:
     return (TEMPLATES / name).read_text(encoding="utf-8")
 
 
+# Only templates that exist as of this task. Tasks 6 and 7 append to this list
+# as they add templates, so every commit leaves the suite green.
 ALL_TEMPLATE_NAMES = [
     "bootstrap-gcp.sh",
-    "deploy.yml",
-    "deploy-integration.yml",
-    "integration-tag.yml",
     "review_tag.py",
     "sync-github-secrets.sh",
 ]
@@ -1022,17 +1027,35 @@ def test_bootstrap_fails_closed_on_ambiguous_inspection():
 
 def test_bootstrap_grants_no_project_level_role_to_a_runtime_account():
     # Invariant 8: runtime identities get resource-scoped bindings only.
+    #
+    # The member is on a continuation line, not on the line naming the command,
+    # so the whole invocation has to be reassembled before it can be inspected.
+    # Checking only the command line would assert nothing.
     script = _template("bootstrap-gcp.sh")
-    for line in script.splitlines():
-        if "projects add-iam-policy-binding" in line:
-            assert "RUNTIME" not in line, line
+    lines = script.splitlines()
+    invocations = []
+    for index, line in enumerate(lines):
+        if "projects add-iam-policy-binding" not in line:
+            continue
+        invocation = [line]
+        cursor = index
+        while lines[cursor].rstrip().endswith("\\") and cursor + 1 < len(lines):
+            cursor += 1
+            invocation.append(lines[cursor])
+        invocations.append("\n".join(invocation))
+
+    assert invocations, "bootstrap-gcp.sh grants no project-level role at all"
+    for invocation in invocations:
+        assert "RUNTIME" not in invocation, invocation
+        assert "runtime" not in invocation, invocation
+        assert "DEPLOY_SA_EMAIL" in invocation, invocation
 ```
 
 - [ ] **Step 2: Verify RED**
 
 Run: `uv run pytest tests/test_cloud_run_deploy_skill.py -v`
 
-Expected: every test errors with `FileNotFoundError` — no template exists yet. The parametrized cases for templates from later tasks will also fail; that is expected and they go green as Tasks 6–8 land.
+Expected: every test errors with `FileNotFoundError` — `bootstrap-gcp.sh` does not exist yet. `review_tag.py` and `sync-github-secrets.sh` already exist from Tasks 2 and 4, so their parametrized cases pass immediately.
 
 - [ ] **Step 3: Write the bootstrap template**
 
@@ -1279,7 +1302,7 @@ uv run pytest tests/test_cloud_run_deploy_skill.py -v -k "wif or fails_closed or
 bash -n skills/delivery/cloud-run-continuous-deploy/templates/bootstrap-gcp.sh
 ```
 
-Expected: the four bootstrap-specific tests pass. The parametrized `test_no_template_creates_a_service_account_key` cases for `deploy.yml`, `deploy-integration.yml` and `integration-tag.yml` still fail — those templates land in Tasks 6 and 7.
+Expected: the whole file passes — `ALL_TEMPLATE_NAMES` names only templates that exist as of this task.
 
 - [ ] **Step 5: Commit**
 
@@ -1306,9 +1329,14 @@ The listener and the trusted workflow are one deliverable. Splitting them would 
 
 - [ ] **Step 1: Add the failing trust-boundary tests**
 
-Append to `tests/test_cloud_run_deploy_skill.py`:
+Append to `tests/test_cloud_run_deploy_skill.py`, and extend the existing
+`ALL_TEMPLATE_NAMES` list with the two templates this task adds so the
+service-account-key check covers them:
 
 ```python
+ALL_TEMPLATE_NAMES += ["integration-tag.yml", "deploy-integration.yml"]
+
+
 def test_listener_never_receives_credentials():
     # Invariants 1 and 2: this file is loaded from the tagged commit's own tree,
     # so its author controls every line. It must be worth nothing to compromise.
@@ -1364,9 +1392,13 @@ def test_marker_lives_outside_the_dropped_schema():
 
 def test_integration_images_are_tagged_by_pr_and_sha():
     # Invariant 9: a deployed revision must be traceable to one commit.
+    #
+    # Only the IMAGE tag is checked. Secret Manager references legitimately end
+    # in `:latest` -- that is a secret version, not an image tag, and asserting
+    # on a bare ":latest" would conflate the two.
     workflow = _template("deploy-integration.yml")
     assert "integration-pr-" in workflow
-    assert ":latest" not in workflow
+    assert "/app:latest" not in workflow
 ```
 
 - [ ] **Step 2: Verify RED**
@@ -1672,7 +1704,7 @@ uv run pytest tests/test_cloud_run_deploy_skill.py -v
 python3 -c "import sys, yaml" 2>/dev/null && echo "yaml available" || echo "skip yaml lint"
 ```
 
-Expected: every test except the `deploy.yml` parametrized case passes. `deploy.yml` lands in Task 7.
+Expected: the whole file passes.
 
 - [ ] **Step 7: Commit**
 
@@ -1701,14 +1733,23 @@ git commit -m "feat(skills): add review tag trust boundary templates"
 Append to `tests/test_cloud_run_deploy_skill.py`:
 
 ```python
+ALL_TEMPLATE_NAMES += ["deploy.yml"]
+
+
 def test_environment_derives_from_the_ref_not_an_input():
     # Invariant 3: `environment: ${{ inputs.environment }}` hands production
     # secrets to anyone with workflow_dispatch rights.
+    #
+    # `${{` is required in the match because the workflow_dispatch input is
+    # itself NAMED `environment`, so its declaration line also strips to
+    # "environment:" -- matching on the prefix alone flags a false positive.
     workflow = _template("deploy.yml")
     environment_lines = [
-        line for line in workflow.splitlines() if line.strip().startswith("environment:")
+        line
+        for line in workflow.splitlines()
+        if line.strip().startswith("environment:") and "${{" in line
     ]
-    assert environment_lines, "deploy.yml declares no environment"
+    assert environment_lines, "deploy.yml declares no job environment expression"
     for line in environment_lines:
         assert "github.ref_name" in line, line
         assert "inputs." not in line, line
@@ -1722,9 +1763,10 @@ def test_dispatch_input_is_cross_checked_against_the_ref():
 
 
 def test_branch_images_are_tagged_by_sha():
-    # Invariant 9.
+    # Invariant 9. As above, only the image tag -- Secret Manager's `:latest`
+    # version reference is a different thing and is correct.
     workflow = _template("deploy.yml")
-    assert ":latest" not in workflow
+    assert "/app:latest" not in workflow
     assert "rev-parse --short=12" in workflow
 ```
 
@@ -2405,16 +2447,21 @@ uv run ruff format --check .
 
 Expected: all tests pass, ruff clean.
 
-- [ ] **Step 4: Verify the skill installs**
+- [ ] **Step 4: Verify the bundle is complete and the docs promise `--full-depth`**
+
+Do **not** run `npx skills add` here. It mutates tracked state (`skills-lock.json`)
+and writes `.agents/skills/` as a side effect of what is meant to be a check, and
+it needs the network. Verify the two things that actually matter directly:
 
 ```bash
-npx skills add . --agent opencode --yes --skill cloud-run-continuous-deploy --full-depth
-ls .agents/skills/cloud-run-continuous-deploy/templates/
+ls skills/delivery/cloud-run-continuous-deploy/templates/ | wc -l   # expect 10
+ls skills/delivery/cloud-run-continuous-deploy/scripts/             # inventory-compose.sh
+grep -c -- "--full-depth" README.md guide.md                        # expect >= 1 each
 ```
 
-Expected: all ten templates present. The `--full-depth` flag is what carries
-`scripts/` and `templates/` alongside `SKILL.md`; without it only the prose
-installs and every phase after 1 fails at runtime.
+`--full-depth` is what carries `scripts/` and `templates/` alongside `SKILL.md`.
+Without it only the prose installs, and every phase after 1 fails at runtime —
+which is why the local-install line in both docs must keep the flag.
 
 - [ ] **Step 5: Commit**
 
@@ -2463,7 +2510,10 @@ reused unchanged in Tasks 6–8. Template placeholder names (`{{AR_REPO}}`,
 `{{WEB_CONTEXT}}`, `{{WEB_BUILD_COMMAND}}`, `{{RUNTIME_BASE_IMAGE}}`) are
 consistent across Tasks 5–8 and listed in Task 9's Phase 3 and Phase 4.
 
-**Known ordering artifact:** the parametrized
-`test_no_template_creates_a_service_account_key` cases fail from Task 5 until
-Task 7 lands the last template. Each task's verification step says which cases
-are expected to still fail, so a red run is never ambiguous.
+**Green at every commit:** `ALL_TEMPLATE_NAMES` starts in Task 5 naming only
+templates that already exist, and Tasks 6 and 7 append to it as they add theirs.
+No task commits a knowingly-failing test, so a red run is always a real failure.
+
+**Frontmatter identity:** Task 9 replaces the SKILL.md body written in Task 1 and
+must reproduce Task 1's frontmatter byte-for-byte. The `name:` and `description:`
+values are identical in both tasks; copy them, do not retype them.
