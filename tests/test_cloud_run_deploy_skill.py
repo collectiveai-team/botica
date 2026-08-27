@@ -258,6 +258,7 @@ def test_validate_job_runs_before_any_credential():
     validate_block = workflow.split("deploy:", 1)[0]
     assert "google-github-actions/auth" not in validate_block
     assert "environment:" not in validate_block
+    assert "${{ secrets." not in validate_block
 
 
 def test_untrusted_head_checkout_drops_credentials():
@@ -276,8 +277,33 @@ def test_integration_concurrency_does_not_cancel():
 def test_reset_requires_both_flags():
     # Invariant 10, the two flags. The marker is asserted separately.
     workflow = _template("deploy-integration.yml")
-    assert "ALLOW_DATABASE_RESET=true" in workflow
-    assert "DEPLOY_ENV=integration" in workflow
+    # Extract only the reset step to ensure flags are in the right place
+    reset_step_start = workflow.find('- name: Reset, migrate and seed the integration database')
+    assert reset_step_start != -1, "Reset step not found"
+    reset_step_end = workflow.find('- name:', reset_step_start + 1)
+    if reset_step_end == -1:
+        reset_step = workflow[reset_step_start:]
+    else:
+        reset_step = workflow[reset_step_start:reset_step_end]
+    assert "ALLOW_DATABASE_RESET=true" in reset_step, "ALLOW_DATABASE_RESET=true not in reset step"
+    assert "DEPLOY_ENV=integration" in reset_step, "DEPLOY_ENV=integration not in reset step"
+
+
+def test_validate_checkout_pins_specific_sha():
+    # Invariant 3: the deploy job must check out the exact SHA that validate
+    # selected, never re-resolve the tag (which could change between validate and
+    # deploy, creating a force-push race). The checkout must use
+    # needs.validate.outputs.head_sha, and inputs.review_tag must not appear
+    # anywhere in the deploy job.
+    workflow = _template("deploy-integration.yml")
+    deploy_block = workflow.split("deploy:", 1)[1]
+    # Find the checkout step in deploy and verify it references head_sha
+    assert "needs.validate.outputs.head_sha" in deploy_block, (
+        "deploy job checkout must reference needs.validate.outputs.head_sha"
+    )
+    assert "inputs.review_tag" not in deploy_block, (
+        "deploy job must not reference inputs.review_tag (would re-resolve the tag)"
+    )
 
 
 def test_marker_lives_outside_the_dropped_schema():
@@ -295,5 +321,12 @@ def test_integration_images_are_tagged_by_pr_and_sha():
     # in `:latest` -- that is a secret version, not an image tag, and asserting
     # on a bare ":latest" would conflate the two.
     workflow = _template("deploy-integration.yml")
-    assert "integration-pr-" in workflow
-    assert "/app:latest" not in workflow
+    # Find the IMAGE= assignment line specifically
+    for line in workflow.splitlines():
+        if 'IMAGE="' in line and '${AR_REGION}-docker.pkg.dev' in line:
+            assert "integration-pr-" in line, f"integration-pr- not in IMAGE line: {line}"
+            assert "${SHORT_SHA}" in line, f"SHORT_SHA not in IMAGE line: {line}"
+            assert not line.rstrip().endswith(":latest"), f"IMAGE line ends in :latest: {line}"
+            break
+    else:
+        raise AssertionError("IMAGE= assignment line not found")
