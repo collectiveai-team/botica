@@ -1,0 +1,159 @@
+name: Deploy
+
+on:
+  push:
+    branches: [{{DEV_BRANCH}}, {{PROD_BRANCH}}]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy (must match the branch you run from)"
+        type: choice
+        options: [dev, prod]
+        required: true
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  # Never cancel. Migrations run as a Cloud Run Job; `jobs execute --wait` only
+  # waits on work GCP runs independently, so cancelling this runner would start a
+  # second migration alongside the first, which is still running.
+  cancel-in-progress: false
+
+env:
+  REGION: {{REGION}}
+  AR_REPO: {{AR_REPO}}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+    permissions:
+      id-token: write
+      contents: read
+    # Bound to the checked-out ref, never to a dispatch input. An input-selected
+    # environment would hand production secrets to anyone who can press Run.
+    environment: ${{ github.ref_name == '{{DEV_BRANCH}}' && 'dev' || github.ref_name == '{{PROD_BRANCH}}' && 'prod' || 'invalid' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate deployment target
+        id: env
+        env:
+          REQUESTED_ENVIRONMENT: ${{ inputs.environment || '' }}
+        run: |
+          set -euo pipefail
+          [[ "$GCP_PROJECT_ID" =~ ^[a-z0-9-]+$ ]] ||
+            { echo "GCP_PROJECT_ID is malformed" >&2; exit 1; }
+
+          # The input may only agree with the ref. It can never choose.
+          case "${{ github.event_name }}:$GITHUB_REF_NAME:$REQUESTED_ENVIRONMENT" in
+            push:{{DEV_BRANCH}}:|workflow_dispatch:{{DEV_BRANCH}}:dev) ENV=dev ;;
+            push:{{PROD_BRANCH}}:|workflow_dispatch:{{PROD_BRANCH}}:prod) ENV=prod ;;
+            *)
+              echo "Deployments require {{DEV_BRANCH}} -> dev or {{PROD_BRANCH}} -> prod;" \
+                   "received ref $GITHUB_REF_NAME and environment ${REQUESTED_ENVIRONMENT:-none}" >&2
+              exit 1
+              ;;
+          esac
+
+          echo "env=$ENV" >> "$GITHUB_OUTPUT"
+          echo "runtime_sa=${AR_REPO}-runtime-${ENV}" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: access_token
+          create_credentials_file: true
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: {{AR_REPO}}-deployer@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Log in to Artifact Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGION }}-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Build and push the image
+        run: |
+          set -euo pipefail
+          ENV="${{ steps.env.outputs.env }}"
+          IMAGE="${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${AR_REPO}/app:${ENV}-${{ steps.env.outputs.sha }}"
+          docker build -f deploy/Dockerfile -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Sync secrets to Secret Manager
+        env:
+          {{SECRET_ENV_BLOCK}}
+        run: |
+          set -euo pipefail
+          ENV="${{ steps.env.outputs.env }}"
+          sync_secret() {
+            local name="$1" value="$2"
+            if [[ -z "$value" ]]; then
+              echo "refusing to sync empty value into ${name}" >&2
+              exit 1
+            fi
+            printf '%s' "$value" | gcloud secrets versions add "$name" \
+              --data-file=- --project "$GCP_PROJECT_ID"
+          }
+          {{SYNC_SECRET_CALLS}}
+
+      - name: Run migrations
+        run: |
+          set -euo pipefail
+          ENV="${{ steps.env.outputs.env }}"
+          gcloud run jobs deploy "migrate-${ENV}" \
+            --image "$IMAGE" \
+            --region "$REGION" \
+            --project "$GCP_PROJECT_ID" \
+            --service-account "${{ steps.env.outputs.runtime_sa }}@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
+            --command {{MIGRATE_ENTRYPOINT}} \
+            --max-retries 0 \
+            --set-secrets "{{MIGRATE_SECRETS}}"
+          gcloud run jobs execute "migrate-${ENV}" \
+            --region "$REGION" --project "$GCP_PROJECT_ID" --wait
+
+      - name: Deploy the service
+        id: service
+        run: |
+          set -euo pipefail
+          ENV="${{ steps.env.outputs.env }}"
+          gcloud run deploy "${AR_REPO}-${ENV}" \
+            --image "$IMAGE" \
+            --region "$REGION" \
+            --project "$GCP_PROJECT_ID" \
+            --allow-unauthenticated \
+            --service-account "${{ steps.env.outputs.runtime_sa }}@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
+            --cpu 1 --memory 1Gi --min 0 --max {{MAX_INSTANCES}} \
+            --set-env-vars "DEPLOY_ENV=${ENV}" \
+            --set-secrets "{{RUNTIME_SECRETS}}"
+          URL="$(gcloud run services describe "${AR_REPO}-${ENV}" \
+            --region "$REGION" --project "$GCP_PROJECT_ID" --format 'value(status.url)')"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test
+        env:
+          URL: ${{ steps.service.outputs.url }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 30 "${URL}{{HEALTH_PATH}}" >/dev/null
+
+      - name: Summary
+        run: |
+          {
+            echo "## Deploy summary"
+            echo "- environment: ${{ steps.env.outputs.env }}"
+            echo "- url: ${{ steps.service.outputs.url }}"
+            echo "- commit: ${{ steps.env.outputs.sha }}"
+          } >> "$GITHUB_STEP_SUMMARY"

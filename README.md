@@ -202,7 +202,7 @@ Instead of running the CLI:
 
 ```bash
 npx skills add 'mattpocock/skills#v1.2.3' --agent opencode --yes --skill grill-with-docs triage improve-codebase-architecture setup-matt-pocock-skills to-spec to-tickets implement wayfinder prototype diagnosing-bugs research tdd domain-modeling codebase-design code-review resolving-merge-conflicts wizard grill-me teach writing-for-agents grilling wait-what
-npx skills add collectiveai-team/scaffolding --agent opencode --yes --skill ask-user journalist handoff test-smell-review unattended-issue-driver
+npx skills add collectiveai-team/scaffolding --agent opencode --yes --skill ask-user journalist handoff test-smell-review unattended-issue-driver cloud-run-continuous-deploy
 npx skills add dmno-dev/varlock --agent opencode --yes
 ```
 
@@ -211,7 +211,7 @@ is silently parsed as a skill-name filter, and an unpinned install tracks the
 upstream default branch. Bump the tag in `scaffolding/skills.py`, never here.
 
 From a local checkout, install local skills with
-`npx skills add . --agent opencode --yes --skill ask-user journalist handoff test-smell-review unattended-issue-driver --full-depth`.
+`npx skills add . --agent opencode --yes --skill ask-user journalist handoff test-smell-review unattended-issue-driver cloud-run-continuous-deploy --full-depth`.
 
 ## Upstream skills from Matt Pocock
 
@@ -254,6 +254,9 @@ repo's own `skills/`, not in `.agents/skills`.
   labelled GitHub issues, builds them with `orq-lite` and opens PRs, using issue labels as
   both the state machine and the mutual-exclusion lock. Ships the driver prompt, an
   installer, and the failure modes the design exists to prevent.
+- `skills/delivery/cloud-run-continuous-deploy` — prepare a docker-compose repo for
+  continuous deployment to Cloud Run: dev on merge to `dev`, prod on merge to `main`,
+  and a resettable integration environment deployed from an immutable PR review tag.
 - `docs/engineering-standards.md` — **CES (Collective Engineering Standard)**: how house
   rules are coded, cited (`CES-<issue#>` + slug), and shipped. Single source of truth,
   referenced by `AGENTS.md`.

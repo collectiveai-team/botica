@@ -58,6 +58,7 @@ Every option except Continue replaces the session with a summary of it, which is
 - `/wait-what`: re-pitch the last message when it did not land. Usable mid-conversation inside any other skill.
 - `/journalist`: record or search session notes under `.journals/`.
 - `/unattended-issue-driver`: stand up, or debug, a scheduled agent that builds labelled issues on its own and opens PRs. Reach for it when an automation claims the wrong work, loops on one issue, or hangs without launching.
+- `/cloud-run-continuous-deploy`: wire a repo with a `docker-compose.yml` to Google Cloud Run, with separate dev, prod and review-tag environments. Reach for it when a deploy hands credentials to an untrusted ref, when review deployments can reach production data, or when secrets need to get into GitHub Environments without an agent seeing them.
 
 ## Precondition
 

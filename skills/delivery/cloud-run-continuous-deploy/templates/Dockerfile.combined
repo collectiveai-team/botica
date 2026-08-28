@@ -1,0 +1,34 @@
+# Single container: every HTTP service plus nginx on Cloud Run's $PORT.
+# Build from the repository root: docker build -f deploy/Dockerfile .
+
+FROM {{API_BASE_IMAGE}} AS api-build
+WORKDIR /src/api
+COPY {{API_CONTEXT}}/ ./
+RUN {{API_BUILD_COMMAND}}
+
+FROM {{WEB_BASE_IMAGE}} AS web-build
+WORKDIR /src/web
+COPY {{WEB_CONTEXT}}/ ./
+RUN {{WEB_BUILD_COMMAND}}
+
+FROM {{RUNTIME_BASE_IMAGE}}
+
+# bash for `wait -n` in the entrypoint, gettext for envsubst, nginx for routing.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends bash gettext-base nginx curl \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY --from=api-build /src/api /app/api
+COPY --from=web-build /src/web /app/web
+
+COPY deploy/nginx.conf /etc/nginx/templates/default.conf.template
+COPY deploy/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh \
+ && rm -f /etc/nginx/sites-enabled/default
+
+# Cloud Run injects PORT; 8080 is only the local default.
+ENV PORT=8080
+EXPOSE 8080
+
+ENTRYPOINT ["/app/entrypoint.sh"]
