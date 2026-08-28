@@ -57,6 +57,7 @@ Every option except Continue replaces the session with a summary of it, which is
 - `/wizard`: turn a procedure only a human can perform — provisioning, credentials, CI secrets, clicking through a third-party dashboard, a one-off migration — into an interactive script that walks them through it. Not for steps an agent can perform itself.
 - `/wait-what`: re-pitch the last message when it did not land. Usable mid-conversation inside any other skill.
 - `/journalist`: record or search session notes under `.journals/`.
+- `/unattended-issue-driver`: stand up, or debug, a scheduled agent that builds labelled issues on its own and opens PRs. Reach for it when an automation claims the wrong work, loops on one issue, or hangs without launching.
 
 ## Precondition
 

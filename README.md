@@ -202,7 +202,7 @@ Instead of running the CLI:
 
 ```bash
 npx skills add 'mattpocock/skills#v1.2.3' --agent opencode --yes --skill grill-with-docs triage improve-codebase-architecture setup-matt-pocock-skills to-spec to-tickets implement wayfinder prototype diagnosing-bugs research tdd domain-modeling codebase-design code-review resolving-merge-conflicts wizard grill-me teach writing-for-agents grilling wait-what
-npx skills add collectiveai-team/scaffolding --agent opencode --yes --skill ask-user journalist handoff test-smell-review
+npx skills add collectiveai-team/scaffolding --agent opencode --yes --skill ask-user journalist handoff test-smell-review unattended-issue-driver
 npx skills add dmno-dev/varlock --agent opencode --yes
 ```
 
@@ -211,7 +211,7 @@ is silently parsed as a skill-name filter, and an unpinned install tracks the
 upstream default branch. Bump the tag in `scaffolding/skills.py`, never here.
 
 From a local checkout, install local skills with
-`npx skills add . --agent opencode --yes --skill ask-user journalist handoff test-smell-review --full-depth`.
+`npx skills add . --agent opencode --yes --skill ask-user journalist handoff test-smell-review unattended-issue-driver --full-depth`.
 
 ## Upstream skills from Matt Pocock
 
@@ -250,6 +250,10 @@ repo's own `skills/`, not in `.agents/skills`.
 - `skills/quality/test-smell-review` — review tests for false-green smells (pass without
   protecting anything) using an in-context judgment protocol, adapted from
   `falsegreen-skill` without its external LLM-CLI dependency.
+- `skills/productivity/unattended-issue-driver` — schedule an Orca automation that picks up
+  labelled GitHub issues, builds them with `orq-lite` and opens PRs, using issue labels as
+  both the state machine and the mutual-exclusion lock. Ships the driver prompt, an
+  installer, and the failure modes the design exists to prevent.
 - `docs/engineering-standards.md` — **CES (Collective Engineering Standard)**: how house
   rules are coded, cited (`CES-<issue#>` + slug), and shipped. Single source of truth,
   referenced by `AGENTS.md`.
