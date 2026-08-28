@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -208,9 +209,28 @@ def _check_env_ignored(root: Path) -> CheckResult:
     return CheckResult(".env ignored", ok, "ignored" if ok else ".env is not gitignored")
 
 
+def _prek_hook_ids(prek: Path) -> set[str]:
+    """Every hook `id` declared in a prek config, or empty if it cannot be parsed."""
+    try:
+        config = tomllib.loads(prek.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return set()
+    ids: set[str] = set()
+    for repo in config.get("repos", []):
+        if not isinstance(repo, dict):
+            continue
+        for hook in repo.get("hooks", []):
+            if isinstance(hook, dict) and isinstance(hook.get("id"), str):
+                ids.add(hook["id"])
+    return ids
+
+
 def _check_astgrep(root: Path) -> CheckResult | None:
     prek = root / "prek.toml"
-    prek_has_astgrep = prek.exists() and "ast-grep" in prek.read_text(encoding="utf-8")
+    # Parse the config instead of substring-matching the file: the generic template
+    # mentions "ast-grep" in a *comment* on the jscpd hook, which made every repo
+    # without an ast-grep hook fail this check demanding an sgconfig.yml it never needed.
+    prek_has_astgrep = prek.exists() and "ast-grep" in _prek_hook_ids(prek)
     if not prek_has_astgrep:
         return None
     rules_dir = root / "ast-grep" / "rules"
