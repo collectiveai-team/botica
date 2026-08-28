@@ -1,6 +1,6 @@
 ---
 name: engineering-refactor
-description: Refactor a codebase toward the house engineering style, project shape, tests, and deep-module architecture. Use when the user asks to adapt a repo to these styles or practices, clean up architecture, modernize a Python project, or refactor existing code for maintainability.
+description: Restructure modules, consolidate shallow wrappers, align package layout, and add tests at module interfaces to move a codebase toward the house stack (uv + ruff + pyrefly) and deep-module architecture. Use when the user asks to refactor, restructure, reorganize, clean up architecture, tidy up code, modernize a Python project, or adapt a repo to these practices.
 ---
 
 # Engineering Refactor
