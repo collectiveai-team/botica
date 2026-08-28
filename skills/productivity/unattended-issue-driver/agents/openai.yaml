@@ -1,0 +1,3 @@
+interface:
+  display_name: "Unattended Issue Driver"
+  short_description: "Schedule an agent to build labelled issues and open PRs"

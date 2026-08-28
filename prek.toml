@@ -27,9 +27,16 @@ id = "check-toml"
 priority = 0
 
 # MARK: check-yaml
+# Skill template payload is excluded: files under `skills/*/*/templates/` ship as text
+# carrying `{{PLACEHOLDER}}` markers that a skill substitutes when it generates the real
+# workflow, and `key: {{VALUE}}` is not parseable YAML until then (`{{` opens a flow
+# mapping). They are templates for YAML, not YAML — the same bundled-payload rationale
+# already used for the `scaffolding/templates/**` excludes on ruff/pyrefly/deptry/jscpd.
+# Scoped to that one directory so real workflows anywhere else stay checked.
 [[repos.hooks]]
 id = "check-yaml"
 args = ["--unsafe"]
+exclude = "^skills/[^/]+/[^/]+/templates/.*\\.ya?ml$"
 priority = 0
 
 # MARK: end-of-file-fixer
@@ -154,12 +161,18 @@ types = ["python"]
 priority = 2
 
 # MARK: jscpd
-# CES-118: copy-pasted (near-verbatim) code blocks above a token threshold. Two deliberate
+# CES-118: copy-pasted (near-verbatim) code blocks above a token threshold. Three deliberate
 # exemptions, not accidental duplication: `guide.md` mirrors README.md's bootstrap instructions
-# for the agentic-install flow (see AGENTS.md repo-layout notes), and `scaffolding/templates/**`
+# for the agentic-install flow (see AGENTS.md repo-layout notes); `scaffolding/templates/**`
 # is the source-of-truth template payload this repo's own dogfooded config/docs are copied
 # *from* — comparing the two is comparing a template to its own intended output, same rationale
-# already used for the ruff/pyrefly/deptry excludes on that path. Threshold calibrated to this
+# already used for the ruff/pyrefly/deptry excludes on that path; and `docs/superpowers/plans/**`
+# holds implementation plans, which are required to embed the complete, placeholder-free content
+# of every file they specify, so a plan necessarily mirrors the artifacts later produced from it —
+# the same template-vs-its-own-output case again, in the other direction. Measured: the cloud-run
+# plan alone accounted for 44 of 67 clones and ~1.9k of 2.1k duplicated lines; exempting only that
+# path takes the repo from 6.7% to 1.33% and leaves the remaining test-fixture repetition visible
+# above the baseline rather than masked. Threshold calibrated to this
 # repo's current baseline (~1.9%, mostly tests/test_engine.py fixture-style repetition); tighten
 # as that gets refactored, per the "flag, don't silently exempt" posture in CES-71. `--threshold`
 # alone is the gate; jscpd v5's separate `--exit-code` flag fails on ANY clone regardless of
@@ -167,7 +180,7 @@ priority = 2
 [[repos.hooks]]
 id = "jscpd"
 name = "jscpd (copy-paste duplication)"
-entry = "npx --yes jscpd@5 . --threshold 2.5 --ignore \"guide.md,scaffolding/templates/**\""
+entry = "npx --yes jscpd@5 . --threshold 2.5 --ignore \"guide.md,scaffolding/templates/**,docs/superpowers/plans/**\""
 language = "system"
 pass_filenames = false
 priority = 2

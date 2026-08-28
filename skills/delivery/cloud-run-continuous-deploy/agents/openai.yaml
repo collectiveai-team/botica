@@ -1,0 +1,3 @@
+interface:
+  display_name: "Cloud Run Continuous Deploy"
+  short_description: "Wire a docker-compose repo to Cloud Run with dev, prod and review environments"
