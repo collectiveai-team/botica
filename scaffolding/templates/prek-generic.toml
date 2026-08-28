@@ -82,10 +82,23 @@ stages = ["commit-msg"]
 # here rather than the Python-only hooks. Respects .gitignore by default. `--threshold` alone is
 # the gate (fails only over the percentage); jscpd v5's separate `--exit-code` flag fails on ANY
 # clone found regardless of threshold — do not combine the two or the threshold becomes inert.
+#
+# --ignore covers generated lockfiles. .gitignore is not enough for these: a lockfile is
+# *tracked*, so jscpd reads it, and it is large and highly repetitive — a 16k-line
+# pnpm-lock.yaml can outweigh the entire first-party source and make the percentage a
+# measure of the lockfile rather than of the code the hook exists to police.
+#
+# CALIBRATE --threshold BEFORE ENABLING THIS. 1 is a floor for a greenfield repo, not a
+# universal default: measure the repo first (`npx --yes jscpd@5 .`) and set the threshold
+# just above the number you get, as a ratchet to tighten later. jscpd gates on the
+# *duplicated lines* percentage, not tokens. This repo's own hook is a worked example —
+# `--threshold 2.5` with its own `--ignore` list, calibrated to a ~1.9% baseline. Shipping
+# an uncalibrated 1 to an existing codebase fails the hook on the first commit, and the
+# only fixes then are a real refactor or a threshold nobody chose deliberately.
 [[repos.hooks]]
 id = "jscpd"
 name = "jscpd (copy-paste duplication)"
-entry = "npx --yes jscpd@5 . --threshold 1"
+entry = "npx --yes jscpd@5 . --threshold 1 --ignore \"**/uv.lock,**/poetry.lock,**/Pipfile.lock,**/package-lock.json,**/pnpm-lock.yaml,**/yarn.lock,**/bun.lock,**/bun.lockb,**/Cargo.lock,**/go.sum,**/composer.lock,**/Gemfile.lock\""
 language = "system"
 pass_filenames = false
 priority = 2
