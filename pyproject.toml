@@ -138,6 +138,11 @@ project-excludes = [
   # repos and reference their deps (structlog, pydantic, …), not this tool's env.
   "scaffolding/templates/**/*",
 ]
+# `tests/` is an import root at runtime — pytest's default prepend import mode puts
+# the test file's own directory on sys.path, which is how the cloud-run suites import
+# their shared `cloud_run_support` helpers. Declaring it here makes pyrefly resolve
+# those imports the same way pytest does, instead of only from the repo root.
+search-path = ["tests"]
 use-ignore-files = false
 disable-project-excludes-heuristics = true
 

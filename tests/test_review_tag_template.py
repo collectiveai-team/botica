@@ -22,7 +22,14 @@ def _load():
     import sys
 
     spec = importlib.util.spec_from_file_location("review_tag_template", TEMPLATE)
+    assert spec is not None, f"could not build an import spec for {TEMPLATE}"
+    assert spec.loader is not None, f"import spec for {TEMPLATE} has no loader"
+
     module = importlib.util.module_from_spec(spec)
+    # Registering the module is required, not incidental: review_tag.py uses
+    # `from __future__ import annotations`, so @dataclass resolves its string
+    # annotations through sys.modules[cls.__module__]. exec_module alone does
+    # not register it, and the dataclass then fails to build.
     sys.modules["review_tag_template"] = module
     spec.loader.exec_module(module)
     return module

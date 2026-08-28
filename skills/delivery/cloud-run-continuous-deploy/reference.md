@@ -1,8 +1,11 @@
 # Reference: the twelve invariants
 
 Each one guards a specific failure. The templates encode them; a template edit
-that drops one is a bug, and `tests/test_cloud_run_deploy_skill.py` in the
-scaffolding repo fails when it happens.
+that drops one is a bug, and the `tests/test_cloud_run_*.py` suites in the
+scaffolding repo fail when it happens — `test_cloud_run_deploy_skill.py` for the
+workflows, `test_cloud_run_bootstrap.py` for the GCP bootstrap, and
+`test_cloud_run_container.py` for the single-container assets, over shared
+helpers in `tests/cloud_run_support.py`.
 
 ## 1. An untrusted ref never receives a credential
 
