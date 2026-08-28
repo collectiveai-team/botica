@@ -164,11 +164,18 @@ priority = 2
 # concatenation of that skill's own `rules/*.md`, so every clone it reports is the artifact
 # matching its source. It is the *only* engineering-skill file exempted — the rules themselves
 # are scanned, which is what caught the two skills shipping byte-identical bundles.
-# Threshold calibrated to this repo's current baseline (~1.9%, mostly tests/test_engine.py
-# fixture-style repetition); tighten as that gets refactored, per the "flag, don't silently
-# exempt" posture in CES-71. `--threshold` alone is the gate; jscpd v5's separate `--exit-code`
-# flag fails on ANY clone regardless of threshold — do not combine the two or the threshold
-# becomes inert.
+# The gate reads the **duplicated-lines** percentage, not the token one. jscpd prints both
+# per language and in the Total row, and they diverge widely — the run that failed this branch
+# reported 34.75% of lines against 67.83% of tokens, and the error text quoted 34.8%. Read the
+# lines column when judging headroom, or the margin looks several times tighter than it is.
+# Threshold calibrated to this repo's baseline (~1.9%, mostly tests/test_engine.py fixture-style
+# repetition); tighten as that gets refactored, per the "flag, don't silently exempt" posture in
+# CES-71. The 70 rule files under engineering-rules share a rigid Prefer/Avoid/Reference
+# skeleton, but it does not clone: the headers sit under jscpd's minimum clone size, so markdown
+# contributes 0.51% of lines. Growing the ruleset adds far more unique lines than duplicated
+# ones, so it dilutes the ratio rather than raising it — the "tighten over time" posture holds.
+# `--threshold` alone is the gate; jscpd v5's separate `--exit-code` flag fails on ANY clone
+# regardless of threshold — do not combine the two or the threshold becomes inert.
 [[repos.hooks]]
 id = "jscpd"
 name = "jscpd (copy-paste duplication)"

@@ -49,6 +49,12 @@ logger.info(f"processing {item_id}")                      # a string, not a quer
 Rich remains the house presentation layer for CLI output (`pylayout-cli-typer-rich`); it is
 not the logging handler.
 
-Reference: the canonical factory ships as a drop-in snippet, `.agents/snippets/core/logger.py`
-(CES-74 · `core-logger`), which `log-get-logger` (CES-45) and `log-no-print` (CES-46) point at.
-See also `log-observability` (Logfire layer added on top for production services).
+In a repo scaffolded by `collectiveai-team/scaffolding`, the canonical factory ships as a
+drop-in snippet you copy to `<your_package>/core/logger.py` (CES-74 · `core-logger`, which
+CES-45 and CES-46 point at). Anywhere else, build the equivalent: configure structlog once,
+lazily, on the first `get_logger` call — JSON renderer under `ENV=prod`/`production`, console
+renderer otherwise, level from `LOG_LEVEL`. Keep that contract even if the import path differs,
+because the rest of these rules assume it.
+
+See also `log-no-print` (libraries log, they don't print) and `log-observability` (Logfire layer
+added on top for production services).

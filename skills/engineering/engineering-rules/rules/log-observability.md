@@ -47,7 +47,9 @@ from prefect import flow, get_run_logger
 @flow
 async def my_flow(doc_id: str) -> None:
     logger = get_run_logger()
-    logger.info(f"Starting flow for doc {doc_id}")
+    # get_run_logger() returns a stdlib Logger, not the house structlog one —
+    # use %s interpolation, not an f-string (ruff G004).
+    logger.info("Starting flow for doc %s", doc_id)
 ```
 
 **Avoid:**

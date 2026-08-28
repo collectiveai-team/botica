@@ -40,7 +40,7 @@ through prek, line 100, latest Python.
 - `pylayout-meta-slice` — `meta/` holds ABC interfaces + Pydantic domain models
 - `pylayout-adapters-slices` — concrete implementations live in sibling slices, not in meta/
 - `pylayout-pydantic-v2` — Pydantic v2 for domain data; pydantic-settings for app config
-- `pylayout-cli-typer-rich` — Typer + Rich for CLI entrypoints
+- `pylayout-cli-typer-rich` — a typed CLI framework (Typer/Cyclopts) + Rich for entrypoints
 - `pylayout-src-layout` — use src/ only if the repo already does; avoid double-nesting
 
 ## 4. Architecture: Deep Modules (arch)

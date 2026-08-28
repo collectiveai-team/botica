@@ -565,14 +565,21 @@ exposes a service or CLI.
 <!-- rule: pylayout-cli-typer-rich -->
 *scope: general · applies-to: all · status: current*
 
-### CLI entrypoints use Typer + Rich; libraries log instead of printing
+### CLI entrypoints use a typed framework + Rich; libraries log instead of printing
 
-User-facing command-line entrypoints are built with `Typer` (argument parsing) and
-`Rich` (output formatting). Libraries and services never write to stdout directly —
-they log via the logger. This keeps library output invisible to callers unless they
-configure a log handler.
+User-facing command-line entrypoints are built with a **typed, declarative framework**
+paired with `Rich` for output. What is flagged is manual, imperative argument plumbing —
+`argparse`, `click`, raw `sys.argv` — not the choice of framework.
 
-**Prefer (CLI entrypoint):**
+`Typer` and `Cyclopts` are both house-approved; `pydantic-settings` covers the
+config-shaped cases. Cyclopts derives commands from plain signatures and needs no
+decorator on every parameter, so it suits a CLI whose arguments are already typed.
+Follow whichever the repo already uses.
+
+Libraries and services never write to stdout directly — they log via the house logger.
+This keeps library output invisible to callers unless they configure a handler.
+
+**Prefer (CLI entrypoint, Typer):**
 
 ```python
 import typer
@@ -587,15 +594,30 @@ def stream_audio(host: str = "localhost", port: int = 8765) -> None:
     ...
 ```
 
+**Prefer (CLI entrypoint, Cyclopts):**
+
+```python
+from cyclopts import App
+from rich.console import Console
+
+app = App()
+console = Console()
+
+@app.command
+def stream_audio(host: str = "localhost", port: int = 8765) -> None:
+    console.print(f"[green]Connecting to {host}:{port}[/green]")
+    ...
+```
+
 **Prefer (library code):**
 
 ```python
-import logging
+from mypackage.core.logger import get_logger
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 def encode(text: str) -> list[float]:
-    log.debug("encoding text", extra={"length": len(text)})
+    log.debug("text_encoding_started", length=len(text))
     ...
 ```
 
@@ -606,9 +628,14 @@ def encode(text: str) -> list[float]:
 def encode(text: str) -> list[float]:
     print(f"Encoding: {text[:50]}")   # don't do this in library code
     ...
+
+## Imperative argument plumbing in an entrypoint
+import sys
+host = sys.argv[1] if len(sys.argv) > 1 else "localhost"
 ```
 
-Cross-ref: `log-no-print` for the logging rule on why libraries must not print.
+Cross-ref: `log-no-print` for the logging rule on why libraries must not print;
+`log-get-logger-structlog` for the factory `get_logger` comes from.
 
 <!-- rule: pylayout-src-layout -->
 *scope: general · applies-to: all · status: current*
@@ -1274,9 +1301,15 @@ logger.info(f"processing {item_id}")                      # a string, not a quer
 Rich remains the house presentation layer for CLI output (`pylayout-cli-typer-rich`); it is
 not the logging handler.
 
-Reference: the canonical factory ships as a drop-in snippet, `.agents/snippets/core/logger.py`
-(CES-74 · `core-logger`), which `log-get-logger` (CES-45) and `log-no-print` (CES-46) point at.
-See also `log-observability` (Logfire layer added on top for production services).
+In a repo scaffolded by `collectiveai-team/scaffolding`, the canonical factory ships as a
+drop-in snippet you copy to `<your_package>/core/logger.py` (CES-74 · `core-logger`, which
+CES-45 and CES-46 point at). Anywhere else, build the equivalent: configure structlog once,
+lazily, on the first `get_logger` call — JSON renderer under `ENV=prod`/`production`, console
+renderer otherwise, level from `LOG_LEVEL`. Keep that contract even if the import path differs,
+because the rest of these rules assume it.
+
+See also `log-no-print` (libraries log, they don't print) and `log-observability` (Logfire layer
+added on top for production services).
 
 <!-- rule: log-no-print -->
 *scope: general · applies-to: all · status: current*
@@ -1362,7 +1395,9 @@ from prefect import flow, get_run_logger
 @flow
 async def my_flow(doc_id: str) -> None:
     logger = get_run_logger()
-    logger.info(f"Starting flow for doc {doc_id}")
+    # get_run_logger() returns a stdlib Logger, not the house structlog one —
+    # use %s interpolation, not an f-string (ruff G004).
+    logger.info("Starting flow for doc %s", doc_id)
 ```
 
 **Avoid:**
