@@ -16,7 +16,7 @@ For an idea that needs to ship:
 2. If a design question needs a runnable answer, use `/handoff` to branch into a fresh `/prototype` session, then `/handoff` the findings back.
 3. For work that fits one session, use `/implement` directly. For multi-session work, use `/to-spec`, then `/to-tickets`, and start a fresh `/implement` session for each unblocked ticket.
 
-`/implement` drives `/tdd` at agreed seams and closes with `/code-review`. Use `/tdd` or `/code-review` directly when only that focused workflow is needed. `/test-smell-review` applies whenever tests are written or edited; reach for it directly to audit an existing suite for tests that pass without protecting anything.
+`/implement` drives `/tdd` at agreed seams and closes with `/code-review`. Use `/tdd` or `/code-review` directly when only that focused workflow is needed. Before creating, updating, or marking a PR ready, `/engineering-pr-review` runs the house gate on top of that — the shared rules, the deep-module check, and the large-file/spaghetti check — and reports what it ran. `/test-smell-review` applies whenever tests are written or edited; reach for it directly to audit an existing suite for tests that pass without protecting anything.
 
 Keep grilling, specification, and ticketing in one context window when practical, so each step builds on the same thinking. Between independently implementable tickets, clear context — see Phase Boundaries.
 
@@ -32,6 +32,7 @@ Do not triage tickets produced by `/to-tickets`; they are already agent-ready. D
 
 - Survey a codebase for deepening opportunities: `/improve-codebase-architecture`.
 - Design a chosen module or seam using deep-module vocabulary: `/codebase-design`.
+- Move an existing repo toward the house standard — toolchain, layout, tests, architecture — without bulldozing its local contracts: `/engineering-refactor`.
 - Resolve unclear or overloaded domain terminology: `/domain-modeling`.
 
 ## Phase Boundaries
@@ -57,6 +58,7 @@ Every option except Continue replaces the session with a summary of it, which is
 - `/wizard`: turn a procedure only a human can perform — provisioning, credentials, CI secrets, clicking through a third-party dashboard, a one-off migration — into an interactive script that walks them through it. Not for steps an agent can perform itself.
 - `/wait-what`: re-pitch the last message when it did not land. Usable mid-conversation inside any other skill.
 - `/journalist`: record or search session notes under `.journals/`.
+- `/engineering-rules`: look up what the house engineering standard says about code you are writing. `/engineering-pr-review` and `/engineering-refactor` invoke it; reach for it directly when you only need the rule.
 
 ## Precondition
 

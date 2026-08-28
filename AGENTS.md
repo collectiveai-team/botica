@@ -17,7 +17,9 @@
   `collectiveai-team/scaffolding` on `main`.
 - `guide.md` — the agentic-install guide (judgment layer that drives the CLI and
   handles merges). Keep template raw URLs pointing at `collectiveai-team/scaffolding`.
-- `skills/` — actual installed skills (`ask-user`, `journalist`, `handoff`). Each
+- `skills/` — actual installed skills (`ask-user`, `journalist`, `handoff`,
+  `test-smell-review`, `engineering-rules`, `engineering-pr-review`,
+  `engineering-refactor`). Each
   carries Claude-style `SKILL.md` frontmatter **and** an `agents/openai.yaml`;
   Codex reads only the latter, so `disable-model-invocation: true` must be paired
   with `policy.allow_implicit_invocation: false` (and omitted for model-invoked
@@ -37,14 +39,28 @@ After changing the CLI, validate with `uv run ruff check scaffolding` and
 ## Skill Development
 
 After creating or editing any skill under `skills/`, validate its `SKILL.md`
-before committing:
+before committing. `tessl review run` is a command group, not a command — pick a
+subcommand:
 
 ```bash
-tessl review run <SKILL.md>
+tessl review run security <SKILL.md>   # free
+tessl review run quality  <SKILL.md>   # ~10 credits per run
 ```
 
-Run it against each changed skill (e.g. `tessl review run skills/productivity/journalist/SKILL.md`)
-and resolve the reported issues before publishing. It needs `tessl login`.
+Run both against each changed skill (e.g.
+`tessl review run quality skills/productivity/journalist/SKILL.md`) and resolve the
+reported issues before publishing.
+
+Setup: `tessl login`, plus a workspace (`tessl workspace create <name>`) — a fresh
+account has none and the review fails without one. `tessl org usage` shows the credit
+balance; the free plan carries 1,000 per month. In CI, `TESSL_TOKEN` replaces the
+interactive login.
+
+**The review only reads `SKILL.md` and the `references/`, `scripts/` and `assets/`
+directories.** Anything a skill bundles elsewhere is not sent, and the run says so.
+For a skill whose substance lives outside those paths — `engineering-rules` keeps 70
+rule files under `rules/` — the score covers the `SKILL.md` alone. Read it as a check
+on the entry point, not on the bundle.
 
 The upstream skill catalog (`MATTPOCOCK_SKILLS` in `scaffolding/skills.py`) is
 the single source of truth — `README.md` and `guide.md` only copy it, and

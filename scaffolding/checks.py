@@ -10,7 +10,12 @@ from pathlib import Path
 
 from scaffolding.agent_config import AGENTS_SKILLS_DIR
 from scaffolding.components import AGENTS_MARKER, GITIGNORE_ENTRIES
-from scaffolding.skills import MANIFEST_FILE, installed_names, read_manifest
+from scaffolding.skills import (
+    MANIFEST_FILE,
+    SKILL_DEPENDENCIES,
+    installed_names,
+    read_manifest,
+)
 
 
 @dataclass
@@ -224,6 +229,35 @@ def _check_agents_md(root: Path) -> CheckResult:
     return CheckResult("AGENTS.md section", has, detail)
 
 
+def _check_skill_dependencies(root: Path) -> CheckResult:
+    """Verify every installed skill that delegates has the skill it delegates to.
+
+    The `skills` CLI installs by name with no dependency resolution, so
+    `--skill engineering-pr-review` on its own yields a workflow whose every rule
+    citation resolves to nothing. That failure is silent at install time and only shows
+    up as an agent applying a standard from memory, so it is caught here instead.
+
+    Only *installed* leaves are checked: a repo that wants neither is not missing
+    anything.
+    """
+    installed = set(installed_names(root, AGENTS_SKILLS_DIR))
+    missing = {
+        dep
+        for leaf, dep in SKILL_DEPENDENCIES.items()
+        if leaf in installed and dep not in installed
+    }
+    detail = "ok"
+    if missing:
+        names = " ".join(sorted(missing))
+        pairs = "; ".join(
+            f"{leaf} needs {dep}"
+            for leaf, dep in sorted(SKILL_DEPENDENCIES.items())
+            if dep in missing and leaf in installed
+        )
+        detail = f"{pairs} — run `npx skills add collectiveai-team/scaffolding --skill {names}`"
+    return CheckResult("skill dependencies installed", not missing, detail)
+
+
 def run_checks(root: Path | None = None) -> list[CheckResult]:
     root = root or Path.cwd()
     # Agent config is per-agent and optional: validate whatever is present rather than
@@ -237,6 +271,7 @@ def run_checks(root: Path | None = None) -> list[CheckResult]:
         _check_env_ignored(root),
         _check_astgrep(root),
         *_check_skills_manifest(root),
+        _check_skill_dependencies(root),
         _check_agents_md(root),
     ]
     return [c for c in checks if c is not None]
