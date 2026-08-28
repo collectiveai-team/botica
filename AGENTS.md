@@ -145,8 +145,9 @@ judgment; `[snippet]` ships canonical code under `.agents/snippets/` (in target 
   random, reproducibly-seeded order. → `@.agents/rules/test-order-randomization-pytest-randomly.md`
 - **CES-113 · dependency review on PRs** `[ci]` — `dependency-review-action`, summary-only, not a
   merge gate. → `@.agents/rules/dependency-review-action.md`
-- **CES-118 · no copy-paste duplication** `[prek]` — `jscpd`; `guide.md` exempted (deliberately
-  mirrors `README.md`). → `@.agents/rules/code-duplication-jscpd.md`
+- **CES-118 · no copy-paste duplication** `[prek]` — `jscpd`; `guide.md` (deliberately mirrors
+  `README.md`) and `docs/superpowers/plans/**` (a plan embeds the full content of every file it
+  specifies) exempted. → `@.agents/rules/code-duplication-jscpd.md`
 - **CES-119 · dependency vulnerability scanning** `[ci]` — `osv-scanner` on `uv.lock`; replaces
   the old `pip-audit.yml`. → `@.agents/rules/osv-scanner-replace-pip-audit.md`
 
