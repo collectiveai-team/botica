@@ -27,9 +27,16 @@ id = "check-toml"
 priority = 0
 
 # MARK: check-yaml
+# Skill template payload is excluded: files under `skills/*/*/templates/` ship as text
+# carrying `{{PLACEHOLDER}}` markers that a skill substitutes when it generates the real
+# workflow, and `key: {{VALUE}}` is not parseable YAML until then (`{{` opens a flow
+# mapping). They are templates for YAML, not YAML — the same bundled-payload rationale
+# already used for the `scaffolding/templates/**` excludes on ruff/pyrefly/deptry/jscpd.
+# Scoped to that one directory so real workflows anywhere else stay checked.
 [[repos.hooks]]
 id = "check-yaml"
 args = ["--unsafe"]
+exclude = "^skills/[^/]+/[^/]+/templates/.*\\.ya?ml$"
 priority = 0
 
 # MARK: end-of-file-fixer
