@@ -39,7 +39,9 @@ def _doc_revs(path: Path) -> list[str]:
 
 def test_rule_quotes_the_ruff_rev_prek_actually_pins():
     doc_revs = _doc_revs(RULE)
-    assert doc_revs, f"{RULE.name} no longer shows a rev pin — drop this test if that was deliberate"
+    assert doc_revs, (
+        f"{RULE.name} no longer shows a rev pin — drop this test if that was deliberate"
+    )
     expected = _prek_rev(RUFF_HOOK_REPO)
     assert set(doc_revs) == {expected}, (
         f"{RULE.name} teaches rev {sorted(set(doc_revs))}, prek.toml pins {expected!r}. "
