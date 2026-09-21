@@ -27,7 +27,7 @@ dev = [
   # CES-111 (test-order-randomization-pytest-randomly): random, reproducibly-seeded test
   # order on every run — catches state-leaking/order-dependent tests for free.
   "pytest-randomly>=4.1.0",
-  "ruff>=0.16.3",
+  "ruff>=0.16.7",
 ]
 
 # Version derived from git tags (vX.Y.Z) by hatch-vcs.
