@@ -1,9 +1,14 @@
 <p align="center">
-  <img src="assets/logo.png" alt="scaffolding — agent-driven repo bootstrap + recurring skills" style="width:600px; max-width:100%; height:auto;" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-light.svg" />
+    <img src="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-light.svg" alt="Botica: recetas, artilugios y alquimia" width="600" style="max-width:100%; height:auto;" />
+  </picture>
 </p>
 
 <p align="center">
-  <em>Clean-adds-only repo bootstrap CLI — plus a couple of recurring agent skills.</em>
+  <strong><em>Botica: recetas, artilugios y alquimia</em></strong><br />
+  <sub>Recipes and standards for projects: deterministic rules, templates, and design decisions.</sub>
 </p>
 
 <p align="center">
@@ -20,17 +25,20 @@
 
 ---
 
-Personal repo bootstrap + agent skills for opencode / claude-code / codex.
+**botica** is a set of recipes and standards for projects, built for agents
+(opencode / claude-code / codex) and the people working with them:
 
-This repo does two things:
+- **Deterministic rules:** the Collective Engineering Standards (CES), enforced
+  by ast-grep and prek hooks rather than left to judgment.
+- **Templates:** workspace defaults (gitignore, per-agent config, `AGENTS.md`
+  guidance, prek hooks, ast-grep, CI, Varlock secrets) dropped into a repo by a
+  small, clean-adds-only CLI. It runs once per repo, as an *agentic install* or
+  directly. Target one or more agents with `--agent` (repeatable /
+  comma-separated; default `opencode`).
+- **Design decisions:** the reasoning behind the defaults, captured as rule
+  detail files, ADRs, and recurring skills you install once and reuse.
 
-1. **Bootstrap a repo** with my workspace defaults (gitignore, per-agent config,
-   `AGENTS.md` guidance, optional prek hooks, ast-grep, CI, Varlock secrets) via a
-   small Python CLI. This is a one-time-per-repo operation, run as an *agentic
-   install* or directly — not an installed skill. Target one or more agents with
-   `--agent` (repeatable / comma-separated; default `opencode`).
-2. **Ship a couple of recurring skills** (`journalist`, `handoff`) that you
-   install once and use repeatedly.
+The CLI command and Python package are still `scaffolding`.
 
 Most engineering workflow skills I use come from Matt Pocock's
 [`skills`](https://github.com/mattpocock/skills). This repo intentionally does
@@ -113,7 +121,7 @@ pinned (`owner/repo#v1.2.3`), tags are mutable, and the `computedHash` that is
 written is never verified on restore. So it reproduces *which skills, from where,
 at what ref* — not bytes. It is a manifest, not a lock.
 
-The `skills` CLI owns the file; scaffolding reads it and never writes it. Adding a
+The `skills` CLI owns the file; botica reads it and never writes it. Adding a
 skill is `npx skills add`, which records the source, ref and hash actually used.
 
 Two states, and one refusal. A repo **with** a manifest restores from it — it is
@@ -121,7 +129,7 @@ the source of truth, and is never topped up towards the house baseline, so a ski
 you removed stays removed. A repo **without** one gets the baseline seeded, which
 creates it. A manifest that exists but does not parse is deferred, never
 overwritten. If the manifest is gitignored, install offers to un-ignore it — the
-one consent this asks for, since it is the one file the repo owns that scaffolding
+one consent this asks for, since it is the one file the repo owns that botica
 edits.
 
 The baseline it seeds is the curated upstream set from Matt Pocock, pinned to a
