@@ -19,8 +19,9 @@ from scaffolding.settings import Settings
 
 app = App(
     name="scaffolding",
-    help="Deterministic, clean-adds-only repo bootstrap. Existing files are never "
-    "edited or overwritten — merges are deferred to the agentic guide. The one "
+    help="botica. Recipes and standards for projects: deterministic rules, templates, "
+    "and design decisions. Clean-adds only: existing files are never "
+    "edited or overwritten; merges are deferred to the agentic guide. The one "
     "exception is un-ignoring the skills manifest, which is asked for first.",
 )
 

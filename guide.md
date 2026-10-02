@@ -1,6 +1,6 @@
-# Scaffolding — Agentic Install Guide
+# Botica: Agentic Install Guide
 
-This is the judgment layer for the `scaffolding` bootstrap. The deterministic
+This is the judgment layer for the botica bootstrap (CLI command: `scaffolding`). The deterministic
 work (clean-adds, gating, the plan) lives in the CLI; your job as the agent is to
 drive that CLI, surface the decisions the **user** must own, and handle the
 merges the CLI deliberately refuses to do.
@@ -231,7 +231,7 @@ the resolved set. The guarantee is weaker than `uv.lock` — entries carry a `re
 only when the source was pinned (`owner/repo#v1.2.3`), tags are mutable, and
 `computedHash` is written but never verified on restore. Call it a manifest.
 
-**The `skills` CLI owns this file. Never write it from scaffolding, and never
+**The `skills` CLI owns this file. Never write it from botica, and never
 hand-edit it.** Re-serialising it drops `ref`, `skillPath` and `computedHash`;
 upstream notes that losing `skillPath` alone makes `update` refetch every skill in
 the source repo. Adding a skill is `npx skills add`.

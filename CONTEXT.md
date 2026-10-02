@@ -1,4 +1,4 @@
-# Scaffolding
+# Botica
 
 The bootstrap CLI that installs house standards, agent config, and agent skills into a target
 repo. It is deterministic and clean-adds-only: it decides what a repo needs, then adds what is
@@ -46,7 +46,7 @@ why an upstream rename removed a skill from every fresh install without anyone n
 
 **Skills manifest**:
 `skills-lock.json` — the tracked declaration of which skills a repo uses and where they come
-from. **Owned by the third-party `skills` CLI**: scaffolding reads it and never writes it. It
+from. **Owned by the third-party `skills` CLI**: botica reads it and never writes it. It
 records a `ref` only when the source was pinned, and its `computedHash` is never verified on
 restore, so it reproduces which skills from where at what ref — not bytes.
 _Avoid_: lockfile, skills lock, skill list

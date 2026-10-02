@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# scaffolding — bootstrap shim.
+# botica: bootstrap shim.
 #
 # Ensures `uv` is available, then runs the scaffolding CLI straight from git
 # (no PyPI). All real work lives in the Python package; this shim only exists to

@@ -3,9 +3,9 @@ requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
-name = "scaffolding"
+name = "botica"
 dynamic = ["version"]
-description = "Deterministic, clean-adds-only repo bootstrap CLI (agent-driven)."
+description = "Recipes and standards for projects: deterministic rules, templates, and design decisions."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
