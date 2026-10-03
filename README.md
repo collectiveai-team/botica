@@ -2,12 +2,12 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-dark.svg" />
     <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-light.svg" />
-    <img src="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-light.svg" alt="Botica: recetas, artilugios y alquimia" width="600" style="max-width:100%; height:auto;" />
+    <img src="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-light.svg" alt="Botica: recetas, alquimia y artilugios" width="600" style="max-width:100%; height:auto;" />
   </picture>
 </p>
 
 <p align="center">
-  <strong><em>Botica: recetas, artilugios y alquimia</em></strong><br />
+  <strong><em>Botica: recetas, alquimia y artilugios</em></strong><br />
   <sub>Recipes and standards for projects: deterministic rules, templates, and design decisions.</sub>
 </p>
 
