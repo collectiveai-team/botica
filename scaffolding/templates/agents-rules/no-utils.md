@@ -2,7 +2,7 @@
 
 **Code:** `CES-63` &nbsp;·&nbsp; **Slug:** `no-utils` &nbsp;·&nbsp; **Enforced by:** prek hook
 (filename glob) &nbsp;·&nbsp; **Tracker:**
-[#63](https://github.com/collectiveai-team/scaffolding/issues/63)
+[#63](https://github.com/collectiveai-team/botica/issues/63)
 
 ## Directive
 

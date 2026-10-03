@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/collectiveai-team/scaffolding/releases"><img alt="Release" src="https://img.shields.io/github/v/release/collectiveai-team/scaffolding?logo=github" /></a>
+  <a href="https://github.com/collectiveai-team/botica/releases"><img alt="Release" src="https://img.shields.io/github/v/release/collectiveai-team/botica?logo=github" /></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white" alt="Python 3.11+"></a>
   <a href="https://opencode.ai/"><img src="https://img.shields.io/badge/Agents-opencode%20%C2%B7%20claude--code%20%C2%B7%20codex-1d1d1d?logo=anthropic&logoColor=white" alt="opencode · claude-code · codex"></a>
   <a href="https://docs.astral.sh/uv/"><img src="https://img.shields.io/badge/Install-uvx%20%C2%B7%20curl-261230?logo=astral&logoColor=white" alt="Install via uvx or curl" /></a>
@@ -21,7 +21,7 @@
 
 ---
 
-**Source Code**: [https://github.com/collectiveai-team/scaffolding](https://github.com/collectiveai-team/scaffolding)
+**Source Code**: [https://github.com/collectiveai-team/botica](https://github.com/collectiveai-team/botica)
 
 ---
 
@@ -54,7 +54,7 @@ detection, and per-item conflict resolution. The CLI does the deterministic
 clean-adds; the agent drives it and handles merges. Point your agent at the guide:
 
 > Set up this repo by following the instructions here:
-> `https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/guide.md`
+> `https://raw.githubusercontent.com/collectiveai-team/botica/main/guide.md`
 > Don't summarize it — follow every step.
 
 **New / empty repo (fast path): run the CLI directly.** It does clean adds only
@@ -63,14 +63,14 @@ and refuses to touch existing files, deferring any merge to the agent.
 Straight from git via `uvx` (no PyPI):
 
 ```bash
-uvx --from git+https://github.com/collectiveai-team/scaffolding scaffolding install
+uvx --from git+https://github.com/collectiveai-team/botica scaffolding install
 ```
 
 Or via the bootstrap shim (also installs `uv` if missing — preserves the classic
 one-liner):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/collectiveai-team/botica/main/install.sh | bash
 ```
 
 The installer is idempotent — safe to re-run. Existing files are never edited or
@@ -210,7 +210,7 @@ Instead of running the CLI:
 
 ```bash
 npx skills add 'mattpocock/skills#v1.2.3' --agent opencode --yes --skill grill-with-docs triage improve-codebase-architecture setup-matt-pocock-skills to-spec to-tickets implement wayfinder prototype diagnosing-bugs research tdd domain-modeling codebase-design code-review resolving-merge-conflicts wizard grill-me teach writing-for-agents grilling wait-what
-npx skills add collectiveai-team/scaffolding --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor
+npx skills add collectiveai-team/botica --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor
 npx skills add dmno-dev/varlock --agent opencode --yes
 ```
 

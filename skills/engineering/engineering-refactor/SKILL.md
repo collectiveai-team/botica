@@ -21,7 +21,7 @@ applies to this repo at all.
 
 > If `engineering-rules` is not available, **stop and say so**. Do not refactor from a
 > remembered standard. Install it with
-> `npx skills add collectiveai-team/scaffolding --skill engineering-rules`.
+> `npx skills add collectiveai-team/botica --skill engineering-rules`.
 
 **Follow the local repo over the direction** unless the user explicitly asked to modernize.
 

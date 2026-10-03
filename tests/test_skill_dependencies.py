@@ -85,4 +85,4 @@ def test_names_every_broken_dependent_not_just_the_first(tmp_path: Path):
 def test_remediation_command_installs_the_missing_dependency(tmp_path: Path):
     _install(tmp_path, "engineering-pr-review")
     detail = _result(tmp_path).detail
-    assert "npx skills add collectiveai-team/scaffolding --skill engineering-rules" in detail
+    assert "npx skills add collectiveai-team/botica --skill engineering-rules" in detail

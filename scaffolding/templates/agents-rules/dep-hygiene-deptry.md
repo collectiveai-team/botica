@@ -2,7 +2,7 @@
 
 **Code:** `CES-109` &nbsp;·&nbsp; **Slug:** `dep-hygiene-deptry` &nbsp;·&nbsp; **Enforced by:**
 prek hook &nbsp;·&nbsp; **Tracker:**
-[#109](https://github.com/collectiveai-team/scaffolding/issues/109)
+[#109](https://github.com/collectiveai-team/botica/issues/109)
 
 ## Directive
 

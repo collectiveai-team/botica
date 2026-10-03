@@ -1,7 +1,7 @@
 # CES-16 · architectural vocabulary
 
 **Code:** `CES-16` &nbsp;·&nbsp; **Slug:** `arch-vocabulary` &nbsp;·&nbsp; **Tier:** judgment
-&nbsp;·&nbsp; **Tracker:** [#16](https://github.com/collectiveai-team/scaffolding/issues/16)
+&nbsp;·&nbsp; **Tracker:** [#16](https://github.com/collectiveai-team/botica/issues/16)
 
 ## Directive
 
