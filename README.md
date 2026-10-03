@@ -38,8 +38,6 @@
 - **Design decisions:** the reasoning behind the defaults, captured as rule
   detail files, ADRs, and recurring skills you install once and reuse.
 
-The CLI command and Python package are still `scaffolding`.
-
 Most engineering workflow skills I use come from Matt Pocock's
 [`skills`](https://github.com/mattpocock/skills). This repo intentionally does
 not vendor those; it only contains my own additions.
