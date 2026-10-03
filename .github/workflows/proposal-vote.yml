@@ -74,7 +74,7 @@ jobs:
         contains(github.event.comment.body, '/decline') ||
         contains(github.event.comment.body, '/withdraw')
       )
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       contents: read
       issues: write
@@ -125,7 +125,7 @@ jobs:
   sweep:
     name: lazy-consensus clock
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       contents: read
       issues: write
