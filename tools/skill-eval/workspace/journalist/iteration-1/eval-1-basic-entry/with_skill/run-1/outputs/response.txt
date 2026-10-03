@@ -1,0 +1,8 @@
+Now let's run the index update script and set up `.gitignore`:
+Index generated correctly. Now checking `.gitignore` for `.journals/`:
+Journaled the session:
+
+- **Entry**: `.journals/2026-08-07/2026-08-07_auth-testing_fix-flaky-oauth-login-test/2026-08-07_auth-testing_fix-flaky-oauth-login-test.md`
+- **Topic**: `auth-testing` (new topic)
+- **Summary**: Fixed the flaky `tests/auth_test.py` login test (race condition in OAuth token refresh) by wrapping the refresh call in a retry — landed in `abc1234`. Follow-up noted: audit other call sites for the same race.
+- Rebuilt `.journals/index.md` and added `.journals/` to a new `.gitignore` (none existed before).

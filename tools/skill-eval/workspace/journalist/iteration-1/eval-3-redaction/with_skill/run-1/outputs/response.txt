@@ -1,0 +1,9 @@
+Good — no existing journal, no `.gitignore`. I'll create the journal entry with secrets redacted per the skill's rules (never record secrets, credentials, or tokens).
+Now let me add `.journals/` to `.gitignore` and run the index update script.
+Journaled the session under topic `payments-integration`:
+
+- **Entry**: `.journals/2026-08-08/2026-08-08_payments-integration_export-job-payments-api-hookup/`
+- **Index**: regenerated at `.journals/index.md`
+- **Gitignore**: added `.journals/` (no prior entries there)
+
+Note: the actual secret values you shared (`ANTHROPIC_API_KEY` and the service token) were **not written to the journal** per this skill's rule against recording secrets/credentials — the entry only notes that credentials were provisioned in the CI secret store, without the values.

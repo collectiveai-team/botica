@@ -1,0 +1,14 @@
+{
+  "eval_id": 1,
+  "eval_name": "basic-entry",
+  "prompt": "Journal this session. We fixed a flaky login test in tests/auth_test.py caused by a race condition in the OAuth token refresh. Wrapped the refresh call in a retry so it tolerates the race. The fix landed in commit abc1234. Follow-up: audit other call sites for the same race condition.",
+  "expected_output": "A new journal entry under .journals/<date>/<date>_<topic>_<title>/<date>_<topic>_<title>.md with valid frontmatter (created_at, updated_at, title, topic, brief), a body that preserves the auth_test.py fix and the follow-up, and the journal index regenerated afterwards.",
+  "assertions": [
+    "A file matching the pattern .journals/<date>/<date>_<topic-slug>_<title-slug>/<date>_<topic-slug>_<title-slug>.md was created",
+    "The file's frontmatter contains all five required fields: created_at, updated_at, title, topic, and brief",
+    "created_at and updated_at are valid ISO-8601 timestamps",
+    "topic is lowercase kebab-case (only lowercase letters, digits, and hyphens)",
+    "The entry body preserves the substantive context: the auth_test.py fix, the OAuth token-refresh retry, and the follow-up to audit other call sites",
+    "update_journal_index.py was run after writing the entry (.journals/index.md exists and references the new entry), or the transcript shows the script being invoked"
+  ]
+}

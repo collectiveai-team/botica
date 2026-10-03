@@ -4,6 +4,7 @@ severity: error
 message: "Boundary function returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
 ignores:
   - "skills/**"
+  - "tools/skill-eval/**"
 rule:
   any:
     - pattern: |

@@ -1,0 +1,7 @@
+node_modules/
+.probe/
+
+# Raw per-run fixture copies are redundant with outputs/ (which captures the
+# same created/modified files) and contain a machine-local absolute symlink
+# to the skill directory -- not portable, not meaningful to commit.
+workspace/**/fixture/

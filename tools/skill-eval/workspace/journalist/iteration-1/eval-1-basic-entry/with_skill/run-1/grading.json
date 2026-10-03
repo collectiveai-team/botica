@@ -1,0 +1,57 @@
+{
+  "expectations": [
+    {
+      "text": "A file matching the pattern .journals/<date>/<date>_<topic-slug>_<title-slug>/<date>_<topic-slug>_<title-slug>.md was created",
+      "passed": true,
+      "evidence": "The file `.journals/2026-08-07/2026-08-07_auth-testing_fix-flaky-oauth-login-test/2026-08-07_auth-testing_fix-flaky-oauth-login-test.md` was created, matching the pattern with date=2026-08-07, topic-slug=auth-testing, title-slug=fix-flaky-oauth-login-test."
+    },
+    {
+      "text": "The file's frontmatter contains all five required fields: created_at, updated_at, title, topic, and brief",
+      "passed": true,
+      "evidence": "The frontmatter contains: `created_at: 2026-08-07T00:00:00Z`, `updated_at: 2026-08-07T00:00:00Z`, `title: Fix Flaky OAuth Login Test`, `topic: auth-testing`, and `brief: Fixed a flaky test in tests/auth_test.py caused by a race condition in OAuth token refresh by wrapping the refresh call in a retry. Landed in commit abc1234.`"
+    },
+    {
+      "text": "created_at and updated_at are valid ISO-8601 timestamps",
+      "passed": true,
+      "evidence": "Both fields are set to `2026-08-07T00:00:00Z`, which is valid ISO-8601 format (date T time Z)."
+    },
+    {
+      "text": "topic is lowercase kebab-case (only lowercase letters, digits, and hyphens)",
+      "passed": true,
+      "evidence": "The topic is `auth-testing`, which contains only lowercase letters and a hyphen, matching the kebab-case requirement."
+    },
+    {
+      "text": "The entry body preserves the substantive context: the auth_test.py fix, the OAuth token-refresh retry, and the follow-up to audit other call sites",
+      "passed": true,
+      "evidence": "The body's Notes section states: `tests/auth_test.py had an intermittently failing login test`, `Root cause: a race condition in the OAuth token refresh flow`, `Fix: wrapped the refresh call in a retry so it tolerates the race`, and `Landed in commit abc1234`. The Follow-ups section states: `Audit other call sites for the same OAuth token refresh race condition.`"
+    },
+    {
+      "text": "update_journal_index.py was run after writing the entry (.journals/index.md exists and references the new entry), or the transcript shows the script being invoked",
+      "passed": true,
+      "evidence": "The agent's final response states `Index generated correctly` and `Rebuilt .journals/index.md`. The file `.journals/index.md` exists and references the new entry: `- **2026-08-07** [Fix Flaky OAuth Login Test](.journals/2026-08-07/2026-08-07_auth-testing_fix-flaky-oauth-login-test/2026-08-07_auth-testing_fix-flaky-oauth-login-test.md)`. The tool call summary includes 5 bash calls, consistent with running the index script."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "skill": 1,
+      "bash": 5,
+      "write": 2,
+      "read": 1,
+      "glob": 1
+    },
+    "total_tool_calls": 10,
+    "total_steps": 11,
+    "errors_encountered": 0,
+    "output_chars": 662,
+    "transcript_chars": 31490
+  },
+  "timing": {
+    "total_duration_seconds": 56.06
+  }
+}

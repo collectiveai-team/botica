@@ -1,0 +1,13 @@
+{
+  "eval_id": 4,
+  "eval_name": "update-in-place",
+  "prompt": "Journal this session: we continued the repo-tooling / prek lint config work from earlier today, replacing the plain retry around the ruff invocation with exponential backoff to better absorb prek-cache flakiness under CI load.",
+  "expected_output": "The existing entry at .journals/2026-08-05/2026-08-05_repo-tooling_prek-lint-config/2026-08-05_repo-tooling_prek-lint-config.md is updated in place (updated_at refreshed, created_at preserved, body reflects the exponential-backoff change) rather than a new duplicate entry being created for the same date/topic/title.",
+  "assertions": [
+    "No new/duplicate entry directory or file was created for the 2026-08-05 repo-tooling prek-lint-config entry; exactly one file exists at that path",
+    "created_at in the entry frontmatter is unchanged (still 2026-08-05T14:02:00Z)",
+    "updated_at in the entry frontmatter is refreshed to a timestamp later than created_at, reflecting the update",
+    "The entry body now mentions the exponential backoff replacing the plain retry",
+    "The frontmatter still contains all five required fields: created_at, updated_at, title, topic, and brief"
+  ]
+}

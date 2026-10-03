@@ -1,0 +1,7 @@
+Now update the index entry to reflect the change:
+Journal updated in place for the existing **Repo Tooling → Prek Lint Config** entry (`.journals/2026-08-05/2026-08-05_repo-tooling_prek-lint-config/`):
+
+- Bumped `updated_at` to today.
+- Added a note that the plain retry around the ruff invocation was replaced with exponential backoff to better absorb prek-cache flakiness under CI load.
+- Revised the brief and the open follow-up (now points at tuning backoff parameters instead of "consider backoff," since that's done).
+- Synced the one-liner in `.journals/index.md` to match.

@@ -1,0 +1,10 @@
+There's an existing "Repo Tooling" topic that fits perfectly (CI lint config tooling). Let me gather more context before writing the entry.
+Now let's regenerate the index:
+No `.gitignore` in this fixture directory, so nothing to update there. Journal entry created.
+
+I journaled this session under the existing **Repo Tooling** topic (reused it since it fit):
+
+- `.journals/2026-08-07/2026-08-07_repo-tooling_ruff-lint-scaffolding/2026-08-07_repo-tooling_ruff-lint-scaffolding.md`
+- Regenerated `.journals/index.md`
+
+Entry summary: tightened `prek.toml` so ruff lints the `scaffolding` package, reusing tooling patterns from earlier sessions (consistent with the CES-58 house lint stack).
