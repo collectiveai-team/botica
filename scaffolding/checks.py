@@ -274,7 +274,7 @@ def _check_skill_dependencies(root: Path) -> CheckResult:
             for leaf, dep in sorted(SKILL_DEPENDENCIES.items())
             if dep in missing and leaf in installed
         )
-        detail = f"{pairs} — run `npx skills add collectiveai-team/scaffolding --skill {names}`"
+        detail = f"{pairs} — run `npx skills add collectiveai-team/botica --skill {names}`"
     return CheckResult("skill dependencies installed", not missing, detail)
 
 

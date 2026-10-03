@@ -2,7 +2,7 @@
 
 **Code:** `CES-74` &nbsp;·&nbsp; **Slug:** `core-logger` &nbsp;·&nbsp; **Ships as:** snippet
 (`.agents/snippets/core/logger.py`) &nbsp;·&nbsp; **Tracker:**
-[#74](https://github.com/collectiveai-team/scaffolding/issues/74)
+[#74](https://github.com/collectiveai-team/botica/issues/74)
 
 ## Directive
 

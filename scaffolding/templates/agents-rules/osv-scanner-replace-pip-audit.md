@@ -2,7 +2,7 @@
 
 **Code:** `CES-119` &nbsp;·&nbsp; **Slug:** `osv-scanner-replace-pip-audit` &nbsp;·&nbsp;
 **Enforced by:** CI workflow (`osv-scanner.yml`) &nbsp;·&nbsp; **Tracker:**
-[#119](https://github.com/collectiveai-team/scaffolding/issues/119)
+[#119](https://github.com/collectiveai-team/botica/issues/119)
 
 ## Directive
 

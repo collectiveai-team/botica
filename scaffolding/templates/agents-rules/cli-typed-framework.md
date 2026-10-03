@@ -2,7 +2,7 @@
 
 **Code:** `CES-67` &nbsp;·&nbsp; **Slug:** `cli-typed-framework` &nbsp;·&nbsp; **Enforced by:**
 ast-grep (`warning`) &nbsp;·&nbsp; **Tracker:**
-[#67](https://github.com/collectiveai-team/scaffolding/issues/67)
+[#67](https://github.com/collectiveai-team/botica/issues/67)
 
 ## Directive
 

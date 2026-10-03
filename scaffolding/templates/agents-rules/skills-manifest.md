@@ -2,7 +2,7 @@
 
 **Code:** `CES-107` &nbsp;·&nbsp; **Slug:** `skills-manifest` &nbsp;·&nbsp; **Enforced by:**
 `scaffolding check` &nbsp;·&nbsp; **Tracker:**
-[#107](https://github.com/collectiveai-team/scaffolding/issues/107)
+[#107](https://github.com/collectiveai-team/botica/issues/107)
 
 ## Directive
 
