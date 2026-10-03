@@ -19,7 +19,7 @@ jobs:
     name: tests
     permissions:
       contents: read
-    uses: ./.github/workflows/tests.yml
+    uses: $/.github/workflows/tests.yml
 
   release:
     name: build & github release
