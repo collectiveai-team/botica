@@ -1,6 +1,6 @@
 # Botica: Agentic Install Guide
 
-This is the judgment layer for the botica bootstrap (CLI command: `scaffolding`). The deterministic
+This is the judgment layer for the botica bootstrap. The deterministic
 work (clean-adds, gating, the plan) lives in the CLI; your job as the agent is to
 drive that CLI, surface the decisions the **user** must own, and handle the
 merges the CLI deliberately refuses to do.
