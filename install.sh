@@ -6,7 +6,7 @@
 # (no PyPI). All real work lives in the Python package; this shim only exists to
 # preserve the documented one-liner and to bootstrap uv on a cold machine:
 #
-#   curl -fsSL https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/collectiveai-team/botica/main/install.sh | bash
 #
 # Anything after `--` (or any args) is forwarded to `scaffolding install`, e.g.:
 #
@@ -18,7 +18,7 @@
 set -euo pipefail
 
 REF="${SCAFFOLDING_REF:-main}"
-SRC="git+https://github.com/collectiveai-team/scaffolding@${REF}"
+SRC="git+https://github.com/collectiveai-team/botica@${REF}"
 
 if ! command -v uv >/dev/null 2>&1; then
   echo "uv not found — installing via https://astral.sh/uv ..." >&2

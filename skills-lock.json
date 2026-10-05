@@ -2,7 +2,7 @@
   "version": 1,
   "skills": {
     "ask-user": {
-      "source": "collectiveai-team/scaffolding",
+      "source": "collectiveai-team/botica",
       "sourceType": "github",
       "skillPath": "skills/productivity/ask-user/SKILL.md",
       "computedHash": "0ca670493d421e5b28256e82b418962af01800cadf6a1875f2f044606eaef062"
@@ -50,7 +50,7 @@
       "computedHash": "4ebdd12fe61ff3abf20cff6683740e2b9b3739454be0a3f4a928a1c4d07d6b34"
     },
     "handoff": {
-      "source": "collectiveai-team/scaffolding",
+      "source": "collectiveai-team/botica",
       "sourceType": "github",
       "skillPath": "skills/productivity/handoff/SKILL.md",
       "computedHash": "9b269aac942ffa40f414da2e718a04fe8d4e0ac7bcba1532f06b1e9a29a4fcb8"
@@ -68,7 +68,7 @@
       "computedHash": "bce096b49db40761adb1d5348f064c303fc152e4e50fc3fd81b79df8b6cf137f"
     },
     "journalist": {
-      "source": "collectiveai-team/scaffolding",
+      "source": "collectiveai-team/botica",
       "sourceType": "github",
       "skillPath": "skills/productivity/journalist/SKILL.md",
       "computedHash": "317d40618f06261d034fccd3a92fbdccc07e9f79684f71e4caa82112fc008d64"
@@ -110,7 +110,7 @@
       "computedHash": "68999bb1a241384b2f921f3321d779b7d05eb6089077b70d88cee2aee3d75ccc"
     },
     "test-smell-review": {
-      "source": "collectiveai-team/scaffolding",
+      "source": "collectiveai-team/botica",
       "sourceType": "github",
       "skillPath": "skills/quality/test-smell-review/SKILL.md",
       "computedHash": "40f936997e91bb3320c6bef94818b33a103c0c18c16d846cfb0d0bde6f55f472"

@@ -2,7 +2,7 @@
 
 **Code:** `CES-32` &nbsp;·&nbsp; **Slug:** `repo-shape` &nbsp;·&nbsp; **Enforced by:** prek hook
 (path glob, parametrized) &nbsp;·&nbsp; **Tracker:**
-[#32](https://github.com/collectiveai-team/scaffolding/issues/32)
+[#32](https://github.com/collectiveai-team/botica/issues/32)
 
 ## Directive
 

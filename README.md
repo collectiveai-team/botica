@@ -2,17 +2,17 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-dark.svg" />
     <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-light.svg" />
-    <img src="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-light.svg" alt="Botica: recetas, artilugios y alquimia" width="600" style="max-width:100%; height:auto;" />
+    <img src="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-light.svg" alt="Botica: recetas, alquimia y artilugios" width="600" style="max-width:100%; height:auto;" />
   </picture>
 </p>
 
 <p align="center">
-  <strong><em>Botica: recetas, artilugios y alquimia</em></strong><br />
+  <strong><em>Botica: recetas, alquimia y artilugios</em></strong><br />
   <sub>Recipes and standards for projects: deterministic rules, templates, and design decisions.</sub>
 </p>
 
 <p align="center">
-  <a href="https://github.com/collectiveai-team/scaffolding/releases"><img alt="Release" src="https://img.shields.io/github/v/release/collectiveai-team/scaffolding?logo=github" /></a>
+  <a href="https://github.com/collectiveai-team/botica/releases"><img alt="Release" src="https://img.shields.io/github/v/release/collectiveai-team/botica?logo=github" /></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white" alt="Python 3.11+"></a>
   <a href="https://opencode.ai/"><img src="https://img.shields.io/badge/Agents-opencode%20%C2%B7%20claude--code%20%C2%B7%20codex-1d1d1d?logo=anthropic&logoColor=white" alt="opencode · claude-code · codex"></a>
   <a href="https://docs.astral.sh/uv/"><img src="https://img.shields.io/badge/Install-uvx%20%C2%B7%20curl-261230?logo=astral&logoColor=white" alt="Install via uvx or curl" /></a>
@@ -21,7 +21,7 @@
 
 ---
 
-**Source Code**: [https://github.com/collectiveai-team/scaffolding](https://github.com/collectiveai-team/scaffolding)
+**Source Code**: [https://github.com/collectiveai-team/botica](https://github.com/collectiveai-team/botica)
 
 ---
 
@@ -38,8 +38,6 @@
 - **Design decisions:** the reasoning behind the defaults, captured as rule
   detail files, ADRs, and recurring skills you install once and reuse.
 
-The CLI command and Python package are still `scaffolding`.
-
 Most engineering workflow skills I use come from Matt Pocock's
 [`skills`](https://github.com/mattpocock/skills). This repo intentionally does
 not vendor those; it only contains my own additions.
@@ -54,7 +52,7 @@ detection, and per-item conflict resolution. The CLI does the deterministic
 clean-adds; the agent drives it and handles merges. Point your agent at the guide:
 
 > Set up this repo by following the instructions here:
-> `https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/guide.md`
+> `https://raw.githubusercontent.com/collectiveai-team/botica/main/guide.md`
 > Don't summarize it — follow every step.
 
 **New / empty repo (fast path): run the CLI directly.** It does clean adds only
@@ -63,14 +61,14 @@ and refuses to touch existing files, deferring any merge to the agent.
 Straight from git via `uvx` (no PyPI):
 
 ```bash
-uvx --from git+https://github.com/collectiveai-team/scaffolding scaffolding install
+uvx --from git+https://github.com/collectiveai-team/botica scaffolding install
 ```
 
 Or via the bootstrap shim (also installs `uv` if missing — preserves the classic
 one-liner):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/collectiveai-team/botica/main/install.sh | bash
 ```
 
 The installer is idempotent — safe to re-run. Existing files are never edited or
@@ -210,7 +208,7 @@ Instead of running the CLI:
 
 ```bash
 npx skills add 'mattpocock/skills#v1.2.3' --agent opencode --yes --skill grill-with-docs triage improve-codebase-architecture setup-matt-pocock-skills to-spec to-tickets implement wayfinder prototype diagnosing-bugs research tdd domain-modeling codebase-design code-review resolving-merge-conflicts wizard grill-me teach writing-for-agents grilling wait-what
-npx skills add collectiveai-team/scaffolding --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor
+npx skills add collectiveai-team/botica --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor
 npx skills add dmno-dev/varlock --agent opencode --yes
 ```
 

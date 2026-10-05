@@ -18,7 +18,7 @@ permissions:
 jobs:
   validate:
     name: validate PR title
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Validate Conventional Commits format
         env:

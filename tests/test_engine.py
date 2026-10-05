@@ -659,7 +659,7 @@ def test_check_passes_for_codex_only_repo(repo: Path):
 def test_local_skills_each_ship_a_skill_file():
     """Guard the LOCAL_SKILLS -> skills/**/SKILL.md seam directly.
 
-    LOCAL_SKILLS drives `npx skills add collectiveai-team/scaffolding --skill
+    LOCAL_SKILLS drives `npx skills add collectiveai-team/botica --skill
     <slug>`; a slug with no matching skills/**/<slug>/SKILL.md would silently
     fail at install time in every target repo.
     """

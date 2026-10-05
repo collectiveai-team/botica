@@ -19,12 +19,12 @@ jobs:
     name: tests
     permissions:
       contents: read
-    uses: ./.github/workflows/tests.yml
+    uses: $/.github/workflows/tests.yml
 
   release:
     name: build & github release
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       contents: write
     steps:
