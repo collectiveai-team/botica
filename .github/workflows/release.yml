@@ -37,7 +37,7 @@ jobs:
       - name: Install uv
         # Pinned to an exact immutable tag, not a major tag: setup-uv stopped
         # publishing @v8 / @v8.x from v8.0.0 on, as supply-chain hardening.
-        uses: astral-sh/setup-uv@v10.0.1
+        uses: astral-sh/setup-uv@v10.2.0
         with:
           version: "0.11.12"
           # Cache disabled in the release job: it runs with contents: write on
