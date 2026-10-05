@@ -2,7 +2,7 @@
 
 **Code:** `CES-75` &nbsp;·&nbsp; **Slug:** `agents-conventional-commits` &nbsp;·&nbsp; **Enforced
 by:** prek commit-msg hook + CI PR-title check &nbsp;·&nbsp; **Tracker:**
-[#75](https://github.com/collectiveai-team/scaffolding/issues/75)
+[#75](https://github.com/collectiveai-team/botica/issues/75)
 
 ## Directive
 

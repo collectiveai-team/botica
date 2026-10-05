@@ -11,7 +11,7 @@ import os
 import subprocess
 from dataclasses import dataclass, field
 
-REPO = os.environ.get("REVIEW_REPO", "collectiveai-team/scaffolding")
+REPO = os.environ.get("REVIEW_REPO", "collectiveai-team/botica")
 
 STATE_LABELS = ["state:proposal", "state:had-comments", "state:approved", "state:declined"]
 PRIORITY_RANK = {"high": 0, "medium": 1, "low": 2}

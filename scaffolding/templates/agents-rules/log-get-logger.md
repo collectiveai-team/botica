@@ -2,7 +2,7 @@
 
 **Code:** `CES-45` &nbsp;·&nbsp; **Slug:** `log-get-logger` &nbsp;·&nbsp; **Enforced by:** ast-grep
 (`warning`) &nbsp;·&nbsp; **Tracker:**
-[#45](https://github.com/collectiveai-team/scaffolding/issues/45)
+[#45](https://github.com/collectiveai-team/botica/issues/45)
 
 ## Directive
 

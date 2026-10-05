@@ -2,7 +2,7 @@
 
 **Code:** `CES-71` &nbsp;·&nbsp; **Slug:** `file-size-guard` &nbsp;·&nbsp; **Enforced by:** prek
 hook (`warn` 400 / `error` 700) &nbsp;·&nbsp; **Tracker:**
-[#71](https://github.com/collectiveai-team/scaffolding/issues/71)
+[#71](https://github.com/collectiveai-team/botica/issues/71)
 
 ## Directive
 

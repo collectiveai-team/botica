@@ -392,7 +392,7 @@ by hand today.
 - **[`vinicq/falsegreen`](https://github.com/vinicq/falsegreen)** (MIT) — the
   deterministic Python/pytest AST scanner that proves the structural half of
   the Python catalog for free, no LLM needed. Proposed separately as a house
-  prek hook in [scaffolding#124](https://github.com/collectiveai-team/scaffolding/issues/124).
+  prek hook in [scaffolding#124](https://github.com/collectiveai-team/botica/issues/124).
 - **[`vinicq/falsegreen-js`](https://github.com/vinicq/falsegreen-js)** (MIT)
   — the TS/JS companion scanner; proves the structural half of the TS/JS
   catalog above the same way.
