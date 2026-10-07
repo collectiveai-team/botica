@@ -136,6 +136,23 @@ def word(rng: random.Random) -> str:
     return rng.choice(WORDS)
 
 
+def name_of(rng: random.Random) -> str:
+    """Build an identifier of one to three words, as in real code."""
+    return "_".join(word(rng) for _ in range(rng.choice((1, 2, 2, 3))))
+
+
+def prose(rng: random.Random, words: int) -> str:
+    return " ".join(word(rng) for _ in range(words))
+
+
+def docstring(rng: random.Random, indent: str) -> list[str]:
+    """Real modules spend about half their bytes on docstrings and comments, which parse cheaply."""
+    if rng.random() < 0.35:
+        return [f'{indent}"""{prose(rng, rng.randint(4, 10)).capitalize()}."""']
+    body = [f"{indent}{prose(rng, rng.randint(8, 13))}" for _ in range(rng.randint(2, 12))]
+    return [f'{indent}"""{prose(rng, rng.randint(5, 10)).capitalize()}.', "", *body, f'{indent}"""']
+
+
 def py_expr(rng: random.Random) -> str:
     a, b = word(rng), word(rng)
     if rng.random() < 0.06:
@@ -163,7 +180,7 @@ def py_simple(rng: random.Random, indent: str, roll: float, a: str) -> list[str]
     if roll < 0.52:
         return [f"{indent}self.{a}.append({py_expr(rng)})"]
     if roll < 0.57:
-        return [f"{indent}# {a} {word(rng)} {word(rng)}"]
+        return [f"{indent}# {prose(rng, rng.randint(6, 13))}" for _ in range(rng.randint(1, 3))]
     if roll < 0.62:
         return [f'{indent}assert {a} is not None, "{a} missing"']
     return None
@@ -196,39 +213,39 @@ def py_block(rng: random.Random, depth: int, indent: str) -> list[str]:
     out: list[str] = []
     for _ in range(rng.randint(2, 6)):
         roll = rng.random()
-        a = word(rng)
+        a = name_of(rng)
         lines = py_simple(rng, indent, roll, a)
         if lines is None and depth < 3:
             lines = py_compound(rng, depth, indent, roll, a)
         if lines is None:
             lines = [f"{indent}{a} = {word(rng)}({py_expr(rng)}, {py_expr(rng)})"]
         out += lines
+    if all(line.lstrip().startswith("#") for line in out):
+        out.append(f"{indent}pass")
     return out
 
 
 def py_neutral(rng: random.Random, n: int) -> str:
     kind = rng.random()
-    name = f"{word(rng)}_{n}"
+    name = f"{name_of(rng)}_{n}"
     if kind < 0.55:
         args = ", ".join(
-            f"{word(rng)}: {rng.choice(['int', 'str', 'float', 'list[str]'])}"
+            f"{name_of(rng)}: {rng.choice(['int', 'str', 'float', 'list[str]'])}"
             for _ in range(rng.randint(0, 4))
         )
         header = f"def {name}({args}) -> {rng.choice(['int', 'str', 'None', 'list[int]', 'bool'])}:"
         body = (
-            [f'    """{word(rng).capitalize()} the {word(rng)}."""']
+            docstring(rng, "    ")
             + py_block(rng, 1, "    ")
             + ([f"    return {word(rng)}"] if rng.random() < 0.6 else [])
         )
         return "\n".join([header, *body]) + "\n"
     if kind < 0.85:
-        lines = [
-            f"class {name.capitalize()}:",
-            f'    """{word(rng).capitalize()} {word(rng)}."""',
-            "",
-        ]
+        lines = [f"class {name.capitalize()}:", *docstring(rng, "    "), ""]
         for m in range(rng.randint(1, 4)):
-            lines.append(f"    def method_{m}(self, {word(rng)}):")
+            lines.append(f"    def method_{m}(self, {name_of(rng)}):")
+            if rng.random() < 0.5:
+                lines += docstring(rng, "        ")
             lines += py_block(rng, 2, "        ")
             lines.append("        return self" if rng.random() < 0.5 else "        pass")
             lines.append("")
@@ -248,7 +265,7 @@ def ts_neutral(rng: random.Random, n: int) -> str:
         return f"export interface {name.capitalize()} {{\n{fields}}}\n"
     body = []
     for _ in range(rng.randint(2, 6)):
-        a = word(rng)
+        a = name_of(rng)
         body.append(
             rng.choice(
                 [

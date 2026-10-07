@@ -65,7 +65,9 @@ BOTICA_PREFILTER_REGEX=1 python3 "$BENCH/parity.py" "$WORK/repo10k-real" "$BOTIC
 (cd "$WORK/repo10k-real" && RUNS=8 hf --export-markdown "$OUT/repo-10k-real.md" \
   "$BOTICA lint . --no-prefilter" \
   "$BOTICA lint ." \
-  "env BOTICA_PREFILTER_REGEX=1 $BOTICA lint .")
+  "env BOTICA_PREFILTER_REGEX=1 $BOTICA lint ." \
+  "env BOTICA_PREFILTER_REGEX=1 BOTICA_SCHED_LARGEST_FIRST=1 $BOTICA lint .")
+# Per-file cost concentration: BOTICA_FILE_TIMES=1 prints one `[file]` row per file on stderr.
 
 echo "== prefilter and result cache (10k synthetic files) =="
 rm -rf "$WORK/cache-10k"
