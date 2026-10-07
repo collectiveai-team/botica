@@ -59,6 +59,14 @@ echo "== 10k files =="
 RUNS=5 WARMUP=1 "$HYPERFINE" --warmup 1 --runs 5 --ignore-failure --export-markdown "$OUT/repo-10k-python-hook.md" \
   "$WORK/hooks/all_py.sh $WORK/repo10k $WORK/hooks/fsg.sh"
 
+echo "== 10k files, calibrated on real code (gen_realistic.py) =="
+[ -d "$WORK/repo10k-real" ] || python3 "$BENCH/gen_realistic.py" "$WORK/repo10k-real" 10000
+BOTICA_PREFILTER_REGEX=1 python3 "$BENCH/parity.py" "$WORK/repo10k-real" "$BOTICA" "$WORK/sg" | tee "$OUT/parity-real.txt"
+(cd "$WORK/repo10k-real" && RUNS=8 hf --export-markdown "$OUT/repo-10k-real.md" \
+  "$BOTICA lint . --no-prefilter" \
+  "$BOTICA lint ." \
+  "env BOTICA_PREFILTER_REGEX=1 $BOTICA lint .")
+
 echo "== prefilter and result cache (10k synthetic files) =="
 rm -rf "$WORK/cache-10k"
 (cd "$WORK/repo10k" && "$BOTICA" lint . --cache-dir "$WORK/cache-10k" >/dev/null 2>&1 || true)
