@@ -56,6 +56,12 @@ impl AstGrepRule {
         &self.config.id
     }
 
+    /// Replaces the requirement with a hand-declared regex the file text must match. The caller
+    /// vouches that every match of the rule implies a match of the regex.
+    pub fn require_regex(&mut self, pattern: &str) {
+        self.requirement = prefilter::Req::Re(pattern.to_owned());
+    }
+
     /// Declares literals the file must contain for this rule to match (for rules that
     /// ast-grep expresses without a pattern, e.g. `kind:` only). The caller vouches for them.
     pub fn require(&mut self, literals: &[&str]) {
@@ -112,6 +118,34 @@ fn build_globs(config: &serde_json::Value, key: &str) -> Result<Option<GlobSet>>
     Ok(Some(builder.build()?))
 }
 
+thread_local! {
+    static PARSERS: std::cell::RefCell<Vec<(SupportLang, tree_sitter::Parser)>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// ast-grep 0.41 builds a `Parser` and calls `set_language` for every file; this keeps one
+/// per thread and language.
+fn parse_reusing(lang: SupportLang, text: &str) -> Option<AstGrep<StrDoc<SupportLang>>> {
+    let tree = PARSERS.with(|cell| {
+        let mut parsers = cell.borrow_mut();
+        let position = match parsers.iter().position(|(l, _)| *l == lang) {
+            Some(position) => position,
+            None => {
+                let mut parser = tree_sitter::Parser::new();
+                parser.set_language(&lang.get_ts_language()).ok()?;
+                parsers.push((lang, parser));
+                parsers.len() - 1
+            }
+        };
+        parsers[position].1.parse(text.as_bytes(), None)
+    })?;
+    Some(AstGrep::doc(StrDoc {
+        src: text.to_owned(),
+        lang,
+        tree,
+    }))
+}
+
 fn severity_name(severity: &Severity) -> &'static str {
     match severity {
         Severity::Error => "error",
@@ -139,6 +173,7 @@ pub struct AstGrepSet {
     rules: Vec<AstGrepRule>,
     groups: Vec<LanguageGroup>,
     literals: HashMap<String, Finder<'static>>,
+    regexes: HashMap<String, regex::bytes::Regex>,
     prefilter: bool,
     parsed: AtomicUsize,
     skipped: AtomicUsize,
@@ -154,6 +189,7 @@ impl AstGrepSet {
     pub fn new(rules: Vec<AstGrepRule>) -> Self {
         let mut groups: Vec<LanguageGroup> = Vec::new();
         let mut literals: HashMap<String, Finder<'static>> = HashMap::new();
+        let mut regexes: HashMap<String, regex::bytes::Regex> = HashMap::new();
         for (index, rule) in rules.iter().enumerate() {
             let language = rule.language();
             let position = groups.iter().position(|g| g.language == language);
@@ -184,11 +220,19 @@ impl AstGrepSet {
                     .entry(literal.to_owned())
                     .or_insert_with(|| Finder::new(literal.as_bytes()).into_owned());
             }
+            let mut patterns = Vec::new();
+            rule.requirement.regexes(&mut patterns);
+            for pattern in patterns {
+                regexes.entry(pattern.to_owned()).or_insert_with(|| {
+                    regex::bytes::Regex::new(pattern).expect("valid prefilter regex")
+                });
+            }
         }
         Self {
             rules,
             groups,
             literals,
+            regexes,
             prefilter: true,
             parsed: AtomicUsize::new(0),
             skipped: AtomicUsize::new(0),
@@ -223,15 +267,25 @@ impl AstGrepSet {
                 continue;
             }
             flags[index] = !self.prefilter
-                || self.rules[index].requirement.holds(&mut |literal| {
-                    if let Some(&known) = seen.get(literal) {
+                || self.rules[index].requirement.holds(&mut |atom| {
+                    let key = match atom {
+                        prefilter::Req::Lit(s) | prefilter::Req::Re(s) => s,
+                        _ => return true,
+                    };
+                    if let Some(&known) = seen.get(key) {
                         return known;
                     }
-                    let found = self
-                        .literals
-                        .get(literal)
-                        .is_none_or(|finder| finder.find(text.as_bytes()).is_some());
-                    seen.insert(literal.to_owned(), found);
+                    let found = match atom {
+                        prefilter::Req::Lit(literal) => self
+                            .literals
+                            .get(literal)
+                            .is_none_or(|finder| finder.find(text.as_bytes()).is_some()),
+                        _ => self
+                            .regexes
+                            .get(key)
+                            .is_none_or(|re| re.is_match(text.as_bytes())),
+                    };
+                    seen.insert(key.to_owned(), found);
                     found
                 });
         }
@@ -251,7 +305,13 @@ impl AstGrepSet {
             return Vec::new();
         }
         self.parsed.fetch_add(1, Ordering::Relaxed);
-        self.run(group, &active, &lang.ast_grep(text))
+        if std::env::var_os("BOTICA_NO_PARSER_REUSE").is_some() {
+            return self.run(group, &active, &lang.ast_grep(text));
+        }
+        match parse_reusing(lang, text) {
+            Some(grep) => self.run(group, &active, &grep),
+            None => Vec::new(),
+        }
     }
 
     fn run(

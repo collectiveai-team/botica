@@ -12,6 +12,8 @@ use serde_json::Value;
 pub enum Req {
     Always,
     Lit(String),
+    /// A regex (byte semantics, ASCII) the file text must match; declared by hand per rule.
+    Re(String),
     And(Vec<Req>),
     Or(Vec<Req>),
 }
@@ -37,14 +39,23 @@ impl Req {
         match self {
             Req::Always => {}
             Req::Lit(literal) => out.push(literal),
+            Req::Re(_) => {}
             Req::And(parts) | Req::Or(parts) => parts.iter().for_each(|p| p.literals(out)),
         }
     }
 
-    pub fn holds(&self, present: &mut dyn FnMut(&str) -> bool) -> bool {
+    pub fn regexes<'a>(&'a self, out: &mut Vec<&'a str>) {
+        match self {
+            Req::Re(pattern) => out.push(pattern),
+            Req::And(parts) | Req::Or(parts) => parts.iter().for_each(|p| p.regexes(out)),
+            Req::Always | Req::Lit(_) => {}
+        }
+    }
+
+    pub fn holds(&self, present: &mut dyn FnMut(&Req) -> bool) -> bool {
         match self {
             Req::Always => true,
-            Req::Lit(literal) => present(literal),
+            Req::Lit(_) | Req::Re(_) => present(self),
             Req::And(parts) => parts.iter().all(|p| p.holds(present)),
             Req::Or(parts) => parts.iter().any(|p| p.holds(present)),
         }

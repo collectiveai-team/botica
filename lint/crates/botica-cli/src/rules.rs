@@ -23,7 +23,11 @@ pub fn build_engine(with_astgrep: bool, prefilter: bool) -> Result<Engine> {
     if with_astgrep {
         for yaml in EMBEDDED {
             for mut rule in AstGrepRule::from_yaml(yaml)? {
-                if let Some(literals) = declared_literals(rule.id()) {
+                if std::env::var_os("BOTICA_PREFILTER_REGEX").is_some() {
+                    if let Some(pattern) = declared_regex(rule.id()) {
+                        rule.require_regex(pattern);
+                    }
+                } else if let Some(literals) = declared_literals(rule.id()) {
                     rule.require(literals);
                 }
                 rules.push(rule);
@@ -45,6 +49,24 @@ pub fn fingerprint(with_astgrep: bool) -> String {
         hasher.update(yaml.as_bytes());
     }
     hasher.finalize().to_hex().to_string()
+}
+
+/// Prototype of a `prefilter = "<regex>"` field: a necessary condition on the file text for the
+/// rule to match anywhere (ASCII byte regex). Experimental, hand-checked against the rules.
+fn declared_regex(rule_id: &str) -> Option<&'static str> {
+    Some(match rule_id {
+        "api-schemas-extra-forbid" => "BaseModel",
+        "arch-database-package" => "SQLModel|create_engine|sessionmaker",
+        "cli-typed-framework" => "argparse|click|argv",
+        "log-get-logger" => "getLogger",
+        "log-no-print" => r"(?-u)\bprint\s*\(",
+        "no-dict-alias" => r"(?-u)=\s*dict\b",
+        "no-dict-call-return" => r"(?-u)\breturn[\s\\]+dict",
+        "no-dict-literal-return" => r"(?-u)\breturn[\s\\]*\{",
+        "no-dict-return-annotation" => r"(?-u)->\s*dict\b",
+        "settings-module" => r"(?-u)\bos\s*\.\s*(getenv|environ)",
+        _ => return None,
+    })
 }
 
 /// What a `prefilter = [...]` field in `rule.toml` would carry: rules written with `kind:` only
