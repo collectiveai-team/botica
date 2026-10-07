@@ -115,6 +115,31 @@ fn lint_source(c: &mut Criterion) {
     });
     group.finish();
 
+    // One keystroke in the middle of the buffer, then back: each iteration is two edits.
+    let mut typing = c.benchmark_group("lsp_keystroke_x2");
+    for (name, path, text) in [
+        ("py_2000_lines", "pkg/mod.py", &py2000),
+        ("ts_2000_lines", "src/mod.ts", &ts2000),
+    ] {
+        let at = text[text.len() / 2..].find('\n').unwrap() + text.len() / 2 + 1;
+        let mut buffer = full.astgrep().open(path.as_ref(), text).unwrap();
+        typing.bench_function(format!("{name}/reparse_only"), |b| {
+            b.iter(|| {
+                buffer.edit(at, 0, "#").unwrap();
+                buffer.edit(at, 1, "").unwrap();
+            });
+        });
+        typing.bench_function(format!("{name}/reparse+rules"), |b| {
+            b.iter(|| {
+                buffer.edit(at, 0, "#").unwrap();
+                black_box(full.astgrep().check_buffer(&buffer));
+                buffer.edit(at, 1, "").unwrap();
+                black_box(full.astgrep().check_buffer(&buffer));
+            });
+        });
+    }
+    typing.finish();
+
     let mut parse = c.benchmark_group("parse_only");
     parse.bench_function("py_2000_lines", |b| {
         b.iter(|| SupportLang::Python.ast_grep(black_box(&py2000)));

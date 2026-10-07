@@ -59,6 +59,28 @@ echo "== 10k files =="
 RUNS=5 WARMUP=1 "$HYPERFINE" --warmup 1 --runs 5 --ignore-failure --export-markdown "$OUT/repo-10k-python-hook.md" \
   "$WORK/hooks/all_py.sh $WORK/repo10k $WORK/hooks/fsg.sh"
 
+echo "== prefilter and result cache (10k synthetic files) =="
+rm -rf "$WORK/cache-10k"
+(cd "$WORK/repo10k" && "$BOTICA" lint . --cache-dir "$WORK/cache-10k" >/dev/null 2>&1 || true)
+(cd "$WORK/repo10k" && RUNS=10 hf --export-markdown "$OUT/cache-10k.md" \
+  "$BOTICA lint . --no-prefilter" \
+  "$BOTICA lint ." \
+  "$BOTICA lint . --cache-dir $WORK/cache-10k")
+
+STDLIB=${STDLIB:-/usr/lib/python3.14}
+if [ -d "$STDLIB" ]; then
+  echo "== real corpus: $STDLIB =="
+  python3 "$BENCH/parity.py" "$STDLIB" "$BOTICA" "$WORK/sg" | tee "$OUT/parity-stdlib.txt"
+  (cd "$STDLIB" && "$BOTICA" lint . --timings 2>&1 >/dev/null | grep -E "prefilter" || true)
+  rm -rf "$WORK/cache-stdlib"
+  (cd "$STDLIB" && "$BOTICA" lint . --cache-dir "$WORK/cache-stdlib" >/dev/null 2>&1 || true)
+  (cd "$STDLIB" && RUNS=5 WARMUP=1 hf --export-markdown "$OUT/stdlib.md" \
+    "$BOTICA lint . --no-prefilter" \
+    "$BOTICA lint ." \
+    "$BOTICA lint . --cache-dir $WORK/cache-stdlib" \
+    "$BOTICA lint . --no-astgrep")
+fi
+
 echo "== thread scaling (10k files, native + ast-grep) =="
 for threads in 1 2 4 8 16; do
   (cd "$WORK/repo10k" && RAYON_NUM_THREADS=$threads RUNS=3 WARMUP=1 hf "$BOTICA lint ." | grep -E "Time" | sed "s/^/threads=$threads /")

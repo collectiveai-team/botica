@@ -16,6 +16,10 @@ impl Engine {
         Self { native, astgrep }
     }
 
+    pub fn astgrep(&self) -> &AstGrepSet {
+        &self.astgrep
+    }
+
     /// Lints text the caller already holds. Does no I/O.
     pub fn lint_source(&self, path: &str, text: &str) -> Vec<Diagnostic> {
         let doc = Document::new(path, text);

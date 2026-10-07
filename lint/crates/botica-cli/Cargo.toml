@@ -11,6 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow.workspace = true
+blake3 = "1"
 botica-astgrep = { path = "../botica-astgrep" }
 botica-core = { path = "../botica-core", features = ["fs"] }
 botica-ext = { path = "../botica-ext" }

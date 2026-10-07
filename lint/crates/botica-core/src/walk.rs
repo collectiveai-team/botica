@@ -10,7 +10,7 @@ pub struct SourceFile {
     pub text: String,
 }
 
-const LINTED_EXTENSIONS: [&str; 5] = ["py", "ts", "tsx", "js", "jsx"];
+const LINTED_EXTENSIONS: [&str; 6] = ["py", "pyi", "ts", "tsx", "js", "jsx"];
 
 /// One walk of the tree, honouring `.gitignore`.
 pub fn discover(root: &Path) -> Vec<PathBuf> {

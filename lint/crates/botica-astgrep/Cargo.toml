@@ -11,4 +11,5 @@ ast-grep-core.workspace = true
 ast-grep-config.workspace = true
 ast-grep-language.workspace = true
 globset.workspace = true
+memchr = "2"
 serde_json.workspace = true

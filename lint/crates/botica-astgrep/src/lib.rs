@@ -1,10 +1,17 @@
+mod prefilter;
+
 use anyhow::{Context, Result};
 use ast_grep_config::{from_yaml_string, GlobalRules, RuleConfig, Severity};
 use ast_grep_core::matcher::MatcherExt;
-use ast_grep_core::Matcher;
+use ast_grep_core::source::Edit;
+use ast_grep_core::tree_sitter::StrDoc;
+use ast_grep_core::{AstGrep, Matcher};
 use ast_grep_language::{Language, LanguageExt, SupportLang};
 use globset::{Glob, GlobBuilder, GlobSet, GlobSetBuilder};
-use std::path::Path;
+use memchr::memmem::Finder;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Hit {
@@ -19,6 +26,7 @@ pub struct AstGrepRule {
     config: RuleConfig<SupportLang>,
     files: Option<GlobSet>,
     ignores: Option<GlobSet>,
+    requirement: prefilter::Req,
 }
 
 impl AstGrepRule {
@@ -31,10 +39,14 @@ impl AstGrepRule {
                 let serialized = serde_json::to_value(&*config)?;
                 let files = build_globs(&serialized, "files")?;
                 let ignores = build_globs(&serialized, "ignores")?;
+                let requirement = serialized
+                    .get("rule")
+                    .map_or(prefilter::Req::Always, prefilter::requirement);
                 Ok(Self {
                     config,
                     files,
                     ignores,
+                    requirement,
                 })
             })
             .collect()
@@ -42,6 +54,17 @@ impl AstGrepRule {
 
     pub fn id(&self) -> &str {
         &self.config.id
+    }
+
+    /// Declares literals the file must contain for this rule to match (for rules that
+    /// ast-grep expresses without a pattern, e.g. `kind:` only). The caller vouches for them.
+    pub fn require(&mut self, literals: &[&str]) {
+        let extra = literals
+            .iter()
+            .map(|l| prefilter::Req::Lit((*l).to_owned()))
+            .collect();
+        let current = std::mem::replace(&mut self.requirement, prefilter::Req::Always);
+        self.requirement = prefilter::Req::And(vec![current, prefilter::Req::And(extra)]);
     }
 
     pub fn language(&self) -> SupportLang {
@@ -106,15 +129,31 @@ struct LanguageGroup {
     by_kind: Vec<Vec<usize>>,
 }
 
-#[derive(Default)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct PrefilterStats {
+    pub parsed: usize,
+    pub skipped: usize,
+}
+
 pub struct AstGrepSet {
     rules: Vec<AstGrepRule>,
     groups: Vec<LanguageGroup>,
+    literals: HashMap<String, Finder<'static>>,
+    prefilter: bool,
+    parsed: AtomicUsize,
+    skipped: AtomicUsize,
+}
+
+impl Default for AstGrepSet {
+    fn default() -> Self {
+        Self::new(Vec::new())
+    }
 }
 
 impl AstGrepSet {
     pub fn new(rules: Vec<AstGrepRule>) -> Self {
         let mut groups: Vec<LanguageGroup> = Vec::new();
+        let mut literals: HashMap<String, Finder<'static>> = HashMap::new();
         for (index, rule) in rules.iter().enumerate() {
             let language = rule.language();
             let position = groups.iter().position(|g| g.language == language);
@@ -138,8 +177,34 @@ impl AstGrepSet {
                     group.by_kind[kind].push(index);
                 }
             }
+            let mut needed = Vec::new();
+            rule.requirement.literals(&mut needed);
+            for literal in needed {
+                literals
+                    .entry(literal.to_owned())
+                    .or_insert_with(|| Finder::new(literal.as_bytes()).into_owned());
+            }
         }
-        Self { rules, groups }
+        Self {
+            rules,
+            groups,
+            literals,
+            prefilter: true,
+            parsed: AtomicUsize::new(0),
+            skipped: AtomicUsize::new(0),
+        }
+    }
+
+    /// Turns the required-literal prefilter on or off (on by default).
+    pub fn set_prefilter(&mut self, enabled: bool) {
+        self.prefilter = enabled;
+    }
+
+    pub fn stats(&self) -> PrefilterStats {
+        PrefilterStats {
+            parsed: self.parsed.load(Ordering::Relaxed),
+            skipped: self.skipped.load(Ordering::Relaxed),
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -150,6 +215,29 @@ impl AstGrepSet {
         self.rules.is_empty()
     }
 
+    fn active_rules(&self, group: &LanguageGroup, path: &Path, text: &str) -> Vec<bool> {
+        let mut flags = vec![false; self.rules.len()];
+        let mut seen: HashMap<String, bool> = HashMap::new();
+        for &index in &group.rules {
+            if !self.rules[index].applies_to(path) {
+                continue;
+            }
+            flags[index] = !self.prefilter
+                || self.rules[index].requirement.holds(&mut |literal| {
+                    if let Some(&known) = seen.get(literal) {
+                        return known;
+                    }
+                    let found = self
+                        .literals
+                        .get(literal)
+                        .is_none_or(|finder| finder.find(text.as_bytes()).is_some());
+                    seen.insert(literal.to_owned(), found);
+                    found
+                });
+        }
+        flags
+    }
+
     pub fn check(&self, path: &Path, text: &str) -> Vec<Hit> {
         let Some(lang) = SupportLang::from_path(path) else {
             return Vec::new();
@@ -157,17 +245,21 @@ impl AstGrepSet {
         let Some(group) = self.groups.iter().find(|g| g.language == lang) else {
             return Vec::new();
         };
-        let active: Vec<bool> = {
-            let mut flags = vec![false; self.rules.len()];
-            for &index in &group.rules {
-                flags[index] = self.rules[index].applies_to(path);
-            }
-            flags
-        };
+        let active = self.active_rules(group, path, text);
         if !active.iter().any(|&on| on) {
+            self.skipped.fetch_add(1, Ordering::Relaxed);
             return Vec::new();
         }
-        let grep = lang.ast_grep(text);
+        self.parsed.fetch_add(1, Ordering::Relaxed);
+        self.run(group, &active, &lang.ast_grep(text))
+    }
+
+    fn run(
+        &self,
+        group: &LanguageGroup,
+        active: &[bool],
+        grep: &AstGrep<StrDoc<SupportLang>>,
+    ) -> Vec<Hit> {
         let mut hits = Vec::new();
         for node in grep.root().dfs() {
             let Some(candidates) = group.by_kind.get(node.kind_id() as usize) else {
@@ -192,5 +284,55 @@ impl AstGrepSet {
             }
         }
         hits
+    }
+
+    /// Opens an editable buffer (LSP): the syntax tree is kept and re-used between edits.
+    pub fn open(&self, path: &Path, text: &str) -> Option<Buffer> {
+        let language = SupportLang::from_path(path)?;
+        self.groups.iter().find(|g| g.language == language)?;
+        Some(Buffer {
+            path: path.to_path_buf(),
+            language,
+            grep: language.ast_grep(text),
+        })
+    }
+
+    pub fn check_buffer(&self, buffer: &Buffer) -> Vec<Hit> {
+        let Some(group) = self.groups.iter().find(|g| g.language == buffer.language) else {
+            return Vec::new();
+        };
+        let mut active = vec![false; self.rules.len()];
+        for &index in &group.rules {
+            active[index] = self.rules[index].applies_to(&buffer.path);
+        }
+        self.run(group, &active, &buffer.grep)
+    }
+}
+
+pub struct Buffer {
+    path: PathBuf,
+    language: SupportLang,
+    grep: AstGrep<StrDoc<SupportLang>>,
+}
+
+impl Buffer {
+    pub fn text(&self) -> &str {
+        &self.grep.root().get_doc().src
+    }
+
+    /// Replaces `deleted` bytes at `start` with `inserted`, re-parsing incrementally.
+    pub fn edit(&mut self, start: usize, deleted: usize, inserted: &str) -> Result<()> {
+        self.grep
+            .edit(Edit {
+                position: start,
+                deleted_length: deleted,
+                inserted_text: inserted.as_bytes().to_vec(),
+            })
+            .map_err(anyhow::Error::msg)?;
+        Ok(())
+    }
+
+    pub fn language(&self) -> SupportLang {
+        self.language
     }
 }

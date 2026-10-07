@@ -1,6 +1,7 @@
 mod rules;
 
 use anyhow::Result;
+use botica_core::cache::{lint_files_cached, Cache};
 use botica_core::{walk, Diagnostic, ExtensionRun, Severity};
 use clap::{Parser, Subcommand};
 use std::io::Write;
@@ -29,6 +30,12 @@ enum Command {
         /// Skip the embedded ast-grep rules.
         #[arg(long)]
         no_astgrep: bool,
+        /// Parse every file even when no rule's required literals occur in it.
+        #[arg(long)]
+        no_prefilter: bool,
+        /// Directory for the per-file result cache (off when omitted).
+        #[arg(long)]
+        cache_dir: Option<PathBuf>,
         /// Print phase timings to stderr.
         #[arg(long)]
         timings: bool,
@@ -42,9 +49,19 @@ fn main() -> ExitCode {
         ext,
         batch,
         no_astgrep,
+        no_prefilter,
+        cache_dir,
         timings,
     } = command;
-    match lint(paths, ext, batch, !no_astgrep, timings) {
+    match lint(
+        paths,
+        ext,
+        batch,
+        !no_astgrep,
+        !no_prefilter,
+        cache_dir,
+        timings,
+    ) {
         Ok(true) => ExitCode::from(1),
         Ok(false) => ExitCode::SUCCESS,
         Err(error) => {
@@ -59,6 +76,8 @@ fn lint(
     ext: Option<String>,
     batch: usize,
     with_astgrep: bool,
+    prefilter: bool,
+    cache_dir: Option<PathBuf>,
     timings: bool,
 ) -> Result<bool> {
     let total = Instant::now();
@@ -73,7 +92,7 @@ fn lint(
         lap = Instant::now();
     };
 
-    let engine = rules::build_engine(with_astgrep)?;
+    let engine = rules::build_engine(with_astgrep, prefilter)?;
     mark("compile rules");
 
     let root = std::env::current_dir()?;
@@ -94,8 +113,28 @@ fn lint(
     let sources = walk::read_all(&root, &files);
     mark("read");
 
-    let mut diagnostics = walk::lint_files(&engine, &sources);
+    let mut diagnostics = if let Some(dir) = &cache_dir {
+        let mut cache = Cache::load(dir, &rules::fingerprint(with_astgrep));
+        let (found, stats) = lint_files_cached(&engine, &sources, &mut cache);
+        cache.save()?;
+        if timings {
+            eprintln!(
+                "[timing] cache: {} hits, {} misses",
+                stats.hits, stats.misses
+            );
+        }
+        found
+    } else {
+        walk::lint_files(&engine, &sources)
+    };
     mark("native+ast-grep");
+    if timings {
+        let stats = engine.astgrep().stats();
+        eprintln!(
+            "[timing] prefilter: parsed {} files, skipped {}",
+            stats.parsed, stats.skipped
+        );
+    }
 
     if let Some(command) = ext {
         let command: Vec<String> = command.split_whitespace().map(str::to_owned).collect();

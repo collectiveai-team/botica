@@ -4,6 +4,8 @@ mod engine;
 mod native;
 
 #[cfg(feature = "fs")]
+pub mod cache;
+#[cfg(feature = "fs")]
 pub mod walk;
 
 pub use diagnostic::{Diagnostic, Severity};
