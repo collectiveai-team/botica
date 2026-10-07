@@ -1,0 +1,4 @@
+id: tsx-use-state
+language: tsx
+rule:
+  pattern: const [$A, $B] = useState($$$C)

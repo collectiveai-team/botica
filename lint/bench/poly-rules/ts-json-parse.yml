@@ -1,0 +1,4 @@
+id: ts-json-parse
+language: typescript
+rule:
+  pattern: JSON.parse($A)

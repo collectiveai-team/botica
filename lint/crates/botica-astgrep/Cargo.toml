@@ -11,7 +11,9 @@ ast-grep-core.workspace = true
 ast-grep-config.workspace = true
 ast-grep-language.workspace = true
 globset.workspace = true
+aho-corasick = "1"
 memchr = "2"
 regex = { version = "1", default-features = false, features = ["std", "perf"] }
+regex-syntax = "0.8"
 tree-sitter = "=0.26.13"
 serde_json.workspace = true

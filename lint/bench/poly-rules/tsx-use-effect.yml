@@ -1,0 +1,4 @@
+id: tsx-use-effect
+language: tsx
+rule:
+  pattern: useEffect($A, [])

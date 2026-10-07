@@ -23,7 +23,11 @@ pub fn build_engine(with_astgrep: bool, prefilter: bool) -> Result<Engine> {
     if with_astgrep {
         for yaml in EMBEDDED {
             for mut rule in AstGrepRule::from_yaml(yaml)? {
-                if std::env::var_os("BOTICA_PREFILTER_REGEX").is_some() {
+                if std::env::var_os("BOTICA_PREFILTER_AUTO").is_some() {
+                    if rule.id() == "no-dict-literal-return" {
+                        rule.require_regex(declared_regex(rule.id()).expect("declared"));
+                    }
+                } else if std::env::var_os("BOTICA_PREFILTER_REGEX").is_some() {
                     if let Some(pattern) = declared_regex(rule.id()) {
                         rule.require_regex(pattern);
                     }
@@ -34,7 +38,26 @@ pub fn build_engine(with_astgrep: bool, prefilter: bool) -> Result<Engine> {
             }
         }
     }
+    if let Some(dir) = std::env::var_os("BOTICA_EXTRA_RULES").filter(|_| with_astgrep) {
+        // Test hook: extra ast-grep YAML rules, e.g. to check prefilter parity on more languages.
+        let mut paths: Vec<_> = std::fs::read_dir(dir)?
+            .filter_map(|e| e.ok().map(|e| e.path()))
+            .filter(|p| p.extension().is_some_and(|e| e == "yml"))
+            .collect();
+        paths.sort();
+        for path in paths {
+            rules.extend(AstGrepRule::from_yaml(&std::fs::read_to_string(path)?)?);
+        }
+    }
     let mut set = AstGrepSet::new(rules);
+    if std::env::var_os("BOTICA_PREFILTER_AUTO").is_some() {
+        set.use_auto_prefilter();
+        if std::env::var_os("BOTICA_PREFILTER_DESCRIBE").is_some() {
+            for (id, requirement) in set.describe_prefilter() {
+                eprintln!("[prefilter] {id}: {requirement}");
+            }
+        }
+    }
     set.set_prefilter(prefilter);
     Ok(Engine::new(native, set))
 }

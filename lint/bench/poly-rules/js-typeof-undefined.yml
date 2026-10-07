@@ -1,0 +1,6 @@
+id: js-typeof-undefined
+language: javascript
+rule:
+  any:
+    - pattern: typeof $A === 'undefined'
+    - pattern: typeof $A === "undefined"

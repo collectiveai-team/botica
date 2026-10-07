@@ -1,3 +1,4 @@
+mod chains;
 mod prefilter;
 
 use anyhow::{Context, Result};
@@ -27,6 +28,9 @@ pub struct AstGrepRule {
     files: Option<GlobSet>,
     ignores: Option<GlobSet>,
     requirement: prefilter::Req,
+    /// A hand-written requirement (`prefilter` in `rule.toml`); wins over the derived one.
+    declared: Option<prefilter::Req>,
+    rule_json: serde_json::Value,
 }
 
 impl AstGrepRule {
@@ -47,6 +51,8 @@ impl AstGrepRule {
                     files,
                     ignores,
                     requirement,
+                    declared: None,
+                    rule_json: serialized.get("rule").cloned().unwrap_or_default(),
                 })
             })
             .collect()
@@ -60,6 +66,7 @@ impl AstGrepRule {
     /// vouches that every match of the rule implies a match of the regex.
     pub fn require_regex(&mut self, pattern: &str) {
         self.requirement = prefilter::Req::Re(pattern.to_owned());
+        self.declared = Some(self.requirement.clone());
     }
 
     /// Declares literals the file must contain for this rule to match (for rules that
@@ -161,6 +168,7 @@ struct LanguageGroup {
     language: SupportLang,
     rules: Vec<usize>,
     by_kind: Vec<Vec<usize>>,
+    chains: Option<chains::LangChains>,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -200,6 +208,7 @@ impl AstGrepSet {
                         language,
                         rules: Vec::new(),
                         by_kind: Vec::new(),
+                        chains: None,
                     });
                     groups.last_mut().expect("just pushed")
                 }
@@ -239,6 +248,52 @@ impl AstGrepSet {
         }
     }
 
+    /// Derives each rule's requirement from the rule itself (token chains of its patterns,
+    /// literals of its regexes) instead of loose identifiers; hand-declared ones still win.
+    pub fn use_auto_prefilter(&mut self) {
+        for group in &mut self.groups {
+            let mut table = chains::LangChains::new(group.language);
+            for &index in &group.rules {
+                let rule = &mut self.rules[index];
+                rule.requirement = match &rule.declared {
+                    Some(declared) => declared.clone(),
+                    None => table.requirement(&rule.rule_json),
+                };
+                let mut needed = Vec::new();
+                rule.requirement.literals(&mut needed);
+                for literal in needed {
+                    self.literals
+                        .entry(literal.to_owned())
+                        .or_insert_with(|| Finder::new(literal.as_bytes()).into_owned());
+                }
+                let mut patterns = Vec::new();
+                rule.requirement.regexes(&mut patterns);
+                for pattern in patterns {
+                    self.regexes.entry(pattern.to_owned()).or_insert_with(|| {
+                        regex::bytes::Regex::new(pattern).expect("valid prefilter regex")
+                    });
+                }
+            }
+            table.finish();
+            group.chains = (!table.is_empty()).then_some(table);
+        }
+    }
+
+    /// Each rule's id with its effective requirement, for inspection.
+    pub fn describe_prefilter(&self) -> Vec<(String, String)> {
+        let chains = self
+            .groups
+            .iter()
+            .filter_map(|g| g.chains.as_ref())
+            .flat_map(chains::LangChains::describe)
+            .map(|line| ("chain".to_owned(), line));
+        self.rules
+            .iter()
+            .map(|r| (r.id().to_owned(), format!("{:?}", r.requirement)))
+            .chain(chains)
+            .collect()
+    }
+
     /// Turns the required-literal prefilter on or off (on by default).
     pub fn set_prefilter(&mut self, enabled: bool) {
         self.prefilter = enabled;
@@ -262,6 +317,7 @@ impl AstGrepSet {
     fn active_rules(&self, group: &LanguageGroup, path: &Path, text: &str) -> Vec<bool> {
         let mut flags = vec![false; self.rules.len()];
         let mut seen: HashMap<String, bool> = HashMap::new();
+        let mut chain_hits: Option<Vec<bool>> = None;
         for &index in &group.rules {
             if !self.rules[index].applies_to(path) {
                 continue;
@@ -270,6 +326,13 @@ impl AstGrepSet {
                 || self.rules[index].requirement.holds(&mut |atom| {
                     let key = match atom {
                         prefilter::Req::Lit(s) | prefilter::Req::Re(s) => s,
+                        prefilter::Req::Chain(i) => {
+                            let Some(table) = &group.chains else {
+                                return true;
+                            };
+                            return chain_hits.get_or_insert_with(|| table.scan(text.as_bytes()))
+                                [*i];
+                        }
                         _ => return true,
                     };
                     if let Some(&known) = seen.get(key) {

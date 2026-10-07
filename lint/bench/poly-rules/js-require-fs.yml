@@ -1,0 +1,7 @@
+id: js-require-fs
+language: javascript
+rule:
+  any:
+    - pattern: require('fs')
+    - pattern: require("fs")
+    - pattern: require('node:fs')

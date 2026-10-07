@@ -14,6 +14,8 @@ pub enum Req {
     Lit(String),
     /// A regex (byte semantics, ASCII) the file text must match; declared by hand per rule.
     Re(String),
+    /// A token chain of `chains::LangChains`, by index.
+    Chain(usize),
     And(Vec<Req>),
     Or(Vec<Req>),
 }
@@ -39,7 +41,7 @@ impl Req {
         match self {
             Req::Always => {}
             Req::Lit(literal) => out.push(literal),
-            Req::Re(_) => {}
+            Req::Re(_) | Req::Chain(_) => {}
             Req::And(parts) | Req::Or(parts) => parts.iter().for_each(|p| p.literals(out)),
         }
     }
@@ -48,14 +50,14 @@ impl Req {
         match self {
             Req::Re(pattern) => out.push(pattern),
             Req::And(parts) | Req::Or(parts) => parts.iter().for_each(|p| p.regexes(out)),
-            Req::Always | Req::Lit(_) => {}
+            Req::Always | Req::Lit(_) | Req::Chain(_) => {}
         }
     }
 
     pub fn holds(&self, present: &mut dyn FnMut(&Req) -> bool) -> bool {
         match self {
             Req::Always => true,
-            Req::Lit(_) | Req::Re(_) => present(self),
+            Req::Lit(_) | Req::Re(_) | Req::Chain(_) => present(self),
             Req::And(parts) => parts.iter().all(|p| p.holds(present)),
             Req::Or(parts) => parts.iter().any(|p| p.holds(present)),
         }

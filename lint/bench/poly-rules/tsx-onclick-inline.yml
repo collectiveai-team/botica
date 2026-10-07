@@ -1,0 +1,4 @@
+id: tsx-onclick-inline
+language: tsx
+rule:
+  pattern: <$E onClick={() => $B} $$$P />

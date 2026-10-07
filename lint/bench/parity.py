@@ -19,7 +19,8 @@ sg = subprocess.run(
     check=False,
 )
 expected = set()
-for line in sg.stdout.splitlines():
+# Split on \n only: str.splitlines() also breaks on U+2028/U+0085, which minified JS contains.
+for line in filter(None, sg.stdout.split("\n")):
     hit = json.loads(line)
     path = Path(hit["file"]).resolve().relative_to(repo).as_posix()
     expected.add(
@@ -33,7 +34,7 @@ for line in sg.stdout.splitlines():
 
 mine = subprocess.run([botica, "lint", "."], cwd=repo, capture_output=True, text=True, check=False)
 actual = set()
-for line in mine.stdout.splitlines():
+for line in filter(None, mine.stdout.split("\n")):
     location, _, rest = line.partition(": ")
     path, line_no, col = location.rsplit(":", 2)
     rule_id = rest.split("[", 1)[1].split("]", 1)[0]

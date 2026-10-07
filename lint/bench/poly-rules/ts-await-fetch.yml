@@ -1,0 +1,4 @@
+id: ts-await-fetch
+language: typescript
+rule:
+  pattern: await fetch($$$ARGS)

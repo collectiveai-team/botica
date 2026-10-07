@@ -182,6 +182,7 @@ dependencies = [
 name = "botica-astgrep"
 version = "0.0.0"
 dependencies = [
+ "aho-corasick",
  "anyhow",
  "ast-grep-config",
  "ast-grep-core",
@@ -189,6 +190,7 @@ dependencies = [
  "globset",
  "memchr",
  "regex",
+ "regex-syntax",
  "serde_json",
  "tree-sitter",
 ]

@@ -66,8 +66,21 @@ BOTICA_PREFILTER_REGEX=1 python3 "$BENCH/parity.py" "$WORK/repo10k-real" "$BOTIC
   "$BOTICA lint . --no-prefilter" \
   "$BOTICA lint ." \
   "env BOTICA_PREFILTER_REGEX=1 $BOTICA lint ." \
-  "env BOTICA_PREFILTER_REGEX=1 BOTICA_SCHED_LARGEST_FIRST=1 $BOTICA lint .")
+  "env BOTICA_PREFILTER_REGEX=1 BOTICA_SCHED_LARGEST_FIRST=1 $BOTICA lint ." \
+  "env BOTICA_PREFILTER_AUTO=1 $BOTICA lint .")
+BOTICA_PREFILTER_AUTO=1 python3 "$BENCH/parity.py" "$WORK/repo10k-real" "$BOTICA" "$WORK/sg" | tee "$OUT/parity-real-auto.txt"
 # Per-file cost concentration: BOTICA_FILE_TIMES=1 prints one `[file]` row per file on stderr.
+
+# Polyglot parity of the derived prefilter: point POLY_CORPUS at a tree of real JS/TS/TSX
+# (node_modules dirs renamed, since the walk honours .gitignore).
+if [ -n "${POLY_CORPUS:-}" ]; then
+  echo "== derived prefilter parity on JS/TS/TSX ($POLY_CORPUS) =="
+  mkdir -p "$WORK/sg-poly/rules"
+  cp "$WORK"/sg/rules/*.yml "$BENCH"/poly-rules/*.yml "$WORK/sg-poly/rules/"
+  cp "$WORK/sg/sgconfig.yml" "$WORK/sg-poly/"
+  BOTICA_EXTRA_RULES="$BENCH/poly-rules" BOTICA_PREFILTER_AUTO=1 \
+    python3 "$BENCH/parity.py" "$POLY_CORPUS" "$BOTICA" "$WORK/sg-poly" | tee "$OUT/parity-poly.txt"
+fi
 
 echo "== prefilter and result cache (10k synthetic files) =="
 rm -rf "$WORK/cache-10k"

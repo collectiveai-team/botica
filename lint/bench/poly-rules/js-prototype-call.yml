@@ -1,0 +1,4 @@
+id: js-prototype-call
+language: javascript
+rule:
+  pattern: Object.prototype.hasOwnProperty.call($A, $B)
