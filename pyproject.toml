@@ -125,6 +125,8 @@ ban-relative-imports = "all"
 "tests/**" = ["S101", "INP001"]
 # Maintainer scripts run as files, not as an importable package.
 "scripts/**" = ["INP001"]
+# botica lint's Python extension SDK and benchmark scripts run as files, not as a package.
+"lint/**" = ["INP001"]
 
 [tool.pyrefly]
 project-excludes = [
@@ -134,6 +136,7 @@ project-excludes = [
   "**/.worktrees/**/*",
   "skills/**/*",
   "review/**/*",     # separate distribution with its own env/import-root
+  "lint/**/*",       # Rust workspace; its Python SDK and bench scripts have their own deps
   # Bundled template payload: snippets/ drop-ins are shipped verbatim into target
   # repos and reference their deps (structlog, pydantic, …), not this tool's env.
   "scaffolding/templates/**/*",
@@ -149,4 +152,4 @@ testpaths = ["tests"]
 # bundled/vendored payload shipped verbatim into target repos (same rationale as the ruff and
 # pyrefly excludes above) — none of the three belong to this tool's own import graph.
 [tool.deptry]
-extend_exclude = ["review", "scaffolding/templates", "skills"]
+extend_exclude = ["lint", "review", "scaffolding/templates", "skills"]
