@@ -80,6 +80,13 @@ if [ -n "${POLY_CORPUS:-}" ]; then
   cp "$WORK/sg/sgconfig.yml" "$WORK/sg-poly/"
   BOTICA_EXTRA_RULES="$BENCH/poly-rules" BOTICA_PREFILTER_AUTO=1 \
     python3 "$BENCH/parity.py" "$POLY_CORPUS" "$BOTICA" "$WORK/sg-poly" | tee "$OUT/parity-poly.txt"
+  echo "== derived prefilter soundness with comments injected between tokens =="
+  python3 "$BENCH/mutate_comments.py" "$POLY_CORPUS" "$WORK/poly-comments"
+  python3 "$BENCH/self_parity.py" "$WORK/poly-comments" "$BOTICA" "$BENCH/poly-rules" | tee "$OUT/self-parity-poly-comments.txt"
+fi
+if [ -d "$STDLIB" ]; then
+  python3 "$BENCH/mutate_comments.py" "$STDLIB" "$WORK/stdlib-comments"
+  python3 "$BENCH/self_parity.py" "$WORK/stdlib-comments" "$BOTICA" | tee "$OUT/self-parity-stdlib-comments.txt"
 fi
 
 echo "== prefilter and result cache (10k synthetic files) =="

@@ -34,12 +34,30 @@ pub struct LangChains {
     comments: Comments,
 }
 
+/// Comment syntax: line markers (to end of line) and an optional block pair.
 #[derive(Clone, Copy)]
-enum Comments {
-    Hash,
-    DoubleDash,
-    CFamily,
+struct Comments {
+    line: &'static [&'static [u8]],
+    block: Option<(&'static [u8], &'static [u8])>,
 }
+
+const HASH: Comments = Comments {
+    line: &[b"#"],
+    block: None,
+};
+const DOUBLE_DASH: Comments = Comments {
+    line: &[b"--"],
+    block: None,
+};
+const C_FAMILY: Comments = Comments {
+    line: &[b"//"],
+    block: Some((b"/*", b"*/")),
+};
+/// tree-sitter-javascript also lexes HTML-like comments (`<!--`, `-->`) as comments.
+const JS_FAMILY: Comments = Comments {
+    line: &[b"//", b"<!--", b"-->"],
+    block: Some((b"/*", b"*/")),
+};
 
 impl LangChains {
     pub fn new(language: SupportLang) -> Self {
@@ -64,9 +82,10 @@ impl LangChains {
             | SupportLang::Bash
             | SupportLang::Yaml
             | SupportLang::Elixir
-            | SupportLang::Nix => Comments::Hash,
-            SupportLang::Lua | SupportLang::Haskell => Comments::DoubleDash,
-            _ => Comments::CFamily,
+            | SupportLang::Nix => HASH,
+            SupportLang::Lua | SupportLang::Haskell => DOUBLE_DASH,
+            SupportLang::JavaScript | SupportLang::TypeScript | SupportLang::Tsx => JS_FAMILY,
+            _ => C_FAMILY,
         };
         Self {
             language,
@@ -267,9 +286,9 @@ impl LangChains {
         true
     }
 
-    /// Mirror of `after_gap`, walking backwards. It does not skip comments: in `smart` mode a
-    /// comment between two pattern tokens is a named node and stops the match, and the places
-    /// where ast-grep accepts arbitrary nodes (a node's trailing children) already split chains.
+    /// Mirror of `after_gap`, walking backwards. It skips comments too: ast-grep 0.41-0.44 stop
+    /// a `smart` match at a comment, but 0.45 skips comments (`is_extra`), so the prefilter must
+    /// allow them to stay correct across versions.
     fn before_gap(&self, text: &[u8], end: usize, token: &[u8]) -> Option<usize> {
         let mut pending = vec![end];
         let mut seen: Vec<usize> = Vec::new();
@@ -303,6 +322,10 @@ impl LangChains {
                     }
                 }
             }
+            let mut starts = Vec::new();
+            let at_line_end = text.get(at).is_none_or(|&b| b == b'\n' || b == b'\r');
+            self.comment_starts(head, at_line_end, &mut starts);
+            pending.extend(starts.into_iter().filter(|&start| start < at));
         }
         None
     }
@@ -374,21 +397,42 @@ impl LangChains {
     }
 
     fn comment_len(&self, rest: &[u8]) -> usize {
-        let line = |prefix: &[u8]| {
-            if rest.starts_with(prefix) {
-                rest.iter().position(|&b| b == b'\n').unwrap_or(rest.len())
-            } else {
-                0
+        if let Some((open, close)) = self.comments.block {
+            if rest.starts_with(open) {
+                return memchr::memmem::find(&rest[open.len()..], close)
+                    .map_or(rest.len(), |end| open.len() + end + close.len());
             }
-        };
-        match self.comments {
-            Comments::Hash => line(b"#"),
-            Comments::DoubleDash => line(b"--"),
-            Comments::CFamily => {
-                if rest.starts_with(b"/*") {
-                    memchr::memmem::find(&rest[2..], b"*/").map_or(rest.len(), |end| end + 4)
-                } else {
-                    line(b"//")
+        }
+        if self
+            .comments
+            .line
+            .iter()
+            .any(|marker| rest.starts_with(marker))
+        {
+            return rest.iter().position(|&b| b == b'\n').unwrap_or(rest.len());
+        }
+        0
+    }
+
+    /// Start positions of every comment that could end exactly at `head.len()`. A line comment
+    /// may start at any marker of the current line (a marker inside a string is a harmless extra
+    /// candidate); a block comment at any opener after the previous closer.
+    fn comment_starts(&self, head: &[u8], at_line_end: bool, out: &mut Vec<usize>) {
+        if at_line_end {
+            let line_start = head.iter().rposition(|&b| b == b'\n').map_or(0, |i| i + 1);
+            let line = &head[line_start..];
+            for marker in self.comments.line {
+                for found in memchr::memmem::find_iter(line, marker) {
+                    out.push(line_start + found);
+                }
+            }
+        }
+        if let Some((open, close)) = self.comments.block {
+            if head.ends_with(close) {
+                let body = &head[..head.len() - close.len()];
+                let from = memchr::memmem::rfind(body, close).map_or(0, |i| i + close.len());
+                for found in memchr::memmem::find_iter(&body[from..], open) {
+                    out.push(from + found);
                 }
             }
         }
@@ -562,6 +606,36 @@ mod tests {
             &r,
             "class Row(Base, SQLModel):\n    table = True\n"
         ));
+    }
+
+    #[test]
+    fn comments_inside_a_chain_are_allowed_both_ways() {
+        // ast-grep 0.45 skips comments in `smart` mode; the check before the anchor must too.
+        let (c, r) = chains_of(
+            SupportLang::Python,
+            json!({"pattern": "class $N(SQLModel, table=True):\n    $$$B"}),
+        );
+        assert!(matches(
+            &c,
+            &r,
+            "class Hero(  # db model\n    SQLModel, table=True):\n    id: int\n"
+        ));
+        assert!(matches(
+            &c,
+            &r,
+            "class Hero(  # a # b\n    SQLModel, table=True):\n    id: int\n"
+        ));
+        let (c, r) = chains_of(
+            SupportLang::TypeScript,
+            json!({"pattern": "let $A: any = $B"}),
+        );
+        assert!(matches(&c, &r, "let a: /* c */ any = 1;"));
+        assert!(matches(&c, &r, "let a: // c\n  any = 1;"));
+        let (c, r) = chains_of(
+            SupportLang::JavaScript,
+            json!({"pattern": "throw new Error($$$A)"}),
+        );
+        assert!(matches(&c, &r, "throw <!-- c\n new Error(1);"));
     }
 
     #[test]
