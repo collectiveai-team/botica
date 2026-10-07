@@ -1,0 +1,17 @@
+[package]
+name = "botica-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "botica"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+botica-astgrep = { path = "../botica-astgrep" }
+botica-core = { path = "../botica-core", features = ["fs"] }
+botica-ext = { path = "../botica-ext" }
+clap.workspace = true
