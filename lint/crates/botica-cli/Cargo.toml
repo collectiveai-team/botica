@@ -9,13 +9,7 @@ publish.workspace = true
 name = "botica"
 path = "src/main.rs"
 
-[features]
-mimalloc = ["dep:mimalloc", "dep:libmimalloc-sys", "dep:tree-sitter"]
-
 [dependencies]
-mimalloc = { version = "0.1", optional = true, default-features = false }
-libmimalloc-sys = { version = "0.1", optional = true, features = ["extended"] }
-tree-sitter = { version = "=0.26.13", optional = true }
 anyhow.workspace = true
 blake3 = "1"
 botica-astgrep = { path = "../botica-astgrep" }

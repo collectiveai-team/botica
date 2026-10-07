@@ -305,9 +305,6 @@ impl AstGrepSet {
             return Vec::new();
         }
         self.parsed.fetch_add(1, Ordering::Relaxed);
-        if std::env::var_os("BOTICA_NO_PARSER_REUSE").is_some() {
-            return self.run(group, &active, &lang.ast_grep(text));
-        }
         match parse_reusing(lang, text) {
             Some(grep) => self.run(group, &active, &grep),
             None => Vec::new(),

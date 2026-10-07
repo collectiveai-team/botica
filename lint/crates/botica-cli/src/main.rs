@@ -1,9 +1,5 @@
 mod rules;
 
-#[cfg(feature = "mimalloc")]
-#[global_allocator]
-static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
-
 use anyhow::Result;
 use botica_core::cache::{lint_files_cached, Cache};
 use botica_core::{walk, Diagnostic, ExtensionRun, Severity};
@@ -47,17 +43,6 @@ enum Command {
 }
 
 fn main() -> ExitCode {
-    #[cfg(feature = "mimalloc")]
-    unsafe {
-        use libmimalloc_sys::mi_calloc;
-        use libmimalloc_sys::{mi_free, mi_malloc, mi_realloc};
-        tree_sitter::set_allocator(
-            Some(mi_malloc),
-            Some(mi_calloc),
-            Some(mi_realloc),
-            Some(mi_free),
-        );
-    }
     let Cli { command } = Cli::parse();
     let Command::Lint {
         paths,

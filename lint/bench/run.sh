@@ -79,8 +79,7 @@ if [ -d "$STDLIB" ]; then
     "$BOTICA lint ." \
     "$BOTICA lint . --cache-dir $WORK/cache-stdlib" \
     "$BOTICA lint . --no-astgrep" \
-    "env BOTICA_PREFILTER_REGEX=1 $BOTICA lint ." \
-    "env BOTICA_NO_PARSER_REUSE=1 $BOTICA lint .")
+    "env BOTICA_PREFILTER_REGEX=1 $BOTICA lint .")
   echo "== regex prefilter parity on real code =="
   BOTICA_PREFILTER_REGEX=1 python3 "$BENCH/parity.py" "$STDLIB" "$BOTICA" "$WORK/sg" | tee "$OUT/parity-stdlib-regex.txt"
 fi
