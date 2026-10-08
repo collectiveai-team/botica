@@ -53,7 +53,7 @@ struct LintArgs {
     /// Measurement aid: how files are handed to the worker threads.
     #[arg(long, hide = true, value_enum, default_value_t = ScheduleArg::InOrder)]
     schedule: ScheduleArg,
-    /// Experiment: parse only the top-level statements holding a candidate (Python).
+    /// Experiment: parse only the top-level statements holding a candidate (Python, JS/TS).
     #[arg(long, hide = true)]
     regions: bool,
 }

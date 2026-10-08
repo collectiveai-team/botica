@@ -43,7 +43,9 @@ fn is_local(rule: &serde_json::Value) -> bool {
         serde_json::Value::Object(map) => map.iter().all(|(key, value)| match key.as_str() {
             _ if value.is_null() => true,
             "follows" | "precedes" | "nthChild" | "matches" => false,
-            "kind" => value.as_str().is_none_or(|k| k != "module"),
+            "kind" => value
+                .as_str()
+                .is_none_or(|k| k != "module" && k != "program"),
             _ => is_local(value),
         }),
         serde_json::Value::Array(items) => items.iter().all(is_local),
@@ -365,7 +367,7 @@ impl AstGrepSet {
         }
     }
 
-    /// Experiment: parse only the top-level statements holding a candidate (Python only).
+    /// Experiment: parse only the top-level statements holding a candidate (Python, JS/TS).
     pub fn set_regions(&mut self, enabled: bool) {
         self.regions = enabled;
     }
@@ -464,8 +466,8 @@ impl AstGrepSet {
         }
         self.parsed.fetch_add(1, Ordering::Relaxed);
         self.file_bytes.fetch_add(text.len(), Ordering::Relaxed);
-        let partial = if self.regions && lang == SupportLang::Python {
-            self.parse_regions(group, &active, text)
+        let partial = if self.regions {
+            self.parse_regions(lang, group, &active, text)
         } else {
             None
         };
@@ -483,11 +485,13 @@ impl AstGrepSet {
     /// or returns `None` when that is not safe or not worth it.
     fn parse_regions(
         &self,
+        lang: SupportLang,
         group: &LanguageGroup,
         active: &[bool],
         text: &str,
     ) -> Option<AstGrep<StrDoc<SupportLang>>> {
         let bytes = text.as_bytes();
+        let chunks = regions::chunks(lang, bytes)?;
         let mut wanted = vec![false; group.chains.as_ref().map_or(0, chains::LangChains::len)];
         let mut positions = Vec::new();
         for &index in &group.rules {
@@ -512,7 +516,9 @@ impl AstGrepSet {
                     },
                     _ => unknown = true,
                 }
-                false // visit every atom, including every branch of `Or`
+                // `false` visits every branch of an `Or` but only the first atom of an `And`:
+                // enough, since any atom of a local rule lies in the statement holding the match.
+                false
             });
             if unknown {
                 return None;
@@ -521,7 +527,6 @@ impl AstGrepSet {
         if let Some(table) = &group.chains {
             table.positions(bytes, &wanted, &mut positions);
         }
-        let chunks = regions::python_chunks(bytes);
         let picked = regions::select(&chunks, &mut positions);
         let picked_bytes: usize = picked.iter().map(|c| c.end - c.start).sum();
         if picked.is_empty() || picked_bytes * 5 > text.len() * 4 {
@@ -545,7 +550,7 @@ impl AstGrepSet {
                 end_point: point(c.end, c.end_row),
             })
             .collect();
-        let grep = parse_reusing(SupportLang::Python, text, &ranges)?;
+        let grep = parse_reusing(lang, text, &ranges)?;
         if grep.root().get_inner_node().has_error() {
             self.region_fallbacks.fetch_add(1, Ordering::Relaxed);
             return None;
