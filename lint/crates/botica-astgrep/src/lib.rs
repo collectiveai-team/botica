@@ -34,8 +34,10 @@ pub struct AstGrepRule {
     rule_json: serde_json::Value,
     /// Every match lies inside one top-level statement and depends on nothing outside it.
     local: bool,
-    /// Uses `has`: a match may be a container (e.g. a class) whose whole body matters, so the
-    /// rule cannot be narrowed below top-level statements.
+    /// Reads the contents of a container, so the rule cannot be narrowed below top-level
+    /// statements: it uses `has` (the match may be a class whose whole body matters), or an
+    /// `inside` that reads its ancestor's text or descendants (a partly parsed class would not
+    /// match it, and a `not` around it would then report a false hit).
     inspects_descendants: bool,
     /// Uses `inside` outside a `not`: part of its prefilter lies in an ancestor of the match.
     looks_at_ancestors: bool,
@@ -49,6 +51,62 @@ fn uses_key(value: &serde_json::Value, wanted: &str) -> bool {
         serde_json::Value::Array(items) => items.iter().any(|v| uses_key(v, wanted)),
         _ => false,
     }
+}
+
+/// Whether an `inside` (under a `not` or not) reads the contents of an ancestor that member
+/// narrowing may leave partly parsed: it uses `has` or `regex`, or a `pattern` that can match
+/// such a container. In Python only top-level `class`/`def` bodies are narrowed, so a pattern
+/// rooted elsewhere (e.g. `if __name__ == "__main__": …`) is safe; in JS/TS any statement ending
+/// in a block may be narrowed, so every pattern counts.
+fn inside_reads_contents(value: &serde_json::Value, language: SupportLang) -> bool {
+    match value {
+        serde_json::Value::Object(map) => map.iter().any(|(key, v)| {
+            let reads = key == "inside"
+                && (uses_key(v, "has")
+                    || uses_key(v, "regex")
+                    || any_value_of(v, "pattern", &|p| !spares_members(p, language)));
+            reads || inside_reads_contents(v, language)
+        }),
+        serde_json::Value::Array(items) => items.iter().any(|v| inside_reads_contents(v, language)),
+        _ => false,
+    }
+}
+
+/// Whether some value under key `wanted`, at any depth, satisfies `test`.
+fn any_value_of(
+    value: &serde_json::Value,
+    wanted: &str,
+    test: &dyn Fn(&serde_json::Value) -> bool,
+) -> bool {
+    match value {
+        serde_json::Value::Object(map) => map
+            .iter()
+            .any(|(key, v)| (key == wanted && test(v)) || any_value_of(v, wanted, test)),
+        serde_json::Value::Array(items) => items.iter().any(|v| any_value_of(v, wanted, test)),
+        _ => false,
+    }
+}
+
+/// Whether a pattern can never match a node that member narrowing leaves partly parsed.
+fn spares_members(pattern: &serde_json::Value, language: SupportLang) -> bool {
+    const PYTHON_CONTAINERS: [&str; 4] = [
+        "class_definition",
+        "function_definition",
+        "decorated_definition",
+        "block",
+    ];
+    let (Some(source), SupportLang::Python) = (pattern.as_str(), language) else {
+        return false;
+    };
+    let Some(kinds) = ast_grep_core::Pattern::try_new(source, language)
+        .ok()
+        .and_then(|p| p.potential_kinds())
+    else {
+        return false;
+    };
+    PYTHON_CONTAINERS
+        .iter()
+        .all(|kind| !kinds.contains(usize::from(language.kind_to_id(kind))))
 }
 
 /// Like `uses_key`, but not under a `not`: the prefilter takes no atom from there.
@@ -158,9 +216,9 @@ impl AstGrepRule {
                 let local = serialized.get("utils").is_none_or(|u| {
                     u.is_null() || u.as_object().is_some_and(serde_json::Map::is_empty)
                 }) && serialized.get("rule").is_some_and(is_local);
-                let inspects_descendants = serialized
-                    .get("rule")
-                    .is_some_and(|rule| uses_key(rule, "has"));
+                let inspects_descendants = serialized.get("rule").is_some_and(|rule| {
+                    uses_key(rule, "has") || inside_reads_contents(rule, config.language)
+                });
                 let looks_at_ancestors = serialized
                     .get("rule")
                     .is_some_and(|rule| uses_key_outside_not(rule, "inside"));
@@ -499,7 +557,7 @@ impl AstGrepSet {
     }
 
     /// Whether some rule's language covers `path`, by ast-grep's extension mapping.
-    pub fn lints(&self, path: &Path) -> bool {
+    pub fn covers(&self, path: &Path) -> bool {
         language_of(path).is_some_and(|language| self.groups.iter().any(|g| g.language == language))
     }
 
@@ -915,6 +973,30 @@ mod language_tests {
     }
 
     #[test]
+    fn an_inside_that_reads_its_ancestor_keeps_the_whole_class() {
+        // Narrowed to `g`, the class would lose `x = 1`, the `inside` would fail and the `not`
+        // would report the print.
+        let yaml = "id: p\nlanguage: python\nrule:\n  pattern: print($A)\n  not:\n    inside:\n      stopBy: end\n      pattern: |\n        class $C:\n            x = 1\n            $$$B\n";
+        let filler: String = (0..40)
+            .map(|i| format!("def h{i}(a, b):\n    return a + b * {i}\n\n"))
+            .collect();
+        let source = format!(
+            "{filler}class C:\n    x = 1\n\n    def f(self):\n        return 1\n\n    def g(self):\n        print(2)\n"
+        );
+        let mut whole = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
+        whole.set_regions(false);
+        let regions = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
+        let path = Path::new("m.py");
+        assert!(whole.check(path, &source).is_empty());
+        assert!(regions.check(path, &source).is_empty());
+        assert_eq!(regions.stats().region_files, 1);
+        assert!(AstGrepRule::from_yaml(yaml).unwrap()[0].inspects_descendants);
+        // An ancestor that is never narrowed (a top-level `if`) does not stop the narrowing.
+        let main = "id: p\nlanguage: python\nrule:\n  pattern: print($A)\n  not:\n    inside:\n      stopBy: end\n      pattern: |\n        if __name__ == \"__main__\":\n            $$$B\n";
+        assert!(!AstGrepRule::from_yaml(main).unwrap()[0].inspects_descendants);
+    }
+
+    #[test]
     fn skipping_subtrees_finds_the_same_hits_as_matching_every_node() {
         let yaml = "id: p\nlanguage: python\nrule:\n  pattern: print($A)\n  not:\n    inside:\n      stopBy: end\n      pattern: 'if __name__ == \"__main__\": $$$B'\n---\nid: q\nlanguage: python\nrule:\n  kind: call\n  has:\n    field: function\n    regex: ^log$\n";
         let source = "def f(a):\n    return [x for x in a if print(x)]\n\nclass C:\n    def g(self):\n        log(print(2), print(3, 4))\n\nY = {'k': print(5)}\n\nif __name__ == \"__main__\":\n    print(6)\n";
@@ -932,16 +1014,16 @@ mod language_tests {
     }
 
     #[test]
-    fn lints_every_extension_ast_grep_maps_to_a_rule_language() {
+    fn covers_every_extension_ast_grep_maps_to_a_rule_language() {
         let set = AstGrepSet::new(
             AstGrepRule::from_yaml("id: j\nlanguage: javascript\nrule:\n  pattern: debugger\n")
                 .unwrap(),
         );
         for linted in ["a.js", "a.mjs", "a.cjs", "a.jsx"] {
-            assert!(set.lints(Path::new(linted)), "{linted}");
+            assert!(set.covers(Path::new(linted)), "{linted}");
         }
         for other in ["a.py", "a.ts", "a.json"] {
-            assert!(!set.lints(Path::new(other)), "{other}");
+            assert!(!set.covers(Path::new(other)), "{other}");
         }
     }
 

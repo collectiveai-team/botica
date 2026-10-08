@@ -127,7 +127,7 @@ fn lint(args: LintArgs) -> Result<bool> {
     let mut files = Vec::new();
     for path in &paths {
         if path.is_dir() {
-            files.extend(walk::discover(path, &|p| engine.astgrep().lints(p)));
+            files.extend(walk::discover(path, &|p| engine.astgrep().covers(p)));
         } else {
             files.push(path.clone());
         }
@@ -140,7 +140,10 @@ fn lint(args: LintArgs) -> Result<bool> {
         let sources = walk::read_all(&root, &files);
         mark("read");
         let found = if let Some(dir) = &args.cache_dir {
-            let mut cache = Cache::load(dir, &rules::fingerprint(with_astgrep));
+            let mut cache = Cache::load(
+                dir,
+                &rules::fingerprint(with_astgrep, args.extra_rules.as_deref())?,
+            );
             let (found, stats) = lint_files_cached(&engine, &sources, &mut cache);
             cache.save()?;
             if timings {

@@ -43,15 +43,8 @@ pub fn build_engine(options: &EngineOptions<'_>) -> Result<Engine> {
                 rules.push(rule);
             }
         }
-        if let Some(dir) = options.extra_rules {
-            let mut paths: Vec<_> = std::fs::read_dir(dir)?
-                .filter_map(|e| e.ok().map(|e| e.path()))
-                .filter(|p| p.extension().is_some_and(|e| e == "yml"))
-                .collect();
-            paths.sort();
-            for path in paths {
-                rules.extend(AstGrepRule::from_yaml(&std::fs::read_to_string(path)?)?);
-            }
+        for yaml in extra_rule_texts(options.extra_rules)? {
+            rules.extend(AstGrepRule::from_yaml(&yaml)?);
         }
     }
     let mut set = AstGrepSet::new(rules);
@@ -67,7 +60,7 @@ pub fn build_engine(options: &EngineOptions<'_>) -> Result<Engine> {
 }
 
 /// Identifies everything that can change a file's diagnostics, for the result cache.
-pub fn fingerprint(with_astgrep: bool) -> String {
+pub fn fingerprint(with_astgrep: bool, extra_rules: Option<&Path>) -> Result<String> {
     let mut hasher = blake3::Hasher::new();
     hasher.update(env!("CARGO_PKG_VERSION").as_bytes());
     hasher.update(&[u8::from(with_astgrep)]);
@@ -75,7 +68,28 @@ pub fn fingerprint(with_astgrep: bool) -> String {
     for yaml in EMBEDDED {
         hasher.update(yaml.as_bytes());
     }
-    hasher.finalize().to_hex().to_string()
+    if with_astgrep {
+        for yaml in extra_rule_texts(extra_rules)? {
+            hasher.update(yaml.as_bytes());
+        }
+    }
+    Ok(hasher.finalize().to_hex().to_string())
+}
+
+/// The `*.yml` files of the extra rules directory, in name order.
+fn extra_rule_texts(dir: Option<&Path>) -> Result<Vec<String>> {
+    let Some(dir) = dir else {
+        return Ok(Vec::new());
+    };
+    let mut paths: Vec<_> = std::fs::read_dir(dir)?
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .filter(|p| p.extension().is_some_and(|e| e == "yml"))
+        .collect();
+    paths.sort();
+    paths
+        .into_iter()
+        .map(|path| Ok(std::fs::read_to_string(path)?))
+        .collect()
 }
 
 /// Stand-in for the `prefilter = "<regex>"` field of `rule.toml`, which only rules without a
