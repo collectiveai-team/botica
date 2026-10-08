@@ -498,6 +498,11 @@ impl AstGrepSet {
         self.rules.len()
     }
 
+    /// Whether some rule's language covers `path`, by ast-grep's extension mapping.
+    pub fn lints(&self, path: &Path) -> bool {
+        language_of(path).is_some_and(|language| self.groups.iter().any(|g| g.language == language))
+    }
+
     pub fn is_empty(&self) -> bool {
         self.rules.is_empty()
     }
@@ -924,6 +929,20 @@ mod language_tests {
         assert_eq!(skipping.check(path, source), expected);
         assert_eq!(skipping.stats().anchored_files, 1);
         assert_eq!(every.stats().anchored_files, 0);
+    }
+
+    #[test]
+    fn lints_every_extension_ast_grep_maps_to_a_rule_language() {
+        let set = AstGrepSet::new(
+            AstGrepRule::from_yaml("id: j\nlanguage: javascript\nrule:\n  pattern: debugger\n")
+                .unwrap(),
+        );
+        for linted in ["a.js", "a.mjs", "a.cjs", "a.jsx"] {
+            assert!(set.lints(Path::new(linted)), "{linted}");
+        }
+        for other in ["a.py", "a.ts", "a.json"] {
+            assert!(!set.lints(Path::new(other)), "{other}");
+        }
     }
 
     #[test]

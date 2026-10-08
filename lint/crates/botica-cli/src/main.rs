@@ -127,7 +127,7 @@ fn lint(args: LintArgs) -> Result<bool> {
     let mut files = Vec::new();
     for path in &paths {
         if path.is_dir() {
-            files.extend(walk::discover(path));
+            files.extend(walk::discover(path, &|p| engine.astgrep().lints(p)));
         } else {
             files.push(path.clone());
         }

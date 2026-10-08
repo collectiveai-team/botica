@@ -12,8 +12,9 @@ pub struct SourceFile {
 const LINTED_EXTENSIONS: [&str; 6] = ["py", "pyi", "ts", "tsx", "js", "jsx"];
 
 /// One walk of the tree, honouring `.gitignore`, on several threads; sorted, so the result
-/// does not depend on thread timing.
-pub fn discover(root: &Path) -> Vec<PathBuf> {
+/// does not depend on thread timing. Keeps the files with a linted extension and those `rules`
+/// accepts (e.g. `.mjs` when there are JavaScript ast-grep rules).
+pub fn discover(root: &Path, rules: &(dyn Fn(&Path) -> bool + Sync)) -> Vec<PathBuf> {
     let found = std::sync::Mutex::new(Vec::new());
     WalkBuilder::new(root)
         .hidden(true)
@@ -26,11 +27,12 @@ pub fn discover(root: &Path) -> Vec<PathBuf> {
             Box::new(move |entry| {
                 if let Ok(entry) = entry {
                     let linted = entry.file_type().is_some_and(|t| t.is_file())
-                        && entry
+                        && (entry
                             .path()
                             .extension()
                             .and_then(|e| e.to_str())
-                            .is_some_and(|e| LINTED_EXTENSIONS.contains(&e));
+                            .is_some_and(|e| LINTED_EXTENSIONS.contains(&e))
+                            || rules(entry.path()));
                     if linted {
                         mine.paths.push(entry.into_path());
                     }
