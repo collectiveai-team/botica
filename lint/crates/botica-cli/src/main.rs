@@ -59,6 +59,9 @@ struct LintArgs {
     /// Match every node instead of skipping the subtrees without candidates.
     #[arg(long, hide = true)]
     no_subtree_skip: bool,
+    /// Measurement aid: finish the walk before reading and linting any file.
+    #[arg(long, hide = true)]
+    separate_walk: bool,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -124,17 +127,32 @@ fn lint(args: LintArgs) -> Result<bool> {
     } else {
         args.paths
     };
+    let fused = args.cache_dir.is_none() && matches!(args.schedule, ScheduleArg::InOrder);
+    let streaming = fused && args.ext.is_none();
+    let overlapped = streaming && !args.separate_walk;
     let mut files = Vec::new();
+    let mut files_read = 0;
+    let mut overlapped_found = Vec::new();
     for path in &paths {
-        if path.is_dir() {
-            files.extend(walk::discover(path, &|p| engine.astgrep().covers(p)));
-        } else {
+        if !path.is_dir() {
             files.push(path.clone());
+        } else if overlapped {
+            let (read, found) =
+                walk::walk_and_lint(&engine, &root, path, &|p| engine.astgrep().covers(p));
+            files_read += read;
+            overlapped_found.extend(found);
+        } else {
+            files.extend(walk::discover(path, &|p| engine.astgrep().covers(p)));
         }
     }
-    mark("walk");
-    let fused = args.cache_dir.is_none() && matches!(args.schedule, ScheduleArg::InOrder);
-    let (sources, mut diagnostics) = if fused {
+    mark(if overlapped { "walk+read+lint" } else { "walk" });
+    let (sources, mut diagnostics) = if streaming {
+        let (read, mut found) = walk::lint_streaming(&engine, &root, &files);
+        files_read += read;
+        found.append(&mut overlapped_found);
+        found.sort_by(|a, b| (&a.path, a.start, &a.rule).cmp(&(&b.path, b.start, &b.rule)));
+        (Vec::new(), found)
+    } else if fused {
         walk::read_and_lint(&engine, &root, &files)
     } else {
         let sources = walk::read_all(&root, &files);
@@ -208,7 +226,7 @@ fn lint(args: LintArgs) -> Result<bool> {
         eprintln!(
             "[timing] total {:.2} ms, {} files, {} diagnostics",
             total.elapsed().as_secs_f64() * 1e3,
-            sources.len(),
+            files_read.max(sources.len()),
             diagnostics.len()
         );
     }

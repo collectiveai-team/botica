@@ -26,14 +26,7 @@ pub fn discover(root: &Path, rules: &(dyn Fn(&Path) -> bool + Sync)) -> Vec<Path
             };
             Box::new(move |entry| {
                 if let Ok(entry) = entry {
-                    let linted = entry.file_type().is_some_and(|t| t.is_file())
-                        && (entry
-                            .path()
-                            .extension()
-                            .and_then(|e| e.to_str())
-                            .is_some_and(|e| LINTED_EXTENSIONS.contains(&e))
-                            || rules(entry.path()));
-                    if linted {
+                    if is_linted(&entry, rules) {
                         mine.paths.push(entry.into_path());
                     }
                 }
@@ -43,6 +36,94 @@ pub fn discover(root: &Path, rules: &(dyn Fn(&Path) -> bool + Sync)) -> Vec<Path
     let mut paths = found.into_inner().expect("walk");
     paths.sort_unstable();
     paths
+}
+
+fn is_linted(entry: &ignore::DirEntry, rules: &(dyn Fn(&Path) -> bool + Sync)) -> bool {
+    entry.file_type().is_some_and(|t| t.is_file())
+        && (entry
+            .path()
+            .extension()
+            .and_then(|e| e.to_str())
+            .is_some_and(|e| LINTED_EXTENSIONS.contains(&e))
+            || rules(entry.path()))
+}
+
+/// What `walk_and_lint` collects from every walker thread.
+#[derive(Default)]
+struct Linted {
+    read: usize,
+    found: Vec<Diagnostic>,
+}
+
+/// Walks `dir` and lints each file on the walker thread that found it, with no list of paths and
+/// no barrier between walking and linting. Nobody keeps the texts. Returns the number of files
+/// read and the sorted diagnostics.
+pub fn walk_and_lint(
+    engine: &Engine,
+    root: &Path,
+    dir: &Path,
+    rules: &(dyn Fn(&Path) -> bool + Sync),
+) -> (usize, Vec<Diagnostic>) {
+    struct Builder<'a> {
+        engine: &'a Engine,
+        root: &'a Path,
+        rules: &'a (dyn Fn(&Path) -> bool + Sync),
+        into: &'a std::sync::Mutex<Linted>,
+    }
+    struct Visitor<'a> {
+        builder: Builder<'a>,
+        buf: Vec<u8>,
+        mine: Linted,
+    }
+    impl<'a> ignore::ParallelVisitorBuilder<'a> for Builder<'a> {
+        fn build(&mut self) -> Box<dyn ignore::ParallelVisitor + 'a> {
+            Box::new(Visitor {
+                builder: Builder { ..*self },
+                buf: Vec::new(),
+                mine: Linted::default(),
+            })
+        }
+    }
+    impl ignore::ParallelVisitor for Visitor<'_> {
+        fn visit(&mut self, entry: Result<ignore::DirEntry, ignore::Error>) -> ignore::WalkState {
+            if let Ok(entry) = entry {
+                if is_linted(&entry, self.builder.rules) {
+                    if let Some(text) = read_into(entry.path(), &mut self.buf) {
+                        let path = relative_path(self.builder.root, entry.path());
+                        self.mine
+                            .found
+                            .extend(self.builder.engine.lint_source(&path, text));
+                        self.mine.read += 1;
+                    }
+                }
+            }
+            ignore::WalkState::Continue
+        }
+    }
+    impl Drop for Visitor<'_> {
+        fn drop(&mut self) {
+            if let Ok(mut all) = self.builder.into.lock() {
+                all.read += self.mine.read;
+                all.found.append(&mut self.mine.found);
+            }
+        }
+    }
+
+    let into = std::sync::Mutex::new(Linted::default());
+    let mut builder = Builder {
+        engine,
+        root,
+        rules,
+        into: &into,
+    };
+    WalkBuilder::new(dir)
+        .hidden(true)
+        .threads(rayon::current_num_threads())
+        .build_parallel()
+        .visit(&mut builder);
+    let Linted { read, mut found } = into.into_inner().expect("walk");
+    found.sort_by(|a, b| (&a.path, a.start, &a.rule).cmp(&(&b.path, b.start, &b.rule)));
+    (read, found)
 }
 
 /// A walker thread's paths, handed over to the shared list when the thread's visitor drops.
@@ -59,17 +140,63 @@ impl Drop for Flush<'_> {
     }
 }
 
-fn read_one(root: &Path, path: &Path) -> Option<SourceFile> {
-    let text = std::fs::read_to_string(path).ok()?;
+fn relative_path(root: &Path, path: &Path) -> String {
     let relative = path.strip_prefix(root).unwrap_or(path);
     let relative: PathBuf = relative
         .components()
         .filter(|c| !matches!(c, Component::CurDir))
         .collect();
+    relative.to_string_lossy().into_owned()
+}
+
+fn read_one(root: &Path, path: &Path) -> Option<SourceFile> {
+    let text = std::fs::read_to_string(path).ok()?;
     Some(SourceFile {
-        path: relative.to_string_lossy().into_owned(),
+        path: relative_path(root, path),
         text,
     })
+}
+
+const FIRST_READ: usize = 64 * 1024;
+
+/// Reads `path` into `buf`, which a worker keeps between files: no allocation per file, and no
+/// `statx`/`lseek` for a size hint (most files fit in one read). `None` when the file cannot be
+/// read or is not UTF-8, like `read_to_string`.
+fn read_into<'a>(path: &Path, buf: &'a mut Vec<u8>) -> Option<&'a str> {
+    use std::io::{ErrorKind, Read};
+    if buf.is_empty() {
+        buf.resize(FIRST_READ, 0);
+    }
+    let mut file = std::fs::File::open(path).ok()?;
+    let mut filled = 0;
+    loop {
+        if filled == buf.len() {
+            buf.resize(buf.len() * 2, 0);
+        }
+        match file.read(&mut buf[filled..]) {
+            Ok(0) => break,
+            Ok(read) => filled += read,
+            Err(error) if error.kind() == ErrorKind::Interrupted => {}
+            Err(_) => return None,
+        }
+    }
+    std::str::from_utf8(&buf[..filled]).ok()
+}
+
+/// Like `read_and_lint` for when nobody needs the texts afterwards (no extension): each file's
+/// text is dropped as soon as it is linted. Returns the number of files read.
+pub fn lint_streaming(engine: &Engine, root: &Path, paths: &[PathBuf]) -> (usize, Vec<Diagnostic>) {
+    let found: Vec<Option<Vec<Diagnostic>>> = paths
+        .par_iter()
+        .map_init(Vec::new, |buf, path| {
+            let text = read_into(path, buf)?;
+            Some(engine.lint_source(&relative_path(root, path), text))
+        })
+        .collect();
+    let read = found.iter().flatten().count();
+    let mut out: Vec<Diagnostic> = found.into_iter().flatten().flatten().collect();
+    out.sort_by(|a, b| (&a.path, a.start, &a.rule).cmp(&(&b.path, b.start, &b.rule)));
+    (read, out)
 }
 
 pub fn read_all(root: &Path, paths: &[PathBuf]) -> Vec<SourceFile> {
