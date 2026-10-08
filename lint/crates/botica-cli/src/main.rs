@@ -2,8 +2,9 @@ mod rules;
 
 use anyhow::Result;
 use botica_core::cache::{lint_files_cached, Cache};
+use botica_core::walk::Schedule;
 use botica_core::{walk, Diagnostic, ExtensionRun, Severity};
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -18,50 +19,65 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    Lint {
-        /// Directory to walk, or explicit files (as prek passes them).
-        paths: Vec<PathBuf>,
-        /// Extension command, e.g. "uv run --script ext.py".
-        #[arg(long)]
-        ext: Option<String>,
-        /// Files per `lint/files` request.
-        #[arg(long, default_value_t = 256)]
-        batch: usize,
-        /// Skip the embedded ast-grep rules.
-        #[arg(long)]
-        no_astgrep: bool,
-        /// Parse every file even when no rule's required literals occur in it.
-        #[arg(long)]
-        no_prefilter: bool,
-        /// Directory for the per-file result cache (off when omitted).
-        #[arg(long)]
-        cache_dir: Option<PathBuf>,
-        /// Print phase timings to stderr.
-        #[arg(long)]
-        timings: bool,
-    },
+    Lint(LintArgs),
+}
+
+#[derive(Args)]
+struct LintArgs {
+    /// Directory to walk, or explicit files (as prek passes them).
+    paths: Vec<PathBuf>,
+    /// Extension command, e.g. "uv run --script ext.py".
+    #[arg(long)]
+    ext: Option<String>,
+    /// Files per `lint/files` request.
+    #[arg(long, default_value_t = 256)]
+    batch: usize,
+    /// Skip the embedded ast-grep rules.
+    #[arg(long)]
+    no_astgrep: bool,
+    /// Parse every file, even those the rules' derived prefilters rule out.
+    #[arg(long)]
+    no_prefilter: bool,
+    /// Directory for the per-file result cache (off when omitted).
+    #[arg(long)]
+    cache_dir: Option<PathBuf>,
+    /// Print phase timings to stderr.
+    #[arg(long)]
+    timings: bool,
+    /// Measurement aid: extra ast-grep rules (`*.yml` in this directory).
+    #[arg(long, hide = true)]
+    extra_rules: Option<PathBuf>,
+    /// Measurement aid: print each rule's effective prefilter to stderr.
+    #[arg(long, hide = true)]
+    describe_prefilter: bool,
+    /// Measurement aid: how files are handed to the worker threads.
+    #[arg(long, hide = true, value_enum, default_value_t = ScheduleArg::InOrder)]
+    schedule: ScheduleArg,
+}
+
+#[derive(Clone, Copy, ValueEnum)]
+enum ScheduleArg {
+    InOrder,
+    LargestFirst,
+    /// One `[file]` timing row per file on stderr.
+    Timed,
+}
+
+impl From<ScheduleArg> for Schedule {
+    fn from(arg: ScheduleArg) -> Self {
+        match arg {
+            ScheduleArg::InOrder => Schedule::InOrder,
+            ScheduleArg::LargestFirst => Schedule::LargestFirst,
+            ScheduleArg::Timed => Schedule::Timed,
+        }
+    }
 }
 
 fn main() -> ExitCode {
-    let Cli { command } = Cli::parse();
-    let Command::Lint {
-        paths,
-        ext,
-        batch,
-        no_astgrep,
-        no_prefilter,
-        cache_dir,
-        timings,
-    } = command;
-    match lint(
-        paths,
-        ext,
-        batch,
-        !no_astgrep,
-        !no_prefilter,
-        cache_dir,
-        timings,
-    ) {
+    let Cli {
+        command: Command::Lint(args),
+    } = Cli::parse();
+    match lint(args) {
         Ok(true) => ExitCode::from(1),
         Ok(false) => ExitCode::SUCCESS,
         Err(error) => {
@@ -71,15 +87,8 @@ fn main() -> ExitCode {
     }
 }
 
-fn lint(
-    paths: Vec<PathBuf>,
-    ext: Option<String>,
-    batch: usize,
-    with_astgrep: bool,
-    prefilter: bool,
-    cache_dir: Option<PathBuf>,
-    timings: bool,
-) -> Result<bool> {
+fn lint(args: LintArgs) -> Result<bool> {
+    let timings = args.timings;
     let total = Instant::now();
     let mut lap = Instant::now();
     let mut mark = |label: &str| {
@@ -92,14 +101,20 @@ fn lint(
         lap = Instant::now();
     };
 
-    let engine = rules::build_engine(with_astgrep, prefilter)?;
+    let with_astgrep = !args.no_astgrep;
+    let engine = rules::build_engine(&rules::EngineOptions {
+        astgrep: with_astgrep,
+        prefilter: !args.no_prefilter,
+        extra_rules: args.extra_rules.as_deref(),
+        describe_prefilter: args.describe_prefilter,
+    })?;
     mark("compile rules");
 
     let root = std::env::current_dir()?;
-    let paths = if paths.is_empty() {
+    let paths = if args.paths.is_empty() {
         vec![PathBuf::from(".")]
     } else {
-        paths
+        args.paths
     };
     let mut files = Vec::new();
     for path in &paths {
@@ -113,7 +128,7 @@ fn lint(
     let sources = walk::read_all(&root, &files);
     mark("read");
 
-    let mut diagnostics = if let Some(dir) = &cache_dir {
+    let mut diagnostics = if let Some(dir) = &args.cache_dir {
         let mut cache = Cache::load(dir, &rules::fingerprint(with_astgrep));
         let (found, stats) = lint_files_cached(&engine, &sources, &mut cache);
         cache.save()?;
@@ -125,7 +140,7 @@ fn lint(
         }
         found
     } else {
-        walk::lint_files(&engine, &sources)
+        walk::lint_files(&engine, &sources, args.schedule.into())
     };
     mark("native+ast-grep");
     if timings {
@@ -136,13 +151,13 @@ fn lint(
         );
     }
 
-    if let Some(command) = ext {
+    if let Some(command) = args.ext {
         let command: Vec<String> = command.split_whitespace().map(str::to_owned).collect();
         let mut run = ExtensionRun::start(&command)?;
         mark("ext start");
         diagnostics.extend(run.lint(
             sources.iter().map(|f| (f.path.as_str(), f.text.as_str())),
-            batch,
+            args.batch,
         )?);
         mark("ext lint");
         run.finish()?;

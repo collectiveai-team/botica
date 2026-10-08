@@ -46,16 +46,25 @@ pub fn read_all(root: &Path, paths: &[PathBuf]) -> Vec<SourceFile> {
         .collect()
 }
 
-pub fn lint_files(engine: &Engine, files: &[SourceFile]) -> Vec<Diagnostic> {
-    let mut out: Vec<Diagnostic> = if std::env::var_os("BOTICA_FILE_TIMES").is_some() {
-        lint_timed(engine, files)
-    } else if std::env::var_os("BOTICA_SCHED_LARGEST_FIRST").is_some() {
-        lint_largest_first(engine, files)
-    } else {
-        files
+/// How files are handed to the worker threads. Only `InOrder` is meant for users; the others are
+/// measurement aids kept from the spike.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum Schedule {
+    #[default]
+    InOrder,
+    LargestFirst,
+    /// `InOrder`, plus one timing row per file on stderr.
+    Timed,
+}
+
+pub fn lint_files(engine: &Engine, files: &[SourceFile], schedule: Schedule) -> Vec<Diagnostic> {
+    let mut out: Vec<Diagnostic> = match schedule {
+        Schedule::InOrder => files
             .par_iter()
             .flat_map_iter(|file| engine.lint_source(&file.path, &file.text))
-            .collect()
+            .collect(),
+        Schedule::LargestFirst => lint_largest_first(engine, files),
+        Schedule::Timed => lint_timed(engine, files),
     };
     out.sort_by(|a, b| (&a.path, a.start, &a.rule).cmp(&(&b.path, b.start, &b.rule)));
     out
@@ -73,7 +82,7 @@ fn lint_largest_first(engine: &Engine, files: &[SourceFile]) -> Vec<Diagnostic> 
         .collect()
 }
 
-/// Experiment: one `path<TAB>bytes<TAB>lines<TAB>longest line<TAB>microseconds` row per file on
+/// One `[file] path<TAB>bytes<TAB>lines<TAB>longest line<TAB>microseconds` row per file on
 /// stderr, to see which files dominate the cost.
 fn lint_timed(engine: &Engine, files: &[SourceFile]) -> Vec<Diagnostic> {
     let rows: Vec<(String, Vec<Diagnostic>)> = files

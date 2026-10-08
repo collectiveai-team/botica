@@ -107,14 +107,11 @@ impl AstGrepRule {
                 let serialized = serde_json::to_value(&*config)?;
                 let files = build_globs(&serialized, "files")?;
                 let ignores = build_globs(&serialized, "ignores")?;
-                let requirement = serialized
-                    .get("rule")
-                    .map_or(prefilter::Req::Always, prefilter::requirement);
                 Ok(Self {
                     config,
                     files,
                     ignores,
-                    requirement,
+                    requirement: prefilter::Req::Always,
                     declared: None,
                     rule_json: serialized.get("rule").cloned().unwrap_or_default(),
                 })
@@ -126,22 +123,11 @@ impl AstGrepRule {
         &self.config.id
     }
 
-    /// Replaces the requirement with a hand-declared regex the file text must match. The caller
-    /// vouches that every match of the rule implies a match of the regex.
-    pub fn require_regex(&mut self, pattern: &str) {
-        self.requirement = prefilter::Req::Re(pattern.to_owned());
-        self.declared = Some(self.requirement.clone());
-    }
-
-    /// Declares literals the file must contain for this rule to match (for rules that
-    /// ast-grep expresses without a pattern, e.g. `kind:` only). The caller vouches for them.
-    pub fn require(&mut self, literals: &[&str]) {
-        let extra = literals
-            .iter()
-            .map(|l| prefilter::Req::Lit((*l).to_owned()))
-            .collect();
-        let current = std::mem::replace(&mut self.requirement, prefilter::Req::Always);
-        self.requirement = prefilter::Req::And(vec![current, prefilter::Req::And(extra)]);
+    /// Declares the regex the file text must match (the `prefilter` field of `rule.toml`), in
+    /// place of the one derived from the rule. Only rules without a pattern need it (`kind:`
+    /// only). The caller vouches that every match of the rule implies a match of the regex.
+    pub fn declare_prefilter(&mut self, pattern: &str) {
+        self.declared = Some(prefilter::Req::Re(pattern.to_owned()));
     }
 
     pub fn language(&self) -> SupportLang {
@@ -258,10 +244,10 @@ impl Default for AstGrepSet {
 }
 
 impl AstGrepSet {
-    pub fn new(rules: Vec<AstGrepRule>) -> Self {
+    /// Groups the rules by language and derives each rule's prefilter from the rule itself
+    /// (token chains of its patterns, literals of its regexes); declared prefilters win.
+    pub fn new(mut rules: Vec<AstGrepRule>) -> Self {
         let mut groups: Vec<LanguageGroup> = Vec::new();
-        let mut literals: HashMap<String, Finder<'static>> = HashMap::new();
-        let mut regexes: HashMap<String, regex::bytes::Regex> = HashMap::new();
         for (index, rule) in rules.iter().enumerate() {
             let language = rule.language();
             let position = groups.iter().position(|g| g.language == language);
@@ -286,6 +272,22 @@ impl AstGrepSet {
                     group.by_kind[kind].push(index);
                 }
             }
+        }
+        for group in &mut groups {
+            let mut table = chains::LangChains::new(group.language);
+            for &index in &group.rules {
+                let rule = &mut rules[index];
+                rule.requirement = match &rule.declared {
+                    Some(declared) => declared.clone(),
+                    None => table.requirement(&rule.rule_json),
+                };
+            }
+            table.finish();
+            group.chains = (!table.is_empty()).then_some(table);
+        }
+        let mut literals: HashMap<String, Finder<'static>> = HashMap::new();
+        let mut regexes: HashMap<String, regex::bytes::Regex> = HashMap::new();
+        for rule in &rules {
             let mut needed = Vec::new();
             rule.requirement.literals(&mut needed);
             for literal in needed {
@@ -312,37 +314,6 @@ impl AstGrepSet {
         }
     }
 
-    /// Derives each rule's requirement from the rule itself (token chains of its patterns,
-    /// literals of its regexes) instead of loose identifiers; hand-declared ones still win.
-    pub fn use_auto_prefilter(&mut self) {
-        for group in &mut self.groups {
-            let mut table = chains::LangChains::new(group.language);
-            for &index in &group.rules {
-                let rule = &mut self.rules[index];
-                rule.requirement = match &rule.declared {
-                    Some(declared) => declared.clone(),
-                    None => table.requirement(&rule.rule_json),
-                };
-                let mut needed = Vec::new();
-                rule.requirement.literals(&mut needed);
-                for literal in needed {
-                    self.literals
-                        .entry(literal.to_owned())
-                        .or_insert_with(|| Finder::new(literal.as_bytes()).into_owned());
-                }
-                let mut patterns = Vec::new();
-                rule.requirement.regexes(&mut patterns);
-                for pattern in patterns {
-                    self.regexes.entry(pattern.to_owned()).or_insert_with(|| {
-                        regex::bytes::Regex::new(pattern).expect("valid prefilter regex")
-                    });
-                }
-            }
-            table.finish();
-            group.chains = (!table.is_empty()).then_some(table);
-        }
-    }
-
     /// Each rule's id with its effective requirement, for inspection.
     pub fn describe_prefilter(&self) -> Vec<(String, String)> {
         let chains = self
@@ -358,7 +329,7 @@ impl AstGrepSet {
             .collect()
     }
 
-    /// Turns the required-literal prefilter on or off (on by default).
+    /// Turns the prefilter on or off (on by default); off parses every file, for parity checks.
     pub fn set_prefilter(&mut self, enabled: bool) {
         self.prefilter = enabled;
     }

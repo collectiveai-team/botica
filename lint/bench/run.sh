@@ -63,15 +63,15 @@ RUNS=5 WARMUP=1 "$HYPERFINE" --warmup 1 --runs 5 --ignore-failure --export-markd
 
 echo "== 10k files, calibrated on real code (gen_realistic.py) =="
 [ -d "$WORK/repo10k-real" ] || python3 "$BENCH/gen_realistic.py" "$WORK/repo10k-real" 10000
-BOTICA_PREFILTER_REGEX=1 python3 "$BENCH/parity.py" "$WORK/repo10k-real" "$BOTICA" "$WORK/sg" | tee "$OUT/parity-real.txt"
+python3 "$BENCH/parity.py" "$WORK/repo10k-real" "$BOTICA" "$WORK/sg" | tee "$OUT/parity-real.txt"
 (cd "$WORK/repo10k-real" && RUNS=8 hf --export-markdown "$OUT/repo-10k-real.md" \
   "$BOTICA lint . --no-prefilter" \
   "$BOTICA lint ." \
-  "env BOTICA_PREFILTER_REGEX=1 $BOTICA lint ." \
-  "env BOTICA_PREFILTER_REGEX=1 BOTICA_SCHED_LARGEST_FIRST=1 $BOTICA lint ." \
-  "env BOTICA_PREFILTER_AUTO=1 $BOTICA lint .")
-BOTICA_PREFILTER_AUTO=1 python3 "$BENCH/parity.py" "$WORK/repo10k-real" "$BOTICA" "$WORK/sg" | tee "$OUT/parity-real-auto.txt"
-# Per-file cost concentration: BOTICA_FILE_TIMES=1 prints one `[file]` row per file on stderr.
+  "$BOTICA lint . --schedule largest-first")
+# Per-file cost concentration: `--schedule timed` prints one `[file]` row per file on stderr.
+# Each rule's derived prefilter: `--describe-prefilter`.
+
+STDLIB=${STDLIB:-/usr/lib/python3.14}
 
 # Polyglot parity of the derived prefilter: point POLY_CORPUS at a tree of real JS/TS/TSX
 # (node_modules dirs renamed, since the walk honours .gitignore).
@@ -80,8 +80,8 @@ if [ -n "${POLY_CORPUS:-}" ]; then
   mkdir -p "$WORK/sg-poly/rules"
   cp "$WORK"/sg/rules/*.yml "$BENCH"/poly-rules/*.yml "$WORK/sg-poly/rules/"
   cp "$WORK/sg/sgconfig.yml" "$WORK/sg-poly/"
-  BOTICA_EXTRA_RULES="$BENCH/poly-rules" BOTICA_PREFILTER_AUTO=1 \
-    python3 "$BENCH/parity.py" "$POLY_CORPUS" "$BOTICA" "$WORK/sg-poly" | tee "$OUT/parity-poly.txt"
+  python3 "$BENCH/parity.py" "$POLY_CORPUS" "$BOTICA" "$WORK/sg-poly" "$BENCH/poly-rules" |
+    tee "$OUT/parity-poly.txt"
   echo "== derived prefilter soundness with comments injected between tokens =="
   python3 "$BENCH/mutate_comments.py" "$POLY_CORPUS" "$WORK/poly-comments"
   python3 "$BENCH/self_parity.py" "$WORK/poly-comments" "$BOTICA" "$BENCH/poly-rules" | tee "$OUT/self-parity-poly-comments.txt"
@@ -99,7 +99,6 @@ rm -rf "$WORK/cache-10k"
   "$BOTICA lint ." \
   "$BOTICA lint . --cache-dir $WORK/cache-10k")
 
-STDLIB=${STDLIB:-/usr/lib/python3.14}
 if [ -d "$STDLIB" ]; then
   echo "== real corpus: $STDLIB =="
   python3 "$BENCH/parity.py" "$STDLIB" "$BOTICA" "$WORK/sg" | tee "$OUT/parity-stdlib.txt"
@@ -110,10 +109,7 @@ if [ -d "$STDLIB" ]; then
     "$BOTICA lint . --no-prefilter" \
     "$BOTICA lint ." \
     "$BOTICA lint . --cache-dir $WORK/cache-stdlib" \
-    "$BOTICA lint . --no-astgrep" \
-    "env BOTICA_PREFILTER_REGEX=1 $BOTICA lint .")
-  echo "== regex prefilter parity on real code =="
-  BOTICA_PREFILTER_REGEX=1 python3 "$BENCH/parity.py" "$STDLIB" "$BOTICA" "$WORK/sg" | tee "$OUT/parity-stdlib-regex.txt"
+    "$BOTICA lint . --no-astgrep")
 fi
 
 echo "== thread scaling (10k files, native + ast-grep) =="

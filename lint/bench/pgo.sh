@@ -22,7 +22,7 @@ rm -rf "$WORK/data"/*
 
 echo "== 2. training (1 thread) =="
 for dir in $TRAIN; do
-  (cd "$dir" && RAYON_NUM_THREADS=1 BOTICA_PREFILTER_REGEX=1 "$WORK/target/release/botica" lint . >/dev/null 2>&1 || true)
+  (cd "$dir" && RAYON_NUM_THREADS=1 "$WORK/target/release/botica" lint . >/dev/null 2>&1 || true)
 done
 find "$WORK/data" -name '*.gcda' | wc -l
 

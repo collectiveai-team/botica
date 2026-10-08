@@ -1,7 +1,8 @@
 """Compare botica's embedded ast-grep rules with the ast-grep CLI on the same tree.
 
-Usage: python parity.py <repo_dir> <botica_bin> <ast_grep_rules_dir>
+Usage: python parity.py <repo_dir> <botica_bin> <ast_grep_rules_dir> [extra_rules_dir]
 Compares (path, rule id, 1-based line, 1-based column) for every rule the two share.
+`extra_rules_dir` is passed to botica as `--extra-rules` (the CLI must also have those rules).
 """
 
 import json
@@ -32,7 +33,10 @@ for line in filter(None, sg.stdout.split("\n")):
         )
     )
 
-mine = subprocess.run([botica, "lint", "."], cwd=repo, capture_output=True, text=True, check=False)
+extra = ["--extra-rules", str(Path(sys.argv[4]).resolve())] if len(sys.argv) > 4 else []
+mine = subprocess.run(
+    [botica, "lint", ".", *extra], cwd=repo, capture_output=True, text=True, check=False
+)
 actual = set()
 for line in filter(None, mine.stdout.split("\n")):
     location, _, rest = line.partition(": ")

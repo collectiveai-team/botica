@@ -132,15 +132,15 @@ impl LangChains {
             let part = match key.as_str() {
                 "pattern" => self.pattern(value),
                 "regex" => value.as_str().map_or(Req::Always, regex_requirement),
-                "all" => and(self.each(value)),
-                "any" => or(self.each(value)),
+                "all" => Req::and(self.each(value)),
+                "any" => Req::or(self.each(value)),
                 "inside" | "has" | "follows" | "precedes" => self.requirement(value),
                 // `not`, `kind`, `matches`, `nthChild`, `range`, `stopBy`, `field`: no text needed.
                 _ => Req::Always,
             };
             parts.push(part);
         }
-        and(parts)
+        Req::and(parts)
     }
 
     fn each(&mut self, value: &Value) -> Vec<Req> {
@@ -171,7 +171,7 @@ impl LangChains {
             _ => return Req::Always,
         };
         let chains = self.tokenize(source);
-        and(chains.into_iter().map(|chain| self.intern(chain)).collect())
+        Req::and(chains.into_iter().map(|chain| self.intern(chain)).collect())
     }
 
     fn tokenize(&self, source: &str) -> Vec<Chain> {
@@ -466,32 +466,15 @@ fn regex_requirement(pattern: &str) -> Req {
     let seq = extractor.extract(&hir);
     match seq.literals() {
         Some(literals) if !literals.is_empty() && literals.iter().all(|l| !l.is_empty()) => {
-            or(literals
-                .iter()
-                .map(|l| Req::Lit(String::from_utf8_lossy(l.as_bytes()).into_owned()))
-                .collect())
+            Req::or(
+                literals
+                    .iter()
+                    .map(|l| Req::Lit(String::from_utf8_lossy(l.as_bytes()).into_owned()))
+                    .collect(),
+            )
         }
         _ => Req::Always,
     }
-}
-
-fn and(parts: Vec<Req>) -> Req {
-    let mut parts: Vec<Req> = parts.into_iter().filter(|p| *p != Req::Always).collect();
-    match parts.len() {
-        0 => Req::Always,
-        1 => parts.remove(0),
-        _ => Req::And(parts),
-    }
-}
-
-fn or(mut parts: Vec<Req>) -> Req {
-    if parts.is_empty() || parts.contains(&Req::Always) {
-        return Req::Always;
-    }
-    if parts.len() == 1 {
-        return parts.remove(0);
-    }
-    Req::Or(parts)
 }
 
 #[cfg(test)]
