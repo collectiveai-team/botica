@@ -18,13 +18,15 @@ pub fn chunks(language: SupportLang, text: &[u8]) -> Option<Split> {
     }
 }
 
-/// A top-level statement: byte range and the row it starts on.
+/// A statement: byte range and the rows it spans.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Chunk {
     pub start: usize,
     pub end: usize,
     pub start_row: usize,
     pub end_row: usize,
+    /// For a Python `class`/`def`: the indentation of its body, for `python_members`.
+    pub body_indent: Option<usize>,
 }
 
 /// The top-level statements of a file, and whether the lexer saw a likely syntax error.
@@ -41,21 +43,28 @@ pub struct Split {
 /// with the statement before them; `else`/`elif`/`except`/`finally` and decorated definitions
 /// stay with the statement they continue.
 pub fn python_chunks(text: &[u8]) -> Split {
-    python_split(text, 0, text.len(), 0, 0).split
+    python_split(text, 0, text.len(), 0, 0)
 }
 
-struct PythonSplit {
-    split: Split,
-    /// Indentation of the first indented logical line: the body level of a compound statement.
-    body_indent: Option<usize>,
-    /// Offset of the first statement line that is not a decorator.
-    head: Option<usize>,
-}
+/// Bytes the Python lexer must look at outside strings; everything else is skipped in bulk.
+const PY_INTERESTING: [bool; 256] = {
+    let mut table = [false; 256];
+    let bytes = b"#'\"()[]{}\\\n";
+    let mut k = 0;
+    while k < bytes.len() {
+        table[bytes[k] as usize] = true;
+        k += 1;
+    }
+    table
+};
 
 /// Splits `text[from..to]` into statements at indentation `level` (0 = top level). Indentation is
 /// only checked for syntax errors at the top level.
-fn python_split(text: &[u8], from: usize, to: usize, from_row: usize, level: usize) -> PythonSplit {
-    let mut starts: Vec<(usize, usize)> = vec![(from, from_row)];
+fn python_split(text: &[u8], from: usize, to: usize, from_row: usize, level: usize) -> Split {
+    // (start, row, body indent if the statement is a class/def)
+    let mut starts: Vec<(usize, usize, Option<usize>)> = vec![(from, from_row, None)];
+    let mut head_seen = false;
+    let mut compound = false;
     let mut depth = 0usize;
     let mut quote: Option<(u8, bool)> = None; // (quote byte, triple)
     let mut continued = false;
@@ -63,8 +72,6 @@ fn python_split(text: &[u8], from: usize, to: usize, from_row: usize, level: usi
     let mut indents: Vec<usize> = vec![0];
     let mut last: Option<u8> = None; // last significant code byte
     let mut suspect = false;
-    let mut body_indent = None;
-    let mut head = None;
     let mut row = from_row;
     let mut i = from;
     let mut line_start = true;
@@ -81,8 +88,9 @@ fn python_split(text: &[u8], from: usize, to: usize, from_row: usize, level: usi
                     if level == 0 {
                         suspect |= !indentation_ok(&mut indents, indent, last == Some(b':'));
                     }
-                    if indent > 0 && body_indent.is_none() && i > from {
-                        body_indent = Some(indent);
+                    let current = starts.len() - 1;
+                    if indent > level && compound && starts[current].2.is_none() {
+                        starts[current].2 = Some(indent);
                     }
                     if indent == level {
                         let rest = &text[i + indent..to];
@@ -90,20 +98,29 @@ fn python_split(text: &[u8], from: usize, to: usize, from_row: usize, level: usi
                             .iter()
                             .any(|kw| keyword_at(rest, kw.as_bytes()));
                         if !continues && !after_decorator && i > from {
-                            starts.push((i, row));
+                            starts.push((i, row, None));
+                            head_seen = false;
+                            compound = false;
                         }
                         after_decorator = rest[0] == b'@';
-                        if !after_decorator && head.is_none() {
-                            head = Some(i + indent);
+                        if !after_decorator && !head_seen {
+                            head_seen = true;
+                            compound = keyword_at(rest, b"class")
+                                || keyword_at(rest, b"def")
+                                || keyword_at(rest, b"async");
                         }
                     }
                 }
             }
             continued = false;
         }
-        let byte = text[i];
         match quote {
             Some((q, triple)) => {
+                match memchr::memchr3(q, b'\\', b'\n', &text[i..to]) {
+                    Some(offset) => i += offset,
+                    None => break,
+                }
+                let byte = text[i];
                 if byte == b'\\' {
                     i += 1;
                 } else if byte == q {
@@ -115,38 +132,49 @@ fn python_split(text: &[u8], from: usize, to: usize, from_row: usize, level: usi
                         last = Some(q);
                         i += 2;
                     }
-                } else if byte == b'\n' && !triple {
+                } else if !triple {
                     quote = None;
                     suspect = true;
                 }
             }
-            None => match byte {
-                b'#' => {
-                    while i + 1 < to && text[i + 1] != b'\n' {
-                        i += 1;
+            None => {
+                while i < to && !PY_INTERESTING[text[i] as usize] {
+                    if !text[i].is_ascii_whitespace() {
+                        last = Some(text[i]);
                     }
+                    i += 1;
                 }
-                b'\'' | b'"' => {
-                    let triple = text[i..].starts_with(&[byte, byte, byte]);
-                    quote = Some((byte, triple));
-                    if triple {
-                        i += 2;
+                if i >= to {
+                    break;
+                }
+                let byte = text[i];
+                match byte {
+                    b'#' => {
+                        // Stop just before the newline, which the next round handles.
+                        i = memchr::memchr(b'\n', &text[i..to]).map_or(to, |o| i + o) - 1;
                     }
+                    b'\'' | b'"' => {
+                        let triple = text[i..].starts_with(&[byte, byte, byte]);
+                        quote = Some((byte, triple));
+                        if triple {
+                            i += 2;
+                        }
+                    }
+                    b'(' | b'[' | b'{' => {
+                        depth += 1;
+                        last = Some(byte);
+                    }
+                    b')' | b']' | b'}' => {
+                        suspect |= depth == 0;
+                        depth = depth.saturating_sub(1);
+                        last = Some(byte);
+                    }
+                    b'\\' if text.get(i + 1) == Some(&b'\n') => continued = true,
+                    b'\\' if text[i + 1..].starts_with(b"\r\n") => continued = true,
+                    b'\\' => last = Some(byte),
+                    _ => {}
                 }
-                b'(' | b'[' | b'{' => {
-                    depth += 1;
-                    last = Some(byte);
-                }
-                b')' | b']' | b'}' => {
-                    suspect |= depth == 0;
-                    depth = depth.saturating_sub(1);
-                    last = Some(byte);
-                }
-                b'\\' if text.get(i + 1) == Some(&b'\n') => continued = true,
-                b'\\' if text[i + 1..].starts_with(b"\r\n") => continued = true,
-                _ if !byte.is_ascii_whitespace() => last = Some(byte),
-                _ => {}
-            },
+            }
         }
         if text.get(i) == Some(&b'\n') {
             row += 1;
@@ -154,13 +182,9 @@ fn python_split(text: &[u8], from: usize, to: usize, from_row: usize, level: usi
         }
         i += 1;
     }
-    PythonSplit {
-        split: Split {
-            chunks: build(&starts, to, row),
-            suspect: suspect || depth != 0 || quote.is_some(),
-        },
-        body_indent,
-        head,
+    Split {
+        chunks: build(&starts, to, row),
+        suspect: suspect || depth != 0 || quote.is_some(),
     }
 }
 
@@ -170,16 +194,9 @@ fn python_split(text: &[u8], from: usize, to: usize, from_row: usize, level: usi
 pub fn python_members(text: &[u8], picked: &[Chunk], positions: &[usize]) -> Vec<Chunk> {
     let mut out = Vec::new();
     for &chunk in picked {
-        let outer = python_split(text, chunk.start, chunk.end, chunk.start_row, 0);
-        let compound = outer.head.is_some_and(|h| {
-            let rest = &text[h..chunk.end];
-            keyword_at(rest, b"class") || keyword_at(rest, b"def") || keyword_at(rest, b"async")
-        });
-        let members = match outer.body_indent.filter(|_| compound) {
+        let members = match chunk.body_indent {
             Some(level) => {
-                python_split(text, chunk.start, chunk.end, chunk.start_row, level)
-                    .split
-                    .chunks
+                python_split(text, chunk.start, chunk.end, chunk.start_row, level).chunks
             }
             None => Vec::new(),
         };
@@ -215,15 +232,22 @@ fn indentation_ok(indents: &mut Vec<usize>, indent: usize, opens_block: bool) ->
     indents.last() == Some(&indent)
 }
 
-fn build(starts: &[(usize, usize)], text_len: usize, total_rows: usize) -> Vec<Chunk> {
+fn build(
+    starts: &[(usize, usize, Option<usize>)],
+    text_len: usize,
+    total_rows: usize,
+) -> Vec<Chunk> {
     let mut chunks = Vec::with_capacity(starts.len());
-    for (k, &(start, start_row)) in starts.iter().enumerate() {
-        let (end, end_row) = starts.get(k + 1).copied().unwrap_or((text_len, total_rows));
+    for (k, &(start, start_row, body_indent)) in starts.iter().enumerate() {
+        let (end, end_row) = starts
+            .get(k + 1)
+            .map_or((text_len, total_rows), |&(s, r, _)| (s, r));
         chunks.push(Chunk {
             start,
             end,
             start_row,
             end_row,
+            body_indent,
         });
     }
     chunks
@@ -284,7 +308,7 @@ enum Js {
 /// the whole file. Unterminated strings are not flagged, since JSX text holds stray quotes.
 pub fn js_chunks(text: &[u8]) -> Split {
     let mut suspect = false;
-    let mut starts: Vec<(usize, usize)> = vec![(0, 0)];
+    let mut starts: Vec<(usize, usize, Option<usize>)> = vec![(0, 0, None)];
     let mut mode = if text.starts_with(b"#!") {
         Js::Line
     } else {
@@ -304,7 +328,7 @@ pub fn js_chunks(text: &[u8]) -> Split {
                 if let Some(word) = js_statement_word(&text[i..]) {
                     let ends = last.is_none_or(|p| !b"=+-*/%&|^!?:,.(<>[{~".contains(&text[p]));
                     if ends && !after_decorator && i > 0 && JS_STARTS.contains(&word) {
-                        starts.push((i, row));
+                        starts.push((i, row, None));
                     }
                     after_decorator = word == "@";
                 }

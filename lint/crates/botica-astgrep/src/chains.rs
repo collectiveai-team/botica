@@ -24,6 +24,9 @@ struct Chain {
     anchor: usize,
 }
 
+/// Per chain, whether it occurs; and every verified occurrence as `(chain, anchor offset)`.
+pub type ChainScan = (Vec<bool>, Vec<(usize, usize)>);
+
 pub struct LangChains {
     language: SupportLang,
     chains: Vec<Chain>,
@@ -260,6 +263,7 @@ impl LangChains {
     }
 
     /// Which chains occur in `text`, as a flag per chain.
+    #[cfg(test)]
     pub fn scan(&self, text: &[u8]) -> Vec<bool> {
         let mut found = vec![false; self.chains.len()];
         let Some(anchors) = &self.anchors else {
@@ -285,23 +289,28 @@ impl LangChains {
         found
     }
 
-    /// Anchor offsets of every verified occurrence of the chains flagged in `wanted`.
-    pub fn positions(&self, text: &[u8], wanted: &[bool], out: &mut Vec<usize>) {
+    /// Like `scan`, without stopping early: also every verified occurrence as
+    /// `(chain, anchor offset)`, for region parsing.
+    pub fn scan_all(&self, text: &[u8]) -> ChainScan {
+        let mut found = vec![false; self.chains.len()];
+        let mut at = Vec::new();
         let Some(anchors) = &self.anchors else {
-            return;
+            return (found, at);
         };
         for hit in anchors.find_overlapping_iter(text) {
             let index = hit.pattern().as_usize();
-            if !wanted[index] || !bounded(text, hit.start(), hit.end()) {
+            if !bounded(text, hit.start(), hit.end()) {
                 continue;
             }
             let chain = &self.chains[index];
             if self.rest_follows(&chain.tokens[chain.anchor + 1..], text, hit.end())
                 && self.rest_precedes(&chain.tokens[..chain.anchor], text, hit.start())
             {
-                out.push(hit.start());
+                found[index] = true;
+                at.push((index, hit.start()));
             }
         }
+        (found, at)
     }
 
     fn rest_precedes(&self, tokens: &[Vec<u8>], text: &[u8], mut position: usize) -> bool {

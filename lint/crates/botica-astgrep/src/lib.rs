@@ -294,7 +294,7 @@ pub struct PrefilterStats {
     pub parsed_bytes: usize,
     pub file_bytes: usize,
     /// CPU time per phase, summed over threads, indexed by the `PHASE_*` constants.
-    pub phase_nanos: [u64; 6],
+    pub phase_nanos: [u64; 8],
 }
 
 /// Prefilter scan. Region selection, including the parse inside it (`PHASE_PARSE_REGIONS`).
@@ -305,6 +305,9 @@ pub const PHASE_PARSE: usize = 2;
 pub const PHASE_PARSE_REGIONS: usize = 3;
 pub const PHASE_MATCH: usize = 4;
 pub const PHASE_DROP: usize = 5;
+/// Inside `PHASE_REGIONS`: top-level lexing, and narrowing to class/function members.
+pub const PHASE_LEX: usize = 6;
+pub const PHASE_MEMBERS: usize = 7;
 
 pub struct AstGrepSet {
     rules: Vec<AstGrepRule>,
@@ -320,7 +323,7 @@ pub struct AstGrepSet {
     region_suspects: AtomicUsize,
     parsed_bytes: AtomicUsize,
     file_bytes: AtomicUsize,
-    phase_nanos: [std::sync::atomic::AtomicU64; 6],
+    phase_nanos: [std::sync::atomic::AtomicU64; 8],
 }
 
 impl Default for AstGrepSet {
@@ -462,10 +465,17 @@ impl AstGrepSet {
         self.rules.is_empty()
     }
 
-    fn active_rules(&self, group: &LanguageGroup, path: &Path, text: &str) -> Vec<bool> {
+    /// Which rules can match `text`, and the verified chain occurrences `(chain, offset)` found
+    /// on the way (all of them, for region parsing; empty when no rule needs a chain).
+    fn active_rules(
+        &self,
+        group: &LanguageGroup,
+        path: &Path,
+        text: &str,
+    ) -> (Vec<bool>, Vec<(usize, usize)>) {
         let mut flags = vec![false; self.rules.len()];
         let mut seen: HashMap<String, bool> = HashMap::new();
-        let mut chain_hits: Option<Vec<bool>> = None;
+        let mut chain_hits: Option<chains::ChainScan> = None;
         for &index in &group.rules {
             if !self.rules[index].applies_to(path) {
                 continue;
@@ -478,8 +488,9 @@ impl AstGrepSet {
                             let Some(table) = &group.chains else {
                                 return true;
                             };
-                            return chain_hits.get_or_insert_with(|| table.scan(text.as_bytes()))
-                                [*i];
+                            return chain_hits
+                                .get_or_insert_with(|| table.scan_all(text.as_bytes()))
+                                .0[*i];
                         }
                         _ => return true,
                     };
@@ -500,7 +511,7 @@ impl AstGrepSet {
                     found
                 });
         }
-        flags
+        (flags, chain_hits.map(|(_, at)| at).unwrap_or_default())
     }
 
     pub fn check(&self, path: &Path, text: &str) -> Vec<Hit> {
@@ -510,7 +521,8 @@ impl AstGrepSet {
         let Some(group) = self.groups.iter().find(|g| g.language == lang) else {
             return Vec::new();
         };
-        let active = self.timed(PHASE_PREFILTER, || self.active_rules(group, path, text));
+        let (active, chain_at) =
+            self.timed(PHASE_PREFILTER, || self.active_rules(group, path, text));
         if !active.iter().any(|&on| on) {
             self.skipped.fetch_add(1, Ordering::Relaxed);
             return Vec::new();
@@ -519,7 +531,7 @@ impl AstGrepSet {
         self.file_bytes.fetch_add(text.len(), Ordering::Relaxed);
         let partial = if self.regions {
             self.timed(PHASE_REGIONS, || {
-                self.parse_regions(lang, group, &active, text)
+                self.parse_regions(lang, group, &active, &chain_at, text)
             })
         } else {
             None
@@ -545,10 +557,11 @@ impl AstGrepSet {
         lang: SupportLang,
         group: &LanguageGroup,
         active: &[bool],
+        chain_at: &[(usize, usize)],
         text: &str,
     ) -> Option<AstGrep<StrDoc<SupportLang>>> {
         let bytes = text.as_bytes();
-        let split = regions::chunks(lang, bytes)?;
+        let split = self.timed(PHASE_LEX, || regions::chunks(lang, bytes))?;
         if split.suspect {
             self.region_suspects.fetch_add(1, Ordering::Relaxed);
             return None;
@@ -590,12 +603,17 @@ impl AstGrepSet {
                 return None;
             }
         }
-        if let Some(table) = &group.chains {
-            table.positions(bytes, &wanted, &mut positions);
-        }
+        positions.extend(
+            chain_at
+                .iter()
+                .filter(|&&(chain, _)| wanted[chain])
+                .map(|&(_, at)| at),
+        );
         let top = regions::pick(&chunks, &mut positions);
         let picked = if members {
-            regions::python_members(bytes, &top, &positions)
+            self.timed(PHASE_MEMBERS, || {
+                regions::python_members(bytes, &top, &positions)
+            })
         } else {
             regions::merge(top)
         };

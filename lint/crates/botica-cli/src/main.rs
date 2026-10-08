@@ -161,12 +161,14 @@ fn lint(args: LintArgs) -> Result<bool> {
             stats.parsed_bytes as f64 / 1e6,
             stats.file_bytes as f64 / 1e6
         );
-        let [pre, regions, whole, partial, matching, drop] =
+        let [pre, regions, whole, partial, matching, drop, lex, members] =
             stats.phase_nanos.map(|n| n as f64 / 1e6);
         eprintln!(
-            "[timing] cpu: prefilter {pre:.0} ms, region lexing {:.0} ms, parse {:.0} ms \
-             (whole {whole:.0}, regions {partial:.0}), match {matching:.0} ms, free tree {drop:.0} ms",
+            "[timing] cpu: prefilter {pre:.0} ms, regions {:.0} ms (lex {lex:.0}, members \
+             {members:.0}, positions {:.0}), parse {:.0} ms (whole {whole:.0}, regions \
+             {partial:.0}), match {matching:.0} ms, free tree {drop:.0} ms",
             regions - partial,
+            regions - partial - lex - members,
             whole + partial
         );
     }
