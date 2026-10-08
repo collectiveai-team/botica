@@ -41,7 +41,21 @@ pub struct Split {
 /// with the statement before them; `else`/`elif`/`except`/`finally` and decorated definitions
 /// stay with the statement they continue.
 pub fn python_chunks(text: &[u8]) -> Split {
-    let mut starts: Vec<(usize, usize)> = vec![(0, 0)];
+    python_split(text, 0, text.len(), 0, 0).split
+}
+
+struct PythonSplit {
+    split: Split,
+    /// Indentation of the first indented logical line: the body level of a compound statement.
+    body_indent: Option<usize>,
+    /// Offset of the first statement line that is not a decorator.
+    head: Option<usize>,
+}
+
+/// Splits `text[from..to]` into statements at indentation `level` (0 = top level). Indentation is
+/// only checked for syntax errors at the top level.
+fn python_split(text: &[u8], from: usize, to: usize, from_row: usize, level: usize) -> PythonSplit {
+    let mut starts: Vec<(usize, usize)> = vec![(from, from_row)];
     let mut depth = 0usize;
     let mut quote: Option<(u8, bool)> = None; // (quote byte, triple)
     let mut continued = false;
@@ -49,31 +63,40 @@ pub fn python_chunks(text: &[u8]) -> Split {
     let mut indents: Vec<usize> = vec![0];
     let mut last: Option<u8> = None; // last significant code byte
     let mut suspect = false;
-    let mut row = 0;
-    let mut i = 0;
+    let mut body_indent = None;
+    let mut head = None;
+    let mut row = from_row;
+    let mut i = from;
     let mut line_start = true;
-    while i < text.len() {
+    while i < to {
         if line_start {
             line_start = false;
             if quote.is_none() && depth == 0 && !continued {
-                let indent = text[i..]
+                let indent = text[i..to]
                     .iter()
                     .take_while(|b| **b == b' ' || **b == b'\t')
                     .count();
-                let first = text.get(i + indent).copied();
+                let first = text.get(i + indent).copied().filter(|_| i + indent < to);
                 if first.is_some_and(|b| b != b'\n' && b != b'\r' && b != b'#') {
-                    suspect |= !indentation_ok(&mut indents, indent, last == Some(b':'));
-                }
-                let byte = text[i];
-                if !byte.is_ascii_whitespace() && byte != b'#' {
-                    let rest = &text[i..];
-                    let continues = ["else", "elif", "except", "finally"]
-                        .iter()
-                        .any(|kw| keyword_at(rest, kw.as_bytes()));
-                    if !continues && !after_decorator && i > 0 {
-                        starts.push((i, row));
+                    if level == 0 {
+                        suspect |= !indentation_ok(&mut indents, indent, last == Some(b':'));
                     }
-                    after_decorator = byte == b'@';
+                    if indent > 0 && body_indent.is_none() && i > from {
+                        body_indent = Some(indent);
+                    }
+                    if indent == level {
+                        let rest = &text[i + indent..to];
+                        let continues = ["else", "elif", "except", "finally"]
+                            .iter()
+                            .any(|kw| keyword_at(rest, kw.as_bytes()));
+                        if !continues && !after_decorator && i > from {
+                            starts.push((i, row));
+                        }
+                        after_decorator = rest[0] == b'@';
+                        if !after_decorator && head.is_none() {
+                            head = Some(i + indent);
+                        }
+                    }
                 }
             }
             continued = false;
@@ -99,7 +122,7 @@ pub fn python_chunks(text: &[u8]) -> Split {
             }
             None => match byte {
                 b'#' => {
-                    while i + 1 < text.len() && text[i + 1] != b'\n' {
+                    while i + 1 < to && text[i + 1] != b'\n' {
                         i += 1;
                     }
                 }
@@ -131,10 +154,48 @@ pub fn python_chunks(text: &[u8]) -> Split {
         }
         i += 1;
     }
-    Split {
-        chunks: build(&starts, text.len(), row),
-        suspect: suspect || depth != 0 || quote.is_some(),
+    PythonSplit {
+        split: Split {
+            chunks: build(&starts, to, row),
+            suspect: suspect || depth != 0 || quote.is_some(),
+        },
+        body_indent,
+        head,
     }
+}
+
+/// Narrows each top-level `class`/`def` among `picked` to its header plus the body statements
+/// holding a position, so a hit in one method does not parse the whole class. A position in the
+/// header (decorators, signature, bases) keeps the whole statement: the match may be the class.
+pub fn python_members(text: &[u8], picked: &[Chunk], positions: &[usize]) -> Vec<Chunk> {
+    let mut out = Vec::new();
+    for &chunk in picked {
+        let outer = python_split(text, chunk.start, chunk.end, chunk.start_row, 0);
+        let compound = outer.head.is_some_and(|h| {
+            let rest = &text[h..chunk.end];
+            keyword_at(rest, b"class") || keyword_at(rest, b"def") || keyword_at(rest, b"async")
+        });
+        let members = match outer.body_indent.filter(|_| compound) {
+            Some(level) => {
+                python_split(text, chunk.start, chunk.end, chunk.start_row, level)
+                    .split
+                    .chunks
+            }
+            None => Vec::new(),
+        };
+        let mut inside: Vec<usize> = positions
+            .iter()
+            .copied()
+            .filter(|&p| p >= chunk.start && p < chunk.end)
+            .collect();
+        if members.len() < 2 || inside.iter().any(|&p| p < members[1].start) {
+            out.push(chunk);
+            continue;
+        }
+        out.push(members[0]);
+        out.extend(pick(&members[1..], &mut inside));
+    }
+    merge(out)
 }
 
 /// Python's INDENT/DEDENT rules for one logical line: a block opened by `:` must indent, nothing
@@ -379,7 +440,13 @@ fn keyword_at(rest: &[u8], keyword: &[u8]) -> bool {
 }
 
 /// The chunks holding at least one of `positions`, merged when adjacent.
-pub fn select(chunks: &[Chunk], positions: &mut [usize]) -> Vec<Chunk> {
+#[cfg(test)]
+fn select(chunks: &[Chunk], positions: &mut [usize]) -> Vec<Chunk> {
+    merge(pick(chunks, positions))
+}
+
+/// The chunks holding at least one of `positions`, each once, in order.
+pub fn pick(chunks: &[Chunk], positions: &mut [usize]) -> Vec<Chunk> {
     positions.sort_unstable();
     let mut out: Vec<Chunk> = Vec::new();
     let mut k = 0;
@@ -388,13 +455,23 @@ pub fn select(chunks: &[Chunk], positions: &mut [usize]) -> Vec<Chunk> {
             k += 1;
         }
         let Some(chunk) = chunks.get(k) else { break };
+        if out.last().is_none_or(|last| last.start != chunk.start) {
+            out.push(*chunk);
+        }
+    }
+    out
+}
+
+/// Joins chunks that touch, so the parser gets fewer ranges.
+pub fn merge(chunks: Vec<Chunk>) -> Vec<Chunk> {
+    let mut out: Vec<Chunk> = Vec::with_capacity(chunks.len());
+    for chunk in chunks {
         match out.last_mut() {
             Some(last) if last.end == chunk.start => {
                 last.end = chunk.end;
                 last.end_row = chunk.end_row;
             }
-            Some(last) if last.start == chunk.start => {}
-            _ => out.push(*chunk),
+            _ => out.push(chunk),
         }
     }
     out
@@ -496,6 +573,33 @@ mod tests {
         assert!(js("function f() {\n"));
         assert!(js("const t = `abc\n"));
         assert!(js("/* open\n"));
+    }
+
+    fn narrowed(source: &str, needle: &str) -> String {
+        let text = source.as_bytes();
+        let mut positions: Vec<usize> = source.match_indices(needle).map(|(i, _)| i).collect();
+        let top = pick(&python_chunks(text).chunks, &mut positions);
+        python_members(text, &top, &positions)
+            .iter()
+            .map(|c| &source[c.start..c.end])
+            .collect()
+    }
+
+    #[test]
+    fn classes_and_functions_narrow_to_header_and_members_with_candidates() {
+        let source = "import os\n\n@dec(\n    1,\n)\nclass A(\n    Base,\n):\n    '''doc'''\n\n    def f(self):\n        return 1\n\n    @prop\n    def g(self):\n        print(2)\n\n    x = 3\n\n\ndef h():\n    a = 1\n    print(3)\n";
+        assert_eq!(
+            narrowed(source, "print"),
+            "@dec(\n    1,\n)\nclass A(\n    Base,\n):\n    @prop\n    def g(self):\n        print(2)\n\n    \
+             def h():\n    print(3)\n"
+                .replace("    def h", "def h")
+        );
+    }
+
+    #[test]
+    fn a_candidate_in_the_header_keeps_the_whole_class() {
+        let source = "class A(Base):\n    def f(self):\n        return 1\n    def g(self):\n        return 2\n";
+        assert_eq!(narrowed(source, "Base"), source);
     }
 
     #[test]

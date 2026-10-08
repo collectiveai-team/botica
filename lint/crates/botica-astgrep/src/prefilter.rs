@@ -52,6 +52,30 @@ impl Req {
         }
     }
 
+    /// Visits every text check of the formula, in every branch.
+    pub fn each_atom(&self, visit: &mut dyn FnMut(&Req)) {
+        match self {
+            Req::And(parts) | Req::Or(parts) => parts.iter().for_each(|p| p.each_atom(visit)),
+            Req::Always => {}
+            atom => visit(atom),
+        }
+    }
+
+    /// Visits every branch of an `Or` but only the first part of an `And`: enough to locate a
+    /// match when every part of an `And` lies inside the matched node.
+    pub fn each_first_atom(&self, visit: &mut dyn FnMut(&Req)) {
+        match self {
+            Req::Or(parts) => parts.iter().for_each(|p| p.each_first_atom(visit)),
+            Req::And(parts) => {
+                if let Some(first) = parts.first() {
+                    first.each_first_atom(visit);
+                }
+            }
+            Req::Always => {}
+            atom => visit(atom),
+        }
+    }
+
     pub fn holds(&self, present: &mut dyn FnMut(&Req) -> bool) -> bool {
         match self {
             Req::Always => true,

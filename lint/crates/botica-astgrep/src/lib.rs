@@ -34,6 +34,21 @@ pub struct AstGrepRule {
     rule_json: serde_json::Value,
     /// Every match lies inside one top-level statement and depends on nothing outside it.
     local: bool,
+    /// Uses `has`: a match may be a container (e.g. a class) whose whole body matters, so the
+    /// rule cannot be narrowed below top-level statements.
+    inspects_descendants: bool,
+    /// Uses `inside`.
+    looks_at_ancestors: bool,
+}
+
+fn uses_key(value: &serde_json::Value, wanted: &str) -> bool {
+    match value {
+        serde_json::Value::Object(map) => map
+            .iter()
+            .any(|(key, v)| (key == wanted && !v.is_null()) || uses_key(v, wanted)),
+        serde_json::Value::Array(items) => items.iter().any(|v| uses_key(v, wanted)),
+        _ => false,
+    }
 }
 
 /// Whether a rule only looks at a node, its descendants and its ancestors: no siblings
@@ -132,7 +147,15 @@ impl AstGrepRule {
                 let local = serialized.get("utils").is_none_or(|u| {
                     u.is_null() || u.as_object().is_some_and(serde_json::Map::is_empty)
                 }) && serialized.get("rule").is_some_and(is_local);
+                let inspects_descendants = serialized
+                    .get("rule")
+                    .is_some_and(|rule| uses_key(rule, "has"));
+                let looks_at_ancestors = serialized
+                    .get("rule")
+                    .is_some_and(|rule| uses_key(rule, "inside"));
                 Ok(Self {
+                    looks_at_ancestors,
+                    inspects_descendants,
                     local,
                     config,
                     files,
@@ -270,7 +293,18 @@ pub struct PrefilterStats {
     pub region_suspects: usize,
     pub parsed_bytes: usize,
     pub file_bytes: usize,
+    /// CPU time per phase, summed over threads, indexed by the `PHASE_*` constants.
+    pub phase_nanos: [u64; 6],
 }
+
+/// Prefilter scan. Region selection, including the parse inside it (`PHASE_PARSE_REGIONS`).
+/// Whole-file parse. Parse of the selected regions. Rule matching. Freeing the tree.
+pub const PHASE_PREFILTER: usize = 0;
+pub const PHASE_REGIONS: usize = 1;
+pub const PHASE_PARSE: usize = 2;
+pub const PHASE_PARSE_REGIONS: usize = 3;
+pub const PHASE_MATCH: usize = 4;
+pub const PHASE_DROP: usize = 5;
 
 pub struct AstGrepSet {
     rules: Vec<AstGrepRule>,
@@ -286,6 +320,7 @@ pub struct AstGrepSet {
     region_suspects: AtomicUsize,
     parsed_bytes: AtomicUsize,
     file_bytes: AtomicUsize,
+    phase_nanos: [std::sync::atomic::AtomicU64; 6],
 }
 
 impl Default for AstGrepSet {
@@ -368,7 +403,16 @@ impl AstGrepSet {
             region_suspects: AtomicUsize::new(0),
             parsed_bytes: AtomicUsize::new(0),
             file_bytes: AtomicUsize::new(0),
+            phase_nanos: Default::default(),
         }
+    }
+
+    fn timed<T>(&self, phase: usize, work: impl FnOnce() -> T) -> T {
+        let start = std::time::Instant::now();
+        let out = work();
+        let nanos = u64::try_from(start.elapsed().as_nanos()).unwrap_or(u64::MAX);
+        self.phase_nanos[phase].fetch_add(nanos, Ordering::Relaxed);
+        out
     }
 
     /// Parses only the top-level statements holding a prefilter candidate (Python, JS/TS),
@@ -406,6 +450,7 @@ impl AstGrepSet {
             region_suspects: self.region_suspects.load(Ordering::Relaxed),
             parsed_bytes: self.parsed_bytes.load(Ordering::Relaxed),
             file_bytes: self.file_bytes.load(Ordering::Relaxed),
+            phase_nanos: std::array::from_fn(|i| self.phase_nanos[i].load(Ordering::Relaxed)),
         }
     }
 
@@ -465,7 +510,7 @@ impl AstGrepSet {
         let Some(group) = self.groups.iter().find(|g| g.language == lang) else {
             return Vec::new();
         };
-        let active = self.active_rules(group, path, text);
+        let active = self.timed(PHASE_PREFILTER, || self.active_rules(group, path, text));
         if !active.iter().any(|&on| on) {
             self.skipped.fetch_add(1, Ordering::Relaxed);
             return Vec::new();
@@ -473,16 +518,22 @@ impl AstGrepSet {
         self.parsed.fetch_add(1, Ordering::Relaxed);
         self.file_bytes.fetch_add(text.len(), Ordering::Relaxed);
         let partial = if self.regions {
-            self.parse_regions(lang, group, &active, text)
+            self.timed(PHASE_REGIONS, || {
+                self.parse_regions(lang, group, &active, text)
+            })
         } else {
             None
         };
         let grep = partial.or_else(|| {
             self.parsed_bytes.fetch_add(text.len(), Ordering::Relaxed);
-            parse_reusing(lang, text, &[])
+            self.timed(PHASE_PARSE, || parse_reusing(lang, text, &[]))
         });
         match grep {
-            Some(grep) => self.run(group, &active, &grep),
+            Some(grep) => {
+                let hits = self.timed(PHASE_MATCH, || self.run(group, &active, &grep));
+                self.timed(PHASE_DROP, || drop(grep));
+                hits
+            }
             None => Vec::new(),
         }
     }
@@ -505,6 +556,7 @@ impl AstGrepSet {
         let chunks = split.chunks;
         let mut wanted = vec![false; group.chains.as_ref().map_or(0, chains::LangChains::len)];
         let mut positions = Vec::new();
+        let mut members = lang == SupportLang::Python;
         for &index in &group.rules {
             if !active[index] {
                 continue;
@@ -513,24 +565,27 @@ impl AstGrepSet {
             if !rule.local || rule.requirement == prefilter::Req::Always {
                 return None;
             }
+            members &= !rule.inspects_descendants;
             let mut unknown = false;
-            rule.requirement.holds(&mut |atom| {
-                match atom {
-                    prefilter::Req::Chain(i) => wanted[*i] = true,
-                    prefilter::Req::Lit(literal) => match self.literals.get(literal) {
-                        Some(finder) => positions.extend(finder.find_iter(bytes)),
-                        None => unknown = true,
-                    },
-                    prefilter::Req::Re(pattern) => match self.regexes.get(pattern) {
-                        Some(re) => positions.extend(re.find_iter(bytes).map(|m| m.start())),
-                        None => unknown = true,
-                    },
-                    _ => unknown = true,
-                }
-                // `false` visits every branch of an `Or` but only the first atom of an `And`:
-                // enough, since any atom of a local rule lies in the statement holding the match.
-                false
-            });
+            let mut visit = |atom: &prefilter::Req| match atom {
+                prefilter::Req::Chain(i) => wanted[*i] = true,
+                prefilter::Req::Lit(literal) => match self.literals.get(literal) {
+                    Some(finder) => positions.extend(finder.find_iter(bytes)),
+                    None => unknown = true,
+                },
+                prefilter::Req::Re(pattern) => match self.regexes.get(pattern) {
+                    Some(re) => positions.extend(re.find_iter(bytes).map(|m| m.start())),
+                    None => unknown = true,
+                },
+                _ => unknown = true,
+            };
+            // An `inside` part lies in an ancestor, maybe in another class member than the
+            // match: every part must then mark its member.
+            if rule.looks_at_ancestors {
+                rule.requirement.each_atom(&mut visit);
+            } else {
+                rule.requirement.each_first_atom(&mut visit);
+            }
             if unknown {
                 return None;
             }
@@ -538,7 +593,12 @@ impl AstGrepSet {
         if let Some(table) = &group.chains {
             table.positions(bytes, &wanted, &mut positions);
         }
-        let picked = regions::select(&chunks, &mut positions);
+        let top = regions::pick(&chunks, &mut positions);
+        let picked = if members {
+            regions::python_members(bytes, &top, &positions)
+        } else {
+            regions::merge(top)
+        };
         let picked_bytes: usize = picked.iter().map(|c| c.end - c.start).sum();
         if picked.is_empty() || picked_bytes * 5 > text.len() * 4 {
             return None;
@@ -561,7 +621,7 @@ impl AstGrepSet {
                 end_point: point(c.end, c.end_row),
             })
             .collect();
-        let grep = parse_reusing(lang, text, &ranges)?;
+        let grep = self.timed(PHASE_PARSE_REGIONS, || parse_reusing(lang, text, &ranges))?;
         if grep.root().get_inner_node().has_error() {
             self.region_fallbacks.fetch_add(1, Ordering::Relaxed);
             return None;
