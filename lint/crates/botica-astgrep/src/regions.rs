@@ -3,7 +3,8 @@
 //! A rule's match lies inside one top-level statement (rules that look at siblings or at the
 //! module itself are excluded by the caller), so the other statements need not be parsed.
 //! tree-sitter's included ranges keep byte offsets global. Statement boundaries come from a
-//! minimal lexer per language (Python, and JavaScript/TypeScript/TSX).
+//! minimal lexer per language (Python, and JavaScript/TypeScript/TSX). Inside a top-level class
+//! or function, `members` narrows further to the header and the members that hold a candidate.
 
 use ast_grep_language::SupportLang;
 
@@ -27,6 +28,9 @@ pub struct Chunk {
     pub end_row: usize,
     /// For a Python `class`/`def`: the indentation of its body, for `python_members`.
     pub body_indent: Option<usize>,
+    /// For a JS/TS statement ending in a `{…}` (a class, function or arrow body, a block or an
+    /// object): its `{` and `}`, for `js_members`.
+    pub block: Option<(usize, usize)>,
 }
 
 /// The top-level statements of a file, and whether the lexer saw a likely syntax error.
@@ -248,6 +252,7 @@ fn build(
             start_row,
             end_row,
             body_indent,
+            block: None,
         });
     }
     chunks
@@ -307,9 +312,32 @@ enum Js {
 /// not correctness: a wrong split leaves a partial tree with errors, and the caller then parses
 /// the whole file. Unterminated strings are not flagged, since JSX text holds stray quotes.
 pub fn js_chunks(text: &[u8]) -> Split {
+    js_split(text, 0, text.len(), 0, false)
+}
+
+/// After a member ending in `;` or `}`, a line starting with one of these continues it.
+const JS_CONTINUES: [&str; 9] = [
+    "else",
+    "catch",
+    "finally",
+    "while",
+    "in",
+    "instanceof",
+    "as",
+    "satisfies",
+    "of",
+];
+
+/// Splits `text[from..to]` into statements. At the top level (`body == false`) it splits before
+/// the words of `JS_STARTS` and after the body of a `class`/`function` declaration, and records
+/// the block each statement ends in. Inside a body it
+/// splits before a line that starts with a word, `@` or `#` right after a `;` or `}`: members
+/// without semicolons stay with the one before, which only narrows less.
+fn js_split(text: &[u8], from: usize, to: usize, from_row: usize, body: bool) -> Split {
     let mut suspect = false;
-    let mut starts: Vec<(usize, usize, Option<usize>)> = vec![(0, 0, None)];
-    let mut mode = if text.starts_with(b"#!") {
+    let mut starts: Vec<(usize, usize, Option<usize>)> = vec![(from, from_row, None)];
+    let mut blocks: Vec<Option<(usize, usize)>> = Vec::new();
+    let mut mode = if from == 0 && text.starts_with(b"#!") {
         Js::Line
     } else {
         Js::Code
@@ -318,19 +346,55 @@ pub fn js_chunks(text: &[u8]) -> Split {
     let mut templates: Vec<usize> = Vec::new();
     let mut last: Option<usize> = None;
     let mut after_decorator = false;
-    let mut row = 0;
-    let mut i = 0;
+    let mut head_seen = false;
+    let mut declaration = false;
+    let mut open = 0usize;
+    let mut block: Option<(usize, usize)> = None;
+    let mut row = from_row;
+    let mut i = from;
     let mut line_start = true;
-    while i < text.len() {
+    while i < to {
         if line_start {
             line_start = false;
             if mode == Js::Code && depth == 0 && templates.is_empty() {
-                if let Some(word) = js_statement_word(&text[i..]) {
-                    let ends = last.is_none_or(|p| !b"=+-*/%&|^!?:,.(<>[{~".contains(&text[p]));
-                    if ends && !after_decorator && i > 0 && JS_STARTS.contains(&word) {
+                if body {
+                    let indent = text[i..to]
+                        .iter()
+                        .take_while(|b| **b == b' ' || **b == b'\t')
+                        .count();
+                    let rest = &text[i + indent..to];
+                    let word = match rest.first() {
+                        Some(b'#') => Some("#"),
+                        _ => js_statement_word(rest),
+                    };
+                    let ended = last.is_some_and(|p| text[p] == b';' || text[p] == b'}');
+                    if ended && i > from && word.is_some_and(|w| !JS_CONTINUES.contains(&w)) {
                         starts.push((i, row, None));
                     }
-                    after_decorator = word == "@";
+                } else {
+                    let rest = &text[i..to];
+                    let word = js_statement_word(rest);
+                    let code = rest.first().is_some_and(|b| !b.is_ascii_whitespace())
+                        && !rest.starts_with(b"//")
+                        && !rest.starts_with(b"/*");
+                    let ends = last.is_none_or(|p| !b"=+-*/%&|^!?:,.(<>[{~".contains(&text[p]));
+                    let starts_statement = ends && word.is_some_and(|w| JS_STARTS.contains(&w));
+                    // A class or function declaration ends at its body.
+                    let after_body = declaration && ending_block(text, block, last).is_some();
+                    if (starts_statement || (after_body && code)) && !after_decorator && i > from {
+                        blocks.push(ending_block(text, block, last));
+                        starts.push((i, row, None));
+                        head_seen = false;
+                        declaration = false;
+                        block = None;
+                    }
+                    if code {
+                        after_decorator = word == Some("@");
+                        if !after_decorator && !head_seen {
+                            head_seen = true;
+                            declaration = js_declaration(rest);
+                        }
+                    }
                 }
             }
         }
@@ -395,6 +459,9 @@ pub fn js_chunks(text: &[u8]) -> Split {
                 b'\'' | b'"' => mode = Js::Str(byte),
                 b'`' => mode = Js::Template,
                 b'(' | b'[' | b'{' => {
+                    if byte == b'{' && depth == 0 {
+                        open = i;
+                    }
                     depth += 1;
                     last = Some(i);
                 }
@@ -405,6 +472,8 @@ pub fn js_chunks(text: &[u8]) -> Split {
                     if byte == b'}' && templates.last() == Some(&depth) {
                         templates.pop();
                         mode = Js::Template;
+                    } else if byte == b'}' && depth == 0 {
+                        block = Some((open, i));
                     }
                 }
                 _ if !byte.is_ascii_whitespace() => last = Some(i),
@@ -417,12 +486,143 @@ pub fn js_chunks(text: &[u8]) -> Split {
         }
         i += 1;
     }
+    let mut chunks = build(&starts, to, row);
+    if !body {
+        blocks.push(ending_block(text, block, last));
+        for (chunk, block) in chunks.iter_mut().zip(blocks) {
+            chunk.block = block;
+        }
+    }
     Split {
-        chunks: build(&starts, text.len(), row),
+        chunks,
         suspect: suspect
             || depth != 0
             || !templates.is_empty()
             || matches!(mode, Js::Template | Js::Block),
+    }
+}
+
+/// The statement's last top-level `{…}`, if nothing but a `;` follows it: the body of a class,
+/// function or arrow, a block, or an object literal. Taking the last one skips braces in a
+/// header, such as `extends B<{ x: number }>`.
+fn ending_block(
+    text: &[u8],
+    block: Option<(usize, usize)>,
+    last: Option<usize>,
+) -> Option<(usize, usize)> {
+    let (open, close) = block?;
+    let last = last?;
+    let ends_there = last == close
+        || (text[last] == b';' && text[close + 1..last].iter().all(u8::is_ascii_whitespace));
+    ends_there.then_some((open, close))
+}
+
+/// Whether a statement starts a `class` or `function` declaration, after its modifiers.
+fn js_declaration(mut rest: &[u8]) -> bool {
+    loop {
+        let Some(word) = js_statement_word(rest) else {
+            return false;
+        };
+        match word {
+            "export" | "default" | "declare" | "abstract" | "async" => {
+                rest = &rest[word.len()..];
+                let blank = rest
+                    .iter()
+                    .take_while(|b| **b == b' ' || **b == b'\t')
+                    .count();
+                if blank == 0 {
+                    return false;
+                }
+                rest = &rest[blank..];
+            }
+            "class" | "function" => return true,
+            _ => return false,
+        }
+    }
+}
+
+/// Narrows each statement among `picked` that ends in a block (see `Chunk::block`) to its header,
+/// the body members holding a position, and the closing `}`. A position in the header or after
+/// the body keeps the whole statement: the match may be the definition itself.
+pub fn js_members(text: &[u8], picked: &[Chunk], positions: &[usize]) -> Vec<Chunk> {
+    let mut out = Vec::new();
+    for &chunk in picked {
+        let Some((header, members, tail)) = chunk.block.and_then(|b| js_body(text, chunk, b))
+        else {
+            out.push(chunk);
+            continue;
+        };
+        let mut inside: Vec<usize> = positions
+            .iter()
+            .copied()
+            .filter(|&p| p >= chunk.start && p < chunk.end)
+            .collect();
+        if members.len() < 2 || inside.iter().any(|&p| p < header.end || p >= tail.start) {
+            out.push(chunk);
+            continue;
+        }
+        out.push(header);
+        out.extend(pick(&members, &mut inside));
+        out.push(tail);
+    }
+    merge(out)
+}
+
+/// Splits a definition into header (through the line of `{`), body members, and the line of the
+/// closing `}` to the end of the statement. `None` unless `{` ends its line and `}` starts one.
+fn js_body(
+    text: &[u8],
+    chunk: Chunk,
+    (open, close): (usize, usize),
+) -> Option<(Chunk, Vec<Chunk>, Chunk)> {
+    let after = memchr::memchr(b'\n', &text[open + 1..close])?;
+    if !text[open + 1..open + 1 + after]
+        .iter()
+        .all(|b| matches!(b, b' ' | b'\t' | b'\r'))
+    {
+        return None;
+    }
+    let body_start = open + after + 2;
+    let close_line =
+        memchr::memrchr(b'\n', &text[body_start..close]).map(|p| body_start + p + 1)?;
+    if !text[close_line..close]
+        .iter()
+        .all(|b| *b == b' ' || *b == b'\t')
+    {
+        return None;
+    }
+    let body_row =
+        chunk.start_row + memchr::memchr_iter(b'\n', &text[chunk.start..body_start]).count();
+    let members = js_split(text, body_start, close_line, body_row, true).chunks;
+    let close_row = members.last().map_or(body_row, |m| m.end_row);
+    let header = Chunk {
+        end: body_start,
+        end_row: body_row,
+        block: None,
+        ..chunk
+    };
+    let tail = Chunk {
+        start: close_line,
+        start_row: close_row,
+        block: None,
+        ..chunk
+    };
+    Some((header, members, tail))
+}
+
+/// Narrows the picked top-level statements to class/function members, for languages that can.
+pub fn members(
+    language: SupportLang,
+    text: &[u8],
+    picked: &[Chunk],
+    positions: &[usize],
+) -> Vec<Chunk> {
+    match language {
+        SupportLang::Python => python_members(text, picked, positions),
+        SupportLang::JavaScript | SupportLang::TypeScript | SupportLang::Tsx => {
+            js_members(text, picked, positions)
+        }
+        _ => merge(picked.to_vec()),
     }
 }
 
@@ -551,6 +751,7 @@ mod tests {
                 "import a from 'a'",
                 "const x =",
                 "function f() {",
+                "foo()",
                 "export default f"
             ]
         );
@@ -624,6 +825,67 @@ mod tests {
     fn a_candidate_in_the_header_keeps_the_whole_class() {
         let source = "class A(Base):\n    def f(self):\n        return 1\n    def g(self):\n        return 2\n";
         assert_eq!(narrowed(source, "Base"), source);
+    }
+
+    fn js_narrowed(source: &str, needle: &str) -> String {
+        let text = source.as_bytes();
+        let mut positions: Vec<usize> = source.match_indices(needle).map(|(i, _)| i).collect();
+        let top = pick(&js_chunks(text).chunks, &mut positions);
+        js_members(text, &top, &positions)
+            .iter()
+            .map(|c| &source[c.start..c.end])
+            .collect()
+    }
+
+    #[test]
+    fn js_classes_and_functions_narrow_to_header_members_and_closing_brace() {
+        let source = concat!(
+            "import a from 'a'\n",
+            "@Dec()\nexport class A extends B<{ x: number }> {\n",
+            "  f() {\n    return 1\n  }\n\n",
+            "  @Input()\n  g = console.log(2);\n\n",
+            "  h() {\n    console.log(3)\n  }\n",
+            "}\n",
+            "function k() {\n  const a = 1;\n  if (a) {\n  }\n  else {\n    console.log(4);\n  }\n}\n",
+        );
+        assert_eq!(
+            js_narrowed(source, "console"),
+            concat!(
+                "@Dec()\nexport class A extends B<{ x: number }> {\n",
+                "  @Input()\n  g = console.log(2);\n\n",
+                "  h() {\n    console.log(3)\n  }\n",
+                "}\n",
+                "function k() {\n  if (a) {\n  }\n  else {\n    console.log(4);\n  }\n}\n",
+            )
+        );
+    }
+
+    #[test]
+    fn js_keeps_whole_statements_it_cannot_narrow() {
+        // A candidate in the header, an object literal, and members without semicolons.
+        let header = "class A extends Base {\n  f() {}\n  g() {}\n}\n";
+        assert_eq!(js_narrowed(header, "Base"), header);
+        let object = "export const o = {\n  a: f(1),\n  b: 2,\n}\n";
+        assert_eq!(js_narrowed(object, "f(1)"), object);
+        let loose = "class A {\n  x = 1\n  y = f()\n}\n";
+        assert_eq!(js_narrowed(loose, "f()"), loose);
+    }
+
+    #[test]
+    fn js_declarations_end_at_their_body_and_expressions_narrow_too() {
+        let source = concat!(
+            "class A {\n  f() {}\n  g() { log() }\n}\nexports.A = A;\n",
+            "module.exports = cls => class B extends cls {\n  h() {}\n  i() { log() }\n};\n",
+            "const k = () => {\n  a();\n  log();\n}\n",
+        );
+        assert_eq!(
+            js_narrowed(source, "log"),
+            concat!(
+                "class A {\n  g() { log() }\n}\n",
+                "module.exports = cls => class B extends cls {\n  i() { log() }\n};\n",
+                "const k = () => {\n  log();\n}\n",
+            )
+        );
     }
 
     #[test]

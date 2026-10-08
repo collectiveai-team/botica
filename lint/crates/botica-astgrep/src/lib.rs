@@ -569,7 +569,7 @@ impl AstGrepSet {
         let chunks = split.chunks;
         let mut wanted = vec![false; group.chains.as_ref().map_or(0, chains::LangChains::len)];
         let mut positions = Vec::new();
-        let mut members = lang == SupportLang::Python;
+        let mut members = true;
         for &index in &group.rules {
             if !active[index] {
                 continue;
@@ -612,7 +612,7 @@ impl AstGrepSet {
         let top = regions::pick(&chunks, &mut positions);
         let picked = if members {
             self.timed(PHASE_MEMBERS, || {
-                regions::python_members(bytes, &top, &positions)
+                regions::members(lang, bytes, &top, &positions)
             })
         } else {
             regions::merge(top)
