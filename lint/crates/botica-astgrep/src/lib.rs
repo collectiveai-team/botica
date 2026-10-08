@@ -82,7 +82,9 @@ fn check_languages(yaml: &str) -> Result<()> {
     }
     for document in serde_yaml::Deserializer::from_str(yaml) {
         let Ok(head) = <Head as serde::Deserialize>::deserialize(document) else {
-            continue; // ast-grep reports malformed rules itself
+            // ast-grep reports malformed rules itself. Stop here: after an error the
+            // deserializer does not advance, so `continue` would loop forever.
+            break;
         };
         let Some(name) = head.language else { continue };
         if let Ok(language) = name.parse::<SupportLang>() {
@@ -505,6 +507,12 @@ mod language_tests {
         ] {
             assert!(compiled(language));
         }
+    }
+
+    #[test]
+    fn malformed_yaml_is_an_error_not_a_hang() {
+        let yaml = "id: x\nlanguage: python\nrule:\n  pattern: if a: b: c\n";
+        assert!(AstGrepRule::from_yaml(yaml).is_err());
     }
 
     #[cfg(not(feature = "lang-kotlin"))]
