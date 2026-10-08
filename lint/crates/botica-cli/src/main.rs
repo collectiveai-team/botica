@@ -129,24 +129,33 @@ fn lint(args: LintArgs) -> Result<bool> {
         }
     }
     mark("walk");
-    let sources = walk::read_all(&root, &files);
-    mark("read");
-
-    let mut diagnostics = if let Some(dir) = &args.cache_dir {
-        let mut cache = Cache::load(dir, &rules::fingerprint(with_astgrep));
-        let (found, stats) = lint_files_cached(&engine, &sources, &mut cache);
-        cache.save()?;
-        if timings {
-            eprintln!(
-                "[timing] cache: {} hits, {} misses",
-                stats.hits, stats.misses
-            );
-        }
-        found
+    let fused = args.cache_dir.is_none() && matches!(args.schedule, ScheduleArg::InOrder);
+    let (sources, mut diagnostics) = if fused {
+        walk::read_and_lint(&engine, &root, &files)
     } else {
-        walk::lint_files(&engine, &sources, args.schedule.into())
+        let sources = walk::read_all(&root, &files);
+        mark("read");
+        let found = if let Some(dir) = &args.cache_dir {
+            let mut cache = Cache::load(dir, &rules::fingerprint(with_astgrep));
+            let (found, stats) = lint_files_cached(&engine, &sources, &mut cache);
+            cache.save()?;
+            if timings {
+                eprintln!(
+                    "[timing] cache: {} hits, {} misses",
+                    stats.hits, stats.misses
+                );
+            }
+            found
+        } else {
+            walk::lint_files(&engine, &sources, args.schedule.into())
+        };
+        (sources, found)
     };
-    mark("native+ast-grep");
+    mark(if fused {
+        "read+lint"
+    } else {
+        "native+ast-grep"
+    });
     if timings {
         let stats = engine.astgrep().stats();
         eprintln!(
