@@ -12,8 +12,11 @@ fn engine() -> Engine {
     Engine::new(native, AstGrepSet::default())
 }
 
-fn tree() -> PathBuf {
-    let root = Path::new(env!("CARGO_TARGET_TMPDIR")).join("streaming_walk");
+/// One directory per test: the tests run in parallel and each rebuilds its tree.
+fn tree(test: &str) -> PathBuf {
+    let root = Path::new(env!("CARGO_TARGET_TMPDIR"))
+        .join("streaming_walk")
+        .join(test);
     let _ = fs::remove_dir_all(&root);
     fs::create_dir_all(root.join("pkg")).unwrap();
     fs::create_dir_all(root.join(".hidden")).unwrap();
@@ -34,7 +37,7 @@ fn rendered(found: &[botica_core::Diagnostic]) -> Vec<String> {
 
 #[test]
 fn walking_and_linting_in_one_pass_reports_what_the_two_passes_report() {
-    let root = tree();
+    let root = tree("one_pass");
     let engine = engine();
     let never = |_: &Path| false;
 
@@ -48,7 +51,7 @@ fn walking_and_linting_in_one_pass_reports_what_the_two_passes_report() {
 
 #[test]
 fn files_of_any_size_are_read_whole_and_unreadable_ones_are_skipped() {
-    let root = tree();
+    let root = tree("any_size");
     let engine = engine();
     let never = |_: &Path| false;
 
@@ -64,7 +67,7 @@ fn files_of_any_size_are_read_whole_and_unreadable_ones_are_skipped() {
 
 #[test]
 fn explicit_files_are_linted_like_walked_ones() {
-    let root = tree();
+    let root = tree("explicit");
     let engine = engine();
     let never = |_: &Path| false;
     let files = vec![root.join("pkg/big.py"), root.join("pkg/latin1.py")];
