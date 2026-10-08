@@ -56,6 +56,9 @@ struct LintArgs {
     /// Parse whole files instead of only the top-level statements holding a candidate.
     #[arg(long, hide = true)]
     no_regions: bool,
+    /// Match every node instead of skipping the subtrees without candidates.
+    #[arg(long, hide = true)]
+    no_subtree_skip: bool,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -111,6 +114,7 @@ fn lint(args: LintArgs) -> Result<bool> {
         extra_rules: args.extra_rules.as_deref(),
         describe_prefilter: args.describe_prefilter,
         regions: !args.no_regions,
+        subtree_skip: !args.no_subtree_skip,
     })?;
     mark("compile rules");
 
@@ -163,21 +167,22 @@ fn lint(args: LintArgs) -> Result<bool> {
             stats.parsed, stats.skipped
         );
         eprintln!(
-            "[timing] regions: {} files, {} fallbacks, {} suspect, parsed {:.1} of {:.1} MB",
+            "[timing] regions: {} files, {} fallbacks, {} suspect, parsed {:.1} of {:.1} MB; \
+             {} files matched skipping subtrees",
             stats.region_files,
             stats.region_fallbacks,
             stats.region_suspects,
             stats.parsed_bytes as f64 / 1e6,
-            stats.file_bytes as f64 / 1e6
+            stats.file_bytes as f64 / 1e6,
+            stats.anchored_files
         );
-        let [pre, regions, whole, partial, matching, drop, lex, members] =
+        let [pre, regions, whole, partial, matching, drop, lex, members, positions] =
             stats.phase_nanos.map(|n| n as f64 / 1e6);
         eprintln!(
-            "[timing] cpu: prefilter {pre:.0} ms, regions {:.0} ms (lex {lex:.0}, members \
-             {members:.0}, positions {:.0}), parse {:.0} ms (whole {whole:.0}, regions \
+            "[timing] cpu: prefilter {pre:.0} ms, regions {:.0} ms (positions {positions:.0}, \
+             lex {lex:.0}, members {members:.0}), parse {:.0} ms (whole {whole:.0}, regions \
              {partial:.0}), match {matching:.0} ms, free tree {drop:.0} ms",
-            regions - partial,
-            regions - partial - lex - members,
+            positions + regions - partial,
             whole + partial
         );
     }

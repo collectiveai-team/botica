@@ -26,6 +26,8 @@ pub struct EngineOptions<'a> {
     pub describe_prefilter: bool,
     /// Parse only the top-level statements holding a candidate (Python, JS/TS).
     pub regions: bool,
+    /// Skip, while matching, the subtrees without a candidate position.
+    pub subtree_skip: bool,
 }
 
 pub fn build_engine(options: &EngineOptions<'_>) -> Result<Engine> {
@@ -60,6 +62,7 @@ pub fn build_engine(options: &EngineOptions<'_>) -> Result<Engine> {
     }
     set.set_prefilter(options.prefilter);
     set.set_regions(options.regions && options.prefilter);
+    set.set_skip_subtrees(options.subtree_skip && options.prefilter);
     Ok(Engine::new(native, set))
 }
 

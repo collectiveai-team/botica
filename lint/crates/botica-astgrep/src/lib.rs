@@ -37,7 +37,7 @@ pub struct AstGrepRule {
     /// Uses `has`: a match may be a container (e.g. a class) whose whole body matters, so the
     /// rule cannot be narrowed below top-level statements.
     inspects_descendants: bool,
-    /// Uses `inside`.
+    /// Uses `inside` outside a `not`: part of its prefilter lies in an ancestor of the match.
     looks_at_ancestors: bool,
 }
 
@@ -47,6 +47,17 @@ fn uses_key(value: &serde_json::Value, wanted: &str) -> bool {
             .iter()
             .any(|(key, v)| (key == wanted && !v.is_null()) || uses_key(v, wanted)),
         serde_json::Value::Array(items) => items.iter().any(|v| uses_key(v, wanted)),
+        _ => false,
+    }
+}
+
+/// Like `uses_key`, but not under a `not`: the prefilter takes no atom from there.
+fn uses_key_outside_not(value: &serde_json::Value, wanted: &str) -> bool {
+    match value {
+        serde_json::Value::Object(map) => map.iter().any(|(key, v)| {
+            key != "not" && ((key == wanted && !v.is_null()) || uses_key_outside_not(v, wanted))
+        }),
+        serde_json::Value::Array(items) => items.iter().any(|v| uses_key_outside_not(v, wanted)),
         _ => false,
     }
 }
@@ -152,7 +163,7 @@ impl AstGrepRule {
                     .is_some_and(|rule| uses_key(rule, "has"));
                 let looks_at_ancestors = serialized
                     .get("rule")
-                    .is_some_and(|rule| uses_key(rule, "inside"));
+                    .is_some_and(|rule| uses_key_outside_not(rule, "inside"));
                 Ok(Self {
                     looks_at_ancestors,
                     inspects_descendants,
@@ -291,10 +302,12 @@ pub struct PrefilterStats {
     pub region_fallbacks: usize,
     /// Files the lexer flagged as likely syntax errors, parsed whole to match ast-grep.
     pub region_suspects: usize,
+    /// Files matched skipping the subtrees without candidates.
+    pub anchored_files: usize,
     pub parsed_bytes: usize,
     pub file_bytes: usize,
     /// CPU time per phase, summed over threads, indexed by the `PHASE_*` constants.
-    pub phase_nanos: [u64; 8],
+    pub phase_nanos: [u64; PHASES],
 }
 
 /// Prefilter scan. Region selection, including the parse inside it (`PHASE_PARSE_REGIONS`).
@@ -308,6 +321,20 @@ pub const PHASE_DROP: usize = 5;
 /// Inside `PHASE_REGIONS`: top-level lexing, and narrowing to class/function members.
 pub const PHASE_LEX: usize = 6;
 pub const PHASE_MEMBERS: usize = 7;
+/// Locating the candidate positions, for regions and for skipping subtrees.
+pub const PHASE_POSITIONS: usize = 8;
+pub const PHASES: usize = 9;
+
+/// Where the active rules of a file can match, from their prefilter atoms.
+struct Candidates {
+    /// Sorted, without duplicates.
+    positions: Vec<usize>,
+    /// No active rule uses `has`, so regions may narrow to class/function members.
+    members: bool,
+    /// Every match of every active rule contains one of `positions`, so matching may skip
+    /// the subtrees that hold none: no rule uses `inside` or a hand-written regex.
+    anchored: bool,
+}
 
 pub struct AstGrepSet {
     rules: Vec<AstGrepRule>,
@@ -316,14 +343,16 @@ pub struct AstGrepSet {
     regexes: HashMap<String, regex::bytes::Regex>,
     prefilter: bool,
     regions: bool,
+    skip_subtrees: bool,
     parsed: AtomicUsize,
     skipped: AtomicUsize,
     region_files: AtomicUsize,
     region_fallbacks: AtomicUsize,
     region_suspects: AtomicUsize,
+    anchored_files: AtomicUsize,
     parsed_bytes: AtomicUsize,
     file_bytes: AtomicUsize,
-    phase_nanos: [std::sync::atomic::AtomicU64; 8],
+    phase_nanos: [std::sync::atomic::AtomicU64; PHASES],
 }
 
 impl Default for AstGrepSet {
@@ -399,11 +428,13 @@ impl AstGrepSet {
             regexes,
             prefilter: true,
             regions: true,
+            skip_subtrees: true,
             parsed: AtomicUsize::new(0),
             skipped: AtomicUsize::new(0),
             region_files: AtomicUsize::new(0),
             region_fallbacks: AtomicUsize::new(0),
             region_suspects: AtomicUsize::new(0),
+            anchored_files: AtomicUsize::new(0),
             parsed_bytes: AtomicUsize::new(0),
             file_bytes: AtomicUsize::new(0),
             phase_nanos: Default::default(),
@@ -422,6 +453,11 @@ impl AstGrepSet {
     /// on by default; off parses whole files, for parity checks.
     pub fn set_regions(&mut self, enabled: bool) {
         self.regions = enabled;
+    }
+
+    /// Skips, while matching, the subtrees that hold no candidate position (on by default).
+    pub fn set_skip_subtrees(&mut self, enabled: bool) {
+        self.skip_subtrees = enabled;
     }
 
     /// Each rule's id with its effective requirement, for inspection.
@@ -451,6 +487,7 @@ impl AstGrepSet {
             region_files: self.region_files.load(Ordering::Relaxed),
             region_fallbacks: self.region_fallbacks.load(Ordering::Relaxed),
             region_suspects: self.region_suspects.load(Ordering::Relaxed),
+            anchored_files: self.anchored_files.load(Ordering::Relaxed),
             parsed_bytes: self.parsed_bytes.load(Ordering::Relaxed),
             file_bytes: self.file_bytes.load(Ordering::Relaxed),
             phase_nanos: std::array::from_fn(|i| self.phase_nanos[i].load(Ordering::Relaxed)),
@@ -529,20 +566,33 @@ impl AstGrepSet {
         }
         self.parsed.fetch_add(1, Ordering::Relaxed);
         self.file_bytes.fetch_add(text.len(), Ordering::Relaxed);
-        let partial = if self.regions {
-            self.timed(PHASE_REGIONS, || {
-                self.parse_regions(lang, group, &active, &chain_at, text)
+        let candidates = if self.prefilter && (self.regions || self.skip_subtrees) {
+            self.timed(PHASE_POSITIONS, || {
+                self.candidates(group, &active, &chain_at, text.as_bytes())
             })
         } else {
             None
+        };
+        let partial = match &candidates {
+            Some(candidates) if self.regions => {
+                self.timed(PHASE_REGIONS, || self.parse_regions(lang, candidates, text))
+            }
+            _ => None,
         };
         let grep = partial.or_else(|| {
             self.parsed_bytes.fetch_add(text.len(), Ordering::Relaxed);
             self.timed(PHASE_PARSE, || parse_reusing(lang, text, &[]))
         });
+        let anchor = candidates
+            .as_ref()
+            .filter(|c| self.skip_subtrees && c.anchored)
+            .map(|c| c.positions.as_slice());
+        if anchor.is_some() {
+            self.anchored_files.fetch_add(1, Ordering::Relaxed);
+        }
         match grep {
             Some(grep) => {
-                let hits = self.timed(PHASE_MATCH, || self.run(group, &active, &grep));
+                let hits = self.timed(PHASE_MATCH, || self.run(group, &active, &grep, anchor));
                 self.timed(PHASE_DROP, || drop(grep));
                 hits
             }
@@ -550,26 +600,19 @@ impl AstGrepSet {
         }
     }
 
-    /// Parses only the top-level statements that hold a candidate position of an active rule,
-    /// or returns `None` when that is not safe or not worth it.
-    fn parse_regions(
+    /// The candidate positions of the active rules, or `None` when some active rule cannot be
+    /// located by them: it is not local, its prefilter is `Always`, or an atom is unknown.
+    fn candidates(
         &self,
-        lang: SupportLang,
         group: &LanguageGroup,
         active: &[bool],
         chain_at: &[(usize, usize)],
-        text: &str,
-    ) -> Option<AstGrep<StrDoc<SupportLang>>> {
-        let bytes = text.as_bytes();
-        let split = self.timed(PHASE_LEX, || regions::chunks(lang, bytes))?;
-        if split.suspect {
-            self.region_suspects.fetch_add(1, Ordering::Relaxed);
-            return None;
-        }
-        let chunks = split.chunks;
+        bytes: &[u8],
+    ) -> Option<Candidates> {
         let mut wanted = vec![false; group.chains.as_ref().map_or(0, chains::LangChains::len)];
         let mut positions = Vec::new();
         let mut members = true;
+        let mut anchored = true;
         for &index in &group.rules {
             if !active[index] {
                 continue;
@@ -579,6 +622,7 @@ impl AstGrepSet {
                 return None;
             }
             members &= !rule.inspects_descendants;
+            anchored &= !rule.looks_at_ancestors;
             let mut unknown = false;
             let mut visit = |atom: &prefilter::Req| match atom {
                 prefilter::Req::Chain(i) => wanted[*i] = true,
@@ -586,8 +630,12 @@ impl AstGrepSet {
                     Some(finder) => positions.extend(finder.find_iter(bytes)),
                     None => unknown = true,
                 },
+                // A hand-written regex may start before the node it stands for.
                 prefilter::Req::Re(pattern) => match self.regexes.get(pattern) {
-                    Some(re) => positions.extend(re.find_iter(bytes).map(|m| m.start())),
+                    Some(re) => {
+                        anchored = false;
+                        positions.extend(re.find_iter(bytes).map(|m| m.start()));
+                    }
                     None => unknown = true,
                 },
                 _ => unknown = true,
@@ -609,10 +657,34 @@ impl AstGrepSet {
                 .filter(|&&(chain, _)| wanted[chain])
                 .map(|&(_, at)| at),
         );
-        let top = regions::pick(&chunks, &mut positions);
-        let picked = if members {
+        positions.sort_unstable();
+        positions.dedup();
+        Some(Candidates {
+            positions,
+            members,
+            anchored,
+        })
+    }
+
+    /// Parses only the top-level statements that hold a candidate position of an active rule,
+    /// or returns `None` when that is not safe or not worth it.
+    fn parse_regions(
+        &self,
+        lang: SupportLang,
+        candidates: &Candidates,
+        text: &str,
+    ) -> Option<AstGrep<StrDoc<SupportLang>>> {
+        let bytes = text.as_bytes();
+        let split = self.timed(PHASE_LEX, || regions::chunks(lang, bytes))?;
+        if split.suspect {
+            self.region_suspects.fetch_add(1, Ordering::Relaxed);
+            return None;
+        }
+        let positions = &candidates.positions;
+        let top = regions::pick(&split.chunks, positions);
+        let picked = if candidates.members {
             self.timed(PHASE_MEMBERS, || {
-                regions::members(lang, bytes, &top, &positions)
+                regions::members(lang, bytes, &top, positions)
             })
         } else {
             regions::merge(top)
@@ -654,11 +726,12 @@ impl AstGrepSet {
         group: &LanguageGroup,
         active: &[bool],
         grep: &AstGrep<StrDoc<SupportLang>>,
+        anchor: Option<&[usize]>,
     ) -> Vec<Hit> {
         let mut hits = Vec::new();
-        for node in grep.root().dfs() {
+        let visit = |node: ast_grep_core::Node<'_, StrDoc<SupportLang>>| {
             let Some(candidates) = group.by_kind.get(node.kind_id() as usize) else {
-                continue;
+                return;
             };
             for &index in candidates {
                 if !active[index] {
@@ -677,6 +750,10 @@ impl AstGrepSet {
                     message: rule.message(&found),
                 });
             }
+        };
+        match anchor {
+            Some(positions) => each_node_holding(grep, positions, visit),
+            None => grep.root().dfs().for_each(visit),
         }
         hits
     }
@@ -700,7 +777,35 @@ impl AstGrepSet {
         for &index in &group.rules {
             active[index] = self.rules[index].applies_to(&buffer.path);
         }
-        self.run(group, &active, &buffer.grep)
+        self.run(group, &active, &buffer.grep, None)
+    }
+}
+
+/// Visits, in pre-order, the nodes whose byte range holds one of `positions` (sorted). A node
+/// holding none has no descendant holding one, so its whole subtree is skipped.
+fn each_node_holding<'r>(
+    grep: &'r AstGrep<StrDoc<SupportLang>>,
+    positions: &[usize],
+    mut visit: impl FnMut(ast_grep_core::Node<'r, StrDoc<SupportLang>>),
+) {
+    let mut cursor = grep.root().get_inner_node().walk();
+    loop {
+        let node = cursor.node();
+        let first = positions.partition_point(|&p| p < node.start_byte());
+        if positions.get(first).is_some_and(|&p| p < node.end_byte()) {
+            visit(grep.adopt(node));
+            if cursor.goto_first_child() {
+                continue;
+            }
+        }
+        loop {
+            if cursor.goto_next_sibling() {
+                break;
+            }
+            if !cursor.goto_parent() {
+                return;
+            }
+        }
     }
 }
 
@@ -765,6 +870,23 @@ mod language_tests {
         assert_eq!(regions.check(path, source), expected);
         assert_eq!(regions.stats().region_files, 1);
         assert!(regions.stats().parsed_bytes < source.len());
+    }
+
+    #[test]
+    fn skipping_subtrees_finds_the_same_hits_as_matching_every_node() {
+        let yaml = "id: p\nlanguage: python\nrule:\n  pattern: print($A)\n  not:\n    inside:\n      stopBy: end\n      pattern: 'if __name__ == \"__main__\": $$$B'\n---\nid: q\nlanguage: python\nrule:\n  kind: call\n  has:\n    field: function\n    regex: ^log$\n";
+        let source = "def f(a):\n    return [x for x in a if print(x)]\n\nclass C:\n    def g(self):\n        log(print(2), print(3, 4))\n\nY = {'k': print(5)}\n\nif __name__ == \"__main__\":\n    print(6)\n";
+        let mut every = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
+        every.set_regions(false);
+        every.set_skip_subtrees(false);
+        let mut skipping = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
+        skipping.set_regions(false);
+        let path = Path::new("m.py");
+        let expected = every.check(path, source);
+        assert_eq!(expected.len(), 4);
+        assert_eq!(skipping.check(path, source), expected);
+        assert_eq!(skipping.stats().anchored_files, 1);
+        assert_eq!(every.stats().anchored_files, 0);
     }
 
     #[test]

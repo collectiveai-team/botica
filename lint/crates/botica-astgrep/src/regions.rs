@@ -204,7 +204,7 @@ pub fn python_members(text: &[u8], picked: &[Chunk], positions: &[usize]) -> Vec
             }
             None => Vec::new(),
         };
-        let mut inside: Vec<usize> = positions
+        let inside: Vec<usize> = positions
             .iter()
             .copied()
             .filter(|&p| p >= chunk.start && p < chunk.end)
@@ -214,7 +214,7 @@ pub fn python_members(text: &[u8], picked: &[Chunk], positions: &[usize]) -> Vec
             continue;
         }
         out.push(members[0]);
-        out.extend(pick(&members[1..], &mut inside));
+        out.extend(pick(&members[1..], &inside));
     }
     merge(out)
 }
@@ -552,7 +552,7 @@ pub fn js_members(text: &[u8], picked: &[Chunk], positions: &[usize]) -> Vec<Chu
             out.push(chunk);
             continue;
         };
-        let mut inside: Vec<usize> = positions
+        let inside: Vec<usize> = positions
             .iter()
             .copied()
             .filter(|&p| p >= chunk.start && p < chunk.end)
@@ -562,7 +562,7 @@ pub fn js_members(text: &[u8], picked: &[Chunk], positions: &[usize]) -> Vec<Chu
             continue;
         }
         out.push(header);
-        out.extend(pick(&members, &mut inside));
+        out.extend(pick(&members, &inside));
         out.push(tail);
     }
     merge(out)
@@ -666,12 +666,12 @@ fn keyword_at(rest: &[u8], keyword: &[u8]) -> bool {
 /// The chunks holding at least one of `positions`, merged when adjacent.
 #[cfg(test)]
 fn select(chunks: &[Chunk], positions: &mut [usize]) -> Vec<Chunk> {
+    positions.sort_unstable();
     merge(pick(chunks, positions))
 }
 
-/// The chunks holding at least one of `positions`, each once, in order.
-pub fn pick(chunks: &[Chunk], positions: &mut [usize]) -> Vec<Chunk> {
-    positions.sort_unstable();
+/// The chunks holding at least one of `positions` (sorted), each once, in order.
+pub fn pick(chunks: &[Chunk], positions: &[usize]) -> Vec<Chunk> {
     let mut out: Vec<Chunk> = Vec::new();
     let mut k = 0;
     for &position in positions.iter() {
@@ -802,8 +802,8 @@ mod tests {
 
     fn narrowed(source: &str, needle: &str) -> String {
         let text = source.as_bytes();
-        let mut positions: Vec<usize> = source.match_indices(needle).map(|(i, _)| i).collect();
-        let top = pick(&python_chunks(text).chunks, &mut positions);
+        let positions: Vec<usize> = source.match_indices(needle).map(|(i, _)| i).collect();
+        let top = pick(&python_chunks(text).chunks, &positions);
         python_members(text, &top, &positions)
             .iter()
             .map(|c| &source[c.start..c.end])
@@ -829,8 +829,8 @@ mod tests {
 
     fn js_narrowed(source: &str, needle: &str) -> String {
         let text = source.as_bytes();
-        let mut positions: Vec<usize> = source.match_indices(needle).map(|(i, _)| i).collect();
-        let top = pick(&js_chunks(text).chunks, &mut positions);
+        let positions: Vec<usize> = source.match_indices(needle).map(|(i, _)| i).collect();
+        let top = pick(&js_chunks(text).chunks, &positions);
         js_members(text, &top, &positions)
             .iter()
             .map(|c| &source[c.start..c.end])
