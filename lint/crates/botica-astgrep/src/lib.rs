@@ -609,7 +609,13 @@ impl AstGrepSet {
         chain_at: &[(usize, usize)],
         bytes: &[u8],
     ) -> Option<Candidates> {
-        let mut wanted = vec![false; group.chains.as_ref().map_or(0, chains::LangChains::len)];
+        let chain_count = group.chains.as_ref().map_or(0, chains::LangChains::len);
+        let mut wanted = vec![false; chain_count];
+        let mut occurrences = vec![0usize; chain_count];
+        for &(chain, _) in chain_at {
+            occurrences[chain] += 1;
+        }
+        let mut found: HashMap<&str, Vec<usize>> = HashMap::new();
         let mut positions = Vec::new();
         let mut members = true;
         let mut anchored = true;
@@ -624,31 +630,62 @@ impl AstGrepSet {
             members &= !rule.inspects_descendants;
             anchored &= !rule.looks_at_ancestors;
             let mut unknown = false;
-            let mut visit = |atom: &prefilter::Req| match atom {
-                prefilter::Req::Chain(i) => wanted[*i] = true,
-                prefilter::Req::Lit(literal) => match self.literals.get(literal) {
-                    Some(finder) => positions.extend(finder.find_iter(bytes)),
-                    None => unknown = true,
-                },
-                // A hand-written regex may start before the node it stands for.
-                prefilter::Req::Re(pattern) => match self.regexes.get(pattern) {
-                    Some(re) => {
-                        anchored = false;
-                        positions.extend(re.find_iter(bytes).map(|m| m.start()));
+            let mut count = |atom: &prefilter::Req| -> usize {
+                match atom {
+                    prefilter::Req::Chain(i) => occurrences[*i],
+                    prefilter::Req::Lit(literal) => match self.literals.get_key_value(literal) {
+                        Some((key, finder)) => found
+                            .entry(key.as_str())
+                            .or_insert_with(|| finder.find_iter(bytes).collect())
+                            .len(),
+                        None => {
+                            unknown = true;
+                            0
+                        }
+                    },
+                    prefilter::Req::Re(pattern) => match self.regexes.get_key_value(pattern) {
+                        Some((key, re)) => found
+                            .entry(key.as_str())
+                            .or_insert_with(|| re.find_iter(bytes).map(|m| m.start()).collect())
+                            .len(),
+                        None => {
+                            unknown = true;
+                            0
+                        }
+                    },
+                    _ => {
+                        unknown = true;
+                        0
                     }
-                    None => unknown = true,
-                },
-                _ => unknown = true,
+                }
             };
+            let mut atoms = Vec::new();
             // An `inside` part lies in an ancestor, maybe in another class member than the
             // match: every part must then mark its member.
             if rule.looks_at_ancestors {
-                rule.requirement.each_atom(&mut visit);
+                rule.requirement.each_atom(&mut |atom| {
+                    count(atom);
+                    atoms.push(atom.clone());
+                });
             } else {
-                rule.requirement.each_first_atom(&mut visit);
+                let mut rarest = Vec::new();
+                rule.requirement.rarest_atoms(&mut count, &mut rarest);
+                atoms.extend(rarest.into_iter().cloned());
             }
             if unknown {
                 return None;
+            }
+            for atom in &atoms {
+                match atom {
+                    prefilter::Req::Chain(i) => wanted[*i] = true,
+                    prefilter::Req::Lit(key) => positions.extend_from_slice(&found[key.as_str()]),
+                    // A hand-written regex may start before the node it stands for.
+                    prefilter::Req::Re(key) => {
+                        anchored = false;
+                        positions.extend_from_slice(&found[key.as_str()]);
+                    }
+                    _ => {}
+                }
             }
         }
         positions.extend(

@@ -61,18 +61,34 @@ impl Req {
         }
     }
 
-    /// Visits every branch of an `Or` but only the first part of an `And`: enough to locate a
-    /// match when every part of an `And` lies inside the matched node.
-    pub fn each_first_atom(&self, visit: &mut dyn FnMut(&Req)) {
+    /// Collects every branch of an `Or` but, of an `And`, only the part with the fewest
+    /// occurrences by `count`: any part locates a match when every part lies inside the matched
+    /// node. Returns the occurrences collected.
+    pub fn rarest_atoms<'a>(
+        &'a self,
+        count: &mut dyn FnMut(&Req) -> usize,
+        out: &mut Vec<&'a Req>,
+    ) -> usize {
         match self {
-            Req::Or(parts) => parts.iter().for_each(|p| p.each_first_atom(visit)),
+            Req::Or(parts) => parts.iter().map(|p| p.rarest_atoms(count, out)).sum(),
             Req::And(parts) => {
-                if let Some(first) = parts.first() {
-                    first.each_first_atom(visit);
+                let mut best: Option<(usize, Vec<&'a Req>)> = None;
+                for part in parts {
+                    let mut atoms = Vec::new();
+                    let total = part.rarest_atoms(count, &mut atoms);
+                    if best.as_ref().is_none_or(|(least, _)| total < *least) {
+                        best = Some((total, atoms));
+                    }
                 }
+                let (total, atoms) = best.unwrap_or_default();
+                out.extend(atoms);
+                total
             }
-            Req::Always => {}
-            atom => visit(atom),
+            Req::Always => 0,
+            atom => {
+                out.push(atom);
+                count(atom)
+            }
         }
     }
 
@@ -97,5 +113,26 @@ mod tests {
         assert_eq!(Req::and(vec![Req::Always]), Req::Always);
         assert_eq!(Req::or(vec![Req::Always, lit.clone()]), Req::Always);
         assert_eq!(Req::or(vec![lit.clone()]), lit);
+    }
+
+    #[test]
+    fn rarest_atoms_keep_every_or_branch_and_the_rarest_and_part() {
+        // `def` is everywhere; `-> dict` is rare: an `And` of both is located by the latter.
+        let req = Req::Or(vec![
+            Req::And(vec![Req::Chain(0), Req::Chain(1)]),
+            Req::And(vec![
+                Req::Chain(0),
+                Req::Or(vec![Req::Chain(2), Req::Chain(3)]),
+            ]),
+        ]);
+        let occurrences = [50, 1, 2, 60];
+        let mut count = |atom: &Req| match atom {
+            Req::Chain(i) => occurrences[*i],
+            _ => 0,
+        };
+        let mut atoms = Vec::new();
+        let total = req.rarest_atoms(&mut count, &mut atoms);
+        assert_eq!(atoms, [&Req::Chain(1), &Req::Chain(0)]);
+        assert_eq!(total, 51);
     }
 }
