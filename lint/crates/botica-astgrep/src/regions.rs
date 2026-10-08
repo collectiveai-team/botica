@@ -8,7 +8,7 @@
 use ast_grep_language::SupportLang;
 
 /// The top-level statements of `text`, or `None` for a language without a splitter.
-pub fn chunks(language: SupportLang, text: &[u8]) -> Option<Vec<Chunk>> {
+pub fn chunks(language: SupportLang, text: &[u8]) -> Option<Split> {
     match language {
         SupportLang::Python => Some(python_chunks(text)),
         SupportLang::JavaScript | SupportLang::TypeScript | SupportLang::Tsx => {
@@ -27,15 +27,28 @@ pub struct Chunk {
     pub end_row: usize,
 }
 
+/// The top-level statements of a file, and whether the lexer saw a likely syntax error.
+///
+/// tree-sitter's error recovery in one statement can change how later statements parse, so a
+/// file that may not parse must be parsed whole to match ast-grep. The lexer catches the common
+/// cases (unbalanced brackets, unterminated strings, bad indentation), not every error.
+pub struct Split {
+    pub chunks: Vec<Chunk>,
+    pub suspect: bool,
+}
+
 /// Splits Python source into top-level statements. Comment-only and blank lines at column 0 stay
 /// with the statement before them; `else`/`elif`/`except`/`finally` and decorated definitions
 /// stay with the statement they continue.
-pub fn python_chunks(text: &[u8]) -> Vec<Chunk> {
+pub fn python_chunks(text: &[u8]) -> Split {
     let mut starts: Vec<(usize, usize)> = vec![(0, 0)];
     let mut depth = 0usize;
     let mut quote: Option<(u8, bool)> = None; // (quote byte, triple)
     let mut continued = false;
     let mut after_decorator = false;
+    let mut indents: Vec<usize> = vec![0];
+    let mut last: Option<u8> = None; // last significant code byte
+    let mut suspect = false;
     let mut row = 0;
     let mut i = 0;
     let mut line_start = true;
@@ -43,6 +56,14 @@ pub fn python_chunks(text: &[u8]) -> Vec<Chunk> {
         if line_start {
             line_start = false;
             if quote.is_none() && depth == 0 && !continued {
+                let indent = text[i..]
+                    .iter()
+                    .take_while(|b| **b == b' ' || **b == b'\t')
+                    .count();
+                let first = text.get(i + indent).copied();
+                if first.is_some_and(|b| b != b'\n' && b != b'\r' && b != b'#') {
+                    suspect |= !indentation_ok(&mut indents, indent, last == Some(b':'));
+                }
                 let byte = text[i];
                 if !byte.is_ascii_whitespace() && byte != b'#' {
                     let rest = &text[i..];
@@ -65,12 +86,15 @@ pub fn python_chunks(text: &[u8]) -> Vec<Chunk> {
                 } else if byte == q {
                     if !triple {
                         quote = None;
+                        last = Some(q);
                     } else if text[i..].starts_with(&[q, q, q]) {
                         quote = None;
+                        last = Some(q);
                         i += 2;
                     }
                 } else if byte == b'\n' && !triple {
-                    quote = None; // unterminated: let the parser report it
+                    quote = None;
+                    suspect = true;
                 }
             }
             None => match byte {
@@ -86,10 +110,18 @@ pub fn python_chunks(text: &[u8]) -> Vec<Chunk> {
                         i += 2;
                     }
                 }
-                b'(' | b'[' | b'{' => depth += 1,
-                b')' | b']' | b'}' => depth = depth.saturating_sub(1),
+                b'(' | b'[' | b'{' => {
+                    depth += 1;
+                    last = Some(byte);
+                }
+                b')' | b']' | b'}' => {
+                    suspect |= depth == 0;
+                    depth = depth.saturating_sub(1);
+                    last = Some(byte);
+                }
                 b'\\' if text.get(i + 1) == Some(&b'\n') => continued = true,
                 b'\\' if text[i + 1..].starts_with(b"\r\n") => continued = true,
+                _ if !byte.is_ascii_whitespace() => last = Some(byte),
                 _ => {}
             },
         }
@@ -99,7 +131,27 @@ pub fn python_chunks(text: &[u8]) -> Vec<Chunk> {
         }
         i += 1;
     }
-    build(&starts, text.len(), row)
+    Split {
+        chunks: build(&starts, text.len(), row),
+        suspect: suspect || depth != 0 || quote.is_some(),
+    }
+}
+
+/// Python's INDENT/DEDENT rules for one logical line: a block opened by `:` must indent, nothing
+/// else may, and a dedent must land on an enclosing level.
+fn indentation_ok(indents: &mut Vec<usize>, indent: usize, opens_block: bool) -> bool {
+    let top = *indents.last().unwrap_or(&0);
+    if opens_block {
+        indents.push(indent);
+        return indent > top;
+    }
+    if indent > top {
+        return false;
+    }
+    while indents.last().is_some_and(|&level| level > indent) {
+        indents.pop();
+    }
+    indents.last() == Some(&indent)
 }
 
 fn build(starts: &[(usize, usize)], text_len: usize, total_rows: usize) -> Vec<Chunk> {
@@ -166,9 +218,11 @@ enum Js {
 }
 
 /// Splits JavaScript/TypeScript/TSX source into top-level statements. Strings end at a newline
-/// and regex literals too, so JSX text with a stray quote only costs splits, not correctness: a
-/// wrong split leaves a partial tree with errors, and the caller then parses the whole file.
-pub fn js_chunks(text: &[u8]) -> Vec<Chunk> {
+/// and regex literals too, so JSX text with a stray quote only costs splits or a `suspect` flag,
+/// not correctness: a wrong split leaves a partial tree with errors, and the caller then parses
+/// the whole file. Unterminated strings are not flagged, since JSX text holds stray quotes.
+pub fn js_chunks(text: &[u8]) -> Split {
+    let mut suspect = false;
     let mut starts: Vec<(usize, usize)> = vec![(0, 0)];
     let mut mode = if text.starts_with(b"#!") {
         Js::Line
@@ -260,6 +314,7 @@ pub fn js_chunks(text: &[u8]) -> Vec<Chunk> {
                     last = Some(i);
                 }
                 b')' | b']' | b'}' => {
+                    suspect |= depth == 0;
                     depth = depth.saturating_sub(1);
                     last = Some(i);
                     if byte == b'}' && templates.last() == Some(&depth) {
@@ -277,7 +332,13 @@ pub fn js_chunks(text: &[u8]) -> Vec<Chunk> {
         }
         i += 1;
     }
-    build(&starts, text.len(), row)
+    Split {
+        chunks: build(&starts, text.len(), row),
+        suspect: suspect
+            || depth != 0
+            || !templates.is_empty()
+            || matches!(mode, Js::Template | Js::Block),
+    }
 }
 
 fn is_js_word(byte: u8) -> bool {
@@ -345,6 +406,7 @@ mod tests {
 
     fn starts(source: &str) -> Vec<&str> {
         python_chunks(source.as_bytes())
+            .chunks
             .iter()
             .map(|c| source[c.start..c.end].lines().next().unwrap_or(""))
             .collect()
@@ -373,6 +435,7 @@ mod tests {
 
     fn js_starts(source: &str) -> Vec<&str> {
         js_chunks(source.as_bytes())
+            .chunks
             .iter()
             .map(|c| source[c.start..c.end].lines().next().unwrap_or(""))
             .collect()
@@ -414,8 +477,30 @@ mod tests {
     }
 
     #[test]
+    fn likely_syntax_errors_are_flagged() {
+        let python = |s: &str| python_chunks(s.as_bytes()).suspect;
+        assert!(!python("class A:\n    def f(self):\n        if x:  # c\n            pass\n    y = 1\nz = (\n  1)\n"));
+        assert!(python("x = 1\n    y = 2\n")); // unexpected indent
+        assert!(python("def f():\nreturn 1\n")); // expected an indented block
+        assert!(python("if a:\n        b\n    c\n")); // dedent to no enclosing level
+        assert!(python("f(a))\n")); // unmatched ')'
+        assert!(python("x = (1,\n")); // never closed
+        assert!(python("s = 'abc\n")); // unterminated string
+        assert!(python("s = \"\"\"abc\n")); // unterminated triple quote
+
+        let js = |s: &str| js_chunks(s.as_bytes()).suspect;
+        assert!(!js(
+            "const a = `x ${b} y`\nfunction f() { return /}/ }\nconst p = <p>Don't</p>\n"
+        ));
+        assert!(js("f(a))\n"));
+        assert!(js("function f() {\n"));
+        assert!(js("const t = `abc\n"));
+        assert!(js("/* open\n"));
+    }
+
+    #[test]
     fn select_merges_adjacent_chunks() {
-        let chunks = python_chunks(b"a = 1\nb = 2\nc = 3\nd = 4\n");
+        let chunks = python_chunks(b"a = 1\nb = 2\nc = 3\nd = 4\n").chunks;
         let picked = select(&chunks, &mut [7, 2, 20, 21]);
         assert_eq!(
             picked

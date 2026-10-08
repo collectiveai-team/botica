@@ -154,9 +154,10 @@ fn lint(args: LintArgs) -> Result<bool> {
             stats.parsed, stats.skipped
         );
         eprintln!(
-            "[timing] regions: {} files, {} fallbacks, parsed {:.1} of {:.1} MB",
+            "[timing] regions: {} files, {} fallbacks, {} suspect, parsed {:.1} of {:.1} MB",
             stats.region_files,
             stats.region_fallbacks,
+            stats.region_suspects,
             stats.parsed_bytes as f64 / 1e6,
             stats.file_bytes as f64 / 1e6
         );

@@ -266,6 +266,8 @@ pub struct PrefilterStats {
     /// bytes handed to the parser against the bytes of the parsed files.
     pub region_files: usize,
     pub region_fallbacks: usize,
+    /// Files the lexer flagged as likely syntax errors, parsed whole to match ast-grep.
+    pub region_suspects: usize,
     pub parsed_bytes: usize,
     pub file_bytes: usize,
 }
@@ -281,6 +283,7 @@ pub struct AstGrepSet {
     skipped: AtomicUsize,
     region_files: AtomicUsize,
     region_fallbacks: AtomicUsize,
+    region_suspects: AtomicUsize,
     parsed_bytes: AtomicUsize,
     file_bytes: AtomicUsize,
 }
@@ -362,6 +365,7 @@ impl AstGrepSet {
             skipped: AtomicUsize::new(0),
             region_files: AtomicUsize::new(0),
             region_fallbacks: AtomicUsize::new(0),
+            region_suspects: AtomicUsize::new(0),
             parsed_bytes: AtomicUsize::new(0),
             file_bytes: AtomicUsize::new(0),
         }
@@ -398,6 +402,7 @@ impl AstGrepSet {
             skipped: self.skipped.load(Ordering::Relaxed),
             region_files: self.region_files.load(Ordering::Relaxed),
             region_fallbacks: self.region_fallbacks.load(Ordering::Relaxed),
+            region_suspects: self.region_suspects.load(Ordering::Relaxed),
             parsed_bytes: self.parsed_bytes.load(Ordering::Relaxed),
             file_bytes: self.file_bytes.load(Ordering::Relaxed),
         }
@@ -491,7 +496,12 @@ impl AstGrepSet {
         text: &str,
     ) -> Option<AstGrep<StrDoc<SupportLang>>> {
         let bytes = text.as_bytes();
-        let chunks = regions::chunks(lang, bytes)?;
+        let split = regions::chunks(lang, bytes)?;
+        if split.suspect {
+            self.region_suspects.fetch_add(1, Ordering::Relaxed);
+            return None;
+        }
+        let chunks = split.chunks;
         let mut wanted = vec![false; group.chains.as_ref().map_or(0, chains::LangChains::len)];
         let mut positions = Vec::new();
         for &index in &group.rules {
