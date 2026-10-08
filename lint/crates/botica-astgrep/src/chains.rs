@@ -122,6 +122,10 @@ impl LangChains {
         self.chains.is_empty()
     }
 
+    pub fn len(&self) -> usize {
+        self.chains.len()
+    }
+
     /// The requirement an ast-grep `rule:` object puts on the file text.
     pub fn requirement(&mut self, rule: &Value) -> Req {
         let Some(object) = rule.as_object() else {
@@ -279,6 +283,25 @@ impl LangChains {
             }
         }
         found
+    }
+
+    /// Anchor offsets of every verified occurrence of the chains flagged in `wanted`.
+    pub fn positions(&self, text: &[u8], wanted: &[bool], out: &mut Vec<usize>) {
+        let Some(anchors) = &self.anchors else {
+            return;
+        };
+        for hit in anchors.find_overlapping_iter(text) {
+            let index = hit.pattern().as_usize();
+            if !wanted[index] || !bounded(text, hit.start(), hit.end()) {
+                continue;
+            }
+            let chain = &self.chains[index];
+            if self.rest_follows(&chain.tokens[chain.anchor + 1..], text, hit.end())
+                && self.rest_precedes(&chain.tokens[..chain.anchor], text, hit.start())
+            {
+                out.push(hit.start());
+            }
+        }
     }
 
     fn rest_precedes(&self, tokens: &[Vec<u8>], text: &[u8], mut position: usize) -> bool {

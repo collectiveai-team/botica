@@ -1,5 +1,6 @@
 mod chains;
 mod prefilter;
+mod regions;
 
 use anyhow::{Context, Result};
 use ast_grep_config::{from_yaml_string, GlobalRules, RuleConfig, Severity};
@@ -31,6 +32,23 @@ pub struct AstGrepRule {
     /// A hand-written requirement (`prefilter` in `rule.toml`); wins over the derived one.
     declared: Option<prefilter::Req>,
     rule_json: serde_json::Value,
+    /// Every match lies inside one top-level statement and depends on nothing outside it.
+    local: bool,
+}
+
+/// Whether a rule only looks at a node, its descendants and its ancestors: no siblings
+/// (`follows`, `precedes`, `nthChild`), no utility rules it cannot see, no module-level match.
+fn is_local(rule: &serde_json::Value) -> bool {
+    match rule {
+        serde_json::Value::Object(map) => map.iter().all(|(key, value)| match key.as_str() {
+            _ if value.is_null() => true,
+            "follows" | "precedes" | "nthChild" | "matches" => false,
+            "kind" => value.as_str().is_none_or(|k| k != "module"),
+            _ => is_local(value),
+        }),
+        serde_json::Value::Array(items) => items.iter().all(is_local),
+        _ => true,
+    }
 }
 
 /// Whether this build carries the grammar for `language`. ast-grep panics when asked for a
@@ -109,7 +127,11 @@ impl AstGrepRule {
                 let serialized = serde_json::to_value(&*config)?;
                 let files = build_globs(&serialized, "files")?;
                 let ignores = build_globs(&serialized, "ignores")?;
+                let local = serialized.get("utils").is_none_or(|u| {
+                    u.is_null() || u.as_object().is_some_and(serde_json::Map::is_empty)
+                }) && serialized.get("rule").is_some_and(is_local);
                 Ok(Self {
+                    local,
                     config,
                     files,
                     ignores,
@@ -184,7 +206,11 @@ thread_local! {
 
 /// ast-grep 0.41 builds a `Parser` and calls `set_language` for every file; this keeps one
 /// per thread and language.
-fn parse_reusing(lang: SupportLang, text: &str) -> Option<AstGrep<StrDoc<SupportLang>>> {
+fn parse_reusing(
+    lang: SupportLang,
+    text: &str,
+    ranges: &[tree_sitter::Range],
+) -> Option<AstGrep<StrDoc<SupportLang>>> {
     let tree = PARSERS.with(|cell| {
         let mut parsers = cell.borrow_mut();
         let position = match parsers.iter().position(|(l, _)| *l == lang) {
@@ -196,7 +222,14 @@ fn parse_reusing(lang: SupportLang, text: &str) -> Option<AstGrep<StrDoc<Support
                 parsers.len() - 1
             }
         };
-        parsers[position].1.parse(text.as_bytes(), None)
+        let parser = &mut parsers[position].1;
+        if ranges.is_empty() {
+            return parser.parse(text.as_bytes(), None);
+        }
+        parser.set_included_ranges(ranges).ok()?;
+        let tree = parser.parse(text.as_bytes(), None);
+        parser.set_included_ranges(&[]).ok()?;
+        tree
     })?;
     Some(AstGrep::doc(StrDoc {
         src: text.to_owned(),
@@ -227,6 +260,12 @@ struct LanguageGroup {
 pub struct PrefilterStats {
     pub parsed: usize,
     pub skipped: usize,
+    /// Files parsed by regions, files whose partial tree had errors (re-parsed whole), and the
+    /// bytes handed to the parser against the bytes of the parsed files.
+    pub region_files: usize,
+    pub region_fallbacks: usize,
+    pub parsed_bytes: usize,
+    pub file_bytes: usize,
 }
 
 pub struct AstGrepSet {
@@ -235,8 +274,13 @@ pub struct AstGrepSet {
     literals: HashMap<String, Finder<'static>>,
     regexes: HashMap<String, regex::bytes::Regex>,
     prefilter: bool,
+    regions: bool,
     parsed: AtomicUsize,
     skipped: AtomicUsize,
+    region_files: AtomicUsize,
+    region_fallbacks: AtomicUsize,
+    parsed_bytes: AtomicUsize,
+    file_bytes: AtomicUsize,
 }
 
 impl Default for AstGrepSet {
@@ -311,9 +355,19 @@ impl AstGrepSet {
             literals,
             regexes,
             prefilter: true,
+            regions: false,
             parsed: AtomicUsize::new(0),
             skipped: AtomicUsize::new(0),
+            region_files: AtomicUsize::new(0),
+            region_fallbacks: AtomicUsize::new(0),
+            parsed_bytes: AtomicUsize::new(0),
+            file_bytes: AtomicUsize::new(0),
         }
+    }
+
+    /// Experiment: parse only the top-level statements holding a candidate (Python only).
+    pub fn set_regions(&mut self, enabled: bool) {
+        self.regions = enabled;
     }
 
     /// Each rule's id with its effective requirement, for inspection.
@@ -340,6 +394,10 @@ impl AstGrepSet {
         PrefilterStats {
             parsed: self.parsed.load(Ordering::Relaxed),
             skipped: self.skipped.load(Ordering::Relaxed),
+            region_files: self.region_files.load(Ordering::Relaxed),
+            region_fallbacks: self.region_fallbacks.load(Ordering::Relaxed),
+            parsed_bytes: self.parsed_bytes.load(Ordering::Relaxed),
+            file_bytes: self.file_bytes.load(Ordering::Relaxed),
         }
     }
 
@@ -405,10 +463,96 @@ impl AstGrepSet {
             return Vec::new();
         }
         self.parsed.fetch_add(1, Ordering::Relaxed);
-        match parse_reusing(lang, text) {
+        self.file_bytes.fetch_add(text.len(), Ordering::Relaxed);
+        let partial = if self.regions && lang == SupportLang::Python {
+            self.parse_regions(group, &active, text)
+        } else {
+            None
+        };
+        let grep = partial.or_else(|| {
+            self.parsed_bytes.fetch_add(text.len(), Ordering::Relaxed);
+            parse_reusing(lang, text, &[])
+        });
+        match grep {
             Some(grep) => self.run(group, &active, &grep),
             None => Vec::new(),
         }
+    }
+
+    /// Parses only the top-level statements that hold a candidate position of an active rule,
+    /// or returns `None` when that is not safe or not worth it.
+    fn parse_regions(
+        &self,
+        group: &LanguageGroup,
+        active: &[bool],
+        text: &str,
+    ) -> Option<AstGrep<StrDoc<SupportLang>>> {
+        let bytes = text.as_bytes();
+        let mut wanted = vec![false; group.chains.as_ref().map_or(0, chains::LangChains::len)];
+        let mut positions = Vec::new();
+        for &index in &group.rules {
+            if !active[index] {
+                continue;
+            }
+            let rule = &self.rules[index];
+            if !rule.local || rule.requirement == prefilter::Req::Always {
+                return None;
+            }
+            let mut unknown = false;
+            rule.requirement.holds(&mut |atom| {
+                match atom {
+                    prefilter::Req::Chain(i) => wanted[*i] = true,
+                    prefilter::Req::Lit(literal) => match self.literals.get(literal) {
+                        Some(finder) => positions.extend(finder.find_iter(bytes)),
+                        None => unknown = true,
+                    },
+                    prefilter::Req::Re(pattern) => match self.regexes.get(pattern) {
+                        Some(re) => positions.extend(re.find_iter(bytes).map(|m| m.start())),
+                        None => unknown = true,
+                    },
+                    _ => unknown = true,
+                }
+                false // visit every atom, including every branch of `Or`
+            });
+            if unknown {
+                return None;
+            }
+        }
+        if let Some(table) = &group.chains {
+            table.positions(bytes, &wanted, &mut positions);
+        }
+        let chunks = regions::python_chunks(bytes);
+        let picked = regions::select(&chunks, &mut positions);
+        let picked_bytes: usize = picked.iter().map(|c| c.end - c.start).sum();
+        if picked.is_empty() || picked_bytes * 5 > text.len() * 4 {
+            return None;
+        }
+        let last_line = bytes.iter().rposition(|&b| b == b'\n').map_or(0, |i| i + 1);
+        let point = |offset: usize, row: usize| tree_sitter::Point {
+            row,
+            column: if offset == bytes.len() {
+                offset - last_line
+            } else {
+                0
+            },
+        };
+        let ranges: Vec<tree_sitter::Range> = picked
+            .iter()
+            .map(|c| tree_sitter::Range {
+                start_byte: c.start,
+                end_byte: c.end,
+                start_point: point(c.start, c.start_row),
+                end_point: point(c.end, c.end_row),
+            })
+            .collect();
+        let grep = parse_reusing(SupportLang::Python, text, &ranges)?;
+        if grep.root().get_inner_node().has_error() {
+            self.region_fallbacks.fetch_add(1, Ordering::Relaxed);
+            return None;
+        }
+        self.region_files.fetch_add(1, Ordering::Relaxed);
+        self.parsed_bytes.fetch_add(picked_bytes, Ordering::Relaxed);
+        Some(grep)
     }
 
     fn run(
@@ -510,9 +654,42 @@ mod language_tests {
     }
 
     #[test]
+    fn region_parsing_finds_the_same_hits_as_a_whole_file_parse() {
+        let yaml = "id: p\nlanguage: python\nrule:\n  pattern: print($$$A)\n  not:\n    inside:\n      stopBy: end\n      pattern: 'if __name__ == \"__main__\": $$$B'\n";
+        let source = "import os\n\nX = 1\n\ndef f():\n    print(1)\n\nclass C:\n    def g(self):\n        '''\nprint(2)\n'''\n        return 2\n\nY = [\nprint(3)]\n\nif __name__ == \"__main__\":\n    print(4)\n";
+        let filler: String = (0..40)
+            .map(|i| format!("def h{i}(a, b):\n    return a + b * {i}\n\n"))
+            .collect();
+        let source = format!("{filler}{source}");
+        let source = source.as_str();
+        let whole = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
+        let mut regions = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
+        regions.set_regions(true);
+        let path = Path::new("m.py");
+        let expected = whole.check(path, source);
+        assert_eq!(expected.len(), 2);
+        assert_eq!(regions.check(path, source), expected);
+        assert_eq!(regions.stats().region_files, 1);
+        assert!(regions.stats().parsed_bytes < source.len());
+    }
+
+    #[test]
     fn malformed_yaml_is_an_error_not_a_hang() {
         let yaml = "id: x\nlanguage: python\nrule:\n  pattern: if a: b: c\n";
         assert!(AstGrepRule::from_yaml(yaml).is_err());
+    }
+
+    #[test]
+    fn rules_that_look_at_siblings_are_not_local() {
+        let local =
+            AstGrepRule::from_yaml("id: a\nlanguage: python\nrule:\n  pattern: print($A)\n")
+                .unwrap();
+        assert!(local[0].local);
+        let sibling = AstGrepRule::from_yaml(
+            "id: b\nlanguage: python\nrule:\n  pattern: print($A)\n  follows:\n    pattern: import os\n",
+        )
+        .unwrap();
+        assert!(!sibling[0].local);
     }
 
     #[cfg(not(feature = "lang-kotlin"))]

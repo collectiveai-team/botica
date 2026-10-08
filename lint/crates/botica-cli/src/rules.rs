@@ -24,6 +24,8 @@ pub struct EngineOptions<'a> {
     pub extra_rules: Option<&'a Path>,
     /// Print each rule's effective prefilter to stderr.
     pub describe_prefilter: bool,
+    /// Experiment: parse only the top-level statements holding a candidate (Python).
+    pub regions: bool,
 }
 
 pub fn build_engine(options: &EngineOptions<'_>) -> Result<Engine> {
@@ -57,6 +59,7 @@ pub fn build_engine(options: &EngineOptions<'_>) -> Result<Engine> {
         }
     }
     set.set_prefilter(options.prefilter);
+    set.set_regions(options.regions && options.prefilter);
     Ok(Engine::new(native, set))
 }
 
