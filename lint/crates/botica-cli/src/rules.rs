@@ -24,7 +24,7 @@ pub struct EngineOptions<'a> {
     pub extra_rules: Option<&'a Path>,
     /// Print each rule's effective prefilter to stderr.
     pub describe_prefilter: bool,
-    /// Experiment: parse only the top-level statements holding a candidate (Python, JS/TS).
+    /// Parse only the top-level statements holding a candidate (Python, JS/TS).
     pub regions: bool,
 }
 

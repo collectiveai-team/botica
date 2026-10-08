@@ -360,7 +360,7 @@ impl AstGrepSet {
             literals,
             regexes,
             prefilter: true,
-            regions: false,
+            regions: true,
             parsed: AtomicUsize::new(0),
             skipped: AtomicUsize::new(0),
             region_files: AtomicUsize::new(0),
@@ -371,7 +371,8 @@ impl AstGrepSet {
         }
     }
 
-    /// Experiment: parse only the top-level statements holding a candidate (Python, JS/TS).
+    /// Parses only the top-level statements holding a prefilter candidate (Python, JS/TS),
+    /// on by default; off parses whole files, for parity checks.
     pub fn set_regions(&mut self, enabled: bool) {
         self.regions = enabled;
     }
@@ -677,9 +678,9 @@ mod language_tests {
             .collect();
         let source = format!("{filler}{source}");
         let source = source.as_str();
-        let whole = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
-        let mut regions = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
-        regions.set_regions(true);
+        let mut whole = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
+        whole.set_regions(false);
+        let regions = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
         let path = Path::new("m.py");
         let expected = whole.check(path, source);
         assert_eq!(expected.len(), 2);

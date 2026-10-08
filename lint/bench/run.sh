@@ -66,6 +66,7 @@ echo "== 10k files, calibrated on real code (gen_realistic.py) =="
 python3 "$BENCH/parity.py" "$WORK/repo10k-real" "$BOTICA" "$WORK/sg" | tee "$OUT/parity-real.txt"
 (cd "$WORK/repo10k-real" && RUNS=8 hf --export-markdown "$OUT/repo-10k-real.md" \
   "$BOTICA lint . --no-prefilter" \
+  "$BOTICA lint . --no-regions" \
   "$BOTICA lint ." \
   "$BOTICA lint . --schedule largest-first")
 # Per-file cost concentration: `--schedule timed` prints one `[file]` row per file on stderr.

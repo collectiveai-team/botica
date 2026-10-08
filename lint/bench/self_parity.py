@@ -2,7 +2,8 @@
 
 Usage: python self_parity.py <corpus_dir> <botica_bin> [extra_rules_dir]
 
-Runs the same binary with and without `--no-prefilter`; the outputs must be identical. Unlike
+Runs the same binary with and without `--no-prefilter` (which also turns region parsing off, so
+both the prefilter and region parsing are checked); the outputs must be identical. Unlike
 parity.py this does not depend on the ast-grep CLI, so it also isolates prefilter bugs from parser
 or grammar differences between botica and the CLI.
 """

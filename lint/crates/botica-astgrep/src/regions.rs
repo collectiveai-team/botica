@@ -1,4 +1,4 @@
-//! Experiment: parse only the top-level statements that hold a prefilter candidate.
+//! Region parsing: parse only the top-level statements that hold a prefilter candidate.
 //!
 //! A rule's match lies inside one top-level statement (rules that look at siblings or at the
 //! module itself are excluded by the caller), so the other statements need not be parsed.

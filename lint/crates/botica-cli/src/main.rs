@@ -53,9 +53,9 @@ struct LintArgs {
     /// Measurement aid: how files are handed to the worker threads.
     #[arg(long, hide = true, value_enum, default_value_t = ScheduleArg::InOrder)]
     schedule: ScheduleArg,
-    /// Experiment: parse only the top-level statements holding a candidate (Python, JS/TS).
+    /// Parse whole files instead of only the top-level statements holding a candidate.
     #[arg(long, hide = true)]
-    regions: bool,
+    no_regions: bool,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -110,7 +110,7 @@ fn lint(args: LintArgs) -> Result<bool> {
         prefilter: !args.no_prefilter,
         extra_rules: args.extra_rules.as_deref(),
         describe_prefilter: args.describe_prefilter,
-        regions: args.regions,
+        regions: !args.no_regions,
     })?;
     mark("compile rules");
 
