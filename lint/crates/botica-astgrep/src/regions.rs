@@ -198,23 +198,16 @@ fn python_split(text: &[u8], from: usize, to: usize, from_row: usize, level: usi
 pub fn python_members(text: &[u8], picked: &[Chunk], positions: &[usize]) -> Vec<Chunk> {
     let mut out = Vec::new();
     for &chunk in picked {
-        let members = match chunk.body_indent {
+        let split = match chunk.body_indent {
             Some(level) => {
                 python_split(text, chunk.start, chunk.end, chunk.start_row, level).chunks
             }
             None => Vec::new(),
         };
-        let inside: Vec<usize> = positions
-            .iter()
-            .copied()
-            .filter(|&p| p >= chunk.start && p < chunk.end)
-            .collect();
-        if members.len() < 2 || inside.iter().any(|&p| p < members[1].start) {
-            out.push(chunk);
-            continue;
+        match split.split_first() {
+            Some((&header, members)) => narrow(chunk, header, members, None, positions, &mut out),
+            None => out.push(chunk),
         }
-        out.push(members[0]);
-        out.extend(pick(&members[1..], &inside));
     }
     merge(out)
 }
@@ -547,25 +540,42 @@ fn js_declaration(mut rest: &[u8]) -> bool {
 pub fn js_members(text: &[u8], picked: &[Chunk], positions: &[usize]) -> Vec<Chunk> {
     let mut out = Vec::new();
     for &chunk in picked {
-        let Some((header, members, tail)) = chunk.block.and_then(|b| js_body(text, chunk, b))
-        else {
-            out.push(chunk);
-            continue;
-        };
-        let inside: Vec<usize> = positions
-            .iter()
-            .copied()
-            .filter(|&p| p >= chunk.start && p < chunk.end)
-            .collect();
-        if members.len() < 2 || inside.iter().any(|&p| p < header.end || p >= tail.start) {
-            out.push(chunk);
-            continue;
+        match chunk.block.and_then(|b| js_body(text, chunk, b)) {
+            Some((header, members, tail)) => {
+                narrow(chunk, header, &members, Some(tail), positions, &mut out);
+            }
+            None => out.push(chunk),
         }
-        out.push(header);
-        out.extend(pick(&members, &inside));
-        out.push(tail);
     }
     merge(out)
+}
+
+/// Pushes `chunk` narrowed to `header`, the `members` holding a position and `tail`; or whole,
+/// if it has fewer than two members or a position outside them (the match may be the container).
+fn narrow(
+    chunk: Chunk,
+    header: Chunk,
+    members: &[Chunk],
+    tail: Option<Chunk>,
+    positions: &[usize],
+    out: &mut Vec<Chunk>,
+) {
+    let (Some(first), Some(last)) = (members.first(), members.last()) else {
+        out.push(chunk);
+        return;
+    };
+    let inside: Vec<usize> = positions
+        .iter()
+        .copied()
+        .filter(|&p| p >= chunk.start && p < chunk.end)
+        .collect();
+    if members.len() < 2 || inside.iter().any(|&p| p < first.start || p >= last.end) {
+        out.push(chunk);
+        return;
+    }
+    out.push(header);
+    out.extend(pick(members, &inside));
+    out.extend(tail);
 }
 
 /// Splits a definition into header (through the line of `{`), body members, and the line of the
@@ -661,13 +671,6 @@ fn keyword_at(rest: &[u8], keyword: &[u8]) -> bool {
         && rest
             .get(keyword.len())
             .is_none_or(|b| !(b.is_ascii_alphanumeric() || *b == b'_'))
-}
-
-/// The chunks holding at least one of `positions`, merged when adjacent.
-#[cfg(test)]
-fn select(chunks: &[Chunk], positions: &mut [usize]) -> Vec<Chunk> {
-    positions.sort_unstable();
-    merge(pick(chunks, positions))
 }
 
 /// The chunks holding at least one of `positions` (sorted), each once, in order.
@@ -889,9 +892,9 @@ mod tests {
     }
 
     #[test]
-    fn select_merges_adjacent_chunks() {
+    fn picked_chunks_merge_when_adjacent() {
         let chunks = python_chunks(b"a = 1\nb = 2\nc = 3\nd = 4\n").chunks;
-        let picked = select(&chunks, &mut [7, 2, 20, 21]);
+        let picked = merge(pick(&chunks, &[2, 7, 20, 21]));
         assert_eq!(
             picked
                 .iter()

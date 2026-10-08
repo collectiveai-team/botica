@@ -52,7 +52,7 @@ pub struct ExtensionRun {
 
 pub fn language_of(path: &str) -> Option<&'static str> {
     match path.rsplit_once('.')?.1 {
-        "py" => Some("python"),
+        "py" | "pyi" => Some("python"),
         "ts" | "tsx" | "mts" | "cts" => Some("typescript"),
         "js" | "jsx" | "mjs" | "cjs" => Some("javascript"),
         _ => None,
