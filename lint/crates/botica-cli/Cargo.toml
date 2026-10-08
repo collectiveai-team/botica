@@ -9,6 +9,10 @@ publish.workspace = true
 name = "botica"
 path = "src/main.rs"
 
+[features]
+# Every grammar ast-grep ships; the default build carries the base set only.
+all-languages = ["botica-astgrep/all-languages"]
+
 [dependencies]
 anyhow.workspace = true
 blake3 = "1"

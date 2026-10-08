@@ -5,6 +5,38 @@ edition.workspace = true
 license.workspace = true
 publish.workspace = true
 
+# Base grammars (Bash, CSS, Go, HCL, HTML, JavaScript, JSON, Lua, Python, Rust, TypeScript/TSX,
+# YAML) come from the workspace dependency. The heavy or less common ones are opt-in.
+[features]
+all-languages = [
+    "lang-c",
+    "lang-cpp",
+    "lang-csharp",
+    "lang-elixir",
+    "lang-haskell",
+    "lang-java",
+    "lang-kotlin",
+    "lang-nix",
+    "lang-php",
+    "lang-ruby",
+    "lang-scala",
+    "lang-solidity",
+    "lang-swift",
+]
+lang-c = ["ast-grep-language/tree-sitter-c"]
+lang-cpp = ["ast-grep-language/tree-sitter-cpp"]
+lang-csharp = ["ast-grep-language/tree-sitter-c-sharp"]
+lang-elixir = ["ast-grep-language/tree-sitter-elixir"]
+lang-haskell = ["ast-grep-language/tree-sitter-haskell"]
+lang-java = ["ast-grep-language/tree-sitter-java"]
+lang-kotlin = ["ast-grep-language/tree-sitter-kotlin"]
+lang-nix = ["ast-grep-language/tree-sitter-nix"]
+lang-php = ["ast-grep-language/tree-sitter-php"]
+lang-ruby = ["ast-grep-language/tree-sitter-ruby"]
+lang-scala = ["ast-grep-language/tree-sitter-scala"]
+lang-solidity = ["ast-grep-language/tree-sitter-solidity"]
+lang-swift = ["ast-grep-language/tree-sitter-swift"]
+
 [dependencies]
 anyhow.workspace = true
 ast-grep-core.workspace = true
@@ -15,5 +47,7 @@ aho-corasick = "1"
 memchr = "2"
 regex = { version = "1", default-features = false, features = ["std", "perf"] }
 regex-syntax = "0.8"
+serde.workspace = true
+serde_yaml = "0.9"
 tree-sitter = "=0.26.13"
 serde_json.workspace = true

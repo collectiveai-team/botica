@@ -33,8 +33,70 @@ pub struct AstGrepRule {
     rule_json: serde_json::Value,
 }
 
+/// Whether this build carries the grammar for `language`. ast-grep panics when asked for a
+/// grammar whose feature is off, so callers must check first.
+pub fn compiled(language: SupportLang) -> bool {
+    use SupportLang as L;
+    match language {
+        L::Bash
+        | L::Css
+        | L::Go
+        | L::Hcl
+        | L::Html
+        | L::JavaScript
+        | L::Json
+        | L::Lua
+        | L::Python
+        | L::Rust
+        | L::Tsx
+        | L::TypeScript
+        | L::Yaml => true,
+        L::C => cfg!(feature = "lang-c"),
+        L::Cpp => cfg!(feature = "lang-cpp"),
+        L::CSharp => cfg!(feature = "lang-csharp"),
+        L::Elixir => cfg!(feature = "lang-elixir"),
+        L::Haskell => cfg!(feature = "lang-haskell"),
+        L::Java => cfg!(feature = "lang-java"),
+        L::Kotlin => cfg!(feature = "lang-kotlin"),
+        L::Nix => cfg!(feature = "lang-nix"),
+        L::Php => cfg!(feature = "lang-php"),
+        L::Ruby => cfg!(feature = "lang-ruby"),
+        L::Scala => cfg!(feature = "lang-scala"),
+        L::Solidity => cfg!(feature = "lang-solidity"),
+        L::Swift => cfg!(feature = "lang-swift"),
+    }
+}
+
+/// The language a file is linted as, if its grammar is in this build.
+fn language_of(path: &Path) -> Option<SupportLang> {
+    SupportLang::from_path(path).filter(|&language| compiled(language))
+}
+
+/// Rejects rules for languages this build lacks, before ast-grep compiles their patterns.
+fn check_languages(yaml: &str) -> Result<()> {
+    #[derive(serde::Deserialize)]
+    struct Head {
+        language: Option<String>,
+    }
+    for document in serde_yaml::Deserializer::from_str(yaml) {
+        let Ok(head) = <Head as serde::Deserialize>::deserialize(document) else {
+            continue; // ast-grep reports malformed rules itself
+        };
+        let Some(name) = head.language else { continue };
+        if let Ok(language) = name.parse::<SupportLang>() {
+            anyhow::ensure!(
+                compiled(language),
+                "rule language `{name}` is not compiled into this botica build \
+                 (enable the botica-astgrep feature for it, or `all-languages`)"
+            );
+        }
+    }
+    Ok(())
+}
+
 impl AstGrepRule {
     pub fn from_yaml(yaml: &str) -> Result<Vec<Self>> {
+        check_languages(yaml)?;
         let globals = GlobalRules::default();
         from_yaml_string::<SupportLang>(yaml, &globals)
             .context("invalid ast-grep rule")?
@@ -356,7 +418,7 @@ impl AstGrepSet {
     }
 
     pub fn check(&self, path: &Path, text: &str) -> Vec<Hit> {
-        let Some(lang) = SupportLang::from_path(path) else {
+        let Some(lang) = language_of(path) else {
             return Vec::new();
         };
         let Some(group) = self.groups.iter().find(|g| g.language == lang) else {
@@ -408,7 +470,7 @@ impl AstGrepSet {
 
     /// Opens an editable buffer (LSP): the syntax tree is kept and re-used between edits.
     pub fn open(&self, path: &Path, text: &str) -> Option<Buffer> {
-        let language = SupportLang::from_path(path)?;
+        let language = language_of(path)?;
         self.groups.iter().find(|g| g.language == language)?;
         Some(Buffer {
             path: path.to_path_buf(),
@@ -454,5 +516,41 @@ impl Buffer {
 
     pub fn language(&self) -> SupportLang {
         self.language
+    }
+}
+
+#[cfg(test)]
+mod language_tests {
+    use super::*;
+
+    #[test]
+    fn base_languages_are_compiled() {
+        for language in [
+            SupportLang::Python,
+            SupportLang::TypeScript,
+            SupportLang::Go,
+        ] {
+            assert!(compiled(language));
+        }
+    }
+
+    #[cfg(not(feature = "lang-kotlin"))]
+    #[test]
+    fn rules_for_missing_grammars_fail_cleanly_and_their_files_are_skipped() {
+        let error =
+            AstGrepRule::from_yaml("id: k\nlanguage: kotlin\nrule:\n  pattern: println($A)\n")
+                .err()
+                .expect("kotlin is not compiled in");
+        assert!(error
+            .to_string()
+            .contains("not compiled into this botica build"));
+        let rules =
+            AstGrepRule::from_yaml("id: p\nlanguage: python\nrule:\n  pattern: print($A)\n")
+                .expect("python is base");
+        let set = AstGrepSet::new(rules);
+        assert!(set
+            .check(Path::new("Main.kt"), "fun main() { println(1) }")
+            .is_empty());
+        assert_eq!(set.check(Path::new("m.py"), "print(1)\n").len(), 1);
     }
 }

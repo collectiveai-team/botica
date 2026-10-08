@@ -17,7 +17,21 @@ publish = false
 anyhow = "1"
 ast-grep-core = "=0.41.0"
 ast-grep-config = "=0.41.0"
-ast-grep-language = "=0.41.0"
+# Base grammars only; the rest are opt-in `lang-*` features of botica-astgrep (see its Cargo.toml).
+ast-grep-language = { version = "=0.41.0", default-features = false, features = [
+    "tree-sitter-bash",
+    "tree-sitter-css",
+    "tree-sitter-go",
+    "tree-sitter-hcl",
+    "tree-sitter-html",
+    "tree-sitter-javascript",
+    "tree-sitter-json",
+    "tree-sitter-lua",
+    "tree-sitter-python",
+    "tree-sitter-rust",
+    "tree-sitter-typescript",
+    "tree-sitter-yaml",
+] }
 clap = { version = "4", features = ["derive"] }
 criterion = { version = "0.5", default-features = false }
 globset = "0.4"
