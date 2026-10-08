@@ -15,15 +15,17 @@ publish = false
 
 [workspace.dependencies]
 anyhow = "1"
-ast-grep-core = "=0.41.0"
-ast-grep-config = "=0.41.0"
+ast-grep-core = "=0.45.3"
+ast-grep-config = "=0.45.3"
 # Base grammars only; the rest are opt-in `lang-*` features of botica-astgrep (see its Cargo.toml).
-ast-grep-language = { version = "=0.41.0", default-features = false, features = [
+ast-grep-language = { version = "=0.45.3", default-features = false, features = [
     "tree-sitter-bash",
+    "tree-sitter-c",
     "tree-sitter-css",
     "tree-sitter-go",
     "tree-sitter-hcl",
     "tree-sitter-html",
+    "tree-sitter-java",
     "tree-sitter-javascript",
     "tree-sitter-json",
     "tree-sitter-lua",

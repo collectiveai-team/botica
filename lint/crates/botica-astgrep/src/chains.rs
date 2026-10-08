@@ -53,6 +53,10 @@ const C_FAMILY: Comments = Comments {
     line: &[b"//"],
     block: Some((b"/*", b"*/")),
 };
+const HTML_LIKE: Comments = Comments {
+    line: &[],
+    block: Some((b"<!--", b"-->")),
+};
 /// tree-sitter-javascript also lexes HTML-like comments (`<!--`, `-->`) as comments.
 const JS_FAMILY: Comments = Comments {
     line: &[b"//", b"<!--", b"-->"],
@@ -85,6 +89,7 @@ impl LangChains {
             | SupportLang::Nix => HASH,
             SupportLang::Lua | SupportLang::Haskell => DOUBLE_DASH,
             SupportLang::JavaScript | SupportLang::TypeScript | SupportLang::Tsx => JS_FAMILY,
+            SupportLang::Html | SupportLang::Markdown => HTML_LIKE,
             _ => C_FAMILY,
         };
         Self {

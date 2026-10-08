@@ -39,10 +39,12 @@ pub fn compiled(language: SupportLang) -> bool {
     use SupportLang as L;
     match language {
         L::Bash
+        | L::C
         | L::Css
         | L::Go
         | L::Hcl
         | L::Html
+        | L::Java
         | L::JavaScript
         | L::Json
         | L::Lua
@@ -51,13 +53,13 @@ pub fn compiled(language: SupportLang) -> bool {
         | L::Tsx
         | L::TypeScript
         | L::Yaml => true,
-        L::C => cfg!(feature = "lang-c"),
         L::Cpp => cfg!(feature = "lang-cpp"),
         L::CSharp => cfg!(feature = "lang-csharp"),
+        L::Dart => cfg!(feature = "lang-dart"),
         L::Elixir => cfg!(feature = "lang-elixir"),
         L::Haskell => cfg!(feature = "lang-haskell"),
-        L::Java => cfg!(feature = "lang-java"),
         L::Kotlin => cfg!(feature = "lang-kotlin"),
+        L::Markdown => cfg!(feature = "lang-markdown"),
         L::Nix => cfg!(feature = "lang-nix"),
         L::Php => cfg!(feature = "lang-php"),
         L::Ruby => cfg!(feature = "lang-ruby"),
