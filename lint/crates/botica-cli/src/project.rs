@@ -1,15 +1,16 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use botica_catalog::Catalog;
-use botica_config::{discover, load_file, Entry, FileRule, Loaded, Resolution};
+use botica_config::{discover, load_file, CommandLine, Entry, FileRule, Loaded, Resolution};
 use botica_core::postprocess::Verdict;
 use botica_core::report::RuleDoc;
 use botica_core::suppress::Policy;
 use botica_core::{language_of, FileSizeGuard, NativePlanner, NativeRule, NoUtils, Severity};
+use clap::Args;
 
 pub struct Project {
     pub loaded: Loaded,
@@ -21,12 +22,43 @@ pub struct Natives {
     pub index: HashMap<String, usize>,
 }
 
-pub fn load(config: Option<&Path>) -> Result<Project> {
-    let loaded = match config {
+/// The options that decide which configuration applies and which rules it selects.
+#[derive(Args)]
+pub struct ProjectArgs {
+    /// Use this configuration file instead of looking for one.
+    #[arg(long)]
+    config: Option<PathBuf>,
+    /// Run only these rules (slug, code, family, prefix or `tag:<t>`; comma-separated or repeated).
+    /// Starts from scratch: the `select`, `extend-select` and `ignore` of the file do not apply.
+    #[arg(long, value_delimiter = ',')]
+    select: Vec<String>,
+    /// Switch these rules off, on top of what the file ignores.
+    #[arg(long, value_delimiter = ',')]
+    ignore: Vec<String>,
+    /// Also run the rules whose status is `preview`.
+    #[arg(long)]
+    preview: bool,
+}
+
+impl ProjectArgs {
+    fn command_line(&self) -> CommandLine {
+        CommandLine {
+            select: self.select.clone(),
+            ignore: self.ignore.clone(),
+            preview: self.preview,
+        }
+    }
+}
+
+pub fn load(args: &ProjectArgs) -> Result<Project> {
+    let mut loaded = match args.config.as_deref() {
         Some(path) => load_file(path)?,
         None => discover(&std::env::current_dir().context("cannot read the working directory")?)?,
     };
     let catalog = Catalog::embedded()?;
+    loaded.config = loaded
+        .config
+        .with_command_line(&catalog, &args.command_line())?;
     let resolution = Resolution::new(&loaded.config, &catalog)?;
     Ok(Project { loaded, resolution })
 }

@@ -1,3 +1,4 @@
+mod command_line;
 mod discover;
 mod issue;
 mod matcher;
@@ -7,6 +8,7 @@ mod resolve;
 mod selector;
 mod validate;
 
+pub use command_line::CommandLine;
 pub use discover::{discover, load_file, Loaded};
 pub use issue::{ConfigError, ConfigIssue};
 pub use matcher::PathMatcher;

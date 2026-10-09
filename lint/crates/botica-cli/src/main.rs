@@ -32,9 +32,8 @@ enum Command {
 struct LintArgs {
     /// Directory to walk, or explicit files (as prek passes them).
     paths: Vec<PathBuf>,
-    /// Use this configuration file instead of looking for one.
-    #[arg(long)]
-    config: Option<PathBuf>,
+    #[command(flatten)]
+    project: project::ProjectArgs,
     /// How to print the findings.
     #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
     output_format: OutputFormat,
@@ -145,7 +144,7 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
     };
 
     let with_astgrep = !args.no_astgrep;
-    let project = project::load(args.config.as_deref())?;
+    let project = project::load(&args.project)?;
     let io_error_active = project.is_active("io-error");
     let prefix = project.working_prefix();
     let config_key = project.fingerprint();

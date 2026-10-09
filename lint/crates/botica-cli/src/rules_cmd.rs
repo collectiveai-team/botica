@@ -1,5 +1,4 @@
 use std::io::Write;
-use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Args;
@@ -11,13 +10,12 @@ pub struct RulesArgs {
     /// Also list the rules that are not active, with the reason.
     #[arg(long)]
     all: bool,
-    /// Use this configuration file instead of looking for one.
-    #[arg(long)]
-    config: Option<PathBuf>,
+    #[command(flatten)]
+    project: project::ProjectArgs,
 }
 
 pub fn run(args: &RulesArgs) -> Result<()> {
-    let project = project::load(args.config.as_deref())?;
+    let project = project::load(&args.project)?;
     let (loaded, resolution) = (&project.loaded, &project.resolution);
 
     let mut out = std::io::stdout().lock();
