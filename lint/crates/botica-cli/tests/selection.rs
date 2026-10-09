@@ -1,6 +1,6 @@
 mod common;
 
-use common::{botica, lines, project_in, stdout, write};
+use common::{botica, command, lines, project_in, stdout, write};
 use std::path::PathBuf;
 
 /// A project whose `utils.py` breaks `no-utils` and whose `big.py` breaks `file-size-guard`.
@@ -98,4 +98,36 @@ fn preview_is_accepted() {
     let dir = project("preview", None);
     let output = botica(&dir, &["--preview"]);
     assert_eq!(output.status.code(), Some(1), "findings, not a usage error");
+}
+
+/// With the embedded syntax rules on (no `--no-astgrep`): does `log.py` get its `print` finding?
+fn prints_are_reported(dir: &std::path::Path, args: &[&str]) -> bool {
+    let mut all = vec!["lint"];
+    all.extend_from_slice(args);
+    stdout(&command(dir, &all)).contains("[log-no-print]")
+}
+
+#[test]
+fn a_narrow_select_runs_only_what_it_names_so_the_embedded_syntax_rules_stay_off() {
+    let dir = project("legacy", None);
+    write(&dir, "log.py", "print('x')\n");
+    assert!(prints_are_reported(&dir, &[]));
+    assert!(!prints_are_reported(&dir, &["--select", "no-utils"]));
+    assert!(!prints_are_reported(&dir, &["--select", "BTSTRUC"]));
+}
+
+#[test]
+fn selecting_default_or_all_keeps_the_embedded_syntax_rules_on() {
+    let dir = project("legacy-all", None);
+    write(&dir, "log.py", "print('x')\n");
+    assert!(prints_are_reported(&dir, &["--select", "default"]));
+    assert!(prints_are_reported(&dir, &["--select", "all"]));
+    assert!(prints_are_reported(&dir, &["--select", "no-utils,default"]));
+}
+
+#[test]
+fn ignore_and_extend_select_do_not_switch_them_off() {
+    let dir = project("legacy-ignore", None);
+    write(&dir, "log.py", "print('x')\n");
+    assert!(prints_are_reported(&dir, &["--ignore", "no-utils"]));
 }

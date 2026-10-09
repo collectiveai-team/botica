@@ -72,7 +72,7 @@ fn ast_grep_rules_are_timed_one_by_one_too() {
     let output = lint(&dir, &[".", "--timings"]);
 
     let print = rule_row(&output, "log-no-print");
-    assert_eq!(print[1], "ast-grep", "{print:?}");
+    assert_eq!(print[1], "syntax", "{print:?}");
     assert!(print[2].parse::<f64>().is_ok(), "{print:?}");
     assert!(
         stdout(&output).contains("[log-no-print]"),

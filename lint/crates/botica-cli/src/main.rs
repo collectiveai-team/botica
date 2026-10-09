@@ -154,8 +154,8 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
         lap = Instant::now();
     };
 
-    let with_astgrep = !args.no_astgrep;
     let project = project::load(&args.project)?;
+    let with_astgrep = !args.no_astgrep && project.embedded_rules;
     let io_error_active = project.is_active("io-error");
     let prefix = project.working_prefix();
     let config_key = project.fingerprint();

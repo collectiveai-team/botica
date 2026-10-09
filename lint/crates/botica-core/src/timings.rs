@@ -13,7 +13,7 @@ impl TimedKind {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Native => "native",
-            Self::AstGrep => "ast-grep",
+            Self::AstGrep => "syntax",
             Self::Suppressions => "suppressions",
         }
     }

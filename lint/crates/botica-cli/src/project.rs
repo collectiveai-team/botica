@@ -17,6 +17,10 @@ use clap::Args;
 pub struct Project {
     pub loaded: Loaded,
     pub resolution: Resolution,
+    /// Whether the selection takes in the syntax rules embedded in the binary. They are not in
+    /// the catalog yet, so no selector can name them: they run only when the selection includes
+    /// `default` or `all`.
+    pub embedded_rules: bool,
 }
 
 pub struct Natives {
@@ -62,7 +66,17 @@ pub fn load(args: &ProjectArgs) -> Result<Project> {
         .config
         .with_command_line(&catalog, &args.command_line())?;
     let resolution = Resolution::new(&loaded.config, &catalog)?;
-    Ok(Project { loaded, resolution })
+    let embedded_rules = loaded
+        .config
+        .select
+        .iter()
+        .chain(&loaded.config.extend_select)
+        .any(|selector| selector == "default" || selector == "all");
+    Ok(Project {
+        loaded,
+        resolution,
+        embedded_rules,
+    })
 }
 
 impl Project {
