@@ -249,6 +249,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "botica-config"
+version = "0.0.0"
+dependencies = [
+ "botica-catalog",
+ "globset",
+ "schemars",
+ "serde",
+ "serde_json",
+ "toml",
+]
+
+[[package]]
 name = "botica-core"
 version = "0.0.0"
 dependencies = [

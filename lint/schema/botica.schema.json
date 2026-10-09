@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Config",
+  "description": "Settings of `botica lint`: `botica.toml`, or the `[tool.botica]` table of `pyproject.toml`.",
+  "type": "object",
+  "properties": {
+    "catalogs": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/CatalogSource"
+      }
+    },
+    "extend-exclude": {
+      "description": "Globs of paths to skip, in addition to what `.gitignore` already skips.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "extend-select": {
+      "description": "Added to `select`.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "external": {
+      "description": "Globs of rule IDs that suppressions may name without a warning even when they are unknown.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "ignore": {
+      "description": "Rules to switch off. Same syntax as `select`.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "languages": {
+      "description": "Restrict the run to these languages (empty means every language).",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "overrides": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Override"
+      }
+    },
+    "preview": {
+      "description": "Also run the rules whose status is `preview`.",
+      "type": "boolean",
+      "default": false
+    },
+    "replace": {
+      "description": "Rule to replace -> rule that replaces it.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {}
+    },
+    "rule-dirs": {
+      "description": "Directories with the project's own rules.",
+      "type": "array",
+      "default": [
+        ".botica/rules"
+      ],
+      "items": {
+        "type": "string"
+      }
+    },
+    "rules": {
+      "description": "Settings per rule, keyed by slug, code or alias.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/RuleConfig"
+      }
+    },
+    "select": {
+      "description": "Rules to run: `default`, `all`, a family (`BTSTRUC`), a code prefix (`BTSTRUC0`), a code, a slug or `tag:<tag>`.",
+      "type": "array",
+      "default": [
+        "default"
+      ],
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "CatalogSource": {
+      "description": "A catalog of rules that lives on disk.",
+      "type": "object",
+      "properties": {
+        "path": {
+          "description": "Directory of the catalog, relative to the directory of this file.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    },
+    "Override": {
+      "description": "Changes for the files that match `files`, applied in order.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ignore": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        },
+        "severity": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/RuleSeverity"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "files"
+      ]
+    },
+    "RuleConfig": {
+      "description": "Settings of one rule. Any other key is an option declared by that rule.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "extend-ignores": {
+          "description": "Added to the `ignores` that apply.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        },
+        "ignores": {
+          "description": "Replaces the default `ignores` of the rule (`[]` clears them).",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "severity": {
+          "description": "`off` is the same as `enabled = false`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSeverity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "RuleSeverity": {
+      "type": "string",
+      "enum": [
+        "error",
+        "warning",
+        "info",
+        "off"
+      ]
+    }
+  }
+}
