@@ -37,6 +37,10 @@ struct LintArgs {
     /// How to print the findings.
     #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
     output_format: OutputFormat,
+    /// Leave out the paths named on the command line too when `extend-exclude` excludes them
+    /// (by default only what the walk finds is left out).
+    #[arg(long)]
+    force_exclude: bool,
     /// Exit with 0 even when there are findings of severity error. Failures of the run still exit 2.
     #[arg(long)]
     exit_zero: bool,
@@ -152,6 +156,7 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
     let resolution = Arc::new(project.resolution);
     let policy = project::suppression_policy(&resolution);
     let planner = project::planner(Arc::clone(&resolution), natives.index, prefix.clone());
+    let exclusion = project::exclusion(Arc::clone(&resolution), prefix.clone());
     let engine = rules::build_engine(
         &rules::EngineOptions {
             astgrep: with_astgrep,
@@ -164,6 +169,7 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
         natives.rules,
         planner,
         policy,
+        exclusion,
     )?;
     mark("compile rules");
 
@@ -181,6 +187,9 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
     let mut overlapped_found = Vec::new();
     let mut io_errors = Vec::new();
     for path in &paths {
+        if args.force_exclude && named_and_excluded(&engine, &root, path) {
+            continue;
+        }
         if !path.is_dir() {
             match std::fs::File::open(path) {
                 Ok(_) => files.push(path.clone()),
@@ -299,6 +308,12 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
         );
     }
     Ok(exit_code(&errors, &diagnostics, args.exit_zero))
+}
+
+/// Whether `extend-exclude` leaves out a path the user named. `.` and the like are never excluded.
+fn named_and_excluded(engine: &botica_core::Engine, root: &Path, path: &Path) -> bool {
+    let named = walk::relative_path(root, path);
+    !named.is_empty() && engine.skips_path(&named)
 }
 
 /// 2 when the run itself failed (it wins over everything), 1 when a finding is an error, else 0.

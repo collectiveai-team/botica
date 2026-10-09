@@ -17,11 +17,26 @@ pub struct Plan {
     pub astgrep: bool,
 }
 
+/// Decides, for an entry the walk met (its path and whether it is a directory), if it is left out.
+pub type EntryExclusion = Box<dyn Fn(&str, bool) -> bool + Send + Sync>;
+
+/// Decides, for a path given by name, if it is left out.
+pub type PathExclusion = Box<dyn Fn(&str) -> bool + Send + Sync>;
+
+/// Which paths the walk leaves out (`extend-exclude`). Paths are relative to where botica runs.
+pub struct Exclusion {
+    /// A directory that matches is skipped with all that is inside.
+    pub entry: EntryExclusion,
+    /// The path or a directory above it matches.
+    pub path: PathExclusion,
+}
+
 pub struct Engine {
     native: Vec<Box<dyn NativeRule>>,
     astgrep: AstGrepSet,
     planner: Option<NativePlanner>,
     suppressions: Option<Policy>,
+    exclusion: Option<Exclusion>,
 }
 
 impl Engine {
@@ -32,7 +47,32 @@ impl Engine {
             astgrep,
             planner: None,
             suppressions: None,
+            exclusion: None,
         }
+    }
+
+    /// Without an exclusion the walk leaves nothing out.
+    pub fn with_exclusion(mut self, exclusion: Exclusion) -> Self {
+        self.exclusion = Some(exclusion);
+        self
+    }
+
+    /// Whether the walk should skip this entry (and, for a directory, all that is inside).
+    pub fn skips_entry(&self, path: &str, is_dir: bool) -> bool {
+        self.exclusion
+            .as_ref()
+            .is_some_and(|exclusion| (exclusion.entry)(path, is_dir))
+    }
+
+    /// Whether a path given by name is excluded.
+    pub fn skips_path(&self, path: &str) -> bool {
+        self.exclusion
+            .as_ref()
+            .is_some_and(|exclusion| (exclusion.path)(path))
+    }
+
+    pub fn has_exclusion(&self) -> bool {
+        self.exclusion.is_some()
     }
 
     /// Without a policy, comments silence nothing.

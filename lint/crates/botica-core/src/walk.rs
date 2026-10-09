@@ -21,6 +21,9 @@ pub fn discover(dir: &Path, root: &Path, engine: &Engine) -> Vec<PathBuf> {
         };
         Box::new(move |entry| {
             if let Ok(entry) = entry {
+                if pruned(engine, root, &entry) {
+                    return ignore::WalkState::Skip;
+                }
                 if entry.file_type().is_some_and(|t| t.is_file())
                     && engine.plan(&relative_path(root, entry.path())).is_some()
                 {
@@ -68,6 +71,9 @@ pub fn walk_and_lint(engine: &Engine, root: &Path, dir: &Path) -> (usize, Vec<Di
     impl ignore::ParallelVisitor for Visitor<'_> {
         fn visit(&mut self, entry: Result<ignore::DirEntry, ignore::Error>) -> ignore::WalkState {
             if let Ok(entry) = entry {
+                if pruned(self.builder.engine, self.builder.root, &entry) {
+                    return ignore::WalkState::Skip;
+                }
                 if entry.file_type().is_some_and(|t| t.is_file()) {
                     let path = relative_path(self.builder.root, entry.path());
                     if let Some(plan) = self.builder.engine.plan(&path) {
@@ -108,6 +114,17 @@ pub fn walk_and_lint(engine: &Engine, root: &Path, dir: &Path) -> (usize, Vec<Di
     (read, found)
 }
 
+/// Whether the exclusion leaves this entry out. The directory a walk starts from is never
+/// pruned: naming it is asking for it (`--force-exclude` decides that before the walk).
+fn pruned(engine: &Engine, root: &Path, entry: &ignore::DirEntry) -> bool {
+    engine.has_exclusion()
+        && entry.depth() > 0
+        && engine.skips_entry(
+            &relative_path(root, entry.path()),
+            entry.file_type().is_some_and(|t| t.is_dir()),
+        )
+}
+
 /// A walker thread's paths, handed over to the shared list when the thread's visitor drops.
 struct Flush<'a> {
     paths: Vec<PathBuf>,
@@ -122,7 +139,8 @@ impl Drop for Flush<'_> {
     }
 }
 
-fn relative_path(root: &Path, path: &Path) -> String {
+/// `path` as the rules and the output see it: from `root` and without `./`.
+pub fn relative_path(root: &Path, path: &Path) -> String {
     let relative = path.strip_prefix(root).unwrap_or(path);
     let relative: PathBuf = relative
         .components()

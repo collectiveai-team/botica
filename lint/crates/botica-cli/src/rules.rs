@@ -1,7 +1,7 @@
 use anyhow::Result;
 use botica_astgrep::{AstGrepRule, AstGrepSet};
 use botica_core::suppress::Policy;
-use botica_core::{Engine, NativePlanner, NativeRule};
+use botica_core::{Engine, Exclusion, NativePlanner, NativeRule};
 use std::path::Path;
 
 const EMBEDDED: [&str; 11] = [
@@ -36,6 +36,7 @@ pub fn build_engine(
     native: Vec<Box<dyn NativeRule>>,
     planner: NativePlanner,
     policy: Policy,
+    exclusion: Option<Exclusion>,
 ) -> Result<Engine> {
     let mut rules = Vec::new();
     if options.astgrep {
@@ -61,9 +62,13 @@ pub fn build_engine(
     set.set_prefilter(options.prefilter);
     set.set_regions(options.regions && options.prefilter);
     set.set_skip_subtrees(options.subtree_skip && options.prefilter);
-    Ok(Engine::new(native, set)
+    let engine = Engine::new(native, set)
         .with_planner(planner)
-        .with_suppressions(policy))
+        .with_suppressions(policy);
+    Ok(match exclusion {
+        Some(exclusion) => engine.with_exclusion(exclusion),
+        None => engine,
+    })
 }
 
 /// Identifies everything that can change a file's diagnostics, for the result cache.

@@ -9,7 +9,9 @@ use botica_config::{discover, load_file, CommandLine, Entry, FileRule, Loaded, R
 use botica_core::postprocess::Verdict;
 use botica_core::report::RuleDoc;
 use botica_core::suppress::Policy;
-use botica_core::{language_of, FileSizeGuard, NativePlanner, NativeRule, NoUtils, Severity};
+use botica_core::{
+    language_of, Exclusion, FileSizeGuard, NativePlanner, NativeRule, NoUtils, Severity,
+};
 use clap::Args;
 
 pub struct Project {
@@ -189,6 +191,23 @@ pub fn planner(
             .iter()
             .filter_map(|file_rule| index.get(file_rule.rule.id.as_str()).copied())
             .collect()
+    })
+}
+
+/// What `extend-exclude` leaves out of the walk, or `None` when it names nothing.
+pub fn exclusion(resolution: Arc<Resolution>, prefix: Option<String>) -> Option<Exclusion> {
+    if !resolution.has_exclusions() {
+        return None;
+    }
+    let (for_entries, for_paths) = (Arc::clone(&resolution), resolution);
+    let (entry_prefix, path_prefix) = (prefix.clone(), prefix);
+    Some(Exclusion {
+        entry: Box::new(move |path, is_dir| {
+            for_entries.excludes_entry(&from_root(entry_prefix.as_deref(), path), is_dir)
+        }),
+        path: Box::new(move |path| {
+            for_paths.excludes_path(&from_root(path_prefix.as_deref(), path))
+        }),
     })
 }
 

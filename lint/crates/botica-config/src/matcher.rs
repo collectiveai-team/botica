@@ -39,4 +39,10 @@ impl PathMatcher {
             .matched_path_or_any_parents(path, false)
             .is_ignore()
     }
+
+    /// Whether this one entry matches, without looking at its parents: for a walk, which prunes a
+    /// directory as soon as it matches and so never reaches what is inside.
+    pub fn is_match_entry(&self, path: &str, is_dir: bool) -> bool {
+        self.inner.matched(path, is_dir).is_ignore()
+    }
 }

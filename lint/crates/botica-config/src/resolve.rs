@@ -79,6 +79,7 @@ pub struct Resolution {
     preview: bool,
     overrides: Vec<CompiledOverride>,
     external: PathMatcher,
+    exclude: PathMatcher,
     compat_ast_grep_ignore: bool,
 }
 
@@ -141,6 +142,17 @@ fn matcher(patterns: &[String], rule: &Rule, what: &str) -> Result<PathMatcher, 
     })
 }
 
+fn matcher_of(patterns: &[String], key: &str) -> Result<PathMatcher, ConfigError> {
+    PathMatcher::new(patterns).map_err(|errors| {
+        let detail = errors
+            .iter()
+            .map(|(_, message)| message.as_str())
+            .collect::<Vec<_>>()
+            .join("; ");
+        ConfigError::single(key, detail)
+    })
+}
+
 impl Resolution {
     pub fn new(config: &Config, catalog: &Catalog) -> Result<Self, ConfigError> {
         config.validate(catalog)?;
@@ -166,14 +178,8 @@ impl Resolution {
             languages: config.languages.clone(),
             preview: config.preview,
             overrides: compile_overrides(config, catalog)?,
-            external: PathMatcher::new(&config.external).map_err(|errors| {
-                let detail = errors
-                    .iter()
-                    .map(|(_, message)| message.as_str())
-                    .collect::<Vec<_>>()
-                    .join("; ");
-                ConfigError::single("external", detail)
-            })?,
+            external: matcher_of(&config.external, "external")?,
+            exclude: matcher_of(&config.extend_exclude, "extend-exclude")?,
             compat_ast_grep_ignore: config.compat_ast_grep_ignore,
         };
         resolution.apply_replacements(config)?;
@@ -217,6 +223,22 @@ impl Resolution {
     /// Whether a suppression may name `id` without a warning although no rule has it.
     pub fn is_external(&self, id: &str) -> bool {
         self.external.is_match(id)
+    }
+
+    /// Whether `extend-exclude` names anything, so a walk has something to check.
+    pub fn has_exclusions(&self) -> bool {
+        !self.exclude.is_empty()
+    }
+
+    /// Whether a walk skips this entry (a directory is skipped with everything in it). Paths are
+    /// from the project root.
+    pub fn excludes_entry(&self, path: &str, is_dir: bool) -> bool {
+        self.exclude.is_match_entry(path, is_dir)
+    }
+
+    /// Whether a path given by name is excluded, itself or through a directory above it.
+    pub fn excludes_path(&self, path: &str) -> bool {
+        self.exclude.is_match(path)
     }
 
     pub fn compat_ast_grep_ignore(&self) -> bool {
