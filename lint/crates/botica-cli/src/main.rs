@@ -1,3 +1,4 @@
+mod project;
 mod rules;
 mod rules_cmd;
 
@@ -7,7 +8,7 @@ use botica_core::walk::Schedule;
 use botica_core::{walk, Diagnostic, ExtensionRun, Severity};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Instant;
 
@@ -29,6 +30,9 @@ enum Command {
 struct LintArgs {
     /// Directory to walk, or explicit files (as prek passes them).
     paths: Vec<PathBuf>,
+    /// Use this configuration file instead of looking for one.
+    #[arg(long)]
+    config: Option<PathBuf>,
     /// Extension command, e.g. "uv run --script ext.py".
     #[arg(long)]
     ext: Option<String>,
@@ -115,14 +119,24 @@ fn lint(args: LintArgs) -> Result<bool> {
     };
 
     let with_astgrep = !args.no_astgrep;
-    let engine = rules::build_engine(&rules::EngineOptions {
-        astgrep: with_astgrep,
-        prefilter: !args.no_prefilter,
-        extra_rules: args.extra_rules.as_deref(),
-        describe_prefilter: args.describe_prefilter,
-        regions: !args.no_regions,
-        subtree_skip: !args.no_subtree_skip,
-    })?;
+    let project = project::load(args.config.as_deref())?;
+    let io_error_active = project.is_active("io-error");
+    let prefix = project.working_prefix();
+    let config_key = project.fingerprint();
+    let natives = project::natives(&project.resolution);
+    let planner = project::planner(project.resolution, natives.index, prefix);
+    let engine = rules::build_engine(
+        &rules::EngineOptions {
+            astgrep: with_astgrep,
+            prefilter: !args.no_prefilter,
+            extra_rules: args.extra_rules.as_deref(),
+            describe_prefilter: args.describe_prefilter,
+            regions: !args.no_regions,
+            subtree_skip: !args.no_subtree_skip,
+        },
+        natives.rules,
+        planner,
+    )?;
     mark("compile rules");
 
     let root = std::env::current_dir()?;
@@ -137,16 +151,20 @@ fn lint(args: LintArgs) -> Result<bool> {
     let mut files = Vec::new();
     let mut files_read = 0;
     let mut overlapped_found = Vec::new();
+    let mut io_errors = Vec::new();
     for path in &paths {
         if !path.is_dir() {
-            files.push(path.clone());
+            match std::fs::File::open(path) {
+                Ok(_) => files.push(path.clone()),
+                Err(error) if io_error_active => io_errors.push(io_error(path, &error)),
+                Err(_) => {}
+            }
         } else if overlapped {
-            let (read, found) =
-                walk::walk_and_lint(&engine, &root, path, &|p| engine.astgrep().covers(p));
+            let (read, found) = walk::walk_and_lint(&engine, &root, path);
             files_read += read;
             overlapped_found.extend(found);
         } else {
-            files.extend(walk::discover(path, &|p| engine.astgrep().covers(p)));
+            files.extend(walk::discover(path, &root, &engine));
         }
     }
     mark(if overlapped { "walk+read+lint" } else { "walk" });
@@ -164,7 +182,7 @@ fn lint(args: LintArgs) -> Result<bool> {
         let found = if let Some(dir) = &args.cache_dir {
             let mut cache = Cache::load(
                 dir,
-                &rules::fingerprint(with_astgrep, args.extra_rules.as_deref())?,
+                &rules::fingerprint(with_astgrep, args.extra_rules.as_deref(), &config_key)?,
             );
             let (found, stats) = lint_files_cached(&engine, &sources, &mut cache);
             cache.save()?;
@@ -225,6 +243,8 @@ fn lint(args: LintArgs) -> Result<bool> {
         mark("ext shutdown");
     }
 
+    diagnostics.extend(io_errors);
+    diagnostics.sort_by(|a, b| (&a.path, a.start, &a.rule).cmp(&(&b.path, b.start, &b.rule)));
     report(&diagnostics)?;
     if timings {
         eprintln!(
@@ -235,6 +255,19 @@ fn lint(args: LintArgs) -> Result<bool> {
         );
     }
     Ok(diagnostics.iter().any(|d| d.severity == Severity::Error))
+}
+
+fn io_error(path: &Path, error: &std::io::Error) -> Diagnostic {
+    Diagnostic {
+        path: path.display().to_string(),
+        rule: "io-error".to_owned(),
+        severity: Severity::Error,
+        start: 0,
+        end: 0,
+        line: 1,
+        column: 1,
+        message: error.to_string(),
+    }
 }
 
 fn report(diagnostics: &[Diagnostic]) -> Result<()> {

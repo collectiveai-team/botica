@@ -1,10 +1,10 @@
 use std::io::Write;
 use std::path::PathBuf;
 
-use anyhow::{Context, Result};
-use botica_catalog::Catalog;
-use botica_config::{discover, load_file, Resolution};
+use anyhow::Result;
 use clap::Args;
+
+use crate::project;
 
 #[derive(Args)]
 pub struct RulesArgs {
@@ -17,12 +17,8 @@ pub struct RulesArgs {
 }
 
 pub fn run(args: &RulesArgs) -> Result<()> {
-    let loaded = match &args.config {
-        Some(path) => load_file(path)?,
-        None => discover(&std::env::current_dir().context("cannot read the working directory")?)?,
-    };
-    let catalog = Catalog::embedded()?;
-    let resolution = Resolution::new(&loaded.config, &catalog)?;
+    let project = project::load(args.config.as_deref())?;
+    let (loaded, resolution) = (&project.loaded, &project.resolution);
 
     let mut out = std::io::stdout().lock();
     match &loaded.source {

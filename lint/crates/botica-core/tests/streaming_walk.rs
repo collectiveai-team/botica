@@ -39,11 +39,10 @@ fn rendered(found: &[botica_core::Diagnostic]) -> Vec<String> {
 fn walking_and_linting_in_one_pass_reports_what_the_two_passes_report() {
     let root = tree("one_pass");
     let engine = engine();
-    let never = |_: &Path| false;
 
-    let files = discover(&root, &never);
+    let files = discover(&root, &root, &engine);
     let (sources, two_passes) = read_and_lint(&engine, &root, &files);
-    let (read, one_pass) = walk_and_lint(&engine, &root, &root, &never);
+    let (read, one_pass) = walk_and_lint(&engine, &root, &root);
 
     assert_eq!(rendered(&one_pass), rendered(&two_passes));
     assert_eq!(read, sources.len());
@@ -53,12 +52,12 @@ fn walking_and_linting_in_one_pass_reports_what_the_two_passes_report() {
 fn files_of_any_size_are_read_whole_and_unreadable_ones_are_skipped() {
     let root = tree("any_size");
     let engine = engine();
-    let never = |_: &Path| false;
 
-    let (read, found) = walk_and_lint(&engine, &root, &root, &never);
+    let (read, found) = walk_and_lint(&engine, &root, &root);
 
-    // big, small, empty and utils; not the Markdown, the hidden directory or the non-UTF-8 file.
-    assert_eq!(read, 4);
+    // big, small, empty, utils and the Markdown (every native rule runs on every path without a
+    // planner); not the hidden directory or the non-UTF-8 file.
+    assert_eq!(read, 5);
     let messages = rendered(&found).join("\n");
     assert!(messages.contains("is too large (40000 lines"), "{messages}");
     assert!(messages.contains("[no-utils]"), "{messages}");
@@ -69,13 +68,12 @@ fn files_of_any_size_are_read_whole_and_unreadable_ones_are_skipped() {
 fn explicit_files_are_linted_like_walked_ones() {
     let root = tree("explicit");
     let engine = engine();
-    let never = |_: &Path| false;
     let files = vec![root.join("pkg/big.py"), root.join("pkg/latin1.py")];
 
     let (read, found) = lint_streaming(&engine, &root, &files);
 
     assert_eq!(read, 1);
-    let (_, walked) = walk_and_lint(&engine, &root, &root, &never);
+    let (_, walked) = walk_and_lint(&engine, &root, &root);
     let big = |d: &String| d.contains("big.py");
     assert_eq!(
         rendered(&found),

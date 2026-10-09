@@ -6,14 +6,45 @@ use botica_astgrep::AstGrepSet;
 use botica_ext::{ExtensionHost, FileIn};
 use std::collections::HashMap;
 
+/// For a path relative to the project root: the indexes of the native rules that apply to it.
+pub type NativePlanner = Box<dyn Fn(&str) -> Vec<usize> + Send + Sync>;
+
+/// What runs on one file: the indexes of its native rules, and whether the ast-grep set may match.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Plan {
+    pub native: Vec<usize>,
+    pub astgrep: bool,
+}
+
 pub struct Engine {
     native: Vec<Box<dyn NativeRule>>,
     astgrep: AstGrepSet,
+    planner: Option<NativePlanner>,
 }
 
 impl Engine {
+    /// Without a planner every native rule applies to every path.
     pub fn new(native: Vec<Box<dyn NativeRule>>, astgrep: AstGrepSet) -> Self {
-        Self { native, astgrep }
+        Self {
+            native,
+            astgrep,
+            planner: None,
+        }
+    }
+
+    pub fn with_planner(mut self, planner: NativePlanner) -> Self {
+        self.planner = Some(planner);
+        self
+    }
+
+    /// `None` when nothing applies to `path`, so the file need not even be read.
+    pub fn plan(&self, path: &str) -> Option<Plan> {
+        let native = match &self.planner {
+            Some(planner) => planner(path),
+            None => (0..self.native.len()).collect(),
+        };
+        let astgrep = self.astgrep.covers(path.as_ref());
+        (!native.is_empty() || astgrep).then_some(Plan { native, astgrep })
     }
 
     pub fn astgrep(&self) -> &AstGrepSet {
@@ -22,12 +53,25 @@ impl Engine {
 
     /// Lints text the caller already holds. Does no I/O.
     pub fn lint_source(&self, path: &str, text: &str) -> Vec<Diagnostic> {
+        match self.plan(path) {
+            Some(plan) => self.lint_planned(path, text, &plan),
+            None => Vec::new(),
+        }
+    }
+
+    /// Like `lint_source` for a caller that already asked for the plan (to decide whether to read).
+    pub fn lint_planned(&self, path: &str, text: &str, plan: &Plan) -> Vec<Diagnostic> {
         let doc = Document::new(path, text);
         let mut out = Vec::new();
-        for rule in &self.native {
-            rule.check(&doc, &mut out);
+        for &index in &plan.native {
+            self.native[index].check(&doc, &mut out);
         }
-        for hit in self.astgrep.check(path.as_ref(), text) {
+        let hits = if plan.astgrep {
+            self.astgrep.check(path.as_ref(), text)
+        } else {
+            Vec::new()
+        };
+        for hit in hits {
             let (line, column) = doc.position(hit.start);
             out.push(Diagnostic {
                 path: path.to_owned(),

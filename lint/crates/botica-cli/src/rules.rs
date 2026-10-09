@@ -1,6 +1,6 @@
 use anyhow::Result;
 use botica_astgrep::{AstGrepRule, AstGrepSet};
-use botica_core::{Engine, FileSizeGuard, NativeRule, NoUtils};
+use botica_core::{Engine, NativePlanner, NativeRule};
 use std::path::Path;
 
 const EMBEDDED: [&str; 11] = [
@@ -30,9 +30,11 @@ pub struct EngineOptions<'a> {
     pub subtree_skip: bool,
 }
 
-pub fn build_engine(options: &EngineOptions<'_>) -> Result<Engine> {
-    let native: Vec<Box<dyn NativeRule>> =
-        vec![Box::new(FileSizeGuard::default()), Box::new(NoUtils)];
+pub fn build_engine(
+    options: &EngineOptions<'_>,
+    native: Vec<Box<dyn NativeRule>>,
+    planner: NativePlanner,
+) -> Result<Engine> {
     let mut rules = Vec::new();
     if options.astgrep {
         for yaml in EMBEDDED {
@@ -56,15 +58,15 @@ pub fn build_engine(options: &EngineOptions<'_>) -> Result<Engine> {
     set.set_prefilter(options.prefilter);
     set.set_regions(options.regions && options.prefilter);
     set.set_skip_subtrees(options.subtree_skip && options.prefilter);
-    Ok(Engine::new(native, set))
+    Ok(Engine::new(native, set).with_planner(planner))
 }
 
 /// Identifies everything that can change a file's diagnostics, for the result cache.
-pub fn fingerprint(with_astgrep: bool, extra_rules: Option<&Path>) -> Result<String> {
+pub fn fingerprint(with_astgrep: bool, extra_rules: Option<&Path>, config: &str) -> Result<String> {
     let mut hasher = blake3::Hasher::new();
     hasher.update(env!("CARGO_PKG_VERSION").as_bytes());
     hasher.update(&[u8::from(with_astgrep)]);
-    hasher.update(b"file-size-guard:400:700");
+    hasher.update(config.as_bytes());
     for yaml in EMBEDDED {
         hasher.update(yaml.as_bytes());
     }

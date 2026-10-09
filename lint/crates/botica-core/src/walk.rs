@@ -9,43 +9,30 @@ pub struct SourceFile {
     pub text: String,
 }
 
-const LINTED_EXTENSIONS: [&str; 6] = ["py", "pyi", "ts", "tsx", "js", "jsx"];
-
-/// One walk of the tree, honouring `.gitignore`, on several threads; sorted, so the result
-/// does not depend on thread timing. Keeps the files with a linted extension and those `rules`
-/// accepts (e.g. `.mjs` when there are JavaScript ast-grep rules).
-pub fn discover(root: &Path, rules: &(dyn Fn(&Path) -> bool + Sync)) -> Vec<PathBuf> {
+/// One walk of the tree under `dir`, honouring `.gitignore` and skipping hidden files, on several
+/// threads; sorted, so the result does not depend on thread timing. Keeps the files some rule of
+/// the engine applies to. Paths are matched relative to `root`.
+pub fn discover(dir: &Path, root: &Path, engine: &Engine) -> Vec<PathBuf> {
     let found = std::sync::Mutex::new(Vec::new());
-    WalkBuilder::new(root)
-        .hidden(true)
-        .build_parallel()
-        .run(|| {
-            let mut mine = Flush {
-                paths: Vec::new(),
-                into: &found,
-            };
-            Box::new(move |entry| {
-                if let Ok(entry) = entry {
-                    if is_linted(&entry, rules) {
-                        mine.paths.push(entry.into_path());
-                    }
+    WalkBuilder::new(dir).hidden(true).build_parallel().run(|| {
+        let mut mine = Flush {
+            paths: Vec::new(),
+            into: &found,
+        };
+        Box::new(move |entry| {
+            if let Ok(entry) = entry {
+                if entry.file_type().is_some_and(|t| t.is_file())
+                    && engine.plan(&relative_path(root, entry.path())).is_some()
+                {
+                    mine.paths.push(entry.into_path());
                 }
-                ignore::WalkState::Continue
-            })
-        });
+            }
+            ignore::WalkState::Continue
+        })
+    });
     let mut paths = found.into_inner().expect("walk");
     paths.sort_unstable();
     paths
-}
-
-fn is_linted(entry: &ignore::DirEntry, rules: &(dyn Fn(&Path) -> bool + Sync)) -> bool {
-    entry.file_type().is_some_and(|t| t.is_file())
-        && (entry
-            .path()
-            .extension()
-            .and_then(|e| e.to_str())
-            .is_some_and(|e| LINTED_EXTENSIONS.contains(&e))
-            || rules(entry.path()))
 }
 
 /// What `walk_and_lint` collects from every walker thread.
@@ -58,16 +45,10 @@ struct Linted {
 /// Walks `dir` and lints each file on the walker thread that found it, with no list of paths and
 /// no barrier between walking and linting. Nobody keeps the texts. Returns the number of files
 /// read and the sorted diagnostics.
-pub fn walk_and_lint(
-    engine: &Engine,
-    root: &Path,
-    dir: &Path,
-    rules: &(dyn Fn(&Path) -> bool + Sync),
-) -> (usize, Vec<Diagnostic>) {
+pub fn walk_and_lint(engine: &Engine, root: &Path, dir: &Path) -> (usize, Vec<Diagnostic>) {
     struct Builder<'a> {
         engine: &'a Engine,
         root: &'a Path,
-        rules: &'a (dyn Fn(&Path) -> bool + Sync),
         into: &'a std::sync::Mutex<Linted>,
     }
     struct Visitor<'a> {
@@ -87,13 +68,15 @@ pub fn walk_and_lint(
     impl ignore::ParallelVisitor for Visitor<'_> {
         fn visit(&mut self, entry: Result<ignore::DirEntry, ignore::Error>) -> ignore::WalkState {
             if let Ok(entry) = entry {
-                if is_linted(&entry, self.builder.rules) {
-                    if let Some(text) = read_into(entry.path(), &mut self.buf) {
-                        let path = relative_path(self.builder.root, entry.path());
-                        self.mine
-                            .found
-                            .extend(self.builder.engine.lint_source(&path, text));
-                        self.mine.read += 1;
+                if entry.file_type().is_some_and(|t| t.is_file()) {
+                    let path = relative_path(self.builder.root, entry.path());
+                    if let Some(plan) = self.builder.engine.plan(&path) {
+                        if let Some(text) = read_into(entry.path(), &mut self.buf) {
+                            self.mine
+                                .found
+                                .extend(self.builder.engine.lint_planned(&path, text, &plan));
+                            self.mine.read += 1;
+                        }
                     }
                 }
             }
@@ -113,7 +96,6 @@ pub fn walk_and_lint(
     let mut builder = Builder {
         engine,
         root,
-        rules,
         into: &into,
     };
     WalkBuilder::new(dir)
@@ -159,9 +141,13 @@ fn read_one(root: &Path, path: &Path) -> Option<SourceFile> {
 
 const FIRST_READ: usize = 64 * 1024;
 
+/// A NUL in the first 8 KB marks a binary file, the criterion of git and ripgrep.
+const BINARY_PROBE: usize = 8 * 1024;
+
 /// Reads `path` into `buf`, which a worker keeps between files: no allocation per file, and no
 /// `statx`/`lseek` for a size hint (most files fit in one read). `None` when the file cannot be
-/// read or is not UTF-8, like `read_to_string`.
+/// read, looks binary (decided from the first read, before reading the rest) or is not UTF-8,
+/// like `read_to_string`.
 fn read_into<'a>(path: &Path, buf: &'a mut Vec<u8>) -> Option<&'a str> {
     use std::io::{ErrorKind, Read};
     if buf.is_empty() {
@@ -169,6 +155,7 @@ fn read_into<'a>(path: &Path, buf: &'a mut Vec<u8>) -> Option<&'a str> {
     }
     let mut file = std::fs::File::open(path).ok()?;
     let mut filled = 0;
+    let mut probed = false;
     loop {
         if filled == buf.len() {
             buf.resize(buf.len() * 2, 0);
@@ -179,6 +166,15 @@ fn read_into<'a>(path: &Path, buf: &'a mut Vec<u8>) -> Option<&'a str> {
             Err(error) if error.kind() == ErrorKind::Interrupted => {}
             Err(_) => return None,
         }
+        if !probed && filled >= BINARY_PROBE.min(buf.len()) {
+            probed = true;
+            if buf[..filled.min(BINARY_PROBE)].contains(&0) {
+                return None;
+            }
+        }
+    }
+    if !probed && buf[..filled.min(BINARY_PROBE)].contains(&0) {
+        return None;
     }
     std::str::from_utf8(&buf[..filled]).ok()
 }

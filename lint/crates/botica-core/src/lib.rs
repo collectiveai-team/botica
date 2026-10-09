@@ -10,5 +10,5 @@ pub mod walk;
 
 pub use diagnostic::{Diagnostic, Severity};
 pub use document::Document;
-pub use engine::{Engine, ExtensionRun};
+pub use engine::{language_of, Engine, ExtensionRun, NativePlanner, Plan};
 pub use native::{FileSizeGuard, NativeRule, NoUtils};
