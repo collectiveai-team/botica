@@ -95,6 +95,7 @@ fn the_default_selection_runs_every_rule_enabled_by_default() {
         active(&resolution),
         [
             "file-size-guard",
+            "invalid-suppression",
             "io-error",
             "no-utils",
             "unused-suppression"
@@ -121,7 +122,7 @@ fn select_and_extend_select_are_added_together() {
     assert_eq!(reason(&resolution, "file-size-guard"), Reason::NotSelected);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BT0\"]")),
-        ["io-error", "unused-suppression"]
+        ["invalid-suppression", "io-error", "unused-suppression"]
     );
     assert_eq!(
         active(&resolve(&catalog, "select = [\"tag:size\"]")),
@@ -129,7 +130,7 @@ fn select_and_extend_select_are_added_together() {
     );
     assert_eq!(
         active(&resolve(&catalog, "select = []\nextend-select = [\"all\"]")).len(),
-        4
+        5
     );
 }
 
@@ -137,7 +138,10 @@ fn select_and_extend_select_are_added_together() {
 fn ignore_removes_what_was_selected_and_names_the_selector() {
     let catalog = embedded();
     let resolution = resolve(&catalog, "ignore = [\"BTSTRUC\"]");
-    assert_eq!(active(&resolution), ["io-error", "unused-suppression"]);
+    assert_eq!(
+        active(&resolution),
+        ["invalid-suppression", "io-error", "unused-suppression"]
+    );
     assert_eq!(
         reason(&resolution, "no-utils"),
         Reason::IgnoredBy("BTSTRUC".into())
@@ -151,7 +155,10 @@ fn a_rule_switched_off_in_its_own_section_stays_out() {
         &catalog,
         "[rules.no-utils]\nenabled = false\n[rules.file-size-guard]\nseverity = \"off\"\n",
     );
-    assert_eq!(active(&resolution), ["io-error", "unused-suppression"]);
+    assert_eq!(
+        active(&resolution),
+        ["invalid-suppression", "io-error", "unused-suppression"]
+    );
     assert_eq!(reason(&resolution, "no-utils"), Reason::Disabled);
     assert_eq!(reason(&resolution, "file-size-guard"), Reason::SeverityOff);
 }

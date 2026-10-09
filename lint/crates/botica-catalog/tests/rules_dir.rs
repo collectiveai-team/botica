@@ -31,6 +31,7 @@ fn the_built_in_catalog_loads() {
         "no-utils",
         "io-error",
         "unused-suppression",
+        "invalid-suppression",
     ] {
         assert!(catalog.resolve(slug).is_some(), "{slug} is missing");
     }
@@ -41,6 +42,10 @@ fn the_built_in_catalog_loads() {
     assert_eq!(
         catalog.resolve("BT001").map(|r| r.id.as_str()),
         Some("io-error")
+    );
+    assert_eq!(
+        catalog.resolve("BT003").map(|r| r.id.as_str()),
+        Some("invalid-suppression")
     );
 }
 
