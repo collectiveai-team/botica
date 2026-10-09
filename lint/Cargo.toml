@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/botica-astgrep",
+    "crates/botica-catalog",
     "crates/botica-ext",
     "crates/botica-core",
     "crates/botica-cli",
@@ -41,6 +42,7 @@ ignore = "0.4"
 rayon = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+toml = "0.9"
 
 [profile.release]
 lto = "thin"
