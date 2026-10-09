@@ -1,5 +1,6 @@
 mod command_line;
 mod discover;
+mod inline;
 mod issue;
 mod matcher;
 mod model;
@@ -10,6 +11,7 @@ mod validate;
 
 pub use command_line::CommandLine;
 pub use discover::{discover, load_file, Loaded};
+pub use inline::inline_setting;
 pub use issue::{ConfigError, ConfigIssue};
 pub use matcher::PathMatcher;
 pub use model::{CatalogSource, Config, Override, RuleConfig, RuleSeverity};

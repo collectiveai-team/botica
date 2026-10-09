@@ -1,11 +1,13 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use botica_catalog::Catalog;
-use botica_config::{discover, load_file, CommandLine, Entry, FileRule, Loaded, Resolution};
+use botica_config::{
+    discover, inline_setting, load_file, CommandLine, Entry, FileRule, Loaded, Resolution,
+};
 use botica_core::postprocess::Verdict;
 use botica_core::report::RuleDoc;
 use botica_core::suppress::Policy;
@@ -31,9 +33,11 @@ pub struct Natives {
 /// The options that decide which configuration applies and which rules it selects.
 #[derive(Args)]
 pub struct ProjectArgs {
-    /// Use this configuration file instead of looking for one.
-    #[arg(long)]
-    config: Option<PathBuf>,
+    /// A configuration file to use instead of looking for one (at most one), or a TOML
+    /// `key = value` setting that goes over the file (as many as you like; for the same key the
+    /// last wins), e.g. `--config 'rules.file-size-guard.max = 900'`.
+    #[arg(long, value_parser = config_option)]
+    config: Vec<ConfigOption>,
     /// Run only these rules (slug, code, family, prefix or `tag:<t>`; comma-separated or repeated).
     /// Starts from scratch: the `select`, `extend-select` and `ignore` of the file do not apply.
     #[arg(long, value_delimiter = ',')]
@@ -54,6 +58,27 @@ pub struct ProjectArgs {
     /// Which rules run: those that look at one file, those that need the whole project, or both.
     #[arg(long, value_enum, default_value_t = ScopeArg::All)]
     scope: ScopeArg,
+}
+
+/// One `--config`: a file, or a setting that goes over the configuration.
+#[derive(Clone)]
+enum ConfigOption {
+    File(PathBuf),
+    Setting(toml::Table),
+}
+
+const CONFIG_HINT: &str = "tip: a `--config` flag must either be the path to a `.toml` \
+                           configuration file or a TOML `key = value` pair that overrides one setting";
+
+fn config_option(text: &str) -> Result<ConfigOption, String> {
+    match inline_setting(text) {
+        Ok(setting) => Ok(ConfigOption::Setting(setting)),
+        Err(_) if Path::new(text).is_file() => Ok(ConfigOption::File(PathBuf::from(text))),
+        Err(error) if text.contains('=') => Err(format!("{error}\n\n  {CONFIG_HINT}")),
+        Err(_) => Err(format!(
+            "`{text}` is not a file that exists nor a `key = value` setting\n\n  {CONFIG_HINT}"
+        )),
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, ValueEnum)]
@@ -89,10 +114,30 @@ impl ProjectArgs {
 }
 
 pub fn load(args: &ProjectArgs) -> Result<Project> {
-    let mut loaded = match args.config.as_deref() {
+    let files: Vec<&Path> = args
+        .config
+        .iter()
+        .filter_map(|option| match option {
+            ConfigOption::File(path) => Some(path.as_path()),
+            ConfigOption::Setting(_) => None,
+        })
+        .collect();
+    let settings: Vec<toml::Table> = args
+        .config
+        .iter()
+        .filter_map(|option| match option {
+            ConfigOption::Setting(setting) => Some(setting.clone()),
+            ConfigOption::File(_) => None,
+        })
+        .collect();
+    if files.len() > 1 {
+        bail!("more than one configuration file was given with --config: keep only one");
+    }
+    let loaded = match files.first() {
         Some(path) => load_file(path)?,
         None => discover(&std::env::current_dir().context("cannot read the working directory")?)?,
     };
+    let mut loaded = loaded.with_inline(&settings)?;
     let catalog = Catalog::embedded()?;
     loaded.config = loaded
         .config
