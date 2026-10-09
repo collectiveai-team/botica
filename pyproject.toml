@@ -44,7 +44,9 @@ include = ["scaffolding", "README.md", "guide.md"]
 line-length = 100
 # Vendored skill scripts and bundled template payload (snippets/ drop-ins shipped
 # verbatim into target repos) are independent artifacts; lint only the tool's code.
-extend-exclude = ["skills", "scaffolding/templates"]
+# The botica lint rule fixtures are deliberately bad code (and carry `# noqa: BT…` codes ruff
+# would otherwise strip), so ruff leaves them alone.
+extend-exclude = ["skills", "scaffolding/templates", "lint/rules/**/fixtures"]
 force-exclude = true
 
 [tool.ruff.lint]
