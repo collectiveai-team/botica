@@ -41,6 +41,8 @@ struct ConfigView {
     /// The file the settings come from; `null` when the defaults apply.
     path: Option<String>,
     root: String,
+    /// Whether the rules whose status is `preview` run, after `--preview`/`--no-preview`.
+    preview: bool,
 }
 
 #[derive(Serialize)]
@@ -74,6 +76,7 @@ fn write_json(project: &Project, all: bool, out: &mut impl Write) -> Result<()> 
                 .as_ref()
                 .map(|path| path.display().to_string()),
             root: project.loaded.root.display().to_string(),
+            preview: project.loaded.config.preview,
         },
         rules: project
             .resolution

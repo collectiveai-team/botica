@@ -262,3 +262,22 @@ fn the_scope_reaches_the_listing_and_is_the_reason_of_what_it_leaves_out() {
         "{text}"
     );
 }
+
+#[test]
+fn json_says_whether_preview_rules_are_on_and_the_command_line_wins() {
+    let dir = project("preview", Some("preview = true\n"));
+    let preview = |args: &[&str]| json(&dir, args)["config"]["preview"].clone();
+    assert_eq!(preview(&["rules", "--json"]), true);
+    assert_eq!(preview(&["rules", "--json", "--no-preview"]), false);
+    assert_eq!(
+        preview(&["rules", "--json", "--no-preview", "--preview"]),
+        true
+    );
+
+    let dir = project("preview-off", None);
+    assert_eq!(json(&dir, &["rules", "--json"])["config"]["preview"], false);
+    assert_eq!(
+        json(&dir, &["rules", "--json", "--preview"])["config"]["preview"],
+        true
+    );
+}
