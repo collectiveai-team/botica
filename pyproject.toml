@@ -136,6 +136,7 @@ project-excludes = [
   "**/__pycache__",
   "**/.venv/**/*",
   "**/.worktrees/**/*",
+  "**/.tmp/**/*",    # local scratch (spike corpora, benchmarks); gitignored
   "skills/**/*",
   "review/**/*",     # separate distribution with its own env/import-root
   "lint/**/*",       # Rust workspace; its Python SDK and bench scripts have their own deps
