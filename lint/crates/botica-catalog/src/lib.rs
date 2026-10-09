@@ -4,6 +4,8 @@ mod load;
 mod model;
 mod validate;
 
+pub use validate::is_kebab_case;
+
 pub use issue::{CatalogError, CatalogIssue};
 pub use load::{Catalog, SourceFile, OWN_RULES_DIR};
 pub use model::{

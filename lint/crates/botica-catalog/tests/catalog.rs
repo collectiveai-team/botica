@@ -290,6 +290,35 @@ fn every_implementation_needs_languages_and_extensions_need_a_runtime() {
 }
 
 #[test]
+fn option_names_cannot_take_the_keys_the_config_reserves_for_every_rule() {
+    for reserved in ["severity", "enabled", "ignores", "extend-ignores"] {
+        let options = format!("[options]\n{reserved} = {{ type = \"int\", default = 1 }}\n");
+        let message = issues(vec![
+            vec![family("structure", "STRUC")],
+            rule_with("structure", "one", "BTSTRUC001", &options, NATIVE_ALL),
+        ]);
+        assert!(
+            message.contains(&format!("option `{reserved}`")),
+            "{reserved}: {message}"
+        );
+    }
+    let message = issues(vec![
+        vec![family("structure", "STRUC")],
+        rule_with(
+            "structure",
+            "one",
+            "BTSTRUC001",
+            "[options]\nWarnAt = { type = \"int\", default = 1 }\n",
+            NATIVE_ALL,
+        ),
+    ]);
+    assert!(
+        message.contains("option `WarnAt`") && message.contains("kebab-case"),
+        "{message}"
+    );
+}
+
+#[test]
 fn a_rule_needs_at_least_one_implementation() {
     let message = issues(vec![
         vec![family("structure", "STRUC")],

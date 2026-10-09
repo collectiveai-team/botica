@@ -5,7 +5,9 @@ use crate::model::{Family, Kind, Rule};
 
 pub(crate) const HEADER: &str = "BT";
 
-pub(crate) fn is_kebab_case(text: &str) -> bool {
+const RESERVED_OPTION_NAMES: [&str; 4] = ["severity", "enabled", "ignores", "extend-ignores"];
+
+pub fn is_kebab_case(text: &str) -> bool {
     !text.is_empty()
         && text.split('-').all(|part| {
             !part.is_empty()
@@ -66,6 +68,15 @@ pub(crate) fn check_rule(
     if let Some(ces) = &rule.ces {
         if !check_ces(ces) {
             add(format!("ces `{ces}` must look like `CES-71`"));
+        }
+    }
+    for name in rule.options.keys() {
+        if RESERVED_OPTION_NAMES.contains(&name.as_str()) {
+            add(format!(
+                "option `{name}` is a key every rule has in the configuration: pick another name"
+            ));
+        } else if !is_kebab_case(name) {
+            add(format!("option `{name}` must be kebab-case"));
         }
     }
     if !check_since(&rule.since) {
