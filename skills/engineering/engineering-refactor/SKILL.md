@@ -1,5 +1,11 @@
 ---
 name: engineering-refactor
+metadata:
+  credits:
+    - author: Matt Pocock
+      skill: codebase-design
+      url: "https://github.com/mattpocock/skills/blob/v1.3.1/skills/engineering/codebase-design/SKILL.md"
+      contribution: Architecture concepts used through engineering-rules; the refactoring procedure is local.
 description: Restructure modules, consolidate shallow wrappers, align package layout, and add tests at module interfaces to move a codebase toward the house stack (uv + ruff + pyrefly) and deep-module architecture. Use when the user asks to refactor, restructure, reorganize, clean up architecture, tidy up code, modernize a Python project, or adapt a repo to these practices.
 ---
 
@@ -30,7 +36,7 @@ applies to this repo at all.
 ### 1. Establish the baseline
 
 Read the `engineering-rules` index, then inspect the repo's local contracts: `pyproject.toml`,
-lockfiles, Makefiles, CI workflows, existing tests, package layout, `README`, `CONTEXT.md`,
+lockfiles, Makefiles, CI workflows, existing tests, package layout, `README`, `GLOSSARY.md` (or legacy `CONTEXT.md`),
 and ADRs if present. Determine, citing evidence:
 
 - Package manager + build backend (`py-package-manager`, `py-build-backend`).

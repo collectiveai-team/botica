@@ -74,6 +74,17 @@ curl -fsSL https://raw.githubusercontent.com/collectiveai-team/botica/main/insta
 The installer is idempotent — safe to re-run. Existing files are never edited or
 overwritten; they are reported as `[defer]` for the agent to merge.
 
+### GitHub PR and issue templates
+
+The default-on `github-templates` component adds `.github/pull_request_template.md`
+and bug report / feature proposal templates under `.github/ISSUE_TEMPLATE/`.
+The internal `/pr` skill reads `.github/pull_request_template.md` from the target
+repo and uses its sections without keeping a second format in the skill. Issue templates adapt
+[collectiveai-web](https://github.com/collectiveai-team/collectiveai-web/tree/main/.github/ISSUE_TEMPLATE)
+for any repo: reproducible evidence, scoped impact, options, and verifiable criteria.
+Existing targets are deferred, never overwritten. Install just these with
+`scaffolding install github-templates`, or opt out with `--skip github-templates`.
+
 ### Commands
 
 ```
@@ -86,7 +97,7 @@ scaffolding check                   # verify bootstrap completeness (nonzero exi
 scaffolding doctor                  # diagnose environment + tools
 ```
 
-Components: `gitignore agent-config prek ast-grep pyproject ci agents standards
+Components: `gitignore agent-config prek ast-grep pyproject ci github-templates agents standards
 skills varlock` (all default-on except `ci`, which is opt-in). Scope with
 positional names or `--skip a,b`. Useful flags: `--agent` (repeatable:
 `opencode`/`claude-code`/`codex`), `--ci/--no-ci`, `--ci-parts`,
@@ -115,7 +126,7 @@ npx skills experimental_install
 Think `pyproject.toml` / `uv.lock`: the baseline below is the declared intent,
 `skills-lock.json` is the resolved set, `.agents/skills/` is the `.venv`. The
 analogy stops at the guarantee. Entries carry a `ref` only when the source was
-pinned (`owner/repo#v1.2.3`), tags are mutable, and the `computedHash` that is
+pinned (`owner/repo#v1.3.1`), tags are mutable, and the `computedHash` that is
 written is never verified on restore. So it reproduces *which skills, from where,
 at what ref* — not bytes. It is a manifest, not a lock.
 
@@ -207,8 +218,8 @@ never re-applied, a removed skill stays removed.
 Instead of running the CLI:
 
 ```bash
-npx skills add 'mattpocock/skills#v1.2.3' --agent opencode --yes --skill grill-with-docs triage improve-codebase-architecture setup-matt-pocock-skills to-spec to-tickets implement wayfinder prototype diagnosing-bugs research tdd domain-modeling codebase-design code-review resolving-merge-conflicts wizard grill-me teach writing-for-agents grilling wait-what
-npx skills add collectiveai-team/botica --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor
+npx skills add 'mattpocock/skills#v1.3.1' --agent opencode --yes --skill grill-with-docs triage improve-codebase-architecture setup-matt-pocock-skills to-spec to-tickets implement implement-spec retro wayfinder prototype diagnosing-bugs research tdd domain-modeling codebase-design code-review wizard grill-me teach writing-for-agents grilling wait-what to-questionnaire
+npx skills add collectiveai-team/botica --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor pr
 npx skills add dmno-dev/varlock --agent opencode --yes
 ```
 
@@ -217,30 +228,35 @@ is silently parsed as a skill-name filter, and an unpinned install tracks the
 upstream default branch. Bump the tag in `scaffolding/skills.py`, never here.
 
 From a local checkout, install local skills with
-`npx skills add . --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor --full-depth`.
+`npx skills add . --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor pr --full-depth`.
 
 ## Upstream skills from Matt Pocock
 
 User-invoked engineering workflows:
 
 - `grill-with-docs`, `triage`, `improve-codebase-architecture`, `setup-matt-pocock-skills`.
-- `to-spec`, `to-tickets`, `implement`, `wayfinder`.
+- `to-spec`, `to-tickets`, `implement`, `implement-spec`, `retro`, `wayfinder`.
 
 Model-invoked engineering workflows:
 
 - `prototype`, `diagnosing-bugs`, `research`, `tdd`.
-- `domain-modeling`, `codebase-design`, `code-review`, `resolving-merge-conflicts`.
+- `domain-modeling`, `codebase-design`, `code-review`.
 - `wizard` — generates an interactive bash script for the steps only a human can
   take (provisioning, credentials, CI secrets, dashboard clicks).
 
 Productivity workflows:
 
-- User-invoked: `grill-me`, `teach`, `wait-what`.
+- User-invoked: `grill-me`, `teach`, `wait-what`, `to-questionnaire`.
 - Model-invoked: `grilling`, `writing-for-agents`.
 
 These land as editable files you own, but `npx skills add` / `skills update`
 overwrite them in place without a diff or a prompt, so keep local edits in this
 repo's own `skills/`, not in `.agents/skills`.
+
+Since v1.3.1, upstream uses `GLOSSARY.md` / `GLOSSARY-MAP.md` instead of
+`CONTEXT.md` / `CONTEXT-MAP.md`. In existing repos, review and rename the old
+domain docs before using the updated workflows. resolving-merge-conflicts
+was removed upstream; conflict resolution no longer needs a dedicated skill.
 
 ## What's in this repo
 
@@ -261,6 +277,8 @@ repo's own `skills/`, not in `.agents/skills`.
   rules; the two workflows below invoke it rather than carrying a copy.
 - `skills/engineering/engineering-pr-review` — the house PR gate: the shared rules, the
   deep-module check, and the large-file/spaghetti check, run before a PR is opened.
+- `skills/engineering/pr` — write the PR body using the target repo's
+  `.github/pull_request_template.md`; replaces the upstream skill of the same name.
 - `skills/engineering/engineering-refactor` — move an existing repo toward the house
   standard (toolchain, layout, tests, architecture) without bulldozing its local
   contracts.

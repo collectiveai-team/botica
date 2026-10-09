@@ -1,5 +1,11 @@
 ---
 name: engineering-pr-review
+metadata:
+  credits:
+    - author: Matt Pocock
+      skill: codebase-design
+      url: "https://github.com/mattpocock/skills/blob/v1.3.1/skills/engineering/codebase-design/SKILL.md"
+      contribution: Architecture concepts used through engineering-rules; the PR gate is local.
 description: PR gate that applies the shared rules plus deep-module and large-file/spaghetti checks before creating, opening, updating, or marking a pull request ready. Use when an agent is about to create a PR, update a PR, publish a branch, request review, or summarize PR readiness.
 ---
 
@@ -23,7 +29,7 @@ specific rules the diff touches. Every rule id cited below resolves through it.
 
 1. Read the `engineering-rules` index and the `pr-*` gate rules.
 2. Inspect the diff against the target branch and the files receiving the largest additions.
-3. Identify the repo's toolchain, tests, CI, package layout; read `CONTEXT.md`/ADRs if present.
+3. Identify the repo's toolchain, tests, CI, package layout; read `GLOSSARY.md`/ADRs if present (fall back to `CONTEXT.md` in repos not yet migrated).
 
 ## PR gate
 

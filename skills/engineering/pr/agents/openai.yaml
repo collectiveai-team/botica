@@ -1,0 +1,3 @@
+interface:
+  display_name: "Pull Request Body"
+  short_description: "Write a PR body using the repository's .github template"

@@ -23,6 +23,8 @@ from scaffolding.skills import (
     MATTPOCOCK_REPO,
     MATTPOCOCK_SKILLS,
     MATTPOCOCK_SOURCE,
+    SCAFFOLDING_SOURCE,
+    house_baseline,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -47,6 +49,12 @@ def test_source_pins_a_ref_as_a_fragment():
     # ref, and installs from the default branch without warning.
     assert f"{MATTPOCOCK_REPO}#{MATTPOCOCK_REF}" == MATTPOCOCK_SOURCE
     assert "@" not in MATTPOCOCK_SOURCE
+
+
+def test_pr_is_installed_only_from_the_internal_catalog():
+    entries = [entry for entry in house_baseline() if entry.name == "pr"]
+    assert len(entries) == 1
+    assert entries[0].source == SCAFFOLDING_SOURCE
 
 
 def test_planned_command_installs_the_pinned_source_and_catalog(tmp_path: Path):

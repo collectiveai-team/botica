@@ -102,6 +102,29 @@ When a target is `deferred`, fetch the bundled template and merge additively.
 Templates are bundled in the package; the raw URLs below are the fallback when
 you need the content to merge by hand.
 
+### GitHub PR and issue templates
+
+`github-templates` is default-on and independent of CI. It adds:
+
+- `.github/pull_request_template.md`: Summary, Related issues, before/after
+  Evidence, and Merge Danger (door, blast radius, rollback). The internal `/pr`
+  skill reads this file from the target repo; the template owns the format.
+- `.github/ISSUE_TEMPLATE/bug_report.md`: measurements, reproduction, impact,
+  exclusions, and ruled-out causes.
+- `.github/ISSUE_TEMPLATE/feature_proposal.md`: evidence, alternatives (including
+  doing nothing), proposal, and measurable acceptance criteria.
+
+Issue templates adapt collectiveai-web's templates without its site-specific
+routes or `PRODUCT.md` assumptions. Preserve existing templates and conventions;
+do not introduce a second default PR template or duplicate issue choice when the
+repo already uses another filename or YAML issue forms. Merge only missing sections
+with the user's approval. To opt out, use `--skip github-templates`.
+
+Fallback templates:
+`https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/.github/pull_request_template.md`,
+`https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/.github/ISSUE_TEMPLATE/bug_report.md`,
+`https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/.github/ISSUE_TEMPLATE/feature_proposal.md`.
+
 ### `.gitignore`
 
 Ensure these are present at the repo root (the CLI adds missing ones; merge by
@@ -228,7 +251,7 @@ skills the repo uses and where they come from, and it is committed.
 `.agents/skills/` is *derived* from it and stays gitignored. It is the
 `pyproject.toml` / `uv.lock` split: the house baseline is the intent, this file is
 the resolved set. The guarantee is weaker than `uv.lock` — entries carry a `ref`
-only when the source was pinned (`owner/repo#v1.2.3`), tags are mutable, and
+only when the source was pinned (`owner/repo#v1.3.1`), tags are mutable, and
 `computedHash` is written but never verified on restore. Call it a manifest.
 
 **The `skills` CLI owns this file. Never write it from botica, and never
@@ -290,18 +313,18 @@ repo's recurring local skills (`ask-user`, `journalist`, `handoff`,
 `engineering-refactor`), and varlock:
 
 ```bash
-npx skills add 'mattpocock/skills#v1.2.3' --agent opencode --yes --skill grill-with-docs triage improve-codebase-architecture setup-matt-pocock-skills to-spec to-tickets implement wayfinder prototype diagnosing-bugs research tdd domain-modeling codebase-design code-review resolving-merge-conflicts wizard grill-me teach writing-for-agents grilling wait-what
-npx skills add collectiveai-team/botica --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor
+npx skills add 'mattpocock/skills#v1.3.1' --agent opencode --yes --skill grill-with-docs triage improve-codebase-architecture setup-matt-pocock-skills to-spec to-tickets implement implement-spec retro wayfinder prototype diagnosing-bugs research tdd domain-modeling codebase-design code-review wizard grill-me teach writing-for-agents grilling wait-what to-questionnaire
+npx skills add collectiveai-team/botica --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor pr
 npx skills add dmno-dev/varlock --agent opencode --yes
 ```
 
 The upstream set is pinned by the `#<tag>` fragment — do not rewrite it as
-`mattpocock/skills@v1.2.3`, which the `skills` CLI parses as a skill-name filter
+`mattpocock/skills@v1.3.1`, which the `skills` CLI parses as a skill-name filter
 and installs from the default branch instead. Bump the tag in
 `scaffolding/skills.py`, never here.
 
 From a local checkout, install local skills with
-`npx skills add . --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor --full-depth`.
+`npx skills add . --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor pr --full-depth`.
 
 ### Changing a repo's skill set
 
