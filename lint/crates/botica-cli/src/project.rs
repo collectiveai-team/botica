@@ -38,20 +38,32 @@ pub struct ProjectArgs {
     /// Starts from scratch: the `select`, `extend-select` and `ignore` of the file do not apply.
     #[arg(long, value_delimiter = ',')]
     select: Vec<String>,
+    /// Run these rules too, on top of the selection (the file's, or the one `--select` gave).
+    #[arg(long, value_delimiter = ',')]
+    extend_select: Vec<String>,
     /// Switch these rules off, on top of what the file ignores.
     #[arg(long, value_delimiter = ',')]
     ignore: Vec<String>,
     /// Also run the rules whose status is `preview`.
-    #[arg(long)]
+    #[arg(long, overrides_with = "no_preview")]
     preview: bool,
+    /// Do not run the rules whose status is `preview`, even if the file says to. The last of
+    /// `--preview` and `--no-preview` wins.
+    #[arg(long, overrides_with = "preview")]
+    no_preview: bool,
 }
 
 impl ProjectArgs {
     fn command_line(&self) -> CommandLine {
         CommandLine {
             select: self.select.clone(),
+            extend_select: self.extend_select.clone(),
             ignore: self.ignore.clone(),
-            preview: self.preview,
+            preview: match (self.preview, self.no_preview) {
+                (_, true) => Some(false),
+                (true, false) => Some(true),
+                (false, false) => None,
+            },
         }
     }
 }

@@ -94,6 +94,35 @@ fn a_selector_that_names_nothing_is_a_usage_error_naming_the_option() {
 }
 
 #[test]
+fn extend_select_adds_rules_to_a_select() {
+    let dir = project("extend", Some("select = [\"no-utils\"]\n"));
+    assert_eq!(rules_found(&botica(&dir, &[])), ["no-utils"]);
+    assert_eq!(
+        rules_found(&botica(&dir, &["--extend-select", "file-size-guard"])),
+        ["no-utils", "file-size-guard"]
+    );
+    assert_eq!(
+        rules_found(&botica(
+            &dir,
+            &["--select", "file-size-guard", "--extend-select", "no-utils"]
+        )),
+        ["no-utils", "file-size-guard"]
+    );
+}
+
+#[test]
+fn preview_and_no_preview_are_accepted_and_the_last_one_wins() {
+    let dir = project("no-preview", None);
+    for args in [
+        &["--no-preview"][..],
+        &["--preview", "--no-preview"],
+        &["--no-preview", "--preview"],
+    ] {
+        assert_eq!(botica(&dir, args).status.code(), Some(1), "{args:?}");
+    }
+}
+
+#[test]
 fn preview_is_accepted() {
     let dir = project("preview", None);
     let output = botica(&dir, &["--preview"]);

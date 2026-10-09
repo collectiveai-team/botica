@@ -4,19 +4,23 @@ use crate::issue::{issue, ConfigError};
 use crate::model::Config;
 use crate::selector::Selector;
 
-/// What `--select`, `--ignore` and `--preview` say, to lay over the configuration file.
+/// What `--select`, `--extend-select`, `--ignore` and `--preview`/`--no-preview` say, to lay over
+/// the configuration file.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CommandLine {
     /// Empty when `--select` was not given.
     pub select: Vec<String>,
+    pub extend_select: Vec<String>,
     pub ignore: Vec<String>,
-    pub preview: bool,
+    /// `None` leaves what the file says.
+    pub preview: Option<bool>,
 }
 
 impl Config {
     /// `--select` starts the selection from scratch, as in ruff: it replaces `select`,
-    /// `extend-select` and `ignore` of the file. `--ignore` is added to the `ignore` that is left,
-    /// and `--preview` turns the opt-in on. Anything that names no rule is an error.
+    /// `extend-select` and `ignore` of the file. `--extend-select` and `--ignore` are added to
+    /// what is left, and `--preview`/`--no-preview` set the opt-in. Anything that names no rule
+    /// is an error.
     pub fn with_command_line(
         mut self,
         catalog: &Catalog,
@@ -25,6 +29,7 @@ impl Config {
         let mut found = Vec::new();
         for (flag, values) in [
             ("--select", &command_line.select),
+            ("--extend-select", &command_line.extend_select),
             ("--ignore", &command_line.ignore),
         ] {
             for value in values {
@@ -42,8 +47,12 @@ impl Config {
             self.extend_select.clear();
             self.ignore.clear();
         }
+        self.extend_select
+            .extend(command_line.extend_select.iter().cloned());
         self.ignore.extend(command_line.ignore.iter().cloned());
-        self.preview |= command_line.preview;
+        if let Some(preview) = command_line.preview {
+            self.preview = preview;
+        }
         Ok(self)
     }
 }
