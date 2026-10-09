@@ -66,6 +66,21 @@ impl Selector {
         }
     }
 
+    pub fn matches(&self, catalog: &Catalog, rule: &Rule) -> bool {
+        match self {
+            Self::Default => rule.default_enabled,
+            Self::All => true,
+            Self::Tag(tag) => rule.tags.contains(tag),
+            Self::Family(code) => family_of(&rule.code).is_some_and(|family| family == code),
+            Self::CodePrefix { family, digits } => {
+                rule.code.starts_with(&format!("{HEADER}{family}{digits}"))
+            }
+            Self::Code(key) | Self::Slug(key) => catalog
+                .resolve(key)
+                .is_some_and(|found| found.id == rule.id),
+        }
+    }
+
     pub fn check(&self, catalog: &Catalog) -> Result<(), String> {
         match self {
             Self::Default | Self::All => Ok(()),
@@ -86,6 +101,14 @@ impl Selector {
             Self::Slug(slug) => check_rule(catalog.resolve(slug), slug),
         }
     }
+}
+
+fn family_of(code: &str) -> Option<&str> {
+    let rest = code.strip_prefix(HEADER)?;
+    let letters = &rest[..rest
+        .find(|c: char| !c.is_ascii_uppercase())
+        .unwrap_or(rest.len())];
+    (!letters.is_empty()).then_some(letters)
 }
 
 fn check_prefix(catalog: &Catalog, family: &str, digits: &str) -> Result<(), String> {
