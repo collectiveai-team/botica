@@ -160,3 +160,40 @@ fn ignore_and_extend_select_do_not_switch_them_off() {
     write(&dir, "log.py", "print('x')\n");
     assert!(prints_are_reported(&dir, &["--ignore", "no-utils"]));
 }
+
+#[test]
+fn scope_file_is_what_runs_by_default_and_project_has_nothing_to_run_yet() {
+    let dir = project("scope", None);
+    write(&dir, "log.py", "print('x')\n");
+    assert_eq!(
+        rules_found(&botica(&dir, &["--scope", "file"])),
+        ["no-utils", "file-size-guard"]
+    );
+    assert_eq!(
+        rules_found(&botica(&dir, &["--scope", "all"])),
+        ["no-utils", "file-size-guard"]
+    );
+    let output = botica(&dir, &["--scope", "project"]);
+    assert!(rules_found(&output).is_empty());
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "no rule of that scope exists yet"
+    );
+}
+
+#[test]
+fn a_project_scope_also_leaves_out_the_embedded_syntax_rules() {
+    let dir = project("scope-legacy", None);
+    write(&dir, "log.py", "print('x')\n");
+    assert!(prints_are_reported(&dir, &["--scope", "file"]));
+    assert!(prints_are_reported(&dir, &["--scope", "all"]));
+    assert!(!prints_are_reported(&dir, &["--scope", "project"]));
+}
+
+#[test]
+fn an_unknown_scope_is_a_usage_error() {
+    let output = botica(&project("scope-bad", None), &["--scope", "galaxy"]);
+    assert_eq!(output.status.code(), Some(2));
+    assert!(stdout(&output).is_empty());
+}

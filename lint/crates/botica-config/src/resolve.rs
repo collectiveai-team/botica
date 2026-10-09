@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-use botica_catalog::{Catalog, Implementation, Rule, Severity, Status};
+use botica_catalog::{Catalog, Implementation, Rule, Scope, Severity, Status};
 use serde::Serialize;
 
 use crate::issue::ConfigError;
@@ -20,6 +20,8 @@ pub enum Reason {
     OnlyPreview,
     Removed,
     ReplacedBy(String),
+    /// Left out by `--scope`; holds the scope that was asked for.
+    OutOfScope(String),
 }
 
 impl fmt::Display for Reason {
@@ -37,6 +39,7 @@ impl fmt::Display for Reason {
             ),
             Self::Removed => write!(f, "removed from the catalog"),
             Self::ReplacedBy(new) => write!(f, "replaced by `{new}`"),
+            Self::OutOfScope(scope) => write!(f, "outside `--scope {scope}`"),
         }
     }
 }
@@ -237,6 +240,25 @@ impl Resolution {
             }
         }
         Ok(())
+    }
+
+    /// Keeps active only the rules of this scope (`None` keeps them all). A rule that was not
+    /// active keeps the reason it had.
+    pub fn only_scope(mut self, scope: Option<Scope>) -> Self {
+        let Some(scope) = scope else {
+            return self;
+        };
+        let name = match scope {
+            Scope::File => "file",
+            Scope::Project => "project",
+        };
+        for entry in self.entries.iter_mut().filter(|entry| entry.active) {
+            if entry.rule.scope != scope {
+                entry.active = false;
+                entry.reason = Reason::OutOfScope(name.to_owned());
+            }
+        }
+        self
     }
 
     /// Whether a suppression may name `id` without a warning although no rule has it.

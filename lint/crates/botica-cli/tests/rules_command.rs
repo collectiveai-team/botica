@@ -252,3 +252,13 @@ fn the_selection_options_reach_the_listing() {
         .collect();
     assert_eq!(slugs, ["no-utils"]);
 }
+
+#[test]
+fn the_scope_reaches_the_listing_and_is_the_reason_of_what_it_leaves_out() {
+    let dir = project("scope", None);
+    let text = stdout(&botica(&dir, &["rules", "--all", "--scope", "project"]));
+    assert!(
+        line_of(&text, "no-utils").contains("outside `--scope project`"),
+        "{text}"
+    );
+}

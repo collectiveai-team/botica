@@ -12,7 +12,7 @@ use botica_core::suppress::Policy;
 use botica_core::{
     language_of, Exclusion, FileSizeGuard, NativePlanner, NativeRule, NoUtils, Severity,
 };
-use clap::Args;
+use clap::{Args, ValueEnum};
 
 pub struct Project {
     pub loaded: Loaded,
@@ -51,6 +51,26 @@ pub struct ProjectArgs {
     /// `--preview` and `--no-preview` wins.
     #[arg(long, overrides_with = "preview")]
     no_preview: bool,
+    /// Which rules run: those that look at one file, those that need the whole project, or both.
+    #[arg(long, value_enum, default_value_t = ScopeArg::All)]
+    scope: ScopeArg,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum ScopeArg {
+    File,
+    Project,
+    All,
+}
+
+impl ScopeArg {
+    fn only(self) -> Option<botica_catalog::Scope> {
+        match self {
+            Self::File => Some(botica_catalog::Scope::File),
+            Self::Project => Some(botica_catalog::Scope::Project),
+            Self::All => None,
+        }
+    }
 }
 
 impl ProjectArgs {
@@ -77,13 +97,15 @@ pub fn load(args: &ProjectArgs) -> Result<Project> {
     loaded.config = loaded
         .config
         .with_command_line(&catalog, &args.command_line())?;
-    let resolution = Resolution::new(&loaded.config, &catalog)?;
-    let embedded_rules = loaded
-        .config
-        .select
-        .iter()
-        .chain(&loaded.config.extend_select)
-        .any(|selector| selector == "default" || selector == "all");
+    let resolution = Resolution::new(&loaded.config, &catalog)?.only_scope(args.scope.only());
+    // The embedded syntax rules look at one file each.
+    let embedded_rules = args.scope != ScopeArg::Project
+        && loaded
+            .config
+            .select
+            .iter()
+            .chain(&loaded.config.extend_select)
+            .any(|selector| selector == "default" || selector == "all");
     Ok(Project {
         loaded,
         resolution,
