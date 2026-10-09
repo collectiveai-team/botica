@@ -110,6 +110,20 @@ pub(crate) fn check_across(
         }
     }
 
+    for short in families {
+        for long in families {
+            if short.code != long.code && long.code.starts_with(&short.code) {
+                found.push(issue(
+                    format!("{}/family.toml", short.name),
+                    format!(
+                        "family code `{}` is a text prefix of `{}` (`{}`): selecting `{HEADER}{}` would be ambiguous",
+                        short.code, long.code, long.name, short.code
+                    ),
+                ));
+            }
+        }
+    }
+
     let mut slugs: BTreeMap<&str, &str> = BTreeMap::new();
     let mut codes: BTreeMap<&str, &str> = BTreeMap::new();
     for (path, rule) in rules {

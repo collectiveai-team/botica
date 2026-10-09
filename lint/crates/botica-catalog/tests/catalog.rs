@@ -161,6 +161,18 @@ fn rejects_duplicate_family_codes() {
 }
 
 #[test]
+fn rejects_a_family_code_that_is_a_text_prefix_of_another() {
+    let message = issues(vec![vec![
+        family("testing", "TEST"),
+        family("tests-short", "TE"),
+    ]]);
+    assert!(
+        message.contains("prefix") && message.contains("`TE`") && message.contains("`TEST`"),
+        "{message}"
+    );
+}
+
+#[test]
 fn rejects_a_rule_folder_without_family_toml() {
     let message = issues(vec![rule("structure", "file-size-guard", "BTSTRUC001")]);
     assert!(message.contains("family.toml"), "{message}");
