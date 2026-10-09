@@ -1,3 +1,4 @@
+mod explain_cmd;
 mod project;
 mod rule_view;
 mod rules;
@@ -27,6 +28,8 @@ enum Command {
     Lint(LintArgs),
     /// Show which rules are active and why.
     Rules(rules_cmd::RulesArgs),
+    /// Say what a rule is, how it is configured here and why it is or is not active.
+    Explain(explain_cmd::ExplainArgs),
 }
 
 #[derive(Args)]
@@ -124,6 +127,7 @@ fn main() -> ExitCode {
     let result = match Cli::parse().command {
         Command::Lint(args) => lint(args),
         Command::Rules(args) => rules_cmd::run(&args).map(|()| ExitCode::SUCCESS),
+        Command::Explain(args) => explain_cmd::run(&args).map(|()| ExitCode::SUCCESS),
     };
     match result {
         Ok(code) => code,

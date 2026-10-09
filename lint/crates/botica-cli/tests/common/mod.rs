@@ -36,6 +36,15 @@ pub fn botica(dir: &Path, args: &[&str]) -> Output {
         .expect("run botica")
 }
 
+/// A subcommand of botica other than `lint`, as given.
+pub fn command(dir: &Path, args: &[&str]) -> Output {
+    Command::new(env!("CARGO_BIN_EXE_botica"))
+        .args(args)
+        .current_dir(dir)
+        .output()
+        .expect("run botica")
+}
+
 pub fn stdout(output: &Output) -> String {
     String::from_utf8(output.stdout.clone()).expect("UTF-8 output")
 }
