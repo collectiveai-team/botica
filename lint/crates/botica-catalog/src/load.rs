@@ -14,7 +14,7 @@ pub struct SourceFile {
     pub text: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Catalog {
     families: Vec<Family>,
     rules: Vec<Rule>,

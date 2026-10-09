@@ -41,8 +41,8 @@ impl fmt::Display for Reason {
 }
 
 #[derive(Debug)]
-pub struct Entry<'c> {
-    pub rule: &'c Rule,
+pub struct Entry {
+    pub rule: Rule,
     pub active: bool,
     pub reason: Reason,
     pub severity: Severity,
@@ -67,9 +67,9 @@ struct CompiledOverride {
 }
 
 #[derive(Debug)]
-pub struct Resolution<'c> {
-    catalog: &'c Catalog,
-    entries: Vec<Entry<'c>>,
+pub struct Resolution {
+    catalog: Catalog,
+    entries: Vec<Entry>,
     languages: Vec<String>,
     preview: bool,
     overrides: Vec<CompiledOverride>,
@@ -134,8 +134,8 @@ fn matcher(patterns: &[String], rule: &Rule, what: &str) -> Result<PathMatcher, 
     })
 }
 
-impl<'c> Resolution<'c> {
-    pub fn new(config: &Config, catalog: &'c Catalog) -> Result<Self, ConfigError> {
+impl Resolution {
+    pub fn new(config: &Config, catalog: &Catalog) -> Result<Self, ConfigError> {
         config.validate(catalog)?;
         let select: Selectors = selectors_of(&config.select)
             .into_iter()
@@ -154,7 +154,7 @@ impl<'c> Resolution<'c> {
             entries.push(entry(catalog, config, rule, rc, &select, &ignore)?);
         }
         let mut resolution = Self {
-            catalog,
+            catalog: catalog.clone(),
             entries,
             languages: config.languages.clone(),
             preview: config.preview,
@@ -198,11 +198,11 @@ impl<'c> Resolution<'c> {
         Ok(())
     }
 
-    pub fn entries(&self) -> &[Entry<'c>] {
+    pub fn entries(&self) -> &[Entry] {
         &self.entries
     }
 
-    pub fn entry(&self, key: &str) -> Option<&Entry<'c>> {
+    pub fn entry(&self, key: &str) -> Option<&Entry> {
         let rule = self.catalog.resolve(key)?;
         self.entries.iter().find(|entry| entry.rule.id == rule.id)
     }
@@ -224,7 +224,7 @@ impl<'c> Resolution<'c> {
                     .rule
                     .implementations
                     .iter()
-                    .filter(|i| runs(entry.rule, i, self.preview))
+                    .filter(|i| runs(&entry.rule, i, self.preview))
                     .filter(|i| {
                         language.map_or_else(
                             || i.languages.iter().any(|l| l == "*"),
@@ -233,7 +233,7 @@ impl<'c> Resolution<'c> {
                     })
                     .collect();
                 (!implementations.is_empty()).then_some(FileRule {
-                    rule: entry.rule,
+                    rule: &entry.rule,
                     severity: entry.severity,
                     implementations,
                     options: &entry.options,
@@ -245,7 +245,7 @@ impl<'c> Resolution<'c> {
                 !over
                     .ignore
                     .iter()
-                    .any(|s| s.matches(self.catalog, file_rule.rule))
+                    .any(|s| s.matches(&self.catalog, file_rule.rule))
             });
             for (id, severity) in &over.severity {
                 match severity_of(*severity) {
@@ -262,14 +262,14 @@ impl<'c> Resolution<'c> {
     }
 }
 
-fn entry<'c>(
+fn entry(
     catalog: &Catalog,
     config: &Config,
-    rule: &'c Rule,
+    rule: &Rule,
     rc: Option<&RuleConfig>,
     select: &Selectors,
     ignore: &Selectors,
-) -> Result<Entry<'c>, ConfigError> {
+) -> Result<Entry, ConfigError> {
     let selected = first_match(catalog, select, rule);
     let any_runs = rule
         .implementations
@@ -301,7 +301,7 @@ fn entry<'c>(
         .chain(rc.map(|c| c.extend_ignores.clone()).unwrap_or_default())
         .collect();
     Ok(Entry {
-        rule,
+        rule: rule.clone(),
         active,
         reason,
         severity: configured.unwrap_or(rule.default_severity),

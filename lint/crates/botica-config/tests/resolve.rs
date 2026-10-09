@@ -9,11 +9,11 @@ fn config(text: &str) -> Config {
     Config::from_botica_toml(text).unwrap_or_else(|error| panic!("config:\n{error}"))
 }
 
-fn resolve<'c>(catalog: &'c Catalog, text: &str) -> Resolution<'c> {
+fn resolve(catalog: &Catalog, text: &str) -> Resolution {
     Resolution::new(&config(text), catalog).unwrap_or_else(|error| panic!("resolve:\n{error}"))
 }
 
-fn active(resolution: &Resolution<'_>) -> Vec<String> {
+fn active(resolution: &Resolution) -> Vec<String> {
     let mut slugs: Vec<String> = resolution
         .entries()
         .iter()
@@ -24,7 +24,7 @@ fn active(resolution: &Resolution<'_>) -> Vec<String> {
     slugs
 }
 
-fn reason(resolution: &Resolution<'_>, slug: &str) -> Reason {
+fn reason(resolution: &Resolution, slug: &str) -> Reason {
     resolution
         .entry(slug)
         .unwrap_or_else(|| panic!("no rule {slug}"))
@@ -32,7 +32,7 @@ fn reason(resolution: &Resolution<'_>, slug: &str) -> Reason {
         .clone()
 }
 
-fn files_for(resolution: &Resolution<'_>, path: &str, language: Option<&str>) -> Vec<String> {
+fn files_for(resolution: &Resolution, path: &str, language: Option<&str>) -> Vec<String> {
     let mut slugs: Vec<String> = resolution
         .rules_for(path, language)
         .iter()
@@ -332,7 +332,7 @@ fn the_languages_of_the_config_restrict_every_rule() {
 #[test]
 fn a_rules_default_ignores_apply_and_the_config_can_replace_or_extend_them() {
     let catalog = embedded();
-    let size = |resolution: &Resolution<'_>, path: &str| {
+    let size = |resolution: &Resolution, path: &str| {
         files_for(resolution, path, None).contains(&"file-size-guard".to_owned())
     };
 
