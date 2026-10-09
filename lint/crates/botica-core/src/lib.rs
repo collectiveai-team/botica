@@ -2,6 +2,7 @@ mod diagnostic;
 mod document;
 mod engine;
 mod native;
+pub mod suppress;
 
 #[cfg(feature = "fs")]
 pub mod cache;

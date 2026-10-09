@@ -1,5 +1,6 @@
 use anyhow::Result;
 use botica_astgrep::{AstGrepRule, AstGrepSet};
+use botica_core::suppress::Policy;
 use botica_core::{Engine, NativePlanner, NativeRule};
 use std::path::Path;
 
@@ -34,6 +35,7 @@ pub fn build_engine(
     options: &EngineOptions<'_>,
     native: Vec<Box<dyn NativeRule>>,
     planner: NativePlanner,
+    policy: Policy,
 ) -> Result<Engine> {
     let mut rules = Vec::new();
     if options.astgrep {
@@ -49,6 +51,7 @@ pub fn build_engine(
             rules.extend(AstGrepRule::from_yaml(&yaml)?);
         }
     }
+    let policy = policy.with_astgrep_rules(rules.iter().map(AstGrepRule::id));
     let mut set = AstGrepSet::new(rules);
     if options.describe_prefilter {
         for (id, requirement) in set.describe_prefilter() {
@@ -58,7 +61,9 @@ pub fn build_engine(
     set.set_prefilter(options.prefilter);
     set.set_regions(options.regions && options.prefilter);
     set.set_skip_subtrees(options.subtree_skip && options.prefilter);
-    Ok(Engine::new(native, set).with_planner(planner))
+    Ok(Engine::new(native, set)
+        .with_planner(planner)
+        .with_suppressions(policy))
 }
 
 /// Identifies everything that can change a file's diagnostics, for the result cache.

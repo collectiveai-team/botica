@@ -54,6 +54,7 @@ impl NativeRule for FileSizeGuard {
             end: 0,
             line: 1,
             column: 1,
+            file_level: true,
             message,
         });
     }
@@ -87,6 +88,7 @@ impl NativeRule for NoUtils {
             end: 0,
             line: 1,
             column: 1,
+            file_level: true,
             message: format!(
                 "CES-63 (no-utils): {path} is a catch-all module — name modules for what they hold, not utils/helpers/aux/misc/common."
             ),

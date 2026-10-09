@@ -76,6 +76,10 @@ pub struct Config {
     /// Globs of rule IDs that suppressions may name without a warning even when they are unknown.
     #[serde(default)]
     pub external: Vec<String>,
+    /// While migrating from ast-grep: honour `# ast-grep-ignore: <rule>` on the line of a finding and
+    /// on the line before it.
+    #[serde(default)]
+    pub compat_ast_grep_ignore: bool,
     #[serde(default)]
     pub catalogs: BTreeMap<String, CatalogSource>,
     /// Rule to replace -> rule that replaces it.
@@ -107,6 +111,7 @@ impl Default for Config {
             extend_exclude: Vec::new(),
             rule_dirs: default_rule_dirs(),
             external: Vec::new(),
+            compat_ast_grep_ignore: false,
             catalogs: BTreeMap::new(),
             replace: BTreeMap::new(),
             rules: BTreeMap::new(),

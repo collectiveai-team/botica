@@ -1,6 +1,7 @@
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::document::Document;
 use crate::native::NativeRule;
+use crate::suppress::Policy;
 use anyhow::Result;
 use botica_astgrep::AstGrepSet;
 use botica_ext::{ExtensionHost, FileIn};
@@ -20,6 +21,7 @@ pub struct Engine {
     native: Vec<Box<dyn NativeRule>>,
     astgrep: AstGrepSet,
     planner: Option<NativePlanner>,
+    suppressions: Option<Policy>,
 }
 
 impl Engine {
@@ -29,7 +31,14 @@ impl Engine {
             native,
             astgrep,
             planner: None,
+            suppressions: None,
         }
+    }
+
+    /// Without a policy, comments silence nothing.
+    pub fn with_suppressions(mut self, policy: Policy) -> Self {
+        self.suppressions = Some(policy);
+        self
     }
 
     pub fn with_planner(mut self, planner: NativePlanner) -> Self {
@@ -81,8 +90,18 @@ impl Engine {
                 end: hit.end,
                 line,
                 column,
+                file_level: false,
                 message: hit.message,
             });
+        }
+        if let Some(policy) = &self.suppressions {
+            let is_active = |slug: &str| {
+                plan.native
+                    .iter()
+                    .any(|&index| self.native[index].id() == slug)
+                    || (plan.astgrep && policy.is_astgrep(slug))
+            };
+            policy.apply(&doc, &is_active, &mut out);
         }
         out.sort_by(|a, b| (a.start, &a.rule).cmp(&(b.start, &b.rule)));
         out
@@ -141,6 +160,7 @@ impl ExtensionRun {
                     end: wire.end,
                     line,
                     column,
+                    file_level: false,
                     message: wire.message,
                 });
             }

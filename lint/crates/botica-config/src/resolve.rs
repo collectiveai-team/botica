@@ -73,6 +73,8 @@ pub struct Resolution {
     languages: Vec<String>,
     preview: bool,
     overrides: Vec<CompiledOverride>,
+    external: PathMatcher,
+    compat_ast_grep_ignore: bool,
 }
 
 type Selectors = Vec<(String, Selector)>;
@@ -159,6 +161,15 @@ impl Resolution {
             languages: config.languages.clone(),
             preview: config.preview,
             overrides: compile_overrides(config, catalog)?,
+            external: PathMatcher::new(&config.external).map_err(|errors| {
+                let detail = errors
+                    .iter()
+                    .map(|(_, message)| message.as_str())
+                    .collect::<Vec<_>>()
+                    .join("; ");
+                ConfigError::single("external", detail)
+            })?,
+            compat_ast_grep_ignore: config.compat_ast_grep_ignore,
         };
         resolution.apply_replacements(config)?;
         Ok(resolution)
@@ -196,6 +207,15 @@ impl Resolution {
             }
         }
         Ok(())
+    }
+
+    /// Whether a suppression may name `id` without a warning although no rule has it.
+    pub fn is_external(&self, id: &str) -> bool {
+        self.external.is_match(id)
+    }
+
+    pub fn compat_ast_grep_ignore(&self) -> bool {
+        self.compat_ast_grep_ignore
     }
 
     pub fn entries(&self) -> &[Entry] {

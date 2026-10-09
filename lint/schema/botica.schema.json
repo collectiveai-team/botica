@@ -10,6 +10,11 @@
         "$ref": "#/$defs/CatalogSource"
       }
     },
+    "compat-ast-grep-ignore": {
+      "description": "While migrating from ast-grep: honour `# ast-grep-ignore: <rule>` on the line of a finding and\non the line before it.",
+      "type": "boolean",
+      "default": false
+    },
     "extend-exclude": {
       "description": "Globs of paths to skip, in addition to what `.gitignore` already skips.",
       "type": "array",

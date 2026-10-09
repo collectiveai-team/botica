@@ -74,6 +74,13 @@ severity = { no-utils = "warning" }
 }
 
 #[test]
+fn compat_ast_grep_ignore_is_off_by_default_and_a_boolean() {
+    assert!(!parse("").compat_ast_grep_ignore);
+    assert!(parse("compat-ast-grep-ignore = true\n").compat_ast_grep_ignore);
+    assert!(Config::from_botica_toml("compat-ast-grep-ignore = \"yes\"\n").is_err());
+}
+
+#[test]
 fn an_unknown_key_is_an_error_that_names_it() {
     assert!(problems("slect = [\"all\"]").contains("slect"));
     assert!(problems("[[overrides]]\nfiles = [\"a\"]\nignor = []\n").contains("ignor"));

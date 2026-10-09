@@ -1,0 +1,427 @@
+//! In-source suppressions (spec §8): `# botica: ignore[...]`, `# botica: ignore-file[...]` and
+//! `# noqa: BT...`, plus the two rules about them, `unused-suppression` and `invalid-suppression`.
+
+mod directive;
+mod scan;
+
+use crate::diagnostic::{Diagnostic, Severity};
+use crate::document::Document;
+use aho_corasick::AhoCorasick;
+use directive::{Channel, Channels, Directive, Malformed, Scope};
+use scan::{allows_noqa, scan, Syntax};
+use std::collections::{HashMap, HashSet};
+use std::ops::Range;
+use std::sync::OnceLock;
+
+pub const UNUSED: &str = "unused-suppression";
+pub const INVALID: &str = "invalid-suppression";
+
+type External = Box<dyn Fn(&str) -> bool + Send + Sync>;
+
+/// What a suppression may name and how the two rules about suppressions report.
+pub struct Policy {
+    /// Every spelling of a rule (slug, code, alias) -> its slug.
+    spellings: HashMap<String, String>,
+    /// Rules run by the ast-grep set: they are active in a file when the set covers it.
+    astgrep: HashSet<String>,
+    external: Option<External>,
+    compat_ast_grep_ignore: bool,
+    unused: Option<Severity>,
+    invalid: Option<Severity>,
+    /// One pass over a file tells whether it holds any marker at all.
+    markers: OnceLock<AhoCorasick>,
+}
+
+impl Default for Policy {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Policy {
+    /// The two rules about suppressions are always known; they report only after
+    /// `report_unused` and `report_invalid`.
+    pub fn new() -> Self {
+        Self {
+            spellings: HashMap::new(),
+            astgrep: HashSet::new(),
+            external: None,
+            compat_ast_grep_ignore: false,
+            unused: None,
+            invalid: None,
+            markers: OnceLock::new(),
+        }
+        .with_rule(UNUSED, &["BT002"])
+        .with_rule(INVALID, &["BT003"])
+    }
+
+    /// A rule a suppression may name, by its slug and by any other spelling.
+    pub fn with_rule(mut self, slug: &str, spellings: &[&str]) -> Self {
+        self.spellings.insert(slug.to_owned(), slug.to_owned());
+        for spelling in spellings {
+            self.spellings
+                .insert((*spelling).to_owned(), slug.to_owned());
+        }
+        self
+    }
+
+    /// Rules of the ast-grep set, known by slug only.
+    pub fn with_astgrep_rules<'a>(mut self, slugs: impl IntoIterator<Item = &'a str>) -> Self {
+        for slug in slugs {
+            self.spellings.insert(slug.to_owned(), slug.to_owned());
+            self.astgrep.insert(slug.to_owned());
+        }
+        self
+    }
+
+    /// IDs that suppressions may name even though no rule has them.
+    pub fn with_external(
+        mut self,
+        is_external: impl Fn(&str) -> bool + Send + Sync + 'static,
+    ) -> Self {
+        self.external = Some(Box::new(is_external));
+        self
+    }
+
+    pub fn with_compat_ast_grep_ignore(mut self, enabled: bool) -> Self {
+        self.compat_ast_grep_ignore = enabled;
+        self
+    }
+
+    pub fn report_unused(mut self, severity: Severity) -> Self {
+        self.unused = Some(severity);
+        self
+    }
+
+    pub fn report_invalid(mut self, severity: Severity) -> Self {
+        self.invalid = Some(severity);
+        self
+    }
+
+    fn has_marker(&self, text: &str) -> bool {
+        self.markers
+            .get_or_init(|| {
+                let mut needles = vec!["botica:", "noqa", "NOQA"];
+                if self.compat_ast_grep_ignore {
+                    needles.push("ast-grep-ignore");
+                }
+                AhoCorasick::new(needles).expect("literal needles compile")
+            })
+            .is_match(text)
+    }
+
+    pub(crate) fn is_astgrep(&self, slug: &str) -> bool {
+        self.astgrep.contains(slug)
+    }
+}
+
+/// An id inside a directive, resolved.
+struct Token {
+    name: String,
+    span: Range<usize>,
+    /// The slug of the rule it names; `None` for an unknown id.
+    slug: Option<String>,
+    external: bool,
+    used: bool,
+}
+
+struct Found {
+    scope: Scope,
+    channel: Channel,
+    line: usize,
+    /// Nothing but the comment on its line (for `ast-grep-ignore`, which then covers the next line).
+    comment_only: bool,
+    span: Range<usize>,
+    tokens: Vec<Token>,
+}
+
+impl Policy {
+    /// The line a finding counts on: where it starts, or the last line of the multi-line string it
+    /// starts in. `None` for a finding about the whole file.
+    fn effective_line(
+        diagnostic: &Diagnostic,
+        strings: &[Range<usize>],
+        doc: &Document<'_>,
+    ) -> Option<usize> {
+        if diagnostic.file_level {
+            return None;
+        }
+        let inside = strings
+            .iter()
+            .find(|string| string.contains(&diagnostic.start));
+        Some(match inside {
+            Some(string) => doc.position(string.end.saturating_sub(1)).0,
+            None => diagnostic.line,
+        })
+    }
+
+    /// The last line a finding touches.
+    fn last_line(diagnostic: &Diagnostic, doc: &Document<'_>) -> usize {
+        if diagnostic.file_level || diagnostic.end <= diagnostic.start {
+            diagnostic.line
+        } else {
+            doc.position(diagnostic.end - 1).0
+        }
+    }
+
+    /// Marks the tokens that silence `diagnostic` and says whether any did.
+    fn silenced(
+        found: &mut [Found],
+        diagnostic: &Diagnostic,
+        line: Option<usize>,
+        end_line: usize,
+    ) -> bool {
+        let mut silenced = false;
+        for directive in found.iter_mut() {
+            let reaches = match (directive.scope, directive.channel) {
+                (Scope::File, _) => true,
+                (Scope::Line, Channel::AstGrep) => {
+                    !diagnostic.file_level
+                        && (diagnostic.line == directive.line
+                            || end_line == directive.line
+                            || (directive.comment_only && diagnostic.line == directive.line + 1))
+                }
+                (Scope::Line, _) => line == Some(directive.line),
+            };
+            if !reaches {
+                continue;
+            }
+            for token in &mut directive.tokens {
+                if token.slug.as_deref() == Some(diagnostic.rule.as_str()) {
+                    token.used = true;
+                    silenced = true;
+                }
+            }
+        }
+        silenced
+    }
+
+    fn resolve(
+        &self,
+        directives: Vec<Directive>,
+        doc: &Document<'_>,
+    ) -> (Vec<Found>, Vec<(Range<usize>, Malformed)>) {
+        let mut found = Vec::new();
+        let mut malformed = Vec::new();
+        for directive in directives {
+            match directive {
+                Directive::Malformed { span, reason } => malformed.push((span, reason)),
+                Directive::Suppress {
+                    scope,
+                    channel,
+                    ids,
+                    span,
+                } => {
+                    let tokens = ids
+                        .into_iter()
+                        .map(|id| {
+                            let slug = self.spellings.get(&id.name).cloned();
+                            let external = slug.is_none()
+                                && self.external.as_ref().is_some_and(|f| f(&id.name));
+                            Token {
+                                name: id.name,
+                                span: id.span,
+                                slug,
+                                external,
+                                used: false,
+                            }
+                        })
+                        .collect();
+                    let line = doc.position(span.start).0;
+                    found.push(Found {
+                        scope,
+                        channel,
+                        line,
+                        comment_only: is_comment_only(doc.text, span.start),
+                        span,
+                        tokens,
+                    });
+                }
+            }
+        }
+        (found, malformed)
+    }
+
+    fn about(
+        &self,
+        doc: &Document<'_>,
+        rule: &str,
+        severity: Severity,
+        span: &Range<usize>,
+        message: String,
+    ) -> Diagnostic {
+        let (line, column) = doc.position(span.start);
+        Diagnostic {
+            path: doc.path.to_owned(),
+            rule: rule.to_owned(),
+            severity,
+            start: span.start,
+            end: span.end,
+            line,
+            column,
+            file_level: false,
+            message,
+        }
+    }
+
+    /// Drops what the comments of the file silence and adds the findings about the comments.
+    pub(crate) fn apply(
+        &self,
+        doc: &Document<'_>,
+        is_active: &dyn Fn(&str) -> bool,
+        found: &mut Vec<Diagnostic>,
+    ) {
+        let Some(syntax) = Syntax::of(doc.path) else {
+            return;
+        };
+        let channels = Channels {
+            noqa: allows_noqa(doc.path),
+            ast_grep: self.compat_ast_grep_ignore,
+        };
+        if !self.has_marker(doc.text) {
+            return;
+        }
+        let scanned = scan(doc.text, syntax);
+        let mut directives = Vec::new();
+        for comment in &scanned.comments {
+            directive::parse(
+                &doc.text[comment.clone()],
+                comment.start,
+                channels,
+                &mut directives,
+            );
+        }
+        if directives.is_empty() {
+            return;
+        }
+        let (mut directives, malformed) = self.resolve(directives, doc);
+
+        let mut kept = Vec::with_capacity(found.len());
+        let mut file_level: HashSet<String> = HashSet::new();
+        for diagnostic in found.drain(..) {
+            let line = Self::effective_line(&diagnostic, &scanned.strings, doc);
+            let last = Self::last_line(&diagnostic, doc);
+            if Self::silenced(&mut directives, &diagnostic, line, last) {
+                continue;
+            }
+            if diagnostic.file_level {
+                file_level.insert(diagnostic.rule.clone());
+            }
+            kept.push(diagnostic);
+        }
+
+        let mut about = Vec::new();
+        if let Some(severity) = self.invalid {
+            for directive in &directives {
+                for token in directive
+                    .tokens
+                    .iter()
+                    .filter(|t| t.slug.is_none() && !t.external)
+                {
+                    if directive.channel == Channel::AstGrep {
+                        continue;
+                    }
+                    about.push(self.about(
+                        doc,
+                        INVALID,
+                        severity,
+                        &token.span,
+                        format!("Unknown rule `{}` in a suppression", token.name),
+                    ));
+                }
+            }
+            for (span, reason) in &malformed {
+                about.push(self.about(doc, INVALID, severity, span, malformed_message(reason)));
+            }
+        }
+        if let Some(severity) = self.unused {
+            for directive in directives.iter().filter(|d| d.channel != Channel::AstGrep) {
+                let mut unused = Vec::new();
+                let mut disabled = Vec::new();
+                let mut file_hint = Vec::new();
+                for token in &directive.tokens {
+                    let Some(slug) = token.slug.as_deref() else {
+                        continue;
+                    };
+                    if token.used || slug == UNUSED || slug == INVALID {
+                        continue;
+                    }
+                    if !self.is_known_active(slug, is_active) {
+                        disabled.push(token.name.as_str());
+                    } else {
+                        unused.push(token.name.as_str());
+                        if directive.scope == Scope::Line && file_level.contains(slug) {
+                            file_hint.push(token.name.as_str());
+                        }
+                    }
+                }
+                if let Some(message) = unused_message(&unused, &disabled, &file_hint) {
+                    about.push(self.about(doc, UNUSED, severity, &directive.span, message));
+                }
+            }
+        }
+        for diagnostic in about {
+            let line = Self::effective_line(&diagnostic, &scanned.strings, doc);
+            let last = Self::last_line(&diagnostic, doc);
+            if !Self::silenced(&mut directives, &diagnostic, line, last) {
+                kept.push(diagnostic);
+            }
+        }
+        *found = kept;
+    }
+
+    fn is_known_active(&self, slug: &str, is_active: &dyn Fn(&str) -> bool) -> bool {
+        is_active(slug)
+    }
+}
+
+/// Whether the directive at `offset` is preceded on its line only by a comment delimiter.
+fn is_comment_only(text: &str, offset: usize) -> bool {
+    let line_start = text[..offset].rfind('\n').map_or(0, |at| at + 1);
+    matches!(
+        text[line_start..offset].trim(),
+        "#" | "//" | "///" | "/*" | "<!--"
+    )
+}
+
+fn malformed_message(reason: &Malformed) -> String {
+    match reason {
+        Malformed::MissingList => {
+            "Malformed suppression: name the rules, as in `botica: ignore[rule-id]`".to_owned()
+        }
+        Malformed::EmptyList => "Malformed suppression: the list of rules is empty".to_owned(),
+        Malformed::Unclosed => "Malformed suppression: the `[` is never closed".to_owned(),
+        Malformed::UnknownVerb(verb) => format!(
+            "Malformed suppression: `{verb}` is not a directive, use `ignore[...]` or `ignore-file[...]`"
+        ),
+    }
+}
+
+fn quoted(names: &[&str]) -> String {
+    names
+        .iter()
+        .map(|name| format!("`{name}`"))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn unused_message(unused: &[&str], disabled: &[&str], file_hint: &[&str]) -> Option<String> {
+    let mut parts = Vec::new();
+    if !unused.is_empty() {
+        parts.push(format!("unused: {}", quoted(unused)));
+    }
+    if !disabled.is_empty() {
+        parts.push(format!("non-enabled: {}", quoted(disabled)));
+    }
+    if parts.is_empty() {
+        return None;
+    }
+    let mut message = format!("Unused suppression ({})", parts.join("; "));
+    if !file_hint.is_empty() {
+        message.push_str(&format!(
+            "; {} reports on the whole file, use `ignore-file`",
+            quoted(file_hint)
+        ));
+    }
+    Some(message)
+}

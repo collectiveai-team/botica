@@ -124,7 +124,9 @@ fn lint(args: LintArgs) -> Result<bool> {
     let prefix = project.working_prefix();
     let config_key = project.fingerprint();
     let natives = project::natives(&project.resolution);
-    let planner = project::planner(project.resolution, natives.index, prefix);
+    let resolution = std::sync::Arc::new(project.resolution);
+    let policy = project::suppression_policy(&resolution);
+    let planner = project::planner(resolution, natives.index, prefix);
     let engine = rules::build_engine(
         &rules::EngineOptions {
             astgrep: with_astgrep,
@@ -136,6 +138,7 @@ fn lint(args: LintArgs) -> Result<bool> {
         },
         natives.rules,
         planner,
+        policy,
     )?;
     mark("compile rules");
 
@@ -266,6 +269,7 @@ fn io_error(path: &Path, error: &std::io::Error) -> Diagnostic {
         end: 0,
         line: 1,
         column: 1,
+        file_level: true,
         message: error.to_string(),
     }
 }

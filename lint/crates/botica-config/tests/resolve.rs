@@ -412,3 +412,13 @@ fn overrides_change_the_rules_of_the_files_they_match_in_order() {
         "the later override turns it off"
     );
 }
+
+#[test]
+fn external_ids_match_the_globs_of_the_configuration() {
+    let catalog = embedded();
+    let resolution = resolve(&catalog, "external = [\"acme-legacy/*\", \"old-rule\"]");
+    assert!(resolution.is_external("acme-legacy/no-utils"));
+    assert!(resolution.is_external("old-rule"));
+    assert!(!resolution.is_external("no-utils"));
+    assert!(!resolve(&catalog, "").is_external("acme-legacy/no-utils"));
+}

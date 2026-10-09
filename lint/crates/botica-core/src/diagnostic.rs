@@ -38,6 +38,9 @@ pub struct Diagnostic {
     pub end: usize,
     pub line: usize,
     pub column: usize,
+    /// About the whole file, with no line of its own (`range: null`): only `ignore-file` silences it.
+    #[serde(default)]
+    pub file_level: bool,
     pub message: String,
 }
 

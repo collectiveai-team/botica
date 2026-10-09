@@ -267,6 +267,7 @@ dependencies = [
 name = "botica-core"
 version = "0.0.0"
 dependencies = [
+ "aho-corasick",
  "anyhow",
  "ast-grep-language",
  "blake3",

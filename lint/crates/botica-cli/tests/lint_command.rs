@@ -215,3 +215,116 @@ fn hidden_files_and_gitignored_files_are_still_skipped() {
     write(&dir, ".gitignore", "ignored/\n");
     assert_eq!(stdout(&botica(&dir, &["."])), "");
 }
+
+fn with_astgrep(dir: &Path, args: &[&str]) -> Output {
+    Command::new(env!("CARGO_BIN_EXE_botica"))
+        .arg("lint")
+        .args(args)
+        .current_dir(dir)
+        .output()
+        .expect("run botica")
+}
+
+#[test]
+fn ignore_file_silences_a_file_level_finding_by_slug_or_code() {
+    let dir = project("suppress-file", None);
+    write(
+        &dir,
+        "pkg/utils.py",
+        "# botica: ignore-file[no-utils]\nx = 1\n",
+    );
+    write(
+        &dir,
+        "pkg/helpers.py",
+        "# botica: ignore-file[BTSTRUC002] -- legacy\nx = 1\n",
+    );
+    write(&dir, "pkg/misc.py", "x = 1\n");
+    let output = botica(&dir, &["."]);
+    let text = stdout(&output);
+    assert!(text.contains("pkg/misc.py:1:1: error [no-utils]"), "{text}");
+    assert!(
+        !text.contains("utils.py") && !text.contains("helpers.py"),
+        "{text}"
+    );
+}
+
+#[test]
+fn a_line_suppression_cannot_silence_a_file_level_finding_and_says_so() {
+    let dir = project("suppress-line-file", None);
+    write(&dir, "pkg/utils.py", "x = 1  # botica: ignore[no-utils]\n");
+    let output = botica(&dir, &["."]);
+    let text = stdout(&output);
+    assert_eq!(output.status.code(), Some(1), "{text}");
+    assert!(text.contains("[no-utils]"), "{text}");
+    assert!(
+        text.contains("pkg/utils.py:1:10: warning [unused-suppression]")
+            && text.contains("ignore-file"),
+        "{text}"
+    );
+}
+
+#[test]
+fn an_unknown_id_warns_unless_the_configuration_lists_it_as_external() {
+    let dir = project("suppress-unknown", None);
+    write(&dir, "a.py", "x = 1  # botica: ignore[acme/no-utils]\n");
+    let text = stdout(&botica(&dir, &["."]));
+    assert!(
+        text.contains("a.py:1:25: warning [invalid-suppression]")
+            && text.contains("`acme/no-utils`"),
+        "{text}"
+    );
+    let dir = project("suppress-external", Some("external = [\"acme/*\"]\n"));
+    write(&dir, "a.py", "x = 1  # botica: ignore[acme/no-utils]\n");
+    let output = botica(&dir, &["."]);
+    assert_eq!(stdout(&output), "");
+    assert_eq!(output.status.code(), Some(0));
+}
+
+#[test]
+fn the_rules_about_suppressions_obey_the_configuration() {
+    let dir = project(
+        "suppress-off",
+        Some("ignore = [\"unused-suppression\", \"BT003\"]\n"),
+    );
+    write(
+        &dir,
+        "a.py",
+        "x = 1  # botica: ignore[no-utils]\ny = 1  # noqa: BTNOPE001\n",
+    );
+    assert_eq!(stdout(&botica(&dir, &["."])), "");
+}
+
+#[test]
+fn ast_grep_findings_are_silenced_by_the_botica_channel() {
+    let dir = project("suppress-astgrep", None);
+    write(
+        &dir,
+        "pkg/a.py",
+        "print('a')  # botica: ignore[log-no-print]\nprint('b')\n",
+    );
+    let output = with_astgrep(&dir, &["."]);
+    let text = stdout(&output);
+    assert!(
+        text.contains("pkg/a.py:2:1: warning [log-no-print]"),
+        "{text}"
+    );
+    assert!(!text.contains("pkg/a.py:1:"), "{text}");
+}
+
+#[test]
+fn compat_honours_ast_grep_ignore_only_when_asked() {
+    let source = "print('a')  # ast-grep-ignore: log-no-print\n# ast-grep-ignore: log-no-print\nprint('b')\n";
+    let dir = project("suppress-compat-off", None);
+    write(&dir, "pkg/a.py", source);
+    let text = stdout(&with_astgrep(&dir, &["."]));
+    assert!(
+        text.contains("pkg/a.py:1:1") && text.contains("pkg/a.py:3:1"),
+        "{text}"
+    );
+    let dir = project(
+        "suppress-compat-on",
+        Some("compat-ast-grep-ignore = true\n"),
+    );
+    write(&dir, "pkg/a.py", source);
+    assert_eq!(stdout(&with_astgrep(&dir, &["."])), "");
+}

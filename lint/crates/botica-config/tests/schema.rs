@@ -41,6 +41,7 @@ fn the_schema_forbids_unknown_keys_and_documents_the_known_ones() {
         "extend-exclude",
         "rule-dirs",
         "external",
+        "compat-ast-grep-ignore",
         "catalogs",
         "replace",
         "rules",

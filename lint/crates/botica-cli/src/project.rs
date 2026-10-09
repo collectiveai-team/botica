@@ -1,11 +1,13 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::Path;
+use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use botica_catalog::Catalog;
 use botica_config::{discover, load_file, Entry, Loaded, Resolution};
-use botica_core::{language_of, FileSizeGuard, NativePlanner, NativeRule, NoUtils};
+use botica_core::suppress::Policy;
+use botica_core::{language_of, FileSizeGuard, NativePlanner, NativeRule, NoUtils, Severity};
 
 pub struct Project {
     pub loaded: Loaded,
@@ -86,8 +88,42 @@ pub fn natives(resolution: &Resolution) -> Natives {
     Natives { rules, index }
 }
 
+fn severity(level: botica_catalog::Severity) -> Severity {
+    match level {
+        botica_catalog::Severity::Error => Severity::Error,
+        botica_catalog::Severity::Warning => Severity::Warning,
+        botica_catalog::Severity::Info => Severity::Info,
+    }
+}
+
+/// What the suppression comments may name, and whether the rules about them report.
+pub fn suppression_policy(resolution: &Arc<Resolution>) -> Policy {
+    let mut policy = Policy::new().with_compat_ast_grep_ignore(resolution.compat_ast_grep_ignore());
+    for entry in resolution.entries() {
+        let spellings: Vec<&str> = std::iter::once(entry.rule.code.as_str())
+            .chain(entry.rule.aliases.iter().map(String::as_str))
+            .collect();
+        policy = policy.with_rule(&entry.rule.id, &spellings);
+    }
+    let external = Arc::clone(resolution);
+    policy = policy.with_external(move |id| external.is_external(id));
+    let reporting = |slug: &str| {
+        resolution
+            .entry(slug)
+            .filter(|entry| entry.active)
+            .map(|entry| severity(entry.severity))
+    };
+    if let Some(level) = reporting("unused-suppression") {
+        policy = policy.report_unused(level);
+    }
+    if let Some(level) = reporting("invalid-suppression") {
+        policy = policy.report_invalid(level);
+    }
+    policy
+}
+
 pub fn planner(
-    resolution: Resolution,
+    resolution: Arc<Resolution>,
     index: HashMap<String, usize>,
     prefix: Option<String>,
 ) -> NativePlanner {
