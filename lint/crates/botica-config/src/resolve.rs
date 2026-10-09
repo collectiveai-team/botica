@@ -46,6 +46,8 @@ pub struct Entry {
     pub active: bool,
     pub reason: Reason,
     pub severity: Severity,
+    /// The severity `rules.<id>` names, if it names one (`severity` falls back to the catalog's).
+    pub configured_severity: Option<Severity>,
     pub options: BTreeMap<String, toml::Value>,
     ignores: PathMatcher,
     files: PathMatcher,
@@ -55,6 +57,9 @@ pub struct Entry {
 pub struct FileRule<'r> {
     pub rule: &'r Rule,
     pub severity: Severity,
+    /// The severity the configuration names for this rule at this path (`rules.<id>` or an
+    /// override). `None` leaves each finding with the severity its rule gave it.
+    pub configured: Option<Severity>,
     pub implementations: Vec<&'r Implementation>,
     pub options: &'r BTreeMap<String, toml::Value>,
 }
@@ -233,6 +238,16 @@ impl Resolution {
         {
             return Vec::new();
         }
+        self.rules_at(path, language)
+    }
+
+    /// Like `rules_for` for a finding that has no language of its own (a path that cannot be
+    /// read): the `languages` of the configuration do not restrict it.
+    pub fn rules_for_path<'r>(&'r self, path: &str) -> Vec<FileRule<'r>> {
+        self.rules_at(path, None)
+    }
+
+    fn rules_at<'r>(&'r self, path: &str, language: Option<&str>) -> Vec<FileRule<'r>> {
         let mut found: Vec<FileRule<'r>> = self
             .entries
             .iter()
@@ -255,6 +270,7 @@ impl Resolution {
                 (!implementations.is_empty()).then_some(FileRule {
                     rule: &entry.rule,
                     severity: entry.severity,
+                    configured: entry.configured_severity,
                     implementations,
                     options: &entry.options,
                 })
@@ -272,6 +288,7 @@ impl Resolution {
                     Some(level) => {
                         if let Some(file_rule) = found.iter_mut().find(|r| r.rule.id == *id) {
                             file_rule.severity = level;
+                            file_rule.configured = Some(level);
                         }
                     }
                     None => found.retain(|r| r.rule.id != *id),
@@ -325,6 +342,7 @@ fn entry(
         active,
         reason,
         severity: configured.unwrap_or(rule.default_severity),
+        configured_severity: configured,
         options: effective_options(rule, rc),
         ignores: matcher(&ignores, rule, "ignores")?,
         files: matcher(&rule.files, rule, "files")?,

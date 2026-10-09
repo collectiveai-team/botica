@@ -2,6 +2,7 @@ mod diagnostic;
 mod document;
 mod engine;
 mod native;
+pub mod postprocess;
 pub mod suppress;
 
 #[cfg(feature = "fs")]

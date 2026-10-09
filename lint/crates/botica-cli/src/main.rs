@@ -5,11 +5,12 @@ mod rules_cmd;
 use anyhow::Result;
 use botica_core::cache::{lint_files_cached, Cache};
 use botica_core::walk::Schedule;
-use botica_core::{walk, Diagnostic, ExtensionRun, Severity};
+use botica_core::{postprocess, walk, Diagnostic, ExtensionRun, Severity};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
+use std::sync::Arc;
 use std::time::Instant;
 
 #[derive(Parser)]
@@ -124,9 +125,9 @@ fn lint(args: LintArgs) -> Result<bool> {
     let prefix = project.working_prefix();
     let config_key = project.fingerprint();
     let natives = project::natives(&project.resolution);
-    let resolution = std::sync::Arc::new(project.resolution);
+    let resolution = Arc::new(project.resolution);
     let policy = project::suppression_policy(&resolution);
-    let planner = project::planner(resolution, natives.index, prefix);
+    let planner = project::planner(Arc::clone(&resolution), natives.index, prefix.clone());
     let engine = rules::build_engine(
         &rules::EngineOptions {
             astgrep: with_astgrep,
@@ -247,7 +248,10 @@ fn lint(args: LintArgs) -> Result<bool> {
     }
 
     diagnostics.extend(io_errors);
-    diagnostics.sort_by(|a, b| (&a.path, a.start, &a.rule).cmp(&(&b.path, b.start, &b.rule)));
+    let diagnostics = postprocess::apply(
+        diagnostics,
+        project::verdicts(&resolution, prefix.as_deref()),
+    );
     report(&diagnostics)?;
     if timings {
         eprintln!(
