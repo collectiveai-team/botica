@@ -2,6 +2,7 @@ use crate::diagnostic::{Diagnostic, Severity};
 use crate::document::Document;
 use crate::native::NativeRule;
 use crate::suppress::Policy;
+use crate::timings::{RuleTime, TimedKind, Timings};
 use anyhow::Result;
 use botica_astgrep::AstGrepSet;
 use botica_ext::{ExtensionHost, FileIn};
@@ -37,6 +38,7 @@ pub struct Engine {
     planner: Option<NativePlanner>,
     suppressions: Option<Policy>,
     exclusion: Option<Exclusion>,
+    timings: Option<Timings>,
 }
 
 impl Engine {
@@ -48,7 +50,51 @@ impl Engine {
             planner: None,
             suppressions: None,
             exclusion: None,
+            timings: None,
         }
+    }
+
+    /// Starts timing each rule (`rule_times`). Slows the run down a little: leave it off unless
+    /// asked.
+    pub fn with_timings(mut self) -> Self {
+        self.timings = Some(Timings::new(self.native.len()));
+        self.astgrep.time_rules();
+        self
+    }
+
+    /// What each rule cost so far; empty unless `with_timings` was called. In no useful order.
+    pub fn rule_times(&self) -> Vec<RuleTime> {
+        let Some(timings) = &self.timings else {
+            return Vec::new();
+        };
+        let mut times: Vec<RuleTime> = self
+            .native
+            .iter()
+            .enumerate()
+            .map(|(slot, rule)| {
+                let (nanos, files) = timings.total(slot);
+                RuleTime {
+                    rule: rule.id().to_owned(),
+                    kind: TimedKind::Native,
+                    nanos,
+                    files,
+                }
+            })
+            .collect();
+        times.extend(self.astgrep.rule_times().into_iter().map(|time| RuleTime {
+            rule: time.id,
+            kind: TimedKind::AstGrep,
+            nanos: time.nanos,
+            files: time.files,
+        }));
+        let (nanos, files) = timings.total(timings.suppressions_slot());
+        times.push(RuleTime {
+            rule: "suppression-comments".to_owned(),
+            kind: TimedKind::Suppressions,
+            nanos,
+            files,
+        });
+        times
     }
 
     /// Without an exclusion the walk leaves nothing out.
@@ -113,7 +159,12 @@ impl Engine {
         let doc = Document::new(path, text);
         let mut out = Vec::new();
         for &index in &plan.native {
-            self.native[index].check(&doc, &mut out);
+            match &self.timings {
+                Some(timings) => {
+                    timings.measure(index, || self.native[index].check(&doc, &mut out))
+                }
+                None => self.native[index].check(&doc, &mut out),
+            }
         }
         let hits = if plan.astgrep {
             self.astgrep.check(path.as_ref(), text)
@@ -144,7 +195,12 @@ impl Engine {
                     .any(|&index| self.native[index].id() == slug)
                     || (plan.astgrep && policy.is_astgrep(slug))
             };
-            policy.apply(&doc, &is_active, &mut out);
+            match &self.timings {
+                Some(timings) => timings.measure(timings.suppressions_slot(), || {
+                    policy.apply(&doc, &is_active, &mut out);
+                }),
+                None => policy.apply(&doc, &is_active, &mut out),
+            }
         }
         out.sort_by(|a, b| (a.start, &a.rule).cmp(&(b.start, &b.rule)));
         out

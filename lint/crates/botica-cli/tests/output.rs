@@ -1,8 +1,8 @@
 mod common;
 
-use common::{botica, lines, stdout, write};
+use common::{botica, fake_extension, lines, stdout, write};
 use serde_json::Value;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Output;
 
 fn project(name: &str, config: Option<&str>) -> PathBuf {
@@ -185,23 +185,6 @@ fn a_clean_run_exits_zero_and_json_is_still_a_document() {
 
     assert_eq!(json(&output)["diagnostics"], serde_json::json!([]));
     assert_eq!(output.status.code(), Some(0));
-}
-
-fn fake_extension(dir: &Path, replies_with: &str) {
-    write(
-        dir,
-        "ext.sh",
-        &format!(
-            r#"while IFS= read -r line; do
-  case "$line" in
-    *'"initialize"'*) printf '%s\n' '{{"jsonrpc":"2.0","id":1,"result":{{"rules":[{{"id":"ext-rule","languages":["python"]}}]}}}}' ;;
-    *'"lint/files"'*) printf '%s\n' '{{"jsonrpc":"2.0","id":2,"result":{{"diagnostics":[{replies_with}]}}}}' ;;
-    *'"shutdown"'*) printf '%s\n' '{{"jsonrpc":"2.0","id":3,"result":null}}'; exit 0 ;;
-  esac
-done
-"#
-        ),
-    );
 }
 
 #[test]

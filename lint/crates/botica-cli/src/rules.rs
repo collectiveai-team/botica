@@ -29,6 +29,8 @@ pub struct EngineOptions<'a> {
     pub regions: bool,
     /// Skip, while matching, the subtrees without a candidate position.
     pub subtree_skip: bool,
+    /// Time each rule (`--timings`).
+    pub timings: bool,
 }
 
 pub fn build_engine(
@@ -65,9 +67,14 @@ pub fn build_engine(
     let engine = Engine::new(native, set)
         .with_planner(planner)
         .with_suppressions(policy);
-    Ok(match exclusion {
+    let engine = match exclusion {
         Some(exclusion) => engine.with_exclusion(exclusion),
         None => engine,
+    };
+    Ok(if options.timings {
+        engine.with_timings()
+    } else {
+        engine
     })
 }
 

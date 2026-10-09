@@ -45,6 +45,29 @@ pub fn command(dir: &Path, args: &[&str]) -> Output {
         .expect("run botica")
 }
 
+/// A shell script `ext.sh` that speaks the extension protocol and answers every `lint/files` with
+/// `replies_with` (the items of the `diagnostics` array).
+pub fn fake_extension(dir: &Path, replies_with: &str) {
+    write(
+        dir,
+        "ext.sh",
+        &format!(
+            r#"while IFS= read -r line; do
+  case "$line" in
+    *'"initialize"'*) printf '%s\n' '{{"jsonrpc":"2.0","id":1,"result":{{"rules":[{{"id":"ext-rule","languages":["python"]}}]}}}}' ;;
+    *'"lint/files"'*) printf '%s\n' '{{"jsonrpc":"2.0","id":2,"result":{{"diagnostics":[{replies_with}]}}}}' ;;
+    *'"shutdown"'*) printf '%s\n' '{{"jsonrpc":"2.0","id":3,"result":null}}'; exit 0 ;;
+  esac
+done
+"#
+        ),
+    );
+}
+
+pub fn stderr(output: &Output) -> String {
+    String::from_utf8(output.stderr.clone()).expect("UTF-8 output")
+}
+
 pub fn stdout(output: &Output) -> String {
     String::from_utf8(output.stdout.clone()).expect("UTF-8 output")
 }

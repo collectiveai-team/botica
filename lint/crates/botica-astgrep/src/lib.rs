@@ -1,6 +1,9 @@
 mod chains;
 mod prefilter;
 mod regions;
+mod rule_timing;
+
+pub use rule_timing::RuleTime;
 
 use anyhow::{Context, Result};
 use ast_grep_config::{from_yaml_string, GlobalRules, RuleConfig, Severity};
@@ -411,6 +414,7 @@ pub struct AstGrepSet {
     parsed_bytes: AtomicUsize,
     file_bytes: AtomicUsize,
     phase_nanos: [std::sync::atomic::AtomicU64; PHASES],
+    rule_timings: Option<rule_timing::RuleTimings>,
 }
 
 impl Default for AstGrepSet {
@@ -496,7 +500,32 @@ impl AstGrepSet {
             parsed_bytes: AtomicUsize::new(0),
             file_bytes: AtomicUsize::new(0),
             phase_nanos: Default::default(),
+            rule_timings: None,
         }
+    }
+
+    /// Starts timing each rule (`rule_times`). Slows matching down: leave it off unless asked.
+    pub fn time_rules(&mut self) {
+        self.rule_timings = Some(rule_timing::RuleTimings::new(self.rules.len()));
+    }
+
+    /// What each rule cost so far; empty unless `time_rules` was called.
+    pub fn rule_times(&self) -> Vec<RuleTime> {
+        let Some(timings) = &self.rule_timings else {
+            return Vec::new();
+        };
+        self.rules
+            .iter()
+            .enumerate()
+            .map(|(index, rule)| {
+                let (nanos, files) = timings.total(index);
+                RuleTime {
+                    id: rule.id().to_owned(),
+                    nanos,
+                    files,
+                }
+            })
+            .collect()
     }
 
     fn timed<T>(&self, phase: usize, work: impl FnOnce() -> T) -> T {
@@ -829,6 +858,10 @@ impl AstGrepSet {
         anchor: Option<&[usize]>,
     ) -> Vec<Hit> {
         let mut hits = Vec::new();
+        let mut spent = self
+            .rule_timings
+            .as_ref()
+            .map(|_| vec![0u64; self.rules.len()]);
         let visit = |node: ast_grep_core::Node<'_, StrDoc<SupportLang>>| {
             let Some(candidates) = group.by_kind.get(node.kind_id() as usize) else {
                 return;
@@ -838,7 +871,17 @@ impl AstGrepSet {
                     continue;
                 }
                 let rule = &self.rules[index];
-                let Some(found) = rule.config.matcher.match_node(node.clone()) else {
+                let matched = match spent.as_mut() {
+                    Some(spent) => {
+                        let start = std::time::Instant::now();
+                        let matched = rule.config.matcher.match_node(node.clone());
+                        spent[index] +=
+                            u64::try_from(start.elapsed().as_nanos()).unwrap_or(u64::MAX);
+                        matched
+                    }
+                    None => rule.config.matcher.match_node(node.clone()),
+                };
+                let Some(found) = matched else {
                     continue;
                 };
                 let range = found.range();
@@ -854,6 +897,9 @@ impl AstGrepSet {
         match anchor {
             Some(positions) => each_node_holding(grep, positions, visit),
             None => grep.root().dfs().for_each(visit),
+        }
+        if let (Some(timings), Some(spent)) = (&self.rule_timings, &spent) {
+            timings.add(spent, active);
         }
         hits
     }

@@ -1,14 +1,16 @@
 mod explain_cmd;
+mod extension;
 mod project;
 mod rule_view;
 mod rules;
 mod rules_cmd;
+mod timings;
 
 use anyhow::Result;
 use botica_core::cache::{lint_files_cached, Cache};
 use botica_core::report::{self, ErrorKind, Format, Report, RunError};
 use botica_core::walk::Schedule;
-use botica_core::{postprocess, walk, Diagnostic, ExtensionRun, Severity};
+use botica_core::{postprocess, walk, Diagnostic, Severity};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -63,7 +65,7 @@ struct LintArgs {
     /// Directory for the per-file result cache (off when omitted).
     #[arg(long)]
     cache_dir: Option<PathBuf>,
-    /// Print phase timings to stderr.
+    /// Print to stderr how long each phase, each rule and each extension took.
     #[arg(long)]
     timings: bool,
     /// Measurement aid: extra ast-grep rules (`*.yml` in this directory).
@@ -139,11 +141,11 @@ fn main() -> ExitCode {
 }
 
 fn lint(args: LintArgs) -> Result<ExitCode> {
-    let timings = args.timings;
+    let timed = args.timings;
     let total = Instant::now();
     let mut lap = Instant::now();
     let mut mark = |label: &str| {
-        if timings {
+        if timed {
             eprintln!(
                 "[timing] {label:<18} {:>8.2} ms",
                 lap.elapsed().as_secs_f64() * 1e3
@@ -170,6 +172,7 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
             describe_prefilter: args.describe_prefilter,
             regions: !args.no_regions,
             subtree_skip: !args.no_subtree_skip,
+            timings: timed,
         },
         natives.rules,
         planner,
@@ -228,7 +231,7 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
             );
             let (found, stats) = lint_files_cached(&engine, &sources, &mut cache);
             cache.save()?;
-            if timings {
+            if timed {
                 eprintln!(
                     "[timing] cache: {} hits, {} misses",
                     stats.hits, stats.misses
@@ -245,7 +248,7 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
     } else {
         "native+ast-grep"
     });
-    if timings {
+    if timed {
         let stats = engine.astgrep().stats();
         eprintln!(
             "[timing] prefilter: parsed {} files, skipped {}",
@@ -274,9 +277,12 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
 
     let mut errors = Vec::new();
     if let Some(command) = &args.ext {
-        let (found, failure) = run_extension(command, &sources, args.batch, &mut mark);
-        diagnostics.extend(found);
-        errors.extend(failure.map(|error| RunError {
+        let outcome = extension::run(command, &sources, args.batch);
+        if timed {
+            timings::print_extension(command, &outcome.time);
+        }
+        diagnostics.extend(outcome.found);
+        errors.extend(outcome.failure.map(|error| RunError {
             kind: ErrorKind::Extension,
             extension: Some(command.clone()),
             message: format!("{error:#}"),
@@ -304,7 +310,8 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
             eprintln!("botica: {error}");
         }
     }
-    if timings {
+    if timed {
+        timings::print_rules(engine.rule_times());
         eprintln!(
             "[timing] total {:.2} ms, {} files, {} diagnostics",
             total.elapsed().as_secs_f64() * 1e3,
@@ -331,31 +338,6 @@ fn exit_code(errors: &[RunError], diagnostics: &[Diagnostic], exit_zero: bool) -
     } else {
         ExitCode::SUCCESS
     }
-}
-
-/// What the extension found, and why it stopped if it did not finish cleanly. A failure never
-/// takes down what was already found.
-fn run_extension(
-    command: &str,
-    sources: &[walk::SourceFile],
-    batch: usize,
-    mark: &mut dyn FnMut(&str),
-) -> (Vec<Diagnostic>, Option<anyhow::Error>) {
-    let argv: Vec<String> = command.split_whitespace().map(str::to_owned).collect();
-    let mut run = match ExtensionRun::start(&argv) {
-        Ok(run) => run,
-        Err(error) => return (Vec::new(), Some(error)),
-    };
-    mark("ext start");
-    let files = sources.iter().map(|f| (f.path.as_str(), f.text.as_str()));
-    let found = match run.lint(files, batch) {
-        Ok(found) => found,
-        Err(error) => return (Vec::new(), Some(error)),
-    };
-    mark("ext lint");
-    let failure = run.finish().err();
-    mark("ext shutdown");
-    (found, failure)
 }
 
 fn io_error(path: &Path, error: &std::io::Error) -> Diagnostic {
