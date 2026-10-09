@@ -1,0 +1,111 @@
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+
+use botica_catalog::{Catalog, OWN_RULES_DIR};
+
+fn rules_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../rules")
+}
+
+fn embedded() -> Catalog {
+    Catalog::embedded().unwrap_or_else(|error| panic!("the built-in catalog is invalid:\n{error}"))
+}
+
+fn files_in(dir: &Path) -> usize {
+    fs::read_dir(dir)
+        .map(|entries| {
+            entries
+                .filter_map(Result::ok)
+                .filter(|e| e.path().is_file())
+                .count()
+        })
+        .unwrap_or(0)
+}
+
+#[test]
+fn the_built_in_catalog_loads() {
+    let catalog = embedded();
+    for slug in [
+        "file-size-guard",
+        "no-utils",
+        "io-error",
+        "unused-suppression",
+    ] {
+        assert!(catalog.resolve(slug).is_some(), "{slug} is missing");
+    }
+    assert_eq!(
+        catalog.resolve("BTSTRUC001").map(|r| r.id.as_str()),
+        Some("file-size-guard")
+    );
+    assert_eq!(
+        catalog.resolve("BT001").map(|r| r.id.as_str()),
+        Some("io-error")
+    );
+}
+
+#[test]
+fn the_families_are_the_ones_the_spec_lists() {
+    let catalog = embedded();
+    let mut codes: Vec<&str> = catalog.families().iter().map(|f| f.code.as_str()).collect();
+    codes.sort_unstable();
+    let mut expected = [
+        "STRUC", "ARCH", "TEST", "LOG", "DM", "P", "FAST", "PREF", "LLM", "DOCK", "NEXTJS", "ASR",
+        "KUBE", "EDGE",
+    ];
+    expected.sort_unstable();
+    assert_eq!(codes, expected);
+}
+
+#[test]
+fn the_linters_own_rules_have_no_family() {
+    let catalog = embedded();
+    for rule in catalog.rules() {
+        let own = rule.family.is_none();
+        assert_eq!(own, rule.code.len() == 5, "{}: {}", rule.id, rule.code);
+    }
+}
+
+#[test]
+fn every_rule_has_valid_and_invalid_fixtures() {
+    let catalog = embedded();
+    for rule in catalog.rules() {
+        let family = rule.family.as_deref().unwrap_or(OWN_RULES_DIR);
+        let fixtures = rules_dir().join(family).join(&rule.id).join("fixtures");
+        for kind in ["valid", "invalid"] {
+            assert!(
+                files_in(&fixtures.join(kind)) > 0,
+                "{}: fixtures/{kind} has no files",
+                rule.id
+            );
+        }
+    }
+}
+
+#[test]
+fn no_ruff_prefix_starts_with_the_botica_header() {
+    let output = match Command::new("ruff").arg("linter").output() {
+        Ok(output) if output.status.success() => output,
+        _ if std::env::var_os("BOTICA_REQUIRE_RUFF").is_some() => {
+            panic!("BOTICA_REQUIRE_RUFF is set but `ruff linter` failed")
+        }
+        _ => {
+            eprintln!("skipped: `ruff` is not installed");
+            return;
+        }
+    };
+    let listing = String::from_utf8(output.stdout).expect("ruff prints UTF-8");
+    let prefixes: Vec<&str> = listing
+        .lines()
+        .filter_map(|line| line.split_whitespace().next())
+        .collect();
+    assert!(
+        prefixes.len() > 50,
+        "unexpected `ruff linter` output: {listing}"
+    );
+    let clashes: Vec<&&str> = prefixes.iter().filter(|p| p.starts_with("BT")).collect();
+    assert!(
+        clashes.is_empty(),
+        "ruff now owns prefixes that start with BT: {clashes:?}"
+    );
+}
