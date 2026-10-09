@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 
 use botica_catalog::{Catalog, Implementation, Rule, Severity, Status};
+use serde::Serialize;
 
 use crate::issue::ConfigError;
 use crate::matcher::PathMatcher;
@@ -40,6 +41,22 @@ impl fmt::Display for Reason {
     }
 }
 
+/// Where an ignore glob of a rule is written.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum IgnoreOrigin {
+    /// The `rule.toml` of the rule.
+    Rule,
+    /// `ignores` or `extend-ignores` of `rules.<id>` in the configuration.
+    Config,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IgnorePattern {
+    pub glob: String,
+    pub origin: IgnoreOrigin,
+}
+
 #[derive(Debug)]
 pub struct Entry {
     pub rule: Rule,
@@ -49,6 +66,8 @@ pub struct Entry {
     /// The severity `rules.<id>` names, if it names one (`severity` falls back to the catalog's).
     pub configured_severity: Option<Severity>,
     pub options: BTreeMap<String, toml::Value>,
+    /// The ignores that apply, in order, each with where it is written.
+    pub ignore_patterns: Vec<IgnorePattern>,
     ignores: PathMatcher,
     files: PathMatcher,
 }
@@ -351,13 +370,29 @@ fn entry(
     };
     let active = matches!(reason, Reason::SelectedBy(_));
     let configured = rc.and_then(|c| c.severity).and_then(severity_of);
-    let own_ignores = match rc.and_then(|c| c.ignores.as_ref()) {
-        Some(replacement) => replacement.clone(),
-        None => rule.ignores.clone(),
+    let (own_ignores, own_origin) = match rc.and_then(|c| c.ignores.as_ref()) {
+        Some(replacement) => (replacement.clone(), IgnoreOrigin::Config),
+        None => (rule.ignores.clone(), IgnoreOrigin::Rule),
     };
-    let ignores: Vec<String> = own_ignores
+    let ignore_patterns: Vec<IgnorePattern> = own_ignores
         .into_iter()
-        .chain(rc.map(|c| c.extend_ignores.clone()).unwrap_or_default())
+        .map(|glob| IgnorePattern {
+            glob,
+            origin: own_origin,
+        })
+        .chain(
+            rc.map(|c| c.extend_ignores.clone())
+                .unwrap_or_default()
+                .into_iter()
+                .map(|glob| IgnorePattern {
+                    glob,
+                    origin: IgnoreOrigin::Config,
+                }),
+        )
+        .collect();
+    let ignores: Vec<String> = ignore_patterns
+        .iter()
+        .map(|pattern| pattern.glob.clone())
         .collect();
     Ok(Entry {
         rule: rule.clone(),
@@ -366,6 +401,7 @@ fn entry(
         severity: configured.unwrap_or(rule.default_severity),
         configured_severity: configured,
         options: effective_options(rule, rc),
+        ignore_patterns,
         ignores: matcher(&ignores, rule, "ignores")?,
         files: matcher(&rule.files, rule, "files")?,
     })

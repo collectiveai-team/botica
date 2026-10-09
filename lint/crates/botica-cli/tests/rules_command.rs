@@ -113,3 +113,142 @@ fn an_invalid_config_exits_with_2_and_names_the_problem() {
         "{message}"
     );
 }
+
+fn json(dir: &Path, args: &[&str]) -> serde_json::Value {
+    let output = botica(dir, args);
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    serde_json::from_slice(&output.stdout).expect("a JSON document")
+}
+
+fn rule<'a>(document: &'a serde_json::Value, slug: &str) -> &'a serde_json::Value {
+    document["rules"]
+        .as_array()
+        .expect("a list of rules")
+        .iter()
+        .find(|rule| rule["rule"] == slug)
+        .unwrap_or_else(|| panic!("no {slug} in {document}"))
+}
+
+#[test]
+fn json_describes_each_active_rule_with_its_resolved_settings() {
+    let dir = project("json", None);
+    let document = json(&dir, &["rules", "--json"]);
+    assert_eq!(document["schema_version"], 1);
+    assert_eq!(document["config"]["path"], serde_json::Value::Null);
+    assert!(document["config"]["root"].is_string());
+
+    let guard = rule(&document, "file-size-guard");
+    assert_eq!(guard["code"], "BTSTRUC001");
+    assert_eq!(guard["family"], "structure");
+    assert_eq!(guard["summary"], "Keep source files small");
+    assert_eq!(guard["status"], "stable");
+    assert_eq!(guard["active"], true);
+    assert_eq!(guard["reason"], "selected by `default`");
+    assert_eq!(guard["severity"], "error");
+    assert_eq!(guard["languages"], serde_json::json!(["*"]));
+    assert_eq!(
+        guard["options"],
+        serde_json::json!({"warn": 400, "max": 700})
+    );
+    assert_eq!(
+        rule(&document, "io-error")["family"],
+        serde_json::Value::Null
+    );
+}
+
+#[test]
+fn json_does_not_carry_the_ces_of_a_rule() {
+    let document = json(&project("json-ces", None), &["rules", "--json"]);
+    assert!(
+        rule(&document, "file-size-guard").get("ces").is_none(),
+        "the CES is documentation of the rule, not part of a public format"
+    );
+}
+
+#[test]
+fn json_follows_the_text_listing_and_all_adds_the_inactive_ones() {
+    let dir = project("json-all", Some("ignore = [\"no-utils\"]\n"));
+    let active = json(&dir, &["rules", "--json"]);
+    assert!(active["rules"]
+        .as_array()
+        .expect("rules")
+        .iter()
+        .all(|rule| rule["active"] == true));
+    assert!(!active.to_string().contains("no-utils"));
+
+    let all = json(&dir, &["rules", "--json", "--all"]);
+    let ignored = rule(&all, "no-utils");
+    assert_eq!(ignored["active"], false);
+    assert_eq!(ignored["reason"], "ignored by `no-utils`");
+}
+
+#[test]
+fn json_shows_the_severity_and_options_the_config_gives() {
+    let dir = project(
+        "json-config",
+        Some("[rules.file-size-guard]\nseverity = \"warning\"\nmax = 900\n"),
+    );
+    let document = json(&dir, &["rules", "--json"]);
+    let guard = rule(&document, "file-size-guard");
+    assert_eq!(guard["severity"], "warning");
+    assert_eq!(guard["options"]["max"], 900);
+    assert!(document["config"]["path"]
+        .as_str()
+        .is_some_and(|path| path.ends_with("botica.toml")));
+}
+
+#[test]
+fn json_says_where_each_ignore_comes_from() {
+    let dir = project(
+        "json-ignores",
+        Some("[rules.file-size-guard]\nextend-ignores = [\"docs/**\"]\n"),
+    );
+    let document = json(&dir, &["rules", "--json"]);
+    let ignores = rule(&document, "file-size-guard")["ignores"]
+        .as_array()
+        .expect("ignores")
+        .clone();
+    assert!(ignores.contains(&serde_json::json!({"glob": "*.lock", "origin": "rule"})));
+    assert_eq!(
+        ignores.last(),
+        Some(&serde_json::json!({"glob": "docs/**", "origin": "config"}))
+    );
+
+    let dir = project(
+        "json-ignores-replaced",
+        Some("[rules.file-size-guard]\nignores = [\"gen/**\"]\n"),
+    );
+    let document = json(&dir, &["rules", "--json"]);
+    assert_eq!(
+        rule(&document, "file-size-guard")["ignores"],
+        serde_json::json!([{"glob": "gen/**", "origin": "config"}])
+    );
+}
+
+#[test]
+fn list_is_the_default_action_and_takes_the_same_options() {
+    let dir = project("list", None);
+    assert_eq!(
+        json(&dir, &["rules", "list", "--json", "--all"]),
+        json(&dir, &["rules", "--json", "--all"])
+    );
+    let text = stdout(&botica(&dir, &["rules", "list", "--all"]));
+    assert!(text.contains("file-size-guard"), "{text}");
+}
+
+#[test]
+fn the_selection_options_reach_the_listing() {
+    let dir = project("select", None);
+    let document = json(&dir, &["rules", "--json", "--select", "no-utils"]);
+    let slugs: Vec<&str> = document["rules"]
+        .as_array()
+        .expect("rules")
+        .iter()
+        .filter_map(|rule| rule["rule"].as_str())
+        .collect();
+    assert_eq!(slugs, ["no-utils"]);
+}
