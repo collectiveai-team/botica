@@ -7,6 +7,7 @@ use anyhow::{Context, Result};
 use botica_catalog::Catalog;
 use botica_config::{discover, load_file, Entry, FileRule, Loaded, Resolution};
 use botica_core::postprocess::Verdict;
+use botica_core::report::RuleDoc;
 use botica_core::suppress::Policy;
 use botica_core::{language_of, FileSizeGuard, NativePlanner, NativeRule, NoUtils, Severity};
 
@@ -121,6 +122,20 @@ pub fn suppression_policy(resolution: &Arc<Resolution>) -> Policy {
         policy = policy.report_invalid(level);
     }
     policy
+}
+
+/// The catalog's rules as the output formats describe them.
+pub fn rule_docs(resolution: &Resolution) -> Vec<RuleDoc> {
+    resolution
+        .entries()
+        .iter()
+        .map(|entry| RuleDoc {
+            id: entry.rule.id.clone(),
+            code: entry.rule.code.clone(),
+            summary: entry.rule.summary.clone(),
+            severity: severity(entry.severity),
+        })
+        .collect()
 }
 
 /// A path as the configuration sees it: from the project root, not from where botica runs.

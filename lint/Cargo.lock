@@ -248,6 +248,7 @@ dependencies = [
  "botica-core",
  "botica-ext",
  "clap",
+ "serde_json",
  "toml",
 ]
 

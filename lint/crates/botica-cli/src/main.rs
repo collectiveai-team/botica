@@ -4,6 +4,7 @@ mod rules_cmd;
 
 use anyhow::Result;
 use botica_core::cache::{lint_files_cached, Cache};
+use botica_core::report::{self, ErrorKind, Format, Report, RunError};
 use botica_core::walk::Schedule;
 use botica_core::{postprocess, walk, Diagnostic, ExtensionRun, Severity};
 use clap::{Args, Parser, Subcommand, ValueEnum};
@@ -34,6 +35,12 @@ struct LintArgs {
     /// Use this configuration file instead of looking for one.
     #[arg(long)]
     config: Option<PathBuf>,
+    /// How to print the findings.
+    #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
+    output_format: OutputFormat,
+    /// Exit with 0 even when there are findings of severity error. Failures of the run still exit 2.
+    #[arg(long)]
+    exit_zero: bool,
     /// Extension command, e.g. "uv run --script ext.py".
     #[arg(long)]
     ext: Option<String>,
@@ -73,6 +80,25 @@ struct LintArgs {
 }
 
 #[derive(Clone, Copy, ValueEnum)]
+enum OutputFormat {
+    Text,
+    Json,
+    Sarif,
+    Github,
+}
+
+impl From<OutputFormat> for Format {
+    fn from(arg: OutputFormat) -> Self {
+        match arg {
+            OutputFormat::Text => Format::Text,
+            OutputFormat::Json => Format::Json,
+            OutputFormat::Sarif => Format::Sarif,
+            OutputFormat::Github => Format::Github,
+        }
+    }
+}
+
+#[derive(Clone, Copy, ValueEnum)]
 enum ScheduleArg {
     InOrder,
     LargestFirst,
@@ -93,11 +119,10 @@ impl From<ScheduleArg> for Schedule {
 fn main() -> ExitCode {
     let result = match Cli::parse().command {
         Command::Lint(args) => lint(args),
-        Command::Rules(args) => rules_cmd::run(&args).map(|()| false),
+        Command::Rules(args) => rules_cmd::run(&args).map(|()| ExitCode::SUCCESS),
     };
     match result {
-        Ok(true) => ExitCode::from(1),
-        Ok(false) => ExitCode::SUCCESS,
+        Ok(code) => code,
         Err(error) => {
             eprintln!("botica: {error:#}");
             ExitCode::from(2)
@@ -105,7 +130,7 @@ fn main() -> ExitCode {
     }
 }
 
-fn lint(args: LintArgs) -> Result<bool> {
+fn lint(args: LintArgs) -> Result<ExitCode> {
     let timings = args.timings;
     let total = Instant::now();
     let mut lap = Instant::now();
@@ -234,17 +259,15 @@ fn lint(args: LintArgs) -> Result<bool> {
         );
     }
 
-    if let Some(command) = args.ext {
-        let command: Vec<String> = command.split_whitespace().map(str::to_owned).collect();
-        let mut run = ExtensionRun::start(&command)?;
-        mark("ext start");
-        diagnostics.extend(run.lint(
-            sources.iter().map(|f| (f.path.as_str(), f.text.as_str())),
-            args.batch,
-        )?);
-        mark("ext lint");
-        run.finish()?;
-        mark("ext shutdown");
+    let mut errors = Vec::new();
+    if let Some(command) = &args.ext {
+        let (found, failure) = run_extension(command, &sources, args.batch, &mut mark);
+        diagnostics.extend(found);
+        errors.extend(failure.map(|error| RunError {
+            kind: ErrorKind::Extension,
+            extension: Some(command.clone()),
+            message: format!("{error:#}"),
+        }));
     }
 
     diagnostics.extend(io_errors);
@@ -252,7 +275,22 @@ fn lint(args: LintArgs) -> Result<bool> {
         diagnostics,
         project::verdicts(&resolution, prefix.as_deref()),
     );
-    report(&diagnostics)?;
+    let rules = project::rule_docs(&resolution);
+    let report = Report {
+        diagnostics: &diagnostics,
+        errors: &errors,
+        rules: &rules,
+        tool_version: env!("CARGO_PKG_VERSION"),
+    };
+    let stdout = std::io::stdout();
+    let mut out = std::io::BufWriter::new(stdout.lock());
+    report::write(&report, args.output_format.into(), &mut out)?;
+    out.flush()?;
+    if matches!(args.output_format, OutputFormat::Text) {
+        for error in &errors {
+            eprintln!("botica: {error}");
+        }
+    }
     if timings {
         eprintln!(
             "[timing] total {:.2} ms, {} files, {} diagnostics",
@@ -261,7 +299,44 @@ fn lint(args: LintArgs) -> Result<bool> {
             diagnostics.len()
         );
     }
-    Ok(diagnostics.iter().any(|d| d.severity == Severity::Error))
+    Ok(exit_code(&errors, &diagnostics, args.exit_zero))
+}
+
+/// 2 when the run itself failed (it wins over everything), 1 when a finding is an error, else 0.
+/// `--exit-zero` only forgives the findings.
+fn exit_code(errors: &[RunError], diagnostics: &[Diagnostic], exit_zero: bool) -> ExitCode {
+    if !errors.is_empty() {
+        ExitCode::from(2)
+    } else if !exit_zero && diagnostics.iter().any(|d| d.severity == Severity::Error) {
+        ExitCode::from(1)
+    } else {
+        ExitCode::SUCCESS
+    }
+}
+
+/// What the extension found, and why it stopped if it did not finish cleanly. A failure never
+/// takes down what was already found.
+fn run_extension(
+    command: &str,
+    sources: &[walk::SourceFile],
+    batch: usize,
+    mark: &mut dyn FnMut(&str),
+) -> (Vec<Diagnostic>, Option<anyhow::Error>) {
+    let argv: Vec<String> = command.split_whitespace().map(str::to_owned).collect();
+    let mut run = match ExtensionRun::start(&argv) {
+        Ok(run) => run,
+        Err(error) => return (Vec::new(), Some(error)),
+    };
+    mark("ext start");
+    let files = sources.iter().map(|f| (f.path.as_str(), f.text.as_str()));
+    let found = match run.lint(files, batch) {
+        Ok(found) => found,
+        Err(error) => return (Vec::new(), Some(error)),
+    };
+    mark("ext lint");
+    let failure = run.finish().err();
+    mark("ext shutdown");
+    (found, failure)
 }
 
 fn io_error(path: &Path, error: &std::io::Error) -> Diagnostic {
@@ -278,14 +353,4 @@ fn io_error(path: &Path, error: &std::io::Error) -> Diagnostic {
         file_level: true,
         message: error.to_string(),
     }
-}
-
-fn report(diagnostics: &[Diagnostic]) -> Result<()> {
-    let stdout = std::io::stdout();
-    let mut out = std::io::BufWriter::new(stdout.lock());
-    for diagnostic in diagnostics {
-        writeln!(out, "{diagnostic}")?;
-    }
-    out.flush()?;
-    Ok(())
 }

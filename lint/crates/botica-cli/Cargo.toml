@@ -23,3 +23,6 @@ botica-core = { path = "../botica-core", features = ["fs"] }
 botica-ext = { path = "../botica-ext" }
 clap.workspace = true
 toml.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

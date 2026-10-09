@@ -70,6 +70,8 @@ pub fn build_engine(
 pub fn fingerprint(with_astgrep: bool, extra_rules: Option<&Path>, config: &str) -> Result<String> {
     let mut hasher = blake3::Hasher::new();
     hasher.update(env!("CARGO_PKG_VERSION").as_bytes());
+    // The shape of the stored diagnostics: v2 added where each one ends.
+    hasher.update(b"diagnostic-v2");
     hasher.update(&[u8::from(with_astgrep)]);
     hasher.update(config.as_bytes());
     for yaml in EMBEDDED {
