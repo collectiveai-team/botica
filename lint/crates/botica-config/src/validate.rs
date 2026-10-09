@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
 use botica_catalog::{Catalog, OptionSpec, OptionType, Rule};
-use globset::Glob;
 
 use crate::issue::{issue, ConfigError, ConfigIssue};
+use crate::matcher::PathMatcher;
 use crate::model::{Config, Override, RuleConfig};
 use crate::selector::{check_rule, Selector};
 
@@ -43,10 +43,10 @@ fn selectors(found: &mut Vec<ConfigIssue>, catalog: &Catalog, key: &str, values:
 
 fn globs(found: &mut Vec<ConfigIssue>, key: &str, values: &[String]) {
     for (index, value) in values.iter().enumerate() {
-        if let Err(error) = Glob::new(value) {
+        if let Err(error) = PathMatcher::check(value) {
             found.push(issue(
                 format!("{key}[{index}]"),
-                format!("invalid glob `{value}`: {}", error.kind()),
+                format!("invalid glob `{value}`: {error}"),
             ));
         }
     }

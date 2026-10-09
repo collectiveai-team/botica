@@ -192,12 +192,12 @@ fn a_removed_rule_cannot_be_mentioned() {
 
 #[test]
 fn globs_must_be_valid() {
-    assert!(problems("extend-exclude = [\"[unclosed\"]").contains("extend-exclude[0]"));
+    assert!(problems("extend-exclude = [\"{unclosed\"]").contains("extend-exclude[0]"));
     assert!(problems("external = [\"{a\"]").contains("external[0]"));
     assert!(
-        problems("[rules.file-size-guard]\nextend-ignores = [\"[x\"]\n").contains("extend-ignores")
+        problems("[rules.file-size-guard]\nextend-ignores = [\"{x\"]\n").contains("extend-ignores")
     );
-    assert!(problems("[[overrides]]\nfiles = [\"[x\"]\n").contains("overrides[0].files[0]"));
+    assert!(problems("[[overrides]]\nfiles = [\"{x\"]\n").contains("overrides[0].files[0]"));
     assert!(problems("[[overrides]]\nfiles = []\n").contains("files"));
 }
 

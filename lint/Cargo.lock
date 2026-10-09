@@ -253,7 +253,7 @@ name = "botica-config"
 version = "0.0.0"
 dependencies = [
  "botica-catalog",
- "globset",
+ "ignore",
  "schemars",
  "serde",
  "serde_json",
