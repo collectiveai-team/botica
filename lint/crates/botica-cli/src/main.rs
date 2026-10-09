@@ -1,4 +1,5 @@
 mod rules;
+mod rules_cmd;
 
 use anyhow::Result;
 use botica_core::cache::{lint_files_cached, Cache};
@@ -20,6 +21,8 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     Lint(LintArgs),
+    /// Show which rules are active and why.
+    Rules(rules_cmd::RulesArgs),
 }
 
 #[derive(Args)]
@@ -83,10 +86,11 @@ impl From<ScheduleArg> for Schedule {
 }
 
 fn main() -> ExitCode {
-    let Cli {
-        command: Command::Lint(args),
-    } = Cli::parse();
-    match lint(args) {
+    let result = match Cli::parse().command {
+        Command::Lint(args) => lint(args),
+        Command::Rules(args) => rules_cmd::run(&args).map(|()| false),
+    };
+    match result {
         Ok(true) => ExitCode::from(1),
         Ok(false) => ExitCode::SUCCESS,
         Err(error) => {

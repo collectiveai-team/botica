@@ -243,6 +243,8 @@ dependencies = [
  "anyhow",
  "blake3",
  "botica-astgrep",
+ "botica-catalog",
+ "botica-config",
  "botica-core",
  "botica-ext",
  "clap",
