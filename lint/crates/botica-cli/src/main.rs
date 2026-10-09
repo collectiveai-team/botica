@@ -47,6 +47,9 @@ struct LintArgs {
     /// (by default only what the walk finds is left out).
     #[arg(long)]
     force_exclude: bool,
+    /// Print how many findings each rule has instead of the findings (text and json formats).
+    #[arg(long)]
+    statistics: bool,
     /// Exit with 0 even when there are findings of severity error. Failures of the run still exit 2.
     #[arg(long)]
     exit_zero: bool,
@@ -141,6 +144,14 @@ fn main() -> ExitCode {
 }
 
 fn lint(args: LintArgs) -> Result<ExitCode> {
+    let format = Format::from(args.output_format);
+    if args.statistics && !report::statistics::supports(format) {
+        let name = args
+            .output_format
+            .to_possible_value()
+            .map_or_else(String::new, |value| value.get_name().to_owned());
+        anyhow::bail!("--statistics works with the text and json output formats, not {name}");
+    }
     let timed = args.timings;
     let total = Instant::now();
     let mut lap = Instant::now();
@@ -303,7 +314,11 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
     };
     let stdout = std::io::stdout();
     let mut out = std::io::BufWriter::new(stdout.lock());
-    report::write(&report, args.output_format.into(), &mut out)?;
+    if args.statistics {
+        report::statistics::write(&report, format, &mut out)?;
+    } else {
+        report::write(&report, format, &mut out)?;
+    }
     out.flush()?;
     if matches!(args.output_format, OutputFormat::Text) {
         for error in &errors {

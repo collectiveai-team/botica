@@ -5,6 +5,7 @@ use std::fmt;
 use std::io::{self, Write};
 
 mod sarif;
+pub mod statistics;
 
 /// Version of the JSON document. A consumer may rely on the keys of one version.
 pub const SCHEMA_VERSION: u32 = 1;
