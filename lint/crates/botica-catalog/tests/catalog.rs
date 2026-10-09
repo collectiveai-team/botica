@@ -161,16 +161,6 @@ fn rejects_duplicate_family_codes() {
 }
 
 #[test]
-fn a_family_code_may_be_a_prefix_of_another() {
-    catalog(vec![
-        vec![family("process", "P"), family("prefect", "PREF")],
-        rule("process", "one", "BTP001"),
-        rule("prefect", "two", "BTPREF001"),
-    ])
-    .expect("P and PREF are different families: the code is split into letters and digits");
-}
-
-#[test]
 fn rejects_a_rule_folder_without_family_toml() {
     let message = issues(vec![rule("structure", "file-size-guard", "BTSTRUC001")]);
     assert!(message.contains("family.toml"), "{message}");

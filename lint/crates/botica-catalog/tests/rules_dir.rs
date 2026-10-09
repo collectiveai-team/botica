@@ -50,8 +50,8 @@ fn the_families_are_the_ones_the_spec_lists() {
     let mut codes: Vec<&str> = catalog.families().iter().map(|f| f.code.as_str()).collect();
     codes.sort_unstable();
     let mut expected = [
-        "STRUC", "ARCH", "TEST", "LOG", "DM", "P", "FAST", "PREF", "LLM", "DOCK", "NEXTJS", "ASR",
-        "KUBE", "EDGE",
+        "STRUC", "ARCH", "TEST", "LOG", "DM", "PROC", "FAST", "PREF", "LLM", "DOCK", "NEXTJS",
+        "ASR", "KUBE", "EDGE",
     ];
     expected.sort_unstable();
     assert_eq!(codes, expected);
