@@ -13,6 +13,7 @@ impl NativeRule for Flag {
     fn check(&self, doc: &Document<'_>, out: &mut Vec<Diagnostic>) {
         for (start, _) in doc.text.match_indices("FLAG") {
             let (line, column) = doc.position(start);
+            let (end_line, end_column) = doc.position(start + 4);
             out.push(Diagnostic {
                 path: doc.path.to_owned(),
                 rule: self.id().to_owned(),
@@ -21,6 +22,8 @@ impl NativeRule for Flag {
                 end: start + 4,
                 line,
                 column,
+                end_line,
+                end_column,
                 file_level: false,
                 message: "flagged".to_owned(),
             });
@@ -46,6 +49,8 @@ impl NativeRule for WholeFile {
                 end: 0,
                 line: 1,
                 column: 1,
+                end_line: 1,
+                end_column: 1,
                 file_level: true,
                 message: "too big".to_owned(),
             });
@@ -67,6 +72,7 @@ impl NativeRule for Multi {
                 continue;
             };
             let (line, column) = doc.position(start);
+            let (end_line, end_column) = doc.position(start + length + 3);
             out.push(Diagnostic {
                 path: doc.path.to_owned(),
                 rule: self.id().to_owned(),
@@ -75,6 +81,8 @@ impl NativeRule for Multi {
                 end: start + length + 3,
                 line,
                 column,
+                end_line,
+                end_column,
                 file_level: false,
                 message: "spans lines".to_owned(),
             });

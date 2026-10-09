@@ -251,6 +251,7 @@ impl Policy {
         message: String,
     ) -> Diagnostic {
         let (line, column) = doc.position(span.start);
+        let (end_line, end_column) = doc.position(span.end);
         Diagnostic {
             path: doc.path.to_owned(),
             rule: rule.to_owned(),
@@ -259,6 +260,8 @@ impl Policy {
             end: span.end,
             line,
             column,
+            end_line,
+            end_column,
             file_level: false,
             message,
         }

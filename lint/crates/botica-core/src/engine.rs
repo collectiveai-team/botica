@@ -82,6 +82,7 @@ impl Engine {
         };
         for hit in hits {
             let (line, column) = doc.position(hit.start);
+            let (end_line, end_column) = doc.position(hit.end);
             out.push(Diagnostic {
                 path: path.to_owned(),
                 rule: hit.rule_id,
@@ -90,6 +91,8 @@ impl Engine {
                 end: hit.end,
                 line,
                 column,
+                end_line,
+                end_column,
                 file_level: false,
                 message: hit.message,
             });
@@ -152,6 +155,7 @@ impl ExtensionRun {
                 let text = texts.get(wire.path.as_str()).copied().unwrap_or("");
                 let doc = Document::new(&wire.path, text);
                 let (line, column) = doc.position(wire.start);
+                let (end_line, end_column) = doc.position(wire.end);
                 out.push(Diagnostic {
                     path: wire.path,
                     rule: wire.rule,
@@ -160,6 +164,8 @@ impl ExtensionRun {
                     end: wire.end,
                     line,
                     column,
+                    end_line,
+                    end_column,
                     file_level: false,
                     message: wire.message,
                 });

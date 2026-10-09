@@ -273,6 +273,8 @@ fn io_error(path: &Path, error: &std::io::Error) -> Diagnostic {
         end: 0,
         line: 1,
         column: 1,
+        end_line: 1,
+        end_column: 1,
         file_level: true,
         message: error.to_string(),
     }
