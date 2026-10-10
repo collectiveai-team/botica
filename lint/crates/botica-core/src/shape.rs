@@ -4,16 +4,19 @@ use crate::native::{NativeRule, Needs};
 
 const ARTIFACT_DIRS: [&str; 3] = ["resources", "reports", "data"];
 
-/// The package of `packages` that holds `path`, and the path from inside it.
-fn within<'p>(packages: &'p [String], path: &'p str) -> Option<(&'p str, &'p str)> {
+/// The path from inside the package of `packages` that holds `path`. A package written as `""` is
+/// the directory the paths are relative to.
+fn within<'p>(packages: &[String], path: &'p str) -> Option<&'p str> {
     packages.iter().find_map(|package| {
-        let inside = path.strip_prefix(package.as_str())?.strip_prefix('/')?;
-        Some((package.as_str(), inside))
+        if package.is_empty() {
+            return Some(path);
+        }
+        path.strip_prefix(package.as_str())?.strip_prefix('/')
     })
 }
 
-/// Keeps data, reports and resources out of a package. A package is a directory of the project
-/// root; the rule only reads paths, so the caller says which directories those are.
+/// Keeps data, reports and resources out of a package. The rule only reads paths, so the caller
+/// says which directories are packages, as paths in the same terms as the ones it is given.
 pub struct RepoShape {
     pub packages: Vec<String>,
 }
@@ -28,7 +31,7 @@ impl NativeRule for RepoShape {
     }
 
     fn check(&self, doc: &Document<'_>, out: &mut Vec<Diagnostic>) {
-        let Some((package, inside)) = within(&self.packages, doc.path) else {
+        let Some(inside) = within(&self.packages, doc.path) else {
             return;
         };
         let Some((directories, _file)) = inside.rsplit_once('/') else {
@@ -45,7 +48,7 @@ impl NativeRule for RepoShape {
             self.id(),
             Severity::Error,
             format!(
-                "CES-32 (repo-shape): {} is under a `{artifact}/` directory inside the package `{package}` — keep data, reports and resources outside the package.",
+                "CES-32 (repo-shape): {} is under a `{artifact}/` directory inside a package — keep data, reports and resources outside the package.",
                 doc.path
             ),
         ));

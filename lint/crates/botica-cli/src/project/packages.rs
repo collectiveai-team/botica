@@ -13,6 +13,27 @@ const MARKERS: [&str; 5] = [
 /// `__init__.py` in them.
 const NOT_PACKAGES: [&str; 2] = ["tests", "test"];
 
+/// `packages` (paths from the project root) as seen from the directory botica runs in, `prefix`
+/// being where that directory sits inside the root. One that holds the directory becomes `""`,
+/// the whole tree; one below it loses the prefix; the rest are out of reach and are dropped.
+pub fn seen_from(packages: Vec<String>, prefix: Option<&str>) -> Vec<String> {
+    let Some(prefix) = prefix else {
+        return packages;
+    };
+    packages
+        .into_iter()
+        .filter_map(|package| {
+            if package == prefix || prefix.starts_with(&format!("{package}/")) {
+                Some(String::new())
+            } else {
+                package
+                    .strip_prefix(&format!("{prefix}/"))
+                    .map(str::to_owned)
+            }
+        })
+        .collect()
+}
+
 /// The directories of `root` that hold a package: the ones with a marker of any language, and not
 /// `src/`. Sorted.
 pub fn detect(root: &Path) -> Vec<String> {

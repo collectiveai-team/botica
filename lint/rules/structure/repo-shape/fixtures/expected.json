@@ -4,13 +4,13 @@
       "path": "backend/data/rows.csv",
       "severity": "error",
       "range": null,
-      "message": "CES-32 (repo-shape): backend/data/rows.csv is under a `data/` directory inside the package `backend` — keep data, reports and resources outside the package."
+      "message": "CES-32 (repo-shape): backend/data/rows.csv is under a `data/` directory inside a package — keep data, reports and resources outside the package."
     },
     {
       "path": "frontend/resources/logo.txt",
       "severity": "error",
       "range": null,
-      "message": "CES-32 (repo-shape): frontend/resources/logo.txt is under a `resources/` directory inside the package `frontend` — keep data, reports and resources outside the package."
+      "message": "CES-32 (repo-shape): frontend/resources/logo.txt is under a `resources/` directory inside a package — keep data, reports and resources outside the package."
     }
   ]
 }

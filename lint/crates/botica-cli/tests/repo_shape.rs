@@ -112,6 +112,73 @@ fn explain_names_the_configuration_as_the_source_of_the_packages() {
     assert_eq!(explained_packages(&dir), "packages:  lib (configuration)");
 }
 
+/// A project whose root holds `botica.toml` and two packages, each with a `data/` directory.
+fn monorepo(name: &str) -> PathBuf {
+    let dir = project(name);
+    write(&dir, "botica.toml", "");
+    write(&dir, "backend/pyproject.toml", "[project]\nname = \"b\"\n");
+    write(&dir, "backend/data/rows.csv", "a,b\n");
+    write(&dir, "backend/app/data/more.csv", "a,b\n");
+    write(&dir, "frontend/package.json", "{}\n");
+    write(&dir, "frontend/data/rows.csv", "a,b\n");
+    dir
+}
+
+fn lint_from(dir: &std::path::Path, below: &str) -> String {
+    stdout(&command(&dir.join(below), &["lint", ".", "--no-astgrep"]))
+}
+
+#[test]
+fn run_from_inside_a_package_every_artifact_directory_is_inside_it() {
+    let dir = monorepo("from-package");
+
+    let text = lint_from(&dir, "backend");
+
+    assert_eq!(
+        reported(&text, "repo-shape"),
+        ["app/data/more.csv", "data/rows.csv"],
+        "{text}"
+    );
+}
+
+#[test]
+fn run_from_deeper_inside_a_package_the_whole_tree_is_still_inside_it() {
+    let dir = monorepo("from-deep");
+
+    let text = lint_from(&dir, "backend/app");
+
+    assert_eq!(reported(&text, "repo-shape"), ["data/more.csv"], "{text}");
+}
+
+#[test]
+fn run_from_a_directory_that_holds_packages_their_paths_are_found_below_it() {
+    let dir = monorepo("from-above");
+    write(&dir, "tools/backend/data/rows.csv", "a,b\n");
+    write(&dir, "botica.toml", "packages = [\"tools/backend\"]\n");
+
+    let text = lint_from(&dir, "tools");
+
+    assert_eq!(
+        reported(&text, "repo-shape"),
+        ["backend/data/rows.csv"],
+        "{text}"
+    );
+}
+
+#[test]
+fn run_from_a_directory_outside_every_package_nothing_is_reported() {
+    let dir = monorepo("from-outside");
+    write(&dir, "docs/data/rows.csv", "a,b\n");
+
+    let text = lint_from(&dir, "docs");
+
+    assert_eq!(
+        reported(&text, "repo-shape"),
+        Vec::<String>::new(),
+        "{text}"
+    );
+}
+
 #[test]
 fn the_packages_of_the_configuration_replace_the_detection() {
     let dir = project("configured");
