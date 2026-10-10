@@ -43,7 +43,7 @@ fn walking_and_linting_in_one_pass_reports_what_the_two_passes_report() {
     let root = tree("one_pass");
     let engine = engine();
 
-    let files = discover(&root, &root, &engine);
+    let files = discover(&root, &root, &engine).paths;
     let (sources, two_passes) = read_and_lint(&engine, &root, &files);
     let one_pass = walk_and_lint(&engine, &root, &root);
 

@@ -10,17 +10,45 @@ fn project(name: &str) -> PathBuf {
     fs::canonicalize(dir).expect("the project exists")
 }
 
-/// A file nobody may read. `false` when this user reads it anyway (root), and the test has
-/// nothing to say.
+/// What to do when this user reads a locked path anyway (root): say so and skip, or, with
+/// `BOTICA_REQUIRE_READ_ERRORS` set (CI), fail, so a run as root cannot pass for a run that
+/// proved something.
+fn readable_anyway(relative: &str) -> bool {
+    assert!(
+        std::env::var_os("BOTICA_REQUIRE_READ_ERRORS").is_none(),
+        "{relative} is readable by this user and BOTICA_REQUIRE_READ_ERRORS is set"
+    );
+    eprintln!("skipped: {relative} is readable by this user");
+    true
+}
+
+/// A file nobody may read. `false` when this user reads it anyway, and the test has nothing to
+/// say.
 fn lock(dir: &Path, relative: &str) -> bool {
     write(dir, relative, "secret\n");
     let path = dir.join(relative);
     fs::set_permissions(&path, fs::Permissions::from_mode(0o000)).expect("chmod");
-    let readable = fs::File::open(&path).is_ok();
-    if readable {
-        eprintln!("skipped: {relative} is readable by this user");
+    !(fs::File::open(&path).is_ok() && readable_anyway(relative))
+}
+
+/// A directory nobody may list, opened again when the test is over so the next run can clean up.
+struct Sealed(PathBuf);
+
+impl Sealed {
+    fn new(dir: &Path, relative: &str) -> Option<Self> {
+        write(dir, &format!("{relative}/inside.txt"), "secret\n");
+        let path = dir.join(relative);
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o000)).expect("chmod");
+        let sealed = Self(path);
+        let listed = fs::read_dir(&sealed.0).is_ok();
+        (!listed || !readable_anyway(relative)).then_some(sealed)
     }
-    !readable
+}
+
+impl Drop for Sealed {
+    fn drop(&mut self) {
+        let _ = fs::set_permissions(&self.0, fs::Permissions::from_mode(0o755));
+    }
 }
 
 fn json(output: &std::process::Output) -> serde_json::Value {
@@ -53,6 +81,34 @@ fn a_file_the_walk_cannot_read_is_an_error_of_the_run_and_the_rest_is_still_repo
     );
     assert_eq!(document["diagnostics"][0]["rule"], "file-size-guard");
     assert_eq!(output.status.code(), Some(2));
+}
+
+#[test]
+fn a_directory_the_walk_cannot_enter_is_an_error_of_the_run_however_it_walks() {
+    let dir = project("directory");
+    write(&dir, "big.txt", &lines(701));
+    let Some(_sealed) = Sealed::new(&dir, "sealed") else {
+        return;
+    };
+    let cache = dir.join("cache");
+    let cache = cache.to_str().expect("UTF-8 path");
+
+    for extra in [&[][..], &["--cache-dir", cache]] {
+        let mut args = vec!["lint", ".", "--no-astgrep", "--output-format", "json"];
+        args.extend(extra);
+        let output = command(&dir, &args);
+
+        let document = json(&output);
+        let errors = document["errors"].as_array().expect("errors");
+        assert_eq!(errors.len(), 1, "{extra:?}: {document}");
+        assert_eq!(errors[0]["kind"], "read", "{extra:?}");
+        assert_eq!(errors[0]["path"], "sealed", "{extra:?}");
+        assert_eq!(
+            document["diagnostics"][0]["rule"], "file-size-guard",
+            "{extra:?}"
+        );
+        assert_eq!(output.status.code(), Some(2), "{extra:?}");
+    }
 }
 
 #[test]

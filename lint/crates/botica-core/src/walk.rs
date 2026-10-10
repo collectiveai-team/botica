@@ -20,30 +20,55 @@ impl SourceFile {
 /// One walk of the tree under `dir`, honouring `.gitignore` and skipping hidden files, on several
 /// threads; sorted, so the result does not depend on thread timing. Keeps the files some rule of
 /// the engine applies to. Paths are matched relative to `root`.
-pub fn discover(dir: &Path, root: &Path, engine: &Engine) -> Vec<PathBuf> {
-    let found = std::sync::Mutex::new(Vec::new());
+pub fn discover(dir: &Path, root: &Path, engine: &Engine) -> Discovered {
+    let found = std::sync::Mutex::new(Discovered::default());
     WalkBuilder::new(dir).hidden(true).build_parallel().run(|| {
         let mut mine = Flush {
-            paths: Vec::new(),
+            found: Discovered::default(),
             into: &found,
         };
         Box::new(move |entry| {
-            if let Ok(entry) = entry {
-                if pruned(engine, root, &entry) {
-                    return ignore::WalkState::Skip;
+            match entry {
+                Ok(entry) => {
+                    if pruned(engine, root, &entry) {
+                        return ignore::WalkState::Skip;
+                    }
+                    if entry.file_type().is_some_and(|t| t.is_file())
+                        && engine.plan(&relative_path(root, entry.path())).is_some()
+                    {
+                        mine.found.paths.push(entry.into_path());
+                    }
                 }
-                if entry.file_type().is_some_and(|t| t.is_file())
-                    && engine.plan(&relative_path(root, entry.path())).is_some()
-                {
-                    mine.paths.push(entry.into_path());
-                }
+                Err(error) => mine.found.unreadable.extend(failure_of(root, &error)),
             }
             ignore::WalkState::Continue
         })
     });
-    let mut paths = found.into_inner().expect("walk");
-    paths.sort_unstable();
-    paths
+    let mut found = found.into_inner().expect("walk");
+    found.paths.sort_unstable();
+    found.unreadable.sort_by(|a, b| a.path.cmp(&b.path));
+    found
+}
+
+/// What a walk that only lists brings back.
+#[derive(Debug, Default)]
+pub struct Discovered {
+    /// The files some rule applies to, sorted.
+    pub paths: Vec<PathBuf>,
+    /// Places the walk could not list (a directory nobody may read), sorted by path.
+    pub unreadable: Vec<Unreadable>,
+}
+
+/// A failure of the walk itself, such as a directory it could not list, as a path it could not
+/// read. Problems with the ignore files are not failures to read the tree.
+fn failure_of(root: &Path, error: &ignore::Error) -> Option<Unreadable> {
+    match error {
+        ignore::Error::WithDepth { err, .. } => failure_of(root, err),
+        ignore::Error::WithPath { path, err } => {
+            Unreadable::of(relative_path(root, path), err.io_error()?)
+        }
+        _ => None,
+    }
 }
 
 /// A file the walk found and could not read. Not for being binary, and not for being gone by the
@@ -100,7 +125,15 @@ pub fn walk_and_lint(engine: &Engine, root: &Path, dir: &Path) -> Walked {
     }
     impl ignore::ParallelVisitor for Visitor<'_> {
         fn visit(&mut self, entry: Result<ignore::DirEntry, ignore::Error>) -> ignore::WalkState {
-            if let Ok(entry) = entry {
+            let entry = match entry {
+                Ok(entry) => Some(entry),
+                Err(error) => {
+                    let failure = failure_of(self.builder.root, &error);
+                    self.mine.unreadable.extend(failure);
+                    None
+                }
+            };
+            if let Some(entry) = entry {
                 if pruned(self.builder.engine, self.builder.root, &entry) {
                     return ignore::WalkState::Skip;
                 }
@@ -178,16 +211,17 @@ fn pruned(engine: &Engine, root: &Path, entry: &ignore::DirEntry) -> bool {
         )
 }
 
-/// A walker thread's paths, handed over to the shared list when the thread's visitor drops.
+/// A walker thread's findings, handed over to the shared ones when the thread's visitor drops.
 struct Flush<'a> {
-    paths: Vec<PathBuf>,
-    into: &'a std::sync::Mutex<Vec<PathBuf>>,
+    found: Discovered,
+    into: &'a std::sync::Mutex<Discovered>,
 }
 
 impl Drop for Flush<'_> {
     fn drop(&mut self) {
         if let Ok(mut all) = self.into.lock() {
-            all.append(&mut self.paths);
+            all.paths.append(&mut self.found.paths);
+            all.unreadable.append(&mut self.found.unreadable);
         }
     }
 }

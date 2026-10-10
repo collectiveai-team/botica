@@ -94,7 +94,7 @@ fn the_walk_reads_only_the_files_the_planner_wants() {
     let paths: Vec<&str> = walked.diagnostics.iter().map(|d| d.path.as_str()).collect();
     assert_eq!(paths, ["src/a.py", "src/b.ts"]);
 
-    let listed = discover(&root, &root, &engine);
+    let listed = discover(&root, &root, &engine).paths;
     let names: Vec<String> = listed
         .iter()
         .map(|p| p.strip_prefix(&root).unwrap().display().to_string())

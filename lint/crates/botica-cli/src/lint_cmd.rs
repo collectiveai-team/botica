@@ -231,9 +231,9 @@ fn reach(args: &LintArgs, setup: &Setup, root: &Path, overlapped: bool) -> Reach
             reached.walked.diagnostics.extend(walked.diagnostics);
             reached.walked.unreadable.extend(walked.unreadable);
         } else {
-            reached
-                .named
-                .extend(walk::discover(path, root, &setup.engine));
+            let listed = walk::discover(path, root, &setup.engine);
+            reached.named.extend(listed.paths);
+            reached.walked.unreadable.extend(listed.unreadable);
         }
     }
     reached
@@ -249,18 +249,16 @@ fn lint_paths(args: &LintArgs, setup: &Setup, root: &Path) -> Result<Linted> {
         let mut diagnostics = named.diagnostics;
         diagnostics.extend(reached.walked.diagnostics);
         diagnostics.sort_by(|a, b| (&a.path, a.start, &a.rule).cmp(&(&b.path, b.start, &b.rule)));
-        let mut unreadable = named.unreadable;
-        unreadable.extend(reached.walked.unreadable);
-        unreadable.sort_by(|a, b| a.path.cmp(&b.path));
         Ok(Linted {
             sources: Vec::new(),
             diagnostics,
             io_errors,
-            unreadable,
+            unreadable: merged(named.unreadable, reached.walked.unreadable),
             files_read: named.read + reached.walked.read,
         })
     } else if let Some(dir) = &args.cache_dir {
         let (sources, unreadable) = walk::read_all(engine, root, &reached.named);
+        let unreadable = merged(unreadable, reached.walked.unreadable);
         let fingerprint = rules::fingerprint(
             setup.with_astgrep,
             args.extra_rules.as_deref(),
@@ -288,10 +286,17 @@ fn lint_paths(args: &LintArgs, setup: &Setup, root: &Path) -> Result<Linted> {
             sources,
             diagnostics: walked.diagnostics,
             io_errors,
-            unreadable: walked.unreadable,
+            unreadable: merged(walked.unreadable, reached.walked.unreadable),
             files_read: 0,
         })
     }
+}
+
+/// Both lists, sorted by path.
+fn merged(mut first: Vec<Unreadable>, second: Vec<Unreadable>) -> Vec<Unreadable> {
+    first.extend(second);
+    first.sort_by(|a, b| a.path.cmp(&b.path));
+    first
 }
 
 /// A file the walk found and could not read is a failure of the run, not a finding.
