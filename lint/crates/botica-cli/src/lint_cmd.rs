@@ -3,6 +3,7 @@ use anyhow::Result;
 use botica_astgrep::Tuning;
 use botica_config::Resolution;
 use botica_core::cache::{lint_files_cached, Cache};
+use botica_core::registry::IO_ERROR;
 use botica_core::report::{self, ErrorKind, Format, Report, RunError};
 use botica_core::walk::{self, SourceFile};
 use botica_core::{postprocess, Diagnostic, Engine, Severity};
@@ -94,7 +95,7 @@ impl Setup {
     fn build(args: &LintArgs) -> Result<Self> {
         let project = project::load(&args.project)?;
         let with_astgrep = !args.no_astgrep && project.embedded_rules;
-        let io_error_active = project.is_active("io-error");
+        let io_error_active = project.is_active(IO_ERROR);
         let prefix = project.working_prefix();
         let config_key = project.fingerprint();
         let natives = project::natives(&project.resolution);
@@ -375,5 +376,5 @@ fn named(root: &Path, path: &Path) -> String {
 }
 
 fn io_error(path: &str, error: &std::io::Error) -> Diagnostic {
-    Diagnostic::file_level(path, "io-error", Severity::Error, error.to_string())
+    Diagnostic::file_level(path, IO_ERROR, Severity::Error, error.to_string())
 }

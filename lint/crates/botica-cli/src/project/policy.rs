@@ -2,16 +2,8 @@ use std::sync::Arc;
 
 use botica_config::Resolution;
 use botica_core::report::RuleDoc;
-use botica_core::suppress::Policy;
+use botica_core::suppress::{Policy, INVALID, UNUSED};
 use botica_core::Severity;
-
-pub(super) fn severity(level: botica_catalog::Severity) -> Severity {
-    match level {
-        botica_catalog::Severity::Error => Severity::Error,
-        botica_catalog::Severity::Warning => Severity::Warning,
-        botica_catalog::Severity::Info => Severity::Info,
-    }
-}
 
 /// What the suppression comments may name, and whether the rules about them report.
 pub fn suppression_policy(resolution: &Arc<Resolution>) -> Policy {
@@ -28,12 +20,12 @@ pub fn suppression_policy(resolution: &Arc<Resolution>) -> Policy {
         resolution
             .entry(slug)
             .filter(|entry| entry.active)
-            .map(|entry| severity(entry.severity))
+            .map(|entry| Severity::from(entry.severity))
     };
-    if let Some(level) = reporting("unused-suppression") {
+    if let Some(level) = reporting(UNUSED) {
         policy = policy.report_unused(level);
     }
-    if let Some(level) = reporting("invalid-suppression") {
+    if let Some(level) = reporting(INVALID) {
         policy = policy.report_invalid(level);
     }
     policy
@@ -48,7 +40,7 @@ pub fn rule_docs(resolution: &Resolution) -> Vec<RuleDoc> {
             id: entry.rule.id.clone(),
             code: entry.rule.code.clone(),
             summary: entry.rule.summary.clone(),
-            severity: severity(entry.severity),
+            severity: Severity::from(entry.severity),
         })
         .collect()
 }

@@ -29,6 +29,16 @@ impl Severity {
     }
 }
 
+impl From<botica_catalog::Severity> for Severity {
+    fn from(level: botica_catalog::Severity) -> Self {
+        match level {
+            botica_catalog::Severity::Error => Self::Error,
+            botica_catalog::Severity::Warning => Self::Warning,
+            botica_catalog::Severity::Info => Self::Info,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Diagnostic {
     pub path: String,

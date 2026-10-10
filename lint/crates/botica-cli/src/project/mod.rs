@@ -8,6 +8,7 @@ use std::path::Path;
 use anyhow::{bail, Context, Result};
 use botica_catalog::Catalog;
 use botica_config::{discover, load_file, Loaded, Resolution};
+use botica_core::registry;
 
 use args::{ConfigOption, ScopeArg};
 
@@ -51,6 +52,7 @@ pub fn load(args: &ProjectArgs) -> Result<Project> {
     };
     let mut loaded = loaded.with_inline(&settings)?;
     let catalog = Catalog::embedded()?;
+    registry::check_catalog(&catalog)?;
     loaded.config = loaded
         .config
         .with_command_line(&catalog, &args.command_line())?;

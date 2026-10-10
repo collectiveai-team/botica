@@ -4,9 +4,8 @@ use std::sync::Arc;
 
 use botica_config::{FileRule, Resolution};
 use botica_core::postprocess::Verdict;
+use botica_core::registry::IO_ERROR;
 use botica_core::{language_of, Exclusion, NativePlanner, Severity};
-
-use super::policy::severity;
 
 /// A path as the configuration sees it: from the project root, not from where botica runs.
 fn from_root<'p>(prefix: Option<&str>, path: &'p str) -> Cow<'p, str> {
@@ -63,7 +62,7 @@ pub fn verdicts<'r>(
             return Verdict::Keep;
         };
         let at_root = from_root(prefix, path);
-        if entry.rule.id == "io-error" {
+        if entry.rule.id == IO_ERROR {
             return verdict_in(&resolution.rules_for_path(&at_root), &entry.rule.id);
         }
         if current.as_ref().is_none_or(|(known, _)| known != path) {
@@ -73,7 +72,7 @@ pub fn verdicts<'r>(
                 .map(|file_rule| {
                     (
                         file_rule.rule.id.as_str(),
-                        file_rule.configured.map(severity),
+                        file_rule.configured.map(Severity::from),
                     )
                 })
                 .collect();
@@ -93,7 +92,7 @@ fn verdict_in(rules: &[FileRule<'_>], id: &str) -> Verdict {
         Some(FileRule {
             configured: Some(level),
             ..
-        }) => Verdict::Report(severity(*level)),
+        }) => Verdict::Report(Severity::from(*level)),
         Some(_) => Verdict::Keep,
         None => Verdict::Drop,
     }

@@ -3,6 +3,7 @@ mod document;
 mod engine;
 mod native;
 pub mod postprocess;
+pub mod registry;
 pub mod report;
 pub mod suppress;
 mod timings;

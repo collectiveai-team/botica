@@ -283,12 +283,14 @@ dependencies = [
  "ast-grep-language",
  "blake3",
  "botica-astgrep",
+ "botica-catalog",
  "botica-ext",
  "criterion",
  "ignore",
  "rayon",
  "serde",
  "serde_json",
+ "toml",
 ]
 
 [[package]]
