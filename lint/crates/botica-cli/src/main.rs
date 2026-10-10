@@ -1,22 +1,14 @@
 mod explain_cmd;
 mod extension;
+mod lint_cmd;
 mod project;
 mod rule_view;
 mod rules;
 mod rules_cmd;
 mod timings;
 
-use anyhow::Result;
-use botica_astgrep::Tuning;
-use botica_core::cache::{lint_files_cached, Cache};
-use botica_core::report::{self, ErrorKind, Format, Report, RunError};
-use botica_core::{postprocess, walk, Diagnostic, Severity};
-use clap::{Args, Parser, Subcommand, ValueEnum};
-use std::io::Write;
-use std::path::{Path, PathBuf};
+use clap::{Parser, Subcommand};
 use std::process::ExitCode;
-use std::sync::Arc;
-use std::time::Instant;
 
 #[derive(Parser)]
 #[command(name = "botica", version)]
@@ -27,83 +19,16 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    Lint(LintArgs),
+    Lint(lint_cmd::LintArgs),
     /// Show which rules are active and why.
     Rules(rules_cmd::RulesArgs),
     /// Say what a rule is, how it is configured here and why it is or is not active.
     Explain(explain_cmd::ExplainArgs),
 }
 
-#[derive(Args)]
-struct LintArgs {
-    /// Directory to walk, or explicit files (as prek passes them).
-    paths: Vec<PathBuf>,
-    #[command(flatten)]
-    project: project::ProjectArgs,
-    /// How to print the findings.
-    #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
-    output_format: OutputFormat,
-    /// Leave out the paths named on the command line too when `extend-exclude` excludes them
-    /// (by default only what the walk finds is left out).
-    #[arg(long)]
-    force_exclude: bool,
-    /// Print how many findings each rule has instead of the findings (text and json formats).
-    #[arg(long)]
-    statistics: bool,
-    /// Exit with 0 even when there are findings of severity error. Failures of the run still exit 2.
-    #[arg(long)]
-    exit_zero: bool,
-    /// Extension command, e.g. "uv run --script ext.py".
-    #[arg(long)]
-    ext: Option<String>,
-    /// Files per `lint/files` request.
-    #[arg(long, default_value_t = 256)]
-    batch: usize,
-    /// Skip the embedded ast-grep rules.
-    #[arg(long)]
-    no_astgrep: bool,
-    /// Parse every file, even those the rules' derived prefilters rule out.
-    #[arg(long)]
-    no_prefilter: bool,
-    /// Directory for the per-file result cache (off when omitted).
-    #[arg(long)]
-    cache_dir: Option<PathBuf>,
-    /// Print to stderr how long each rule and each extension took, and what the prefilter saved.
-    #[arg(long)]
-    timings: bool,
-    /// Extra ast-grep rules (`*.yml` in this directory), for the parity checks on other languages.
-    #[arg(long, hide = true)]
-    extra_rules: Option<PathBuf>,
-    /// Parse whole files instead of only the top-level statements holding a candidate.
-    #[arg(long, hide = true)]
-    no_regions: bool,
-    /// Match every node instead of skipping the subtrees without candidates.
-    #[arg(long, hide = true)]
-    no_subtree_skip: bool,
-}
-
-#[derive(Clone, Copy, ValueEnum)]
-enum OutputFormat {
-    Text,
-    Json,
-    Sarif,
-    Github,
-}
-
-impl From<OutputFormat> for Format {
-    fn from(arg: OutputFormat) -> Self {
-        match arg {
-            OutputFormat::Text => Format::Text,
-            OutputFormat::Json => Format::Json,
-            OutputFormat::Sarif => Format::Sarif,
-            OutputFormat::Github => Format::Github,
-        }
-    }
-}
-
 fn main() -> ExitCode {
     let result = match Cli::parse().command {
-        Command::Lint(args) => lint(args),
+        Command::Lint(args) => lint_cmd::run(args),
         Command::Rules(args) => rules_cmd::run(&args).map(|()| ExitCode::SUCCESS),
         Command::Explain(args) => explain_cmd::run(&args).map(|()| ExitCode::SUCCESS),
     };
@@ -114,199 +39,4 @@ fn main() -> ExitCode {
             ExitCode::from(2)
         }
     }
-}
-
-fn lint(args: LintArgs) -> Result<ExitCode> {
-    let format = Format::from(args.output_format);
-    if args.statistics && !report::statistics::supports(format) {
-        let name = args
-            .output_format
-            .to_possible_value()
-            .map_or_else(String::new, |value| value.get_name().to_owned());
-        anyhow::bail!("--statistics works with the text and json output formats, not {name}");
-    }
-    let timed = args.timings;
-    let total = Instant::now();
-
-    let project = project::load(&args.project)?;
-    let with_astgrep = !args.no_astgrep && project.embedded_rules;
-    let io_error_active = project.is_active("io-error");
-    let prefix = project.working_prefix();
-    let config_key = project.fingerprint();
-    let natives = project::natives(&project.resolution);
-    let resolution = Arc::new(project.resolution);
-    let policy = project::suppression_policy(&resolution);
-    let planner = project::planner(Arc::clone(&resolution), natives.index, prefix.clone());
-    let exclusion = project::exclusion(Arc::clone(&resolution), prefix.clone());
-    let engine = rules::build_engine(
-        &rules::EngineOptions {
-            astgrep: with_astgrep,
-            tuning: Tuning {
-                prefilter: !args.no_prefilter,
-                regions: !args.no_regions,
-                skip_subtrees: !args.no_subtree_skip,
-            },
-            extra_rules: args.extra_rules.as_deref(),
-            timings: timed,
-        },
-        natives.rules,
-        planner,
-        policy,
-        exclusion,
-    )?;
-
-    let root = std::env::current_dir()?;
-    let paths = if args.paths.is_empty() {
-        vec![PathBuf::from(".")]
-    } else {
-        args.paths
-    };
-    let overlapped = args.cache_dir.is_none() && args.ext.is_none();
-    let mut files = Vec::new();
-    let mut files_read = 0;
-    let mut overlapped_found = Vec::new();
-    let mut io_errors = Vec::new();
-    for path in &paths {
-        if args.force_exclude && named_and_excluded(&engine, &root, path) {
-            continue;
-        }
-        if !path.is_dir() {
-            match std::fs::File::open(path) {
-                Ok(_) => files.push(path.clone()),
-                Err(error) if io_error_active => {
-                    io_errors.push(io_error(&named(&root, path), &error))
-                }
-                Err(_) => {}
-            }
-        } else if overlapped {
-            let (read, found) = walk::walk_and_lint(&engine, &root, path);
-            files_read += read;
-            overlapped_found.extend(found);
-        } else {
-            files.extend(walk::discover(path, &root, &engine));
-        }
-    }
-    let (sources, mut diagnostics) = if overlapped {
-        let (read, mut found) = walk::lint_streaming(&engine, &root, &files);
-        files_read += read;
-        found.append(&mut overlapped_found);
-        found.sort_by(|a, b| (&a.path, a.start, &a.rule).cmp(&(&b.path, b.start, &b.rule)));
-        (Vec::new(), found)
-    } else if let Some(dir) = &args.cache_dir {
-        let sources = walk::read_all(&root, &files);
-        let mut cache = Cache::load(
-            dir,
-            &rules::fingerprint(with_astgrep, args.extra_rules.as_deref(), &config_key)?,
-        );
-        let (found, stats) = lint_files_cached(&engine, &sources, &mut cache);
-        cache.save()?;
-        if timed {
-            eprintln!(
-                "[timing] cache: {} hits, {} misses",
-                stats.hits, stats.misses
-            );
-        }
-        (sources, found)
-    } else {
-        walk::read_and_lint(&engine, &root, &files)
-    };
-    if timed {
-        let stats = engine.astgrep().stats();
-        eprintln!(
-            "[timing] prefilter: parsed {} files, skipped {}",
-            stats.parsed, stats.skipped
-        );
-        eprintln!(
-            "[timing] regions: {} files, {} fallbacks, {} suspect, parsed {:.1} of {:.1} MB; \
-             {} files matched skipping subtrees",
-            stats.region_files,
-            stats.region_fallbacks,
-            stats.region_suspects,
-            stats.parsed_bytes as f64 / 1e6,
-            stats.file_bytes as f64 / 1e6,
-            stats.anchored_files
-        );
-    }
-
-    let mut errors = Vec::new();
-    if let Some(command) = &args.ext {
-        let outcome = extension::run(command, &sources, args.batch);
-        if timed {
-            timings::print_extension(command, &outcome.time);
-        }
-        diagnostics.extend(outcome.found);
-        errors.extend(outcome.failure.map(|error| RunError {
-            kind: ErrorKind::Extension,
-            extension: Some(command.clone()),
-            message: format!("{error:#}"),
-        }));
-    }
-
-    diagnostics.extend(io_errors);
-    let diagnostics = postprocess::apply(
-        diagnostics,
-        project::verdicts(&resolution, prefix.as_deref()),
-    );
-    let rules = project::rule_docs(&resolution);
-    let report = Report {
-        diagnostics: &diagnostics,
-        errors: &errors,
-        rules: &rules,
-        tool_version: env!("CARGO_PKG_VERSION"),
-    };
-    let stdout = std::io::stdout();
-    let mut out = std::io::BufWriter::new(stdout.lock());
-    if args.statistics {
-        report::statistics::write(&report, format, &mut out)?;
-    } else {
-        report::write(&report, format, &mut out)?;
-    }
-    out.flush()?;
-    if matches!(args.output_format, OutputFormat::Text) {
-        for error in &errors {
-            eprintln!("botica: {error}");
-        }
-    }
-    if timed {
-        timings::print_rules(engine.rule_times());
-        eprintln!(
-            "[timing] total {:.2} ms, {} files, {} diagnostics",
-            total.elapsed().as_secs_f64() * 1e3,
-            files_read.max(sources.len()),
-            diagnostics.len()
-        );
-    }
-    Ok(exit_code(&errors, &diagnostics, args.exit_zero))
-}
-
-/// Whether `extend-exclude` leaves out a path the user named. `.` and the like are never excluded.
-fn named_and_excluded(engine: &botica_core::Engine, root: &Path, path: &Path) -> bool {
-    let named = walk::relative_path(root, path);
-    !named.is_empty() && engine.skips_path(&named)
-}
-
-/// 2 when the run itself failed (it wins over everything), 1 when a finding is an error, else 0.
-/// `--exit-zero` only forgives the findings.
-fn exit_code(errors: &[RunError], diagnostics: &[Diagnostic], exit_zero: bool) -> ExitCode {
-    if !errors.is_empty() {
-        ExitCode::from(2)
-    } else if !exit_zero && diagnostics.iter().any(|d| d.severity == Severity::Error) {
-        ExitCode::from(1)
-    } else {
-        ExitCode::SUCCESS
-    }
-}
-
-/// A path the user typed, as the walk would name it (from the root, no `./`), with the trailing
-/// `/` the user gave a directory.
-fn named(root: &Path, path: &Path) -> String {
-    let mut name = walk::relative_path(root, path);
-    if path.to_string_lossy().ends_with('/') && !name.ends_with('/') {
-        name.push('/');
-    }
-    name
-}
-
-fn io_error(path: &str, error: &std::io::Error) -> Diagnostic {
-    Diagnostic::file_level(path, "io-error", Severity::Error, error.to_string())
 }
