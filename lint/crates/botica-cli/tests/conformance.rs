@@ -1,0 +1,33 @@
+use std::path::Path;
+
+use botica_conformance::Runner;
+
+#[test]
+fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_optimisation() {
+    let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../rules");
+    let scratch = Path::new(env!("CARGO_TARGET_TMPDIR")).join("conformance");
+    let outcomes = Runner::new(env!("CARGO_BIN_EXE_botica"), &scratch)
+        .check_catalog(&rules)
+        .expect("the catalog is checked");
+
+    let names: Vec<&str> = outcomes.iter().map(|outcome| outcome.rule()).collect();
+    assert_eq!(
+        names,
+        [
+            "file-size-guard",
+            "invalid-suppression",
+            "io-error",
+            "no-utils",
+            "unused-suppression"
+        ]
+    );
+    let report: Vec<String> = outcomes
+        .iter()
+        .filter(|outcome| !outcome.passed())
+        .map(|outcome| {
+            let reasons: Vec<String> = outcome.failures().iter().map(ToString::to_string).collect();
+            format!("{}:\n{}", outcome.rule(), reasons.join("\n"))
+        })
+        .collect();
+    assert!(report.is_empty(), "{}", report.join("\n\n"));
+}

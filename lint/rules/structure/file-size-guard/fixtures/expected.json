@@ -1,0 +1,10 @@
+{
+  "diagnostics": [
+    {
+      "path": "large.txt",
+      "severity": "error",
+      "range": null,
+      "message": "CES-71 (file-size-guard): large.txt is too large (701 lines, limit is 700)"
+    }
+  ]
+}

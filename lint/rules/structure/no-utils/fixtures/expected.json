@@ -1,0 +1,10 @@
+{
+  "diagnostics": [
+    {
+      "path": "utils.py",
+      "severity": "error",
+      "range": null,
+      "message": "CES-63 (no-utils): utils.py is a catch-all module — name modules for what they hold, not utils/helpers/aux/misc/common."
+    }
+  ]
+}

@@ -245,6 +245,7 @@ dependencies = [
  "botica-astgrep",
  "botica-catalog",
  "botica-config",
+ "botica-conformance",
  "botica-core",
  "botica-ext",
  "clap",
@@ -263,6 +264,14 @@ dependencies = [
  "serde",
  "serde_json",
  "toml",
+]
+
+[[package]]
+name = "botica-conformance"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "serde_json",
 ]
 
 [[package]]

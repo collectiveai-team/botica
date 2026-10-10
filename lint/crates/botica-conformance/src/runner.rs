@@ -1,0 +1,257 @@
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+
+use anyhow::{bail, Context, Result};
+use serde_json::Value;
+
+use crate::finding::Finding;
+use crate::outcome::{Failure, Outcome};
+
+/// One way of running botica whose findings must not differ from the others': the optimisations
+/// that can be switched off must not change what a rule finds.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Variant {
+    name: String,
+    args: Vec<String>,
+}
+
+impl Variant {
+    pub fn new(name: &str, args: &[&str]) -> Self {
+        Self {
+            name: name.to_owned(),
+            args: args.iter().map(|&arg| arg.to_owned()).collect(),
+        }
+    }
+
+    /// The default run and one run with each optimisation off.
+    pub fn standard() -> Vec<Self> {
+        vec![
+            Self::new("default", &[]),
+            Self::new("no-prefilter", &["--no-prefilter"]),
+            Self::new("no-regions", &["--no-regions"]),
+            Self::new("no-subtree-skip", &["--no-subtree-skip"]),
+        ]
+    }
+}
+
+pub struct Runner {
+    binary: PathBuf,
+    scratch: PathBuf,
+    variants: Vec<Variant>,
+}
+
+impl Runner {
+    pub fn new(binary: impl Into<PathBuf>, scratch: impl Into<PathBuf>) -> Self {
+        Self {
+            binary: binary.into(),
+            scratch: scratch.into(),
+            variants: Variant::standard(),
+        }
+    }
+
+    #[must_use]
+    pub fn with_variants(mut self, variants: Vec<Variant>) -> Self {
+        self.variants = variants;
+        self
+    }
+
+    /// Checks every rule of a catalog directory (`<family>/<slug>/rule.toml`, the slug being the
+    /// rule's ID), in slug order.
+    pub fn check_catalog(&self, rules_dir: &Path) -> Result<Vec<Outcome>> {
+        let mut rules = Vec::new();
+        for family in subdirectories(rules_dir)? {
+            for rule in subdirectories(&family)? {
+                if rule.join("rule.toml").is_file() {
+                    rules.push(rule);
+                }
+            }
+        }
+        rules.sort_by_key(|rule| rule.file_name().map(ToOwned::to_owned));
+        rules
+            .iter()
+            .map(|rule| {
+                let slug = rule.file_name().and_then(|name| name.to_str());
+                self.check(
+                    slug.context("a rule folder name is not UTF-8")?,
+                    &rule.join("fixtures"),
+                )
+            })
+            .collect()
+    }
+
+    /// Runs `rule` over `fixtures/valid` and `fixtures/invalid` and compares with
+    /// `fixtures/expected.json`.
+    pub fn check(&self, rule: &str, fixtures: &Path) -> Result<Outcome> {
+        let mut failures = Vec::new();
+        self.check_valid(rule, fixtures, &mut failures)?;
+        self.check_invalid(rule, fixtures, &mut failures)?;
+        Ok(Outcome::new(rule, failures))
+    }
+
+    fn check_valid(&self, rule: &str, fixtures: &Path, failures: &mut Vec<Failure>) -> Result<()> {
+        let valid = fixtures.join("valid");
+        if !holds_files(&valid) {
+            failures.push(Failure::NoFiles {
+                side: "valid".to_owned(),
+            });
+            return Ok(());
+        }
+        for variant in &self.variants {
+            for finding in self.run(rule, variant, &valid, "valid")? {
+                failures.push(Failure::Unexpected {
+                    variant: variant.name.clone(),
+                    finding,
+                });
+            }
+        }
+        Ok(())
+    }
+
+    fn check_invalid(
+        &self,
+        rule: &str,
+        fixtures: &Path,
+        failures: &mut Vec<Failure>,
+    ) -> Result<()> {
+        let invalid = fixtures.join("invalid");
+        if !holds_files(&invalid) {
+            failures.push(Failure::NoFiles {
+                side: "invalid".to_owned(),
+            });
+            return Ok(());
+        }
+        let expected_path = fixtures.join("expected.json");
+        if !expected_path.is_file() {
+            failures.push(Failure::NoExpected);
+            return Ok(());
+        }
+        let expected = read_expected(&expected_path)?;
+        if expected.is_empty() {
+            failures.push(Failure::ExpectsNothing);
+            return Ok(());
+        }
+        for variant in &self.variants {
+            let actual = self.run(rule, variant, &invalid, "invalid")?;
+            if actual != expected {
+                failures.push(Failure::Mismatch {
+                    variant: variant.name.clone(),
+                    expected: expected.clone(),
+                    actual,
+                });
+            }
+        }
+        Ok(())
+    }
+
+    /// The findings of `rule` when botica lints a copy of `source` as a project of its own.
+    fn run(
+        &self,
+        rule: &str,
+        variant: &Variant,
+        source: &Path,
+        side: &str,
+    ) -> Result<Vec<Finding>> {
+        let project = self.scratch.join(rule).join(&variant.name).join(side);
+        let _ = fs::remove_dir_all(&project);
+        copy_tree(source, &project)?;
+        fs::create_dir_all(project.join(".git"))?;
+        let output = Command::new(&self.binary)
+            .args([
+                "lint",
+                "--preview",
+                "--output-format",
+                "json",
+                "--extend-select",
+            ])
+            .arg(rule)
+            .args(&variant.args)
+            .args(given_paths(&project)?)
+            .current_dir(&project)
+            .output()
+            .with_context(|| format!("run {}", self.binary.display()))?;
+        if !matches!(output.status.code(), Some(0 | 1)) {
+            bail!(
+                "botica failed on {}: {}",
+                source.display(),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        let report: Value = serde_json::from_slice(&output.stdout)
+            .with_context(|| format!("the output for {} is not JSON", source.display()))?;
+        diagnostics_of(&report, rule)
+    }
+}
+
+/// What botica is told to lint: the paths one per line in `cli-args.txt`, as a command line would
+/// give them (some rules only exist for those), or else the whole project.
+fn given_paths(project: &Path) -> Result<Vec<String>> {
+    let listing = project.join("cli-args.txt");
+    if !listing.is_file() {
+        return Ok(vec![".".to_owned()]);
+    }
+    let text =
+        fs::read_to_string(&listing).with_context(|| format!("read {}", listing.display()))?;
+    Ok(text
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(str::to_owned)
+        .collect())
+}
+
+fn diagnostics_of(report: &Value, rule: &str) -> Result<Vec<Finding>> {
+    report["diagnostics"]
+        .as_array()
+        .context("the report has no `diagnostics` list")?
+        .iter()
+        .filter(|diagnostic| diagnostic["rule"] == rule)
+        .map(Finding::from_json)
+        .collect()
+}
+
+fn read_expected(path: &Path) -> Result<Vec<Finding>> {
+    let text = fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
+    let document: Value =
+        serde_json::from_str(&text).with_context(|| format!("{} is not JSON", path.display()))?;
+    document["diagnostics"]
+        .as_array()
+        .with_context(|| format!("{} has no `diagnostics` list", path.display()))?
+        .iter()
+        .map(Finding::from_json)
+        .collect()
+}
+
+fn subdirectories(dir: &Path) -> Result<Vec<PathBuf>> {
+    let mut found = Vec::new();
+    for entry in fs::read_dir(dir).with_context(|| format!("read {}", dir.display()))? {
+        let path = entry?.path();
+        if path.is_dir() {
+            found.push(path);
+        }
+    }
+    Ok(found)
+}
+
+fn holds_files(dir: &Path) -> bool {
+    fs::read_dir(dir).is_ok_and(|entries| {
+        entries.filter_map(Result::ok).any(|entry| {
+            let path = entry.path();
+            path.is_file() || holds_files(&path)
+        })
+    })
+}
+
+fn copy_tree(from: &Path, to: &Path) -> Result<()> {
+    fs::create_dir_all(to)?;
+    for entry in fs::read_dir(from).with_context(|| format!("read {}", from.display()))? {
+        let entry = entry?;
+        let target = to.join(entry.file_name());
+        if entry.file_type()?.is_dir() {
+            copy_tree(&entry.path(), &target)?;
+        } else {
+            fs::copy(entry.path(), target)?;
+        }
+    }
+    Ok(())
+}
