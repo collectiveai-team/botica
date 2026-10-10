@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "sdk" / "python"))
 from botica_ext import rule, serve
 
 
-@rule("spike/noop", ["python"])
+@rule("bench/noop", ["python"])
 def noop(path: str, text: str) -> Iterator[tuple[int, int, str]]:
     return iter(())
 

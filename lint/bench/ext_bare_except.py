@@ -14,7 +14,7 @@ from ast_grep_py import SgRoot
 from botica_ext import char_to_byte_offsets, rule, serve
 
 
-@rule("spike/no-bare-except", ["python"])
+@rule("bench/no-bare-except", ["python"])
 def no_bare_except(path: str, text: str) -> Iterator[tuple[int, int, str]]:
     to_byte = char_to_byte_offsets(text)
     for node in SgRoot(text, "python").root().find_all(kind="except_clause"):
@@ -23,7 +23,7 @@ def no_bare_except(path: str, text: str) -> Iterator[tuple[int, int, str]]:
             yield (
                 to_byte(span.start.index),
                 to_byte(span.end.index),
-                "spike/no-bare-except: catch a specific exception, not a bare `except:`.",
+                "bench/no-bare-except: catch a specific exception, not a bare `except:`.",
             )
 
 

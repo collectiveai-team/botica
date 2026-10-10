@@ -1,4 +1,4 @@
-"""Generate a deterministic synthetic repo for the botica lint measurement spike.
+"""Generate a deterministic synthetic repo for the botica lint measurements.
 
 Usage: python gen_repo.py <out_dir> [n_files] [clean]
 

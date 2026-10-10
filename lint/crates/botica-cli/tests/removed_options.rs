@@ -3,8 +3,8 @@ mod common;
 use common::{command, project_in, stderr, write};
 
 #[test]
-fn the_measurement_switches_of_the_spike_are_gone() {
-    let dir = project_in("spike_switches", "gone", None);
+fn the_measurement_options_are_gone() {
+    let dir = project_in("removed_options", "gone", None);
     write(&dir, "a.py", "x = 1\n");
     for switch in [
         &["--schedule", "timed"][..],
@@ -29,8 +29,8 @@ fn the_measurement_switches_of_the_spike_are_gone() {
 }
 
 #[test]
-fn timings_show_rules_and_the_total_but_no_phases_of_the_spike() {
-    let dir = project_in("spike_switches", "timings", None);
+fn timings_show_rules_and_the_total_but_no_phases() {
+    let dir = project_in("removed_options", "timings", None);
     write(&dir, "a.py", "x = 1\n");
     let text = stderr(&command(&dir, &["lint", ".", "--timings"]));
 

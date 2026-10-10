@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "sdk" / "python"))
 from botica_ext import rule, serve
 
 
-@rule("spike/no-bare-except", ["python"])
+@rule("bench/no-bare-except", ["python"])
 def no_bare_except(path: str, text: str) -> Iterator[tuple[int, int, str]]:
     try:
         tree = ast.parse(text)
@@ -26,7 +26,7 @@ def no_bare_except(path: str, text: str) -> Iterator[tuple[int, int, str]]:
             yield (
                 start,
                 start + 7,
-                "spike/no-bare-except: catch a specific exception, not a bare `except:`.",
+                "bench/no-bare-except: catch a specific exception, not a bare `except:`.",
             )
 
 

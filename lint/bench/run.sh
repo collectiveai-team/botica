@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Reproduces the botica lint measurement spike. Requires: cargo, uv, hyperfine, ast-grep, python3.
+# Reproduces the botica lint measurements. Requires: cargo, uv, hyperfine, ast-grep, python3.
 # Parity needs the ast-grep CLI at the same version as the crates in lint/Cargo.toml (0.45.3):
 #   uv tool install ast-grep-cli==0.45.3   (or put a shim for it first on PATH)
-# Everything is written under $WORK (default: <repo>/.tmp/spike); nothing is committed.
+# Everything is written under $WORK (default: <repo>/.tmp/bench); nothing is committed.
 set -euo pipefail
 
 ROOT=$(git rev-parse --show-toplevel)
-WORK=${WORK:-$ROOT/.tmp/spike}
+WORK=${WORK:-$ROOT/.tmp/bench}
 HYPERFINE=${HYPERFINE:-hyperfine}
 BOTICA=$ROOT/lint/target/release/botica
 BENCH=$ROOT/lint/bench

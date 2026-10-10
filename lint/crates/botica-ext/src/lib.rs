@@ -69,7 +69,7 @@ impl ExtensionHost {
         };
         let init: InitializeResult = host.call(
             "initialize",
-            json!({ "protocolVersion": PROTOCOL_VERSION, "client": "botica-spike" }),
+            json!({ "protocolVersion": PROTOCOL_VERSION, "client": "botica" }),
         )?;
         host.rules = init.rules;
         Ok(host)

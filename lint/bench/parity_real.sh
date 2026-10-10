@@ -13,7 +13,7 @@ set -uo pipefail
 ROOT=$(git rev-parse --show-toplevel)
 BENCH=$ROOT/lint/bench
 BOTICA=$(realpath "$1")
-WORK=${2:-$ROOT/.tmp/spike}
+WORK=${2:-$ROOT/.tmp/bench}
 status=0
 
 while read -r name url commit; do

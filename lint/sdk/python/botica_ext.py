@@ -1,4 +1,4 @@
-"""Minimal botica extension SDK (spike): NDJSON JSON-RPC 2.0 over stdio.
+"""Minimal botica extension SDK: NDJSON JSON-RPC 2.0 over stdio.
 
 An extension registers rules with `@rule(id, languages)`; each rule receives `(path, text)` and
 yields `(start_byte, end_byte, message)`. The SDK answers `initialize`, `lint/files` and
