@@ -17,9 +17,10 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
             "file-size-guard",
             "invalid-suppression",
             "io-error",
+            "no-artifacts-in-package",
             "no-notebooks",
+            "no-tests-in-package",
             "no-utils",
-            "repo-shape",
             "unused-suppression"
         ]
     );

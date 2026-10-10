@@ -1,3 +1,3 @@
-# A package with a notebook inside it
+# Un notebook dentro del paquete
 
-`backend/` holds a notebook under `app/`.
+`backend/amarc/` tiene un notebook.

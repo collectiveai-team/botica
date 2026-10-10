@@ -1,3 +1,4 @@
+mod ecosystem;
 mod embedded;
 mod issue;
 mod load;
@@ -6,6 +7,7 @@ mod validate;
 
 pub use validate::is_kebab_case;
 
+pub use ecosystem::Ecosystem;
 pub use issue::{CatalogError, CatalogIssue};
 pub use load::{Catalog, SourceFile, OWN_RULES_DIR};
 pub use model::{

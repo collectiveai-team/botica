@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use botica_catalog::{Catalog, OptionSpec, OptionType, Rule};
+use botica_catalog::{Catalog, Ecosystem, OptionSpec, OptionType, Rule};
 
 use crate::issue::{issue, ConfigError, ConfigIssue};
 use crate::matcher::PathMatcher;
@@ -15,7 +15,7 @@ impl Config {
         selectors(&mut found, catalog, "ignore", &self.ignore);
         globs(&mut found, "extend-exclude", &self.extend_exclude);
         globs(&mut found, "external", &self.external);
-        packages(&mut found, self.packages.as_deref().unwrap_or_default());
+        code_dirs(&mut found, self.code_dirs.as_ref());
         for (old, new) in &self.replace {
             let location = format!("replace.{old}");
             rule_id(&mut found, catalog, &location, old);
@@ -42,20 +42,33 @@ fn selectors(found: &mut Vec<ConfigIssue>, catalog: &Catalog, key: &str, values:
     }
 }
 
-/// A package is written as the directory it is, from the project root, with nothing around it: a
-/// path that cannot match what the walk reports would leave the rules about layout doing nothing.
-fn packages(found: &mut Vec<ConfigIssue>, values: &[String]) {
-    for (index, value) in values.iter().enumerate() {
-        let plain = value
-            .split('/')
-            .all(|part| !part.is_empty() && part != "." && part != "..");
-        if !plain {
+/// A directory of code is written as the directory it is, from the project root, with nothing
+/// around it: a path that cannot match what the walk reports would leave the rules about layout
+/// doing nothing. The ecosystems are the ones the linter knows.
+fn code_dirs(found: &mut Vec<ConfigIssue>, configured: Option<&BTreeMap<String, Vec<String>>>) {
+    for (name, values) in configured.into_iter().flatten() {
+        if Ecosystem::parse(name).is_none() {
+            let known: Vec<&str> = Ecosystem::ALL.iter().map(|e| e.name()).collect();
             found.push(issue(
-                format!("packages[{index}]"),
+                format!("code-dirs.{name}"),
                 format!(
-                    "`{value}` is not a plain directory: write it from the project root, like `backend` or `services/api`, with no leading or trailing `/`, `.` or `..`"
+                    "`{name}` is not an ecosystem the linter knows; they are {}",
+                    known.join(", ")
                 ),
             ));
+        }
+        for (index, value) in values.iter().enumerate() {
+            let plain = value
+                .split('/')
+                .all(|part| !part.is_empty() && part != "." && part != "..");
+            if !plain {
+                found.push(issue(
+                    format!("code-dirs.{name}[{index}]"),
+                    format!(
+                        "`{value}` is not a plain directory: write it from the project root, like `backend/app` or `frontend/src`, with no leading or trailing `/`, `.` or `..`"
+                    ),
+                ));
+            }
         }
     }
 }

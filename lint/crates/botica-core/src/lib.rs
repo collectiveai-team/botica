@@ -1,11 +1,11 @@
 mod diagnostic;
 mod document;
 mod engine;
+mod layout;
 mod native;
 pub mod postprocess;
 pub mod registry;
 pub mod report;
-mod shape;
 pub mod suppress;
 mod timings;
 
@@ -17,6 +17,6 @@ pub mod walk;
 pub use diagnostic::{Diagnostic, Severity};
 pub use document::Document;
 pub use engine::{language_of, Engine, Exclusion, ExtensionRun, NativePlanner, Plan};
+pub use layout::{CodeDir, NoArtifactsInPackage, NoNotebooks, NoTestsInPackage};
 pub use native::{FileSizeGuard, NativeRule, Needs, NoUtils};
-pub use shape::{NoNotebooks, RepoShape};
 pub use timings::{RuleTime, TimedKind};

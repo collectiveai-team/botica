@@ -30,11 +30,13 @@ fn accepted(text: &str) {
 }
 
 #[test]
-fn packages_are_directories_from_the_root_written_plainly() {
-    accepted("packages = [\"backend\", \"services/api\"]");
-    accepted("packages = []");
-    assert_eq!(parse("").packages, None, "absent is not the same as empty");
-    assert_eq!(parse("packages = []").packages, Some(Vec::new()));
+fn code_dirs_are_directories_from_the_root_written_plainly_and_grouped_by_ecosystem() {
+    accepted(
+        "[code-dirs]\npython = [\"backend/amarc\", \"services/api/app\"]\njs = [\"frontend/src\"]",
+    );
+    accepted("[code-dirs]");
+    assert_eq!(parse("").code_dirs, None, "absent is not the same as empty");
+    assert_eq!(parse("[code-dirs]").code_dirs, Some(Default::default()));
     for bad in [
         "backend/",
         "/backend",
@@ -44,10 +46,22 @@ fn packages_are_directories_from_the_root_written_plainly() {
         "a//b",
         "a/../b",
     ] {
-        let message = problems(&format!("packages = [\"{bad}\"]"));
-        assert!(message.contains("packages[0]"), "`{bad}`: {message}");
+        let message = problems(&format!("[code-dirs]\npython = [\"{bad}\"]"));
+        assert!(
+            message.contains("code-dirs.python[0]"),
+            "`{bad}`: {message}"
+        );
     }
-    assert!(problems("packages = \"lib\"").contains("packages"));
+    assert!(problems("code-dirs = [\"lib\"]").contains("code-dirs"));
+}
+
+#[test]
+fn an_ecosystem_the_linter_does_not_know_is_named_with_the_ones_it_does() {
+    let message = problems("[code-dirs]\ncobol = [\"src\"]");
+    assert!(message.contains("code-dirs.cobol"), "{message}");
+    for known in ["python", "js", "rust", "go", "jvm"] {
+        assert!(message.contains(known), "{message}");
+    }
 }
 
 #[test]

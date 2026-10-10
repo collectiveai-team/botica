@@ -3,8 +3,8 @@ use std::fmt;
 
 use botica_catalog::{Catalog, Kind};
 
+use crate::layout::{CodeDir, NoArtifactsInPackage, NoNotebooks, NoTestsInPackage};
 use crate::native::{FileSizeGuard, NativeRule, NoUtils};
-use crate::shape::{NoNotebooks, RepoShape};
 use crate::suppress::{INVALID, UNUSED};
 
 pub const IO_ERROR: &str = "io-error";
@@ -15,8 +15,8 @@ pub type Options = BTreeMap<String, toml::Value>;
 /// What a rule may need to know about the project that is not one of its options.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Context {
-    /// The directories of the project root that hold a package, as paths from the root.
-    pub packages: Vec<String>,
+    /// Where the code of the project lives, as paths in the terms of the paths the rules get.
+    pub code_dirs: Vec<CodeDir>,
 }
 
 enum Provider {
@@ -25,32 +25,46 @@ enum Provider {
     Engine,
 }
 
-const NATIVES: [(&str, Provider); 7] = [
+const NATIVES: [(&str, Provider); 8] = [
     ("file-size-guard", Provider::Rule(file_size_guard)),
     ("no-utils", Provider::Rule(no_utils)),
-    ("repo-shape", Provider::Rule(repo_shape)),
+    ("no-tests-in-package", Provider::Rule(no_tests_in_package)),
     ("no-notebooks", Provider::Rule(no_notebooks)),
+    (
+        "no-artifacts-in-package",
+        Provider::Rule(no_artifacts_in_package),
+    ),
     (IO_ERROR, Provider::Engine),
     (UNUSED, Provider::Engine),
     (INVALID, Provider::Engine),
 ];
 
-/// The rules that read `Context::packages`, so a command can say which packages they will see.
-const USES_PACKAGES: [&str; 2] = ["repo-shape", "no-notebooks"];
+/// The rules that read `Context::code_dirs`, so a command can say which directories they see.
+const USES_CODE_DIRS: [&str; 3] = [
+    "no-tests-in-package",
+    "no-notebooks",
+    "no-artifacts-in-package",
+];
 
-pub fn uses_packages(slug: &str) -> bool {
-    USES_PACKAGES.contains(&slug)
+pub fn uses_code_dirs(slug: &str) -> bool {
+    USES_CODE_DIRS.contains(&slug)
 }
 
-fn repo_shape(_options: &Options, context: &Context) -> Box<dyn NativeRule> {
-    Box::new(RepoShape {
-        packages: context.packages.clone(),
+fn no_tests_in_package(_options: &Options, context: &Context) -> Box<dyn NativeRule> {
+    Box::new(NoTestsInPackage {
+        code_dirs: context.code_dirs.clone(),
     })
 }
 
 fn no_notebooks(_options: &Options, context: &Context) -> Box<dyn NativeRule> {
     Box::new(NoNotebooks {
-        packages: context.packages.clone(),
+        code_dirs: context.code_dirs.clone(),
+    })
+}
+
+fn no_artifacts_in_package(_options: &Options, context: &Context) -> Box<dyn NativeRule> {
+    Box::new(NoArtifactsInPackage {
+        code_dirs: context.code_dirs.clone(),
     })
 }
 

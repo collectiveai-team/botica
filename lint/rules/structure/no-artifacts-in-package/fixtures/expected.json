@@ -1,0 +1,22 @@
+{
+  "diagnostics": [
+    {
+      "path": "backend/amarc/data/rows.csv",
+      "severity": "error",
+      "range": null,
+      "message": "CES-32 (no-artifacts-in-package): backend/amarc/data/rows.csv is a data or model file inside the code of the project — keep data, models and reports outside it."
+    },
+    {
+      "path": "backend/amarc/resources/schema.yaml",
+      "severity": "error",
+      "range": null,
+      "message": "CES-32 (no-artifacts-in-package): backend/amarc/resources/schema.yaml is a file under a `resources/` directory inside the code of the project — keep data, models and reports outside it."
+    },
+    {
+      "path": "frontend/src/models/weights.pt",
+      "severity": "error",
+      "range": null,
+      "message": "CES-32 (no-artifacts-in-package): frontend/src/models/weights.pt is a data or model file inside the code of the project — keep data, models and reports outside it."
+    }
+  ]
+}

@@ -1,10 +1,10 @@
 {
   "diagnostics": [
     {
-      "path": "backend/app/analysis.ipynb",
+      "path": "backend/amarc/analysis.ipynb",
       "severity": "error",
       "range": null,
-      "message": "CES-32 (no-notebooks): backend/app/analysis.ipynb is a notebook inside a package — keep notebooks outside the package."
+      "message": "CES-32 (no-notebooks): backend/amarc/analysis.ipynb is a notebook inside the code of the project — keep notebooks outside it."
     }
   ]
 }

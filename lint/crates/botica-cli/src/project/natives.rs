@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use botica_core::registry::{self, Context};
 use botica_core::NativeRule;
 
-use super::{packages, Project};
+use super::Project;
 
 pub struct Natives {
     pub rules: Vec<Box<dyn NativeRule>>,
@@ -12,7 +12,7 @@ pub struct Natives {
 
 pub fn natives(project: &Project) -> Natives {
     let context = Context {
-        packages: packages::seen_from(project.packages(), project.working_prefix().as_deref()),
+        code_dirs: project.code_dirs_seen_from_here(),
     };
     let mut rules = Vec::new();
     let mut index = HashMap::new();

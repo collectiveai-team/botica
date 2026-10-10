@@ -66,7 +66,12 @@ fn ignore_after_select_trims_the_selection() {
     let resolution = resolve("", &command_line);
     assert_eq!(
         active(&resolution),
-        ["file-size-guard", "no-notebooks", "repo-shape"]
+        [
+            "file-size-guard",
+            "no-artifacts-in-package",
+            "no-notebooks",
+            "no-tests-in-package"
+        ]
     );
 }
 

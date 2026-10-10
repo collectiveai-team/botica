@@ -29,8 +29,8 @@ pub fn run(args: &ExplainArgs) -> Result<()> {
         None => "none (the defaults apply)".to_owned(),
     };
     let mut out = std::io::stdout().lock();
-    let packages = registry::uses_packages(&entry.rule.id).then(|| project.describe_packages());
-    write_entry(entry, &config, packages.as_deref(), &mut out)?;
+    let code_dirs = registry::uses_code_dirs(&entry.rule.id).then(|| project.describe_code_dirs());
+    write_entry(entry, &config, code_dirs.as_deref(), &mut out)?;
     Ok(())
 }
 
@@ -62,7 +62,7 @@ fn severity_name(severity: Severity) -> &'static str {
 fn write_entry(
     entry: &Entry,
     config: &str,
-    packages: Option<&str>,
+    code_dirs: Option<&str>,
     out: &mut impl Write,
 ) -> Result<()> {
     let rule = &entry.rule;
@@ -97,8 +97,8 @@ fn write_entry(
         .map(|(name, value)| format!("{name} = {value}"))
         .collect();
     writeln!(out, "options:   {}", or_none(&options))?;
-    if let Some(packages) = packages {
-        writeln!(out, "packages:  {packages}")?;
+    if let Some(code_dirs) = code_dirs {
+        writeln!(out, "code-dirs: {code_dirs}")?;
     }
     writeln!(out, "config:    {config}")?;
     writeln!(

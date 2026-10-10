@@ -1,3 +1,3 @@
-# A package with no notebook inside it
+# Los notebooks estan al lado del paquete
 
-The notebook is in `notebooks/`, at the root, next to the package.
+En `backend/notebooks/`, no dentro de `backend/amarc/`.

@@ -97,8 +97,10 @@ fn the_default_selection_runs_every_rule_enabled_by_default() {
             "file-size-guard",
             "invalid-suppression",
             "io-error",
+            "no-artifacts-in-package",
+            "no-notebooks",
+            "no-tests-in-package",
             "no-utils",
-            "repo-shape",
             "unused-suppression"
         ]
     );
@@ -113,7 +115,13 @@ fn select_and_extend_select_are_added_together() {
     let catalog = embedded();
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTSTRUC\"]")),
-        ["file-size-guard", "no-notebooks", "no-utils", "repo-shape"]
+        [
+            "file-size-guard",
+            "no-artifacts-in-package",
+            "no-notebooks",
+            "no-tests-in-package",
+            "no-utils"
+        ]
     );
     let resolution = resolve(
         &catalog,
@@ -131,7 +139,7 @@ fn select_and_extend_select_are_added_together() {
     );
     assert_eq!(
         active(&resolve(&catalog, "select = []\nextend-select = [\"all\"]")).len(),
-        7
+        8
     );
 }
 
@@ -161,7 +169,9 @@ fn a_rule_switched_off_in_its_own_section_stays_out() {
         [
             "invalid-suppression",
             "io-error",
-            "repo-shape",
+            "no-artifacts-in-package",
+            "no-notebooks",
+            "no-tests-in-package",
             "unused-suppression"
         ]
     );

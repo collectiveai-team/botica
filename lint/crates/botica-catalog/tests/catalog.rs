@@ -379,3 +379,19 @@ fn ces_is_only_a_documentary_reference_and_must_look_like_one() {
     ]);
     assert!(message.contains("ces"), "{message}");
 }
+
+#[test]
+fn every_ecosystem_has_a_name_that_parses_back_to_it() {
+    let names: Vec<&str> = botica_catalog::Ecosystem::ALL
+        .iter()
+        .map(|e| e.name())
+        .collect();
+    assert_eq!(names, ["python", "js", "rust", "go", "jvm"]);
+    for ecosystem in botica_catalog::Ecosystem::ALL {
+        assert_eq!(
+            botica_catalog::Ecosystem::parse(ecosystem.name()),
+            Some(ecosystem)
+        );
+    }
+    assert_eq!(botica_catalog::Ecosystem::parse("typescript"), None);
+}

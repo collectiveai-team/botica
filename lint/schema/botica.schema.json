@@ -10,6 +10,20 @@
         "$ref": "#/$defs/CatalogSource"
       }
     },
+    "code-dirs": {
+      "description": "Where the code of the project lives, as directories from its root grouped by ecosystem\n(`python`, `js`, `rust`, `go`, `jvm`), for the rules about layout. When absent they are\ndetected; an empty table says there are none.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "default": null
+    },
     "compat-ast-grep-ignore": {
       "description": "While migrating from ast-grep: honour `# ast-grep-ignore: <rule>` on the line of a finding and\non the line before it.",
       "type": "boolean",
@@ -59,17 +73,6 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/Override"
-      }
-    },
-    "packages": {
-      "description": "The packages of the project, as directories from its root, for the rules about layout. When\nabsent they are detected; `[]` says there are none.",
-      "type": [
-        "array",
-        "null"
-      ],
-      "default": null,
-      "items": {
-        "type": "string"
       }
     },
     "preview": {

@@ -1,6 +1,6 @@
 mod args;
+mod code_dirs;
 mod natives;
-mod packages;
 mod paths;
 mod policy;
 
@@ -9,7 +9,7 @@ use std::path::Path;
 use anyhow::{bail, Context, Result};
 use botica_catalog::Catalog;
 use botica_config::{discover, load_file, Loaded, Resolution};
-use botica_core::registry;
+use botica_core::{registry, CodeDir};
 
 use args::{ConfigOption, ScopeArg};
 
@@ -80,28 +80,37 @@ impl Project {
             .is_some_and(|entry| entry.active)
     }
 
-    /// The packages of the project: the ones the configuration lists, or else the ones the root
-    /// holds.
-    pub fn packages(&self) -> Vec<String> {
-        match &self.loaded.config.packages {
-            Some(listed) => listed.clone(),
-            None => packages::detect(&self.loaded.root),
+    /// Where the code of the project lives, from its root: what the configuration lists, or else
+    /// what the root holds.
+    pub fn code_dirs(&self) -> Vec<CodeDir> {
+        match &self.loaded.config.code_dirs {
+            Some(listed) => code_dirs::configured(listed),
+            None => code_dirs::detect(&self.loaded.root),
         }
     }
 
-    /// The packages and where they come from, for a person: `backend, frontend (detected)`.
-    pub fn describe_packages(&self) -> String {
-        let source = if self.loaded.config.packages.is_some() {
+    /// The code directories as seen from where botica runs, for the rules.
+    pub fn code_dirs_seen_from_here(&self) -> Vec<CodeDir> {
+        code_dirs::seen_from(self.code_dirs(), self.working_prefix().as_deref())
+    }
+
+    /// The code directories and where they come from, for a person: `python: backend/amarc
+    /// (detected)`.
+    pub fn describe_code_dirs(&self) -> String {
+        let source = if self.loaded.config.code_dirs.is_some() {
             "configuration"
         } else {
             "detected"
         };
-        let found = self.packages();
+        let found = self.code_dirs();
         if found.is_empty() {
-            format!("none ({source}), so the rule does nothing")
-        } else {
-            format!("{} ({source})", found.join(", "))
+            return format!("none ({source}), so the rules about layout do nothing");
         }
+        let listed: Vec<String> = found
+            .iter()
+            .map(|dir| format!("{}: {}", dir.ecosystem.name(), dir.path))
+            .collect();
+        format!("{} ({source})", listed.join(", "))
     }
 
     /// Where the working directory sits inside the project root, when it is not the root itself.
