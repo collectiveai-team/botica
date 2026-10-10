@@ -98,3 +98,21 @@ fn two_ecosystems_in_one_directory_are_both_looked_at() {
         "{text}"
     );
 }
+
+#[test]
+fn a_project_inside_another_project_is_not_looked_for() {
+    let dir = project("nested");
+    write(&dir, "backend/pyproject.toml", PYPROJECT);
+    write(&dir, "backend/web/package.json", "{}\n");
+    write(&dir, "backend/web/src/weights.pt", "w\n");
+    write(&dir, "packages/ui/package.json", "{}\n");
+    write(&dir, "packages/ui/src/weights.pt", "w\n");
+
+    let text = lint(&dir);
+
+    assert_eq!(
+        reported(&text, "no-artifacts-in-package"),
+        ["packages/ui/src/weights.pt"],
+        "{text}"
+    );
+}

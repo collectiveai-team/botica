@@ -123,7 +123,8 @@ impl NativeRule for NoTestsInPackage {
             return;
         };
         let (directories, file) = split(inside);
-        let in_tests_directory = directories.iter().any(|part| TEST_DIRS.contains(part));
+        let in_tests_directory = directories.iter().any(|part| TEST_DIRS.contains(part))
+            && extension(file).as_deref() == Some("py");
         if !in_tests_directory && !is_python_test_file(file) {
             return;
         }

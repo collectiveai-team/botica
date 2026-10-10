@@ -260,7 +260,7 @@ fn lint_paths(args: &LintArgs, setup: &Setup, root: &Path) -> Result<Linted> {
             files_read: named.read + reached.walked.read,
         })
     } else if let Some(dir) = &args.cache_dir {
-        let (sources, unreadable) = walk::read_all(root, &reached.named);
+        let (sources, unreadable) = walk::read_all(engine, root, &reached.named);
         let fingerprint = rules::fingerprint(
             setup.with_astgrep,
             args.extra_rules.as_deref(),

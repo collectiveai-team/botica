@@ -33,3 +33,30 @@ fn a_file_that_only_mentions_ipynb_is_not_a_notebook() {
 
     assert_eq!(reported(&text, "no-notebooks"), nothing(), "{text}");
 }
+
+#[test]
+fn a_notebook_nobody_may_read_is_still_reported_by_its_name_and_is_no_failure() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = project("notebook-locked");
+    backend(&dir);
+    write(&dir, "backend/amarc/secret.ipynb", "{}\n");
+    let path = dir.join("backend/amarc/secret.ipynb");
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o000)).expect("chmod");
+    if std::fs::File::open(&path).is_ok() {
+        eprintln!("skipped: the file is readable by this user");
+        return;
+    }
+
+    let output = command(
+        &dir,
+        &["lint", ".", "--no-astgrep", "--select", "no-notebooks"],
+    );
+
+    let text = stdout(&output);
+    assert_eq!(
+        reported(&text, "no-notebooks"),
+        ["backend/amarc/secret.ipynb"],
+        "{text}"
+    );
+    assert_eq!(output.status.code(), Some(1), "{}", stderr(&output));
+}

@@ -28,6 +28,55 @@ fn tests_inside_a_python_package_are_reported_and_the_ones_beside_it_are_not() {
 }
 
 #[test]
+fn under_a_tests_directory_only_python_files_are_tests() {
+    let dir = project("tests-python-only");
+    backend(&dir);
+    write(&dir, "backend/amarc/ui/tests/e2e/spec.ts", "export {};\n");
+    write(&dir, "backend/amarc/ui/tests/README.md", "x\n");
+    write(&dir, "backend/amarc/tests/data.json", "{}\n");
+    write(&dir, "backend/amarc/tests/helpers.py", "x = 1\n");
+
+    let text = lint(&dir);
+
+    assert_eq!(
+        reported(&text, "no-tests-in-package"),
+        ["backend/amarc/tests/helpers.py"],
+        "{text}"
+    );
+}
+
+#[test]
+fn a_file_level_comment_silences_a_finding_about_the_name_of_a_file() {
+    let dir = project("silenced");
+    backend(&dir);
+    write(
+        &dir,
+        "backend/amarc/test_a.py",
+        "# botica: ignore-file[no-tests-in-package]\nx = 1\n",
+    );
+    write(&dir, "backend/amarc/test_b.py", "x = 1\n");
+
+    // Only the rule that goes by the name is selected, so nothing else asks for the file to be
+    // read: the comment has to be reason enough.
+    let text = stdout(&command(
+        &dir,
+        &[
+            "lint",
+            ".",
+            "--no-astgrep",
+            "--select",
+            "no-tests-in-package",
+        ],
+    ));
+
+    assert_eq!(
+        reported(&text, "no-tests-in-package"),
+        ["backend/amarc/test_b.py"],
+        "{text}"
+    );
+}
+
+#[test]
 fn a_file_that_only_looks_like_a_test_is_not_one() {
     let dir = project("python-lookalikes");
     backend(&dir);
@@ -57,7 +106,16 @@ fn a_tests_directory_with_an_init_file_is_not_a_package_of_its_own() {
 fn a_directory_that_is_not_a_package_by_convention_is_not_one_with_an_init_file() {
     let dir = project("not-packages");
     write(&dir, "pyproject.toml", PYPROJECT);
-    for name in ["tests", "test", "src", "docs", "scripts", "examples"] {
+    for name in [
+        "tests",
+        "test",
+        "src",
+        "docs",
+        "scripts",
+        "examples",
+        "fixtures",
+        "benchmarks",
+    ] {
         write(&dir, &format!("{name}/__init__.py"), "");
         write(&dir, &format!("{name}/test_top.py"), "x = 1\n");
     }

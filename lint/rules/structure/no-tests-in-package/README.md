@@ -5,7 +5,9 @@
 ## Directive
 
 Tests live in a `tests/` directory **beside** the package, not in it. Inside a Python package, a
-`tests/` or `test/` directory, a `test_*.py` or `*_test.py` file and a `conftest.py` are errors.
+Python file under a `tests/` or `test/` directory, a `test_*.py` or `*_test.py` file and a
+`conftest.py` are errors. A non-Python file under `tests/` (the end-to-end tests of a web app that
+ships inside the package, say) is not.
 
 ## Why
 
@@ -20,8 +22,13 @@ Tests live in a `tests/` directory **beside** the package, not in it. Inside a P
 
 The directories of code of the project (see the `code-dirs` setting): for Python, a directory with
 an `__init__.py` inside the project or inside its `src/`. `tests`, `test`, `src`, `docs`,
-`scripts` and `examples` are never a package. Other ecosystems are not covered: Go and Rust put
+`scripts`, `examples`, `fixtures` and `benchmarks` are never a package. Other ecosystems are not covered: Go and Rust put
 their tests with the code by design, and TypeScript projects are split.
+
+## Names that look like tests
+
+The rule goes by the names `pytest` collects, so a module that is code but is called
+`connection_test.py` or `test_fire_action.py` is reported. Exclude it with `ignores`.
 
 ## Suppression
 

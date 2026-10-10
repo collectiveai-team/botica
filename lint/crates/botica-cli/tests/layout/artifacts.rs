@@ -1,4 +1,5 @@
 use super::*;
+use common::write_bytes;
 
 #[test]
 fn code_in_a_directory_named_like_an_artifact_is_not_one_but_data_is() {
@@ -20,6 +21,27 @@ fn code_in_a_directory_named_like_an_artifact_is_not_one_but_data_is() {
             "backend/amarc/data/rows.csv",
             "backend/amarc/resources/schema.yaml"
         ],
+        "{text}"
+    );
+}
+
+#[test]
+fn a_binary_data_file_is_reported_though_the_linter_never_reads_it() {
+    let dir = project("artifact-binary");
+    backend(&dir);
+    write_bytes(
+        &dir,
+        "backend/amarc/weights.pt",
+        b"\x80\x02\x00\x00PK\x03\x04\x00\x00",
+    );
+    write_bytes(&dir, "backend/amarc/table.parquet", b"PAR1\x00\x00\x00\x00");
+    write_bytes(&dir, "backend/weights.pt", b"\x00\x01\x02");
+
+    let text = lint(&dir);
+
+    assert_eq!(
+        reported(&text, "no-artifacts-in-package"),
+        ["backend/amarc/table.parquet", "backend/amarc/weights.pt"],
         "{text}"
     );
 }
@@ -128,4 +150,31 @@ fn in_the_other_ecosystems_only_the_kind_of_file_counts() {
         ["frontend/src/models/weights.pt"],
         "{text}"
     );
+}
+
+#[test]
+fn a_binary_data_file_is_reported_however_it_is_reached() {
+    let dir = project("artifact-binary-named");
+    backend(&dir);
+    write_bytes(
+        &dir,
+        "backend/amarc/weights.pt",
+        b"\x80\x02\x00\x00PK\x03\x04\x00\x00",
+    );
+    let cache = dir.join("cache");
+    let cache = cache.to_str().expect("UTF-8 path");
+
+    for args in [
+        &["lint", "backend/amarc/weights.pt", "--no-astgrep"][..],
+        &["lint", ".", "--no-astgrep", "--cache-dir", cache],
+        &["lint", ".", "--no-astgrep", "--cache-dir", cache],
+    ] {
+        let text = stdout(&command(&dir, args));
+
+        assert_eq!(
+            reported(&text, "no-artifacts-in-package"),
+            ["backend/amarc/weights.pt"],
+            "{args:?}:\n{text}"
+        );
+    }
 }

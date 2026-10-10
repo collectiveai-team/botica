@@ -16,6 +16,10 @@ pub type NativePlanner = Box<dyn Fn(&str) -> Vec<usize> + Send + Sync>;
 pub struct Plan {
     pub native: Vec<usize>,
     pub astgrep: bool,
+    /// Whether anything looks inside the file. When it is `false` the rules go by the path alone,
+    /// and the file need not be opened: that is how a binary file or a file that is not UTF-8 gets
+    /// its findings about its name.
+    pub content: bool,
 }
 
 /// Decides, for an entry the walk met (its path and whether it is a directory), if it is left out.
@@ -149,7 +153,19 @@ impl Engine {
                 .suppressions
                 .as_ref()
                 .is_some_and(|policy| policy.reads(path));
-        (!native.is_empty() || astgrep || comments_only).then_some(Plan { native, astgrep })
+        let content = astgrep
+            || native
+                .iter()
+                .any(|&index| self.native[index].needs() != Needs::Path)
+            || self
+                .suppressions
+                .as_ref()
+                .is_some_and(|policy| policy.can_silence(path));
+        (!native.is_empty() || astgrep || comments_only).then_some(Plan {
+            native,
+            astgrep,
+            content,
+        })
     }
 
     pub fn astgrep(&self) -> &AstGrepSet {
@@ -183,6 +199,19 @@ impl Engine {
     /// cannot parse it and the suppression comments cannot be read.
     pub fn lint_bytes_planned(&self, path: &str, bytes: &[u8], plan: &Plan) -> Vec<Diagnostic> {
         self.lint_document(&Document::from_bytes(path, bytes), plan)
+    }
+
+    /// What the rules that go by the name alone find in a file that looks binary and is not read.
+    pub fn lint_unread(&self, path: &str, plan: &Plan) -> Vec<Diagnostic> {
+        let doc = Document::from_bytes(path, &[]);
+        let mut out = Vec::new();
+        for &index in &plan.native {
+            if self.native[index].needs() == Needs::Path {
+                self.native[index].check(&doc, &mut out);
+            }
+        }
+        out.sort_by(|a, b| (a.start, &a.rule).cmp(&(b.start, &b.rule)));
+        out
     }
 
     fn lint_document(&self, doc: &Document<'_>, plan: &Plan) -> Vec<Diagnostic> {

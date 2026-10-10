@@ -54,7 +54,7 @@ fn walking_and_linting_in_one_pass_reports_what_the_two_passes_report() {
 }
 
 #[test]
-fn files_of_any_size_are_read_whole_and_binary_ones_are_skipped() {
+fn files_of_any_size_are_read_whole_and_binary_ones_are_judged_by_their_name() {
     let root = tree("any_size");
     let engine = engine();
 
@@ -62,8 +62,9 @@ fn files_of_any_size_are_read_whole_and_binary_ones_are_skipped() {
 
     // big, small, empty, utils, the Markdown and the Latin-1 file (every native rule runs on
     // every path without a planner; a file that is not UTF-8 is still read, for the rules that
-    // count bytes); not the hidden directory or the binary file.
-    assert_eq!(walked.read, 6);
+    // count bytes), and the binary file, which only the rules that go by its name see; not the
+    // hidden directory.
+    assert_eq!(walked.read, 7);
     assert!(walked.unreadable.is_empty());
     let messages = rendered(&walked.diagnostics).join("\n");
     assert!(messages.contains("is too large (40000 lines"), "{messages}");
@@ -83,7 +84,7 @@ fn explicit_files_are_linted_like_walked_ones() {
 
     let streamed = lint_streaming(&engine, &root, &files);
 
-    assert_eq!(streamed.read, 2);
+    assert_eq!(streamed.read, 3);
     let walked = walk_and_lint(&engine, &root, &root);
     let big = |d: &String| d.contains("big.py");
     assert_eq!(

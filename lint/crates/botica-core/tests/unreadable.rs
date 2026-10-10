@@ -57,7 +57,7 @@ fn every_way_of_reading_named_files_reports_the_same_failure() {
 
     let streamed = lint_streaming(&engine, &root, &files);
     let (_, two_passes) = read_and_lint(&engine, &root, &files);
-    let (sources, unreadable) = read_all(&root, &files);
+    let (sources, unreadable) = read_all(&engine, &root, &files);
 
     assert_eq!(streamed.unreadable, two_passes.unreadable);
     assert_eq!(streamed.unreadable, unreadable);

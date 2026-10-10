@@ -1,5 +1,5 @@
 use crate::diagnostic::Diagnostic;
-use crate::engine::Engine;
+use crate::engine::{language_of, Engine, Plan};
 use ignore::WalkBuilder;
 use rayon::prelude::*;
 use std::io;
@@ -67,7 +67,8 @@ impl Unreadable {
 /// What a walk that also lints brings back.
 #[derive(Debug, Default)]
 pub struct Walked {
-    /// Files read and linted; not the binary ones or the unreadable ones.
+    /// Files linted: the ones read, and the ones judged by their name alone, which includes the
+    /// binary ones. Not the unreadable ones.
     pub read: usize,
     /// Sorted by file, position and rule, whatever the threads did.
     pub diagnostics: Vec<Diagnostic>,
@@ -106,6 +107,13 @@ pub fn walk_and_lint(engine: &Engine, root: &Path, dir: &Path) -> Walked {
                 if entry.file_type().is_some_and(|t| t.is_file()) {
                     let path = relative_path(self.builder.root, entry.path());
                     if let Some(plan) = self.builder.engine.plan(&path) {
+                        if !plan.content {
+                            self.mine
+                                .diagnostics
+                                .extend(self.builder.engine.lint_bytes_planned(&path, &[], &plan));
+                            self.mine.read += 1;
+                            return ignore::WalkState::Continue;
+                        }
                         match read_into(entry.path(), &mut self.buf) {
                             Ok(Some(bytes)) => {
                                 self.mine.diagnostics.extend(
@@ -113,7 +121,12 @@ pub fn walk_and_lint(engine: &Engine, root: &Path, dir: &Path) -> Walked {
                                 );
                                 self.mine.read += 1;
                             }
-                            Ok(None) => {}
+                            Ok(None) => {
+                                self.mine
+                                    .diagnostics
+                                    .extend(self.builder.engine.lint_unread(&path, &plan));
+                                self.mine.read += 1;
+                            }
                             Err(error) => self.mine.unreadable.extend(Unreadable::of(path, &error)),
                         }
                     }
@@ -207,15 +220,63 @@ impl<T> Outcome<T> {
     }
 }
 
-/// Reads `path` into `buf`: its name as the rules see it, and its bytes.
-fn read_named<'a>(root: &Path, path: &Path, buf: &'a mut Vec<u8>) -> Outcome<(String, &'a [u8])> {
+/// A file the caller named: its name as the rules see it, what the engine means to do with it
+/// and its bytes. The bytes are empty when the rules go by the name alone and nobody wants the
+/// text, and when the file looks binary (`binary`).
+struct Opened<'a> {
+    name: String,
+    plan: Option<Plan>,
+    bytes: &'a [u8],
+    binary: bool,
+}
+
+/// Opens `path` into `buf`. The file is left unread when the rules look only at its name, which
+/// also spares a binary file from being dropped. `keep` says the caller holds on to the texts, so
+/// a file in a language an extension may ask for is read all the same.
+fn open_named<'a>(
+    engine: &Engine,
+    root: &Path,
+    path: &Path,
+    buf: &'a mut Vec<u8>,
+    keep: bool,
+) -> Outcome<Opened<'a>> {
+    let name = relative_path(root, path);
+    let plan = engine.plan(&name);
+    let read = match &plan {
+        Some(plan) if plan.content => true,
+        Some(_) => keep && language_of(&name).is_some(),
+        None => keep,
+    };
+    let opened = |name, plan, bytes, binary| {
+        Outcome::Got(Opened {
+            name,
+            plan,
+            bytes,
+            binary,
+        })
+    };
+    if !read {
+        return opened(name, plan, &[], false);
+    }
     match read_into(path, buf) {
-        Ok(Some(bytes)) => Outcome::Got((relative_path(root, path), bytes)),
-        Ok(None) => Outcome::Skipped,
-        Err(error) => match Unreadable::of(relative_path(root, path), &error) {
+        Ok(Some(bytes)) => opened(name, plan, bytes, false),
+        Ok(None) => opened(name, plan, &[], true),
+        Err(error) => match Unreadable::of(name, &error) {
             Some(failure) => Outcome::Failed(failure),
             None => Outcome::Skipped,
         },
+    }
+}
+
+/// What the engine finds in a file opened by `open_named`.
+fn lint_opened(engine: &Engine, opened: &Opened<'_>) -> Vec<Diagnostic> {
+    let Some(plan) = &opened.plan else {
+        return Vec::new();
+    };
+    if opened.binary {
+        engine.lint_unread(&opened.name, plan)
+    } else {
+        engine.lint_bytes_planned(&opened.name, opened.bytes, plan)
     }
 }
 
@@ -291,21 +352,26 @@ pub fn lint_streaming(engine: &Engine, root: &Path, paths: &[PathBuf]) -> Walked
     let outcomes: Vec<Outcome<Vec<Diagnostic>>> = paths
         .par_iter()
         .map_init(Vec::new, |buf, path| {
-            read_named(root, path, buf).map(|(name, bytes)| engine.lint_bytes(&name, bytes))
+            open_named(engine, root, path, buf, false).map(|opened| lint_opened(engine, &opened))
         })
         .collect();
     let (found, unreadable) = split(outcomes);
     walked(found, unreadable)
 }
 
-/// The files that were read, with their bytes, and the ones that could not be.
-pub fn read_all(root: &Path, paths: &[PathBuf]) -> (Vec<SourceFile>, Vec<Unreadable>) {
+/// The files that were read, with their bytes, and the ones that could not be. A file the rules
+/// judge by its name alone has no bytes.
+pub fn read_all(
+    engine: &Engine,
+    root: &Path,
+    paths: &[PathBuf],
+) -> (Vec<SourceFile>, Vec<Unreadable>) {
     let outcomes: Vec<Outcome<SourceFile>> = paths
         .par_iter()
         .map_init(Vec::new, |buf, path| {
-            read_named(root, path, buf).map(|(path, bytes)| SourceFile {
-                path,
-                bytes: bytes.to_vec(),
+            open_named(engine, root, path, buf, true).map(|opened| SourceFile {
+                path: opened.name,
+                bytes: opened.bytes.to_vec(),
             })
         })
         .collect();
@@ -318,11 +384,11 @@ pub fn read_and_lint(engine: &Engine, root: &Path, paths: &[PathBuf]) -> (Vec<So
     let outcomes: Vec<Outcome<(SourceFile, Vec<Diagnostic>)>> = paths
         .par_iter()
         .map_init(Vec::new, |buf, path| {
-            read_named(root, path, buf).map(|(path, bytes)| {
-                let found = engine.lint_bytes(&path, bytes);
+            open_named(engine, root, path, buf, true).map(|opened| {
+                let found = lint_opened(engine, &opened);
                 let file = SourceFile {
-                    path,
-                    bytes: bytes.to_vec(),
+                    path: opened.name,
+                    bytes: opened.bytes.to_vec(),
                 };
                 (file, found)
             })

@@ -33,7 +33,16 @@ const NOT_PROJECTS: [&str; 20] = [
 const DEPTH: usize = 2;
 
 /// Directories next to a Python package that are never one, even with an `__init__.py` in them.
-const NOT_PACKAGES: [&str; 6] = ["tests", "test", "src", "docs", "scripts", "examples"];
+const NOT_PACKAGES: [&str; 8] = [
+    "tests",
+    "test",
+    "src",
+    "docs",
+    "scripts",
+    "examples",
+    "fixtures",
+    "benchmarks",
+];
 
 /// What a directory holds that matters to the search for code, read with one listing.
 struct Listing {
@@ -140,29 +149,77 @@ fn code_of(root: &Path, project: &str, ecosystem: Ecosystem, listing: &Listing) 
     }
 }
 
+/// What one directory of the search brings: the code directories of its project, if it is one, and
+/// the directories below it that are worth a look.
+struct Inspected {
+    code: Vec<CodeDir>,
+    below: Vec<String>,
+}
+
+/// Looks at the directory `project` (a path from the root). A project is not searched for other
+/// projects inside it, as the layout of a monorepo does not nest them; the root is, and so is a
+/// directory with no manifest, which groups projects (`packages/`, `crates/`).
+fn inspect(root: &Path, project: &str, depth: usize) -> Inspected {
+    let mut inspected = Inspected {
+        code: Vec::new(),
+        below: Vec::new(),
+    };
+    let Some(listing) = list(&root.join(project)) else {
+        return inspected;
+    };
+    let ecosystems = ecosystems_of(&listing.files);
+    for &ecosystem in &ecosystems {
+        for path in code_of(root, project, ecosystem, &listing) {
+            inspected.code.push(CodeDir { path, ecosystem });
+        }
+    }
+    let is_project = !ecosystems.is_empty();
+    if depth < DEPTH && (depth == 0 || !is_project) {
+        for name in &listing.directories {
+            // Hidden directories hold no code the walk reaches, and `.git` alone has hundreds
+            // of directories to list.
+            if !name.starts_with('.') && !NOT_PROJECTS.contains(&name.as_str()) {
+                inspected.below.push(joined(project, name));
+            }
+        }
+    }
+    inspected
+}
+
+/// `f` on each item, on as many threads as the machine offers (a few at most), in order.
+fn in_parallel<T: Sync, R: Send>(items: &[T], f: impl Fn(&T) -> R + Sync) -> Vec<R> {
+    let workers = std::thread::available_parallelism()
+        .map_or(1, usize::from)
+        .min(8)
+        .min(items.len());
+    if workers <= 1 {
+        return items.iter().map(f).collect();
+    }
+    std::thread::scope(|scope| {
+        let handles: Vec<_> = items
+            .chunks(items.len().div_ceil(workers))
+            .map(|chunk| scope.spawn(|| chunk.iter().map(&f).collect::<Vec<_>>()))
+            .collect();
+        handles
+            .into_iter()
+            .flat_map(|handle| handle.join().expect("a thread of the search"))
+            .collect()
+    })
+}
+
 /// Where the code of the project at `root` lives: for each project found within `DEPTH` levels,
-/// the directories its ecosystem keeps code in. Sorted.
+/// the directories its ecosystem keeps code in. Sorted. Each level of directories is listed at
+/// once, since this runs before the walk starts and the walk cannot overlap with it.
 pub fn detect(root: &Path) -> Vec<CodeDir> {
     let mut found = Vec::new();
-    let mut pending = vec![(String::new(), 0)];
-    while let Some((project, depth)) = pending.pop() {
-        let Some(listing) = list(&root.join(&project)) else {
-            continue;
-        };
-        for ecosystem in ecosystems_of(&listing.files) {
-            for path in code_of(root, &project, ecosystem, &listing) {
-                found.push(CodeDir { path, ecosystem });
-            }
+    let mut level = vec![String::new()];
+    for depth in 0..=DEPTH {
+        let mut next = Vec::new();
+        for inspected in in_parallel(&level, |project| inspect(root, project, depth)) {
+            found.extend(inspected.code);
+            next.extend(inspected.below);
         }
-        if depth < DEPTH {
-            for name in &listing.directories {
-                // Hidden directories hold no code the walk reaches, and `.git` alone has hundreds
-                // of directories to list.
-                if !name.starts_with('.') && !NOT_PROJECTS.contains(&name.as_str()) {
-                    pending.push((joined(&project, name), depth + 1));
-                }
-            }
-        }
+        level = next;
     }
     found.sort_by(|a, b| (&a.path, a.ecosystem).cmp(&(&b.path, b.ecosystem)));
     found

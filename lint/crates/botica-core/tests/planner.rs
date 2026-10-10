@@ -29,7 +29,8 @@ fn without_a_planner_every_native_rule_runs_on_every_path() {
         engine.plan("notes.md"),
         Some(Plan {
             native: vec![0, 1],
-            astgrep: false
+            astgrep: false,
+            content: true,
         })
     );
 }
@@ -109,7 +110,7 @@ fn every_kind_of_file_is_walked_when_a_rule_covers_every_language() {
 }
 
 #[test]
-fn binary_files_are_skipped_before_reading_them_whole() {
+fn binary_files_are_not_read_whole() {
     let root = tree("binary");
     let mut binary = vec![b'x'; 100];
     binary.push(0);
@@ -117,7 +118,10 @@ fn binary_files_are_skipped_before_reading_them_whole() {
     fs::write(root.join("src/blob.dat"), binary).unwrap();
     let engine = Engine::new(natives(), AstGrepSet::default()).with_planner(Box::new(|_| vec![0]));
     let walked = walk_and_lint(&engine, &root, &root);
-    assert_eq!(walked.read, 4, "the blob is not counted as read");
+    assert_eq!(
+        walked.read, 5,
+        "the blob is linted by its name, not read whole"
+    );
     assert!(walked
         .diagnostics
         .iter()

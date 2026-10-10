@@ -117,6 +117,12 @@ impl Policy {
         (self.unused.is_some() || self.invalid.is_some()) && Syntax::of(path).is_some()
     }
 
+    /// Whether a comment of the file at `path` could silence a finding there, so the file has to
+    /// be read even when the rules look only at its name.
+    pub(crate) fn can_silence(&self, path: &str) -> bool {
+        Syntax::of(path).is_some()
+    }
+
     pub(crate) fn is_astgrep(&self, slug: &str) -> bool {
         self.astgrep.contains(slug)
     }
