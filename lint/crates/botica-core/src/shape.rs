@@ -15,6 +15,37 @@ fn within<'p>(packages: &[String], path: &'p str) -> Option<&'p str> {
     })
 }
 
+/// Keeps Jupyter notebooks out of a package. A rule of its own, switched off by default, so a
+/// project that ships notebooks on purpose can leave it off without giving up `repo-shape`.
+pub struct NoNotebooks {
+    pub packages: Vec<String>,
+}
+
+impl NativeRule for NoNotebooks {
+    fn id(&self) -> &'static str {
+        "no-notebooks"
+    }
+
+    fn needs(&self) -> Needs {
+        Needs::Path
+    }
+
+    fn check(&self, doc: &Document<'_>, out: &mut Vec<Diagnostic>) {
+        if !doc.path.ends_with(".ipynb") || within(&self.packages, doc.path).is_none() {
+            return;
+        }
+        out.push(Diagnostic::file_level(
+            doc.path,
+            self.id(),
+            Severity::Error,
+            format!(
+                "CES-32 (no-notebooks): {} is a notebook inside a package — keep notebooks outside the package.",
+                doc.path
+            ),
+        ));
+    }
+}
+
 /// Keeps data, reports and resources out of a package. The rule only reads paths, so the caller
 /// says which directories are packages, as paths in the same terms as the ones it is given.
 pub struct RepoShape {

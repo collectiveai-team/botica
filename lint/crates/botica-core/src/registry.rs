@@ -4,7 +4,7 @@ use std::fmt;
 use botica_catalog::{Catalog, Kind};
 
 use crate::native::{FileSizeGuard, NativeRule, NoUtils};
-use crate::shape::RepoShape;
+use crate::shape::{NoNotebooks, RepoShape};
 use crate::suppress::{INVALID, UNUSED};
 
 pub const IO_ERROR: &str = "io-error";
@@ -25,17 +25,18 @@ enum Provider {
     Engine,
 }
 
-const NATIVES: [(&str, Provider); 6] = [
+const NATIVES: [(&str, Provider); 7] = [
     ("file-size-guard", Provider::Rule(file_size_guard)),
     ("no-utils", Provider::Rule(no_utils)),
     ("repo-shape", Provider::Rule(repo_shape)),
+    ("no-notebooks", Provider::Rule(no_notebooks)),
     (IO_ERROR, Provider::Engine),
     (UNUSED, Provider::Engine),
     (INVALID, Provider::Engine),
 ];
 
 /// The rules that read `Context::packages`, so a command can say which packages they will see.
-const USES_PACKAGES: [&str; 1] = ["repo-shape"];
+const USES_PACKAGES: [&str; 2] = ["repo-shape", "no-notebooks"];
 
 pub fn uses_packages(slug: &str) -> bool {
     USES_PACKAGES.contains(&slug)
@@ -43,6 +44,12 @@ pub fn uses_packages(slug: &str) -> bool {
 
 fn repo_shape(_options: &Options, context: &Context) -> Box<dyn NativeRule> {
     Box::new(RepoShape {
+        packages: context.packages.clone(),
+    })
+}
+
+fn no_notebooks(_options: &Options, context: &Context) -> Box<dyn NativeRule> {
+    Box::new(NoNotebooks {
         packages: context.packages.clone(),
     })
 }

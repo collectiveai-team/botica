@@ -1,0 +1,10 @@
+{
+  "diagnostics": [
+    {
+      "path": "backend/app/analysis.ipynb",
+      "severity": "error",
+      "range": null,
+      "message": "CES-32 (no-notebooks): backend/app/analysis.ipynb is a notebook inside a package — keep notebooks outside the package."
+    }
+  ]
+}

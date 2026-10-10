@@ -1,0 +1,16 @@
+id = "no-notebooks"
+code = "BTSTRUC004"
+ces = "CES-32"
+summary = "Keep Jupyter notebooks out of the package"
+status = "stable"
+since = "0.1.0"
+tags = ["layout"]
+scope = "file"
+needs = "path"
+run-on = ["cli", "save"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "native"
+languages = ["*"]

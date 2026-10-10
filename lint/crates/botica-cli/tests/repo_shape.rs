@@ -128,6 +128,92 @@ fn lint_from(dir: &std::path::Path, below: &str) -> String {
     stdout(&command(&dir.join(below), &["lint", ".", "--no-astgrep"]))
 }
 
+fn with_notebooks(name: &str) -> PathBuf {
+    let dir = project(name);
+    write(&dir, "backend/pyproject.toml", "[project]\nname = \"b\"\n");
+    write(&dir, "backend/app/analysis.ipynb", "{}\n");
+    write(&dir, "backend/data/rows.csv", "a,b\n");
+    write(&dir, "notebooks/explore.ipynb", "{}\n");
+    dir
+}
+
+#[test]
+fn notebooks_are_not_looked_for_unless_the_rule_is_switched_on() {
+    let dir = with_notebooks("notebooks-off");
+
+    let text = lint(&dir);
+
+    assert_eq!(
+        reported(&text, "no-notebooks"),
+        Vec::<String>::new(),
+        "{text}"
+    );
+    assert_eq!(
+        reported(&text, "repo-shape"),
+        ["backend/data/rows.csv"],
+        "{text}"
+    );
+}
+
+#[test]
+fn a_notebook_inside_a_package_is_reported_when_the_rule_is_on_and_one_outside_is_not() {
+    let dir = with_notebooks("notebooks-on");
+
+    let output = command(
+        &dir,
+        &[
+            "lint",
+            ".",
+            "--no-astgrep",
+            "--extend-select",
+            "no-notebooks",
+        ],
+    );
+
+    let text = stdout(&output);
+    assert_eq!(
+        reported(&text, "no-notebooks"),
+        ["backend/app/analysis.ipynb"],
+        "{text}"
+    );
+    assert_eq!(output.status.code(), Some(1));
+}
+
+#[test]
+fn the_two_rules_are_switched_off_apart() {
+    let dir = with_notebooks("apart");
+    let lint_with = |args: &[&str]| {
+        let mut all = vec![
+            "lint",
+            ".",
+            "--no-astgrep",
+            "--extend-select",
+            "no-notebooks",
+        ];
+        all.extend_from_slice(args);
+        stdout(&command(&dir, &all))
+    };
+
+    let without_dirs = lint_with(&["--ignore", "repo-shape"]);
+    assert_eq!(reported(&without_dirs, "repo-shape"), Vec::<String>::new());
+    assert_eq!(
+        reported(&without_dirs, "no-notebooks").len(),
+        1,
+        "{without_dirs}"
+    );
+
+    let without_notebooks = lint_with(&["--ignore", "no-notebooks"]);
+    assert_eq!(
+        reported(&without_notebooks, "no-notebooks"),
+        Vec::<String>::new()
+    );
+    assert_eq!(
+        reported(&without_notebooks, "repo-shape").len(),
+        1,
+        "{without_notebooks}"
+    );
+}
+
 #[test]
 fn run_from_inside_a_package_every_artifact_directory_is_inside_it() {
     let dir = monorepo("from-package");

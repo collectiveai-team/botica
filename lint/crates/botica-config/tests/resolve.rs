@@ -113,7 +113,7 @@ fn select_and_extend_select_are_added_together() {
     let catalog = embedded();
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTSTRUC\"]")),
-        ["file-size-guard", "no-utils", "repo-shape"]
+        ["file-size-guard", "no-notebooks", "no-utils", "repo-shape"]
     );
     let resolution = resolve(
         &catalog,
@@ -131,7 +131,7 @@ fn select_and_extend_select_are_added_together() {
     );
     assert_eq!(
         active(&resolve(&catalog, "select = []\nextend-select = [\"all\"]")).len(),
-        6
+        7
     );
 }
 
