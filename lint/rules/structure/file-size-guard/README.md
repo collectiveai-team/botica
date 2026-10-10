@@ -21,8 +21,8 @@ error. Split a module along a real seam before it crosses the hard limit.
 | `warn` | 400 | lines at which the warning starts |
 | `max` | 700 | lines at which it becomes an error |
 
-Lines are counted as the `\n` bytes of the file, as `wc -l` does. Binary files (a NUL in the
-first 8 KB) are skipped.
+Lines are counted on the bytes of the file: each `\n`, plus a last line that has no `\n`. A lone
+`\r` is not a line break. Binary files (a NUL in the first 8 KB) are skipped.
 
 ## Which files
 
