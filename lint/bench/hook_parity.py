@@ -6,7 +6,7 @@ file selection is prek's: tracked files, `types`, `files`, `exclude`). Two check
 1. the real repositories of real-repos.txt: both tools run on the same checkout and what they
    report is compared file by file. A difference is expected only if it is one of two decided ones
    (see DECIDED below); anything else is a failure.
-2. edge cases (EDGE_CASES): a small git repository with one file per case, where the table says
+2. edge cases (edge_cases()): a small git repository with one file per case, where the table says
    what the hook reports and what botica reports. A case where the two differ is a decided
    difference, with its reason: this table is the one in the spec, so it cannot go stale.
 
@@ -192,7 +192,9 @@ def real_repo_report(botica: Path, workdir: Path) -> int:
             print_comparison(name, rule, result)
             failures += len(result.unexplained)
         shape = run(["prek", "run", "repo-shape", "--all-files", "-c", str(TEMPLATE)], repo)
-        print(f"== {name} repo-shape hook: {shape.stdout.strip().splitlines()[0]}")
+        skipped = "no files to check" in shape.stdout
+        print(f"== {name} repo-shape hook: {'no files to check' if skipped else 'RAN'}")
+        failures += not skipped
     return failures
 
 
