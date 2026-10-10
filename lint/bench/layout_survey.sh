@@ -5,13 +5,15 @@
 #
 # Usage: layout_survey.sh <botica-binary> [workdir]
 # Clones (one commit, no history) go to <workdir>/layout/<name>; a repository that cannot be cloned
-# is skipped.
+# is skipped. Exit status 1 if botica fails on a repository.
 set -uo pipefail
 ROOT=$(git rev-parse --show-toplevel)
 BENCH=$ROOT/lint/bench
 BOTICA=$(realpath "$1")
 WORK=${2:-$ROOT/.tmp/bench}
 RULES="no-tests-in-package,no-notebooks,no-artifacts-in-package"
+ERR=$WORK/layout-survey.err
+status=0
 
 printf '%-18s %-7s %6s  %5s %5s %5s   %s\n' repo eco files tests notebk artif "code directories found"
 while read -r name url commit eco; do
@@ -24,9 +26,17 @@ while read -r name url commit eco; do
       || { echo "$name: cannot clone, skipped"; rm -rf "$repo"; continue; }
   fi
   files=$(cd "$repo" && git ls-files | wc -l)
-  json=$(cd "$repo" && "$BOTICA" lint . --no-astgrep --select "$RULES" --output-format json 2>/dev/null)
-  dirs=$(cd "$repo" && "$BOTICA" explain no-notebooks 2>/dev/null | sed -n 's/^code-dirs: //p' | sed 's/ (detected)//' | cut -c1-70)
+  json=$(cd "$repo" && "$BOTICA" lint . --no-astgrep --select "$RULES" --output-format json 2>"$ERR")
+  code=$?
+  if [ "$code" -ge 2 ]; then
+    echo "$name: botica failed (exit $code): $(head -c 200 "$ERR")"
+    status=1
+    continue
+  fi
+  dirs=$(cd "$repo" && "$BOTICA" explain no-notebooks 2>&1 | sed -n 's/^code-dirs: //p' | sed 's/ (detected)//' | cut -c1-70)
+  [ -n "$dirs" ] || { dirs="(no code-dirs line in explain)"; status=1; }
   printf '%-18s %-7s %6s  ' "$name" "$eco" "$files"
-  printf '%s' "$json" | python3 "$BENCH/layout_tally.py"
+  printf '%s' "$json" | python3 "$BENCH/layout_tally.py" || status=1
   printf '   %s\n' "$dirs"
 done <"$BENCH/layout-repos.txt"
+exit $status
