@@ -18,6 +18,7 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
             "invalid-suppression",
             "io-error",
             "no-utils",
+            "repo-shape",
             "unused-suppression"
         ]
     );

@@ -4,6 +4,7 @@ use std::fmt;
 use botica_catalog::{Catalog, Kind};
 
 use crate::native::{FileSizeGuard, NativeRule, NoUtils};
+use crate::shape::RepoShape;
 use crate::suppress::{INVALID, UNUSED};
 
 pub const IO_ERROR: &str = "io-error";
@@ -11,21 +12,42 @@ pub const IO_ERROR: &str = "io-error";
 /// The effective options of a rule: its catalog defaults with the configuration on top.
 pub type Options = BTreeMap<String, toml::Value>;
 
+/// What a rule may need to know about the project that is not one of its options.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Context {
+    /// The directories of the project root that hold a package, as paths from the root.
+    pub packages: Vec<String>,
+}
+
 enum Provider {
-    Rule(fn(&Options) -> Box<dyn NativeRule>),
+    Rule(fn(&Options, &Context) -> Box<dyn NativeRule>),
     /// The engine reports these itself while it lints (suppression comments, unreadable files).
     Engine,
 }
 
-const NATIVES: [(&str, Provider); 5] = [
+const NATIVES: [(&str, Provider); 6] = [
     ("file-size-guard", Provider::Rule(file_size_guard)),
     ("no-utils", Provider::Rule(no_utils)),
+    ("repo-shape", Provider::Rule(repo_shape)),
     (IO_ERROR, Provider::Engine),
     (UNUSED, Provider::Engine),
     (INVALID, Provider::Engine),
 ];
 
-fn file_size_guard(options: &Options) -> Box<dyn NativeRule> {
+/// The rules that read `Context::packages`, so a command can say which packages they will see.
+const USES_PACKAGES: [&str; 1] = ["repo-shape"];
+
+pub fn uses_packages(slug: &str) -> bool {
+    USES_PACKAGES.contains(&slug)
+}
+
+fn repo_shape(_options: &Options, context: &Context) -> Box<dyn NativeRule> {
+    Box::new(RepoShape {
+        packages: context.packages.clone(),
+    })
+}
+
+fn file_size_guard(options: &Options, _context: &Context) -> Box<dyn NativeRule> {
     let defaults = FileSizeGuard::default();
     Box::new(FileSizeGuard {
         warn_at: threshold(options, "warn", defaults.warn_at),
@@ -33,7 +55,7 @@ fn file_size_guard(options: &Options) -> Box<dyn NativeRule> {
     })
 }
 
-fn no_utils(_options: &Options) -> Box<dyn NativeRule> {
+fn no_utils(_options: &Options, _context: &Context) -> Box<dyn NativeRule> {
     Box::new(NoUtils)
 }
 
@@ -45,11 +67,11 @@ fn threshold(options: &Options, name: &str, default: usize) -> usize {
         .unwrap_or(default)
 }
 
-/// The native rule `slug` names, set up with `options`. `None` when the engine provides the
-/// rule itself or when nothing implements it.
-pub fn build(slug: &str, options: &Options) -> Option<Box<dyn NativeRule>> {
+/// The native rule `slug` names, set up with `options` and what the project says. `None` when
+/// the engine provides the rule itself or when nothing implements it.
+pub fn build(slug: &str, options: &Options, context: &Context) -> Option<Box<dyn NativeRule>> {
     NATIVES.iter().find_map(|(name, provider)| match provider {
-        Provider::Rule(make) if *name == slug => Some(make(options)),
+        Provider::Rule(make) if *name == slug => Some(make(options, context)),
         _ => None,
     })
 }

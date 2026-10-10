@@ -98,7 +98,7 @@ impl Setup {
         let io_error_active = project.is_active(IO_ERROR);
         let prefix = project.working_prefix();
         let config_key = project.fingerprint();
-        let natives = project::natives(&project.resolution);
+        let natives = project::natives(&project);
         let resolution = Arc::new(project.resolution);
         let policy = project::suppression_policy(&resolution);
         let planner = project::planner(Arc::clone(&resolution), natives.index, prefix.clone());

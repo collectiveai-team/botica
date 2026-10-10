@@ -1,5 +1,6 @@
 mod args;
 mod natives;
+mod packages;
 mod paths;
 mod policy;
 
@@ -77,6 +78,30 @@ impl Project {
         self.resolution
             .entry(slug)
             .is_some_and(|entry| entry.active)
+    }
+
+    /// The packages of the project: the ones the configuration lists, or else the ones the root
+    /// holds.
+    pub fn packages(&self) -> Vec<String> {
+        match &self.loaded.config.packages {
+            Some(listed) => listed.clone(),
+            None => packages::detect(&self.loaded.root),
+        }
+    }
+
+    /// The packages and where they come from, for a person: `backend, frontend (detected)`.
+    pub fn describe_packages(&self) -> String {
+        let source = if self.loaded.config.packages.is_some() {
+            "configuration"
+        } else {
+            "detected"
+        };
+        let found = self.packages();
+        if found.is_empty() {
+            format!("none ({source}), so the rule does nothing")
+        } else {
+            format!("{} ({source})", found.join(", "))
+        }
     }
 
     /// Where the working directory sits inside the project root, when it is not the root itself.

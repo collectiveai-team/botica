@@ -70,6 +70,10 @@ pub struct Config {
     /// Globs of paths to skip, in addition to what `.gitignore` already skips.
     #[serde(default)]
     pub extend_exclude: Vec<String>,
+    /// The packages of the project, as directories from its root, for the rules about layout. When
+    /// absent they are detected; `[]` says there are none.
+    #[serde(default)]
+    pub packages: Option<Vec<String>>,
     /// Directories with the project's own rules.
     #[serde(default = "default_rule_dirs")]
     pub rule_dirs: Vec<String>,
@@ -109,6 +113,7 @@ impl Default for Config {
             preview: false,
             languages: Vec::new(),
             extend_exclude: Vec::new(),
+            packages: None,
             rule_dirs: default_rule_dirs(),
             external: Vec::new(),
             compat_ast_grep_ignore: false,

@@ -61,6 +61,17 @@
         "$ref": "#/$defs/Override"
       }
     },
+    "packages": {
+      "description": "The packages of the project, as directories from its root, for the rules about layout. When\nabsent they are detected; `[]` says there are none.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "default": null,
+      "items": {
+        "type": "string"
+      }
+    },
     "preview": {
       "description": "Also run the rules whose status is `preview`.",
       "type": "boolean",

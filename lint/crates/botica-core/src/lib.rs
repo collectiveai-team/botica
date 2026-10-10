@@ -5,6 +5,7 @@ mod native;
 pub mod postprocess;
 pub mod registry;
 pub mod report;
+mod shape;
 pub mod suppress;
 mod timings;
 
@@ -17,4 +18,5 @@ pub use diagnostic::{Diagnostic, Severity};
 pub use document::Document;
 pub use engine::{language_of, Engine, Exclusion, ExtensionRun, NativePlanner, Plan};
 pub use native::{FileSizeGuard, NativeRule, Needs, NoUtils};
+pub use shape::RepoShape;
 pub use timings::{RuleTime, TimedKind};

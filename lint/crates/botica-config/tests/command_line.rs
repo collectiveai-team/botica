@@ -64,7 +64,7 @@ fn ignore_after_select_trims_the_selection() {
         ..CommandLine::default()
     };
     let resolution = resolve("", &command_line);
-    assert_eq!(active(&resolution), ["file-size-guard"]);
+    assert_eq!(active(&resolution), ["file-size-guard", "repo-shape"]);
 }
 
 #[test]

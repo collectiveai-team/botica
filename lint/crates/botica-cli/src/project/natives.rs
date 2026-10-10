@@ -1,18 +1,28 @@
 use std::collections::HashMap;
 
-use botica_config::Resolution;
-use botica_core::{registry, NativeRule};
+use botica_core::registry::{self, Context};
+use botica_core::NativeRule;
+
+use super::Project;
 
 pub struct Natives {
     pub rules: Vec<Box<dyn NativeRule>>,
     pub index: HashMap<String, usize>,
 }
 
-pub fn natives(resolution: &Resolution) -> Natives {
+pub fn natives(project: &Project) -> Natives {
+    let context = Context {
+        packages: project.packages(),
+    };
     let mut rules = Vec::new();
     let mut index = HashMap::new();
-    for entry in resolution.entries().iter().filter(|entry| entry.active) {
-        if let Some(rule) = registry::build(&entry.rule.id, &entry.options) {
+    for entry in project
+        .resolution
+        .entries()
+        .iter()
+        .filter(|entry| entry.active)
+    {
+        if let Some(rule) = registry::build(&entry.rule.id, &entry.options, &context) {
             index.insert(entry.rule.id.clone(), rules.len());
             rules.push(rule);
         }

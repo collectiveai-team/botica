@@ -3,6 +3,7 @@ use std::io::Write;
 use anyhow::{bail, Result};
 use botica_catalog::{Severity, Status};
 use botica_config::{Entry, IgnoreOrigin};
+use botica_core::registry;
 use clap::Args;
 
 use crate::project::{self, ProjectArgs};
@@ -28,7 +29,8 @@ pub fn run(args: &ExplainArgs) -> Result<()> {
         None => "none (the defaults apply)".to_owned(),
     };
     let mut out = std::io::stdout().lock();
-    write_entry(entry, &config, &mut out)?;
+    let packages = registry::uses_packages(&entry.rule.id).then(|| project.describe_packages());
+    write_entry(entry, &config, packages.as_deref(), &mut out)?;
     Ok(())
 }
 
@@ -57,7 +59,12 @@ fn severity_name(severity: Severity) -> &'static str {
     }
 }
 
-fn write_entry(entry: &Entry, config: &str, out: &mut impl Write) -> Result<()> {
+fn write_entry(
+    entry: &Entry,
+    config: &str,
+    packages: Option<&str>,
+    out: &mut impl Write,
+) -> Result<()> {
     let rule = &entry.rule;
     writeln!(out, "{} ({}): {}\n", rule.id, rule.code, rule.summary)?;
     let state = if entry.active {
@@ -90,6 +97,9 @@ fn write_entry(entry: &Entry, config: &str, out: &mut impl Write) -> Result<()> 
         .map(|(name, value)| format!("{name} = {value}"))
         .collect();
     writeln!(out, "options:   {}", or_none(&options))?;
+    if let Some(packages) = packages {
+        writeln!(out, "packages:  {packages}")?;
+    }
     writeln!(out, "config:    {config}")?;
     writeln!(
         out,

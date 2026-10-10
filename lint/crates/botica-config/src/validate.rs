@@ -15,6 +15,7 @@ impl Config {
         selectors(&mut found, catalog, "ignore", &self.ignore);
         globs(&mut found, "extend-exclude", &self.extend_exclude);
         globs(&mut found, "external", &self.external);
+        packages(&mut found, self.packages.as_deref().unwrap_or_default());
         for (old, new) in &self.replace {
             let location = format!("replace.{old}");
             rule_id(&mut found, catalog, &location, old);
@@ -37,6 +38,24 @@ fn selectors(found: &mut Vec<ConfigIssue>, catalog: &Catalog, key: &str, values:
         let verdict = Selector::parse(value).and_then(|selector| selector.check(catalog));
         if let Err(message) = verdict {
             found.push(issue(format!("{key}[{index}]"), message));
+        }
+    }
+}
+
+/// A package is written as the directory it is, from the project root, with nothing around it: a
+/// path that cannot match what the walk reports would leave the rules about layout doing nothing.
+fn packages(found: &mut Vec<ConfigIssue>, values: &[String]) {
+    for (index, value) in values.iter().enumerate() {
+        let plain = value
+            .split('/')
+            .all(|part| !part.is_empty() && part != "." && part != "..");
+        if !plain {
+            found.push(issue(
+                format!("packages[{index}]"),
+                format!(
+                    "`{value}` is not a plain directory: write it from the project root, like `backend` or `services/api`, with no leading or trailing `/`, `.` or `..`"
+                ),
+            ));
         }
     }
 }

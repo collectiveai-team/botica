@@ -30,6 +30,27 @@ fn accepted(text: &str) {
 }
 
 #[test]
+fn packages_are_directories_from_the_root_written_plainly() {
+    accepted("packages = [\"backend\", \"services/api\"]");
+    accepted("packages = []");
+    assert_eq!(parse("").packages, None, "absent is not the same as empty");
+    assert_eq!(parse("packages = []").packages, Some(Vec::new()));
+    for bad in [
+        "backend/",
+        "/backend",
+        "./backend",
+        "../backend",
+        "",
+        "a//b",
+        "a/../b",
+    ] {
+        let message = problems(&format!("packages = [\"{bad}\"]"));
+        assert!(message.contains("packages[0]"), "`{bad}`: {message}");
+    }
+    assert!(problems("packages = \"lib\"").contains("packages"));
+}
+
+#[test]
 fn an_empty_file_gives_the_house_defaults() {
     let config = parse("");
     assert_eq!(config, Config::default());

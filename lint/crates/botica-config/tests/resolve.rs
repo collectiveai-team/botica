@@ -98,6 +98,7 @@ fn the_default_selection_runs_every_rule_enabled_by_default() {
             "invalid-suppression",
             "io-error",
             "no-utils",
+            "repo-shape",
             "unused-suppression"
         ]
     );
@@ -112,7 +113,7 @@ fn select_and_extend_select_are_added_together() {
     let catalog = embedded();
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTSTRUC\"]")),
-        ["file-size-guard", "no-utils"]
+        ["file-size-guard", "no-utils", "repo-shape"]
     );
     let resolution = resolve(
         &catalog,
@@ -130,7 +131,7 @@ fn select_and_extend_select_are_added_together() {
     );
     assert_eq!(
         active(&resolve(&catalog, "select = []\nextend-select = [\"all\"]")).len(),
-        5
+        6
     );
 }
 
@@ -157,7 +158,12 @@ fn a_rule_switched_off_in_its_own_section_stays_out() {
     );
     assert_eq!(
         active(&resolution),
-        ["invalid-suppression", "io-error", "unused-suppression"]
+        [
+            "invalid-suppression",
+            "io-error",
+            "repo-shape",
+            "unused-suppression"
+        ]
     );
     assert_eq!(reason(&resolution, "no-utils"), Reason::Disabled);
     assert_eq!(reason(&resolution, "file-size-guard"), Reason::SeverityOff);

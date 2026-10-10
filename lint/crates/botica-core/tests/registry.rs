@@ -62,7 +62,8 @@ fn the_registry_builds_file_size_guard_with_the_thresholds_it_is_given() {
         ("warn".to_owned(), toml::Value::Integer(2)),
         ("max".to_owned(), toml::Value::Integer(3)),
     ]);
-    let rule = registry::build("file-size-guard", &options).expect("file-size-guard is native");
+    let rule = registry::build("file-size-guard", &options, &registry::Context::default())
+        .expect("file-size-guard is native");
     let engine = Engine::new(vec![rule], AstGrepSet::default());
     let lines = |count: usize| "x = 1\n".repeat(count);
 
