@@ -367,24 +367,29 @@ pub struct PrefilterStats {
     pub anchored_files: usize,
     pub parsed_bytes: usize,
     pub file_bytes: usize,
-    /// CPU time per phase, summed over threads, indexed by the `PHASE_*` constants.
-    pub phase_nanos: [u64; PHASES],
 }
 
-/// Prefilter scan. Region selection, including the parse inside it (`PHASE_PARSE_REGIONS`).
-/// Whole-file parse. Parse of the selected regions. Rule matching. Freeing the tree.
-pub const PHASE_PREFILTER: usize = 0;
-pub const PHASE_REGIONS: usize = 1;
-pub const PHASE_PARSE: usize = 2;
-pub const PHASE_PARSE_REGIONS: usize = 3;
-pub const PHASE_MATCH: usize = 4;
-pub const PHASE_DROP: usize = 5;
-/// Inside `PHASE_REGIONS`: top-level lexing, and narrowing to class/function members.
-pub const PHASE_LEX: usize = 6;
-pub const PHASE_MEMBERS: usize = 7;
-/// Locating the candidate positions, for regions and for skipping subtrees.
-pub const PHASE_POSITIONS: usize = 8;
-pub const PHASES: usize = 9;
+/// Which optimisations a set uses. They change how fast the hits are found, never which hits:
+/// switching them off is how the conformance runner checks exactly that.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Tuning {
+    /// Parse only the files whose text can hold a match, found by each rule's derived prefilter.
+    pub prefilter: bool,
+    /// Parse only the top-level statements holding a candidate (Python, JS/TS).
+    pub regions: bool,
+    /// Skip, while matching, the subtrees that hold no candidate position.
+    pub skip_subtrees: bool,
+}
+
+impl Default for Tuning {
+    fn default() -> Self {
+        Self {
+            prefilter: true,
+            regions: true,
+            skip_subtrees: true,
+        }
+    }
+}
 
 /// Where the active rules of a file can match, from their prefilter atoms.
 struct Candidates {
@@ -413,7 +418,6 @@ pub struct AstGrepSet {
     anchored_files: AtomicUsize,
     parsed_bytes: AtomicUsize,
     file_bytes: AtomicUsize,
-    phase_nanos: [std::sync::atomic::AtomicU64; PHASES],
     rule_timings: Option<rule_timing::RuleTimings>,
 }
 
@@ -424,9 +428,15 @@ impl Default for AstGrepSet {
 }
 
 impl AstGrepSet {
+    pub fn new(rules: Vec<AstGrepRule>) -> Self {
+        Self::with_tuning(rules, Tuning::default())
+    }
+
     /// Groups the rules by language and derives each rule's prefilter from the rule itself
     /// (token chains of its patterns, literals of its regexes); declared prefilters win.
-    pub fn new(mut rules: Vec<AstGrepRule>) -> Self {
+    /// Regions and subtree skipping both read the prefilter's candidate positions, so they go
+    /// off with it.
+    pub fn with_tuning(mut rules: Vec<AstGrepRule>, tuning: Tuning) -> Self {
         let mut groups: Vec<LanguageGroup> = Vec::new();
         for (index, rule) in rules.iter().enumerate() {
             let language = rule.language();
@@ -488,9 +498,9 @@ impl AstGrepSet {
             groups,
             literals,
             regexes,
-            prefilter: true,
-            regions: true,
-            skip_subtrees: true,
+            prefilter: tuning.prefilter,
+            regions: tuning.regions && tuning.prefilter,
+            skip_subtrees: tuning.skip_subtrees && tuning.prefilter,
             parsed: AtomicUsize::new(0),
             skipped: AtomicUsize::new(0),
             region_files: AtomicUsize::new(0),
@@ -499,7 +509,6 @@ impl AstGrepSet {
             anchored_files: AtomicUsize::new(0),
             parsed_bytes: AtomicUsize::new(0),
             file_bytes: AtomicUsize::new(0),
-            phase_nanos: Default::default(),
             rule_timings: None,
         }
     }
@@ -528,45 +537,6 @@ impl AstGrepSet {
             .collect()
     }
 
-    fn timed<T>(&self, phase: usize, work: impl FnOnce() -> T) -> T {
-        let start = std::time::Instant::now();
-        let out = work();
-        let nanos = u64::try_from(start.elapsed().as_nanos()).unwrap_or(u64::MAX);
-        self.phase_nanos[phase].fetch_add(nanos, Ordering::Relaxed);
-        out
-    }
-
-    /// Parses only the top-level statements holding a prefilter candidate (Python, JS/TS),
-    /// on by default; off parses whole files, for parity checks.
-    pub fn set_regions(&mut self, enabled: bool) {
-        self.regions = enabled;
-    }
-
-    /// Skips, while matching, the subtrees that hold no candidate position (on by default).
-    pub fn set_skip_subtrees(&mut self, enabled: bool) {
-        self.skip_subtrees = enabled;
-    }
-
-    /// Each rule's id with its effective requirement, for inspection.
-    pub fn describe_prefilter(&self) -> Vec<(String, String)> {
-        let chains = self
-            .groups
-            .iter()
-            .filter_map(|g| g.chains.as_ref())
-            .flat_map(chains::LangChains::describe)
-            .map(|line| ("chain".to_owned(), line));
-        self.rules
-            .iter()
-            .map(|r| (r.id().to_owned(), format!("{:?}", r.requirement)))
-            .chain(chains)
-            .collect()
-    }
-
-    /// Turns the prefilter on or off (on by default); off parses every file, for parity checks.
-    pub fn set_prefilter(&mut self, enabled: bool) {
-        self.prefilter = enabled;
-    }
-
     pub fn stats(&self) -> PrefilterStats {
         PrefilterStats {
             parsed: self.parsed.load(Ordering::Relaxed),
@@ -577,7 +547,6 @@ impl AstGrepSet {
             anchored_files: self.anchored_files.load(Ordering::Relaxed),
             parsed_bytes: self.parsed_bytes.load(Ordering::Relaxed),
             file_bytes: self.file_bytes.load(Ordering::Relaxed),
-            phase_nanos: std::array::from_fn(|i| self.phase_nanos[i].load(Ordering::Relaxed)),
         }
     }
 
@@ -650,8 +619,7 @@ impl AstGrepSet {
         let Some(group) = self.groups.iter().find(|g| g.language == lang) else {
             return Vec::new();
         };
-        let (active, chain_at) =
-            self.timed(PHASE_PREFILTER, || self.active_rules(group, path, text));
+        let (active, chain_at) = self.active_rules(group, path, text);
         if !active.iter().any(|&on| on) {
             self.skipped.fetch_add(1, Ordering::Relaxed);
             return Vec::new();
@@ -659,21 +627,17 @@ impl AstGrepSet {
         self.parsed.fetch_add(1, Ordering::Relaxed);
         self.file_bytes.fetch_add(text.len(), Ordering::Relaxed);
         let candidates = if self.prefilter && (self.regions || self.skip_subtrees) {
-            self.timed(PHASE_POSITIONS, || {
-                self.candidates(group, &active, &chain_at, text.as_bytes())
-            })
+            self.candidates(group, &active, &chain_at, text.as_bytes())
         } else {
             None
         };
         let partial = match &candidates {
-            Some(candidates) if self.regions => {
-                self.timed(PHASE_REGIONS, || self.parse_regions(lang, candidates, text))
-            }
+            Some(candidates) if self.regions => self.parse_regions(lang, candidates, text),
             _ => None,
         };
         let grep = partial.or_else(|| {
             self.parsed_bytes.fetch_add(text.len(), Ordering::Relaxed);
-            self.timed(PHASE_PARSE, || parse_reusing(lang, text, &[]))
+            parse_reusing(lang, text, &[])
         });
         let anchor = candidates
             .as_ref()
@@ -683,11 +647,7 @@ impl AstGrepSet {
             self.anchored_files.fetch_add(1, Ordering::Relaxed);
         }
         match grep {
-            Some(grep) => {
-                let hits = self.timed(PHASE_MATCH, || self.run(group, &active, &grep, anchor));
-                self.timed(PHASE_DROP, || drop(grep));
-                hits
-            }
+            Some(grep) => self.run(group, &active, &grep, anchor),
             None => Vec::new(),
         }
     }
@@ -804,7 +764,7 @@ impl AstGrepSet {
         text: &str,
     ) -> Option<AstGrep<StrDoc<SupportLang>>> {
         let bytes = text.as_bytes();
-        let split = self.timed(PHASE_LEX, || regions::chunks(lang, bytes))?;
+        let split = regions::chunks(lang, bytes)?;
         if split.suspect {
             self.region_suspects.fetch_add(1, Ordering::Relaxed);
             return None;
@@ -812,9 +772,7 @@ impl AstGrepSet {
         let positions = &candidates.positions;
         let top = regions::pick(&split.chunks, positions);
         let picked = if candidates.members {
-            self.timed(PHASE_MEMBERS, || {
-                regions::members(lang, bytes, &top, positions)
-            })
+            regions::members(lang, bytes, &top, positions)
         } else {
             regions::merge(top)
         };
@@ -840,7 +798,7 @@ impl AstGrepSet {
                 end_point: point(c.end, c.end_row),
             })
             .collect();
-        let grep = self.timed(PHASE_PARSE_REGIONS, || parse_reusing(lang, text, &ranges))?;
+        let grep = parse_reusing(lang, text, &ranges)?;
         if grep.root().get_inner_node().has_error() {
             self.region_fallbacks.fetch_add(1, Ordering::Relaxed);
             return None;
@@ -1007,8 +965,13 @@ mod language_tests {
             .collect();
         let source = format!("{filler}{source}");
         let source = source.as_str();
-        let mut whole = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
-        whole.set_regions(false);
+        let whole = AstGrepSet::with_tuning(
+            AstGrepRule::from_yaml(yaml).unwrap(),
+            Tuning {
+                regions: false,
+                ..Tuning::default()
+            },
+        );
         let regions = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
         let path = Path::new("m.py");
         let expected = whole.check(path, source);
@@ -1029,8 +992,13 @@ mod language_tests {
         let source = format!(
             "{filler}class C:\n    x = 1\n\n    def f(self):\n        return 1\n\n    def g(self):\n        print(2)\n"
         );
-        let mut whole = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
-        whole.set_regions(false);
+        let whole = AstGrepSet::with_tuning(
+            AstGrepRule::from_yaml(yaml).unwrap(),
+            Tuning {
+                regions: false,
+                ..Tuning::default()
+            },
+        );
         let regions = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
         let path = Path::new("m.py");
         assert!(whole.check(path, &source).is_empty());
@@ -1046,11 +1014,21 @@ mod language_tests {
     fn skipping_subtrees_finds_the_same_hits_as_matching_every_node() {
         let yaml = "id: p\nlanguage: python\nrule:\n  pattern: print($A)\n  not:\n    inside:\n      stopBy: end\n      pattern: 'if __name__ == \"__main__\": $$$B'\n---\nid: q\nlanguage: python\nrule:\n  kind: call\n  has:\n    field: function\n    regex: ^log$\n";
         let source = "def f(a):\n    return [x for x in a if print(x)]\n\nclass C:\n    def g(self):\n        log(print(2), print(3, 4))\n\nY = {'k': print(5)}\n\nif __name__ == \"__main__\":\n    print(6)\n";
-        let mut every = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
-        every.set_regions(false);
-        every.set_skip_subtrees(false);
-        let mut skipping = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
-        skipping.set_regions(false);
+        let every = AstGrepSet::with_tuning(
+            AstGrepRule::from_yaml(yaml).unwrap(),
+            Tuning {
+                regions: false,
+                skip_subtrees: false,
+                ..Tuning::default()
+            },
+        );
+        let skipping = AstGrepSet::with_tuning(
+            AstGrepRule::from_yaml(yaml).unwrap(),
+            Tuning {
+                regions: false,
+                ..Tuning::default()
+            },
+        );
         let path = Path::new("m.py");
         let expected = every.check(path, source);
         assert_eq!(expected.len(), 4);

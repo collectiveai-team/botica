@@ -67,10 +67,8 @@ python3 "$BENCH/parity.py" "$WORK/repo10k-real" "$BOTICA" "$WORK/sg" | tee "$OUT
 (cd "$WORK/repo10k-real" && RUNS=8 hf --export-markdown "$OUT/repo-10k-real.md" \
   "$BOTICA lint . --no-prefilter" \
   "$BOTICA lint . --no-regions" \
-  "$BOTICA lint ." \
-  "$BOTICA lint . --schedule largest-first")
-# Per-file cost concentration: `--schedule timed` prints one `[file]` row per file on stderr.
-# Each rule's derived prefilter: `--describe-prefilter`.
+  "$BOTICA lint . --no-subtree-skip" \
+  "$BOTICA lint .")
 
 STDLIB=${STDLIB:-/usr/lib/python3.14}
 

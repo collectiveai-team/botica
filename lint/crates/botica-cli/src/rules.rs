@@ -1,5 +1,5 @@
 use anyhow::Result;
-use botica_astgrep::{AstGrepRule, AstGrepSet};
+use botica_astgrep::{AstGrepRule, AstGrepSet, Tuning};
 use botica_core::suppress::Policy;
 use botica_core::{Engine, Exclusion, NativePlanner, NativeRule};
 use std::path::Path;
@@ -20,15 +20,9 @@ const EMBEDDED: [&str; 11] = [
 
 pub struct EngineOptions<'a> {
     pub astgrep: bool,
-    pub prefilter: bool,
+    pub tuning: Tuning,
     /// Extra ast-grep YAML rules (`*.yml` in this directory), for parity checks on more languages.
     pub extra_rules: Option<&'a Path>,
-    /// Print each rule's effective prefilter to stderr.
-    pub describe_prefilter: bool,
-    /// Parse only the top-level statements holding a candidate (Python, JS/TS).
-    pub regions: bool,
-    /// Skip, while matching, the subtrees without a candidate position.
-    pub subtree_skip: bool,
     /// Time each rule (`--timings`).
     pub timings: bool,
 }
@@ -55,15 +49,7 @@ pub fn build_engine(
         }
     }
     let policy = policy.with_astgrep_rules(rules.iter().map(AstGrepRule::id));
-    let mut set = AstGrepSet::new(rules);
-    if options.describe_prefilter {
-        for (id, requirement) in set.describe_prefilter() {
-            eprintln!("[prefilter] {id}: {requirement}");
-        }
-    }
-    set.set_prefilter(options.prefilter);
-    set.set_regions(options.regions && options.prefilter);
-    set.set_skip_subtrees(options.subtree_skip && options.prefilter);
+    let set = AstGrepSet::with_tuning(rules, options.tuning);
     let engine = Engine::new(native, set)
         .with_planner(planner)
         .with_suppressions(policy);

@@ -7,9 +7,9 @@ mod rules_cmd;
 mod timings;
 
 use anyhow::Result;
+use botica_astgrep::Tuning;
 use botica_core::cache::{lint_files_cached, Cache};
 use botica_core::report::{self, ErrorKind, Format, Report, RunError};
-use botica_core::walk::Schedule;
 use botica_core::{postprocess, walk, Diagnostic, Severity};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use std::io::Write;
@@ -68,27 +68,18 @@ struct LintArgs {
     /// Directory for the per-file result cache (off when omitted).
     #[arg(long)]
     cache_dir: Option<PathBuf>,
-    /// Print to stderr how long each phase, each rule and each extension took.
+    /// Print to stderr how long each rule and each extension took, and what the prefilter saved.
     #[arg(long)]
     timings: bool,
     /// Measurement aid: extra ast-grep rules (`*.yml` in this directory).
     #[arg(long, hide = true)]
     extra_rules: Option<PathBuf>,
-    /// Measurement aid: print each rule's effective prefilter to stderr.
-    #[arg(long, hide = true)]
-    describe_prefilter: bool,
-    /// Measurement aid: how files are handed to the worker threads.
-    #[arg(long, hide = true, value_enum, default_value_t = ScheduleArg::InOrder)]
-    schedule: ScheduleArg,
     /// Parse whole files instead of only the top-level statements holding a candidate.
     #[arg(long, hide = true)]
     no_regions: bool,
     /// Match every node instead of skipping the subtrees without candidates.
     #[arg(long, hide = true)]
     no_subtree_skip: bool,
-    /// Measurement aid: finish the walk before reading and linting any file.
-    #[arg(long, hide = true)]
-    separate_walk: bool,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -106,24 +97,6 @@ impl From<OutputFormat> for Format {
             OutputFormat::Json => Format::Json,
             OutputFormat::Sarif => Format::Sarif,
             OutputFormat::Github => Format::Github,
-        }
-    }
-}
-
-#[derive(Clone, Copy, ValueEnum)]
-enum ScheduleArg {
-    InOrder,
-    LargestFirst,
-    /// One `[file]` timing row per file on stderr.
-    Timed,
-}
-
-impl From<ScheduleArg> for Schedule {
-    fn from(arg: ScheduleArg) -> Self {
-        match arg {
-            ScheduleArg::InOrder => Schedule::InOrder,
-            ScheduleArg::LargestFirst => Schedule::LargestFirst,
-            ScheduleArg::Timed => Schedule::Timed,
         }
     }
 }
@@ -154,16 +127,6 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
     }
     let timed = args.timings;
     let total = Instant::now();
-    let mut lap = Instant::now();
-    let mut mark = |label: &str| {
-        if timed {
-            eprintln!(
-                "[timing] {label:<18} {:>8.2} ms",
-                lap.elapsed().as_secs_f64() * 1e3
-            );
-        }
-        lap = Instant::now();
-    };
 
     let project = project::load(&args.project)?;
     let with_astgrep = !args.no_astgrep && project.embedded_rules;
@@ -178,11 +141,12 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
     let engine = rules::build_engine(
         &rules::EngineOptions {
             astgrep: with_astgrep,
-            prefilter: !args.no_prefilter,
+            tuning: Tuning {
+                prefilter: !args.no_prefilter,
+                regions: !args.no_regions,
+                skip_subtrees: !args.no_subtree_skip,
+            },
             extra_rules: args.extra_rules.as_deref(),
-            describe_prefilter: args.describe_prefilter,
-            regions: !args.no_regions,
-            subtree_skip: !args.no_subtree_skip,
             timings: timed,
         },
         natives.rules,
@@ -190,7 +154,6 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
         policy,
         exclusion,
     )?;
-    mark("compile rules");
 
     let root = std::env::current_dir()?;
     let paths = if args.paths.is_empty() {
@@ -198,9 +161,7 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
     } else {
         args.paths
     };
-    let fused = args.cache_dir.is_none() && matches!(args.schedule, ScheduleArg::InOrder);
-    let streaming = fused && args.ext.is_none();
-    let overlapped = streaming && !args.separate_walk;
+    let overlapped = args.cache_dir.is_none() && args.ext.is_none();
     let mut files = Vec::new();
     let mut files_read = 0;
     let mut overlapped_found = Vec::new();
@@ -223,42 +184,30 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
             files.extend(walk::discover(path, &root, &engine));
         }
     }
-    mark(if overlapped { "walk+read+lint" } else { "walk" });
-    let (sources, mut diagnostics) = if streaming {
+    let (sources, mut diagnostics) = if overlapped {
         let (read, mut found) = walk::lint_streaming(&engine, &root, &files);
         files_read += read;
         found.append(&mut overlapped_found);
         found.sort_by(|a, b| (&a.path, a.start, &a.rule).cmp(&(&b.path, b.start, &b.rule)));
         (Vec::new(), found)
-    } else if fused {
-        walk::read_and_lint(&engine, &root, &files)
-    } else {
+    } else if let Some(dir) = &args.cache_dir {
         let sources = walk::read_all(&root, &files);
-        mark("read");
-        let found = if let Some(dir) = &args.cache_dir {
-            let mut cache = Cache::load(
-                dir,
-                &rules::fingerprint(with_astgrep, args.extra_rules.as_deref(), &config_key)?,
+        let mut cache = Cache::load(
+            dir,
+            &rules::fingerprint(with_astgrep, args.extra_rules.as_deref(), &config_key)?,
+        );
+        let (found, stats) = lint_files_cached(&engine, &sources, &mut cache);
+        cache.save()?;
+        if timed {
+            eprintln!(
+                "[timing] cache: {} hits, {} misses",
+                stats.hits, stats.misses
             );
-            let (found, stats) = lint_files_cached(&engine, &sources, &mut cache);
-            cache.save()?;
-            if timed {
-                eprintln!(
-                    "[timing] cache: {} hits, {} misses",
-                    stats.hits, stats.misses
-                );
-            }
-            found
-        } else {
-            walk::lint_files(&engine, &sources, args.schedule.into())
-        };
+        }
         (sources, found)
-    };
-    mark(if fused {
-        "read+lint"
     } else {
-        "native+ast-grep"
-    });
+        walk::read_and_lint(&engine, &root, &files)
+    };
     if timed {
         let stats = engine.astgrep().stats();
         eprintln!(
@@ -274,15 +223,6 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
             stats.parsed_bytes as f64 / 1e6,
             stats.file_bytes as f64 / 1e6,
             stats.anchored_files
-        );
-        let [pre, regions, whole, partial, matching, drop, lex, members, positions] =
-            stats.phase_nanos.map(|n| n as f64 / 1e6);
-        eprintln!(
-            "[timing] cpu: prefilter {pre:.0} ms, regions {:.0} ms (positions {positions:.0}, \
-             lex {lex:.0}, members {members:.0}), parse {:.0} ms (whole {whole:.0}, regions \
-             {partial:.0}), match {matching:.0} ms, free tree {drop:.0} ms",
-            positions + regions - partial,
-            whole + partial
         );
     }
 

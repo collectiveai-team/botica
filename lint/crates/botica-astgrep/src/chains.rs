@@ -105,22 +105,6 @@ impl LangChains {
         }
     }
 
-    /// `C<i>: tok tok …` for each chain, for inspection.
-    pub fn describe(&self) -> Vec<String> {
-        self.chains
-            .iter()
-            .enumerate()
-            .map(|(i, c)| {
-                let tokens: Vec<String> = c
-                    .tokens
-                    .iter()
-                    .map(|t| String::from_utf8_lossy(t).into_owned())
-                    .collect();
-                format!("{:?} C{i}: {}", self.language, tokens.join(" ⋯ "))
-            })
-            .collect()
-    }
-
     pub fn is_empty(&self) -> bool {
         self.chains.is_empty()
     }
