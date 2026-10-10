@@ -11,7 +11,10 @@ impl NativeRule for Flag {
     }
 
     fn check(&self, doc: &Document<'_>, out: &mut Vec<Diagnostic>) {
-        for (start, _) in doc.text.match_indices("FLAG") {
+        let text = doc
+            .text()
+            .expect("the engine gives text to rules that need it");
+        for (start, _) in text.match_indices("FLAG") {
             let (line, column) = doc.position(start);
             let (end_line, end_column) = doc.position(start + 4);
             out.push(Diagnostic {
@@ -40,7 +43,10 @@ impl NativeRule for WholeFile {
     }
 
     fn check(&self, doc: &Document<'_>, out: &mut Vec<Diagnostic>) {
-        if doc.text.contains("BIG") {
+        let text = doc
+            .text()
+            .expect("the engine gives text to rules that need it");
+        if text.contains("BIG") {
             out.push(Diagnostic {
                 path: doc.path.to_owned(),
                 rule: self.id().to_owned(),
@@ -67,8 +73,11 @@ impl NativeRule for Multi {
     }
 
     fn check(&self, doc: &Document<'_>, out: &mut Vec<Diagnostic>) {
-        for (start, _) in doc.text.match_indices("BEGIN") {
-            let Some(length) = doc.text[start..].find("END") else {
+        let text = doc
+            .text()
+            .expect("the engine gives text to rules that need it");
+        for (start, _) in text.match_indices("BEGIN") {
+            let Some(length) = text[start..].find("END") else {
                 continue;
             };
             let (line, column) = doc.position(start);

@@ -22,6 +22,12 @@ pub fn write(dir: &Path, relative: &str, text: &str) {
     fs::write(path, text).expect("write the file");
 }
 
+pub fn write_bytes(dir: &Path, relative: &str, bytes: &[u8]) {
+    let path = dir.join(relative);
+    fs::create_dir_all(path.parent().expect("has a parent")).expect("create parents");
+    fs::write(path, bytes).expect("write the file");
+}
+
 pub fn lines(count: usize) -> String {
     "x = 1\n".repeat(count)
 }

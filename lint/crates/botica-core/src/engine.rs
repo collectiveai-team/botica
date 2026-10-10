@@ -1,6 +1,6 @@
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::document::Document;
-use crate::native::NativeRule;
+use crate::native::{NativeRule, Needs};
 use crate::suppress::Policy;
 use crate::timings::{RuleTime, TimedKind, Timings};
 use anyhow::Result;
@@ -166,20 +166,41 @@ impl Engine {
 
     /// Like `lint_source` for a caller that already asked for the plan (to decide whether to read).
     pub fn lint_planned(&self, path: &str, text: &str, plan: &Plan) -> Vec<Diagnostic> {
-        let doc = Document::new(path, text);
+        self.lint_document(&Document::new(path, text), plan)
+    }
+
+    /// Lints a file as it was read, UTF-8 or not. Does no I/O.
+    pub fn lint_bytes(&self, path: &str, bytes: &[u8]) -> Vec<Diagnostic> {
+        match self.plan(path) {
+            Some(plan) => self.lint_bytes_planned(path, bytes, &plan),
+            None => Vec::new(),
+        }
+    }
+
+    /// Like `lint_bytes` for a caller that already asked for the plan.
+    ///
+    /// A file that is not UTF-8 gets only the native rules that do not need its text: ast-grep
+    /// cannot parse it and the suppression comments cannot be read.
+    pub fn lint_bytes_planned(&self, path: &str, bytes: &[u8], plan: &Plan) -> Vec<Diagnostic> {
+        self.lint_document(&Document::from_bytes(path, bytes), plan)
+    }
+
+    fn lint_document(&self, doc: &Document<'_>, plan: &Plan) -> Vec<Diagnostic> {
+        let path = doc.path;
+        let text = doc.text();
         let mut out = Vec::new();
         for &index in &plan.native {
+            if text.is_none() && self.native[index].needs() == Needs::Text {
+                continue;
+            }
             match &self.timings {
-                Some(timings) => {
-                    timings.measure(index, || self.native[index].check(&doc, &mut out))
-                }
-                None => self.native[index].check(&doc, &mut out),
+                Some(timings) => timings.measure(index, || self.native[index].check(doc, &mut out)),
+                None => self.native[index].check(doc, &mut out),
             }
         }
-        let hits = if plan.astgrep {
-            self.astgrep.check(path.as_ref(), text)
-        } else {
-            Vec::new()
+        let hits = match text {
+            Some(text) if plan.astgrep => self.astgrep.check(path.as_ref(), text),
+            _ => Vec::new(),
         };
         for hit in hits {
             let (line, column) = doc.position(hit.start);
@@ -198,7 +219,7 @@ impl Engine {
                 message: hit.message,
             });
         }
-        if let Some(policy) = &self.suppressions {
+        if let (Some(policy), Some(_)) = (&self.suppressions, text) {
             let is_active = |slug: &str| {
                 plan.native
                     .iter()
@@ -207,9 +228,9 @@ impl Engine {
             };
             match &self.timings {
                 Some(timings) => timings.measure(timings.suppressions_slot(), || {
-                    policy.apply(&doc, &is_active, &mut out);
+                    policy.apply(doc, &is_active, &mut out);
                 }),
-                None => policy.apply(&doc, &is_active, &mut out),
+                None => policy.apply(doc, &is_active, &mut out),
             }
         }
         out.sort_by(|a, b| (a.start, &a.rule).cmp(&(b.start, &b.rule)));

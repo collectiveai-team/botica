@@ -40,7 +40,9 @@ pub fn run(command: &str, sources: &[walk::SourceFile], batch: usize) -> Outcome
             }
         }
     };
-    let files = sources.iter().map(|f| (f.path.as_str(), f.text.as_str()));
+    let files = sources
+        .iter()
+        .filter_map(|f| Some((f.path.as_str(), f.text()?)));
     let linting = Instant::now();
     let linted = run.lint(files, batch);
     time.lint = linting.elapsed();

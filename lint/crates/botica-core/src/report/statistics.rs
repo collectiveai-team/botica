@@ -68,15 +68,7 @@ pub fn write(report: &Report<'_>, format: Format, out: &mut impl Write) -> io::R
                         count: row.count,
                     })
                     .collect(),
-                errors: report
-                    .errors
-                    .iter()
-                    .map(|error| JsonError {
-                        kind: error.kind.as_str(),
-                        extension: error.extension.as_deref(),
-                        message: &error.message,
-                    })
-                    .collect(),
+                errors: report.errors.iter().map(JsonError::from).collect(),
             };
             serde_json::to_writer(&mut *out, &document)?;
             writeln!(out)

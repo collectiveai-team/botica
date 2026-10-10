@@ -34,12 +34,15 @@ pub struct RuleDoc {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorKind {
     Extension,
+    /// A file the walk found and could not read.
+    Read,
 }
 
 impl ErrorKind {
     fn as_str(self) -> &'static str {
         match self {
             Self::Extension => "extension",
+            Self::Read => "read",
         }
     }
 }
@@ -48,15 +51,20 @@ impl ErrorKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RunError {
     pub kind: ErrorKind,
+    /// The command of the extension that failed.
     pub extension: Option<String>,
+    /// The file that could not be read.
+    pub path: Option<String>,
     pub message: String,
 }
 
 impl fmt::Display for RunError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self.extension {
-            Some(command) => write!(f, "{} `{command}`: {}", self.kind.as_str(), self.message),
-            None => f.write_str(&self.message),
+        match (&self.extension, &self.path) {
+            (Some(subject), _) | (None, Some(subject)) => {
+                write!(f, "{} `{subject}`: {}", self.kind.as_str(), self.message)
+            }
+            (None, None) => f.write_str(&self.message),
         }
     }
 }
@@ -165,8 +173,22 @@ struct JsonDiagnostic<'a> {
 #[derive(Serialize)]
 struct JsonError<'a> {
     kind: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
     extension: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    path: Option<&'a str>,
     message: &'a str,
+}
+
+impl<'a> From<&'a RunError> for JsonError<'a> {
+    fn from(error: &'a RunError) -> Self {
+        Self {
+            kind: error.kind.as_str(),
+            extension: error.extension.as_deref(),
+            path: error.path.as_deref(),
+            message: &error.message,
+        }
+    }
 }
 
 struct Diagnostics<'a> {
@@ -216,15 +238,7 @@ fn json(report: &Report<'_>, out: &mut impl Write) -> io::Result<()> {
                 .map(|rule| (rule.id.as_str(), rule.code.as_str()))
                 .collect(),
         },
-        errors: report
-            .errors
-            .iter()
-            .map(|error| JsonError {
-                kind: error.kind.as_str(),
-                extension: error.extension.as_deref(),
-                message: &error.message,
-            })
-            .collect(),
+        errors: report.errors.iter().map(JsonError::from).collect(),
     };
     serde_json::to_writer(&mut *out, &document)?;
     writeln!(out)

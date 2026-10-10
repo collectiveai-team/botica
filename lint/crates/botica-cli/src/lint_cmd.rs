@@ -5,7 +5,7 @@ use botica_config::Resolution;
 use botica_core::cache::{lint_files_cached, Cache};
 use botica_core::registry::IO_ERROR;
 use botica_core::report::{self, ErrorKind, Format, Report, RunError};
-use botica_core::walk::{self, SourceFile};
+use botica_core::walk::{self, SourceFile, Unreadable, Walked};
 use botica_core::{postprocess, Diagnostic, Engine, Severity};
 use clap::{Args, ValueEnum};
 use std::io::Write;
@@ -136,6 +136,8 @@ struct Linted {
     sources: Vec<SourceFile>,
     diagnostics: Vec<Diagnostic>,
     io_errors: Vec<Diagnostic>,
+    /// Files the walk found and could not read.
+    unreadable: Vec<Unreadable>,
     files_read: usize,
 }
 
@@ -150,16 +152,17 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         sources,
         mut diagnostics,
         io_errors,
+        unreadable,
         files_read,
     } = lint_paths(&args, &setup, &root)?;
     if args.timings {
         print_prefilter_stats(&setup.engine);
     }
 
-    let errors = match &args.ext {
-        Some(command) => run_extension(&args, command, &sources, &mut diagnostics),
-        None => Vec::new(),
-    };
+    let mut errors = read_errors(unreadable);
+    if let Some(command) = &args.ext {
+        errors.extend(run_extension(&args, command, &sources, &mut diagnostics));
+    }
     diagnostics.extend(io_errors);
     let diagnostics = postprocess::apply(
         diagnostics,
@@ -195,9 +198,8 @@ struct Reached {
     /// Files still to be linted.
     named: Vec<PathBuf>,
     io_errors: Vec<Diagnostic>,
-    /// Files read and findings of the directories walked and linted in one pass.
-    walked_read: usize,
-    walked: Vec<Diagnostic>,
+    /// What the directories walked and linted in one pass brought.
+    walked: Walked,
 }
 
 fn reach(args: &LintArgs, setup: &Setup, root: &Path, overlapped: bool) -> Reached {
@@ -209,8 +211,7 @@ fn reach(args: &LintArgs, setup: &Setup, root: &Path, overlapped: bool) -> Reach
     let mut reached = Reached {
         named: Vec::new(),
         io_errors: Vec::new(),
-        walked_read: 0,
-        walked: Vec::new(),
+        walked: Walked::default(),
     };
     for path in &paths {
         if args.force_exclude && named_and_excluded(&setup.engine, root, path) {
@@ -225,9 +226,10 @@ fn reach(args: &LintArgs, setup: &Setup, root: &Path, overlapped: bool) -> Reach
                 Err(_) => {}
             }
         } else if overlapped {
-            let (read, found) = walk::walk_and_lint(&setup.engine, root, path);
-            reached.walked_read += read;
-            reached.walked.extend(found);
+            let walked = walk::walk_and_lint(&setup.engine, root, path);
+            reached.walked.read += walked.read;
+            reached.walked.diagnostics.extend(walked.diagnostics);
+            reached.walked.unreadable.extend(walked.unreadable);
         } else {
             reached
                 .named
@@ -241,20 +243,31 @@ fn lint_paths(args: &LintArgs, setup: &Setup, root: &Path) -> Result<Linted> {
     let overlapped = args.cache_dir.is_none() && args.ext.is_none();
     let reached = reach(args, setup, root, overlapped);
     let engine = &setup.engine;
-    let (sources, diagnostics, files_read) = if overlapped {
-        let (read, mut found) = walk::lint_streaming(engine, root, &reached.named);
-        found.extend(reached.walked);
-        found.sort_by(|a, b| (&a.path, a.start, &a.rule).cmp(&(&b.path, b.start, &b.rule)));
-        (Vec::new(), found, read + reached.walked_read)
+    let io_errors = reached.io_errors;
+    if overlapped {
+        let named = walk::lint_streaming(engine, root, &reached.named);
+        let mut diagnostics = named.diagnostics;
+        diagnostics.extend(reached.walked.diagnostics);
+        diagnostics.sort_by(|a, b| (&a.path, a.start, &a.rule).cmp(&(&b.path, b.start, &b.rule)));
+        let mut unreadable = named.unreadable;
+        unreadable.extend(reached.walked.unreadable);
+        unreadable.sort_by(|a, b| a.path.cmp(&b.path));
+        Ok(Linted {
+            sources: Vec::new(),
+            diagnostics,
+            io_errors,
+            unreadable,
+            files_read: named.read + reached.walked.read,
+        })
     } else if let Some(dir) = &args.cache_dir {
-        let sources = walk::read_all(root, &reached.named);
+        let (sources, unreadable) = walk::read_all(root, &reached.named);
         let fingerprint = rules::fingerprint(
             setup.with_astgrep,
             args.extra_rules.as_deref(),
             &setup.config_key,
         )?;
         let mut cache = Cache::load(dir, &fingerprint);
-        let (found, stats) = lint_files_cached(engine, &sources, &mut cache);
+        let (diagnostics, stats) = lint_files_cached(engine, &sources, &mut cache);
         cache.save()?;
         if args.timings {
             eprintln!(
@@ -262,17 +275,36 @@ fn lint_paths(args: &LintArgs, setup: &Setup, root: &Path) -> Result<Linted> {
                 stats.hits, stats.misses
             );
         }
-        (sources, found, 0)
+        Ok(Linted {
+            sources,
+            diagnostics,
+            io_errors,
+            unreadable,
+            files_read: 0,
+        })
     } else {
-        let (sources, found) = walk::read_and_lint(engine, root, &reached.named);
-        (sources, found, 0)
-    };
-    Ok(Linted {
-        sources,
-        diagnostics,
-        io_errors: reached.io_errors,
-        files_read,
-    })
+        let (sources, walked) = walk::read_and_lint(engine, root, &reached.named);
+        Ok(Linted {
+            sources,
+            diagnostics: walked.diagnostics,
+            io_errors,
+            unreadable: walked.unreadable,
+            files_read: 0,
+        })
+    }
+}
+
+/// A file the walk found and could not read is a failure of the run, not a finding.
+fn read_errors(unreadable: Vec<Unreadable>) -> Vec<RunError> {
+    unreadable
+        .into_iter()
+        .map(|failure| RunError {
+            kind: ErrorKind::Read,
+            extension: None,
+            path: Some(failure.path),
+            message: failure.message,
+        })
+        .collect()
 }
 
 fn print_prefilter_stats(engine: &Engine) {
@@ -311,6 +343,7 @@ fn run_extension(
         .map(|error| RunError {
             kind: ErrorKind::Extension,
             extension: Some(command.to_owned()),
+            path: None,
             message: format!("{error:#}"),
         })
         .into_iter()

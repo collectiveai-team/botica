@@ -88,9 +88,9 @@ fn the_walk_reads_only_the_files_the_planner_wants() {
         }
     }));
 
-    let (read, found) = walk_and_lint(&engine, &root, &root);
-    assert_eq!(read, 2, "only src/a.py and src/b.ts");
-    let paths: Vec<&str> = found.iter().map(|d| d.path.as_str()).collect();
+    let walked = walk_and_lint(&engine, &root, &root);
+    assert_eq!(walked.read, 2, "only src/a.py and src/b.ts");
+    let paths: Vec<&str> = walked.diagnostics.iter().map(|d| d.path.as_str()).collect();
     assert_eq!(paths, ["src/a.py", "src/b.ts"]);
 
     let listed = discover(&root, &root, &engine);
@@ -105,8 +105,7 @@ fn the_walk_reads_only_the_files_the_planner_wants() {
 fn every_kind_of_file_is_walked_when_a_rule_covers_every_language() {
     let root = tree("all");
     let engine = Engine::new(natives(), AstGrepSet::default()).with_planner(Box::new(|_| vec![0]));
-    let (read, _) = walk_and_lint(&engine, &root, &root);
-    assert_eq!(read, 4);
+    assert_eq!(walk_and_lint(&engine, &root, &root).read, 4);
 }
 
 #[test]
@@ -117,7 +116,14 @@ fn binary_files_are_skipped_before_reading_them_whole() {
     binary.extend(std::iter::repeat_n(b'y', 5_000_000));
     fs::write(root.join("src/blob.dat"), binary).unwrap();
     let engine = Engine::new(natives(), AstGrepSet::default()).with_planner(Box::new(|_| vec![0]));
-    let (read, found) = walk_and_lint(&engine, &root, &root);
-    assert_eq!(read, 4, "the blob is not counted as read");
-    assert!(found.iter().all(|d| !d.path.ends_with("blob.dat")));
+    let walked = walk_and_lint(&engine, &root, &root);
+    assert_eq!(walked.read, 4, "the blob is not counted as read");
+    assert!(walked
+        .diagnostics
+        .iter()
+        .all(|d| !d.path.ends_with("blob.dat")));
+    assert!(
+        walked.unreadable.is_empty(),
+        "a binary file is not a failure"
+    );
 }

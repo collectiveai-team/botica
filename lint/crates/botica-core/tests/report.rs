@@ -47,6 +47,7 @@ fn extension_failure() -> RunError {
     RunError {
         kind: ErrorKind::Extension,
         extension: Some("uv run --script ext.py".to_owned()),
+        path: None,
         message: "extension closed its stdout during `lint/files`".to_owned(),
     }
 }
@@ -213,6 +214,42 @@ fn sarif_levels_follow_the_severity() {
         .map(|result| result["level"].as_str().expect("level"))
         .collect();
     assert_eq!(levels, ["error", "warning", "note", "note"]);
+}
+
+fn read_failure() -> RunError {
+    RunError {
+        kind: ErrorKind::Read,
+        extension: None,
+        path: Some("data/locked.txt".to_owned()),
+        message: "Permission denied (os error 13)".to_owned(),
+    }
+}
+
+#[test]
+fn json_names_the_file_of_a_read_error_and_not_an_extension() {
+    let text = rendered(&[], &[read_failure()], Format::Json);
+
+    let document: Value = serde_json::from_str(&text).expect("one JSON document");
+    assert_eq!(
+        document["errors"],
+        json!([
+            {
+                "kind": "read",
+                "path": "data/locked.txt",
+                "message": "Permission denied (os error 13)"
+            }
+        ])
+    );
+}
+
+#[test]
+fn github_says_a_read_error_with_the_file_in_the_message() {
+    let text = rendered(&[], &[read_failure()], Format::Github);
+
+    assert_eq!(
+        text,
+        "::error title=botica::read `data/locked.txt`: Permission denied (os error 13)\n"
+    );
 }
 
 #[test]

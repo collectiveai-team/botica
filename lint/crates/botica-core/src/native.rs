@@ -1,8 +1,25 @@
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::document::Document;
 
+/// What a native rule reads of a file, like `needs` in `rule.toml`. The engine hands the rule
+/// only the files that give it that much.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Needs {
+    /// The path alone: the rule runs whatever the contents are.
+    Path,
+    /// The bytes: the rule runs on any file that is not binary, UTF-8 or not.
+    Bytes,
+    /// The text: the rule runs on UTF-8 files only.
+    Text,
+}
+
 pub trait NativeRule: Send + Sync {
     fn id(&self) -> &'static str;
+
+    fn needs(&self) -> Needs {
+        Needs::Text
+    }
+
     fn check(&self, doc: &Document<'_>, out: &mut Vec<Diagnostic>);
 }
 
@@ -23,6 +40,10 @@ impl Default for FileSizeGuard {
 impl NativeRule for FileSizeGuard {
     fn id(&self) -> &'static str {
         "file-size-guard"
+    }
+
+    fn needs(&self) -> Needs {
+        Needs::Bytes
     }
 
     fn check(&self, doc: &Document<'_>, out: &mut Vec<Diagnostic>) {
@@ -63,6 +84,10 @@ const CODE_EXTENSIONS: [&str; 3] = ["py", "ts", "js"];
 impl NativeRule for NoUtils {
     fn id(&self) -> &'static str {
         "no-utils"
+    }
+
+    fn needs(&self) -> Needs {
+        Needs::Path
     }
 
     fn check(&self, doc: &Document<'_>, out: &mut Vec<Diagnostic>) {

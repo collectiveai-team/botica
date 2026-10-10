@@ -55,7 +55,7 @@ fn key(file: &SourceFile) -> String {
     let mut hasher = blake3::Hasher::new();
     hasher.update(file.path.as_bytes());
     hasher.update(&[0]);
-    hasher.update(file.text.as_bytes());
+    hasher.update(&file.bytes);
     hasher.finalize().to_hex().to_string()
 }
 
@@ -72,7 +72,7 @@ pub fn lint_files_cached(
             match known.get(&key) {
                 Some(found) => (key, found.clone(), true),
                 None => {
-                    let found = engine.lint_source(&file.path, &file.text);
+                    let found = engine.lint_bytes(&file.path, &file.bytes);
                     (key, found, false)
                 }
             }

@@ -27,6 +27,7 @@ fn tree(test: &str) -> PathBuf {
     fs::write(root.join("pkg/utils.py"), "").unwrap();
     fs::write(root.join("pkg/notes.md"), "not code\n").unwrap();
     fs::write(root.join("pkg/latin1.py"), [b'x', b' ', 0xE9, b'\n']).unwrap();
+    fs::write(root.join("pkg/blob.bin"), b"\0not text\n").unwrap();
     fs::write(root.join(".hidden/secret.py"), "x = 1\n".repeat(800)).unwrap();
     root
 }
@@ -42,23 +43,29 @@ fn walking_and_linting_in_one_pass_reports_what_the_two_passes_report() {
 
     let files = discover(&root, &root, &engine);
     let (sources, two_passes) = read_and_lint(&engine, &root, &files);
-    let (read, one_pass) = walk_and_lint(&engine, &root, &root);
+    let one_pass = walk_and_lint(&engine, &root, &root);
 
-    assert_eq!(rendered(&one_pass), rendered(&two_passes));
-    assert_eq!(read, sources.len());
+    assert_eq!(
+        rendered(&one_pass.diagnostics),
+        rendered(&two_passes.diagnostics)
+    );
+    assert_eq!(one_pass.read, sources.len());
+    assert_eq!(one_pass.read, two_passes.read);
 }
 
 #[test]
-fn files_of_any_size_are_read_whole_and_unreadable_ones_are_skipped() {
+fn files_of_any_size_are_read_whole_and_binary_ones_are_skipped() {
     let root = tree("any_size");
     let engine = engine();
 
-    let (read, found) = walk_and_lint(&engine, &root, &root);
+    let walked = walk_and_lint(&engine, &root, &root);
 
-    // big, small, empty, utils and the Markdown (every native rule runs on every path without a
-    // planner); not the hidden directory or the non-UTF-8 file.
-    assert_eq!(read, 5);
-    let messages = rendered(&found).join("\n");
+    // big, small, empty, utils, the Markdown and the Latin-1 file (every native rule runs on
+    // every path without a planner; a file that is not UTF-8 is still read, for the rules that
+    // count bytes); not the hidden directory or the binary file.
+    assert_eq!(walked.read, 6);
+    assert!(walked.unreadable.is_empty());
+    let messages = rendered(&walked.diagnostics).join("\n");
     assert!(messages.contains("is too large (40000 lines"), "{messages}");
     assert!(messages.contains("[no-utils]"), "{messages}");
     assert!(!messages.contains("secret.py"), "{messages}");
@@ -68,16 +75,20 @@ fn files_of_any_size_are_read_whole_and_unreadable_ones_are_skipped() {
 fn explicit_files_are_linted_like_walked_ones() {
     let root = tree("explicit");
     let engine = engine();
-    let files = vec![root.join("pkg/big.py"), root.join("pkg/latin1.py")];
+    let files = vec![
+        root.join("pkg/big.py"),
+        root.join("pkg/latin1.py"),
+        root.join("pkg/blob.bin"),
+    ];
 
-    let (read, found) = lint_streaming(&engine, &root, &files);
+    let streamed = lint_streaming(&engine, &root, &files);
 
-    assert_eq!(read, 1);
-    let (_, walked) = walk_and_lint(&engine, &root, &root);
+    assert_eq!(streamed.read, 2);
+    let walked = walk_and_lint(&engine, &root, &root);
     let big = |d: &String| d.contains("big.py");
     assert_eq!(
-        rendered(&found),
-        rendered(&walked)
+        rendered(&streamed.diagnostics),
+        rendered(&walked.diagnostics)
             .into_iter()
             .filter(big)
             .collect::<Vec<_>>()

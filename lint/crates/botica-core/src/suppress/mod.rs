@@ -239,7 +239,7 @@ impl Policy {
                         scope,
                         channel,
                         line,
-                        comment_only: is_comment_only(doc.text, span.start),
+                        comment_only: is_comment_only(doc.text().unwrap_or_default(), span.start),
                         span,
                         tokens,
                     });
@@ -288,14 +288,17 @@ impl Policy {
             noqa: allows_noqa(doc.path),
             ast_grep: self.compat_ast_grep_ignore,
         };
-        if !self.has_marker(doc.text) {
+        let Some(text) = doc.text() else {
+            return;
+        };
+        if !self.has_marker(text) {
             return;
         }
-        let scanned = scan(doc.text, syntax);
+        let scanned = scan(text, syntax);
         let mut directives = Vec::new();
         for comment in &scanned.comments {
             directive::parse(
-                &doc.text[comment.clone()],
+                &text[comment.clone()],
                 comment.start,
                 channels,
                 &mut directives,
