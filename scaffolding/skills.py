@@ -59,7 +59,7 @@ UNIGNORE_WHITELIST = frozenset({MANIFEST_FILE})
 # skips unknown names without failing). Note the ref must be a `#fragment`: the
 # `owner/repo@ref` form is parsed as a skill-name filter and the ref is ignored.
 # The skills-drift workflow reports when a newer tag is available.
-MATTPOCOCK_REF = "v1.2.3"
+MATTPOCOCK_REF = "v1.3.1"
 MATTPOCOCK_REPO = "mattpocock/skills"
 MATTPOCOCK_SOURCE = f"{MATTPOCOCK_REPO}#{MATTPOCOCK_REF}"
 SCAFFOLDING_SOURCE = "collectiveai-team/botica"
@@ -73,6 +73,8 @@ MATTPOCOCK_SKILLS = [
     "to-spec",
     "to-tickets",
     "implement",
+    "implement-spec",
+    "retro",
     "wayfinder",
     "prototype",
     "diagnosing-bugs",
@@ -81,13 +83,13 @@ MATTPOCOCK_SKILLS = [
     "domain-modeling",
     "codebase-design",
     "code-review",
-    "resolving-merge-conflicts",
     "wizard",
     "grill-me",
     "teach",
     "writing-for-agents",
     "grilling",
     "wait-what",
+    "to-questionnaire",
 ]
 LOCAL_SKILLS = [
     "ask-user",
@@ -97,6 +99,7 @@ LOCAL_SKILLS = [
     "engineering-rules",
     "engineering-pr-review",
     "engineering-refactor",
+    "pr",
 ]
 VARLOCK_SKILLS = ["varlock"]
 

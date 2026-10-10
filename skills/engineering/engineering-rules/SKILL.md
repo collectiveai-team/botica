@@ -1,5 +1,11 @@
 ---
 name: engineering-rules
+metadata:
+  credits:
+    - author: Matt Pocock
+      skill: codebase-design
+      url: "https://github.com/mattpocock/skills/blob/v1.3.1/skills/engineering/codebase-design/SKILL.md"
+      contribution: Deep-module vocabulary, deletion test, adapter discipline, and interface-based testing; other house rules are local.
 description: The house engineering ruleset — Python toolchain, package layout, deep-module architecture, testing, logging, and the stack-specific patterns (FastAPI, Prefect, LLM/AI, ASR, Next.js, k8s). Use when looking up what the house standard says about code being written, reviewed, refactored, or restructured — which linter, which layout, which test shape, whether a pattern is current or legacy. Invoked by engineering-pr-review and engineering-refactor, and usable directly.
 ---
 

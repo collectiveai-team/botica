@@ -413,6 +413,24 @@ def plan_ci(ctx: Context) -> list[Op]:
     return ops
 
 
+def plan_github_templates(ctx: Context) -> list[Op]:
+    targets = [
+        ".github/pull_request_template.md",
+        ".github/ISSUE_TEMPLATE/bug_report.md",
+        ".github/ISSUE_TEMPLATE/feature_proposal.md",
+    ]
+    return [
+        write_if_absent(
+            "github-templates",
+            ctx.root / target,
+            template_text(target),
+            target,
+            ctx.guide_url,
+        )
+        for target in targets
+    ]
+
+
 def plan_agents(ctx: Context) -> list[Op]:
     dest = ctx.root / "AGENTS.md"
     section = template_text("agents-workspace-defaults.md")
@@ -623,6 +641,14 @@ REGISTRY: list[Component] = [
         "pyproject", "pyproject.toml (guided name/description)", 2, True, _python, plan_pyproject
     ),
     Component("ci", "GitHub Actions workflows + dependabot", 2, False, _always, plan_ci),
+    Component(
+        "github-templates",
+        "GitHub PR + bug report + feature proposal templates",
+        1,
+        True,
+        _always,
+        plan_github_templates,
+    ),
     Component("agents", "AGENTS.md workspace-defaults section", 1, True, _always, plan_agents),
     Component(
         "standards",

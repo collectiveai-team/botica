@@ -177,7 +177,7 @@ judgment; `[snippet]` ships canonical code under `.agents/snippets/` (in target 
 
 ## Domain docs
 
-Single-context — `CONTEXT.md` + `docs/adr/` at the repo root (created lazily).
+Single-context — `GLOSSARY.md` + `docs/adr/` at the repo root (created lazily).
 See `docs/agents/domain.md`.
 
 ## Repo Workspace Defaults
