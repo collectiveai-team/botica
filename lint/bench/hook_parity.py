@@ -30,7 +30,7 @@ TEMPLATE = ROOT / "scaffolding" / "templates" / "prek-python.toml"
 RULES = ("file-size-guard", "no-utils")
 HOOK_LINE = re.compile(r"^\s+(Error|Warning): (CES-\d+ \((?:file-size-guard|no-utils)\): .*)$")
 PATH_IN_MESSAGE = re.compile(r"\): (.+?) (?:is too large|is large|is a catch-all)")
-WALK = ROOT / "lint" / "crates" / "botica-core" / "src" / "walk.rs"
+WALK = ROOT / "lint" / "crates" / "botica-core" / "src" / "walk" / "mod.rs"
 # The directories of tools the walk does not enter, read from the walk itself.
 TOOL_DIRS = frozenset(
     re.findall(
