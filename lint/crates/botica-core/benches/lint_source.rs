@@ -78,8 +78,10 @@ fn buffer(block: &str, lines: usize) -> String {
 }
 
 fn engine(py: bool, ts: bool) -> Engine {
-    let native: Vec<Box<dyn NativeRule>> =
-        vec![Box::new(FileSizeGuard::default()), Box::new(NoUtils)];
+    let native: Vec<Box<dyn NativeRule>> = vec![
+        Box::new(FileSizeGuard::default()),
+        Box::new(NoUtils::default()),
+    ];
     let mut rules = Vec::new();
     if py {
         for yaml in PY_RULES {

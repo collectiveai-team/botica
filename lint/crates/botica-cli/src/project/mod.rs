@@ -94,6 +94,21 @@ impl Project {
         code_dirs::seen_from(self.code_dirs(), self.working_prefix().as_deref())
     }
 
+    /// What the active rules are told about the code directories: nothing (and no search of the
+    /// tree) unless one of them reads them.
+    pub fn code_dirs_for_the_rules(&self) -> Vec<CodeDir> {
+        let wanted = self
+            .resolution
+            .entries()
+            .iter()
+            .any(|entry| entry.active && registry::uses_code_dirs(&entry.rule.id));
+        if wanted {
+            self.code_dirs_seen_from_here()
+        } else {
+            Vec::new()
+        }
+    }
+
     /// The code directories and where they come from, for a person: `python: backend/amarc
     /// (detected)`.
     pub fn describe_code_dirs(&self) -> String {
@@ -136,6 +151,11 @@ impl Project {
             .filter(|entry| entry.active)
             .map(|entry| entry.rule.id.as_str())
             .collect();
-        format!("{:?}|{}", self.loaded.config, active.join(","))
+        format!(
+            "{:?}|{}|{:?}",
+            self.loaded.config,
+            active.join(","),
+            self.code_dirs_for_the_rules()
+        )
     }
 }

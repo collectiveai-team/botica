@@ -13,8 +13,15 @@ fn dir(path: &str, ecosystem: Ecosystem) -> CodeDir {
 }
 
 fn engine(slug: &str, code_dirs: Vec<CodeDir>) -> Engine {
-    let rule = registry::build(slug, &BTreeMap::new(), &Context { code_dirs })
-        .expect("the rule is native");
+    let rule = registry::build(
+        slug,
+        &BTreeMap::new(),
+        &Context {
+            code_dirs,
+            ..Context::default()
+        },
+    )
+    .expect("the rule is native");
     let rules: Vec<Box<dyn NativeRule>> = vec![rule];
     Engine::new(rules, AstGrepSet::default())
 }

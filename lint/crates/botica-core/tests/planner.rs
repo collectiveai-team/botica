@@ -12,7 +12,7 @@ fn natives() -> Vec<Box<dyn NativeRule>> {
             warn_at: 2,
             error_at: 4,
         }),
-        Box::new(NoUtils),
+        Box::new(NoUtils::default()),
     ]
 }
 

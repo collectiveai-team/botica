@@ -76,10 +76,14 @@ impl NativeRule for FileSizeGuard {
     }
 }
 
-pub struct NoUtils;
+#[derive(Default)]
+pub struct NoUtils {
+    /// Where botica runs inside the project, so `tests/` is recognised from the root and not
+    /// only from the directory the paths start at (`""` at the root).
+    pub working_prefix: String,
+}
 
 const CATCH_ALL_STEMS: [&str; 5] = ["utils", "helpers", "aux", "misc", "common"];
-const CODE_EXTENSIONS: [&str; 3] = ["py", "ts", "js"];
 
 impl NativeRule for NoUtils {
     fn id(&self) -> &'static str {
@@ -92,12 +96,17 @@ impl NativeRule for NoUtils {
 
     fn check(&self, doc: &Document<'_>, out: &mut Vec<Diagnostic>) {
         let path = doc.path;
-        let in_tests = path.starts_with("tests/") || path.contains("/tests/");
+        let from_the_root = if self.working_prefix.is_empty() {
+            path.to_owned()
+        } else {
+            format!("{}/{path}", self.working_prefix)
+        };
+        let in_tests = from_the_root.starts_with("tests/") || from_the_root.contains("/tests/");
         let name = path.rsplit('/').next().unwrap_or(path);
-        let Some((stem, extension)) = name.rsplit_once('.') else {
+        let Some((stem, "py")) = name.rsplit_once('.') else {
             return;
         };
-        if in_tests || !CATCH_ALL_STEMS.contains(&stem) || !CODE_EXTENSIONS.contains(&extension) {
+        if in_tests || !CATCH_ALL_STEMS.contains(&stem) {
             return;
         }
         out.push(Diagnostic::file_level(

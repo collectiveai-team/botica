@@ -17,6 +17,8 @@ pub type Options = BTreeMap<String, toml::Value>;
 pub struct Context {
     /// Where the code of the project lives, as paths in the terms of the paths the rules get.
     pub code_dirs: Vec<CodeDir>,
+    /// Where botica runs inside the project root (`""` at the root).
+    pub working_prefix: String,
 }
 
 enum Provider {
@@ -76,8 +78,10 @@ fn file_size_guard(options: &Options, _context: &Context) -> Box<dyn NativeRule>
     })
 }
 
-fn no_utils(_options: &Options, _context: &Context) -> Box<dyn NativeRule> {
-    Box::new(NoUtils)
+fn no_utils(_options: &Options, context: &Context) -> Box<dyn NativeRule> {
+    Box::new(NoUtils {
+        working_prefix: context.working_prefix.clone(),
+    })
 }
 
 fn threshold(options: &Options, name: &str, default: usize) -> usize {

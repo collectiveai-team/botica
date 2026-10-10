@@ -7,8 +7,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 fn engine() -> Engine {
-    let native: Vec<Box<dyn NativeRule>> =
-        vec![Box::new(FileSizeGuard::default()), Box::new(NoUtils)];
+    let native: Vec<Box<dyn NativeRule>> = vec![
+        Box::new(FileSizeGuard::default()),
+        Box::new(NoUtils::default()),
+    ];
     Engine::new(native, AstGrepSet::default())
 }
 

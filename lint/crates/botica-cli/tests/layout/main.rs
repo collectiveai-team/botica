@@ -36,8 +36,10 @@ fn backend(dir: &Path) {
 }
 
 mod artifacts;
+mod cache;
 mod configuration;
 mod ecosystems;
 mod from_a_subdirectory;
+mod no_utils_below_the_root;
 mod notebooks;
 mod tests_in_package;

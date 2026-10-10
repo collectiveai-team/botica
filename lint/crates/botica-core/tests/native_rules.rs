@@ -2,8 +2,10 @@ use botica_astgrep::{AstGrepRule, AstGrepSet};
 use botica_core::{Engine, FileSizeGuard, NativeRule, NoUtils, Severity};
 
 fn native_engine() -> Engine {
-    let native: Vec<Box<dyn NativeRule>> =
-        vec![Box::new(FileSizeGuard::default()), Box::new(NoUtils)];
+    let native: Vec<Box<dyn NativeRule>> = vec![
+        Box::new(FileSizeGuard::default()),
+        Box::new(NoUtils::default()),
+    ];
     Engine::new(native, AstGrepSet::default())
 }
 
@@ -36,7 +38,8 @@ fn an_unterminated_last_line_counts_like_python() {
 fn no_utils_flags_catch_all_modules_outside_tests() {
     let engine = native_engine();
     assert_eq!(engine.lint_source("pkg/utils.py", "").len(), 1);
-    assert_eq!(engine.lint_source("helpers.ts", "").len(), 1);
+    assert!(engine.lint_source("helpers.ts", "").is_empty());
+    assert!(engine.lint_source("common.js", "").is_empty());
     assert!(engine.lint_source("tests/utils.py", "").is_empty());
     assert!(engine.lint_source("pkg/utils_extra.py", "").is_empty());
     assert!(engine.lint_source("pkg/utils.md", "").is_empty());
