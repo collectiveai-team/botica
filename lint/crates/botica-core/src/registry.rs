@@ -22,52 +22,75 @@ pub struct Context {
 }
 
 enum Provider {
-    Rule(fn(&Options, &Context) -> Box<dyn NativeRule>),
+    Rule {
+        make: fn(&Options, &Context) -> Box<dyn NativeRule>,
+        /// Whether the rule reads `Context::code_dirs`, so a command can say which directories
+        /// it sees and a search for them is only made when one of these is active.
+        reads_code_dirs: bool,
+    },
     /// The engine reports these itself while it lints (suppression comments, unreadable files).
     Engine,
 }
 
 const NATIVES: [(&str, Provider); 8] = [
-    ("file-size-guard", Provider::Rule(file_size_guard)),
-    ("no-utils", Provider::Rule(no_utils)),
-    ("no-tests-in-package", Provider::Rule(no_tests_in_package)),
-    ("no-notebooks", Provider::Rule(no_notebooks)),
+    (
+        "file-size-guard",
+        Provider::Rule {
+            make: file_size_guard,
+            reads_code_dirs: false,
+        },
+    ),
+    (
+        "no-utils",
+        Provider::Rule {
+            make: no_utils,
+            reads_code_dirs: false,
+        },
+    ),
+    (
+        "no-tests-in-package",
+        Provider::Rule {
+            make: |_, context| over_code_dirs::<NoTestsInPackage>(context),
+            reads_code_dirs: true,
+        },
+    ),
+    (
+        "no-notebooks",
+        Provider::Rule {
+            make: |_, context| over_code_dirs::<NoNotebooks>(context),
+            reads_code_dirs: true,
+        },
+    ),
     (
         "no-artifacts-in-package",
-        Provider::Rule(no_artifacts_in_package),
+        Provider::Rule {
+            make: |_, context| over_code_dirs::<NoArtifactsInPackage>(context),
+            reads_code_dirs: true,
+        },
     ),
     (IO_ERROR, Provider::Engine),
     (UNUSED, Provider::Engine),
     (INVALID, Provider::Engine),
 ];
 
-/// The rules that read `Context::code_dirs`, so a command can say which directories they see.
-const USES_CODE_DIRS: [&str; 3] = [
-    "no-tests-in-package",
-    "no-notebooks",
-    "no-artifacts-in-package",
-];
-
 pub fn uses_code_dirs(slug: &str) -> bool {
-    USES_CODE_DIRS.contains(&slug)
-}
-
-fn no_tests_in_package(_options: &Options, context: &Context) -> Box<dyn NativeRule> {
-    Box::new(NoTestsInPackage {
-        code_dirs: context.code_dirs.clone(),
+    NATIVES.iter().any(|(name, provider)| {
+        *name == slug
+            && matches!(
+                provider,
+                Provider::Rule {
+                    reads_code_dirs: true,
+                    ..
+                }
+            )
     })
 }
 
-fn no_notebooks(_options: &Options, context: &Context) -> Box<dyn NativeRule> {
-    Box::new(NoNotebooks {
-        code_dirs: context.code_dirs.clone(),
-    })
-}
-
-fn no_artifacts_in_package(_options: &Options, context: &Context) -> Box<dyn NativeRule> {
-    Box::new(NoArtifactsInPackage {
-        code_dirs: context.code_dirs.clone(),
-    })
+fn over_code_dirs<R>(context: &Context) -> Box<dyn NativeRule>
+where
+    R: NativeRule + From<Vec<CodeDir>> + 'static,
+{
+    Box::new(R::from(context.code_dirs.clone()))
 }
 
 fn file_size_guard(options: &Options, _context: &Context) -> Box<dyn NativeRule> {
@@ -96,7 +119,7 @@ fn threshold(options: &Options, name: &str, default: usize) -> usize {
 /// the engine provides the rule itself or when nothing implements it.
 pub fn build(slug: &str, options: &Options, context: &Context) -> Option<Box<dyn NativeRule>> {
     NATIVES.iter().find_map(|(name, provider)| match provider {
-        Provider::Rule(make) if *name == slug => Some(make(options, context)),
+        Provider::Rule { make, .. } if *name == slug => Some(make(options, context)),
         _ => None,
     })
 }

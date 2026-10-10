@@ -4,7 +4,8 @@ use botica_catalog::Ecosystem;
 use botica_core::CodeDir;
 
 /// Directories that are never a project of their own, however deep: dependencies, build output,
-/// and the places where examples, test data and templates keep their own manifests.
+/// and the places where examples, test data and templates keep their own manifests. Not the same
+/// question as `NOT_PACKAGES` below or the directories the rules exempt (`layout.rs` in core).
 const NOT_PROJECTS: [&str; 20] = [
     "node_modules",
     "vendor",

@@ -13,6 +13,8 @@ pub struct CodeDir {
 }
 
 /// Directories whose contents are not the code of the package, even when they sit inside it.
+/// Not the same question as which directories are no project or no package (`code_dirs.rs` in
+/// the CLI): the lists overlap by chance and are not meant to be kept equal.
 const EXEMPT_DIRS: [&str; 9] = [
     "tests",
     "test",
@@ -223,5 +225,23 @@ impl NativeRule for NoArtifactsInPackage {
                 doc.path
             ),
         ));
+    }
+}
+
+impl From<Vec<CodeDir>> for NoTestsInPackage {
+    fn from(code_dirs: Vec<CodeDir>) -> Self {
+        Self { code_dirs }
+    }
+}
+
+impl From<Vec<CodeDir>> for NoNotebooks {
+    fn from(code_dirs: Vec<CodeDir>) -> Self {
+        Self { code_dirs }
+    }
+}
+
+impl From<Vec<CodeDir>> for NoArtifactsInPackage {
+    fn from(code_dirs: Vec<CodeDir>) -> Self {
+        Self { code_dirs }
     }
 }

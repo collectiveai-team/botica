@@ -213,14 +213,9 @@ impl Engine {
     /// Lints text the caller already holds. Does no I/O.
     pub fn lint_source(&self, path: &str, text: &str) -> Vec<Diagnostic> {
         match self.plan(path) {
-            Some(plan) => self.lint_planned(path, text, &plan),
+            Some(plan) => self.lint_document(&Document::new(path, text), &plan),
             None => Vec::new(),
         }
-    }
-
-    /// Like `lint_source` for a caller that already asked for the plan (to decide whether to read).
-    pub fn lint_planned(&self, path: &str, text: &str, plan: &Plan) -> Vec<Diagnostic> {
-        self.lint_document(&Document::new(path, text), plan)
     }
 
     /// Lints a file as it was read, UTF-8 or not. Does no I/O.
