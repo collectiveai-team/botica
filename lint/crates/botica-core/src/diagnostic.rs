@@ -49,6 +49,25 @@ pub struct Diagnostic {
     pub message: String,
 }
 
+impl Diagnostic {
+    /// A finding about a whole file: it sits at 1:1 and carries no range of its own.
+    pub fn file_level(path: &str, rule: &str, severity: Severity, message: String) -> Self {
+        Self {
+            path: path.to_owned(),
+            rule: rule.to_owned(),
+            severity,
+            start: 0,
+            end: 0,
+            line: 1,
+            column: 1,
+            end_line: 1,
+            end_column: 1,
+            file_level: true,
+            message,
+        }
+    }
+}
+
 impl fmt::Display for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(

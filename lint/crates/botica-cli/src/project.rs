@@ -181,7 +181,14 @@ impl Project {
 
     /// Everything that can change which diagnostics a file gets, for the result cache.
     pub fn fingerprint(&self) -> String {
-        format!("{:?}", self.loaded.config)
+        let active: Vec<&str> = self
+            .resolution
+            .entries()
+            .iter()
+            .filter(|entry| entry.active)
+            .map(|entry| entry.rule.id.as_str())
+            .collect();
+        format!("{:?}|{}", self.loaded.config, active.join(","))
     }
 }
 

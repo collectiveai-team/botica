@@ -71,7 +71,7 @@ struct LintArgs {
     /// Print to stderr how long each rule and each extension took, and what the prefilter saved.
     #[arg(long)]
     timings: bool,
-    /// Measurement aid: extra ast-grep rules (`*.yml` in this directory).
+    /// Extra ast-grep rules (`*.yml` in this directory), for the parity checks on other languages.
     #[arg(long, hide = true)]
     extra_rules: Option<PathBuf>,
     /// Parse whole files instead of only the top-level statements holding a candidate.
@@ -173,7 +173,9 @@ fn lint(args: LintArgs) -> Result<ExitCode> {
         if !path.is_dir() {
             match std::fs::File::open(path) {
                 Ok(_) => files.push(path.clone()),
-                Err(error) if io_error_active => io_errors.push(io_error(path, &error)),
+                Err(error) if io_error_active => {
+                    io_errors.push(io_error(&named(&root, path), &error))
+                }
                 Err(_) => {}
             }
         } else if overlapped {
@@ -295,18 +297,16 @@ fn exit_code(errors: &[RunError], diagnostics: &[Diagnostic], exit_zero: bool) -
     }
 }
 
-fn io_error(path: &Path, error: &std::io::Error) -> Diagnostic {
-    Diagnostic {
-        path: path.display().to_string(),
-        rule: "io-error".to_owned(),
-        severity: Severity::Error,
-        start: 0,
-        end: 0,
-        line: 1,
-        column: 1,
-        end_line: 1,
-        end_column: 1,
-        file_level: true,
-        message: error.to_string(),
+/// A path the user typed, as the walk would name it (from the root, no `./`), with the trailing
+/// `/` the user gave a directory.
+fn named(root: &Path, path: &Path) -> String {
+    let mut name = walk::relative_path(root, path);
+    if path.to_string_lossy().ends_with('/') && !name.ends_with('/') {
+        name.push('/');
     }
+    name
+}
+
+fn io_error(path: &str, error: &std::io::Error) -> Diagnostic {
+    Diagnostic::file_level(path, "io-error", Severity::Error, error.to_string())
 }

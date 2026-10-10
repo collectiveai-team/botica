@@ -112,6 +112,11 @@ impl Policy {
             .is_match(text)
     }
 
+    /// Whether this policy would report about the comments of the file at `path`.
+    pub(crate) fn reads(&self, path: &str) -> bool {
+        (self.unused.is_some() || self.invalid.is_some()) && Syntax::of(path).is_some()
+    }
+
     pub(crate) fn is_astgrep(&self, slug: &str) -> bool {
         self.astgrep.contains(slug)
     }

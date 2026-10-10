@@ -11,6 +11,26 @@ pub enum Verdict {
     Keep,
 }
 
+/// A file reached twice (named twice, or named and also walked) is linted twice; its findings
+/// must come out once. Only findings equal in every field count as the same one.
+fn drop_repeats(sorted: &mut Vec<Diagnostic>) {
+    let mut kept: Vec<Diagnostic> = Vec::with_capacity(sorted.len());
+    for diagnostic in sorted.drain(..) {
+        let repeated = kept
+            .iter()
+            .rev()
+            .take_while(|known| {
+                (&known.path, known.start, &known.rule)
+                    == (&diagnostic.path, diagnostic.start, &diagnostic.rule)
+            })
+            .any(|known| *known == diagnostic);
+        if !repeated {
+            kept.push(diagnostic);
+        }
+    }
+    *sorted = kept;
+}
+
 /// Applies the configuration to the diagnostics and puts them in their final order,
 /// `(path, byte start, rule)`.
 ///
@@ -20,6 +40,7 @@ pub fn apply(
     mut verdict: impl FnMut(&str, &str) -> Verdict,
 ) -> Vec<Diagnostic> {
     diagnostics.sort_by(|a, b| (&a.path, a.start, &a.rule).cmp(&(&b.path, b.start, &b.rule)));
+    drop_repeats(&mut diagnostics);
     diagnostics.retain_mut(
         |diagnostic| match verdict(&diagnostic.path, &diagnostic.rule) {
             Verdict::Report(severity) => {

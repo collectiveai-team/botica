@@ -18,6 +18,15 @@ const EMBEDDED: [&str; 11] = [
     include_str!("../rules/no-console-log.yml"),
 ];
 
+/// The IDs of the embedded rules, known to the suppression comments whether or not the rules run.
+/// Read from each file's `id:` line so that a run without ast-grep need not compile them.
+fn embedded_slugs() -> impl Iterator<Item = &'static str> {
+    EMBEDDED
+        .iter()
+        .flat_map(|yaml| yaml.lines().filter_map(|line| line.strip_prefix("id: ")))
+        .map(str::trim)
+}
+
 pub struct EngineOptions<'a> {
     pub astgrep: bool,
     pub tuning: Tuning,
@@ -48,7 +57,9 @@ pub fn build_engine(
             rules.extend(AstGrepRule::from_yaml(&yaml)?);
         }
     }
-    let policy = policy.with_astgrep_rules(rules.iter().map(AstGrepRule::id));
+    let policy = policy
+        .with_astgrep_rules(embedded_slugs())
+        .with_astgrep_rules(rules.iter().map(AstGrepRule::id));
     let set = AstGrepSet::with_tuning(rules, options.tuning);
     let engine = Engine::new(native, set)
         .with_planner(planner)

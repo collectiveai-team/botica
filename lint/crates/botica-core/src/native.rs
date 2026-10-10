@@ -46,19 +46,12 @@ impl NativeRule for FileSizeGuard {
         } else {
             return;
         };
-        out.push(Diagnostic {
-            path: doc.path.to_owned(),
-            rule: self.id().to_owned(),
+        out.push(Diagnostic::file_level(
+            doc.path,
+            self.id(),
             severity,
-            start: 0,
-            end: 0,
-            line: 1,
-            column: 1,
-            end_line: 1,
-            end_column: 1,
-            file_level: true,
             message,
-        });
+        ));
     }
 }
 
@@ -82,20 +75,13 @@ impl NativeRule for NoUtils {
         if in_tests || !CATCH_ALL_STEMS.contains(&stem) || !CODE_EXTENSIONS.contains(&extension) {
             return;
         }
-        out.push(Diagnostic {
-            path: path.to_owned(),
-            rule: self.id().to_owned(),
-            severity: Severity::Error,
-            start: 0,
-            end: 0,
-            line: 1,
-            column: 1,
-            end_line: 1,
-            end_column: 1,
-            file_level: true,
-            message: format!(
+        out.push(Diagnostic::file_level(
+            path,
+            self.id(),
+            Severity::Error,
+            format!(
                 "CES-63 (no-utils): {path} is a catch-all module — name modules for what they hold, not utils/helpers/aux/misc/common."
             ),
-        });
+        ));
     }
 }

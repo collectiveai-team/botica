@@ -133,13 +133,23 @@ impl Engine {
     }
 
     /// `None` when nothing applies to `path`, so the file need not even be read.
+    ///
+    /// With no rule of code to run at all (the selection names only the rules about suppression
+    /// comments), the files that can hold such comments are still read: the comments are the
+    /// whole job.
     pub fn plan(&self, path: &str) -> Option<Plan> {
         let native = match &self.planner {
             Some(planner) => planner(path),
             None => (0..self.native.len()).collect(),
         };
         let astgrep = self.astgrep.covers(path.as_ref());
-        (!native.is_empty() || astgrep).then_some(Plan { native, astgrep })
+        let comments_only = self.native.is_empty()
+            && self.astgrep.is_empty()
+            && self
+                .suppressions
+                .as_ref()
+                .is_some_and(|policy| policy.reads(path));
+        (!native.is_empty() || astgrep || comments_only).then_some(Plan { native, astgrep })
     }
 
     pub fn astgrep(&self) -> &AstGrepSet {
