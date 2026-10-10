@@ -5,7 +5,7 @@ use std::sync::Arc;
 use botica_config::{FileRule, Resolution};
 use botica_core::postprocess::Verdict;
 use botica_core::registry::IO_ERROR;
-use botica_core::{language_of, Exclusion, NativePlanner, Severity};
+use botica_core::{language_of, Exclusion, Inclusion, NativePlanner, Severity};
 
 /// A path as the configuration sees it: from the project root, not from where botica runs.
 fn from_root<'p>(prefix: Option<&str>, path: &'p str) -> Cow<'p, str> {
@@ -42,6 +42,23 @@ pub fn exclusion(resolution: Arc<Resolution>, prefix: Option<String>) -> Option<
         }),
         path: Box::new(move |path| {
             for_paths.excludes_path(&from_root(path_prefix.as_deref(), path))
+        }),
+    })
+}
+
+/// What `extend-include` asks for, or `None` when it names nothing.
+pub fn inclusion(resolution: Arc<Resolution>, prefix: Option<String>) -> Option<Inclusion> {
+    if !resolution.has_inclusions() {
+        return None;
+    }
+    let (for_paths, for_dirs) = (Arc::clone(&resolution), resolution);
+    let (path_prefix, dir_prefix) = (prefix.clone(), prefix);
+    Some(Inclusion {
+        asks_for: Box::new(move |path| {
+            for_paths.includes_path(&from_root(path_prefix.as_deref(), path))
+        }),
+        may_hold: Box::new(move |dir| {
+            for_dirs.include_may_reach(&from_root(dir_prefix.as_deref(), dir))
         }),
     })
 }

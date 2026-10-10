@@ -103,6 +103,7 @@ impl Setup {
         let policy = project::suppression_policy(&resolution);
         let planner = project::planner(Arc::clone(&resolution), natives.index, prefix.clone());
         let exclusion = project::exclusion(Arc::clone(&resolution), prefix.clone());
+        let inclusion = project::inclusion(Arc::clone(&resolution), prefix.clone());
         let engine = rules::build_engine(
             &rules::EngineOptions {
                 astgrep: with_astgrep,
@@ -119,6 +120,10 @@ impl Setup {
             policy,
             exclusion,
         )?;
+        let engine = match inclusion {
+            Some(inclusion) => engine.with_inclusion(inclusion),
+            None => engine,
+        };
         Ok(Self {
             engine,
             resolution,
@@ -225,15 +230,24 @@ fn reach(args: &LintArgs, setup: &Setup, root: &Path, overlapped: bool) -> Reach
                 }
                 Err(_) => {}
             }
-        } else if overlapped {
-            let walked = walk::walk_and_lint(&setup.engine, root, path);
-            reached.walked.read += walked.read;
-            reached.walked.diagnostics.extend(walked.diagnostics);
-            reached.walked.unreadable.extend(walked.unreadable);
         } else {
-            let listed = walk::discover(path, root, &setup.engine);
-            reached.named.extend(listed.paths);
-            reached.walked.unreadable.extend(listed.unreadable);
+            let asked_for = if overlapped {
+                let walked = walk::walk_and_lint(&setup.engine, root, path);
+                reached.walked.read += walked.read;
+                reached.walked.diagnostics.extend(walked.diagnostics);
+                reached.walked.unreadable.extend(walked.unreadable);
+                walked.asked_for
+            } else {
+                let listed = walk::discover(path, root, &setup.engine);
+                reached.named.extend(listed.paths);
+                reached.walked.unreadable.extend(listed.unreadable);
+                listed.asked_for
+            };
+            if setup.engine.has_inclusion() {
+                let more = walk::walk_asked_for(path, root, &setup.engine, &asked_for);
+                reached.named.extend(more.paths);
+                reached.walked.unreadable.extend(more.unreadable);
+            }
         }
     }
     reached

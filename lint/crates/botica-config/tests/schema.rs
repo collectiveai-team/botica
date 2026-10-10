@@ -39,6 +39,7 @@ fn the_schema_forbids_unknown_keys_and_documents_the_known_ones() {
         "preview",
         "languages",
         "extend-exclude",
+        "extend-include",
         "rule-dirs",
         "external",
         "compat-ast-grep-ignore",

@@ -61,6 +61,43 @@ fn an_empty_matcher_matches_nothing() {
 }
 
 #[test]
+fn a_walk_for_matches_enters_only_the_directories_an_anchored_pattern_can_reach() {
+    let m = matcher(&["generated/api/*.py", "/build/out"]);
+    for dir in [
+        "",
+        "generated",
+        "generated/api",
+        "generated/api/v2",
+        "build",
+        "build/out/x",
+    ] {
+        assert!(m.may_match_below(dir), "{dir}");
+    }
+    for dir in ["src", "generated/other", "other/generated", "builds"] {
+        assert!(!m.may_match_below(dir), "{dir}");
+    }
+}
+
+#[test]
+fn a_pattern_that_can_match_at_any_depth_reaches_every_directory() {
+    for pattern in ["*.gen.py", "docs/", "**/fixtures/x.json", "*/deep/x.py"] {
+        let m = matcher(&[pattern]);
+        for dir in ["", "src", "a/b/c"] {
+            assert!(m.may_match_below(dir), "{pattern} in {dir}");
+        }
+    }
+}
+
+#[test]
+fn a_matcher_with_no_pattern_that_selects_reaches_nothing() {
+    for patterns in [&[][..], &["!keep/"], &["# a comment"]] {
+        let m = matcher(patterns);
+        assert!(!m.may_match_below(""), "{patterns:?}");
+        assert!(!m.may_match_below("generated"), "{patterns:?}");
+    }
+}
+
+#[test]
 fn invalid_patterns_are_reported_with_their_position() {
     let owned = vec![
         "ok/**".to_owned(),

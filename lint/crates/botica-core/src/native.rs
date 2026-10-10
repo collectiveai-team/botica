@@ -85,6 +85,18 @@ pub struct NoUtils {
 
 const CATCH_ALL_STEMS: [&str; 5] = ["utils", "helpers", "aux", "misc", "common"];
 
+impl NoUtils {
+    /// Whether a directory called `tests` is on the way to the file, counting the ones above
+    /// where botica runs.
+    fn in_tests(&self, path: &str) -> bool {
+        let (directories, _) = path.rsplit_once('/').unwrap_or(("", path));
+        self.working_prefix
+            .split('/')
+            .chain(directories.split('/'))
+            .any(|part| part == "tests")
+    }
+}
+
 impl NativeRule for NoUtils {
     fn id(&self) -> &'static str {
         "no-utils"
@@ -96,17 +108,11 @@ impl NativeRule for NoUtils {
 
     fn check(&self, doc: &Document<'_>, out: &mut Vec<Diagnostic>) {
         let path = doc.path;
-        let from_the_root = if self.working_prefix.is_empty() {
-            path.to_owned()
-        } else {
-            format!("{}/{path}", self.working_prefix)
-        };
-        let in_tests = from_the_root.starts_with("tests/") || from_the_root.contains("/tests/");
         let name = path.rsplit('/').next().unwrap_or(path);
         let Some((stem, "py")) = name.rsplit_once('.') else {
             return;
         };
-        if in_tests || !CATCH_ALL_STEMS.contains(&stem) {
+        if !CATCH_ALL_STEMS.contains(&stem) || self.in_tests(path) {
             return;
         }
         out.push(Diagnostic::file_level(

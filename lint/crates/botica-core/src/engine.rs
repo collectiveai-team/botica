@@ -36,12 +36,25 @@ pub struct Exclusion {
     pub path: PathExclusion,
 }
 
+/// A question about a path, relative to where botica runs.
+pub type PathTest = Box<dyn Fn(&str) -> bool + Send + Sync>;
+
+/// What `extend-include` asks for although the walk would not reach it by itself (what
+/// `.gitignore` leaves out, the directories of tools).
+pub struct Inclusion {
+    /// The path, or a directory above it, is asked for.
+    pub asks_for: PathTest,
+    /// Something below this directory may be asked for.
+    pub may_hold: PathTest,
+}
+
 pub struct Engine {
     native: Vec<Box<dyn NativeRule>>,
     astgrep: AstGrepSet,
     planner: Option<NativePlanner>,
     suppressions: Option<Policy>,
     exclusion: Option<Exclusion>,
+    inclusion: Option<Inclusion>,
     timings: Option<Timings>,
 }
 
@@ -54,6 +67,7 @@ impl Engine {
             planner: None,
             suppressions: None,
             exclusion: None,
+            inclusion: None,
             timings: None,
         }
     }
@@ -123,6 +137,30 @@ impl Engine {
 
     pub fn has_exclusion(&self) -> bool {
         self.exclusion.is_some()
+    }
+
+    /// Without an inclusion the walk lints only what it reaches by itself.
+    pub fn with_inclusion(mut self, inclusion: Inclusion) -> Self {
+        self.inclusion = Some(inclusion);
+        self
+    }
+
+    pub fn has_inclusion(&self) -> bool {
+        self.inclusion.is_some()
+    }
+
+    /// Whether `extend-include` asks for this path.
+    pub fn is_asked_for(&self, path: &str) -> bool {
+        self.inclusion
+            .as_ref()
+            .is_some_and(|inclusion| (inclusion.asks_for)(path))
+    }
+
+    /// Whether a walk looking for what `extend-include` asks for should enter this directory.
+    pub fn may_hold_what_is_asked_for(&self, dir: &str) -> bool {
+        self.inclusion
+            .as_ref()
+            .is_some_and(|inclusion| (inclusion.may_hold)(dir))
     }
 
     /// Without a policy, comments silence nothing.

@@ -179,12 +179,14 @@ fn an_explicit_config_and_an_invalid_one() {
 }
 
 #[test]
-fn hidden_files_and_gitignored_files_are_still_skipped() {
+fn hidden_directories_are_walked_and_gitignored_files_are_still_skipped() {
     let dir = project("walk", None);
     write(&dir, ".hidden/big.py", &lines(701));
     write(&dir, "ignored/big.py", &lines(701));
     write(&dir, ".gitignore", "ignored/\n");
-    assert_eq!(stdout(&botica(&dir, &["."])), "");
+    let text = stdout(&botica(&dir, &["."]));
+    assert!(text.contains(".hidden/big.py"), "{text}");
+    assert!(!text.contains("ignored/big.py"), "{text}");
 }
 
 fn with_astgrep(dir: &Path, args: &[&str]) -> Output {

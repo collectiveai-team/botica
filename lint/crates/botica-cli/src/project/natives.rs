@@ -12,7 +12,7 @@ pub struct Natives {
 
 pub fn natives(project: &Project) -> Natives {
     let context = Context {
-        code_dirs: project.code_dirs_for_the_rules(),
+        code_dirs: project.code_dirs_for_the_rules().to_vec(),
         working_prefix: project.working_prefix().unwrap_or_default(),
     };
     let mut rules = Vec::new();

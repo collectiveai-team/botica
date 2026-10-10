@@ -14,6 +14,7 @@ impl Config {
         selectors(&mut found, catalog, "extend-select", &self.extend_select);
         selectors(&mut found, catalog, "ignore", &self.ignore);
         globs(&mut found, "extend-exclude", &self.extend_exclude);
+        globs(&mut found, "extend-include", &self.extend_include);
         globs(&mut found, "external", &self.external);
         code_dirs(&mut found, self.code_dirs.as_ref());
         for (old, new) in &self.replace {

@@ -5,6 +5,7 @@ mod paths;
 mod policy;
 
 use std::path::Path;
+use std::sync::OnceLock;
 
 use anyhow::{bail, Context, Result};
 use botica_catalog::Catalog;
@@ -15,7 +16,7 @@ use args::{ConfigOption, ScopeArg};
 
 pub use args::ProjectArgs;
 pub use natives::natives;
-pub use paths::{exclusion, planner, verdicts};
+pub use paths::{exclusion, inclusion, planner, verdicts};
 pub use policy::{rule_docs, suppression_policy};
 
 pub struct Project {
@@ -25,6 +26,8 @@ pub struct Project {
     /// the catalog yet, so no selector can name them: they run only when the selection includes
     /// `default` or `all`.
     pub embedded_rules: bool,
+    /// What `code_dirs_for_the_rules` found, searched once.
+    for_the_rules: OnceLock<Vec<CodeDir>>,
 }
 
 pub fn load(args: &ProjectArgs) -> Result<Project> {
@@ -70,6 +73,7 @@ pub fn load(args: &ProjectArgs) -> Result<Project> {
         loaded,
         resolution,
         embedded_rules,
+        for_the_rules: OnceLock::new(),
     })
 }
 
@@ -96,17 +100,19 @@ impl Project {
 
     /// What the active rules are told about the code directories: nothing (and no search of the
     /// tree) unless one of them reads them.
-    pub fn code_dirs_for_the_rules(&self) -> Vec<CodeDir> {
-        let wanted = self
-            .resolution
-            .entries()
-            .iter()
-            .any(|entry| entry.active && registry::uses_code_dirs(&entry.rule.id));
-        if wanted {
-            self.code_dirs_seen_from_here()
-        } else {
-            Vec::new()
-        }
+    pub fn code_dirs_for_the_rules(&self) -> &[CodeDir] {
+        self.for_the_rules.get_or_init(|| {
+            let wanted = self
+                .resolution
+                .entries()
+                .iter()
+                .any(|entry| entry.active && registry::uses_code_dirs(&entry.rule.id));
+            if wanted {
+                self.code_dirs_seen_from_here()
+            } else {
+                Vec::new()
+            }
+        })
     }
 
     /// The code directories and where they come from, for a person: `python: backend/amarc

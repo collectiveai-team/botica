@@ -35,6 +35,7 @@ pub struct Resolution {
     overrides: Vec<CompiledOverride>,
     external: PathMatcher,
     exclude: PathMatcher,
+    include: PathMatcher,
     compat_ast_grep_ignore: bool,
 }
 
@@ -89,6 +90,7 @@ impl Resolution {
             overrides: compile_overrides(config, catalog)?,
             external: matcher_of(&config.external, "external")?,
             exclude: matcher_of(&config.extend_exclude, "extend-exclude")?,
+            include: matcher_of(&config.extend_include, "extend-include")?,
             compat_ast_grep_ignore: config.compat_ast_grep_ignore,
         };
         resolution.apply_replacements(config)?;
@@ -167,6 +169,23 @@ impl Resolution {
     /// Whether a path given by name is excluded, itself or through a directory above it.
     pub fn excludes_path(&self, path: &str) -> bool {
         self.exclude.is_match(path)
+    }
+
+    /// Whether `extend-include` names anything, so a walk has something to look for beyond what
+    /// it reaches by itself.
+    pub fn has_inclusions(&self) -> bool {
+        !self.include.is_empty()
+    }
+
+    /// Whether `extend-include` asks for this path, itself or through a directory above it.
+    /// Paths are from the project root.
+    pub fn includes_path(&self, path: &str) -> bool {
+        self.include.is_match(path)
+    }
+
+    /// Whether a walk looking for what `extend-include` asks for should enter this directory.
+    pub fn include_may_reach(&self, dir: &str) -> bool {
+        self.include.may_match_below(dir)
     }
 
     pub fn compat_ast_grep_ignore(&self) -> bool {

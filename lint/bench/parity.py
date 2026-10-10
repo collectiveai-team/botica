@@ -1,7 +1,8 @@
 """Compare botica's embedded ast-grep rules with the ast-grep CLI on the same tree.
 
 Usage: python parity.py <repo_dir> <botica_bin> <ast_grep_rules_dir> [extra_rules_dir]
-Compares (path, rule id, 1-based line, 1-based column) for every rule the two share.
+Compares (path, rule id, 1-based line, 1-based column) for every rule the two share, on the
+paths that are not in a hidden directory (the CLI skips those; botica walks them).
 `extra_rules_dir` is passed to botica as `--extra-rules` (the CLI must also have those rules).
 """
 
@@ -42,7 +43,9 @@ for line in filter(None, mine.stdout.split("\n")):
     location, _, rest = line.partition(": ")
     path, line_no, col = location.rsplit(":", 2)
     rule_id = rest.split("[", 1)[1].split("]", 1)[0]
-    if rule_id in ast_grep_rule_ids:
+    hidden = any(part.startswith(".") for part in Path(path).parts)
+    # The ast-grep CLI skips hidden directories; botica walks them (tested in walk_scope.rs).
+    if rule_id in ast_grep_rule_ids and not hidden:
         actual.add((path.removeprefix("./"), rule_id, int(line_no), int(col)))
 
 print(f"ast-grep CLI: {len(expected)} hits | botica: {len(actual)} hits")

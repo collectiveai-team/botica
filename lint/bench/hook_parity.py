@@ -30,9 +30,16 @@ TEMPLATE = ROOT / "scaffolding" / "templates" / "prek-python.toml"
 RULES = ("file-size-guard", "no-utils")
 HOOK_LINE = re.compile(r"^\s+(Error|Warning): (CES-\d+ \((?:file-size-guard|no-utils)\): .*)$")
 PATH_IN_MESSAGE = re.compile(r"\): (.+?) (?:is too large|is large|is a catch-all)")
+WALK = ROOT / "lint" / "crates" / "botica-core" / "src" / "walk.rs"
+# The directories of tools the walk does not enter, read from the walk itself.
+TOOL_DIRS = frozenset(
+    re.findall(
+        r'"(\.[^"]+)"', re.search(r"const TOOL_DIRS[^=]*= \[(.*?)\];", WALK.read_text(), re.S)[1]
+    )
+)
 DECIDED = {
     "scope": "botica only, not Python: file-size-guard covers every language (spec 4.2)",
-    "hidden": "hook only, in a hidden directory: botica's walk skips them",
+    "tool_dir": "hook only, in the directory of a tool (TOOL_DIRS): botica's walk skips it",
 }
 
 
@@ -59,7 +66,7 @@ class Case:
 class Comparison:
     same: int = 0
     scope: list[str] = field(default_factory=list)
-    hidden: list[str] = field(default_factory=list)
+    tool_dir: list[str] = field(default_factory=list)
     unexplained: list[str] = field(default_factory=list)
 
 
@@ -89,7 +96,8 @@ def edge_cases() -> list[Case]:
         Case("big.md", lines(700), None, None),
         Case("big.rst", lines(700), None, None),
         Case("poetry.lock", lines(700), None, None),
-        Case(".hidden/big.py", lines(700), "error", None, note=DECIDED["hidden"]),
+        Case(".hidden/big.py", lines(700), "error", "error"),
+        Case(".venv/big.py", lines(700), "error", None, note=DECIDED["tool_dir"]),
         Case("tool", b"#!/usr/bin/env python3\n" + lines(700), "error", "error"),
         Case("stub.pyi", lines(700), None, "error", note="prek's `python` type leaves out .pyi"),
         Case("ignored.py", lines(700), "error", None, note="Tracked but in .gitignore"),
@@ -99,7 +107,7 @@ def edge_cases() -> list[Case]:
     cases += [
         Case("latin1/utils.py", b"# caf\xe9\n", "error", "error", rule="no-utils"),
         Case("pkg/utils.js", b"", None, None, rule="no-utils"),
-        Case(".github/utils.py", b"", "error", None, rule="no-utils", note=DECIDED["hidden"]),
+        Case(".github/utils.py", b"", "error", "error", rule="no-utils"),
     ]
     return cases
 
@@ -135,8 +143,8 @@ def botica_findings(botica: Path, repo: Path, rule: str) -> list[Finding]:
     return [Finding(d["severity"], d["path"], d["message"]) for d in report["diagnostics"]]
 
 
-def is_hidden(path: str) -> bool:
-    return any(part.startswith(".") for part in path.split("/"))
+def in_tool_dir(path: str) -> bool:
+    return any(part in TOOL_DIRS for part in path.split("/"))
 
 
 def compare(hook: list[Finding], botica: list[Finding]) -> Comparison:
@@ -149,8 +157,8 @@ def compare(hook: list[Finding], botica: list[Finding]) -> Comparison:
             result.same += 1
         elif theirs is None and not path.endswith(".py"):
             result.scope.append(path)
-        elif ours is None and is_hidden(path):
-            result.hidden.append(path)
+        elif ours is None and in_tool_dir(path):
+            result.tool_dir.append(path)
         else:
             result.unexplained.append(f"{path}: hook {theirs and theirs.message} | botica {ours}")
     return result
@@ -176,10 +184,11 @@ def print_comparison(name: str, rule: str, result: Comparison) -> None:
     extensions = Counter(Path(p).suffix or p for p in result.scope).most_common(4)
     print(
         f"== {name} {rule}: {result.same} identical, {len(result.scope)} scope"
-        f" {extensions}, {len(result.hidden)} hidden, {len(result.unexplained)} unexplained"
+        f" {extensions}, {len(result.tool_dir)} in tool directories,"
+        f" {len(result.unexplained)} unexplained"
     )
-    for item in result.hidden[:5]:
-        print(f"   hidden {item}")
+    for item in result.tool_dir[:5]:
+        print(f"   tool directory {item}")
     for item in result.unexplained[:10]:
         print(f"   UNEXPLAINED {item}")
 
@@ -198,8 +207,7 @@ def real_repo_report(botica: Path, workdir: Path) -> int:
     return failures
 
 
-def write_edge_repo(workdir: Path, cases: list[Case]) -> Path:
-    repo = Path(tempfile.mkdtemp(prefix="edge-", dir=workdir))
+def write_edge_repo(repo: Path, cases: list[Case]) -> None:
     run(["git", "init", "--quiet"], repo)
     (repo / ".gitignore").write_text("ignored.py\n")
     for case in cases:
@@ -209,7 +217,6 @@ def write_edge_repo(workdir: Path, cases: list[Case]) -> Path:
         if case.path == "tool":
             target.chmod(0o755)
     run(["git", "add", "--force", "--all"], repo)
-    return repo
 
 
 def check_cases(botica: Path, repo: Path, rule: str, cases: list[Case]) -> int:
@@ -229,8 +236,10 @@ def check_cases(botica: Path, repo: Path, rule: str, cases: list[Case]) -> int:
 
 def edge_case_report(botica: Path, workdir: Path) -> int:
     cases = edge_cases()
-    repo = write_edge_repo(workdir, cases)
-    return sum(check_cases(botica, repo, rule, cases) for rule in RULES)
+    with tempfile.TemporaryDirectory(prefix="edge-", dir=workdir) as scratch:
+        repo = Path(scratch)
+        write_edge_repo(repo, cases)
+        return sum(check_cases(botica, repo, rule, cases) for rule in RULES)
 
 
 def main() -> int:

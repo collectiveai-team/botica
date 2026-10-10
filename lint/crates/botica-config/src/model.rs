@@ -70,6 +70,10 @@ pub struct Config {
     /// Globs of paths to skip, in addition to what `.gitignore` already skips.
     #[serde(default)]
     pub extend_exclude: Vec<String>,
+    /// Globs of paths to lint although `.gitignore` or the list of directories of tools (`.venv`,
+    /// `.mypy_cache`…) would leave them out. `extend-exclude` wins over it.
+    #[serde(default)]
+    pub extend_include: Vec<String>,
     /// Where the code of the project lives, as directories from its root grouped by ecosystem
     /// (`python`, `js`, `rust`, `go`, `jvm`), for the rules about layout. When absent they are
     /// detected; an empty table says there are none.
@@ -114,6 +118,7 @@ impl Default for Config {
             preview: false,
             languages: Vec::new(),
             extend_exclude: Vec::new(),
+            extend_include: Vec::new(),
             code_dirs: None,
             rule_dirs: default_rule_dirs(),
             external: Vec::new(),

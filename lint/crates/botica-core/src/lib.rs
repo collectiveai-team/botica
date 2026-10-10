@@ -16,7 +16,7 @@ pub mod walk;
 
 pub use diagnostic::{Diagnostic, Severity};
 pub use document::Document;
-pub use engine::{language_of, Engine, Exclusion, ExtensionRun, NativePlanner, Plan};
+pub use engine::{language_of, Engine, Exclusion, ExtensionRun, Inclusion, NativePlanner, Plan};
 pub use layout::{CodeDir, NoArtifactsInPackage, NoNotebooks, NoTestsInPackage};
 pub use native::{FileSizeGuard, NativeRule, Needs, NoUtils};
 pub use timings::{RuleTime, TimedKind};

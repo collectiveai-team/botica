@@ -37,6 +37,14 @@
         "type": "string"
       }
     },
+    "extend-include": {
+      "description": "Globs of paths to lint although `.gitignore` or the list of directories of tools (`.venv`,\n`.mypy_cache`…) would leave them out. `extend-exclude` wins over it.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
     "extend-select": {
       "description": "Added to `select`.",
       "type": "array",
