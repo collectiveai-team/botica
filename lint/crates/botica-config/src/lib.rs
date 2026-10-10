@@ -1,5 +1,6 @@
 mod command_line;
 mod discover;
+mod entry;
 mod inline;
 mod issue;
 mod matcher;
@@ -11,10 +12,11 @@ mod validate;
 
 pub use command_line::CommandLine;
 pub use discover::{discover, load_file, Loaded};
+pub use entry::{Entry, IgnoreOrigin, IgnorePattern, Reason};
 pub use inline::inline_setting;
 pub use issue::{ConfigError, ConfigIssue};
 pub use matcher::PathMatcher;
 pub use model::{CatalogSource, Config, Override, RuleConfig, RuleSeverity};
 pub use parse::json_schema;
-pub use resolve::{Entry, FileRule, IgnoreOrigin, IgnorePattern, Reason, Resolution};
+pub use resolve::{FileRule, Resolution};
 pub use selector::Selector;

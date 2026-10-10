@@ -2,12 +2,14 @@
 //! `# noqa: BT...`, plus the two rules about them, `unused-suppression` and `invalid-suppression`.
 
 mod directive;
+mod message;
 mod scan;
 
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::document::Document;
 use aho_corasick::AhoCorasick;
 use directive::{Channel, Channels, Directive, Malformed, Scope};
+use message::{malformed_message, unused_message};
 use scan::{allows_noqa, scan, Syntax};
 use std::collections::{HashMap, HashSet};
 use std::ops::Range;
@@ -385,46 +387,4 @@ fn is_comment_only(text: &str, offset: usize) -> bool {
         text[line_start..offset].trim(),
         "#" | "//" | "///" | "/*" | "<!--"
     )
-}
-
-fn malformed_message(reason: &Malformed) -> String {
-    match reason {
-        Malformed::MissingList => {
-            "Malformed suppression: name the rules, as in `botica: ignore[rule-id]`".to_owned()
-        }
-        Malformed::EmptyList => "Malformed suppression: the list of rules is empty".to_owned(),
-        Malformed::Unclosed => "Malformed suppression: the `[` is never closed".to_owned(),
-        Malformed::UnknownVerb(verb) => format!(
-            "Malformed suppression: `{verb}` is not a directive, use `ignore[...]` or `ignore-file[...]`"
-        ),
-    }
-}
-
-fn quoted(names: &[&str]) -> String {
-    names
-        .iter()
-        .map(|name| format!("`{name}`"))
-        .collect::<Vec<_>>()
-        .join(", ")
-}
-
-fn unused_message(unused: &[&str], disabled: &[&str], file_hint: &[&str]) -> Option<String> {
-    let mut parts = Vec::new();
-    if !unused.is_empty() {
-        parts.push(format!("unused: {}", quoted(unused)));
-    }
-    if !disabled.is_empty() {
-        parts.push(format!("non-enabled: {}", quoted(disabled)));
-    }
-    if parts.is_empty() {
-        return None;
-    }
-    let mut message = format!("Unused suppression ({})", parts.join("; "));
-    if !file_hint.is_empty() {
-        message.push_str(&format!(
-            "; {} reports on the whole file, use `ignore-file`",
-            quoted(file_hint)
-        ));
-    }
-    Some(message)
 }
