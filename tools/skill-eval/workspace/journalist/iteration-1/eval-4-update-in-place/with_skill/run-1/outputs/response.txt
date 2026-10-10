@@ -1,0 +1,8 @@
+Now regenerating the index:
+Updated the existing **Repo Tooling / Prek Lint Config** journal entry in place (same topic + title as the earlier session):
+
+- Added a note that the plain retry around the `ruff` invocation was replaced with exponential backoff to better absorb prek-cache flakiness under CI load.
+- Refreshed `updated_at` and the `brief` to reflect the change; resolved the old follow-up and added a new one to monitor CI and revisit backoff parameters if flakiness persists.
+- Regenerated `.journals/index.md` — brief now reflects the exponential-backoff update.
+
+File: `.journals/2026-08-05/2026-08-05_repo-tooling_prek-lint-config/2026-08-05_repo-tooling_prek-lint-config.md`

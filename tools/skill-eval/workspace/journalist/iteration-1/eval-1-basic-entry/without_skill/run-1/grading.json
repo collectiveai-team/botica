@@ -1,0 +1,54 @@
+{
+  "expectations": [
+    {
+      "text": "A file matching the pattern .journals/<date>/<date>_<topic-slug>_<title-slug>/<date>_<topic-slug>_<title-slug>.md was created",
+      "passed": true,
+      "evidence": "The file `.journals/2026-08-07/2026-08-07_auth-flaky-login-test-fix/2026-08-07_auth-flaky-login-test-fix.md` was created, matching the pattern with date=2026-08-07, topic-slug=auth, title-slug=flaky-login-test-fix."
+    },
+    {
+      "text": "The file's frontmatter contains all five required fields: created_at, updated_at, title, topic, and brief",
+      "passed": false,
+      "evidence": "The frontmatter in the created file contains only `date`, `tags`, and `commit`. None of the five required fields (created_at, updated_at, title, topic, brief) are present."
+    },
+    {
+      "text": "created_at and updated_at are valid ISO-8601 timestamps",
+      "passed": false,
+      "evidence": "The frontmatter does not contain `created_at` or `updated_at` fields at all, so there are no ISO-8601 timestamps to validate."
+    },
+    {
+      "text": "topic is lowercase kebab-case (only lowercase letters, digits, and hyphens)",
+      "passed": false,
+      "evidence": "There is no `topic` field in the frontmatter. The directory name contains `auth` which would be valid kebab-case, but the required frontmatter field itself is absent."
+    },
+    {
+      "text": "The entry body preserves the substantive context: the auth_test.py fix, the OAuth token-refresh retry, and the follow-up to audit other call sites",
+      "passed": true,
+      "evidence": "The body states: '`tests/auth_test.py` had a flaky login test caused by a race condition in the OAuth token refresh flow'; 'Wrapped the token refresh call in a retry so it tolerates the race condition'; and 'Audit other call sites for the same OAuth token refresh race condition and apply the same retry treatment where needed.'"
+    },
+    {
+      "text": "update_journal_index.py was run after writing the entry (.journals/index.md exists and references the new entry), or the transcript shows the script being invoked",
+      "passed": false,
+      "evidence": "The agent's final response explicitly states: 'no `index.md` was created/updated since that's a skill-specific convention I don't have detailed instructions for'. No evidence of update_journal_index.py being invoked or index.md being created."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 4,
+    "total": 6,
+    "pass_rate": 0.3333
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "bash": 9,
+      "write": 1
+    },
+    "total_tool_calls": 10,
+    "total_steps": 11,
+    "errors_encountered": 0,
+    "output_chars": 734,
+    "transcript_chars": 35516
+  },
+  "timing": {
+    "total_duration_seconds": 205.92
+  }
+}

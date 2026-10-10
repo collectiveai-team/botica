@@ -1,0 +1,51 @@
+{
+  "expectations": [
+    {
+      "text": "No new/duplicate entry directory or file was created for the 2026-08-05 repo-tooling prek-lint-config entry; exactly one file exists at that path",
+      "passed": true,
+      "evidence": "The FILES CREATED OR MODIFIED section shows only one file at the expected path: .journals/2026-08-05/2026-08-05_repo-tooling_prek-lint-config/2026-08-05_repo-tooling_prek-lint-config.md, and it is marked as modified (---) rather than created (+++). No duplicate directory or file path appears in the file list."
+    },
+    {
+      "text": "created_at in the entry frontmatter is unchanged (still 2026-08-05T14:02:00Z)",
+      "passed": true,
+      "evidence": "The frontmatter in the modified file shows 'created_at: 2026-08-05T14:02:00Z', matching the expected original timestamp exactly."
+    },
+    {
+      "text": "updated_at in the entry frontmatter is refreshed to a timestamp later than created_at, reflecting the update",
+      "passed": true,
+      "evidence": "The frontmatter shows 'updated_at: 2026-08-07T15:30:00Z', which is later than the created_at of 2026-08-05T14:02:00Z, confirming the timestamp was refreshed."
+    },
+    {
+      "text": "The entry body now mentions the exponential backoff replacing the plain retry",
+      "passed": true,
+      "evidence": "The Notes section contains the line: 'Replaced the plain retry with exponential backoff around the ruff invocation, to better absorb prek-cache flakiness under CI load.' This directly describes the exponential backoff replacing the plain retry."
+    },
+    {
+      "text": "The frontmatter still contains all five required fields: created_at, updated_at, title, topic, and brief",
+      "passed": true,
+      "evidence": "The frontmatter shows all five fields: 'created_at: 2026-08-05T14:02:00Z', 'updated_at: 2026-08-07T15:30:00Z', 'title: Prek Lint Config', 'topic: repo-tooling', and 'brief: Tightened prek.toml so ruff runs on the scaffolding package; the ruff retry now uses exponential backoff instead of a plain retry.'"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "skill": 1,
+      "bash": 2,
+      "read": 4,
+      "edit": 1
+    },
+    "total_tool_calls": 8,
+    "total_steps": 8,
+    "errors_encountered": 0,
+    "output_chars": 691,
+    "transcript_chars": 49293
+  },
+  "timing": {
+    "total_duration_seconds": 136.27
+  }
+}

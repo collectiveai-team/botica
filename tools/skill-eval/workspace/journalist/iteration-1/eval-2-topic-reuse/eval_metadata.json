@@ -1,0 +1,12 @@
+{
+  "eval_id": 2,
+  "eval_name": "topic-reuse",
+  "prompt": "Journal this session: we tightened the CI lint config (prek.toml) so ruff runs on the scaffolding package, reusing existing tooling patterns from earlier sessions.",
+  "expected_output": "A new entry that reuses the existing 'repo-tooling' topic from .journals/index.md rather than inventing a new topic, with valid frontmatter.",
+  "assertions": [
+    "The chosen topic matches an existing kebab-case topic present in the provided index, rather than inventing a new topic",
+    "The chosen topic is exactly 'repo-tooling' (the existing topic appropriate for a CI/lint-config session)",
+    "The frontmatter contains all five required fields: created_at, updated_at, title, topic, and brief",
+    "topic is lowercase kebab-case"
+  ]
+}

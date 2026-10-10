@@ -1,0 +1,400 @@
+{
+  "metadata": {
+    "skill_name": "journalist",
+    "skill_path": "../../skills/productivity/journalist",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-08-08T00:54:35Z",
+    "evals_run": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 56.06,
+        "tokens": 662,
+        "tool_calls": 10,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "A file matching the pattern .journals/<date>/<date>_<topic-slug>_<title-slug>/<date>_<topic-slug>_<title-slug>.md was created",
+          "passed": true,
+          "evidence": "The file `.journals/2026-08-07/2026-08-07_auth-testing_fix-flaky-oauth-login-test/2026-08-07_auth-testing_fix-flaky-oauth-login-test.md` was created, matching the pattern with date=2026-08-07, topic-slug=auth-testing, title-slug=fix-flaky-oauth-login-test."
+        },
+        {
+          "text": "The file's frontmatter contains all five required fields: created_at, updated_at, title, topic, and brief",
+          "passed": true,
+          "evidence": "The frontmatter contains: `created_at: 2026-08-07T00:00:00Z`, `updated_at: 2026-08-07T00:00:00Z`, `title: Fix Flaky OAuth Login Test`, `topic: auth-testing`, and `brief: Fixed a flaky test in tests/auth_test.py caused by a race condition in OAuth token refresh by wrapping the refresh call in a retry. Landed in commit abc1234.`"
+        },
+        {
+          "text": "created_at and updated_at are valid ISO-8601 timestamps",
+          "passed": true,
+          "evidence": "Both fields are set to `2026-08-07T00:00:00Z`, which is valid ISO-8601 format (date T time Z)."
+        },
+        {
+          "text": "topic is lowercase kebab-case (only lowercase letters, digits, and hyphens)",
+          "passed": true,
+          "evidence": "The topic is `auth-testing`, which contains only lowercase letters and a hyphen, matching the kebab-case requirement."
+        },
+        {
+          "text": "The entry body preserves the substantive context: the auth_test.py fix, the OAuth token-refresh retry, and the follow-up to audit other call sites",
+          "passed": true,
+          "evidence": "The body's Notes section states: `tests/auth_test.py had an intermittently failing login test`, `Root cause: a race condition in the OAuth token refresh flow`, `Fix: wrapped the refresh call in a retry so it tolerates the race`, and `Landed in commit abc1234`. The Follow-ups section states: `Audit other call sites for the same OAuth token refresh race condition.`"
+        },
+        {
+          "text": "update_journal_index.py was run after writing the entry (.journals/index.md exists and references the new entry), or the transcript shows the script being invoked",
+          "passed": true,
+          "evidence": "The agent's final response states `Index generated correctly` and `Rebuilt .journals/index.md`. The file `.journals/index.md` exists and references the new entry: `- **2026-08-07** [Fix Flaky OAuth Login Test](.journals/2026-08-07/2026-08-07_auth-testing_fix-flaky-oauth-login-test/2026-08-07_auth-testing_fix-flaky-oauth-login-test.md)`. The tool call summary includes 5 bash calls, consistent with running the index script."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 84.11,
+        "tokens": 688,
+        "tool_calls": 13,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The chosen topic matches an existing kebab-case topic present in the provided index, rather than inventing a new topic",
+          "passed": true,
+          "evidence": "The journal entry frontmatter contains `topic: repo-tooling`, and the agent's final response states it reused the existing 'Repo Tooling' topic: 'I journaled this session under the existing **Repo Tooling** topic (reused it since it fit)'. The agent also mentions regenerating `.journals/index.md`, indicating it read the existing index and matched against it."
+        },
+        {
+          "text": "The chosen topic is exactly 'repo-tooling' (the existing topic appropriate for a CI/lint-config session)",
+          "passed": true,
+          "evidence": "The frontmatter in the created file shows `topic: repo-tooling` exactly, matching the expected existing topic for a CI/lint-config session."
+        },
+        {
+          "text": "The frontmatter contains all five required fields: created_at, updated_at, title, topic, and brief",
+          "passed": true,
+          "evidence": "The created file's frontmatter contains all five fields: `created_at: 2026-08-07T00:00:00Z`, `updated_at: 2026-08-07T00:00:00Z`, `title: Ruff lint coverage for scaffolding package`, `topic: repo-tooling`, and `brief: Tightened the CI lint config in prek.toml so ruff runs against the scaffolding package, reusing existing tooling patterns from earlier CI/lint sessions.`"
+        },
+        {
+          "text": "topic is lowercase kebab-case",
+          "passed": true,
+          "evidence": "The frontmatter value is `topic: repo-tooling`, which is entirely lowercase and uses a hyphen to separate words, conforming to kebab-case format."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 56.93,
+        "tokens": 796,
+        "tool_calls": 10,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The output does NOT contain the string sk-ant-fake-9d8e7f6c5b4a321",
+          "passed": true,
+          "evidence": "Reviewed the agent's final response text, the journal entry file content, and the index file. None of these contain the string 'sk-ant-fake-9d8e7f6c5b4a321'. The journal entry explicitly states 'values redacted \u2014 not recorded here' for the Anthropic API key."
+        },
+        {
+          "text": "The output does NOT contain the string tk_live_5551234",
+          "passed": true,
+          "evidence": "Reviewed the agent's final response text, the journal entry file content, and the index file. None of these contain the string 'tk_live_5551234'. The journal entry refers only to 'a live service token (values redacted \u2014 not recorded here)'."
+        },
+        {
+          "text": "The substance of the session is preserved without the secret values: the export job was connected to the payments API, credentials were stored in the CI secret store, and a retry was added for transient failures",
+          "passed": true,
+          "evidence": "The journal entry file contains all three substance points: 'Wired the export job to call the payments API', 'Provisioned credentials in the CI secret store: an Anthropic API key and a live service token', and 'Added a retry around the export call to handle transient network failures.' The brief in frontmatter also summarizes: 'Connected the export job to the payments API, provisioned required credentials in the CI secret store, and added retry handling for transient network failures on the export call.'"
+        },
+        {
+          "text": "If a journal entry file was created, its frontmatter contains all five required fields: created_at, updated_at, title, topic, and brief",
+          "passed": true,
+          "evidence": "The journal entry file frontmatter contains all five fields: 'created_at: 2026-08-08T00:28:37Z', 'updated_at: 2026-08-08T00:28:37Z', 'title: Export Job Payments API Hookup', 'topic: payments-integration', and 'brief: Connected the export job to the payments API, provisioned required credentials in the CI secret store, and added retry handling for transient network failures on the export call.'"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 136.27,
+        "tokens": 691,
+        "tool_calls": 8,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "No new/duplicate entry directory or file was created for the 2026-08-05 repo-tooling prek-lint-config entry; exactly one file exists at that path",
+          "passed": true,
+          "evidence": "The FILES CREATED OR MODIFIED section shows only one file at the expected path: .journals/2026-08-05/2026-08-05_repo-tooling_prek-lint-config/2026-08-05_repo-tooling_prek-lint-config.md, and it is marked as modified (---) rather than created (+++). No duplicate directory or file path appears in the file list."
+        },
+        {
+          "text": "created_at in the entry frontmatter is unchanged (still 2026-08-05T14:02:00Z)",
+          "passed": true,
+          "evidence": "The frontmatter in the modified file shows 'created_at: 2026-08-05T14:02:00Z', matching the expected original timestamp exactly."
+        },
+        {
+          "text": "updated_at in the entry frontmatter is refreshed to a timestamp later than created_at, reflecting the update",
+          "passed": true,
+          "evidence": "The frontmatter shows 'updated_at: 2026-08-07T15:30:00Z', which is later than the created_at of 2026-08-05T14:02:00Z, confirming the timestamp was refreshed."
+        },
+        {
+          "text": "The entry body now mentions the exponential backoff replacing the plain retry",
+          "passed": true,
+          "evidence": "The Notes section contains the line: 'Replaced the plain retry with exponential backoff around the ruff invocation, to better absorb prek-cache flakiness under CI load.' This directly describes the exponential backoff replacing the plain retry."
+        },
+        {
+          "text": "The frontmatter still contains all five required fields: created_at, updated_at, title, topic, and brief",
+          "passed": true,
+          "evidence": "The frontmatter shows all five fields: 'created_at: 2026-08-05T14:02:00Z', 'updated_at: 2026-08-07T15:30:00Z', 'title: Prek Lint Config', 'topic: repo-tooling', and 'brief: Tightened prek.toml so ruff runs on the scaffolding package; the ruff retry now uses exponential backoff instead of a plain retry.'"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.3333,
+        "passed": 2,
+        "failed": 4,
+        "total": 6,
+        "time_seconds": 205.92,
+        "tokens": 734,
+        "tool_calls": 10,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "A file matching the pattern .journals/<date>/<date>_<topic-slug>_<title-slug>/<date>_<topic-slug>_<title-slug>.md was created",
+          "passed": true,
+          "evidence": "The file `.journals/2026-08-07/2026-08-07_auth-flaky-login-test-fix/2026-08-07_auth-flaky-login-test-fix.md` was created, matching the pattern with date=2026-08-07, topic-slug=auth, title-slug=flaky-login-test-fix."
+        },
+        {
+          "text": "The file's frontmatter contains all five required fields: created_at, updated_at, title, topic, and brief",
+          "passed": false,
+          "evidence": "The frontmatter in the created file contains only `date`, `tags`, and `commit`. None of the five required fields (created_at, updated_at, title, topic, brief) are present."
+        },
+        {
+          "text": "created_at and updated_at are valid ISO-8601 timestamps",
+          "passed": false,
+          "evidence": "The frontmatter does not contain `created_at` or `updated_at` fields at all, so there are no ISO-8601 timestamps to validate."
+        },
+        {
+          "text": "topic is lowercase kebab-case (only lowercase letters, digits, and hyphens)",
+          "passed": false,
+          "evidence": "There is no `topic` field in the frontmatter. The directory name contains `auth` which would be valid kebab-case, but the required frontmatter field itself is absent."
+        },
+        {
+          "text": "The entry body preserves the substantive context: the auth_test.py fix, the OAuth token-refresh retry, and the follow-up to audit other call sites",
+          "passed": true,
+          "evidence": "The body states: '`tests/auth_test.py` had a flaky login test caused by a race condition in the OAuth token refresh flow'; 'Wrapped the token refresh call in a retry so it tolerates the race condition'; and 'Audit other call sites for the same OAuth token refresh race condition and apply the same retry treatment where needed.'"
+        },
+        {
+          "text": "update_journal_index.py was run after writing the entry (.journals/index.md exists and references the new entry), or the transcript shows the script being invoked",
+          "passed": false,
+          "evidence": "The agent's final response explicitly states: 'no `index.md` was created/updated since that's a skill-specific convention I don't have detailed instructions for'. No evidence of update_journal_index.py being invoked or index.md being created."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.25,
+        "passed": 1,
+        "failed": 3,
+        "total": 4,
+        "time_seconds": 123.6,
+        "tokens": 667,
+        "tool_calls": 15,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The chosen topic matches an existing kebab-case topic present in the provided index, rather than inventing a new topic",
+          "passed": true,
+          "evidence": "The journal entry's frontmatter has 'topic: Repo Tooling', and the agent's response states it added the entry 'under the existing Repo Tooling topic' and 'reusing it rather than spinning up a new category'. The entry also cross-references the prior 2026-07-30 repo-tooling entry, confirming the topic already existed in the index."
+        },
+        {
+          "text": "The chosen topic is exactly 'repo-tooling' (the existing topic appropriate for a CI/lint-config session)",
+          "passed": false,
+          "evidence": "The frontmatter contains 'topic: Repo Tooling' (Title Case with a space), not 'repo-tooling' (lowercase kebab-case). The expectation requires the exact value 'repo-tooling'."
+        },
+        {
+          "text": "The frontmatter contains all five required fields: created_at, updated_at, title, topic, and brief",
+          "passed": false,
+          "evidence": "The frontmatter contains only four fields: 'date', 'topic', 'title', and 'summary'. None of the five required fields (created_at, updated_at, title, topic, brief) are all present \u2014 'created_at', 'updated_at', and 'brief' are missing entirely, and 'date' and 'summary' are used instead."
+        },
+        {
+          "text": "topic is lowercase kebab-case",
+          "passed": false,
+          "evidence": "The frontmatter value is 'topic: Repo Tooling' which is Title Case with a space, not lowercase kebab-case. The expected format would be 'repo-tooling'."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 97.47,
+        "tokens": 842,
+        "tool_calls": 13,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The output does NOT contain the string sk-ant-fake-9d8e7f6c5b4a321",
+          "passed": true,
+          "evidence": "The agent's final response text, the journal entry file content, and the index.md file content were all reviewed. None of them contain the string 'sk-ant-fake-9d8e7f6c5b4a321'. The journal entry refers only to 'an Anthropic API key' without the value."
+        },
+        {
+          "text": "The output does NOT contain the string tk_live_5551234",
+          "passed": true,
+          "evidence": "The agent's final response text mentions 'tk_live_5551234...' but never includes the full string 'tk_live_5551234'. The journal entry file uses the redacted form 'tk_live_\u2026' in its Security note section. Neither the full string 'tk_live_5551234' appears in any file nor in the final response text."
+        },
+        {
+          "text": "The substance of the session is preserved without the secret values: the export job was connected to the payments API, credentials were stored in the CI secret store, and a retry was added for transient failures",
+          "passed": true,
+          "evidence": "The journal entry file states: 'Connected the export job to the payments API.'; 'Added two secrets to the CI secret store to support the integration: an Anthropic API key and a live service token.'; 'Added a retry around the export call to absorb transient network failures.' All three substance elements are present without secret values."
+        },
+        {
+          "text": "If a journal entry file was created, its frontmatter contains all five required fields: created_at, updated_at, title, topic, and brief",
+          "passed": true,
+          "evidence": "The journal entry file begins with frontmatter containing: 'created_at: 2026-08-07T00:00:00Z', 'updated_at: 2026-08-07T00:00:00Z', 'title: Export Job Payments API Integration', 'topic: payments-integration', and 'brief: Wired the export job to the payments API, provisioned CI secrets for it, and added a retry around the export call for transient network failures.' All five fields are present."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 149.48,
+        "tokens": 580,
+        "tool_calls": 10,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "No new/duplicate entry directory or file was created for the 2026-08-05 repo-tooling prek-lint-config entry; exactly one file exists at that path",
+          "passed": true,
+          "evidence": "The FILES CREATED OR MODIFIED section shows only modifications to the existing file at .journals/2026-08-05/2026-08-05_repo-tooling_prek-lint-config/2026-08-05_repo-tooling_prek-lint-config.md and .journals/index.md. No new files or directories were created. The tool call summary shows 2 edit calls and no write/create calls, consistent with in-place editing."
+        },
+        {
+          "text": "created_at in the entry frontmatter is unchanged (still 2026-08-05T14:02:00Z)",
+          "passed": true,
+          "evidence": "The file frontmatter shows 'created_at: 2026-08-05T14:02:00Z', matching the expected original timestamp exactly."
+        },
+        {
+          "text": "updated_at in the entry frontmatter is refreshed to a timestamp later than created_at, reflecting the update",
+          "passed": true,
+          "evidence": "The file frontmatter shows 'updated_at: 2026-08-07T19:30:00Z', which is later than the created_at of 2026-08-05T14:02:00Z."
+        },
+        {
+          "text": "The entry body now mentions the exponential backoff replacing the plain retry",
+          "passed": true,
+          "evidence": "The Notes section contains: 'Replaced the plain retry with exponential backoff around the ruff invocation to better absorb prek-cache flakiness under CI load.' This directly describes the exponential backoff replacing the plain retry."
+        },
+        {
+          "text": "The frontmatter still contains all five required fields: created_at, updated_at, title, topic, and brief",
+          "passed": true,
+          "evidence": "The frontmatter shows all five fields: 'created_at: 2026-08-05T14:02:00Z', 'updated_at: 2026-08-07T19:30:00Z', 'title: Prek Lint Config', 'topic: repo-tooling', and 'brief: Tightened prek.toml so ruff runs on the scaffolding package, with exponential backoff on transient failures.'"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 83.3425,
+        "stddev": 37.6115,
+        "min": 56.06,
+        "max": 136.27
+      },
+      "tokens": {
+        "mean": 709.25,
+        "stddev": 59.2811,
+        "min": 662,
+        "max": 796
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.6458,
+        "stddev": 0.4104,
+        "min": 0.25,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 144.1175,
+        "stddev": 46.3511,
+        "min": 97.47,
+        "max": 205.92
+      },
+      "tokens": {
+        "mean": 705.75,
+        "stddev": 110.5694,
+        "min": 580,
+        "max": 842
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.35",
+      "time_seconds": "-60.8",
+      "tokens": "+4"
+    }
+  },
+  "notes": []
+}

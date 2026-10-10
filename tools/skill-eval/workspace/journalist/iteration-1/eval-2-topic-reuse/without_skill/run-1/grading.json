@@ -1,0 +1,47 @@
+{
+  "expectations": [
+    {
+      "text": "The chosen topic matches an existing kebab-case topic present in the provided index, rather than inventing a new topic",
+      "passed": true,
+      "evidence": "The journal entry's frontmatter has 'topic: Repo Tooling', and the agent's response states it added the entry 'under the existing Repo Tooling topic' and 'reusing it rather than spinning up a new category'. The entry also cross-references the prior 2026-07-30 repo-tooling entry, confirming the topic already existed in the index."
+    },
+    {
+      "text": "The chosen topic is exactly 'repo-tooling' (the existing topic appropriate for a CI/lint-config session)",
+      "passed": false,
+      "evidence": "The frontmatter contains 'topic: Repo Tooling' (Title Case with a space), not 'repo-tooling' (lowercase kebab-case). The expectation requires the exact value 'repo-tooling'."
+    },
+    {
+      "text": "The frontmatter contains all five required fields: created_at, updated_at, title, topic, and brief",
+      "passed": false,
+      "evidence": "The frontmatter contains only four fields: 'date', 'topic', 'title', and 'summary'. None of the five required fields (created_at, updated_at, title, topic, brief) are all present \u2014 'created_at', 'updated_at', and 'brief' are missing entirely, and 'date' and 'summary' are used instead."
+    },
+    {
+      "text": "topic is lowercase kebab-case",
+      "passed": false,
+      "evidence": "The frontmatter value is 'topic: Repo Tooling' which is Title Case with a space, not lowercase kebab-case. The expected format would be 'repo-tooling'."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "execution_metrics": {
+    "tool_calls": {
+      "bash": 11,
+      "glob": 1,
+      "read": 1,
+      "write": 1,
+      "edit": 1
+    },
+    "total_tool_calls": 15,
+    "total_steps": 14,
+    "errors_encountered": 0,
+    "output_chars": 667,
+    "transcript_chars": 63133
+  },
+  "timing": {
+    "total_duration_seconds": 123.6
+  }
+}

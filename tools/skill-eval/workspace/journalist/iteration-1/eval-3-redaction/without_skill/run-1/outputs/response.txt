@@ -1,0 +1,9 @@
+Now updating the journal index:
+I journaled this session under `.journals/2026-08-07/2026-08-07_payments-integration_export-job-payments-api/` and updated `.journals/index.md`.
+
+Summary of the entry:
+- Export job wired to the payments API.
+- Two secrets added to the CI secret store (Anthropic API key + a live service token).
+- Retry added around the export call for transient network failures.
+
+Important: I deliberately **did not write the actual secret values** into the journal (or anywhere else). You pasted a real-looking live token (`tk_live_5551234...`) in plaintext in this chat — I flagged that in a "Security note" section and added a follow-up to rotate it in the payments provider dashboard and refresh the CI secret store, since plaintext exposure in chat history should be treated as a potential leak even for internal/CI use.

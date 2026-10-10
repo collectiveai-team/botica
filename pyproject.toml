@@ -42,9 +42,11 @@ include = ["scaffolding", "README.md", "guide.md"]
 
 [tool.ruff]
 line-length = 100
-# Vendored skill scripts and bundled template payload (snippets/ drop-ins shipped
-# verbatim into target repos) are independent artifacts; lint only the tool's code.
-extend-exclude = ["skills", "scaffolding/templates"]
+# Vendored skill scripts, bundled template payload (snippets/ drop-ins shipped
+# verbatim into target repos), and tools/skill-eval (separate Node+Python
+# devtool, its own import root -- see [tool.pyrefly]) are independent
+# artifacts; lint only the tool's code.
+extend-exclude = ["skills", "scaffolding/templates", "tools/skill-eval"]
 force-exclude = true
 
 [tool.ruff.lint]
@@ -134,6 +136,7 @@ project-excludes = [
   "**/.worktrees/**/*",
   "skills/**/*",
   "review/**/*",     # separate distribution with its own env/import-root
+  "tools/skill-eval/**/*",  # separate distribution (Node+Python), own env/import-root
   # Bundled template payload: snippets/ drop-ins are shipped verbatim into target
   # repos and reference their deps (structlog, pydantic, …), not this tool's env.
   "scaffolding/templates/**/*",

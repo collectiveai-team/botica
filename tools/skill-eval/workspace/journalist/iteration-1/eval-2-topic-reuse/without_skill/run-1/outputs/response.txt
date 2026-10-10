@@ -1,0 +1,5 @@
+Now updating the index to add this entry under the existing "Repo Tooling" topic:
+Journaled under the existing **Repo Tooling** topic (reusing it rather than spinning up a new category, since it already covers the earlier ruff-pre-commit pinning session):
+
+- `.journals/2026-08-07/2026-08-07_repo-tooling_scope-ruff-to-scaffolding/2026-08-07_repo-tooling_scope-ruff-to-scaffolding.md` — new entry noting the `prek.toml` tightening so ruff runs on the `scaffolding` package, calling out that it built on/reused earlier tooling patterns.
+- `.journals/index.md` — added the entry as the newest item under **Repo Tooling**, above the 2026-07-30 ruff-pre-commit pin entry.

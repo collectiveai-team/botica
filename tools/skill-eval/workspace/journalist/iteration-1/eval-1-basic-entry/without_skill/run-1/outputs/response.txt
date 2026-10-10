@@ -1,0 +1,10 @@
+I journaled the session. Since the `journalist` skill isn't available here, I created a plain markdown entry manually, following the `.journals/` convention noted in `AGENTS.md`:
+
+**`.journals/2026-08-07/2026-08-07_auth-flaky-login-test-fix/2026-08-07_auth-flaky-login-test-fix.md`**
+
+Contents:
+- **What happened**: flaky login test in `tests/auth_test.py` caused by a race condition in OAuth token refresh.
+- **Fix**: wrapped the refresh call in a retry to tolerate the race — landed in commit `abc1234`.
+- **Follow-up**: audit other call sites for the same race condition.
+
+Note: no `index.md` was created/updated since that's a skill-specific convention I don't have detailed instructions for without the `journalist` skill loaded.
