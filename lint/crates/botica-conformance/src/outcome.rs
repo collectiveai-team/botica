@@ -1,22 +1,26 @@
 use std::fmt;
 
-use crate::finding::Finding;
+use crate::fixture_diagnostic::FixtureDiagnostic;
+use crate::side::Side;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Failure {
     /// `fixtures/valid` or `fixtures/invalid` is missing or holds no file.
-    NoFiles { side: String },
+    NoFiles { side: Side },
     /// There are invalid fixtures but no `expected.json` to say what they must raise.
     NoExpected,
     /// `expected.json` lists nothing, so the invalid fixtures would be valid.
     ExpectsNothing,
     /// A `valid` fixture raised a diagnostic of the rule.
-    Unexpected { variant: String, finding: Finding },
+    Unexpected {
+        variant: String,
+        finding: FixtureDiagnostic,
+    },
     /// The `invalid` fixtures raised something other than what `expected.json` lists.
     Mismatch {
         variant: String,
-        expected: Vec<Finding>,
-        actual: Vec<Finding>,
+        expected: Vec<FixtureDiagnostic>,
+        actual: Vec<FixtureDiagnostic>,
     },
 }
 
@@ -48,7 +52,11 @@ impl fmt::Display for Failure {
     }
 }
 
-fn write_list(f: &mut fmt::Formatter<'_>, label: &str, findings: &[Finding]) -> fmt::Result {
+fn write_list(
+    f: &mut fmt::Formatter<'_>,
+    label: &str,
+    findings: &[FixtureDiagnostic],
+) -> fmt::Result {
     writeln!(f, "  {label}:")?;
     if findings.is_empty() {
         return writeln!(f, "    (nothing)");

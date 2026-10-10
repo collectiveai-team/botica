@@ -46,8 +46,11 @@ pub fn exclusion(resolution: Arc<Resolution>, prefix: Option<String>) -> Option<
     })
 }
 
-/// The rules that apply at one path, each with the severity the configuration names for it.
-type Named<'r> = Vec<(&'r str, Option<Severity>)>;
+/// A rule that applies at a path, with the severity the configuration names for it there.
+struct AppliedRule<'r> {
+    id: &'r str,
+    named_severity: Option<Severity>,
+}
 
 /// What the configuration says about a rule at a path, for the post-process. A rule of the
 /// catalog that does not apply at the path is dropped; one that has a severity named for it
@@ -56,7 +59,7 @@ pub fn verdicts<'r>(
     resolution: &'r Resolution,
     prefix: Option<&'r str>,
 ) -> impl FnMut(&str, &str) -> Verdict + 'r {
-    let mut current: Option<(String, Named<'r>)> = None;
+    let mut current: Option<(String, Vec<AppliedRule<'r>>)> = None;
     move |path, rule| {
         let Some(entry) = resolution.entry(rule) else {
             return Verdict::Keep;
@@ -69,19 +72,20 @@ pub fn verdicts<'r>(
             let rules = resolution.rules_for(&at_root, language_of(path));
             let found = rules
                 .iter()
-                .map(|file_rule| {
-                    (
-                        file_rule.rule.id.as_str(),
-                        file_rule.configured.map(Severity::from),
-                    )
+                .map(|file_rule| AppliedRule {
+                    id: file_rule.rule.id.as_str(),
+                    named_severity: file_rule.configured.map(Severity::from),
                 })
                 .collect();
             current = Some((path.to_owned(), found));
         }
         let (_, found) = current.as_ref().expect("filled just above");
-        match found.iter().find(|(id, _)| *id == entry.rule.id) {
-            Some((_, Some(level))) => Verdict::Report(*level),
-            Some((_, None)) => Verdict::Keep,
+        match found.iter().find(|applied| applied.id == entry.rule.id) {
+            Some(AppliedRule {
+                named_severity: Some(level),
+                ..
+            }) => Verdict::Report(*level),
+            Some(_) => Verdict::Keep,
             None => Verdict::Drop,
         }
     }

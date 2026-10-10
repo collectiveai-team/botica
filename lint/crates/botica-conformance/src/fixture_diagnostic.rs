@@ -10,28 +10,38 @@ pub struct Position {
     pub column: u64,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Range {
+    pub start: Position,
+    pub end: Position,
+}
+
 /// What a fixture is compared on: where the diagnostic is, how serious it is and what it says.
 /// The rule and its code are left out, so the same expectations can judge a replacement rule.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Finding {
+pub struct FixtureDiagnostic {
     pub path: String,
     pub severity: String,
     /// `None` for a diagnostic about a whole file (`"range": null`).
-    pub range: Option<(Position, Position)>,
+    pub range: Option<Range>,
     pub message: String,
 }
 
-impl fmt::Display for Finding {
+impl fmt::Display for FixtureDiagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.range {
-            Some((start, _)) => write!(f, "{}:{}:{}", self.path, start.line, start.column)?,
+            Some(range) => write!(
+                f,
+                "{}:{}:{}",
+                self.path, range.start.line, range.start.column
+            )?,
             None => write!(f, "{}", self.path)?,
         }
         write!(f, " {}: {}", self.severity, self.message)
     }
 }
 
-impl Finding {
+impl FixtureDiagnostic {
     pub(crate) fn from_json(diagnostic: &Value) -> Result<Self> {
         Ok(Self {
             path: text(diagnostic, "path")?,
@@ -49,13 +59,13 @@ fn text(value: &Value, key: &str) -> Result<String> {
         .ok_or_else(|| anyhow!("a diagnostic has no `{key}` text"))
 }
 
-fn range(value: &Value) -> Result<Option<(Position, Position)>> {
+fn range(value: &Value) -> Result<Option<Range>> {
     if value.is_null() {
         return Ok(None);
     }
     let start = position(&value["start"]).context("range.start")?;
     let end = position(&value["end"]).context("range.end")?;
-    Ok(Some((start, end)))
+    Ok(Some(Range { start, end }))
 }
 
 fn position(value: &Value) -> Result<Position> {

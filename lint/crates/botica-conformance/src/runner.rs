@@ -5,19 +5,20 @@ use std::process::Command;
 use anyhow::{bail, Context, Result};
 use serde_json::Value;
 
-use crate::finding::Finding;
+use crate::fixture_diagnostic::FixtureDiagnostic;
 use crate::outcome::{Failure, Outcome};
+use crate::side::Side;
 
 /// One way of running botica whose findings must not differ from the others': the optimisations
 /// that can be switched off must not change what a rule finds.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Variant {
+struct Variant {
     name: String,
     args: Vec<String>,
 }
 
 impl Variant {
-    pub fn new(name: &str, args: &[&str]) -> Self {
+    fn new(name: &str, args: &[&str]) -> Self {
         Self {
             name: name.to_owned(),
             args: args.iter().map(|&arg| arg.to_owned()).collect(),
@@ -25,7 +26,7 @@ impl Variant {
     }
 
     /// The default run and one run with each optimisation off.
-    pub fn standard() -> Vec<Self> {
+    fn standard() -> Vec<Self> {
         vec![
             Self::new("default", &[]),
             Self::new("no-prefilter", &["--no-prefilter"]),
@@ -48,12 +49,6 @@ impl Runner {
             scratch: scratch.into(),
             variants: Variant::standard(),
         }
-    }
-
-    #[must_use]
-    pub fn with_variants(mut self, variants: Vec<Variant>) -> Self {
-        self.variants = variants;
-        self
     }
 
     /// Checks every rule of a catalog directory (`<family>/<slug>/rule.toml`, the slug being the
@@ -90,15 +85,13 @@ impl Runner {
     }
 
     fn check_valid(&self, rule: &str, fixtures: &Path, failures: &mut Vec<Failure>) -> Result<()> {
-        let valid = fixtures.join("valid");
+        let valid = fixtures.join(Side::Valid.folder());
         if !holds_files(&valid) {
-            failures.push(Failure::NoFiles {
-                side: "valid".to_owned(),
-            });
+            failures.push(Failure::NoFiles { side: Side::Valid });
             return Ok(());
         }
         for variant in &self.variants {
-            for finding in self.run(rule, variant, &valid, "valid")? {
+            for finding in self.run(rule, variant, &valid, Side::Valid)? {
                 failures.push(Failure::Unexpected {
                     variant: variant.name.clone(),
                     finding,
@@ -114,10 +107,10 @@ impl Runner {
         fixtures: &Path,
         failures: &mut Vec<Failure>,
     ) -> Result<()> {
-        let invalid = fixtures.join("invalid");
+        let invalid = fixtures.join(Side::Invalid.folder());
         if !holds_files(&invalid) {
             failures.push(Failure::NoFiles {
-                side: "invalid".to_owned(),
+                side: Side::Invalid,
             });
             return Ok(());
         }
@@ -132,7 +125,7 @@ impl Runner {
             return Ok(());
         }
         for variant in &self.variants {
-            let actual = self.run(rule, variant, &invalid, "invalid")?;
+            let actual = self.run(rule, variant, &invalid, Side::Invalid)?;
             if actual != expected {
                 failures.push(Failure::Mismatch {
                     variant: variant.name.clone(),
@@ -150,9 +143,13 @@ impl Runner {
         rule: &str,
         variant: &Variant,
         source: &Path,
-        side: &str,
-    ) -> Result<Vec<Finding>> {
-        let project = self.scratch.join(rule).join(&variant.name).join(side);
+        side: Side,
+    ) -> Result<Vec<FixtureDiagnostic>> {
+        let project = self
+            .scratch
+            .join(rule)
+            .join(&variant.name)
+            .join(side.folder());
         let _ = fs::remove_dir_all(&project);
         copy_tree(source, &project)?;
         fs::create_dir_all(project.join(".git"))?;
@@ -200,17 +197,17 @@ fn given_paths(project: &Path) -> Result<Vec<String>> {
         .collect())
 }
 
-fn diagnostics_of(report: &Value, rule: &str) -> Result<Vec<Finding>> {
+fn diagnostics_of(report: &Value, rule: &str) -> Result<Vec<FixtureDiagnostic>> {
     report["diagnostics"]
         .as_array()
         .context("the report has no `diagnostics` list")?
         .iter()
         .filter(|diagnostic| diagnostic["rule"] == rule)
-        .map(Finding::from_json)
+        .map(FixtureDiagnostic::from_json)
         .collect()
 }
 
-fn read_expected(path: &Path) -> Result<Vec<Finding>> {
+fn read_expected(path: &Path) -> Result<Vec<FixtureDiagnostic>> {
     let text = fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let document: Value =
         serde_json::from_str(&text).with_context(|| format!("{} is not JSON", path.display()))?;
@@ -218,7 +215,7 @@ fn read_expected(path: &Path) -> Result<Vec<Finding>> {
         .as_array()
         .with_context(|| format!("{} has no `diagnostics` list", path.display()))?
         .iter()
-        .map(Finding::from_json)
+        .map(FixtureDiagnostic::from_json)
         .collect()
 }
 
