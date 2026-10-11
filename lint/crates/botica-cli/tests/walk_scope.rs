@@ -33,6 +33,7 @@ fn hidden_directories_are_walked_except_the_ones_of_tools() {
     let dir = project("hidden", "");
     big(&dir, ".github/scripts/ci.py");
     big(&dir, ".agents/skills/run.py");
+    big(&dir, ".claude/hooks/guard.py");
     big(&dir, ".venv/lib/dep.py");
     big(&dir, ".mypy_cache/3.12/mod.py");
     big(&dir, ".git/hooks/pre-commit.py");
@@ -43,14 +44,27 @@ fn hidden_directories_are_walked_except_the_ones_of_tools() {
     for extra in [&[][..], &["--cache-dir", cache]] {
         assert_eq!(
             oversized(&dir, extra),
-            [
-                ".agents/skills/run.py",
-                ".github/scripts/ci.py",
-                "src/app.py"
-            ],
+            [".github/scripts/ci.py", "src/app.py"],
             "{extra:?}"
         );
     }
+}
+
+#[test]
+fn the_configuration_of_agents_is_left_out_unless_it_is_named_or_included() {
+    let dir = project("agents", "");
+    big(&dir, ".agents/skills/run.py");
+    big(&dir, ".claude/hooks/guard.py");
+
+    assert_eq!(oversized(&dir, &[]), Vec::<String>::new());
+    assert_eq!(oversized(&dir, &[".agents"]), [".agents/skills/run.py"]);
+    assert_eq!(oversized(&dir, &[".claude"]), [".claude/hooks/guard.py"]);
+
+    let dir = project("agents-included", "extend-include = [\".claude/\"]\n");
+    big(&dir, ".agents/skills/run.py");
+    big(&dir, ".claude/hooks/guard.py");
+
+    assert_eq!(oversized(&dir, &[]), [".claude/hooks/guard.py"]);
 }
 
 #[test]

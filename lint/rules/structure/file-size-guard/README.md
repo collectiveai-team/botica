@@ -27,7 +27,8 @@ Lines are counted on the bytes of the file: each `\n`, plus a last line that has
 ## Which files
 
 Every file the walk reaches. The walk honours `.gitignore`, walks hidden directories such as
-`.github`, and skips the directories of tools and caches (`.git`, `.venv`, `.mypy_cache`…).
+`.github`, and skips the directories of tools, caches and configuration of agents (`.git`,
+`.venv`, `.mypy_cache`, `.agents`, `.claude`…).
 `extend-include` brings back a path they leave out, and `extend-exclude` wins over it.
 
 Of those, the generated or documentation files in the rule's default `ignores` are left out

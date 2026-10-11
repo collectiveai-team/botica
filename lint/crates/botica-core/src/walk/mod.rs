@@ -8,10 +8,10 @@ use std::path::{Component, Path, PathBuf};
 use read::{lint_opened, open_named, Outcome};
 pub use read::{lint_streaming, read_all, read_and_lint, SourceFile, Unreadable};
 
-/// Directories of tools and caches that hold no code of the project. A walk does not enter them
-/// unless it is told to start there or `extend-include` asks for something inside. The other
-/// hidden directories (`.github`, `.agents`…) are walked.
-const TOOL_DIRS: [&str; 24] = [
+/// Directories of tools, caches and configuration of agents that hold no code of the project. A
+/// walk does not enter them unless it is told to start there or `extend-include` asks for
+/// something inside. The other hidden directories (`.github`…) are walked.
+const TOOL_DIRS: [&str; 26] = [
     ".git",
     ".hg",
     ".svn",
@@ -36,6 +36,8 @@ const TOOL_DIRS: [&str; 24] = [
     ".next",
     ".gradle",
     ".terraform",
+    ".agents",
+    ".claude",
 ];
 
 /// One walk of the tree under `dir`, honouring `.gitignore` and the list of directories of tools,

@@ -33,6 +33,10 @@ fn tree(test: &str) -> PathBuf {
     fs::write(root.join(".hidden/secret.py"), "x = 1\n".repeat(800)).unwrap();
     fs::create_dir_all(root.join(".venv")).unwrap();
     fs::write(root.join(".venv/dependency.py"), "x = 1\n".repeat(800)).unwrap();
+    for agents in [".agents/skills", ".claude/hooks"] {
+        fs::create_dir_all(root.join(agents)).unwrap();
+        fs::write(root.join(agents).join("agent.py"), "x = 1\n".repeat(800)).unwrap();
+    }
     root
 }
 
@@ -67,7 +71,7 @@ fn files_of_any_size_are_read_whole_and_binary_ones_are_judged_by_their_name() {
     // big, small, empty, utils, the Markdown and the Latin-1 file (every native rule runs on
     // every path without a planner; a file that is not UTF-8 is still read, for the rules that
     // count bytes), the binary file, which only the rules that go by its name see, and the file
-    // in the hidden directory; not the directory of a tool.
+    // in the hidden directory; not the directories of tools nor those of agents.
     assert_eq!(walked.read, 8);
     assert!(walked.unreadable.is_empty());
     let messages = rendered(&walked.diagnostics).join("\n");
@@ -75,6 +79,7 @@ fn files_of_any_size_are_read_whole_and_binary_ones_are_judged_by_their_name() {
     assert!(messages.contains("[no-utils]"), "{messages}");
     assert!(messages.contains(".hidden/secret.py"), "{messages}");
     assert!(!messages.contains("dependency.py"), "{messages}");
+    assert!(!messages.contains("agent.py"), "{messages}");
 }
 
 #[test]
