@@ -136,7 +136,7 @@ Rules already shipped before the CES scheme, now coded via retroactive issues:
 | CES | Slugs | Ships as |
 |---|---|---|
 | **CES-79** | `no-dict-return-annotation`, `no-dict-call-return`, `no-dict-literal-return`, `no-dict-alias` | ast-grep (`templates/ast-grep-rules/no-dict-*.yml`) |
-| **CES-71** | `file-size-guard` | prek hook (`templates/prek-python.toml`, 400 warn / 700 error) |
+| **CES-71** | `file-size-guard` | `botica lint` rule, run by the `botica` hook of `templates/prek-python.toml` (400 warn / 700 error, any language) |
 | **CES-107** | `skills-manifest` | `scaffolding check` + the `skills` component (`scaffolding/skills.py`) |
 
 ## References

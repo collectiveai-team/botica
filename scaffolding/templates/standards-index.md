@@ -20,7 +20,7 @@ reviewer/agent judgment; `[snippet]` ships canonical drop-in code. Full conventi
   never a raw `dict`. Ships four slugs: `no-dict-return-annotation`, `no-dict-call-return`,
   `no-dict-literal-return`, `no-dict-alias`. → `@.agents/rules/no-dict.md`
 - **CES-71 · keep files small** `[prek]` — split a module before it grows; the
-  `file-size-guard` hook warns at 400 lines and errors at 700. A persistently large file is a
+  `file-size-guard` rule of `botica lint` warns at 400 lines and errors at 700, in any language. A persistently large file is a
   design smell, not a limit to raise. → `@.agents/rules/file-size-guard.md`
 - **CES-107 · track the skills manifest** `[script]` — commit `skills-lock.json`; `.agents/skills/`
   is derived from it and stays gitignored. Install restores from the manifest. It pins no version

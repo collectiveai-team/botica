@@ -1,12 +1,12 @@
 # CES-63 · no catch-all modules
 
-**Code:** `CES-63` &nbsp;·&nbsp; **Slug:** `no-utils` &nbsp;·&nbsp; **Enforced by:** prek hook
-(filename glob) &nbsp;·&nbsp; **Tracker:**
+**Code:** `CES-63` &nbsp;·&nbsp; **Slug:** `no-utils` &nbsp;·&nbsp; **Enforced by:** `botica lint`
+(by file name), run by the `botica` prek hook &nbsp;·&nbsp; **Tracker:**
 [#63](https://github.com/collectiveai-team/scaffolding/issues/63)
 
 ## Directive
 
-Don't create catch-all modules. The `no-utils` prek hook fails on any file named `utils.py`,
+Don't create catch-all modules. The `no-utils` rule of `botica lint` fails on any file named `utils.py`,
 `helpers.py`, `aux.py`, `misc.py`, or `common.py` (anywhere except `tests/`). Name a module for
 what it holds.
 
@@ -26,11 +26,12 @@ what it holds.
 
 ## Scope
 
-The hook excludes `tests/` (fixtures and test helpers are exempt). No package parameter is
-needed — it keys purely on the basename.
+The rule covers Python files only and skips anything under `tests/` (fixtures and test helpers are
+exempt). No package parameter is needed — it keys purely on the basename.
 
 ## Suppression
 
-`no-utils` is a prek hook, so there is no per-line ast-grep ignore. If a single file legitimately
-must carry one of these names (rare — e.g. matching an external convention), exclude it via the
-hook's `exclude` pattern in `prek.toml` rather than disabling the guard.
+The finding is about the file name and has no line, so a line comment cannot silence it. If a
+single file legitimately must carry one of these names (rare — e.g. matching an external
+convention), put `botica: ignore-file[no-utils]` in a comment of the file, or exclude it in the
+`botica` configuration, rather than removing the hook.
