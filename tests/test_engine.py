@@ -322,24 +322,16 @@ def test_standards_repo_hygiene_rules_add_details(repo: Path):
     assert ".agents/rules/repo-shape.md" in adds
 
 
-def test_prek_plan_ships_repo_hygiene_hooks(repo: Path):
+def test_prek_plan_ships_repo_hygiene_through_the_botica_hook(repo: Path):
     (repo / "app.py").write_text("x = 1\n")
     plan = build_plan(repo, _facts(repo), Settings(), requested=["prek"])
     prek_ops = [op for op in plan.by(Disposition.ADD) if op.target == "prek.toml"]
     assert prek_ops, "expected a prek.toml ADD op"
     content = prek_ops[0].content or ""
-    assert 'id = "no-utils"' in content
-    assert 'id = "repo-shape"' in content
-
-
-def test_repo_hygiene_hooks_are_ces_coded():
-    prek = template_text("prek-python.toml")
-    assert "CES-63 (no-utils)" in prek
-    assert 'id = "no-utils"' in prek
-    assert "CES-32 (repo-shape)" in prek
-    assert 'id = "repo-shape"' in prek
-    # repo-shape carries the copier-style placeholder the agent fills at install time.
-    assert "{{ import_package }}" in prek
+    assert 'id = "botica"' in content
+    for retired in ("file-size-guard", "no-utils", "repo-shape"):
+        assert f'id = "{retired}"' not in content
+    assert "{{ import_package }}" not in content
 
 
 def test_standards_conventional_commits_adds_detail(repo: Path):
@@ -577,9 +569,6 @@ def test_ces_codes_embedded_in_as_built_rule_messages():
         body = template_text(f"ast-grep-rules/{slug}.yml")
         assert f"CES-79 ({slug})" in body
         assert f"id: {slug}" in body  # slug / suppression key unchanged
-    prek = template_text("prek-python.toml")
-    assert "CES-71 (file-size-guard)" in prek
-    assert 'id = "file-size-guard"' in prek  # prek hook id (suppression key) unchanged
 
 
 def test_select_skip(repo: Path):

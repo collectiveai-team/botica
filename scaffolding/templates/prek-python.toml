@@ -46,15 +46,6 @@ types = ["python"]
 pass_filenames = false
 priority = 2
 
-# MARK: file-size-guard
-[[repos.hooks]]
-id = "file-size-guard"
-name = "file-size-guard (400 large / 700 enormous)"
-entry = "python -c \"import sys; sys.exit(max([0] + [1 for f in sys.argv[1:] for n in [sum(1 for _ in open(f, errors='ignore'))] if (n >= 700 and not print(f'Error: CES-71 (file-size-guard): {f} is too large ({n} lines, limit is 700)')) or (n >= 400 and not print(f'Warning: CES-71 (file-size-guard): {f} is large ({n} lines, recommended limit is 400)') and False)]))\""
-language = "system"
-types = ["python"]
-priority = 2
-
 # MARK: deptry
 # CES-109: declared `pyproject.toml` dependencies must match the actual import graph — no
 # declared-but-unused deps, no imported-but-undeclared deps, no dev-vs-prod misplacement. Add
@@ -81,26 +72,14 @@ language = "system"
 types = ["python"]
 priority = 2
 
-# MARK: no-utils
-# CES-63: catch-all module names (utils/helpers/aux/misc/common) hide grab-bags of unrelated
-# code. The hook only ever runs on files whose basename matches, so it always fails when invoked.
+# MARK: botica
+# The structure rules, run by `botica lint` (it must be on PATH): CES-71 file-size-guard (400 warn
+# / 700 error), CES-63 no-utils, and the layout rules that replace the old `repo-shape` hook
+# (CES-32 no-notebooks and no-artifacts-in-package, plus no-tests-in-package). The ast-grep rules
+# keep their own hook, so botica skips them here. Findings carry their own CES code.
 [[repos.hooks]]
-id = "no-utils"
-name = "no-utils (no catch-all modules)"
-entry = "python -c \"import sys; [print(f'Error: CES-63 (no-utils): {f} is a catch-all module — name modules for what they hold, not utils/helpers/aux/misc/common.') for f in sys.argv[1:]]; sys.exit(1 if sys.argv[1:] else 0)\""
+id = "botica"
+name = "botica (file size, catch-all modules, package layout)"
+entry = "botica lint --no-astgrep --select file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package"
 language = "system"
-files = "(^|/)(utils|helpers|aux|misc|common)\\.py$"
-exclude = "(^|/)tests/"
-priority = 2
-
-# MARK: repo-shape
-# CES-32: notebooks, resources/, reports/, and data/ do not belong inside the import package.
-# {{ import_package }} is a copier-style placeholder — resolve it to your top-level package dir
-# at install time (the guide instructs the fill); until then this hook never matches.
-[[repos.hooks]]
-id = "repo-shape"
-name = "repo-shape (no notebooks/resources/reports/data in the package)"
-entry = "python -c \"import sys; [print(f'Error: CES-32 (repo-shape): {f} does not belong inside the import package — keep notebooks/resources/reports/data outside it.') for f in sys.argv[1:]]; sys.exit(1 if sys.argv[1:] else 0)\""
-language = "system"
-files = "^{{ import_package }}/(.*\\.ipynb$|(.*/)?(resources|reports|data)/.*)"
 priority = 2

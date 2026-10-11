@@ -24,6 +24,15 @@ LOCKFILES = (
     "Gemfile.lock",
 )
 
+# The native rules the botica hook runs: CES-71, CES-63 and the layout rules (was `repo-shape`).
+BOTICA_RULES = {
+    "file-size-guard",
+    "no-utils",
+    "no-notebooks",
+    "no-artifacts-in-package",
+    "no-tests-in-package",
+}
+
 
 def _hook_entry(template: str, hook_id: str) -> str:
     """Return the `entry` command of a hook declared in a shipped prek template."""
@@ -56,3 +65,11 @@ def test_jscpd_does_not_combine_threshold_with_exit_code():
 
     assert "--threshold" in entry
     assert "--exit-code" not in entry
+
+
+def test_botica_hook_runs_the_native_structure_rules():
+    entry = shlex.split(_hook_entry("prek-python.toml", "botica"))
+
+    assert entry[:3] == ["botica", "lint", "--no-astgrep"]
+    assert "--select" in entry, f"botica would run every rule it knows: {entry!r}"
+    assert set(entry[entry.index("--select") + 1].split(",")) == BOTICA_RULES
