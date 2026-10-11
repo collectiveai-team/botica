@@ -1,0 +1,65 @@
+name: Botica lint
+
+# Format, lint and test the Rust workspace in lint/ (the `botica` binary).
+# Two switches turn tests that skip themselves into failures, so a runner that cannot
+# exercise them does not pass silently:
+#   BOTICA_REQUIRE_RUFF         the rule catalog is checked against `ruff linter`
+#   BOTICA_REQUIRE_READ_ERRORS  unreadable files must really be unreadable (not run as root)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "lint/**"
+      - ".github/workflows/botica-lint.yml"
+  # Allow other workflows (e.g. a wheel release) to gate on this suite.
+  workflow_call:
+
+concurrency:
+  group: botica-lint-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  BOTICA_REQUIRE_RUFF: "1"
+  BOTICA_REQUIRE_READ_ERRORS: "1"
+
+jobs:
+  test:
+    name: fmt, clippy & test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lint
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        # Pinned to an exact immutable tag, like the other workflows.
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: "0.11.12"
+          enable-cache: false
+
+      # `ruff linter` lists the rules the catalog is checked against. Pinned to the version the
+      # suite was verified with; bump it on purpose, since a new ruff can add or rename rules.
+      - name: Install ruff
+        run: uv tool install ruff==0.16.3
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace --locked --no-fail-fast
