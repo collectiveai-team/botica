@@ -1,0 +1,112 @@
+name: Botica release
+
+# Tag-driven: `git tag botica-vX.Y.Z && git push origin botica-vX.Y.Z`, with X.Y.Z equal to the
+# version in lint/Cargo.toml ([workspace.package]) and Cargo.lock in sync.
+# Gated on the Botica lint suite. Builds binary-only wheels (maturin, bindings = "bin") per
+# platform and attaches them, with a .sha256 file each, to a GitHub Release. It does not publish
+# to PyPI: that needs a PyPI project and a trusted publisher, which are set up outside this repo.
+
+on:
+  push:
+    tags:
+      - "botica-v*.*.*"
+
+# No top-level permissions: grant least privilege per job instead.
+jobs:
+  test:
+    name: tests
+    permissions:
+      contents: read
+    uses: ./.github/workflows/botica-lint.yml
+
+  version:
+    name: tag matches Cargo.toml
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Compare the tag with the workspace version
+        run: |
+          expected="${TAG#botica-v}"
+          found="$(sed -n '/^\[workspace\.package\]/,/^\[/{s/^version = "\(.*\)"$/\1/p}' lint/Cargo.toml)"
+          if [ "$found" != "$expected" ]; then
+            echo "tag $TAG names $expected but lint/Cargo.toml has ${found:-no version}" >&2
+            exit 1
+          fi
+
+  draft:
+    name: draft release
+    needs: version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Create the draft
+        run: gh release create "$TAG" --draft --generate-notes --title "$TAG"
+
+  wheels:
+    name: wheel ${{ matrix.target }}
+    needs: draft
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, manylinux: auto }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2 }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, manylinux: auto }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl, manylinux: musllinux_1_2 }
+          - { os: macos-latest, target: aarch64-apple-darwin, manylinux: "off" }
+          - { os: macos-latest, target: x86_64-apple-darwin, manylinux: "off" }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc, manylinux: "off" }
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Build the wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          command: build
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux }}
+          working-directory: lint
+          args: --release --locked --out dist
+
+      - name: Attach the wheel and its checksum to the release
+        shell: bash
+        working-directory: lint/dist
+        run: |
+          for wheel in *.whl; do sha256sum "$wheel" > "$wheel.sha256" 2>/dev/null || shasum -a 256 "$wheel" > "$wheel.sha256"; done
+          gh release upload "$TAG" ./*.whl ./*.sha256
+
+  publish:
+    name: publish release
+    needs: wheels
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Publish the draft
+        run: gh release edit "$TAG" --draft=false
