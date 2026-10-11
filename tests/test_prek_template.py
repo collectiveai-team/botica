@@ -68,8 +68,18 @@ def test_jscpd_does_not_combine_threshold_with_exit_code():
 
 
 def test_botica_hook_runs_the_native_structure_rules():
-    entry = shlex.split(_hook_entry("prek-python.toml", "botica"))
+    entry = shlex.split(_hook_entry("prek-generic.toml", "botica"))
 
     assert entry[:3] == ["botica", "lint", "--no-astgrep"]
     assert "--select" in entry, f"botica would run every rule it knows: {entry!r}"
     assert set(entry[entry.index("--select") + 1].split(",")) == BOTICA_RULES
+
+
+def test_the_botica_hook_is_declared_once_so_the_joined_config_has_no_duplicate_id():
+    """A Python repo gets the generic and the Python templates joined into one `prek.toml`."""
+    joined = tomllib.loads(
+        template_text("prek-generic.toml") + "\n" + template_text("prek-python.toml")
+    )
+    ids = [hook["id"] for repo in joined["repos"] for hook in repo.get("hooks", [])]
+
+    assert ids.count("botica") == 1

@@ -71,15 +71,3 @@ entry = "uvx complexipy --max-complexity-allowed 15"
 language = "system"
 types = ["python"]
 priority = 2
-
-# MARK: botica
-# The structure rules, run by `botica lint` (it must be on PATH): CES-71 file-size-guard (400 warn
-# / 700 error), CES-63 no-utils, and the layout rules that replace the old `repo-shape` hook
-# (CES-32 no-notebooks and no-artifacts-in-package, plus no-tests-in-package). The ast-grep rules
-# keep their own hook, so botica skips them here. Findings carry their own CES code.
-[[repos.hooks]]
-id = "botica"
-name = "botica (file size, catch-all modules, package layout)"
-entry = "botica lint --no-astgrep --select file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package"
-language = "system"
-priority = 2
