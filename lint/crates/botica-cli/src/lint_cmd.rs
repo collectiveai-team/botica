@@ -51,6 +51,9 @@ pub struct LintArgs {
     /// Directory for the per-file result cache (off when omitted).
     #[arg(long)]
     cache_dir: Option<PathBuf>,
+    /// Keep the result cache in `.botica/cache` under the root of the project.
+    #[arg(long, conflicts_with = "cache_dir")]
+    cache: bool,
     /// Print to stderr how long each rule and each extension took, and what the prefilter saved.
     #[arg(long)]
     timings: bool,
@@ -92,11 +95,14 @@ struct Setup {
     io_error_active: bool,
     config_key: String,
     with_astgrep: bool,
+    /// Where the configuration was found (the working directory when there is none).
+    project_root: PathBuf,
 }
 
 impl Setup {
     fn build(args: &LintArgs) -> Result<Self> {
         let project = project::load(&args.project)?;
+        let project_root = project.loaded.root.clone();
         let with_astgrep = !args.no_astgrep && project.embedded_rules;
         let io_error_active = project.is_active(IO_ERROR);
         let prefix = project.working_prefix();
@@ -134,6 +140,7 @@ impl Setup {
             io_error_active,
             config_key,
             with_astgrep,
+            project_root,
         })
     }
 }

@@ -6,6 +6,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 const FILE_NAME: &str = "lint-cache.json";
 
@@ -42,12 +43,39 @@ impl Cache {
         Self { file, stored }
     }
 
+    /// Writes the cache next to its file and renames it into place, so a run that reads it while
+    /// another saves it (two hooks, a CI matrix on one checkout) sees one whole version, and a
+    /// run that dies half way leaves the previous one.
+    ///
+    /// A directory this creates ignores itself (a `.gitignore` with `*`, like `.ruff_cache`), so the
+    /// project's own `.gitignore` stays as it is; one that was already there is left alone.
     pub fn save(&self) -> Result<()> {
         if let Some(parent) = self.file.parent() {
+            let created = !parent.exists();
             std::fs::create_dir_all(parent)?;
+            if created {
+                std::fs::write(parent.join(".gitignore"), "*\n")?;
+            }
         }
-        std::fs::write(&self.file, serde_json::to_vec(&self.stored)?)
-            .with_context(|| format!("cannot write {}", self.file.display()))
+        let pending = self.pending_file();
+        let written = std::fs::write(&pending, serde_json::to_vec(&self.stored)?)
+            .and_then(|()| std::fs::rename(&pending, &self.file));
+        if written.is_err() {
+            let _ = std::fs::remove_file(&pending);
+        }
+        written.with_context(|| format!("cannot write {}", self.file.display()))
+    }
+
+    /// A name no other process or thread saving this cache uses at the same time.
+    fn pending_file(&self) -> PathBuf {
+        static SAVES: AtomicUsize = AtomicUsize::new(0);
+        let mut name = self.file.file_name().unwrap_or_default().to_owned();
+        name.push(format!(
+            ".{}.{}.tmp",
+            std::process::id(),
+            SAVES.fetch_add(1, Ordering::Relaxed)
+        ));
+        self.file.with_file_name(name)
     }
 }
 

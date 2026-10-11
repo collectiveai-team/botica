@@ -74,8 +74,19 @@ fn reach(args: &LintArgs, setup: &Setup, root: &Path, overlapped: bool) -> Reach
     reached
 }
 
+/// Where the result cache lives, if there is one: the directory asked for, or `.botica/cache`
+/// under the root of the project (`.botica` is a directory of tools: the walk never enters it).
+fn cache_dir(args: &LintArgs, root: &Path) -> Option<PathBuf> {
+    match (&args.cache_dir, args.cache) {
+        (Some(dir), _) => Some(dir.clone()),
+        (None, true) => Some(root.join(".botica").join("cache")),
+        (None, false) => None,
+    }
+}
+
 pub(super) fn lint_paths(args: &LintArgs, setup: &Setup, root: &Path) -> Result<Linted> {
-    let overlapped = args.cache_dir.is_none() && args.ext.is_none();
+    let cache_dir = cache_dir(args, &setup.project_root);
+    let overlapped = cache_dir.is_none() && args.ext.is_none();
     let reached = reach(args, setup, root, overlapped);
     let engine = &setup.engine;
     let io_errors = reached.io_errors;
@@ -91,7 +102,7 @@ pub(super) fn lint_paths(args: &LintArgs, setup: &Setup, root: &Path) -> Result<
             unreadable: merged(named.unreadable, reached.walked.unreadable),
             files_read: named.read + reached.walked.read,
         })
-    } else if let Some(dir) = &args.cache_dir {
+    } else if let Some(dir) = &cache_dir {
         let (sources, unreadable) = walk::read_all(engine, root, &reached.named);
         let unreadable = merged(unreadable, reached.walked.unreadable);
         let fingerprint = rules::fingerprint(
