@@ -1,0 +1,17 @@
+- id: botica
+  name: botica
+  description: Deterministic lint of the house engineering standards, the rules that look at one file.
+  entry: botica lint --scope file
+  language: python
+  types: [file]
+  # prek hides the output of a passing hook, and a warning does not fail it.
+  verbose: true
+
+- id: botica-project
+  name: botica (project rules)
+  description: The rules that need the whole project, not one file at a time.
+  entry: botica lint --scope project
+  language: python
+  pass_filenames: false
+  always_run: true
+  verbose: true
