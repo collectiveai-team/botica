@@ -52,9 +52,9 @@ reviewer/agent judgment; `[snippet]` ships canonical drop-in code. Full conventi
 - **CES-63 · no catch-all modules** `[prek]` — no `utils.py`/`helpers.py`/`aux.py`/`misc.py`/`common.py`
   (outside `tests/`); name a module for what it holds. Slug: `no-utils`. →
   `@.agents/rules/no-utils.md`
-- **CES-32 · keep non-code out of the package** `[prek]` — no notebooks/`resources/`/`reports/`/`data/`
-  inside the import package. Parametrized by a `{{ import_package }}` placeholder resolved at
-  install time. Slug: `repo-shape`. → `@.agents/rules/repo-shape.md`
+- **CES-32 · keep non-code out of the package** `[prek]` — no notebooks, data/model files, or
+  non-code under `resources/`/`reports/`/`data/` inside the code of the project; `botica lint`
+  finds the code directories itself. Slug: `repo-shape`. → `@.agents/rules/repo-shape.md`
 - **CES-75 · Conventional Commits** `[prek]` — commit subjects follow `type(scope): description`;
   a commit-msg hook checks every commit and a CI workflow checks the PR title. Slug:
   `agents-conventional-commits`. → `@.agents/rules/agents-conventional-commits.md`

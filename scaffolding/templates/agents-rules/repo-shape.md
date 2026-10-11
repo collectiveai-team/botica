@@ -1,14 +1,15 @@
 # CES-32 · keep non-code out of the package
 
-**Code:** `CES-32` &nbsp;·&nbsp; **Slug:** `repo-shape` &nbsp;·&nbsp; **Enforced by:** prek hook
-(path glob, parametrized) &nbsp;·&nbsp; **Tracker:**
+**Code:** `CES-32` &nbsp;·&nbsp; **Slug:** `repo-shape` &nbsp;·&nbsp; **Enforced by:** `botica lint`
+(`no-notebooks`, `no-artifacts-in-package`), run by the `botica` prek hook &nbsp;·&nbsp; **Tracker:**
 [#32](https://github.com/collectiveai-team/scaffolding/issues/32)
 
 ## Directive
 
-The import package holds **code**, not artifacts. The `repo-shape` prek hook fails on Jupyter
-notebooks (`*.ipynb`) and on `resources/`, `reports/`, and `data/` directories found *inside* the
-import package. Keep those at the repo root (or a sibling), not under the importable package.
+The code of a project holds **code**, not artifacts. `botica lint` fails on a Jupyter notebook
+(`*.ipynb`) found *inside* the code, and on a file of data or of a model (`csv`, `parquet`, `pkl`,
+`pt`, `h5`, `npy`, `onnx`, `db`, `gz`…). In a Python package it also fails on any file that is not
+code under a `data/`, `resources/` or `reports/` directory. Keep those beside the code, not under it.
 
 ## Why
 
@@ -18,12 +19,17 @@ import package. Keep those at the repo root (or a sibling), not under the import
 - A clean package boundary means `pip install` ships only what's importable, and the repo's
   exploratory/output material lives where humans (not the import system) expect it.
 
-## The `{{ import_package }}` placeholder
+## What counts as the code
 
-This hook is parametrized. The shipped `prek.toml` contains a copier-style
-`{{ import_package }}` placeholder in the hook's `files` pattern; **resolve it at install time**
-to your top-level package directory (e.g. `myapp`). The install guide instructs this fill. Until
-it is resolved the pattern matches nothing, so the hook is inert — fill it to turn the guard on.
+The `code-dirs` of the project: the `code-dirs` setting, or else what `botica` detects from the
+manifests. There is nothing to fill in at install time. Python: the directories with an
+`__init__.py` inside the project or its `src/`. JavaScript, TypeScript and Rust: `src/`. Go:
+`internal/`, `pkg/` and `cmd/`. Java, Kotlin and Scala: `src/main/java`, `kotlin` and `scala`.
+`botica explain no-notebooks` lists them.
+
+The name of a directory is not enough, because a `data/` package with an `__init__.py` is code:
+`no-artifacts-in-package` looks at the kind of file. It leaves alone the files under `tests`,
+`fixtures`, `testdata`, `examples`, `docs`, `benches`, `snapshots` and `*_tests`.
 
 ## Suggested layout
 
@@ -38,5 +44,7 @@ repo/
 
 ## Suppression
 
-`repo-shape` is a prek hook, so there is no per-line ast-grep ignore. To allow a specific path,
-narrow the hook's `files`/`exclude` pattern in `prek.toml` rather than removing the guard.
+The findings are about a whole file and have no line, so a line comment cannot silence them. To
+allow a specific path, exclude it with `ignores` or `extend-ignores` in the configuration of the
+rule (`no-notebooks` or `no-artifacts-in-package`), or in the project configuration, rather than
+removing the `botica` hook.
