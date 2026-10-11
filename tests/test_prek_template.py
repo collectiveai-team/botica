@@ -44,6 +44,16 @@ def _hook_entry(template: str, hook_id: str) -> str:
     pytest.fail(f"{template} declares no {hook_id!r} hook")
 
 
+def _hook_setting(template: str, hook_id: str, key: str) -> object:
+    """Return one setting of a hook declared in a shipped prek template (`None` if unset)."""
+    config = tomllib.loads(template_text(template))
+    for repo in config.get("repos", []):
+        for hook in repo.get("hooks", []):
+            if hook.get("id") == hook_id:
+                return hook.get(key)
+    pytest.fail(f"{template} declares no {hook_id!r} hook")
+
+
 def _ignore_arg(entry: str) -> str:
     """Return the value passed to jscpd's `--ignore`."""
     parts = shlex.split(entry)
@@ -73,6 +83,11 @@ def test_botica_hook_runs_the_native_structure_rules():
     assert entry[:3] == ["botica", "lint", "--no-astgrep"]
     assert "--select" in entry, f"botica would run every rule it knows: {entry!r}"
     assert set(entry[entry.index("--select") + 1].split(",")) == BOTICA_RULES
+
+
+def test_botica_hook_shows_its_output_when_it_passes():
+    """Prek hides the output of a passing hook, and a size warning does not fail the hook."""
+    assert _hook_setting("prek-generic.toml", "botica", "verbose") is True
 
 
 def test_the_botica_hook_is_declared_once_so_the_joined_config_has_no_duplicate_id():

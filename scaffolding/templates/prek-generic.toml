@@ -109,12 +109,14 @@ priority = 2
 # old `repo-shape` hook (CES-32 no-notebooks and no-artifacts-in-package, plus no-tests-in-package,
 # Python only). Each rule looks at the languages it declares, so the hook is inert where none
 # applies. The ast-grep rules keep their own hook, so botica skips them here. Findings carry their
-# own CES code.
+# own CES code. `verbose` makes prek show the output of a passing hook: the 400-line warning does
+# not fail the hook, and without it nobody would ever see it.
 [[repos.hooks]]
 id = "botica"
 name = "botica (file size, catch-all modules, package layout)"
 entry = "botica lint --no-astgrep --select file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package"
 language = "system"
+verbose = true
 priority = 2
 
 # MARK: hadolint-docker
