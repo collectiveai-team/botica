@@ -10,6 +10,7 @@ name = "botica"
 description = "Deterministic linter for the house engineering standards"
 requires-python = ">=3.9"
 license = "MIT"
+license-files = ["LICENSE"]
 dynamic = ["version"]
 classifiers = [
     "Environment :: Console",
