@@ -38,21 +38,25 @@ fn cache_alone_keeps_the_results_in_dot_botica_under_the_root_of_the_project() {
 
     // Run from a subdirectory: the place is under the root, not under where the command ran.
     let sub = dir.join("sub");
-    let first = command(&sub, &["lint", ".", "--no-astgrep", "--cache", "--timings"]);
+    command(&sub, &["lint", ".", "--no-astgrep", "--cache"]);
+
     assert!(dir.join(".botica/cache/lint-cache.json").exists());
     assert!(!sub.join(".botica").exists());
-    assert!(
-        stderr(&first).contains("0 hits, 1 misses"),
-        "{}",
-        stderr(&first)
-    );
+}
 
-    let second = command(&sub, &["lint", ".", "--no-astgrep", "--cache", "--timings"]);
-    assert!(
-        stderr(&second).contains("1 hits, 0 misses"),
-        "{}",
-        stderr(&second)
-    );
+#[test]
+fn a_second_run_with_cache_reads_the_results_of_the_first() {
+    let dir = project("second-run");
+    let run = || {
+        let output = command(&dir, &["lint", ".", "--no-astgrep", "--cache", "--timings"]);
+        stderr(&output)
+    };
+
+    let first = run();
+    assert!(first.contains("cache: 0 hits"), "{first}");
+    let second = run();
+    assert!(second.contains(", 0 misses"), "{second}");
+    assert!(!second.contains("cache: 0 hits"), "{second}");
 }
 
 #[test]

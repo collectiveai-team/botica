@@ -23,6 +23,17 @@ fn names(dir: &Path) -> Vec<String> {
     found
 }
 
+#[test]
+fn a_save_that_fails_leaves_no_temporary_file_behind() {
+    let dir = scratch("failed");
+    // The name of the cache is taken by a directory, so the rename cannot succeed.
+    fs::create_dir(dir.join("lint-cache.json")).unwrap();
+
+    assert!(Cache::load(&dir, "first").save().is_err());
+
+    assert_eq!(names(&dir), ["lint-cache.json"]);
+}
+
 /// A second process that reads the cache while another one saves it must see the old file or
 /// the new one, never half of each: a save replaces the file, it does not rewrite it in place.
 #[test]

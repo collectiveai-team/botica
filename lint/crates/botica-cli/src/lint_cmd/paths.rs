@@ -76,16 +76,16 @@ fn reach(args: &LintArgs, setup: &Setup, root: &Path, overlapped: bool) -> Reach
 
 /// Where the result cache lives, if there is one: the directory asked for, or `.botica/cache`
 /// under the root of the project (`.botica` is a directory of tools: the walk never enters it).
-fn cache_dir(args: &LintArgs, root: &Path) -> Option<PathBuf> {
+fn cache_location(args: &LintArgs, project_root: &Path) -> Option<PathBuf> {
     match (&args.cache_dir, args.cache) {
         (Some(dir), _) => Some(dir.clone()),
-        (None, true) => Some(root.join(".botica").join("cache")),
+        (None, true) => Some(project_root.join(".botica").join("cache")),
         (None, false) => None,
     }
 }
 
 pub(super) fn lint_paths(args: &LintArgs, setup: &Setup, root: &Path) -> Result<Linted> {
-    let cache_dir = cache_dir(args, &setup.project_root);
+    let cache_dir = cache_location(args, &setup.project_root);
     let overlapped = cache_dir.is_none() && args.ext.is_none();
     let reached = reach(args, setup, root, overlapped);
     let engine = &setup.engine;

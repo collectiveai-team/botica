@@ -51,11 +51,7 @@ impl Cache {
     /// project's own `.gitignore` stays as it is; one that was already there is left alone.
     pub fn save(&self) -> Result<()> {
         if let Some(parent) = self.file.parent() {
-            let created = !parent.exists();
-            std::fs::create_dir_all(parent)?;
-            if created {
-                std::fs::write(parent.join(".gitignore"), "*\n")?;
-            }
+            ensure_directory(parent)?;
         }
         let pending = self.pending_file();
         let written = std::fs::write(&pending, serde_json::to_vec(&self.stored)?)
@@ -77,6 +73,20 @@ impl Cache {
         ));
         self.file.with_file_name(name)
     }
+}
+
+/// Creates the cache directory. One that is new gets the `.gitignore`; if the process dies between
+/// the two steps, the directory stays without it, and a later run, which finds it there, does not
+/// add one.
+fn ensure_directory(dir: &Path) -> Result<()> {
+    let created = !dir.exists();
+    std::fs::create_dir_all(dir).with_context(|| format!("cannot create {}", dir.display()))?;
+    if created {
+        let ignore = dir.join(".gitignore");
+        std::fs::write(&ignore, "*\n")
+            .with_context(|| format!("cannot write {}", ignore.display()))?;
+    }
+    Ok(())
 }
 
 fn key(file: &SourceFile) -> String {

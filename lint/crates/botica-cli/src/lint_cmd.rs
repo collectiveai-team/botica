@@ -48,7 +48,8 @@ pub struct LintArgs {
     /// Parse every file, even those the rules' derived prefilters rule out.
     #[arg(long)]
     no_prefilter: bool,
-    /// Directory for the per-file result cache (off when omitted).
+    /// Directory for the per-file result cache (off when omitted). One that botica creates ignores
+    /// itself in git; add one that already exists to your `.gitignore`.
     #[arg(long)]
     cache_dir: Option<PathBuf>,
     /// Keep the result cache in `.botica/cache` under the root of the project.
