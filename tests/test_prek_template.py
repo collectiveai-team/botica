@@ -5,11 +5,16 @@ from __future__ import annotations
 import re
 import shlex
 import tomllib
+from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 from scaffolding.templates_registry import template_text
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 BOTICA_MIRROR = "https://github.com/collectiveai-team/botica-pre-commit"
 MIRROR_HOOKS = (
@@ -42,24 +47,32 @@ BOTICA_RULES = {
 }
 
 
-def _hook_entry(template: str, hook_id: str) -> str:
-    """Return the `entry` command of a hook declared in a shipped prek template."""
+@dataclass(frozen=True)
+class DeclaredHook:
+    """A hook as a shipped prek template declares it, with the `[[repos]]` table it sits in."""
+
+    repo: str
+    rev: str
+    settings: Mapping[str, object]
+
+
+def _declared_hook(template: str, hook_id: str) -> DeclaredHook:
     config = tomllib.loads(template_text(template))
     for repo in config.get("repos", []):
         for hook in repo.get("hooks", []):
             if hook.get("id") == hook_id:
-                return hook["entry"]
+                return DeclaredHook(repo["repo"], repo.get("rev", ""), hook)
     pytest.fail(f"{template} declares no {hook_id!r} hook")
+
+
+def _hook_entry(template: str, hook_id: str) -> str:
+    """Return the `entry` command of a hook declared in a shipped prek template."""
+    return str(_declared_hook(template, hook_id).settings["entry"])
 
 
 def _hook_setting(template: str, hook_id: str, key: str) -> object:
     """Return one setting of a hook declared in a shipped prek template (`None` if unset)."""
-    config = tomllib.loads(template_text(template))
-    for repo in config.get("repos", []):
-        for hook in repo.get("hooks", []):
-            if hook.get("id") == hook_id:
-                return hook.get(key)
-    pytest.fail(f"{template} declares no {hook_id!r} hook")
+    return _declared_hook(template, hook_id).settings.get(key)
 
 
 def _ignore_arg(entry: str) -> str:
@@ -85,21 +98,12 @@ def test_jscpd_does_not_combine_threshold_with_exit_code():
     assert "--exit-code" not in entry
 
 
-def _hook_source(template: str, hook_id: str) -> tuple[str, str]:
-    """Return the `(repo, rev)` of the `[[repos]]` table that declares the hook."""
-    config = tomllib.loads(template_text(template))
-    for repo in config.get("repos", []):
-        if any(hook.get("id") == hook_id for hook in repo.get("hooks", [])):
-            return repo["repo"], repo.get("rev", "")
-    pytest.fail(f"{template} declares no {hook_id!r} hook")
-
-
 def test_botica_hook_comes_from_the_mirror_at_a_release_tag():
     """The hook is installed from the mirror, so a target needs no `botica` on its PATH."""
-    repo, rev = _hook_source("prek-generic.toml", "botica")
+    hook = _declared_hook("prek-generic.toml", "botica")
 
-    assert repo == BOTICA_MIRROR
-    assert re.fullmatch(r"v\d+\.\d+\.\d+", rev), f"not a release tag: {rev!r}"
+    assert hook.repo == BOTICA_MIRROR
+    assert re.fullmatch(r"v\d+\.\d+\.\d+", hook.rev), f"not a release tag: {hook.rev!r}"
 
 
 def test_botica_hook_runs_the_native_structure_rules():
@@ -123,6 +127,11 @@ def _mirror_hook_block(hook_id: str) -> str:
 def test_mirror_hooks_show_their_output_when_they_pass(hook_id: str):
     """Prek hides the output of a passing hook, and a size warning does not fail the hook."""
     assert re.search(r"^  verbose: true$", _mirror_hook_block(hook_id), re.M)
+
+
+def test_mirror_file_hook_forces_the_exclusions_on_the_files_prek_names():
+    """Prek names every file, and botica lints a named file even if `extend-exclude` has it."""
+    assert "--force-exclude" in _mirror_hook_block("botica")
 
 
 def test_botica_hook_does_not_replace_the_entry_of_the_mirror():
