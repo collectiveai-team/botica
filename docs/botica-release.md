@@ -29,10 +29,14 @@ GitHub and on PyPI. The tag moved once on the way: the Linux jobs build in a con
 `lint/dist`, so the checksums are written to `lint/sums` instead. The `publish` step that puts
 "latest" back was added afterwards and has not run on GitHub yet: look at it on the next release.
 
-Checked by hand after the release: `uvx botica --version` installs the wheel from PyPI and prints
-`botica 0.7.0` (Linux x64), and prek installs the mirror repository at `v0.7.0` and runs the hook
-against that wheel. Not checked: that the wheels for musl, arm64, macOS and Windows run (they build
-and are published, nothing more).
+Checked by hand after the release: `uvx botica --version` and `uv tool install botica` install the
+wheel from PyPI and run it (`botica 0.7.0`, Linux x64), and prek installs the mirror repository at
+`v0.7.0` and runs the hook against that wheel. `actionlint` 1.7.12 finds nothing in the workflows.
+`zizmor` 1.30.1 reports two low `self-repository` findings in `botica-release.yml`: it wants
+`uses: $/.github/workflows/ci.yml` (GitHub's self-repository syntax, July 2026) instead of
+`./.github/...`. `actionlint` 1.7.12 rejects the new form for reusable workflows and it cannot be
+tried without a release, so the file keeps `./`. Not checked: that the wheels for musl, arm64,
+macOS and Windows run (they build and are published, nothing more).
 
 ## Set up PyPI once
 
