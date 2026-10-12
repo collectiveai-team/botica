@@ -9,9 +9,3 @@ rules:
     config:
       policies:
         "*": ref-pin
-  # softprops/action-gh-release is a deliberate choice (release-notes
-  # generation + file globbing). The info-level "use gh release create"
-  # suggestion is intentionally ignored for the release workflow.
-  superfluous-actions:
-    ignore:
-      - release.yml

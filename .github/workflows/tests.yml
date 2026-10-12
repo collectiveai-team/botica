@@ -8,7 +8,7 @@ on:
   push:
     branches: [main]
   pull_request:
-  # Allow other workflows (e.g. release.yml) to gate on this suite.
+  # Allow other workflows (e.g. botica-release.yml) to gate on this suite.
   workflow_call:
 
 concurrency:
