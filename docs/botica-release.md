@@ -53,8 +53,8 @@ builds are accepted. A wheel built on your machine for a rehearsal needs
 
 ## Each release
 
-1. Set `version` in `[workspace.package]` of `lint/Cargo.toml` (it is `0.0.0` today; the first
-   release is `0.7.0` or higher), and run `cargo update --workspace`
+1. Set `version` in `[workspace.package]` of `lint/Cargo.toml` (it is `0.7.0`, the first release,
+   and `Cargo.lock` already matches; later ones go up from there), and run `cargo update --workspace`
    in `lint/`. Without it the build, which uses `--locked`, fails; the change to `Cargo.lock` is a
    few lines for the crates of the project.
 2. Commit it (`chore(lint): release X.Y.Z`) and push. Wait for `Botica lint` to pass.
