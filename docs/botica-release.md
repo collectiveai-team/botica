@@ -29,10 +29,14 @@ before the first tag and publish nothing you have not looked at.
    pending publisher**. Project name `botica`; owner `collectiveai-team`; repository `botica`;
    workflow `botica-release.yml`; environment `pypi`. A pending publisher creates the project on
    the first upload.
-3. On GitHub, **Settings → Environments → New environment** named `pypi`. Add yourself as a
-   required reviewer, so every upload waits for an approval.
-4. When you are ready to publish, **Settings → Secrets and variables → Actions → Variables**:
-   add `PUBLISH_TO_PYPI` = `true`. Remove it to turn the job off again.
+3. On GitHub, an environment named `pypi` with a required reviewer, so every upload waits for an
+   approval, and a deployment policy that only lets tags `botica-v*` use it. **Done on
+   2026-10-12** (reviewer: `jedzill4`); to change it, **Settings → Environments → pypi**.
+4. The repository variable `PUBLISH_TO_PYPI` = `true` turns the `pypi` job on. **Set on
+   2026-10-12.** Delete it, or set it to anything else, to turn the job off again.
+
+The `botica-pre-commit` project is **not** created on PyPI: prek installs the mirror by cloning
+its GitHub repository, and the package in it only depends on `botica==X.Y.Z`.
 
 To rehearse, repeat step 2 on test.pypi.org and upload one wheel by hand with
 `uv publish --publish-url https://test.pypi.org/legacy/ lint/dist/*.whl`. The workflow publishes
