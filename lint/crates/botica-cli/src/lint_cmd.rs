@@ -26,8 +26,9 @@ pub struct LintArgs {
     /// How to print the findings.
     #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
     output_format: OutputFormat,
-    /// Leave out the paths named on the command line too when `extend-exclude` excludes them
-    /// (by default only what the walk finds is left out).
+    /// Leave out the paths named on the command line too when `extend-exclude` excludes them, or
+    /// when they are inside a directory of a tool (`.venv`, `.claude`…) that `extend-include` does
+    /// not ask for (by default only what the walk finds is left out).
     #[arg(long)]
     force_exclude: bool,
     /// Print how many findings each rule has instead of the findings (text and json formats).

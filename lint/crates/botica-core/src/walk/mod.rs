@@ -271,6 +271,14 @@ fn is_tool_dir(name: &std::ffi::OsStr) -> bool {
     name.as_encoded_bytes().first() == Some(&b'.') && TOOL_DIRS.iter().any(|tool| name == *tool)
 }
 
+/// Whether a path, written from the root of the project, has a directory of a tool (`.venv`,
+/// `.claude`…) among its parts, or is one itself.
+pub fn is_in_tool_dir(relative: &str) -> bool {
+    Path::new(relative)
+        .components()
+        .any(|part| is_tool_dir(part.as_os_str()))
+}
+
 /// Whether the walk leaves this entry out: a directory of a tool, or what the exclusion names.
 /// The directory a walk starts from is never pruned: naming it is asking for it (`--force-exclude`
 /// decides that before the walk).

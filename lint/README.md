@@ -45,8 +45,11 @@ its directive, its reasons and how to silence it.
 
 The walk honours `.gitignore` and enters hidden directories (`.github/`…) except the directories
 of tools, caches and agent configuration (`.git`, `.venv`, `.mypy_cache`, `.botica`, `.agents`,
-`.claude`…; the list is `TOOL_DIRS` in `crates/botica-core/src/walk/mod.rs`). A directory named on
-the command line is walked even if it is on that list.
+`.claude`…; the list is `TOOL_DIRS` in `crates/botica-core/src/walk/mod.rs`). A path named on the
+command line is linted even if it is on that list or excluded, unless you pass `--force-exclude`,
+which leaves out what `extend-exclude` names and what sits in a directory of a tool (unless
+`extend-include` asks for it). The `botica` hook of the mirror passes it, because prek names every
+file.
 
 - `extend-exclude = ["vendor/"]` skips more (gitignore globs); it wins over everything.
 - `extend-include = ["generated/api.py"]` brings back what `.gitignore` or `TOOL_DIRS` leave out.

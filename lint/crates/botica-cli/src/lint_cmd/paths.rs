@@ -145,10 +145,14 @@ fn merged(mut first: Vec<Unreadable>, second: Vec<Unreadable>) -> Vec<Unreadable
     first
 }
 
-/// Whether `extend-exclude` leaves out a path the user named. `.` and the like are never excluded.
+/// Whether `--force-exclude` leaves out a path the user named: `extend-exclude` names it, or it is
+/// inside a directory of a tool that `extend-include` does not ask for (what the walk would not
+/// have entered either). `.` and the like are never excluded.
 fn named_and_excluded(engine: &Engine, root: &Path, path: &Path) -> bool {
     let named = walk::relative_path(root, path);
-    !named.is_empty() && engine.skips_path(&named)
+    !named.is_empty()
+        && (engine.skips_path(&named)
+            || (walk::is_in_tool_dir(&named) && !engine.is_asked_for(&named)))
 }
 
 /// A path the user typed, as the walk would name it (from the root, no `./`), with the trailing

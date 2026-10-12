@@ -16,16 +16,30 @@ fn big(dir: &Path, relative: &str) {
     write(dir, relative, &lines(701));
 }
 
-/// The files `file-size-guard` reports, in the order of the output.
-fn oversized(dir: &Path, extra: &[&str]) -> Vec<String> {
-    let mut args = vec!["lint", ".", "--no-astgrep", "--select", "file-size-guard"];
-    args.extend(extra);
-    stdout(&command(dir, &args))
+/// The files `file-size-guard` reports for these arguments, in the order of the output.
+fn reported(dir: &Path, args: &[&str]) -> Vec<String> {
+    let mut all = vec!["lint", "--no-astgrep", "--select", "file-size-guard"];
+    all.extend(args);
+    stdout(&command(dir, &all))
         .lines()
         .filter(|line| line.contains("[file-size-guard]"))
         .filter_map(|line| line.split(':').next())
         .map(str::to_owned)
         .collect()
+}
+
+/// The files `file-size-guard` reports when the walk starts from `.`.
+fn oversized(dir: &Path, extra: &[&str]) -> Vec<String> {
+    let mut args = vec!["."];
+    args.extend(extra);
+    reported(dir, &args)
+}
+
+/// The files `file-size-guard` reports for files named one by one, as prek passes them.
+fn oversized_named(dir: &Path, flags: &[&str], files: &[&str]) -> Vec<String> {
+    let mut args = flags.to_vec();
+    args.extend(files);
+    reported(dir, &args)
 }
 
 #[test]
@@ -201,5 +215,59 @@ fn extend_include_works_behind_the_cache_too() {
     assert_eq!(
         oversized(&dir, &["--cache-dir", cache]),
         ["generated/api.py"]
+    );
+}
+
+const NAMED: [&str; 5] = [
+    ".agents/skills/run.py",
+    ".claude/hooks/guard.py",
+    ".venv/lib/dep.py",
+    "pkg/.claude/hooks/nested.py",
+    "src/app.py",
+];
+
+fn project_with_named_files(name: &str, config: &str) -> PathBuf {
+    let dir = project(name, config);
+    for file in NAMED {
+        big(&dir, file);
+    }
+    dir
+}
+
+#[test]
+fn files_named_inside_a_tool_directory_are_checked_by_default() {
+    let dir = project_with_named_files("named-tools", "");
+
+    assert_eq!(oversized_named(&dir, &[], &NAMED), NAMED);
+}
+
+#[test]
+fn force_exclude_leaves_out_files_named_inside_a_tool_directory() {
+    let dir = project_with_named_files("force-tools", "");
+
+    assert_eq!(
+        oversized_named(&dir, &["--force-exclude"], &NAMED),
+        ["src/app.py"]
+    );
+}
+
+#[test]
+fn force_exclude_leaves_out_a_tool_directory_named_on_the_command_line() {
+    let dir = project_with_named_files("force-tools-dir", "");
+
+    assert!(oversized_named(&dir, &["--force-exclude"], &[".claude", ".venv"]).is_empty());
+}
+
+#[test]
+fn force_exclude_keeps_what_extend_include_asks_for_in_a_tool_directory() {
+    let dir = project_with_named_files("force-tools-included", "extend-include = [\".claude/\"]\n");
+
+    assert_eq!(
+        oversized_named(&dir, &["--force-exclude"], &NAMED),
+        [
+            ".claude/hooks/guard.py",
+            "pkg/.claude/hooks/nested.py",
+            "src/app.py"
+        ]
     );
 }
