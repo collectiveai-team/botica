@@ -20,7 +20,7 @@ rules that need the whole project; gets none).
 
 ## Releasing
 
-1. A `vX.Y.Z` tag in the botica repository builds the wheels and publishes them (see
+1. A `botica-vX.Y.Z` tag in the botica repository builds the wheels and publishes them (see
    `.github/workflows/botica-release.yml`).
 2. Here, set `version` and the `botica==` pin in `pyproject.toml` to `X.Y.Z`, commit, and tag
    `vX.Y.Z`. Both versions must match, or prek installs a different binary than the tag names.

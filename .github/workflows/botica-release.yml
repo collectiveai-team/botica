@@ -1,16 +1,17 @@
 name: Botica release
 
-# Tag-driven: `git tag vX.Y.Z && git push origin vX.Y.Z`, with X.Y.Z equal to the version in
-# lint/Cargo.toml ([workspace.package]) and Cargo.lock in sync. botica supersedes scaffolding, so
-# this is the only release of the repository. v0.1.0 to v0.6.0 are scaffolding's tags: start above.
-# Gated on the Botica lint suite and on the repository's own Tests suite. Builds binary-only wheels (maturin, bindings = "bin") per
-# platform and attaches them, with a .sha256 file each, to a GitHub Release. It does not publish
-# to PyPI: that needs a PyPI project and a trusted publisher, which are set up outside this repo.
+# Tag-driven: `git tag botica-vX.Y.Z && git push origin botica-vX.Y.Z`, with X.Y.Z equal to the
+# version in lint/Cargo.toml ([workspace.package]) and Cargo.lock in sync. The `botica-` prefix
+# keeps these tags apart from the `v*` tags that scaffolding releases on main use; the release is
+# marked "not latest" for the same reason. v0.1.0 to v0.6.0 are scaffolding's: start at 0.7.0.
+# Gated on the Botica lint suite and on the repository's own Tests suite. Builds binary-only wheels
+# (maturin, bindings = "bin") per platform, attaches them with a .sha256 each to a GitHub Release,
+# and uploads them to PyPI (trusted publishing) when PUBLISH_TO_PYPI is "true".
 
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "botica-v*.*.*"
 
 # No top-level permissions: grant least privilege per job instead.
 jobs:
@@ -41,7 +42,7 @@ jobs:
 
       - name: Compare the tag with the workspace version
         run: |
-          expected="${TAG#v}"
+          expected="${TAG#botica-v}"
           found="$(sed -n '/^\[workspace\.package\]/,/^\[/{s/^version = "\(.*\)"$/\1/p}' lint/Cargo.toml)"
           if [ "$found" != "$expected" ]; then
             echo "tag $TAG names $expected but lint/Cargo.toml has ${found:-no version}" >&2
@@ -60,7 +61,7 @@ jobs:
       TAG: ${{ github.ref_name }}
     steps:
       - name: Create the draft
-        run: gh release create "$TAG" --draft --generate-notes --title "$TAG"
+        run: gh release create "$TAG" --draft --latest=false --generate-notes --title "$TAG"
 
   wheels:
     name: wheel ${{ matrix.target }}

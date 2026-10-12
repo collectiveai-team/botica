@@ -1,10 +1,14 @@
 # Releasing botica
 
-`botica` is built from the Rust workspace in `lint/` and shipped as binary-only wheels. botica
-supersedes `scaffolding`, so a tag `vX.Y.Z` is the release of the repository and runs
-`.github/workflows/botica-release.yml` (the old release workflow of `scaffolding` is gone).
-`v0.1.0` to `v0.6.0` were `scaffolding`'s releases, so the first botica tag is `v0.7.0` or higher.
-`scaffolding` still takes its own version from these tags (`hatch-vcs`).
+`botica` is built from the Rust workspace in `lint/` and shipped as binary-only wheels. A tag
+`botica-vX.Y.Z` runs `.github/workflows/botica-release.yml`. While `main` is still the production
+branch of `scaffolding`, botica releases use that prefix so they do not take the `v*` names that
+`scaffolding` releases use (`v0.1.0` to `v0.6.0` exist, so botica starts at `0.7.0`), and the
+GitHub Release is created as "not latest". When the refactor lands on `main`, the prefix can go
+back to `vX.Y.Z` (the trigger, the `version` job and the `pypi` environment policy).
+
+A release does not need `main`: a tag runs the workflow as it is in the tagged commit, and
+`git push origin botica-vX.Y.Z` uploads that commit and its history without creating a branch.
 
 1. `test` and `repo-tests` run the `Botica lint` suite (fmt, clippy, `cargo test`) and the
    repository's `Tests` suite (prek, pytest).
@@ -34,9 +38,8 @@ before the first tag and publish nothing you have not looked at.
    workflow `botica-release.yml`; environment `pypi`. A pending publisher creates the project on
    the first upload.
 3. On GitHub, an environment named `pypi` with a required reviewer, so every upload waits for an
-   approval, and a deployment policy that only lets tags `v*` use it. **Done on 2026-10-12**
-   (reviewer: `jedzill4`; the policy was `botica-v*` for a few hours); to change it,
-   **Settings → Environments → pypi**.
+   approval, and a deployment policy that only lets tags `botica-v*` use it. **Done on
+   2026-10-12** (reviewer: `jedzill4`); to change it, **Settings → Environments → pypi**.
 4. The repository variable `PUBLISH_TO_PYPI` = `true` turns the `pypi` job on. **Set on
    2026-10-12.** Delete it, or set it to anything else, to turn the job off again.
 
@@ -58,7 +61,7 @@ builds are accepted. A wheel built on your machine for a rehearsal needs
    in `lint/`. Without it the build, which uses `--locked`, fails; the change to `Cargo.lock` is a
    few lines for the crates of the project.
 2. Commit it (`chore(lint): release X.Y.Z`) and push. Wait for `Botica lint` to pass.
-3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+3. Tag and push: `git tag botica-vX.Y.Z && git push origin botica-vX.Y.Z`.
 4. Watch the run. If a platform fails, fix it and move the tag, or delete the draft release and the
    tag and start again. Once `publish` has run, treat the version as final.
 5. Approve the `pypi` environment when it asks.
