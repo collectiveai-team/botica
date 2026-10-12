@@ -1,9 +1,13 @@
 # Releasing botica
 
-`botica` is built from the Rust workspace in `lint/` and shipped as binary-only wheels. A tag
-`botica-vX.Y.Z` runs `.github/workflows/botica-release.yml`:
+`botica` is built from the Rust workspace in `lint/` and shipped as binary-only wheels. botica
+supersedes `scaffolding`, so a tag `vX.Y.Z` is the release of the repository and runs
+`.github/workflows/botica-release.yml` (the old release workflow of `scaffolding` is gone).
+`v0.1.0` to `v0.6.0` were `scaffolding`'s releases, so the first botica tag is `v0.7.0` or higher.
+`scaffolding` still takes its own version from these tags (`hatch-vcs`).
 
-1. `test` runs the `Botica lint` suite (fmt, clippy, `cargo test`).
+1. `test` and `repo-tests` run the `Botica lint` suite (fmt, clippy, `cargo test`) and the
+   repository's `Tests` suite (prek, pytest).
 2. `version` fails unless `X.Y.Z` equals `version` in `[workspace.package]` of `lint/Cargo.toml`.
 3. `draft` creates a draft GitHub Release.
 4. `wheels` builds a wheel per platform and attaches it, with a `.sha256`, to the draft: Linux
@@ -30,8 +34,9 @@ before the first tag and publish nothing you have not looked at.
    workflow `botica-release.yml`; environment `pypi`. A pending publisher creates the project on
    the first upload.
 3. On GitHub, an environment named `pypi` with a required reviewer, so every upload waits for an
-   approval, and a deployment policy that only lets tags `botica-v*` use it. **Done on
-   2026-10-12** (reviewer: `jedzill4`); to change it, **Settings → Environments → pypi**.
+   approval, and a deployment policy that only lets tags `v*` use it. **Done on 2026-10-12**
+   (reviewer: `jedzill4`; the policy was `botica-v*` for a few hours); to change it,
+   **Settings → Environments → pypi**.
 4. The repository variable `PUBLISH_TO_PYPI` = `true` turns the `pypi` job on. **Set on
    2026-10-12.** Delete it, or set it to anything else, to turn the job off again.
 
@@ -48,11 +53,12 @@ builds are accepted. A wheel built on your machine for a rehearsal needs
 
 ## Each release
 
-1. Set `version` in `[workspace.package]` of `lint/Cargo.toml`, and run `cargo update --workspace`
+1. Set `version` in `[workspace.package]` of `lint/Cargo.toml` (it is `0.0.0` today; the first
+   release is `0.7.0` or higher), and run `cargo update --workspace`
    in `lint/`. Without it the build, which uses `--locked`, fails; the change to `Cargo.lock` is a
    few lines for the crates of the project.
 2. Commit it (`chore(lint): release X.Y.Z`) and push. Wait for `Botica lint` to pass.
-3. Tag and push: `git tag botica-vX.Y.Z && git push origin botica-vX.Y.Z`.
+3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
 4. Watch the run. If a platform fails, fix it and move the tag, or delete the draft release and the
    tag and start again. Once `publish` has run, treat the version as final.
 5. Approve the `pypi` environment when it asks.
