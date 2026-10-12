@@ -110,3 +110,28 @@ jobs:
     steps:
       - name: Publish the draft
         run: gh release edit "$TAG" --draft=false
+
+  # Off until the repository variable PUBLISH_TO_PYPI is "true" (see docs/botica-release.md): PyPI
+  # needs a project and a trusted publisher that are set up outside this repo, and a published
+  # version cannot be replaced. Uploads the wheels of the release, with no token (OIDC).
+  pypi:
+    name: publish to PyPI
+    needs: publish
+    if: vars.PUBLISH_TO_PYPI == 'true'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Download the wheels of the release
+        run: gh release download "$TAG" --pattern '*.whl' --dir dist
+
+      - name: Upload to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/

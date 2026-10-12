@@ -1,0 +1,130 @@
+# botica lint
+
+A deterministic linter for the house engineering standards. It never calls a model or the
+network, reads your files once, and runs its rules in parallel. The design is in
+[ADR 0003](../docs/adr/0003-botica-lint-architecture.md); the standards it enforces are the CES
+catalogued in [`docs/engineering-standards.md`](../docs/engineering-standards.md).
+
+## Install
+
+- **From a wheel**, once the first release is published (see
+  [`docs/botica-release.md`](../docs/botica-release.md)): `uv tool install botica` or
+  `uvx botica lint`. The wheel holds only the binary, so it needs no Python at run time.
+- **From source**: `cargo build --release -p botica-cli` in this directory; the binary is
+  `target/release/botica`.
+
+## Use
+
+```bash
+botica lint                    # the current directory
+botica lint src tests/a.py     # directories to walk, or files (as prek passes them)
+botica lint --select file-size-guard,no-utils
+botica lint --output-format json   # text (default), json, sarif or github
+botica rules                   # which rules are active, and why (--all adds the inactive ones)
+botica explain no-notebooks    # what a rule is and how it is configured here
+```
+
+Exit code: `0` clean (a warning does not fail the run), `1` a finding of severity error, `2`
+the run itself failed (it wins over `1`). `--exit-zero` forgives only the findings.
+
+## Rules
+
+| Code | Rule | Standard | Looks at |
+|---|---|---|---|
+| `BTSTRUC001` | [`file-size-guard`](rules/structure/file-size-guard/README.md) | CES-71 | every file: warns at 400 lines, errors at 700 |
+| `BTSTRUC002` | [`no-utils`](rules/structure/no-utils/README.md) | CES-63 | Python: `utils.py`, `helpers.py`, … |
+| `BTSTRUC003` | [`no-artifacts-in-package`](rules/structure/no-artifacts-in-package/README.md) | CES-32 | data, models and reports inside the code |
+| `BTSTRUC004` | [`no-notebooks`](rules/structure/no-notebooks/README.md) | CES-32 | notebooks inside the code |
+| `BTSTRUC005` | [`no-tests-in-package`](rules/structure/no-tests-in-package/README.md) | none yet | Python: tests inside the package |
+| `BT001`–`BT003` | `io-error`, `unused-suppression`, `invalid-suppression` | | the run and the suppressions |
+
+The embedded ast-grep rules run too, unless you pass `--no-astgrep`. Each rule has a README with
+its directive, its reasons and how to silence it.
+
+## Which files
+
+The walk honours `.gitignore` and enters hidden directories (`.github/`…) except the directories
+of tools, caches and agent configuration (`.git`, `.venv`, `.mypy_cache`, `.botica`, `.agents`,
+`.claude`…; the list is `TOOL_DIRS` in `crates/botica-core/src/walk/mod.rs`). A directory named on
+the command line is walked even if it is on that list.
+
+- `extend-exclude = ["vendor/"]` skips more (gitignore globs); it wins over everything.
+- `extend-include = ["generated/api.py"]` brings back what `.gitignore` or `TOOL_DIRS` leave out.
+
+## Configuration
+
+`botica.toml`, or `[tool.botica]` in `pyproject.toml`, found by walking up from the working
+directory. Defining both is an error, and so is an unknown key or rule. The JSON Schema is
+[`schema/botica.schema.json`](schema/botica.schema.json).
+
+```toml
+# botica.toml
+extend-exclude = ["vendor/"]
+ignore = ["no-tests-in-package"]
+
+[rules.file-size-guard]
+warn = 500
+max = 900
+```
+
+Keys: `select`, `extend-select`, `ignore`, `preview`, `languages`, `extend-exclude`,
+`extend-include`, `code-dirs`, `rules` (settings per rule), `overrides`, `external`, `replace`,
+`rule-dirs`, `catalogs`, `compat-ast-grep-ignore`. Any of them can be given for one run with
+`--config 'key = value'`.
+
+`code-dirs` says where the code of the project lives (`python`, `js`, `rust`, `go`, `jvm`), for
+the layout rules. Without it they are detected from `pyproject.toml`, `package.json`,
+`Cargo.toml`, `go.mod` and the like; `botica explain no-notebooks` lists what was found.
+
+## Silence a finding
+
+```python
+x = compute()  # botica: ignore[some-rule]
+# botica: ignore-file[file-size-guard]    <- anywhere in the file
+y = 1  # noqa: BTSTRUC002 -- reason
+```
+
+A finding about a whole file (size, name, layout) has no line: use `ignore-file`, the rule's
+`ignores`/`extend-ignores`, or `extend-exclude`. With ruff, put `lint.external = ["BT"]` in its
+configuration so it does not report `RUF102` for `BT` codes (the scaffolding template does).
+
+## prek
+
+```toml
+# prek.toml: local, with botica on the PATH
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "botica"
+name = "botica"
+entry = "botica lint --no-astgrep --select file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package"
+language = "system"
+verbose = true
+```
+
+`verbose = true` matters: prek hides the output of a passing hook, and a size warning does not fail
+it. Or use the mirror, which installs the matching wheel
+([`distribution/botica-pre-commit`](distribution/botica-pre-commit/README.md)). The scaffolder
+ships the local hook in `scaffolding/templates/prek-generic.toml`.
+
+## Result cache
+
+`--cache` keeps per-file results in `.botica/cache` under the project root; `--cache-dir <dir>`
+chooses another place. It is off by default and meant for CI and `--all-files`. The key is the file
+path and bytes; the whole cache is discarded when the version, the configuration or the rules
+change. A directory botica creates ignores itself in git; one that already existed is left alone,
+so add it to your `.gitignore`.
+
+## Develop
+
+```bash
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked --no-fail-fast
+```
+
+CI (`.github/workflows/botica-lint.yml`) also sets `BOTICA_REQUIRE_RUFF=1`, so the catalog test
+cannot skip itself for lack of `ruff`, and `BOTICA_REQUIRE_READ_ERRORS=1`, so the permission tests
+cannot skip themselves when the runner is root. Set them locally to run as CI does. `bench/` has
+the parity and timing scripts (`parity.py`, `hook_parity.py`, `run.sh`).
