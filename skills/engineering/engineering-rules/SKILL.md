@@ -45,7 +45,7 @@ detail of this bundle.
 
 ## Relationship to the CES catalog
 
-In a repo scaffolded by `collectiveai-team/scaffolding`, the house standards also ship as
+In a repo scaffolded by `collectiveai-team/botica`, the house standards also ship as
 always-on context: an index in `AGENTS.md` plus detail files under `.agents/rules/<slug>.md`,
 each carrying a `CES-<issue#>` code (see `docs/engineering-standards.md`).
 

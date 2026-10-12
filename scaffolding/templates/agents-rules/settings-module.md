@@ -2,7 +2,7 @@
 
 **Code:** `CES-76` &nbsp;·&nbsp; **Slug:** `settings-module` &nbsp;·&nbsp; **Enforced by:** ast-grep
 (`warning`) &nbsp;·&nbsp; **Tracker:**
-[#76](https://github.com/collectiveai-team/scaffolding/issues/76)
+[#76](https://github.com/collectiveai-team/botica/issues/76)
 
 ## Directive
 

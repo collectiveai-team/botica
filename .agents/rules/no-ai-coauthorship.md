@@ -2,7 +2,7 @@
 
 **Code:** `CES-91` &nbsp;·&nbsp; **Slug:** `no-ai-coauthorship` &nbsp;·&nbsp; **Enforced by:** prek
 commit-msg hook + CI (`commit-policy.yml`) &nbsp;·&nbsp; **Tracker:**
-[#91](https://github.com/collectiveai-team/scaffolding/issues/91)
+[#91](https://github.com/collectiveai-team/botica/issues/91)
 
 ## Directive
 

@@ -8,7 +8,7 @@ Single source of truth for how house engineering rules are coded, cited, and shi
 A **CES — Collective Engineering Standard** is one house rule that the scaffolder ships into
 target repos (as an ast-grep rule, a prek hook, a `pyproject` setting, or an AGENTS.md
 directive + detail file). Each standard is tracked by exactly one issue on the
-[`collectiveai-team/scaffolding`](https://github.com/collectiveai-team/scaffolding/issues) tracker, which is the
+[`collectiveai-team/botica`](https://github.com/collectiveai-team/botica/issues) tracker, which is the
 SSOT for that rule's text and review state.
 
 ## Two identifiers, two jobs

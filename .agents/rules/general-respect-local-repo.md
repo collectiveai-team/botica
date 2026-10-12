@@ -1,7 +1,7 @@
 # CES-30 · respect the local repo
 
 **Code:** `CES-30` &nbsp;·&nbsp; **Slug:** `general-respect-local-repo` &nbsp;·&nbsp; **Tier:**
-judgment &nbsp;·&nbsp; **Tracker:** [#30](https://github.com/collectiveai-team/scaffolding/issues/30)
+judgment &nbsp;·&nbsp; **Tracker:** [#30](https://github.com/collectiveai-team/botica/issues/30)
 
 ## Directive
 

@@ -2,7 +2,7 @@
 
 **Code:** `CES-111` &nbsp;·&nbsp; **Slug:** `test-order-randomization-pytest-randomly`
 &nbsp;·&nbsp; **Enforced by:** dev dependency (pytest plugin) &nbsp;·&nbsp; **Tracker:**
-[#111](https://github.com/collectiveai-team/scaffolding/issues/111)
+[#111](https://github.com/collectiveai-team/botica/issues/111)
 
 ## Directive
 

@@ -62,7 +62,7 @@ UNIGNORE_WHITELIST = frozenset({MANIFEST_FILE})
 MATTPOCOCK_REF = "v1.2.3"
 MATTPOCOCK_REPO = "mattpocock/skills"
 MATTPOCOCK_SOURCE = f"{MATTPOCOCK_REPO}#{MATTPOCOCK_REF}"
-SCAFFOLDING_SOURCE = "collectiveai-team/scaffolding"
+SCAFFOLDING_SOURCE = "collectiveai-team/botica"
 VARLOCK_SOURCE = "dmno-dev/varlock"
 
 MATTPOCOCK_SKILLS = [

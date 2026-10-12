@@ -2,7 +2,7 @@
 
 **Code:** `CES-113` &nbsp;·&nbsp; **Slug:** `dependency-review-action` &nbsp;·&nbsp; **Enforced
 by:** CI workflow (`dependency-review.yml`) &nbsp;·&nbsp; **Tracker:**
-[#113](https://github.com/collectiveai-team/scaffolding/issues/113)
+[#113](https://github.com/collectiveai-team/botica/issues/113)
 
 ## Directive
 

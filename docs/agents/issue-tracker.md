@@ -5,7 +5,7 @@ Issues and specs for this repo live as markdown files in `.scratch/`.
 This is the default for this workspace (solo / agent-driven repos). It can be
 switched to GitHub, GitLab, or another tracker later by re-running the
 `setup-matt-pocock-skills` skill — this repo does have a GitHub remote
-(`collectiveai-team/scaffolding`), so GitHub is a valid alternative if you want it.
+(`collectiveai-team/botica`), so GitHub is a valid alternative if you want it.
 
 ## Conventions
 

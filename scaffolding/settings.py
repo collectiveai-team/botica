@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-DEFAULT_RAW_BASE = "https://raw.githubusercontent.com/collectiveai-team/scaffolding/main"
+DEFAULT_RAW_BASE = "https://raw.githubusercontent.com/collectiveai-team/botica/main"
 
 
 class Settings(BaseSettings):

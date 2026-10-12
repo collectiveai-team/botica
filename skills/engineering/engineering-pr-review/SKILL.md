@@ -17,7 +17,7 @@ specific rules the diff touches. Every rule id cited below resolves through it.
 
 > If `engineering-rules` is not available, **stop and say so**. Do not run the gate from
 > memory — a rule recited from memory is how a standard drifts. Install it with
-> `npx skills add collectiveai-team/scaffolding --skill engineering-rules`.
+> `npx skills add collectiveai-team/botica --skill engineering-rules`.
 
 ## Required context
 

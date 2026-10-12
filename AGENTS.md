@@ -14,9 +14,9 @@
   as an invariant violation — see `docs/adr/0001-scoped-unignore-op.md`.
 - `install.sh` — thin bootstrap shim (ensure `uv`, then `uvx … scaffolding
   install`). Keep it minimal and keep its raw URL pointing at
-  `collectiveai-team/scaffolding` on `main`.
+  `collectiveai-team/botica` on `main`.
 - `guide.md` — the agentic-install guide (judgment layer that drives the CLI and
-  handles merges). Keep template raw URLs pointing at `collectiveai-team/scaffolding`.
+  handles merges). Keep template raw URLs pointing at `collectiveai-team/botica`.
 - `skills/` — actual installed skills (`ask-user`, `journalist`, `handoff`,
   `test-smell-review`, `engineering-rules`, `engineering-pr-review`,
   `engineering-refactor`). Each

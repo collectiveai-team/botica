@@ -1,7 +1,7 @@
 # CES-58 · one modern lint stack
 
 **Code:** `CES-58` &nbsp;·&nbsp; **Slug:** `py-legacy-lint-stack` &nbsp;·&nbsp; **Tier:** judgment
-&nbsp;·&nbsp; **Tracker:** [#58](https://github.com/collectiveai-team/scaffolding/issues/58)
+&nbsp;·&nbsp; **Tracker:** [#58](https://github.com/collectiveai-team/botica/issues/58)
 
 ## Directive
 

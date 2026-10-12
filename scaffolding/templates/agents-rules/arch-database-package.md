@@ -2,7 +2,7 @@
 
 **Code:** `CES-18` &nbsp;·&nbsp; **Slug:** `arch-database-package` &nbsp;·&nbsp; **Enforced by:**
 ast-grep (`warning`, placement-scoped) + a commented import-linter contract (CES-5, Slice 09)
-&nbsp;·&nbsp; **Tracker:** [#18](https://github.com/collectiveai-team/scaffolding/issues/18)
+&nbsp;·&nbsp; **Tracker:** [#18](https://github.com/collectiveai-team/botica/issues/18)
 
 ## Directive
 

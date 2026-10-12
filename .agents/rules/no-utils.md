@@ -2,7 +2,7 @@
 
 **Code:** `CES-63` &nbsp;·&nbsp; **Slug:** `no-utils` &nbsp;·&nbsp; **Enforced by:** `botica lint`
 (by file name), run by the `botica` prek hook &nbsp;·&nbsp; **Tracker:**
-[#63](https://github.com/collectiveai-team/scaffolding/issues/63)
+[#63](https://github.com/collectiveai-team/botica/issues/63)
 
 ## Directive
 

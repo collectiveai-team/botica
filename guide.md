@@ -7,15 +7,15 @@ merges the CLI deliberately refuses to do.
 
 Point an agent at the raw URL of this file and have it follow every step:
 
-`https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/guide.md`
+`https://raw.githubusercontent.com/collectiveai-team/botica/main/guide.md`
 
 For a brand-new/empty repo you can skip the agent and run the CLI directly
 (clean adds only; it refuses to touch existing files):
 
 ```bash
-uvx --from git+https://github.com/collectiveai-team/scaffolding scaffolding install
+uvx --from git+https://github.com/collectiveai-team/botica scaffolding install
 # or the shim (also bootstraps uv):
-curl -fsSL https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/collectiveai-team/botica/main/install.sh | bash
 ```
 
 The CLI is **clean-adds-only**: it never edits, merges, reorders, or overwrites
@@ -119,12 +119,12 @@ hand only if the file conflicts). Keep `.env.schema` tracked:
 ### `prek.toml`
 
 Additive only. Generic hooks always; Python hooks
-([prek-python.toml](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/prek-python.toml))
+([prek-python.toml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/prek-python.toml))
 only for Python repos. Templates:
 
-- [prek-generic.toml](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/prek-generic.toml)
-- [prek-python.toml](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/prek-python.toml)
-- [pyproject-template.toml](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/pyproject-template.toml)
+- [prek-generic.toml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/prek-generic.toml)
+- [prek-python.toml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/prek-python.toml)
+- [pyproject-template.toml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/pyproject-template.toml)
 
 If a Python repo has no `pyproject.toml`, the CLI creates one from the template
 with a guided `name`/`description`. If it exists, only add missing tool sections —
@@ -136,8 +136,8 @@ The `ast-grep` hook in `prek-python.toml` runs `ast-grep scan`, which needs a
 root `sgconfig.yml` pointing at a rule dir. The CLI auto-includes `ast-grep` when
 `prek` is selected on a Python repo. When merging by hand, add both additively:
 
-- [sgconfig-template.yml](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/sgconfig-template.yml) → root `sgconfig.yml` (`ruleDirs: [ast-grep/rules]`)
-- starter rules from [templates/ast-grep-rules/](https://github.com/collectiveai-team/scaffolding/tree/main/scaffolding/templates/ast-grep-rules) → `ast-grep/rules/` (`no-dict-call-return`, `no-dict-literal-return`, `no-dict-return-annotation`).
+- [sgconfig-template.yml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/sgconfig-template.yml) → root `sgconfig.yml` (`ruleDirs: [ast-grep/rules]`)
+- starter rules from [templates/ast-grep-rules/](https://github.com/collectiveai-team/botica/tree/main/scaffolding/templates/ast-grep-rules) → `ast-grep/rules/` (`no-dict-call-return`, `no-dict-literal-return`, `no-dict-return-annotation`).
 
 ### GitHub Actions CI
 
@@ -147,14 +147,14 @@ tag (never a branch) — note `astral-sh/setup-uv` must be pinned to an exact
 version like `@v8.3.2`, since it stopped publishing major tags at v8.0.0 — plus a
 `concurrency` group and least-privilege `permissions`. Templates:
 
-- [zizmor.yml](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/github/workflows/zizmor.yml) — workflow static analysis (any repo).
-- [tests.yml](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/github/workflows/tests.yml) — lint/type-check/test (Python `uv` repos).
-- [osv-scanner.yml](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/github/workflows/osv-scanner.yml) — dependency vuln scan via OSV.dev, reads `uv.lock` natively (Python `uv` repos; polyglot-ready). Replaces the old `pip-audit.yml`.
-- [dependency-review.yml](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/github/workflows/dependency-review.yml) — PR-level new-dependency/license visibility (any GitHub-hosted repo, summary-only).
-- [commit-policy.yml](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/github/workflows/commit-policy.yml) — CI enforcement of the no-AI-co-authorship commit policy (always-on, mirrors the commit-msg prek hook).
-- [dependabot.yml](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/github/dependabot.yml) — weekly updates (Python `uv` repos).
-- [docker.yml](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/github/workflows/docker.yml) — build/push to GHCR. Added only with a root `Dockerfile` **and** a public repo; the CLI skips it on private/internal repos with a GHCR-billing notice.
-- Publish-only (opt-in, placeholders to fill): [release.yml](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/github/workflows/release.yml), [pypi.yml](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/github/workflows/pypi.yml) — public Python packages with Trusted Publishing only.
+- [zizmor.yml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/github/workflows/zizmor.yml) — workflow static analysis (any repo).
+- [tests.yml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/github/workflows/tests.yml) — lint/type-check/test (Python `uv` repos).
+- [osv-scanner.yml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/github/workflows/osv-scanner.yml) — dependency vuln scan via OSV.dev, reads `uv.lock` natively (Python `uv` repos; polyglot-ready). Replaces the old `pip-audit.yml`.
+- [dependency-review.yml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/github/workflows/dependency-review.yml) — PR-level new-dependency/license visibility (any GitHub-hosted repo, summary-only).
+- [commit-policy.yml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/github/workflows/commit-policy.yml) — CI enforcement of the no-AI-co-authorship commit policy (always-on, mirrors the commit-msg prek hook).
+- [dependabot.yml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/github/dependabot.yml) — weekly updates (Python `uv` repos).
+- [docker.yml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/github/workflows/docker.yml) — build/push to GHCR. Added only with a root `Dockerfile` **and** a public repo; the CLI skips it on private/internal repos with a GHCR-billing notice.
+- Publish-only (opt-in, placeholders to fill): [release.yml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/github/workflows/release.yml), [pypi.yml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/github/workflows/pypi.yml) — public Python packages with Trusted Publishing only.
 
 Never overwrite an existing workflow; if a target exists, leave it and suggest
 additive changes the user approves. Bump stale pinned action/tool versions.
@@ -167,13 +167,13 @@ is the exception — it reads `CLAUDE.md` + `.claude/skills`, so it is bridged w
 symlinks.
 
 - **opencode** → repo-root `opencode.jsonc` from
-  [opencode-template.jsonc](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/opencode-template.jsonc).
+  [opencode-template.jsonc](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/opencode-template.jsonc).
   Merge additively: add only missing keys, plugin entries, and permission rules;
   preserve the user's values. Sets `$schema`, the `opencode-sessions-explorer` and
   `opencode-varlock@latest` plugins, and `permission` rules denying secret access
   (`.env*`, `*.pem`, `*.key`, `*credentials*`, `varlock.config`).
 - **claude-code** → `.claude/settings.json` from
-  [claude-settings-template.json](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/claude-settings-template.json)
+  [claude-settings-template.json](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/claude-settings-template.json)
   (a `permissions.deny`/`allow` mirror of the opencode secret rules), plus two
   clean-adds-only symlinks: `CLAUDE.md` → `AGENTS.md` and `.claude/skills` →
   `.agents/skills`. If either path already exists it is deferred — bridge by hand
@@ -211,7 +211,7 @@ never `.env`.
 ### `AGENTS.md`
 
 The core task: the managed `## Repo Workspace Defaults` section, copied verbatim
-from [agents-workspace-defaults.md](https://raw.githubusercontent.com/collectiveai-team/scaffolding/main/scaffolding/templates/agents-workspace-defaults.md).
+from [agents-workspace-defaults.md](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/agents-workspace-defaults.md).
 The CLI appends it when absent and skips when the marker is present. If the
 section exists but needs changes, update only the lines inside it and preserve
 everything else. Do not edit `CLAUDE.md` during bootstrap unless asked.
@@ -291,7 +291,7 @@ repo's recurring local skills (`ask-user`, `journalist`, `handoff`,
 
 ```bash
 npx skills add 'mattpocock/skills#v1.2.3' --agent opencode --yes --skill grill-with-docs triage improve-codebase-architecture setup-matt-pocock-skills to-spec to-tickets implement wayfinder prototype diagnosing-bugs research tdd domain-modeling codebase-design code-review resolving-merge-conflicts wizard grill-me teach writing-for-agents grilling wait-what
-npx skills add collectiveai-team/scaffolding --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor
+npx skills add collectiveai-team/botica --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor
 npx skills add dmno-dev/varlock --agent opencode --yes
 ```
 

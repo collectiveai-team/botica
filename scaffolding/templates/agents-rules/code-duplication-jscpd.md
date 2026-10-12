@@ -2,7 +2,7 @@
 
 **Code:** `CES-118` &nbsp;·&nbsp; **Slug:** `code-duplication-jscpd` &nbsp;·&nbsp; **Enforced
 by:** prek hook &nbsp;·&nbsp; **Tracker:**
-[#118](https://github.com/collectiveai-team/scaffolding/issues/118)
+[#118](https://github.com/collectiveai-team/botica/issues/118)
 
 ## Directive
 

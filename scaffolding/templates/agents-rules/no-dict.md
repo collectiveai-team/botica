@@ -2,7 +2,7 @@
 
 **Code:** `CES-79` &nbsp;·&nbsp; **Slugs:** `no-dict-return-annotation`, `no-dict-call-return`,
 `no-dict-literal-return`, `no-dict-alias` &nbsp;·&nbsp; **Enforced by:** ast-grep (`error`)
-&nbsp;·&nbsp; **Tracker:** [#79](https://github.com/collectiveai-team/scaffolding/issues/79)
+&nbsp;·&nbsp; **Tracker:** [#79](https://github.com/collectiveai-team/botica/issues/79)
 
 ## Directive
 

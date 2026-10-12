@@ -2,7 +2,7 @@
 
 **Code:** `CES-32` &nbsp;·&nbsp; **Slug:** `repo-shape` &nbsp;·&nbsp; **Enforced by:** `botica lint`
 (`no-notebooks`, `no-artifacts-in-package`), run by the `botica` prek hook &nbsp;·&nbsp; **Tracker:**
-[#32](https://github.com/collectiveai-team/scaffolding/issues/32)
+[#32](https://github.com/collectiveai-team/botica/issues/32)
 
 ## Directive
 

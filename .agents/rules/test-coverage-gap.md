@@ -1,7 +1,7 @@
 # CES-66 · coverage gaps are a signal
 
 **Code:** `CES-66` &nbsp;·&nbsp; **Slug:** `test-coverage-gap` &nbsp;·&nbsp; **Tier:** judgment
-&nbsp;·&nbsp; **Tracker:** [#66](https://github.com/collectiveai-team/scaffolding/issues/66)
+&nbsp;·&nbsp; **Tracker:** [#66](https://github.com/collectiveai-team/botica/issues/66)
 
 ## Directive
 

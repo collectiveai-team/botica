@@ -49,7 +49,7 @@ logger.info(f"processing {item_id}")                      # a string, not a quer
 Rich remains the house presentation layer for CLI output (`pylayout-cli-typer-rich`); it is
 not the logging handler.
 
-In a repo scaffolded by `collectiveai-team/scaffolding`, the canonical factory ships as a
+In a repo scaffolded by `collectiveai-team/botica`, the canonical factory ships as a
 drop-in snippet you copy to `<your_package>/core/logger.py` (CES-74 · `core-logger`, which
 CES-45 and CES-46 point at). Anywhere else, build the equivalent: configure structlog once,
 lazily, on the first `get_logger` call — JSON renderer under `ENV=prod`/`production`, console

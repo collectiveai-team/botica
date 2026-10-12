@@ -2,7 +2,7 @@
 
 **Code:** `CES-46` &nbsp;·&nbsp; **Slug:** `log-no-print` &nbsp;·&nbsp; **Enforced by:** ast-grep
 (`warning`) &nbsp;·&nbsp; **Tracker:**
-[#46](https://github.com/collectiveai-team/scaffolding/issues/46)
+[#46](https://github.com/collectiveai-team/botica/issues/46)
 
 ## Directive
 

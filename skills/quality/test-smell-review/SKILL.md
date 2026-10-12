@@ -88,7 +88,7 @@ re-derive those findings by hand, and do not contradict them. Apply the
 judgment protocol below to what a parser cannot prove — that is what the
 rest of this skill is for. (`falsegreen` itself is proposed as a house prek
 hook separately —
-[scaffolding#124](https://github.com/collectiveai-team/scaffolding/issues/124)
+[scaffolding#124](https://github.com/collectiveai-team/botica/issues/124)
 — so it may not be installed yet; if it isn't, apply `reference.md`'s
 structural catalog by hand instead of skipping it.)
 
