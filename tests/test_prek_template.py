@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import re
 import shlex
 import tomllib
 
 import pytest
 
 from scaffolding.templates_registry import template_text
+
+BOTICA_MIRROR = "https://github.com/collectiveai-team/botica-pre-commit"
 
 # Generated, tracked, and highly repetitive. `.gitignore` does not exclude a lockfile
 # (it is committed on purpose), so jscpd reads it and its size can dominate the score.
@@ -77,17 +80,34 @@ def test_jscpd_does_not_combine_threshold_with_exit_code():
     assert "--exit-code" not in entry
 
 
+def _hook_source(template: str, hook_id: str) -> tuple[str, str]:
+    """Return the `(repo, rev)` of the `[[repos]]` table that declares the hook."""
+    config = tomllib.loads(template_text(template))
+    for repo in config.get("repos", []):
+        if any(hook.get("id") == hook_id for hook in repo.get("hooks", [])):
+            return repo["repo"], repo.get("rev", "")
+    pytest.fail(f"{template} declares no {hook_id!r} hook")
+
+
+def test_botica_hook_comes_from_the_mirror_at_a_release_tag():
+    """The hook is installed from the mirror, so a target needs no `botica` on its PATH."""
+    repo, rev = _hook_source("prek-generic.toml", "botica")
+
+    assert repo == BOTICA_MIRROR
+    assert re.fullmatch(r"v\d+\.\d+\.\d+", rev), f"not a release tag: {rev!r}"
+
+
 def test_botica_hook_runs_the_native_structure_rules():
-    entry = shlex.split(_hook_entry("prek-generic.toml", "botica"))
+    args = _hook_setting("prek-generic.toml", "botica", "args")
 
-    assert entry[:3] == ["botica", "lint", "--no-astgrep"]
-    assert "--select" in entry, f"botica would run every rule it knows: {entry!r}"
-    assert set(entry[entry.index("--select") + 1].split(",")) == BOTICA_RULES
+    assert isinstance(args, list), "the mirror's entry is fixed, so the rules go in `args`"
+    assert "--no-astgrep" in args
+    assert "--select" in args, f"botica would run every rule it knows: {args!r}"
+    assert set(args[args.index("--select") + 1].split(",")) == BOTICA_RULES
 
 
-def test_botica_hook_shows_its_output_when_it_passes():
-    """Prek hides the output of a passing hook, and a size warning does not fail the hook."""
-    assert _hook_setting("prek-generic.toml", "botica", "verbose") is True
+def test_botica_hook_does_not_replace_the_entry_of_the_mirror():
+    assert _hook_setting("prek-generic.toml", "botica", "entry") is None
 
 
 def test_the_botica_hook_is_declared_once_so_the_joined_config_has_no_duplicate_id():

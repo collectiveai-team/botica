@@ -91,22 +91,19 @@ configuration so it does not report `RUF102` for `BT` codes (the scaffolding tem
 ## prek
 
 ```toml
-# prek.toml: local, with botica on the PATH
+# prek.toml: the mirror installs the wheel of the same version from PyPI
 [[repos]]
-repo = "local"
+repo = "https://github.com/collectiveai-team/botica-pre-commit"
+rev = "v0.7.0"
 
 [[repos.hooks]]
 id = "botica"
-name = "botica"
-entry = "botica lint --no-astgrep --select file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package"
-language = "system"
-verbose = true
+args = ["--no-astgrep", "--select", "file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package"]
 ```
 
-`verbose = true` matters: prek hides the output of a passing hook, and a size warning does not fail
-it. Or use the mirror, which installs the matching wheel
-([`distribution/botica-pre-commit`](distribution/botica-pre-commit/README.md)). The scaffolder
-ships the local hook in `scaffolding/templates/prek-generic.toml`.
+The mirror's hook is `verbose`: prek hides the output of a passing hook, and a size warning does
+not fail it ([`distribution/botica-pre-commit`](distribution/botica-pre-commit/README.md)). The
+scaffolder ships this hook in `scaffolding/templates/prek-generic.toml`.
 
 ## Result cache
 

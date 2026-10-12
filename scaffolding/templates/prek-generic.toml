@@ -104,19 +104,21 @@ pass_filenames = false
 priority = 2
 
 # MARK: botica
-# The structure rules, run by `botica lint` (it must be on PATH): CES-71 file-size-guard (400 warn
-# / 700 error, any language), CES-63 no-utils (Python only), and the layout rules that replace the
-# old `repo-shape` hook (CES-32 no-notebooks and no-artifacts-in-package, plus no-tests-in-package,
-# Python only). Each rule looks at the languages it declares, so the hook is inert where none
-# applies. The ast-grep rules keep their own hook, so botica skips them here. Findings carry their
-# own CES code. `verbose` makes prek show the output of a passing hook: the 400-line warning does
-# not fail the hook, and without it nobody would ever see it.
+# The structure rules, run by `botica lint`: CES-71 file-size-guard (400 warn / 700 error, any
+# language), CES-63 no-utils (Python only), and the layout rules that replace the old `repo-shape`
+# hook (CES-32 no-notebooks and no-artifacts-in-package, plus no-tests-in-package, Python only).
+# Each rule looks at the languages it declares, so the hook is inert where none applies. The
+# ast-grep rules keep their own hook, so botica skips them here. Findings carry their own CES code.
+# prek installs botica from PyPI through the mirror, at the release `rev` names, so nothing has to
+# be on PATH. The mirror's hook is `verbose`, so prek shows the output of a passing hook: the
+# 400-line warning does not fail the hook, and without it nobody would ever see it.
+[[repos]]
+repo = "https://github.com/collectiveai-team/botica-pre-commit"
+rev = "v0.7.0"
+
 [[repos.hooks]]
 id = "botica"
-name = "botica (file size, catch-all modules, package layout)"
-entry = "botica lint --no-astgrep --select file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package"
-language = "system"
-verbose = true
+args = ["--no-astgrep", "--select", "file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package"]
 priority = 2
 
 # MARK: hadolint-docker
