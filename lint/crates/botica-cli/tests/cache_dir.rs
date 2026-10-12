@@ -78,3 +78,41 @@ fn a_directory_that_was_already_there_is_left_as_it_was() {
     assert!(dir.join("lint-cache.json").exists());
     assert!(!dir.join(".gitignore").exists());
 }
+
+/// A file where the cache directory should go: it cannot be created, even by root.
+fn blocked_cache(dir: &Path) -> String {
+    write(
+        dir,
+        "blocker",
+        "a file where the cache directory should go\n",
+    );
+    dir.join("blocker/cache")
+        .to_str()
+        .expect("UTF-8 path")
+        .to_owned()
+}
+
+#[test]
+fn a_cache_that_cannot_be_saved_does_not_hide_the_findings() {
+    let dir = project("unsaved-findings");
+    write(&dir, "utils.py", "x = 1\n");
+    let cache = blocked_cache(&dir);
+
+    let output = command(&dir, &["lint", ".", "--no-astgrep", "--cache-dir", &cache]);
+
+    assert_eq!(output.status.code(), Some(1), "{}", stderr(&output));
+    assert!(stdout(&output).contains("utils.py"), "{}", stdout(&output));
+}
+
+#[test]
+fn a_cache_that_cannot_be_saved_is_a_warning_and_not_a_failure() {
+    let dir = project("unsaved-clean");
+    let cache = blocked_cache(&dir);
+
+    let output = command(&dir, &["lint", ".", "--no-astgrep", "--cache-dir", &cache]);
+
+    assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
+    let warning = stderr(&output);
+    assert!(warning.contains("not saved"), "{warning}");
+    assert!(warning.contains("blocker"), "{warning}");
+}

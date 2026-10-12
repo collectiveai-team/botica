@@ -112,7 +112,10 @@ pub(super) fn lint_paths(args: &LintArgs, setup: &Setup, root: &Path) -> Result<
         )?;
         let mut cache = Cache::load(dir, &fingerprint);
         let (diagnostics, stats) = lint_files_cached(engine, &sources, &mut cache);
-        cache.save()?;
+        // A cache that cannot be written (a read-only checkout, a full disk) only costs speed.
+        if let Err(error) = cache.save() {
+            eprintln!("botica: warning: the result cache was not saved: {error:#}");
+        }
         if args.timings {
             eprintln!(
                 "[timing] cache: {} hits, {} misses",

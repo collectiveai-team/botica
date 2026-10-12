@@ -114,7 +114,8 @@ scaffolder ships this hook in `scaffolding/templates/prek-generic.toml`.
 chooses another place. It is off by default and meant for CI and `--all-files`. The key is the file
 path and bytes; the whole cache is discarded when the version, the configuration or the rules
 change. A directory botica creates ignores itself in git; one that already existed is left alone,
-so add it to your `.gitignore`.
+so add it to your `.gitignore`. A cache that cannot be written (a read-only checkout) is a warning
+on stderr, not a failure: the findings and the exit code are the same, only the next run is slower.
 
 ## Develop
 
