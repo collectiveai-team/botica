@@ -4,7 +4,7 @@ name: Botica release
 # version in lint/Cargo.toml ([workspace.package]) and Cargo.lock in sync. The `botica-` prefix
 # keeps these tags apart from the `v*` tags that scaffolding releases on main use; the release is
 # marked "not latest" for the same reason. v0.1.0 to v0.6.0 are scaffolding's: start at 0.7.0.
-# Gated on the Botica lint suite and on the repository's own Tests suite. Builds binary-only wheels
+# Gated on the Botica CI suite and on the repository's own Tests suite. Builds binary-only wheels
 # (maturin, bindings = "bin") per platform, attaches them with a .sha256 each to a GitHub Release,
 # and uploads them to PyPI (trusted publishing) when PUBLISH_TO_PYPI is "true".
 
@@ -19,7 +19,7 @@ jobs:
     name: botica tests
     permissions:
       contents: read
-    uses: ./.github/workflows/botica-lint.yml
+    uses: ./.github/workflows/botica-ci.yml
 
   repo-tests:
     name: repository tests

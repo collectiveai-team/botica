@@ -1,6 +1,7 @@
-name: Botica lint
+name: Botica CI
 
-# Format, lint and test the Rust workspace in lint/ (the `botica` binary).
+# Check the Rust workspace in lint/ that builds the `botica` binary, with all of its subcommands:
+# format, clippy and tests. Add the checks of new subcommands here, not in a workflow of their own.
 # Two switches turn tests that skip themselves into failures, so a runner that cannot
 # exercise them does not pass silently:
 #   BOTICA_REQUIRE_RUFF         the rule catalog is checked against `ruff linter`
@@ -12,12 +13,12 @@ on:
   pull_request:
     paths:
       - "lint/**"
-      - ".github/workflows/botica-lint.yml"
+      - ".github/workflows/botica-ci.yml"
   # Allow other workflows (e.g. a wheel release) to gate on this suite.
   workflow_call:
 
 concurrency:
-  group: botica-lint-${{ github.workflow }}-${{ github.ref }}
+  group: botica-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:

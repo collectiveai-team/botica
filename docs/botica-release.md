@@ -10,7 +10,7 @@ back to `vX.Y.Z` (the trigger, the `version` job and the `pypi` environment poli
 A release does not need `main`: a tag runs the workflow as it is in the tagged commit, and
 `git push origin botica-vX.Y.Z` uploads that commit and its history without creating a branch.
 
-1. `test` and `repo-tests` run the `Botica lint` suite (fmt, clippy, `cargo test`) and the
+1. `test` and `repo-tests` run the `Botica CI` suite (fmt, clippy, `cargo test`) and the
    repository's `Tests` suite (prek, pytest).
 2. `version` fails unless `X.Y.Z` equals `version` in `[workspace.package]` of `lint/Cargo.toml`.
 3. `draft` creates a draft GitHub Release.
@@ -60,7 +60,7 @@ builds are accepted. A wheel built on your machine for a rehearsal needs
    and `Cargo.lock` already matches; later ones go up from there), and run `cargo update --workspace`
    in `lint/`. Without it the build, which uses `--locked`, fails; the change to `Cargo.lock` is a
    few lines for the crates of the project.
-2. Commit it (`chore(lint): release X.Y.Z`) and push. Wait for `Botica lint` to pass.
+2. Commit it (`chore(lint): release X.Y.Z`) and push. Wait for `Botica CI` to pass.
 3. Tag and push: `git tag botica-vX.Y.Z && git push origin botica-vX.Y.Z`.
 4. Watch the run. If a platform fails, fix it and move the tag, or delete the draft release and the
    tag and start again. Once `publish` has run, treat the version as final.
