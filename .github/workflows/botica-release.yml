@@ -13,19 +13,24 @@ on:
     tags:
       - "v*.*.*"
 
+# One run per tag, and never cancelled halfway: a release that stops after `publish` is a mess.
+concurrency:
+  group: botica-release-${{ github.ref }}
+  cancel-in-progress: false
+
 # No top-level permissions: grant least privilege per job instead.
 jobs:
   test:
     name: botica tests
     permissions:
       contents: read
-    uses: ./.github/workflows/ci.yml
+    uses: $/.github/workflows/ci.yml
 
   repo-tests:
     name: repository tests
     permissions:
       contents: read
-    uses: ./.github/workflows/tests.yml
+    uses: $/.github/workflows/tests.yml
 
   version:
     name: tag matches Cargo.toml
@@ -153,6 +158,6 @@ jobs:
         run: gh release download "$TAG" --pattern '*.whl' --dir dist
 
       - name: Upload to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@v1.14.2
         with:
           packages-dir: dist/

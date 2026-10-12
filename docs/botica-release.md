@@ -10,7 +10,7 @@ latest release again (see below).
 A release does not need `main`: a tag runs the workflow as it is in the tagged commit, and
 `git push origin vX.Y.Z` uploads that commit and its history without creating a branch.
 
-1. `test` and `repo-tests` run the `Botica CI` suite (fmt, clippy, `cargo test`) and the
+1. `test` and `repo-tests` run the `CI` suite (fmt, clippy, `cargo test`) and the
    repository's `Tests` suite (prek, pytest).
 2. `version` fails unless `X.Y.Z` equals `version` in `[workspace.package]` of `lint/Cargo.toml`.
 3. `draft` creates a draft GitHub Release.
@@ -31,11 +31,13 @@ GitHub and on PyPI. The tag moved once on the way: the Linux jobs build in a con
 
 Checked by hand after the release: `uvx botica --version` and `uv tool install botica` install the
 wheel from PyPI and run it (`botica 0.7.0`, Linux x64), and prek installs the mirror repository at
-`v0.7.0` and runs the hook against that wheel. `actionlint` 1.7.12 finds nothing in the workflows.
-`zizmor` 1.30.1 reports two low `self-repository` findings in `botica-release.yml`: it wants
-`uses: $/.github/workflows/ci.yml` (GitHub's self-repository syntax, July 2026) instead of
-`./.github/...`. `actionlint` 1.7.12 rejects the new form for reusable workflows and it cannot be
-tried without a release, so the file keeps `./`. Not checked: that the wheels for musl, arm64,
+`v0.7.0` and runs the hook against that wheel. `zizmor` 1.30.1 finds nothing in the workflows. `botica-release.yml` calls `ci.yml` and `tests.yml`
+with GitHub's self-repository syntax (`uses: $/.github/workflows/ci.yml`, July 2026, github.com
+only, runner 2.336.0 or newer), which GitHub documents for reusable workflow calls and recommends
+over `./`. It has not run on GitHub yet: look at the first two jobs on the next release.
+`actionlint` 1.7.12 does not know the syntax yet (rhysd/actionlint issue 711) and reports it; until
+it does, run it with
+`-ignore 'reusable workflow call "\$/.+" at "uses" is not following the format'`. Not checked: that the wheels for musl, arm64,
 macOS and Windows run (they build and are published, nothing more).
 
 ## Set up PyPI once
@@ -74,7 +76,7 @@ builds are accepted. A wheel built on your machine for a rehearsal needs
    and `Cargo.lock` already matches; later ones go up from there), and run `cargo update --workspace`
    in `lint/`. Without it the build, which uses `--locked`, fails; the change to `Cargo.lock` is a
    few lines for the crates of the project.
-2. Commit it (`chore(lint): release X.Y.Z`) and push. Wait for `Botica CI` to pass.
+2. Commit it (`chore(lint): release X.Y.Z`) and push. Wait for `CI` to pass.
 3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
 4. Watch the run. If a platform fails, fix it and move the tag, or delete the draft release and the
    tag and start again. Once `publish` has run, treat the version as final.
