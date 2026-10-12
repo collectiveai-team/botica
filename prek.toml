@@ -123,15 +123,6 @@ types = ["python"]
 pass_filenames = false
 priority = 2
 
-# MARK: file-size-guard
-[[repos.hooks]]
-id = "file-size-guard"
-name = "file-size-guard (400 large / 700 enormous)"
-entry = "python -c \"import sys; sys.exit(max([0] + [1 for f in sys.argv[1:] for n in [sum(1 for _ in open(f, errors='ignore'))] if (n >= 700 and not print(f'Error: {f} is too large ({n} lines, limit is 700)')) or (n >= 400 and not print(f'Warning: {f} is large ({n} lines, recommended limit is 400)') and False)]))\""
-language = "system"
-types = ["python"]
-priority = 2
-
 # MARK: deptry
 # CES-109: declared pyproject.toml dependencies must match the actual import graph.
 [[repos.hooks]]
@@ -182,4 +173,19 @@ name = "jscpd (copy-paste duplication)"
 entry = "npx --yes jscpd@5 . --threshold 2.5 --ignore \"guide.md,scaffolding/templates/**,skills/engineering/engineering-rules/AGENTS.md\""
 language = "system"
 pass_filenames = false
+priority = 2
+
+# MARK: file-size-guard
+# CES-71, run by `botica lint` through the mirror, which installs botica from PyPI at the release
+# `rev` names. Own `[[repos]]` table, so it goes after the `local` hooks above, not among them.
+# `types` keeps the old hook's reach (Python only): the rule's own invalid fixtures under
+# lint/rules/ are oversized on purpose.
+[[repos]]
+repo = "https://github.com/collectiveai-team/botica-pre-commit"
+rev = "v0.7.0"
+
+[[repos.hooks]]
+id = "botica"
+args = ["--no-astgrep", "--select", "file-size-guard"]
+types = ["python"]
 priority = 2

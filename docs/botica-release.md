@@ -82,10 +82,7 @@ The tag must come after the wheel is on PyPI, or prek cannot install the hook en
 
 ## After the first release
 
-- `scaffolding/templates/prek-generic.toml` ships a local hook that needs `botica` on the `PATH`.
-  Switch it to the mirror (`repo = "https://github.com/collectiveai-team/botica-pre-commit"`,
-  `rev = "vX.Y.Z"`, `args = [...]`) so a new repository installs it by itself, and update
-  `tests/test_prek_template.py` with it.
-- This repository's own `prek.toml` still has the `python -c` `file-size-guard` hook. Replace it
-  with the same hook then; CI cannot run `botica` before there is something to install.
+- `scaffolding/templates/prek-generic.toml` and this repository's own `prek.toml` use the mirror
+  (`repo = "https://github.com/collectiveai-team/botica-pre-commit"`, `rev`, `args`). They are not
+  moved by a release: after the mirror has its new tag, set `rev` in both by hand.
 - Not published, and not planned yet: npm, Homebrew, a GitHub Action, standalone binaries.
