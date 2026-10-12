@@ -1,4 +1,4 @@
-name: Botica CI
+name: CI
 
 # Check the Rust workspace in lint/ that builds the `botica` binary, with all of its subcommands:
 # format, clippy and tests. Add the checks of new subcommands here, not in a workflow of their own.
@@ -13,12 +13,12 @@ on:
   pull_request:
     paths:
       - "lint/**"
-      - ".github/workflows/botica-ci.yml"
+      - ".github/workflows/ci.yml"
   # Allow other workflows (e.g. a wheel release) to gate on this suite.
   workflow_call:
 
 concurrency:
-  group: botica-ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:

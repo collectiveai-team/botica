@@ -1,17 +1,17 @@
 name: Botica release
 
-# Tag-driven: `git tag botica-vX.Y.Z && git push origin botica-vX.Y.Z`, with X.Y.Z equal to the
-# version in lint/Cargo.toml ([workspace.package]) and Cargo.lock in sync. The `botica-` prefix
-# keeps these tags apart from the `v*` tags that scaffolding releases on main use; the release is
-# marked "not latest" for the same reason. v0.1.0 to v0.6.0 are scaffolding's: start at 0.7.0.
-# Gated on the Botica CI suite and on the repository's own Tests suite. Builds binary-only wheels
+# Tag-driven: `git tag vX.Y.Z && git push origin vX.Y.Z`, with X.Y.Z equal to the version in
+# lint/Cargo.toml ([workspace.package]) and Cargo.lock in sync. v0.1.0 to v0.6.0 are scaffolding's
+# releases: botica starts at 0.7.0. The release is created "not latest" while main still publishes
+# scaffolding releases. The file name is the one the PyPI trusted publisher is registered with.
+# Gated on the CI suite and on the repository's own Tests suite. Builds binary-only wheels
 # (maturin, bindings = "bin") per platform, attaches them with a .sha256 each to a GitHub Release,
 # and uploads them to PyPI (trusted publishing) when PUBLISH_TO_PYPI is "true".
 
 on:
   push:
     tags:
-      - "botica-v*.*.*"
+      - "v*.*.*"
 
 # No top-level permissions: grant least privilege per job instead.
 jobs:
@@ -19,7 +19,7 @@ jobs:
     name: botica tests
     permissions:
       contents: read
-    uses: ./.github/workflows/botica-ci.yml
+    uses: ./.github/workflows/ci.yml
 
   repo-tests:
     name: repository tests
@@ -42,7 +42,7 @@ jobs:
 
       - name: Compare the tag with the workspace version
         run: |
-          expected="${TAG#botica-v}"
+          expected="${TAG#v}"
           found="$(sed -n '/^\[workspace\.package\]/,/^\[/{s/^version = "\(.*\)"$/\1/p}' lint/Cargo.toml)"
           if [ "$found" != "$expected" ]; then
             echo "tag $TAG names $expected but lint/Cargo.toml has ${found:-no version}" >&2
