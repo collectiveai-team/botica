@@ -12,6 +12,11 @@
   listed in `UNIGNORE_WHITELIST` (`scaffolding/skills.py`) from `.gitignore`. It is
   reported under `edits`, not `clean_adds`. Do not widen it, and do not remove it
   as an invariant violation — see `docs/adr/0001-scoped-unignore-op.md`.
+- `lint/` — the `botica` Rust workspace (`botica lint`, more subcommands later), published to
+  PyPI as `botica` (binary-only wheels) and used by prek through the `botica-pre-commit` mirror.
+  It has its own README (`lint/README.md`), release runbook (`docs/botica-release.md`) and design
+  (`docs/adr/0003-botica-lint-architecture.md`). Ruff, pyrefly and deptry skip it; `ci.yml` runs
+  its fmt, clippy and tests. No pipeline in `.github/workflows/` is specific to `lint`.
 - `install.sh` — thin bootstrap shim (ensure `uv`, then `uvx … scaffolding
   install`). Keep it minimal and keep its raw URL pointing at
   `collectiveai-team/botica` on `main`.
@@ -101,8 +106,9 @@ or referencing a rule in this repo, follow this convention:
 > detail file and follow the house pattern. Full convention + SSOT:
 > `docs/engineering-standards.md`.
 
-This is the **dogfooded subset** for this repo — a pure-Python Cyclopts CLI (no API, DB, or web
-layer). `[ast-grep]`/`[prek]` rules are enforced by `prek`; `[judgment]` rules are agent/reviewer
+This is the **dogfooded subset** for this repo — a Python Cyclopts CLI (no API, DB, or web
+layer) next to the `lint/` Rust workspace, which these Python-oriented standards do not cover.
+`[ast-grep]`/`[prek]` rules are enforced by `prek`; `[judgment]` rules are agent/reviewer
 judgment; `[snippet]` ships canonical code under `.agents/snippets/` (in target repos).
 
 ### Standards
@@ -166,7 +172,7 @@ judgment; `[snippet]` ships canonical code under `.agents/snippets/` (in target 
 - **CES-119 · dependency vulnerability scanning** `[ci]` — `osv-scanner` on `uv.lock`; replaces
   the old `pip-audit.yml`. → `@.agents/rules/osv-scanner-replace-pip-audit.md`
 
-### Excluded here (don't apply to a pure-Python CLI)
+### Excluded here (don't apply to a CLI with no API, database or web layer)
 
 - **CES-4 · api-schemas-extra-forbid** — no API request/response schemas in this repo.
 - **CES-18 · arch-database-package** — no relational persistence layer.
