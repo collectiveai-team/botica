@@ -1,8 +1,8 @@
 # botica-pre-commit
 
-Mirror of [botica](https://github.com/collectiveai-team/botica) for prek and pre-commit. This
-directory is the content of the `collectiveai-team/botica-pre-commit` repository; it lives here
-until that repository exists.
+Mirror of [botica](https://github.com/collectiveai-team/botica) for prek and pre-commit: it holds
+the hook definitions and nothing else. The source is `lint/distribution/botica-pre-commit/` in the
+botica repository, copied here at each release (see "Releasing").
 
 ```toml
 # prek.toml
