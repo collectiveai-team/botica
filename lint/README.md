@@ -7,7 +7,7 @@ catalogued in [`docs/engineering-standards.md`](../docs/engineering-standards.md
 
 ## Install
 
-- **From a wheel**, once the first release is published (see
+- **From a wheel**, published on PyPI since 0.7.0 (see
   [`docs/botica-release.md`](../docs/botica-release.md)): `uv tool install botica` or
   `uvx botica lint`. The wheel holds only the binary, so it needs no Python at run time.
 - **From source**: `cargo build --release -p botica-cli` in this directory; the binary is

@@ -4,7 +4,8 @@
 `vX.Y.Z` runs `.github/workflows/botica-release.yml` (the file name is the one the PyPI trusted
 publisher is registered with). `v0.1.0` to `v0.6.0` exist from `scaffolding`, so botica starts at
 `0.7.0`. While `main` still publishes `scaffolding` releases, do not cut a `v*` tag there that
-botica has taken, and note that the GitHub Release is created as "not latest".
+botica has taken. A botica release does not stay "latest" there: `publish` marks the previous
+latest release again (see below).
 
 A release does not need `main`: a tag runs the workflow as it is in the tagged commit, and
 `git push origin vX.Y.Z` uploads that commit and its history without creating a branch.
@@ -15,14 +16,23 @@ A release does not need `main`: a tag runs the workflow as it is in the tagged c
 3. `draft` creates a draft GitHub Release.
 4. `wheels` builds a wheel per platform and attaches it, with a `.sha256`, to the draft: Linux
    x64 and arm64 (glibc and musl), macOS arm64 and x64, Windows x64.
-5. `publish` makes the release public when every wheel is attached.
+5. `publish` makes the release public when every wheel is attached. Publishing a draft makes it
+   "latest" whatever `--latest=false` said when it was created, and `gh release edit --latest=false`
+   does nothing (GitHub picks the newest release again), so the job reads the release that was
+   latest before publishing and marks it latest again. By hand that is
+   `gh release edit vA.B.C --latest`.
 6. `pypi` uploads the wheels to PyPI. It is **off** until the repository variable
    `PUBLISH_TO_PYPI` is `true`.
 
-The workflows have not run on GitHub yet. What was checked by hand: a Linux x64 wheel builds with
-`maturin`, installs in a clean environment, and `botica --version` runs; prek installs the mirror
-repository and runs the hook against that wheel. Not checked: musl, arm64, macOS, Windows, and the
-`PyO3/maturin-action` and `pypa/gh-action-pypi-publish` steps. Expect to fix the first run.
+`0.7.0` was released on 2026-10-12 (run `38197175421`): every job passed, the seven wheels are on
+GitHub and on PyPI. The tag moved once on the way: the Linux jobs build in a container that owns
+`lint/dist`, so the checksums are written to `lint/sums` instead. The `publish` step that puts
+"latest" back was added afterwards and has not run on GitHub yet: look at it on the next release.
+
+Checked by hand after the release: `uvx botica --version` installs the wheel from PyPI and prints
+`botica 0.7.0` (Linux x64), and prek installs the mirror repository at `v0.7.0` and runs the hook
+against that wheel. Not checked: that the wheels for musl, arm64, macOS and Windows run (they build
+and are published, nothing more).
 
 ## Set up PyPI once
 
@@ -30,8 +40,9 @@ PyPI uses **trusted publishing**: no token is stored, and PyPI accepts an upload
 workflow you name. A published version cannot be replaced or reused, only yanked, so do this
 before the first tag and publish nothing you have not looked at.
 
-1. Check the names. On 2026-10-11 `botica` and `botica-pre-commit` did not exist on PyPI. A name is
-   not reserved until something is uploaded, so register the pending publisher soon.
+1. Check the names. On 2026-10-11 `botica` and `botica-pre-commit` did not exist on PyPI; `botica`
+   was created by the first upload on 2026-10-12. A name is not reserved until something is
+   uploaded, so register the pending publisher soon.
 2. On PyPI, with the account that will own the project: **Your account → Publishing → Add a new
    pending publisher**. Project name `botica`; owner `collectiveai-team`; repository `botica`;
    workflow `botica-release.yml`; environment `pypi`. A pending publisher creates the project on
