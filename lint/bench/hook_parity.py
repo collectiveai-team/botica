@@ -1,7 +1,8 @@
 """Parity of botica's `file-size-guard` and `no-utils` with the `python -c` hooks they replace.
 
-The hooks are the ones in scaffolding/templates/prek-python.toml, run by prek itself (so the
-file selection is prek's: tracked files, `types`, `files`, `exclude`). Two checks:
+The hooks are the ones in python_c_hooks.toml (the old scaffolding/templates/prek-python.toml
+hooks, frozen: the template now runs botica instead), run by prek itself (so the file selection
+is prek's: tracked files, `types`, `files`, `exclude`). Two checks:
 
 1. the real repositories of real-repos.txt: both tools run on the same checkout and what they
    report is compared file by file. A difference is expected only if it is one of two decided ones
@@ -26,7 +27,7 @@ from pathlib import Path
 
 ROOT = Path(subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip())
 BENCH = ROOT / "lint" / "bench"
-TEMPLATE = ROOT / "scaffolding" / "templates" / "prek-python.toml"
+TEMPLATE = BENCH / "python_c_hooks.toml"
 RULES = ("file-size-guard", "no-utils")
 HOOK_LINE = re.compile(r"^\s+(Error|Warning): (CES-\d+ \((?:file-size-guard|no-utils)\): .*)$")
 PATH_IN_MESSAGE = re.compile(r"\): (.+?) (?:is too large|is large|is a catch-all)")
