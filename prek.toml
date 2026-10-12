@@ -175,17 +175,20 @@ language = "system"
 pass_filenames = false
 priority = 2
 
-# MARK: file-size-guard
-# CES-71, run by `botica lint` through the mirror, which installs botica from PyPI at the release
-# `rev` names. Own `[[repos]]` table, so it goes after the `local` hooks above, not among them.
+# MARK: botica
+# The same structure rules as the generic template (CES-71 file-size-guard, CES-63 no-utils, CES-32
+# no-notebooks and no-artifacts-in-package, no-tests-in-package), run by `botica lint` through the
+# mirror, which installs botica from PyPI at the release `rev` names. Own `[[repos]]` table, so it
+# goes after the `local` hooks above, not among them.
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
 rev = "v0.7.0"
 
 [[repos.hooks]]
 id = "botica"
-args = ["--no-astgrep", "--select", "file-size-guard"]
-# The rule's own invalid fixtures are oversized on purpose. Documentation is already left out by
-# the rule's default `ignores`.
-exclude = "^lint/rules/.*/fixtures/"
+args = ["--no-astgrep", "--select", "file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package"]
+# Same exclusions as ruff above: the rules' own invalid fixtures (oversized, a utils.py, … on
+# purpose) and the template payload this repo ships to other repositories (a `tests/` snippet).
+# Documentation is already left out by the rule's default `ignores`.
+exclude = "^(lint/rules/.*/fixtures/|scaffolding/templates/)"
 priority = 2
