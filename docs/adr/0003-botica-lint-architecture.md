@@ -13,7 +13,8 @@ more than one file's syntax tree.
 
 The linter has to integrate with editors, grow to more languages, stay fast inside a pre-commit
 hook, and let each rule be added, configured, and switched off independently. ADR 0002 also makes
-its rule catalog the single source of truth for every standard.
+its rule catalog the single source of truth for every standard; as amended there, a CES stays
+documentation and a rule is what botica evaluates, so the catalog describes rules, not standards.
 
 ## Decision
 
@@ -52,11 +53,13 @@ The core lints text it is given (`lint_source(path, text, …)`) and does no I/O
 feature is enabled. That is what lets the same engine serve the CLI, the LSP (unsaved buffers),
 and later WASM or MCP.
 
-**One rule, one folder, four kinds.** Every rule lives in `rules/<catalog>/<slug>/` with a
-`rule.toml` (id, CES, status, languages, scope, needs, typed options), a README, and
-`fixtures/{valid,invalid}`. Its canonical id is `<catalog>/<slug>`, and a bare slug is accepted
-wherever it is unambiguous, so existing suppression keys keep working. The `kind` field picks
-the implementation:
+**One rule, one folder, four kinds.** Every rule lives in `rules/<family>/<slug>/` (the family
+folder holds a `family.toml` with its code; the linter's own rules live in `rules/botica/`) with
+a `rule.toml` (id, code, status, scope, needs, typed options, an optional `ces` reference for the
+docs, and one `[[implementations]]` entry per language), a README, and `fixtures/{valid,invalid}`.
+Its id is its slug, unique across botica, and its code (`BTSTRUC001`) carries the prefix of its
+family. Only external and local catalogs prefix the slug (`acme/no-utils`). The `kind` of each
+implementation picks how it runs:
 
 | Kind | Runs | For |
 |---|---|---|
@@ -80,19 +83,30 @@ bindings, so an extension sees the same node kinds as the core, and a rule can b
 under the same id and fixtures. Extensions load only from catalogs the project declares or from
 `.botica/rules/`, never by discovery.
 
-**Catalogs and overrides.** Built-in catalogs (`ces`, `botica`) are compiled in and reserved.
-Projects add `.botica/rules/<catalog>/<slug>/` and declared external catalogs. A project
-replaces a built-in rule only when the replacement declares `replaces = "<id>"` *and* the
-project config confirms it; suppressions written for the original keep working.
+**Suppressions.** Two comment channels silence a rule on the line of its finding: `# botica:
+ignore[<id>]` in any language with comments, and `# noqa: <code>` in Python. An id is exact (slug,
+code or alias); a bare `# noqa` suppresses nothing of botica's. A finding about a whole file is
+silenced only with `# botica: ignore-file[<id>]`, and one with no file to comment on is excluded
+in the configuration. `unused-suppression` reports a comment that silences nothing, and
+`invalid-suppression` one that names an unknown id or is malformed.
+
+**Catalogs and overrides.** The built-in rules (the families and `botica`) are compiled in.
+Projects add `.botica/rules/<catalog>/<slug>/` and declared external catalogs; which catalog
+names are reserved for those is not decided. A project replaces a built-in rule only when the
+replacement declares `replaces = "<id>"` *and* the project config confirms it; suppressions
+written for the original keep working.
 
 **Configuration** lives in `botica.toml` or `[tool.botica]` in `pyproject.toml`. It is found by
 walking up from the working directory; defining it in both files at once is an error. Unknown
 keys and unknown rule ids are errors, and the schema is published as JSON Schema.
 
-**Distribution.** The binary is built once per platform and repackaged as binary-only PyPI wheels
-(maturin) under the name `botica`. A mirror repo, `botica-pre-commit`, gives prek a pinnable
-hook. The `scaffolding` Python package keeps its name until it is migrated, which is out of scope
-here.
+**Distribution.** `botica` is the whole package and `lint` is its first subcommand, so no
+pipeline is specific to `lint`. The binary is built once per platform (Linux x64 and arm64 with
+glibc and musl, macOS x64 and arm64, Windows x64) and repackaged as binary-only PyPI wheels
+(maturin) under the name `botica`, released from a `vX.Y.Z` tag and published through PyPI trusted
+publishing. Botica starts at 0.7.0 because `v0.1.0` to `v0.6.0` are releases of `scaffolding`. A
+mirror repo, `botica-pre-commit`, gives prek a pinnable hook whose tag pins the matching wheel.
+The `scaffolding` Python package keeps its name until it is migrated, which is out of scope here.
 
 ## Considered options
 
@@ -125,9 +139,13 @@ here.
 - **One conformance runner exercises every kind with the same fixtures.** This makes Python→Rust
   migration and `replaces` checkable (`botica rules test --against`).
 - **The ten ast-grep rules move into botica and the `ast-grep` hook is retired.** During
-  migration, botica optionally honours `# ast-grep-ignore: <slug>`.
-- **The `python -c` hooks for CES-71, CES-63, and CES-32 are replaced.** `repo-shape` detects the
-  import package instead of relying on a placeholder.
+  migration, the opt-in setting `compat-ast-grep-ignore` (off by default) makes botica honour
+  `# ast-grep-ignore: <slug>`.
+- **The `python -c` hooks for CES-71, CES-63, and CES-32 are replaced** (done: the prek templates
+  and this repository's `prek.toml` run the `botica` hook from the mirror). `repo-shape` became
+  three layout rules (`no-notebooks`, `no-artifacts-in-package`, `no-tests-in-package`) that find
+  the code of each ecosystem on their own, or from `code-dirs`, instead of relying on a
+  placeholder.
 - **Botica now maintains a protocol, two SDKs, and a per-platform release matrix.** These are
   real, ongoing costs.
 - **A measurement spike runs before the core is built.** It covers startup, a 10k-file repo,

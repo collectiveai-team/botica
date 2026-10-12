@@ -73,4 +73,46 @@ _Avoid_: local skill, own skill
 Collective Engineering Standard — one house rule the scaffolder ships, tracked by exactly one
 issue. Cited as `CES-<issue#>`; its machine id is a kebab-case slug. See
 `docs/engineering-standards.md`.
+Documentation and the unit of proposals, not something a tool enforces: botica evaluates
+**rules**, and a rule may cite the CES it implements. See `docs/adr/0002-ces-lifecycle-catalog-and-site.md`.
 _Avoid_: rule, convention, lint rule
+
+### Botica
+
+**Botica**:
+The Rust package published on PyPI as `botica` (binary-only wheels), built from `lint/`. `lint` is
+its first subcommand and scaffolding will migrate into it, so no pipeline of its own is specific to
+`lint`. See `docs/adr/0003-botica-lint-architecture.md`.
+_Avoid_: botica lint (for the package)
+
+**Rule**:
+What botica evaluates, selects, ignores and suppresses. Identified by its slug, and by a **code**.
+Lives in `lint/rules/<family>/<slug>/`, belongs to one **family** and can have one implementation
+per language.
+_Avoid_: CES, check, standard
+
+**Family**:
+A group of rules that share a code prefix (`STRUC`, `ARCH`, `TEST`, …). Its folder holds a
+`family.toml` with the code. The linter's own rules have no family and live in `rules/botica/`.
+_Avoid_: category, group
+
+**Code**:
+A rule's identifier with the `BT` header and its family, then three digits (`BTSTRUC001`; the
+linter's own are `BT002`). The only identifier `# noqa` takes.
+_Avoid_: rule id (the id is the slug)
+
+**Suppression channel**:
+A comment syntax that silences a rule on the line of its finding: `# botica: ignore[<id>]` in any
+language, or `# noqa: <code>` in Python. A finding about a whole file takes only
+`# botica: ignore-file[<id>]`.
+_Avoid_: ignore, disable
+
+**Code dirs**:
+Where a project's code lives, per ecosystem. The layout rules read it, detected from the manifest
+or set with `code-dirs`.
+_Avoid_: source root, package dir
+
+**Mirror**:
+`collectiveai-team/botica-pre-commit`, the repo prek installs the `botica` hook from. Its tag pins
+the wheel of the same version, so a repository needs no `botica` on its PATH.
+_Avoid_: hook repo

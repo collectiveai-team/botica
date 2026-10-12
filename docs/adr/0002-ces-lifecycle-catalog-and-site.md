@@ -2,6 +2,21 @@
 
 **Status:** proposed
 
+> **Amended 2026-10-09** (user decision D15 of the botica lint spec). A CES and a rule are two
+> different things. A **CES** is documentation and the unit of proposals: botica never selects,
+> ignores or suppresses by CES, and the CES is not a field of its output. A **rule** is what botica
+> evaluates: its id is its slug, its code carries a family prefix (`BTSTRUC001`), and it may cite
+> the CES it implements in an informational `ces` field. One CES can bring several rules, from
+> different families, and a rule can exist without a CES (the linter's own rules, and
+> `no-tests-in-package` until its CES exists).
+>
+> This changes decision 1 (the rule catalog is no longer the source of truth for a CES: a rule
+> only points at one) and the first Consequence ("every CES has a catalog entry"), and it leaves
+> decision 5 open (numbers are no longer assigned "by the catalog"). **Where the text of a CES and
+> its number live instead is not decided**, so those points stay below as first written until it
+> is. The rule lifecycle, proposals as pull requests, Discussions and the generated site are
+> unaffected.
+
 Today a CES is born as a GitHub issue. The issue number is the CES number, the issue body is the
 standard's text, and its review state is a set of labels that a bot (`proposal-vote.yml`,
 `proposal-update.yml`) rewrites from slash commands in the comments. The text is then copied into
