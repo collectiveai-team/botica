@@ -5,12 +5,17 @@ from __future__ import annotations
 import re
 import shlex
 import tomllib
+from pathlib import Path
 
 import pytest
 
 from scaffolding.templates_registry import template_text
 
 BOTICA_MIRROR = "https://github.com/collectiveai-team/botica-pre-commit"
+MIRROR_HOOKS = (
+    Path(__file__).resolve().parent.parent
+    / "lint/distribution/botica-pre-commit/.pre-commit-hooks.yaml"
+)
 
 # Generated, tracked, and highly repetitive. `.gitignore` does not exclude a lockfile
 # (it is committed on purpose), so jscpd reads it and its size can dominate the score.
@@ -104,6 +109,20 @@ def test_botica_hook_runs_the_native_structure_rules():
     assert "--no-astgrep" in args
     assert "--select" in args, f"botica would run every rule it knows: {args!r}"
     assert set(args[args.index("--select") + 1].split(",")) == BOTICA_RULES
+
+
+def _mirror_hook_block(hook_id: str) -> str:
+    """Return the text of one hook in the mirror's `.pre-commit-hooks.yaml` (no YAML parser)."""
+    text = MIRROR_HOOKS.read_text(encoding="utf-8")
+    match = re.search(rf"^- id: {re.escape(hook_id)}$(.*?)(?=^- id: |\Z)", text, re.M | re.S)
+    assert match, f"the mirror declares no {hook_id!r} hook"
+    return match.group(1)
+
+
+@pytest.mark.parametrize("hook_id", ["botica", "botica-project"])
+def test_mirror_hooks_show_their_output_when_they_pass(hook_id: str):
+    """Prek hides the output of a passing hook, and a size warning does not fail the hook."""
+    assert re.search(r"^  verbose: true$", _mirror_hook_block(hook_id), re.M)
 
 
 def test_botica_hook_does_not_replace_the_entry_of_the_mirror():
