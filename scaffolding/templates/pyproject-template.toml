@@ -70,6 +70,8 @@ select = [
   "PERF",
 ]
 task-tags = ["TODO", "FIXME", "XXX", "MARK"]
+# `botica lint` suppressions in `# noqa: BTxxx` comments; without this ruff reports RUF102.
+external = ["BT"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
