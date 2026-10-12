@@ -178,8 +178,6 @@ priority = 2
 # MARK: file-size-guard
 # CES-71, run by `botica lint` through the mirror, which installs botica from PyPI at the release
 # `rev` names. Own `[[repos]]` table, so it goes after the `local` hooks above, not among them.
-# `types` keeps the old hook's reach (Python only): the rule's own invalid fixtures under
-# lint/rules/ are oversized on purpose.
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
 rev = "v0.7.0"
@@ -187,5 +185,7 @@ rev = "v0.7.0"
 [[repos.hooks]]
 id = "botica"
 args = ["--no-astgrep", "--select", "file-size-guard"]
-types = ["python"]
+# The rule's own invalid fixtures are oversized on purpose. Documentation is already left out by
+# the rule's default `ignores`.
+exclude = "^lint/rules/.*/fixtures/"
 priority = 2
