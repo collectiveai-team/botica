@@ -101,9 +101,14 @@ jobs:
       - name: Attach the wheel and its checksum to the release
         shell: bash
         working-directory: lint/dist
+        # On Linux maturin builds in a container as root, so dist/ is not writable here: the
+        # checksums go to a directory of their own.
         run: |
-          for wheel in *.whl; do sha256sum "$wheel" > "$wheel.sha256" 2>/dev/null || shasum -a 256 "$wheel" > "$wheel.sha256"; done
-          gh release upload "$TAG" ./*.whl ./*.sha256
+          mkdir -p ../sums
+          for wheel in *.whl; do
+            (sha256sum "$wheel" 2>/dev/null || shasum -a 256 "$wheel") > "../sums/$wheel.sha256"
+          done
+          gh release upload "$TAG" ./*.whl ../sums/*.sha256
 
   publish:
     name: publish release
