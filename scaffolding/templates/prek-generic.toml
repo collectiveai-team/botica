@@ -77,7 +77,7 @@ stages = ["commit-msg"]
 
 # MARK: jscpd
 # CES-118: copy-pasted (near-verbatim) code blocks above a token threshold, complementary to
-# ast-grep (single declared pattern) — catches the "agent copies the nearest block instead of
+# the single declared patterns of botica — catches the "agent copies the nearest block instead of
 # extracting a shared helper" failure mode. Polyglot (tree-sitter, 223+ formats), so it lives
 # here rather than the Python-only hooks. Respects .gitignore by default. `--threshold` alone is
 # the gate (fails only over the percentage); jscpd v5's separate `--exit-code` flag fails on ANY
@@ -107,8 +107,8 @@ priority = 2
 # The rules of the house standards that look at one file, run by `botica lint`: CES-71
 # file-size-guard (400 warn / 700 error, any language), CES-63 no-utils (Python only), the layout
 # rules that replaced the old `repo-shape` hook (CES-32 no-notebooks and no-artifacts-in-package,
-# plus no-tests-in-package, Python only), and the syntax rules that the `ast-grep` hook used to run
-# (CES-79, CES-45, CES-46, CES-4, CES-76, CES-67, CES-18; Python only). Each rule looks at the
+# plus no-tests-in-package, Python only), and the syntax rules (CES-79, CES-45, CES-46, CES-4,
+# CES-76, CES-67, CES-18; Python only). Each rule looks at the
 # languages it declares, so the hook is inert where none applies. Findings carry their own CES
 # code. The selection is explicit: a rule that botica adds later does not reach this repository
 # until you ask for it. prek installs botica from PyPI through the mirror, at the release `rev`

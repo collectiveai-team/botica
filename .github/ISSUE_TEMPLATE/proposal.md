@@ -7,7 +7,7 @@ labels: ["state:proposal"]
 
 <!--
 Add the remaining labels by hand (or let the seed script do it):
-  area:<architecture|standards|infra|impl/...>   enforcer:<ast-grep|import-linter|ruff|pytest|kube-linter|script|llm>
+  area:<architecture|standards|infra|impl/...>   enforcer:<botica|import-linter|ruff|pytest|kube-linter|script|llm>
   priority:<high|medium|low>
 The issue NUMBER is the stable id. Priority/state are labels, never the number.
 
@@ -47,12 +47,12 @@ Comment one of these, **on a line of its own** — the command must start the li
 <!-- The precise, testable statement of the rule. -->
 
 ## Enforcement
-- **Enforcer:** <ast-grep | import-linter | ruff | pytest | kube-linter | script | llm>
+- **Enforcer:** <botica | import-linter | ruff | pytest | kube-linter | script | llm>
 - **Tier:** <deterministic | hybrid | judgment>  <!-- derived: only llm = judgment; llm+tool = hybrid; no llm = deterministic -->
 - **Applies to:** <all | fastapi | nextjs | prefect | asr | k8s | ...>
 
 <!-- The ACTUAL change/config that implements the rule: the pyproject.toml block,
-     import-linter contract, ast-grep YAML, kube-linter check, shell snippet, etc. -->
+     import-linter contract, botica rule, kube-linter check, shell snippet, etc. -->
 ```toml
 # e.g. the block added to pyproject.toml
 ```

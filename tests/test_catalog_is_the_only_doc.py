@@ -136,8 +136,13 @@ AST_GREP = re.compile(r"ast-grep|sgconfig", re.I)
 def _normative_texts() -> list[Path]:
     """List what is installed in a target repo or read as the house standard, and the READMEs."""
     templates = ROOT / "scaffolding" / "templates"
+    github = ROOT / ".github"
     paths = [
         *templates.rglob("*.md"),
+        *templates.rglob("*.toml"),
+        *templates.rglob("*.yml"),
+        *github.rglob("*.md"),
+        *github.rglob("*.yml"),
         *(ROOT / ".agents" / "rules").glob("*.md"),
         *(ROOT / "skills").rglob("*.md"),
         *CATALOG.glob("*/*/README.md"),

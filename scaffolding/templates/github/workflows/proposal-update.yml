@@ -97,7 +97,7 @@ jobs:
               "  state:proposal | state:had-comments | state:approved | state:declined\n"
               "  priority:high | priority:medium | priority:low\n"
               "  area:<architecture|standards|infra|impl/...>\n"
-              "  enforcer:<ast-grep|import-linter|ruff|pytest|kube-linter|script|llm>\n"
+              "  enforcer:<botica|import-linter|ruff|pytest|kube-linter|script|llm>\n"
               "  type:<proposal|bug|feature|build|question>\n\n"
               "Rules:\n"
               "- `body`: full replacement Markdown for THIS issue, starting with a "
