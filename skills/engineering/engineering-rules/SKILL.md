@@ -1,6 +1,6 @@
 ---
 name: engineering-rules
-description: The house engineering ruleset — Python toolchain, package layout, deep-module architecture, testing, logging, and the stack-specific patterns (FastAPI, Prefect, LLM/AI, ASR, Next.js, k8s). Use when looking up what the house standard says about code being written, reviewed, refactored, or restructured — which linter, which layout, which test shape, whether a pattern is current or legacy. Invoked by engineering-pr-review and engineering-refactor, and usable directly.
+description: Look up what the house engineering ruleset says about code that is being written, reviewed, refactored or restructured, such as which linter, which package layout, which test shape, or whether a pattern is current or legacy. It holds the rules that no tool measures, for Python and its common stacks. Invoked by engineering-pr-review and engineering-refactor, and usable directly.
 ---
 
 # Engineering Rules
@@ -11,15 +11,15 @@ this one rather than carrying their own copy.
 
 The rules that `botica lint` measures deterministically are **not here**: the catalog of botica
 is their only documentation. `uvx botica rules` lists them and `uvx botica explain <slug>`
-describes one. A rule id that this bundle cites and that has no file in `rules/` is one of them.
+describes one. A rule id that this bundle cites and that has no file in `references/` is one of them.
 
 ## Reading protocol
 
 Read by need, not all at once. Loading the whole ruleset wastes context that the actual work needs.
 
-1. **`rules/_sections.md`** — the index. Every rule id, grouped by section, one line each.
+1. **`references/_sections.md`** — the index. Every rule id, grouped by section, one line each.
    Start here always.
-2. **`rules/<id>.md`** — the specific rules the work touches. Read only these.
+2. **`references/<id>.md`** — the specific rules the work touches. Read only these.
 
 Rule ids are kebab-case and section-prefixed (`py-package-manager` is in section `py`), so the
 index tells you which files to open from the file paths alone.
@@ -41,7 +41,7 @@ a one-size-fits-all standard.
 ## Citing rules
 
 Cite the **rule id**, not a file path: "violates `py-no-formatter-churn`", not "violates
-`rules/py-no-formatter-churn.md`". The id is the stable name; the path is an implementation
+`references/py-no-formatter-churn.md`". The id is the stable name; the path is an implementation
 detail of this bundle.
 
 ## Relationship to the CES catalog

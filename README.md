@@ -250,9 +250,9 @@ repo's own `skills/`, not in `.agents/skills`.
 - `skills/quality/test-smell-review` — review tests for false-green smells (pass without
   protecting anything) using an in-context judgment protocol, adapted from
   `falsegreen-skill` without its external LLM-CLI dependency.
-- `skills/engineering/engineering-rules` — the house engineering ruleset itself: 70 rules
-  under `rules/`, indexed by `rules/_sections.md` and compiled into `AGENTS.md`. Owns the
-  rules; the two workflows below invoke it rather than carrying a copy.
+- `skills/engineering/engineering-rules` — the house engineering rules that no tool measures,
+  under `references/` and indexed by `references/_sections.md`. Owns the rules; the two
+  workflows below invoke it rather than carrying a copy.
 - `skills/engineering/engineering-pr-review` — the house PR gate: the shared rules, the
   deep-module check, and the large-file/spaghetti check, run before a PR is opened.
 - `skills/engineering/engineering-refactor` — move an existing repo toward the house

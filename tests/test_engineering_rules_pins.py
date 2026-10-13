@@ -20,7 +20,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILL = REPO_ROOT / "skills" / "engineering" / "engineering-rules"
-RULE = SKILL / "rules" / "py-ruff-format-modern.md"
+RULE = SKILL / "references" / "py-ruff-format-modern.md"
 RUFF_HOOK_REPO = "https://github.com/astral-sh/ruff-pre-commit"
 BOTICA_HOOK_REPO = "https://github.com/collectiveai-team/botica-pre-commit"
 HOOK_REPOS = [RUFF_HOOK_REPO, BOTICA_HOOK_REPO]

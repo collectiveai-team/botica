@@ -30,7 +30,7 @@ fit for an agentic coding session:
 - It's a second runtime (Node 18+) in a Python-only tool.
 
 This skill extracts the **protocol** (the J1–J6 judgments and the case
-catalog) as native, in-context instructions instead — see `reference.md` for
+catalog) as native, in-context instructions instead — see `references/reference.md` for
 the full catalog, condensed and credited from the same source, and the
 "Credits and references" section there for the complete citation chain
 (academic sources included). No subprocess, no API key, no Node — the agent
@@ -56,10 +56,10 @@ code is wrong; that is exactly what this skill exists to catch.
   (`@jest/globals`, `vitest`), `require('chai')`, global `describe()`/`it()`/
   `test()`/`expect()`, mock cues `jest.fn()`/`vi.fn()`/`sinon.stub()`.
   Runner-agnostic across Jest, Vitest, Mocha+Chai, Jasmine, AVA, `node:test`,
-  Cypress, Playwright, and Testing Library — `reference.md`'s TS/JS section
+  Cypress, Playwright, and Testing Library — `references/reference.md`'s TS/JS section
   applies to all of them.
 - **Any other language (Go, Rust, Java, ...):** no dedicated structural
-  catalog exists here (see `reference.md`'s "Applying this to other
+  catalog exists here (see `references/reference.md`'s "Applying this to other
   languages" section) — the language-agnostic J1–J6 judgments (Step 3) and
   the semantic cases (Step 2) still apply directly. Do not skip the review
   just because there's no matching table of codes.
@@ -72,7 +72,7 @@ Python's companion scanner is
 available, run it on the changed test files before applying any judgment
 below — it proves the purely structural cases (empty test, no assertion,
 tautological assert, swallowed exception, sleep-in-test, and more — the
-"structural"-labeled rows in `reference.md`) deterministically, for free,
+"structural"-labeled rows in `references/reference.md`) deterministically, for free,
 with no LLM involved:
 
 ```bash
@@ -89,7 +89,7 @@ judgment protocol below to what a parser cannot prove — that is what the
 rest of this skill is for. (`falsegreen` itself is proposed as a house prek
 hook separately —
 [scaffolding#124](https://github.com/collectiveai-team/botica/issues/124)
-— so it may not be installed yet; if it isn't, apply `reference.md`'s
+— so it may not be installed yet; if it isn't, apply `references/reference.md`'s
 structural catalog by hand instead of skipping it.)
 
 If a `[tool.falsegreen]` block exists in `pyproject.toml` (or `.falsegreen.toml`;
@@ -150,9 +150,9 @@ integration/E2E, where the response existing is the point. Getting the level
 wrong in either direction produces a wrong verdict, not just a miscategorized
 one.
 
-## Step 2: apply the case catalog (see `reference.md`)
+## Step 2: apply the case catalog (see `references/reference.md`)
 
-`reference.md` in this skill's directory has the full catalog, organized by
+`references/reference.md` in this skill's directory has the full catalog, organized by
 language: Python (Family A–E structural codes), TypeScript/JavaScript (its
 own structural table), and one shared "Semantic patterns" section that
 applies to **every** language, including ones with no dedicated table — load
@@ -165,7 +165,7 @@ cannot catch, and are the actual reason this skill exists on top of it.
 ## Step 3: apply the six judgments (J1–J6)
 
 For each test, ask these in order and stop at the first one that fails; every
-code in `reference.md` maps to one of these:
+code in `references/reference.md` maps to one of these:
 
 | # | Question | Catches |
 |---|---|---|
@@ -207,7 +207,7 @@ finding: it means a bug may be frozen as "correct". Before reporting it:
 - A fluent/library matcher (`hamcrest.assert_that`, assertpy, `numpy.testing.*`,
   `pandas.testing.*`) is the real check even with no bare `assert` keyword —
   absence of the keyword is not absence of verification (not C2/C2b; full
-  exemption list in `reference.md`).
+  exemption list in `references/reference.md`).
 - A mock replacing a genuine external edge (DB, network, clock) is never
   case 10/S12; those apply only when the mock replaces the unit being tested.
 - `@given`/`@hypothesis`-decorated tests with no explicit `assert` are not
@@ -244,5 +244,5 @@ Full attribution, the complete catalog (Python and TypeScript/JavaScript),
 and the academic sources this protocol traces to (Soares 2023's "rotten
 green test" thesis, Delplanque et al. ICSE 2019, PyNose/JetBrains Research
 ASE 2021, Jorge 2023's STEEL tool, and the Open Catalog of Test Smells) are
-in `reference.md`, which this skill loads alongside itself — read it, do not
+in `references/reference.md`, which this skill loads alongside itself — read it, do not
 skip straight to judgment from this file alone.

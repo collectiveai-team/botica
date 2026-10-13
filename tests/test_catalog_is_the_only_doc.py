@@ -20,7 +20,7 @@ from scaffolding.templates_registry import template_text
 ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "lint" / "rules"
 PROPOSALS = ROOT / "lint" / "proposals"
-SKILL_RULES = ROOT / "skills" / "engineering" / "engineering-rules" / "rules"
+SKILL_RULES = ROOT / "skills" / "engineering" / "engineering-rules" / "references"
 
 # Rules of the skill that say what a catalog rule measures, under a name that is not its slug.
 # They were removed once; this keeps them from coming back.
