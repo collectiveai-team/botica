@@ -143,7 +143,6 @@ project-excludes = [
   "**/.worktrees/**/*",
   "**/.tmp/**/*",    # local scratch (spike corpora, benchmarks); gitignored
   "skills/**/*",
-  "review/**/*",     # separate distribution with its own env/import-root
   "lint/**/*",       # Rust workspace; its Python SDK and bench scripts have their own deps
   # Bundled template payload: snippets/ drop-ins are shipped verbatim into target
   # repos and reference their deps (structlog, pydantic, …), not this tool's env.
@@ -155,9 +154,9 @@ disable-project-excludes-heuristics = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
-# CES-109 (dep-hygiene-deptry): declared deps must match the actual import graph. `review/` is
-# a separate distribution with its own pyproject/deps and `scaffolding/templates`/`skills` are
-# bundled/vendored payload shipped verbatim into target repos (same rationale as the ruff and
-# pyrefly excludes above) — none of the three belong to this tool's own import graph.
+# CES-109 (dep-hygiene-deptry): declared deps must match the actual import graph. `lint` is the
+# Rust workspace and `scaffolding/templates`/`skills` are bundled/vendored payload shipped verbatim
+# into target repos (same rationale as the ruff and pyrefly excludes above) — none of the three
+# belong to this tool's own import graph.
 [tool.deptry]
-extend_exclude = ["lint", "review", "scaffolding/templates", "skills"]
+extend_exclude = ["lint", "scaffolding/templates", "skills"]

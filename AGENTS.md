@@ -149,8 +149,8 @@ describes one, and the hook reports each finding with its slug and its message.
   with`/etc AI-attribution trailers; commit-msg hook + `commit-policy.yml` CI. →
   `@.agents/rules/no-ai-coauthorship.md`
 - **CES-109 · dependency hygiene** `[prek]` — declared deps must match the import graph
-  (`deptry`); `review`/`scaffolding/templates`/`skills` excluded (separate distribution / bundled
-  payload). → `@.agents/rules/dep-hygiene-deptry.md`
+  (`deptry`); `scaffolding/templates`/`skills` excluded (bundled payload). →
+  `@.agents/rules/dep-hygiene-deptry.md`
 - **CES-110 · cognitive complexity** `[prek]` — cognitive-complexity ceiling of 15 per function
   (`complexipy`), distinct from ruff's cyclomatic `C90`. →
   `@.agents/rules/cognitive-complexity-complexipy.md`

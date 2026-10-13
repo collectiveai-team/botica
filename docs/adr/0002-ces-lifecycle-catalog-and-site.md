@@ -14,7 +14,7 @@ confusing for contributors and expensive to maintain:
   while planning botica lint (#188, #189, #190, #191).
 - **Review is fragile.** Votes are comment commands parsed by a bot, editing the body dismisses
   approvals, labels drift, and debate and record-keeping share one thread. Keeping it working
-  required a dedicated TUI (`review/`) and ~20 KB of workflow.
+  took ~20 KB of workflow.
 
 The botica rule catalog (`rules/<family>/<slug>/rule.toml` + README + fixtures) already has to
 carry each rule's id, code, status, options and docs. A second description of a rule it measures
@@ -67,7 +67,7 @@ reason ADR 0001 gives.
 
 ## Consequences
 
-- `review/`, `proposal-vote.yml`, `proposal-update.yml`, the proposal issue template, and the
+- `proposal-vote.yml`, `proposal-update.yml`, the proposal issue template, and the
   `state:*` / `vote:*` / `approved:lazy` labels are retired after migration. Existing proposal
   issues are closed with a link to where their standard lives by then.
 - Zensical's stable line starts on 2026-11-05. Until then the site is built with a pinned
@@ -83,4 +83,4 @@ What remains, in order:
    `engineering-rules` skill from them, resolving first the overlaps measured in #164 and the
    contradiction issues (#188–#191).
 3. Stand up the Zensical site and Discussions categories; enable giscus.
-4. Close and link the legacy issues; retire the bot, the TUI, and the labels.
+4. Close and link the legacy issues; retire the bot and the labels.

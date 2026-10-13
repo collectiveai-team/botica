@@ -26,12 +26,11 @@ own `pyproject.toml` demonstrates the pattern:
 
 ```toml
 [tool.deptry]
-extend_exclude = ["review", "scaffolding/templates", "skills"]
+extend_exclude = ["scaffolding/templates", "skills"]
 ```
 
-`review/` is a separate distribution with its own `pyproject.toml`; `scaffolding/templates` and
-`skills` are bundled/vendored payload shipped verbatim into target repos (the same rationale as
-this repo's ruff `extend-exclude` and pyrefly `project-excludes`).
+`scaffolding/templates` and `skills` are bundled/vendored payload shipped verbatim into target
+repos (the same rationale as this repo's ruff `extend-exclude` and pyrefly `project-excludes`).
 
 ## Migration (existing repos)
 
