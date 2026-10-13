@@ -108,24 +108,24 @@ or referencing a rule in this repo, follow this convention:
 
 This is the **dogfooded subset** for this repo — a Python Cyclopts CLI (no API, DB, or web
 layer) next to the `lint/` Rust workspace, which these Python-oriented standards do not cover.
-`[ast-grep]`/`[prek]` rules are enforced by `prek`; `[judgment]` rules are agent/reviewer
+`[botica]`/`[prek]` rules are enforced by `prek`; `[judgment]` rules are agent/reviewer
 judgment; `[snippet]` ships canonical code under `.agents/snippets/` (in target repos).
 
 ### Standards
 
-- **CES-79 · no raw dicts at boundaries** `[ast-grep]` — return/annotate a `@dataclass` or
+- **CES-79 · no raw dicts at boundaries** `[botica]` — return/annotate a `@dataclass` or
   `BaseModel`, never a raw `dict`. → `@.agents/rules/no-dict.md`
 - **CES-71 · keep files small** `[prek]` — `file-size-guard` warns at 400 lines, errors at 700.
   → `@.agents/rules/file-size-guard.md`
 - **CES-107 · track the skills manifest** `[script]` — commit `skills-lock.json`; `.agents/skills/`
   is derived and gitignored; install restores from it. → `@.agents/rules/skills-manifest.md`
-- **CES-45 · use the house get_logger** `[ast-grep]` — no direct `logging.getLogger`. →
+- **CES-45 · use the house get_logger** `[botica]` — no direct `logging.getLogger`. →
   `@.agents/rules/log-get-logger.md`
-- **CES-46 · libraries log, they don't print** `[ast-grep]` — no `print()` in library code;
+- **CES-46 · libraries log, they don't print** `[botica]` — no `print()` in library code;
   CLI/`__main__` exempt. → `@.agents/rules/log-no-print.md`
 - **CES-74 · the house logger** `[snippet]` — structlog `core/logger.py` drop-in. →
   `@.agents/rules/core-logger.md`
-- **CES-67 · typed, declarative CLIs** `[ast-grep]` — Typer/Cyclopts + Rich, not
+- **CES-67 · typed, declarative CLIs** `[botica]` — Typer/Cyclopts + Rich, not
   `argparse`/`click`/`sys.argv`. This repo uses Cyclopts. → `@.agents/rules/cli-typed-framework.md`
 - **CES-63 · no catch-all modules** `[prek]` — no `utils.py`/`helpers.py`/`misc.py` (outside
   `tests/`). → `@.agents/rules/no-utils.md`

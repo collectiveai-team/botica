@@ -61,7 +61,7 @@ fix + code", that belongs in the detail file, not the message.
 ## Where the pieces live (in a target repo)
 
 - **Always-on index:** a marker-delimited `## Engineering Standards` section in `AGENTS.md`
-  listing every rule (terse directive + `[ast-grep]`/`[prek]`/`[judgment]` marker + an
+  listing every rule (terse directive + `[botica]`/`[prek]`/`[judgment]` marker + an
   `@.agents/rules/<slug>.md` pointer).
 - **On-demand detail:** `.agents/rules/<slug>.md` — full rationale, examples, migration.
 - **Canonical code:** `.agents/snippets/` — drop-ins for new repos, comparison templates for existing
