@@ -1,0 +1,53 @@
+# arch-database-package · `BTARCH001`
+
+**Standard:** CES-18 (documentation only) · **Family:** architecture · **Languages:** Python
+
+## Directive
+
+Relational persistence lives in its own `database` package: SQLModel tables, repositories,
+migrations and the connection and session setup, together. Not under `persistence/`, `meta/` or
+`core/`. A warning by default.
+
+The rule looks only at the files under `**/persistence/**`, `**/meta/**` and `**/core/**`, and
+reports:
+
+| Code | Why it is misplaced |
+|---|---|
+| `class X(SQLModel, table=True):` | a table outside the database package |
+| `create_engine(...)` | connection setup outside the database package |
+| `sessionmaker(...)` | a session factory outside the database package |
+
+A correctly placed `database/` package, and a repository without a relational layer, are left
+alone.
+
+## Why
+
+- One `database` package gives persistence a boundary: a single place owns the schema, the engine
+  and the queries, and the rest of the application depends on an explicit seam.
+- `core/` and `meta/` are cross-cutting homes. Tables and engines that leak into them erode the
+  direction in which layers depend on each other.
+
+## Do
+
+```text
+myapp/
+  database/
+    models.py        # SQLModel tables
+    engine.py        # create_engine, sessionmaker
+    repositories.py
+    migrations/
+```
+
+## Don't
+
+```python
+# myapp/core/models.py
+class User(SQLModel, table=True):
+    ...
+```
+
+## Suppression
+
+Silence one line with `# botica: ignore[arch-database-package]` or `# noqa: BTARCH001`. The rule is
+written in ast-grep's YAML (`python.yml`), so `# ast-grep-ignore: arch-database-package` also works
+while `compat-ast-grep-ignore` is on.

@@ -7,11 +7,9 @@ use botica_core::{Engine, Exclusion, NativePlanner, NativeRule};
 use std::path::Path;
 
 /// The syntax rules that are not in the catalog yet.
-const EMBEDDED: [&str; 3] = [
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/arch-database-package.yml"),
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/cli-typed-framework.yml"),
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/settings-module.yml"),
-];
+const EMBEDDED: [&str; 1] = [include_str!(
+    "../../../../scaffolding/templates/ast-grep-rules/cli-typed-framework.yml"
+)];
 
 /// The IDs of the embedded rules, known to the suppression comments whether or not the rules run.
 /// Read from each file's `id:` line so that a run without ast-grep need not compile them.

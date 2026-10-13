@@ -1,0 +1,18 @@
+id: arch-database-package
+language: python
+severity: warning
+message: "CES-18 (arch-database-package): Relational persistence belongs in its own `database` package (SQLModel tables, repositories, migrations, connection setup) — not under persistence/, meta/, or core/. Move this into the database unit. The import-linter contract that enforces the boundary direction is the commented skeleton shipped in Slice 09 (CES-5)."
+# Placement-scoped structural check: SQLModel tables / engine / session setup found under the
+# common wrong homes (persistence/, meta/, core/) are flagged. Inert in non-DB repos and in a
+# correctly-placed database/ package.
+files:
+  - "**/persistence/**/*.py"
+  - "**/meta/**/*.py"
+  - "**/core/**/*.py"
+rule:
+  any:
+    - pattern: |
+        class $NAME(SQLModel, table=True):
+            $$$BODY
+    - pattern: create_engine($$$ARGS)
+    - pattern: sessionmaker($$$ARGS)

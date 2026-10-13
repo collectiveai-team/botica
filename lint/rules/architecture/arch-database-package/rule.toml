@@ -1,0 +1,17 @@
+id = "arch-database-package"
+code = "BTARCH001"
+ces = "CES-18"
+summary = "Relational persistence lives in a database package"
+status = "stable"
+since = "0.8.0"
+tags = ["layout"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = true
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

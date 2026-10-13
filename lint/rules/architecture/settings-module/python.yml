@@ -1,0 +1,17 @@
+id: settings-module
+language: python
+severity: warning
+message: "CES-76 (settings-module): Read env/flags only in the settings module. Move this os.getenv/os.environ access into a pydantic_settings.BaseSettings subclass and read it via get_settings(). See .agents/snippets/settings.py."
+# The settings module(s) are the one place env is read, so they are exempt; everywhere else an
+# os.getenv/os.environ access is flagged. Inert in repos that never read env directly.
+ignores:
+  - "**/settings.py"
+  - "**/settings/**"
+  - "**/config.py"
+  - "**/config/**"
+  - "**/conftest.py"
+  - "**/tests/**"
+rule:
+  any:
+    - pattern: os.getenv($$$ARGS)
+    - pattern: os.environ
