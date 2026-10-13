@@ -1,0 +1,15 @@
+id: no-dict-alias
+language: python
+severity: error
+message: "CES-79 (no-dict-alias): Type alias points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+rule:
+  any:
+    # X = dict / X = dict[...]
+    - pattern: "$NAME = dict"
+    - pattern: "$NAME = dict[$$$ARGS]"
+    # X: TypeAlias = dict / X: TypeAlias = dict[...]
+    - pattern: "$NAME: $ANN = dict"
+    - pattern: "$NAME: $ANN = dict[$$$ARGS]"
+    # PEP 695: type X = dict[...]
+    - pattern: "type $NAME = dict"
+    - pattern: "type $NAME = dict[$$$ARGS]"

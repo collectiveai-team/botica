@@ -1,0 +1,17 @@
+id = "no-dict-call-return"
+code = "BTDM003"
+ces = "CES-79"
+summary = "No function returning dict(...)"
+status = "stable"
+since = "0.8.0"
+tags = ["typing"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = true
+default-severity = "error"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

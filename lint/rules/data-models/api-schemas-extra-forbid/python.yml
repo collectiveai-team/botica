@@ -1,0 +1,20 @@
+id: api-schemas-extra-forbid
+language: python
+severity: warning
+message: "CES-4 (api-schemas-extra-forbid): API request/response schema omits model_config = ConfigDict(extra='forbid'). Reject unknown fields at the API boundary so a typo'd or stale payload fails loudly instead of being silently dropped. See .agents/snippets/api-schemas.py."
+# Placement-scoped (per the CES-17 layout): only request/response schemas under an api/ package,
+# including versioned v* dirs, are matched. Internal/domain models and non-API repos are inert.
+files:
+  - "**/api/**/schemas/requests/**/*.py"
+  - "**/api/**/schemas/responses/**/*.py"
+rule:
+  kind: class_definition
+  all:
+    - has:
+        field: superclasses
+        stopBy: end
+        regex: "BaseModel"
+    - not:
+        has:
+          stopBy: end
+          regex: "extra\\s*=\\s*[\"']forbid[\"']"

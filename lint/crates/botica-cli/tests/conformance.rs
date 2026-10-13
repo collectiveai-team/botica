@@ -14,11 +14,16 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
     assert_eq!(
         names,
         [
+            "api-schemas-extra-forbid",
             "file-size-guard",
             "invalid-suppression",
             "io-error",
             "log-no-print",
             "no-artifacts-in-package",
+            "no-dict-alias",
+            "no-dict-call-return",
+            "no-dict-literal-return",
+            "no-dict-return-annotation",
             "no-notebooks",
             "no-tests-in-package",
             "no-utils",

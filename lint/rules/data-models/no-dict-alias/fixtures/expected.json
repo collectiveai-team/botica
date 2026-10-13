@@ -1,0 +1,72 @@
+{
+  "diagnostics": [
+    {
+      "path": "types.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 30,
+          "line": 3,
+          "column": 1
+        },
+        "end": {
+          "offset": 44,
+          "line": 3,
+          "column": 15
+        }
+      },
+      "message": "CES-79 (no-dict-alias): Type alias points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+    },
+    {
+      "path": "types.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 45,
+          "line": 4,
+          "column": 1
+        },
+        "end": {
+          "offset": 68,
+          "line": 4,
+          "column": 24
+        }
+      },
+      "message": "CES-79 (no-dict-alias): Type alias points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+    },
+    {
+      "path": "types.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 69,
+          "line": 5,
+          "column": 1
+        },
+        "end": {
+          "offset": 105,
+          "line": 5,
+          "column": 37
+        }
+      },
+      "message": "CES-79 (no-dict-alias): Type alias points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+    },
+    {
+      "path": "types.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 106,
+          "line": 6,
+          "column": 1
+        },
+        "end": {
+          "offset": 131,
+          "line": 6,
+          "column": 26
+        }
+      },
+      "message": "CES-79 (no-dict-alias): Type alias points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+    }
+  ]
+}

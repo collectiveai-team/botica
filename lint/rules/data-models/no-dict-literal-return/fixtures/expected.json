@@ -1,0 +1,21 @@
+{
+  "diagnostics": [
+    {
+      "path": "service.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 26,
+          "line": 2,
+          "column": 12
+        },
+        "end": {
+          "offset": 38,
+          "line": 2,
+          "column": 24
+        }
+      },
+      "message": "CES-79 (no-dict-literal-return): Boundary function returns a dict literal. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+    }
+  ]
+}

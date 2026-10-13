@@ -12,13 +12,21 @@ fn embedded() -> Catalog {
     Catalog::embedded().unwrap_or_else(|error| panic!("the built-in catalog is invalid:\n{error}"))
 }
 
+/// The files under `dir`, at any depth: a rule scoped to a placement keeps its fixtures in it.
 fn files_in(dir: &Path) -> usize {
     fs::read_dir(dir)
         .map(|entries| {
             entries
                 .filter_map(Result::ok)
-                .filter(|e| e.path().is_file())
-                .count()
+                .map(|e| {
+                    let path = e.path();
+                    if path.is_file() {
+                        1
+                    } else {
+                        files_in(&path)
+                    }
+                })
+                .sum()
         })
         .unwrap_or(0)
 }

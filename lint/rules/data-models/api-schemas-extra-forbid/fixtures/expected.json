@@ -1,0 +1,38 @@
+{
+  "diagnostics": [
+    {
+      "path": "api/schemas/requests/user.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 33,
+          "line": 4,
+          "column": 1
+        },
+        "end": {
+          "offset": 75,
+          "line": 5,
+          "column": 14
+        }
+      },
+      "message": "CES-4 (api-schemas-extra-forbid): API request/response schema omits model_config = ConfigDict(extra='forbid'). Reject unknown fields at the API boundary so a typo'd or stale payload fails loudly instead of being silently dropped. See .agents/snippets/api-schemas.py."
+    },
+    {
+      "path": "api/v1/schemas/responses/user.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 33,
+          "line": 4,
+          "column": 1
+        },
+        "end": {
+          "offset": 70,
+          "line": 5,
+          "column": 12
+        }
+      },
+      "message": "CES-4 (api-schemas-extra-forbid): API request/response schema omits model_config = ConfigDict(extra='forbid'). Reject unknown fields at the API boundary so a typo'd or stale payload fails loudly instead of being silently dropped. See .agents/snippets/api-schemas.py."
+    }
+  ]
+}

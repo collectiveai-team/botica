@@ -1,0 +1,55 @@
+{
+  "diagnostics": [
+    {
+      "path": "service.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 40,
+          "line": 2,
+          "column": 18
+        }
+      },
+      "message": "CES-79 (no-dict-return-annotation): Boundary function returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+    },
+    {
+      "path": "service.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 43,
+          "line": 5,
+          "column": 1
+        },
+        "end": {
+          "offset": 92,
+          "line": 6,
+          "column": 18
+        }
+      },
+      "message": "CES-79 (no-dict-return-annotation): Boundary function returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+    },
+    {
+      "path": "service.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 95,
+          "line": 9,
+          "column": 1
+        },
+        "end": {
+          "offset": 145,
+          "line": 10,
+          "column": 24
+        }
+      },
+      "message": "CES-79 (no-dict-return-annotation): Boundary function returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+    }
+  ]
+}

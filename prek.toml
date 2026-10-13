@@ -114,10 +114,11 @@ pass_filenames = false
 priority = 2
 
 # MARK: ast-grep
+# The invalid fixtures of the rules in `lint/rules` break the rules on purpose.
 [[repos.hooks]]
 id = "ast-grep"
 name = "ast-grep"
-entry = "uvx --from ast-grep-cli ast-grep scan"
+entry = "uvx --from ast-grep-cli ast-grep scan --globs '!lint/rules/**/fixtures/**'"
 language = "system"
 types = ["python"]
 pass_filenames = false
