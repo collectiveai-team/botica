@@ -109,6 +109,35 @@ fn rules_lists_an_ast_grep_rule_with_its_code_and_explain_describes_it() {
 }
 
 #[test]
+fn the_prefilter_of_a_rule_spares_the_files_that_cannot_match() {
+    let dir = project("prefiltered", "");
+    write(&dir, "plain.py", "x = 1\n");
+    write(&dir, "literal.py", "def f():\n    return {\"a\": 1}\n");
+
+    let output = command(
+        &dir,
+        &[
+            "lint",
+            ".",
+            "--select",
+            "no-dict-literal-return",
+            "--timings",
+        ],
+    );
+
+    assert!(
+        stdout(&output).starts_with("literal.py:2:12:"),
+        "{}",
+        stdout(&output)
+    );
+    assert!(
+        stderr(&output).contains("prefilter: parsed 1 files, skipped 2"),
+        "{}",
+        stderr(&output)
+    );
+}
+
+#[test]
 fn no_astgrep_still_leaves_the_ast_grep_rules_out() {
     let dir = project("no-astgrep", "");
 

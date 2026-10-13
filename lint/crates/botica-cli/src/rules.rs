@@ -6,15 +6,30 @@ use botica_core::suppress::Policy;
 use botica_core::{Engine, Exclusion, NativePlanner, NativeRule};
 use std::path::Path;
 
-/// The YAML of every active rule of the catalog that is implemented with ast-grep.
-fn catalog_sources(resolution: &Resolution) -> Vec<&str> {
+/// An active rule of the catalog that is implemented with ast-grep: its YAML and the regex that
+/// `rule.toml` declares for the prefilter, if any.
+struct Source<'r> {
+    yaml: &'r str,
+    prefilter: Option<&'r str>,
+}
+
+fn catalog_sources(resolution: &Resolution) -> Vec<Source<'_>> {
     resolution
         .entries()
         .iter()
         .filter(|entry| entry.active)
-        .flat_map(|entry| &entry.rule.implementations)
-        .filter(|implementation| implementation.kind == Kind::AstGrep)
-        .filter_map(|implementation| implementation.source.as_deref())
+        .flat_map(|entry| {
+            entry
+                .rule
+                .implementations
+                .iter()
+                .filter(|implementation| implementation.kind == Kind::AstGrep)
+                .filter_map(|implementation| implementation.source.as_deref())
+                .map(|yaml| Source {
+                    yaml,
+                    prefilter: entry.rule.prefilter.as_deref(),
+                })
+        })
         .collect()
 }
 
@@ -37,9 +52,9 @@ pub fn build_engine(
 ) -> Result<Engine> {
     let mut rules = Vec::new();
     if options.astgrep {
-        for yaml in catalog_sources(options.resolution) {
-            for mut rule in AstGrepRule::from_yaml(yaml)? {
-                if let Some(pattern) = declared_prefilter(rule.id()) {
+        for source in catalog_sources(options.resolution) {
+            for mut rule in AstGrepRule::from_yaml(source.yaml)? {
+                if let Some(pattern) = source.prefilter {
                     rule.declare_prefilter(pattern);
                 }
                 rules.push(rule);
@@ -78,8 +93,9 @@ pub fn fingerprint(
     hasher.update(b"diagnostic-v2");
     hasher.update(&[u8::from(with_astgrep)]);
     hasher.update(config.as_bytes());
-    for yaml in catalog_sources(resolution) {
-        hasher.update(yaml.as_bytes());
+    for source in catalog_sources(resolution) {
+        hasher.update(source.yaml.as_bytes());
+        hasher.update(source.prefilter.unwrap_or_default().as_bytes());
     }
     if with_astgrep {
         for yaml in extra_rule_texts(extra_rules)? {
@@ -103,13 +119,4 @@ fn extra_rule_texts(dir: Option<&Path>) -> Result<Vec<String>> {
         .into_iter()
         .map(|path| Ok(std::fs::read_to_string(path)?))
         .collect()
-}
-
-/// Stand-in for the `prefilter = "<regex>"` field of `rule.toml`, which only rules without a
-/// pattern need: the derived prefilter has nothing to read in a `kind:`-only rule.
-fn declared_prefilter(rule_id: &str) -> Option<&'static str> {
-    match rule_id {
-        "no-dict-literal-return" => Some(r"(?-u)\breturn[\s\\]*\{"),
-        _ => None,
-    }
 }
