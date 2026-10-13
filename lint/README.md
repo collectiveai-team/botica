@@ -97,7 +97,7 @@ configuration so it does not report `RUF102` for `BT` codes (the scaffolding tem
 # prek.toml: the mirror installs the wheel of the same version from PyPI
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
-rev = "v0.7.0"
+rev = "v0.7.1"
 
 [[repos.hooks]]
 id = "botica"
