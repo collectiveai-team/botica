@@ -163,6 +163,26 @@ language = "system"
 pass_filenames = false
 priority = 2
 
+# MARK: skill-validator
+# Spec, links, token counts and content checks of the skills under `skills/`, by
+# agent-ecosystem/skill-validator (no account, no network except for the first `go run`). WARNING
+# ONLY for now: the loop always exits 0, and `verbose` shows what it found. It takes one skill
+# directory, or a directory of skills, per call, so it runs once per group. `agents/` is allowed:
+# Codex reads `agents/openai.yaml`. Needs Go on the PATH. To make it a gate, drop the `exit 0` and
+# add `--strict` (warnings fail) after fixing what it reports.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "skill-validator"
+name = "skill-validator (warnings only)"
+entry = "sh -c 'for group in skills/*/; do go run github.com/agent-ecosystem/skill-validator/cmd/skill-validator@v1.6.2 check -o compact --allow-dirs=agents \"$group\"; done; exit 0'"
+language = "system"
+files = "^skills/"
+pass_filenames = false
+verbose = true
+priority = 2
+
 # MARK: botica
 # The same structure rules as the generic template (CES-71 file-size-guard, CES-63 no-utils, CES-32
 # no-notebooks and no-artifacts-in-package, no-tests-in-package), run by `botica lint` through the
