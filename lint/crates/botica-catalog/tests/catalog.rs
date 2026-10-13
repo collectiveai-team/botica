@@ -334,6 +334,10 @@ fn status_can_differ_per_implementation_and_languages_are_the_union() {
     let loaded = catalog(vec![
         vec![family("logging", "LOG")],
         rule_with("logging", "log-no-print", "BTLOG001", "", two),
+        vec![
+            file("logging/log-no-print/python.yml", "id: log-no-print\n"),
+            file("logging/log-no-print/typescript.yml", "id: log-no-print\n"),
+        ],
     ])
     .expect("a rule with one implementation per language loads");
 
@@ -394,4 +398,73 @@ fn every_ecosystem_has_a_name_that_parses_back_to_it() {
         );
     }
     assert_eq!(botica_catalog::Ecosystem::parse("typescript"), None);
+}
+
+const AST_GREP_PYTHON: &str =
+    "[[implementations]]\nkind = \"ast-grep\"\nlanguages = [\"python\"]\nfile = \"python.yml\"\n";
+
+#[test]
+fn an_ast_grep_implementation_carries_the_text_of_its_file() {
+    let loaded = catalog(vec![
+        vec![family("logging", "LOG")],
+        rule_with("logging", "log-no-print", "BTLOG001", "", AST_GREP_PYTHON),
+        vec![file(
+            "logging/log-no-print/python.yml",
+            "id: log-no-print\n",
+        )],
+    ])
+    .expect("a rule whose file is there loads");
+
+    let rule = loaded.resolve("log-no-print").expect("rule exists");
+    assert_eq!(
+        rule.implementations[0].source.as_deref(),
+        Some("id: log-no-print\n")
+    );
+}
+
+#[test]
+fn a_native_implementation_has_no_source() {
+    let loaded = catalog(vec![
+        vec![family("structure", "STRUC")],
+        rule("structure", "one", "BTSTRUC001"),
+    ])
+    .expect("loads");
+
+    assert_eq!(loaded.rules()[0].implementations[0].source, None);
+}
+
+#[test]
+fn an_implementation_whose_file_is_missing_is_rejected() {
+    let message = issues(vec![
+        vec![family("logging", "LOG")],
+        rule_with("logging", "log-no-print", "BTLOG001", "", AST_GREP_PYTHON),
+    ]);
+
+    assert!(message.contains("python.yml"), "{message}");
+    assert!(message.contains("log-no-print"), "{message}");
+}
+
+#[test]
+fn an_ast_grep_implementation_must_name_its_file() {
+    let no_file = "[[implementations]]\nkind = \"ast-grep\"\nlanguages = [\"python\"]\n";
+    let message = issues(vec![
+        vec![family("logging", "LOG")],
+        rule_with("logging", "log-no-print", "BTLOG001", "", no_file),
+    ]);
+
+    assert!(message.contains("file"), "{message}");
+}
+
+#[test]
+fn a_yaml_file_no_implementation_names_is_rejected() {
+    let message = issues(vec![
+        vec![family("logging", "LOG")],
+        rule_with("logging", "log-no-print", "BTLOG001", "", AST_GREP_PYTHON),
+        vec![
+            file("logging/log-no-print/python.yml", "id: a\n"),
+            file("logging/log-no-print/stray.yml", "id: b\n"),
+        ],
+    ]);
+
+    assert!(message.contains("stray.yml"), "{message}");
 }

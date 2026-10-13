@@ -84,6 +84,9 @@ pub struct Implementation {
     pub languages: Vec<String>,
     pub status: Option<Status>,
     pub file: Option<String>,
+    /// The text of `file`, read by the catalog when it loads (never written in `rule.toml`).
+    #[serde(skip)]
+    pub source: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]

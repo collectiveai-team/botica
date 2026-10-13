@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use serde::de::DeserializeOwned;
 
 use crate::issue::{issue, CatalogError, CatalogIssue};
-use crate::model::{Family, FamilyFile, Rule};
+use crate::model::{Family, FamilyFile, Kind, Rule};
 use crate::validate::{check_across, check_family_code, check_rule, is_kebab_case};
 
 pub const OWN_RULES_DIR: &str = "botica";
@@ -25,6 +25,8 @@ pub struct Catalog {
 struct RuleEntry<'a> {
     toml: Option<&'a SourceFile>,
     readme: Option<&'a SourceFile>,
+    /// The YAML files of the implementations.
+    sources: Vec<&'a SourceFile>,
 }
 
 #[derive(Default)]
@@ -89,9 +91,12 @@ fn scan<'a>(
             [dir, slug, "README.md"] => {
                 dirs.entry(dir).or_default().rules.entry(slug).or_default().readme = Some(file);
             }
+            [dir, slug, name] if name.ends_with(".yml") => {
+                dirs.entry(dir).or_default().rules.entry(slug).or_default().sources.push(file);
+            }
             _ => issues.push(issue(
                 file.path.as_str(),
-                "unexpected file: expected <family>/family.toml or <family>/<slug>/{rule.toml,README.md}",
+                "unexpected file: expected <family>/family.toml or <family>/<slug>/{rule.toml,README.md,<implementation>.yml}",
             )),
         }
     }
@@ -175,10 +180,57 @@ fn load_rules(
                 continue;
             };
             issues.extend(check_rule(&toml_file.path, slug, &rule, family));
+            attach_sources(&base, &mut rule, &files.sources, issues);
             rule.family = family.map(|f| f.name.clone());
             rule.readme = readme.text.clone();
             rules.push((toml_file.path.clone(), rule));
         }
     }
     rules
+}
+
+/// Gives each ast-grep implementation the text of the file it names, and rejects the files that
+/// are named by nobody, the ones that are missing and the implementations that name none.
+fn attach_sources(
+    base: &str,
+    rule: &mut Rule,
+    sources: &[&SourceFile],
+    issues: &mut Vec<CatalogIssue>,
+) {
+    let mut named = Vec::new();
+    for implementation in &mut rule.implementations {
+        if implementation.kind != Kind::AstGrep {
+            continue;
+        }
+        let Some(name) = implementation.file.clone() else {
+            issues.push(issue(
+                format!("{base}/rule.toml"),
+                "an ast-grep implementation must name its YAML with `file`",
+            ));
+            continue;
+        };
+        let path = format!("{base}/{name}");
+        match sources.iter().find(|source| source.path == path) {
+            Some(source) => implementation.source = Some(source.text.clone()),
+            None => issues.push(issue(
+                path,
+                format!(
+                    "`{name}` is named by an implementation of `{}` and is missing",
+                    rule.id
+                ),
+            )),
+        }
+        named.push(name);
+    }
+    for source in sources {
+        let used = named
+            .iter()
+            .any(|name| source.path == format!("{base}/{name}"));
+        if !used {
+            issues.push(issue(
+                source.path.as_str(),
+                "no implementation names this file with `file`",
+            ));
+        }
+    }
 }
