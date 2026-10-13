@@ -46,11 +46,22 @@ class Change:
 
 
 def _new_rule_folders(changes: Sequence[Change], catalogs: Sequence[str]) -> list[PurePosixPath]:
+    """Return the folders of the rules a change adds; a rule that only changes family is a move."""
+    rule_files = [PurePosixPath(change.path) for change in changes]
+    removed = {
+        path.parent.name
+        for change, path in zip(changes, rule_files, strict=True)
+        if change.status == "D" and path.name == "rule.toml"
+    }
     folders = []
-    for change in changes:
-        path = PurePosixPath(change.path)
+    for change, path in zip(changes, rule_files, strict=True):
         folder = path.parent
-        if change.status == "A" and path.name == "rule.toml" and str(folder.parents[1]) in catalogs:
+        if (
+            change.status == "A"
+            and path.name == "rule.toml"
+            and str(folder.parents[1]) in catalogs
+            and folder.name not in removed
+        ):
             folders.append(folder)
     return folders
 

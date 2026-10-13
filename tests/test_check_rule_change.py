@@ -87,6 +87,32 @@ def test_a_change_may_add_several_rules_and_each_keeps_its_own_contract(tmp_path
     assert crc.violations(changes, tmp_path) == []
 
 
+def test_a_rule_moved_to_another_family_is_not_a_new_rule(tmp_path: Path):
+    add_rule(tmp_path, BUILTIN, "fastapi", "no-foo", "ast-grep")
+    moved = [
+        crc.Change("D", "lint/rules/data-models/no-foo/rule.toml"),
+        added("lint/rules/fastapi/no-foo/rule.toml"),
+        modified("lint/README.md"),
+        modified("lint/crates/botica-core/benches/lint_source.rs"),
+    ]
+
+    assert crc.violations(moved, tmp_path) == []
+
+
+def test_a_rule_removed_while_another_is_added_is_still_checked(tmp_path: Path):
+    add_rule(tmp_path, BUILTIN, "structure", "no-foo", "ast-grep")
+    changes = [
+        crc.Change("D", "lint/rules/structure/no-bar/rule.toml"),
+        added("lint/rules/structure/no-foo/rule.toml"),
+        modified("lint/crates/botica-core/src/engine.rs"),
+    ]
+
+    assert crc.violations(changes, tmp_path) == [
+        "lint/crates/botica-core/src/engine.rs",
+        "lint/rules/structure/no-bar/rule.toml",
+    ]
+
+
 def test_a_change_that_adds_no_rule_is_not_checked(tmp_path: Path):
     add_rule(tmp_path, BUILTIN, "structure", "no-foo", "ast-grep")
     changes = [
