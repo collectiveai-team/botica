@@ -185,8 +185,7 @@ priority = 2
 # no-notebooks and no-artifacts-in-package, no-tests-in-package), run by `botica lint` through the
 # mirror, which installs botica from PyPI at the release `rev` names. Own `[[repos]]` table, so it
 # goes after the `local` hooks above, not among them. The selection is the one of
-# `scaffolding/templates/prek-generic.toml`: the structure rules and the syntax rules that the
-# `ast-grep` hook used to run.
+# `scaffolding/templates/prek-generic.toml`: the structure rules and the syntax rules.
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
 rev = "v0.8.0"
@@ -194,9 +193,9 @@ rev = "v0.8.0"
 [[repos.hooks]]
 id = "botica"
 args = ["--select", "file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package,no-dict-alias,no-dict-call-return,no-dict-literal-return,no-dict-return-annotation,api-schemas-extra-forbid,log-get-logger,log-no-print,settings-module,cli-typed-framework,arch-database-package"]
-# Same exclusions as ruff above: the rules' own invalid fixtures (oversized, a utils.py, … on
-# purpose), the template payload this repo ships to other repositories (a `tests/` snippet) and
-# the bundled skills.
+# Left out: the rules' own invalid fixtures (oversized, a utils.py, … on purpose), the template
+# payload this repo ships to other repositories (a `tests/` snippet), the bundled skills, and the
+# maintainer tools that are never installed (`lint/bench/`, `scripts/`).
 # Documentation is already left out by the rule's default `ignores`.
-exclude = "^(lint/(rules|proposals)/.*/fixtures/|scaffolding/templates/|skills/)"
+exclude = "^(lint/(rules|proposals)/.*/fixtures/|lint/bench/|scaffolding/templates/|scripts/|skills/)"
 priority = 2
