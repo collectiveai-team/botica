@@ -346,7 +346,7 @@ tracker when the user explicitly wants it.
 
 Run `scaffolding check` — it asserts the completeness checklist (gitignore
 entries incl. `!.env.schema`; prek `betterleaks` hook; `.env.schema` tracked and
-`.env` ignored; ast-grep config when the hook is present; the skills manifest
+`.env` ignored; the skills manifest
 present, not gitignored, tracked, and reconciled against `.agents/skills/` in both
 directions — declared-but-absent and installed-but-undeclared; the `AGENTS.md`
 section, which is the only universal requirement). Agent config is validated

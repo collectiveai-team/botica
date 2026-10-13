@@ -334,9 +334,7 @@ def _ci_publish_ops(ctx: Context) -> list[Op]:
 
 
 def _ci_opencode_ops(ctx: Context) -> list[Op]:
-    return [
-        _ci_workflow_op(ctx, f"workflows/{wf}") for wf in ("opencode.yml", "proposal-update.yml")
-    ]
+    return [_ci_workflow_op(ctx, "workflows/opencode.yml")]
 
 
 # Each entry ships only when its key is in the selected `ci_parts`.

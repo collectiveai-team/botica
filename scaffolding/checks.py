@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import re
 import subprocess
-import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -209,37 +208,6 @@ def _check_env_ignored(root: Path) -> CheckResult:
     return CheckResult(".env ignored", ok, "ignored" if ok else ".env is not gitignored")
 
 
-def _prek_hook_ids(prek: Path) -> set[str]:
-    """Every hook `id` declared in a prek config, or empty if it cannot be parsed."""
-    try:
-        config = tomllib.loads(prek.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
-        return set()
-    ids: set[str] = set()
-    for repo in config.get("repos", []):
-        if not isinstance(repo, dict):
-            continue
-        for hook in repo.get("hooks", []):
-            if isinstance(hook, dict) and isinstance(hook.get("id"), str):
-                ids.add(hook["id"])
-    return ids
-
-
-def _check_astgrep(root: Path) -> CheckResult | None:
-    prek = root / "prek.toml"
-    # Parse the config instead of substring-matching the file: the generic template
-    # mentions "ast-grep" in a *comment* on the jscpd hook, which made every repo
-    # without an ast-grep hook fail this check demanding an sgconfig.yml it never needed.
-    prek_has_astgrep = prek.exists() and "ast-grep" in _prek_hook_ids(prek)
-    if not prek_has_astgrep:
-        return None
-    rules_dir = root / "ast-grep" / "rules"
-    rules = list(rules_dir.glob("*.yml")) if rules_dir.exists() else []
-    ok = (root / "sgconfig.yml").exists() and bool(rules)
-    detail = "ok" if ok else "ast-grep hook present but sgconfig.yml/rules missing"
-    return CheckResult("ast-grep config", ok, detail)
-
-
 def _check_agents_md(root: Path) -> CheckResult:
     am = root / "AGENTS.md"
     if not am.exists():
@@ -281,15 +249,13 @@ def _check_skill_dependencies(root: Path) -> CheckResult:
 def run_checks(root: Path | None = None) -> list[CheckResult]:
     root = root or Path.cwd()
     # Agent config is per-agent and optional: validate whatever is present rather than
-    # requiring opencode.jsonc. AGENTS.md is the only universal requirement. `_check_astgrep`
-    # returns None (filtered out) when the ast-grep hook isn't present in prek.toml.
+    # requiring opencode.jsonc. AGENTS.md is the only universal requirement.
     checks: list[CheckResult | None] = [
         _check_gitignore(root),
         _check_prek(root),
         *_agent_config_checks(root),
         _check_env_schema(root),
         _check_env_ignored(root),
-        _check_astgrep(root),
         *_check_skills_manifest(root),
         _check_skill_dependencies(root),
         _check_agents_md(root),
