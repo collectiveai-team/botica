@@ -15,7 +15,7 @@ one. The pack defines one standard per concern and marks where existing code sho
 **Scope:** general — applies everywhere.
 **Description:** Cross-repo defaults: respect local contracts, internal deps.
 
-- `general-respect-local-repo` — don't bulldoze a working repo's contracts in an unrelated change
+- `general-respect-local-repo` — a repo's deliberate choices win over house defaults; migrate only by explicit decision (CES-30)
 - `general-internal-git-deps` — pin internal/shared deps by git tag, never a branch
 
 ## 2. Python Toolchain (py)
@@ -28,7 +28,8 @@ through prek, line 100, latest Python.
 - `py-build-backend` — use hatchling (+ hatch-vcs for git-tag versioning)
 - `py-version-support` — target the latest Python for new code; honor an existing repo's pin
 - `py-ruff-format-modern` — ruff + ruff-format + pyrefly + botica via prek, line 100
-- `py-legacy-lint-stack` — recognize a legacy black/isort/pylint/mypy setup and migrate it
+- `py-legacy-lint-stack` — don't reintroduce black/isort/flake8/pylint; the stack is ruff + pyrefly + botica (CES-58)
+- `py-legacy-lint-migration` — recognize a legacy black/isort/pylint/mypy setup and migrate it
 - `py-no-formatter-churn` — never reformat outside the touched area
 
 ## 3. Python Layout & Design (pylayout)
@@ -50,14 +51,15 @@ through prek, line 100, latest Python.
 - `arch-deletion-test` — delete the module: does complexity vanish (pass-through) or spread (earning)?
 - `arch-adapter-discipline` — one adapter = hypothetical seam, two = real
 - `arch-interface-is-test-surface` — test observable behavior through the same seam callers cross
-- `arch-vocabulary` — use the exact terms; avoid component/service/API/boundary
+- `arch-vocabulary` — name units with the house terms (api, database, core…), not ad-hoc synonyms (CES-16)
 
 ## 5. Large Files & Spaghetti (spaghetti)
 
 **Scope:** general. **Source:** a pragmatic house heuristic — NOT Matt Pocock (he rejects line ratios).
 **Description:** Concrete size/mixing heuristics for PR gating.
 
-- `spaghetti-mixed-orchestration` — don't pile transport+validation+domain+persistence+formatting in one file
+- `spaghetti-mixed-orchestration` — keep orchestration thin; push logic and I/O into named units (CES-8)
+- `spaghetti-mixed-concerns` — don't pile transport+validation+domain+persistence+formatting in one file
 - `spaghetti-function-size` — split functions over ~80 lines or with deep nesting
 
 ## 6. Testing (test)
@@ -66,9 +68,11 @@ through prek, line 100, latest Python.
 **Description:** pytest baseline, in-memory adapters, treat untested code as a gap.
 
 - `test-pytest-config` — pytest + the shared `[tool.pytest.ini_options]` (testpaths, filterwarnings)
-- `test-in-memory-adapters` — in-memory SQLite + TestClient; no live services
-- `test-through-interface` — assert behavior at the module interface, not internals
-- `test-coverage-gap` — treat untested code as a gap; add tests on behavior change
+- `test-in-memory-adapters` — in-memory fakes of your ports, not mocks or live I/O (CES-64)
+- `test-fastapi-sqlite-fixtures` — in-memory SQLite + TestClient; no live services
+- `test-through-interface` — assert behavior through the public interface, not internals (CES-65)
+- `test-coverage-gap` — an uncovered branch is a question: a test, dead code or a seam to refactor (CES-66)
+- `test-ship-with-change` — a test with every behavior change; default tests need no live services
 
 ## 7. Logging (log)
 

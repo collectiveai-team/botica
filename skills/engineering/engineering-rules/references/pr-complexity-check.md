@@ -19,7 +19,7 @@ that silently adds complexity in any of these dimensions is not ready for review
    or function. If deleting it would change nothing but an import, it should not exist.
 
 2. **Spaghetti conditionals** — new files that mix transport, validation, domain logic,
-   persistence, and formatting in one place fail `spaghetti-mixed-orchestration`. Split
+   persistence, and formatting in one place fail `spaghetti-mixed-concerns`. Split
    before opening.
 
 3. **Large-file growth** — list every touched file that crosses 400 lines (large) or 700
@@ -49,5 +49,5 @@ that silently adds complexity in any of these dimensions is not ready for review
 Opening a PR that adds a 900-line file, three new packages, and tests that only mock
 internal methods — with no acknowledgment of any of it.
 
-Reference: `arch-deletion-test`, `spaghetti-mixed-orchestration`, `file-size-guard`,
+Reference: `arch-deletion-test`, `spaghetti-mixed-concerns`, `file-size-guard`,
 `py-package-manager`, `test-through-interface`.

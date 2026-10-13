@@ -37,4 +37,4 @@ testpaths = ["tests"]
 
 The `testpaths` value varies by repo (`tests` or `test`) — preserve the one declared.
 
-Reference: see `test-coverage-gap` for the baseline testing expectations.
+Reference: see `test-ship-with-change` for the baseline testing expectations.

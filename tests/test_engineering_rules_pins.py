@@ -8,6 +8,9 @@ teaching a rev the repo no longer uses.
 
 Same posture as `test_skill_catalog.py`: a copy that cannot drift undetected is
 worth more than a copy nobody re-reads. When this fails, update the rule.
+
+A rule with a CES also ships in `scaffolding/templates/agents-rules/`, and the skill carries it
+for the repositories that have no `.agents/rules/`. The two copies must say the same.
 """
 
 from __future__ import annotations
@@ -52,3 +55,31 @@ def test_rule_quotes_the_rev_prek_actually_pins(repo_url: str):
         f"{RULE.name} teaches rev {sorted(set(doc_revs))} for {repo_url}, prek.toml pins "
         f"{expected!r}. Update the rule."
     )
+
+
+TEMPLATE_RULES = REPO_ROOT / "scaffolding" / "templates" / "agents-rules"
+
+
+def _body(path: Path) -> str:
+    """Return a rule without the frontmatter the skill adds to it."""
+    text = path.read_text(encoding="utf-8")
+    if text.startswith("---\n"):
+        text = text.split("\n---\n", 1)[1]
+    return text.strip()
+
+
+def test_a_rule_the_skill_shares_with_the_templates_says_what_the_template_says():
+    shared = sorted(
+        rule.name
+        for rule in TEMPLATE_RULES.glob("*.md")
+        if (SKILL / "references" / rule.name).exists()
+    )
+    assert shared, "no rule is in both places: drop this test if that was deliberate"
+
+    drifted = [
+        name
+        for name in shared
+        if _body(SKILL / "references" / name) != _body(TEMPLATE_RULES / name)
+    ]
+
+    assert not drifted, f"the skill says something else than the template: {drifted}"

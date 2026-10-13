@@ -60,5 +60,5 @@ All passing ✓
 Narrow test runs are acceptable when broader ones need infrastructure. Name the boundary.
 Never claim a check passed if it was skipped, errored out, or only partially scoped.
 
-Reference: `py-ruff-format-modern`, `py-legacy-lint-stack`, `infra-makefile-docker`,
+Reference: `py-ruff-format-modern`, `py-legacy-lint-migration`, `infra-makefile-docker`,
 `pr-description` (the "how verified" section lives here).

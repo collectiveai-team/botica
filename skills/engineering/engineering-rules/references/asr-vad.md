@@ -48,7 +48,7 @@ VAD_LEVEL=2                                # Silero intensity (0-3), read in CLI
 **Test gap:** `torch.hub.load("snakers4/silero-vad", ...)` downloads from the internet on
 first run. Any test that constructs `SileroVAD` without mocking this call will make a
 network request (and fail in CI without connectivity). Mock `torch.hub.load` at the test
-boundary. Cross-ref `test-coverage-gap`.
+boundary. Cross-ref `test-ship-with-change`.
 
 Reference: `asr-streaming-interfaces` for `VADModelInterface`; `asr-threading-bridge` for
 how VAD runs in its own thread.

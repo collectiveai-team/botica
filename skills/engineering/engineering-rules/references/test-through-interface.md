@@ -1,5 +1,5 @@
 ---
-title: Assert behavior through the module's public interface, not its internals
+title: CES-65 · test through the interface
 section: test
 scope: general
 applies-to: all
@@ -7,35 +7,38 @@ status: direction
 tags: test, architecture, interface, seam
 ---
 
-## Assert behavior through the module's public interface, not its internals
+# CES-65 · test through the interface
 
-Tests should cross the same seam that callers cross — the public function, HTTP endpoint,
-or ABC method — and assert observable outputs. Tests that reach into private state or
-patch internal helpers survive only as long as the current implementation; tests at the
-interface survive refactors. This is the testing corollary of `arch-interface-is-test-surface`.
+**Code:** `CES-65` &nbsp;·&nbsp; **Slug:** `test-through-interface` &nbsp;·&nbsp; **Tier:** judgment
+&nbsp;·&nbsp; **Tracker:** [#65](https://github.com/collectiveai-team/botica/issues/65)
 
-**Prefer (assert via the public seam):**
+## Directive
+
+Test through the **public interface** — the same seam production code calls — and assert on
+observable behaviour. Don't reach into private attributes, call underscore-prefixed methods, or
+assert on internal state. If it isn't part of the contract, don't test it directly.
+
+## Why
+
+- Tests bound to internals break on every refactor even when behaviour is unchanged, which trains
+  people to delete tests instead of trusting them. Interface tests survive refactors and actually
+  protect the contract.
+- Testing through the public surface is also the best pressure on design: if something is hard to
+  test without poking internals, the interface is probably wrong.
+
+## Do / Don't
 
 ```python
-# Test the HTTP interface — asserts behavior a real caller would observe
-def test_create_contract_returns_id(client: TestClient):
-    resp = client.post("/contracts/", json={"name": "NDA", "content": "..."})
-    assert resp.status_code == 201
-    assert "id" in resp.json()
+# Do — observable behaviour through the public API
+result = service.register(CreateUser(email="a@b.com"))
+assert service.find(result.id).email == "a@b.com"
+
+# Don't — reaching into internals
+assert service._store._rows[0]["email"] == "a@b.com"
 ```
 
-**Avoid (reaching into internals):**
+## Judgment
 
-```python
-# Breaks on any rename/move inside the module
-from myapp.core.crud.contract import _build_insert_stmt
-def test_internal_helper():
-    stmt = _build_insert_stmt(name="NDA")
-    assert "INSERT" in str(stmt)
-```
-
-The ABC or abstract interface layer is the natural seam for unit-testing adapters — test
-against it, not against the concrete implementation's private helpers.
-
-Reference: `arch-interface-is-test-surface`; `test-in-memory-adapters` for the fixture
-setup that makes client-level tests fast.
+If a behaviour can only be verified by inspecting private state, treat that as a missing public
+query, not a reason to break encapsulation in the test. Combine with CES-64 (fake the ports) so
+the public path is fast to drive.

@@ -34,7 +34,7 @@ lockfiles, Makefiles, CI workflows, existing tests, package layout, `README`, `C
 and ADRs if present. Determine, citing evidence:
 
 - Package manager + build backend (`py-package-manager`, `py-build-backend`).
-- Toolchain era — the house stack (uv + ruff + ruff-format + pyrefly + botica via prek) or a legacy poetry+black/isort/mypy setup (`py-ruff-format-modern`, `py-legacy-lint-stack`).
+- Toolchain era — the house stack (uv + ruff + ruff-format + pyrefly + botica via prek) or a legacy poetry+black/isort/mypy setup (`py-ruff-format-modern`, `py-legacy-lint-migration`).
 - Python version, package layout, test layout, logging, runtime entrypoints, frontend (if any).
 
 Preserve the existing toolchain unless the user asked to migrate it (`general-respect-local-repo`).
@@ -47,11 +47,11 @@ Read the architecture rules — `arch-deep-modules`, `arch-deletion-test`,
 - Shallow wrappers whose interface is nearly as complex as their implementation (apply the **deletion test**).
 - Logic spread across callers that should live behind one module interface.
 - Files over 400 lines receiving unrelated behavior; files over 700 lines (`file-size-guard`).
-- Orchestration mixing transport, validation, domain logic, persistence, formatting (`spaghetti-mixed-orchestration`).
+- Orchestration mixing transport, validation, domain logic, persistence, formatting (`spaghetti-mixed-concerns`).
 - Slices that don't match the conventions (`pylayout-meta-slice`, `pylayout-adapters-slices`, `log-get-logger`).
 - Tests asserting internals instead of behavior at the interface (`test-through-interface`).
 
-Use the exact vocabulary from `arch-vocabulary`: module, interface, implementation, depth,
+Use the exact vocabulary from `arch-deep-modules`: module, interface, implementation, depth,
 seam, adapter, leverage, locality.
 
 ### 3. Refactor in small slices
@@ -71,7 +71,7 @@ are docker-only — run linters/pytest directly (`infra-makefile-docker`).
 - House stack: `ruff check`, `ruff format --check`, `pyrefly check`, `botica lint`, `pytest`
   (via `uv run` / `uvx`), or the whole hook set with `uvx prek run --all-files`.
 - Legacy repos: run what the repo actually has (`black`, `isort`, `pylint`/`flake8`, `mypy`,
-  `pytest`) — don't introduce the house stack mid-refactor (`py-legacy-lint-stack`).
+  `pytest`) — don't introduce the house stack mid-refactor (`py-legacy-lint-migration`).
 - Always run relevant pytest tests for behavior changes; report checks that could not run.
 
 ## Output

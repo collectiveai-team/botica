@@ -1,5 +1,5 @@
 ---
-title: Use the exact architecture terms; avoid the substitutes
+title: CES-16 · architectural vocabulary
 section: arch
 scope: general
 applies-to: all
@@ -7,42 +7,36 @@ status: direction
 tags: architecture, vocabulary, language, matt-pocock
 ---
 
-## Use the exact architecture terms; avoid the substitutes
+# CES-16 · architectural vocabulary
 
-Architecture discussions are precise only when everyone uses the same words. Substitutes
-introduce ambiguity: "service" is overloaded across microservices, DI, and business layers;
-"boundary" is claimed by DDD. Use the terms from the `arch-deep-modules` glossary in code
-review, design docs, PR comments, and conversation.
+**Code:** `CES-16` &nbsp;·&nbsp; **Slug:** `arch-vocabulary` &nbsp;·&nbsp; **Tier:** judgment
+&nbsp;·&nbsp; **Tracker:** [#16](https://github.com/collectiveai-team/botica/issues/16)
 
-| Use this | Not this | Why the substitute is weaker |
+## Directive
+
+Name units with the house architectural vocabulary, consistently. Layers and packages are
+`entrypoints`, `api`, `database`, `impl`, `core` (CES-5/17/18); ports are interfaces, their
+implementations are adapters. Don't invent ad-hoc synonyms (`manager`, `handler`, `helper`,
+`service_of_services`, `processor`) for concepts that already have a name.
+
+## Why
+
+- A shared vocabulary makes the structure **greppable and predictable**: `core` always means the
+  same thing, so a reader (or an agent) can navigate an unfamiliar repo by name alone.
+- Synonym drift is how two modules end up doing the same job under different names. Agreeing on
+  the words is the cheapest way to keep the design legible.
+
+## Do / Don't
+
+| Concept | Use | Avoid |
 |---|---|---|
-| **module** | component, service, unit | scale-agnostic; "service" implies network, "unit" implies test granularity |
-| **interface** | API, signature, contract | API = HTTP endpoint to most; signature = only the type line, missing invariants |
-| **implementation** | internals, body, logic | neutral; pairs precisely with module and interface |
-| **depth** | complexity, thickness, size | depth is a measure of leverage, not of lines or cognitive load |
-| **seam** | boundary, layer, separation | boundary is overloaded with DDD; layer implies stack order |
-| **adapter** | wrapper, plugin, provider, impl | adapter states the role (fills a seam); the others describe shape or origin |
-| **leverage** | reuse, DRY | leverage is about callers getting capability; reuse is about not repeating text |
-| **locality** | cohesion, colocation | locality is about change and knowledge concentrating; cohesion is structural |
+| inbound HTTP layer | `api` | `web`, `rest`, `endpoints_v2` |
+| persistence unit | `database` | `persistence`, `dal`, `meta` |
+| reusable domain core | `core` | `common`, `shared`, `utils` |
+| port implementation | adapter | `manager`, `handler` |
 
-**Prefer (precise):**
+## Judgment
 
-```
-# PR comment
-"This module is shallow — the interface is nearly as complex as the
- implementation. Apply the deletion test: if we remove it, does the complexity
- vanish or spread to callers?"
-```
-
-**Avoid (vague):**
-
-```
-# PR comment
-"This service/component seems like a thin wrapper. Maybe we don't need
- the abstraction layer?"
-```
-
-Reference: Matt Pocock `codebase-design` skill (github.com/mattpocock/skills) — "Use these
-terms exactly — don't substitute 'component,' 'service,' 'API,' or 'boundary.' Consistent
-language is the whole point." These terms appear consistently across `arch-deep-modules`,
-`arch-deletion-test`, `arch-adapter-discipline`, and `arch-interface-is-test-surface`.
+This is a judgment-tier standard: no linter enforces it. When you name a new unit, reach for the
+established term first; introduce a new word only when the concept is genuinely new, and then add
+it to the vocabulary.

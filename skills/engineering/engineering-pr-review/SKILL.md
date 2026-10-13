@@ -37,7 +37,7 @@ Walk the diff against the rules that match the touched files. At minimum:
 - New dependencies justified and consistent with the repo (`py-package-manager`).
 - Settings/schemas/API/CLI/logging/adapters placed per the repo shape (`pylayout-*`, `api-*`, `log-*`).
 - Stack-specific rules where relevant: `prefect-*`, `llm-*`, `asr-*`, `fe-*`, `k8s-*`.
-- Tests added/updated for behavior changes; default tests need no live creds/cloud/model downloads (`test-coverage-gap`, `test-in-memory-adapters`).
+- Tests added/updated for behavior changes; default tests need no live creds/cloud/model downloads (`test-ship-with-change`, `test-in-memory-adapters`).
 
 Judge each rule against what the repo actually uses, not a one-size-fits-all standard
 (`general-respect-local-repo`).
@@ -45,7 +45,7 @@ Judge each rule against what the repo actually uses, not a one-size-fits-all sta
 ### 2. Deep-module check
 
 Apply `arch-deletion-test`, `arch-adapter-discipline`, `arch-interface-is-test-surface`, using
-the vocabulary in `arch-vocabulary`:
+the vocabulary in `arch-deep-modules`:
 
 - Shallow module: did the PR add a wrapper whose interface is nearly as complex as its implementation?
 - Deletion test: if the new module were deleted, would complexity vanish (pass-through) or spread back across callers (earning its place)?
@@ -57,7 +57,7 @@ the vocabulary in `arch-vocabulary`:
 Per the `spaghetti-*` rules:
 - List touched files over 400 lines (large) and over 700 lines (enormous) — these thresholds are a house heuristic, not Matt Pocock; use them to *trigger* judgement, then apply the deletion test.
 - For each large touched file, decide whether the PR makes it smaller, keeps the change narrowly localized, or piles on unrelated responsibility.
-- Reject changes that add branches to mixed orchestration without improving the seam (`spaghetti-mixed-orchestration`).
+- Reject changes that add branches to mixed orchestration without improving the seam (`spaghetti-mixed-concerns`).
 - Watch for duplicated conditionals across callers, boolean-flag proliferation, catch-all `utils.py` (`no-utils`), and over-long functions (`spaghetti-function-size`).
 
 ### 4. Verification check

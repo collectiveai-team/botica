@@ -1,5 +1,5 @@
 ---
-title: Treat untested code as a gap — add tests when behavior changes
+title: CES-66 · coverage gaps are a signal
 section: test
 scope: general
 applies-to: all
@@ -7,55 +7,34 @@ status: current
 tags: test, coverage, gap, ci
 ---
 
-## Treat untested code as a gap — add tests when behavior changes
+# CES-66 · coverage gaps are a signal
 
-Untested code is a liability. The default posture is: any behavior change (refactor, new
-endpoint, bug fix) must ship with a test that encodes the expected behavior. Do not wait
-for a separate "testing pass" — tests are part of the change.
+**Code:** `CES-66` &nbsp;·&nbsp; **Slug:** `test-coverage-gap` &nbsp;·&nbsp; **Tier:** judgment
+&nbsp;·&nbsp; **Tracker:** [#66](https://github.com/collectiveai-team/botica/issues/66)
 
-**The constraint that matters most:** default tests must not require live cloud services,
-model downloads, credentials, or any network access. Tests that need these must be gated
-behind a pytest marker and skipped in CI unless the relevant service is explicitly
-provisioned.
+## Directive
 
-**Required when you touch behavior:**
+Treat an uncovered branch as a **question, not a number**. Every coverage gap is one of: a
+missing test, dead code, or an untestable seam that wants refactoring. Investigate which — don't
+paper over it with a `# pragma: no cover` to make a percentage go up.
 
-```python
-# Add or update a test whenever you:
-# - refactor a module's internal seam (callers should stay green)
-# - add a new public function or API endpoint
-# - fix a bug (the test encodes the regression)
+## Why
 
-@pytest.mark.parametrize("name,expected", [("NDA", 201), ("", 422)])
-def test_create_contract_validation(client: TestClient, name: str, expected: int):
-    resp = client.post("/contracts/", json={"name": name, "content": "x"})
-    assert resp.status_code == expected
-```
+- A coverage *percentage* is easy to game (assert nothing, exclude files) and says little. The
+  *gaps* are the signal: the specific line nothing exercises is exactly where a bug will hide.
+- Chasing a number leads to low-value tests written to touch lines. Chasing gaps leads to either
+  a real test or the deletion of code that shouldn't exist.
 
-**Avoid:**
+## How to read a gap
 
-```python
-# Tests that unconditionally download a model or call a cloud provider
-def test_transcribe():
-    model = whisper.load_model("base.en")   # downloads ~150 MB at test time
-    result = model.transcribe("audio.wav")
-    assert result["text"]
-```
+| The uncovered code is… | Do |
+|---|---|
+| a real branch nothing tests | write the test (ideally through the interface, CES-65) |
+| unreachable / dead | delete it |
+| hard to reach without internals | refactor the seam so it's drivable from the outside |
 
-Gate resource-heavy tests with a marker:
+## Judgment
 
-```python
-@pytest.mark.slow
-def test_transcribe_with_model():
-    ...
-```
-
-And skip by default in `pyproject.toml`:
-
-```toml
-[tool.pytest.ini_options]
-addopts = "-m 'not slow'"
-```
-
-Reference: `test-in-memory-adapters` for the fixture pattern that keeps tests fast and
-dependency-free.
+There is no hard coverage gate. Don't add one to "win"; don't suppress a gap to hide it. When a
+gap appears, decide which of the three cases it is and act on that — coverage is a lens on design,
+not a target.

@@ -1,5 +1,5 @@
 ---
-title: Existing project contracts win — don't bulldoze to match defaults
+title: CES-30 · respect the local repo
 section: general
 scope: general
 applies-to: all
@@ -7,29 +7,36 @@ status: current
 tags: conventions, tooling, migration
 ---
 
-## Existing project contracts win — don't bulldoze to match defaults
+# CES-30 · respect the local repo
 
-When working in an existing repo, its package manager, lockfile, CI pipeline, configured linter,
-and public interfaces are the contracts. Respect them unless the task is an explicit migration.
-Imposing a different toolchain mid-feature corrupts lockfiles, breaks CI, and obscures the real diff.
+**Code:** `CES-30` &nbsp;·&nbsp; **Slug:** `general-respect-local-repo` &nbsp;·&nbsp; **Tier:**
+judgment &nbsp;·&nbsp; **Tracker:** [#30](https://github.com/collectiveai-team/botica/issues/30)
 
-**Prefer:**
+## Directive
 
-```bash
-# Repo uses uv — continue to use it for the feature at hand
-uv add httpx
-uv run pytest
-```
+A repo's existing, deliberate choices win over house defaults. Don't overwrite an existing
+version pin, lint config, dependency, or layout just because the standard default differs. When a
+house standard conflicts with a considered local decision, treat it as an **explicit, discussed
+migration** — not a silent rewrite.
 
-**Avoid:**
+## Why
 
-```bash
-# Don't mix two package managers in the same repo
-poetry add httpx   # if the repo already uses uv.lock, this breaks reproducibility
-pip install httpx  # bypasses the project's dependency management entirely
-```
+- The scaffolder is **clean-adds-only** for exactly this reason: it adds what's missing and
+  defers to anything already present (existing files are never edited or overwritten). The same
+  restraint applies to humans and agents working in the repo.
+- A repo's config often encodes hard-won, intentional decisions. Clobbering them to match a
+  default destroys context and breaks builds.
 
-**Direction:** `uv` is the standard package manager for new projects (see `py-package-manager`),
-but existing repos migrate only as an explicit, standalone task — never as a side effect of a
-feature branch. The same principle applies to formatters, linters, and build backends: don't
-swap them inside an unrelated change.
+## In practice
+
+- An existing `requires-python` pin wins over the CES-77 default (which is why CES-77 ships as a
+  comment).
+- An existing `prek.toml` / `pyproject.toml` is deferred, not replaced —
+  merge new rules in by hand, deliberately.
+- Adopt a house standard on the next natural touch, or as a named migration PR — never as a
+  drive-by overwrite.
+
+## Judgment
+
+This is the meta-rule behind the whole standards rollout: standards are defaults, not edicts.
+When in doubt, add alongside and leave the existing choice intact until a migration is agreed.

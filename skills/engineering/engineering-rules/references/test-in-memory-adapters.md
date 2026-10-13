@@ -1,5 +1,5 @@
 ---
-title: Use in-memory or local adapters in tests — no live services
+title: CES-64 · test against in-memory adapters
 section: test
 scope: general
 applies-to: all
@@ -7,53 +7,37 @@ status: direction
 tags: test, fixtures, adapters, sqlite, fastapi
 ---
 
-## Use in-memory or local adapters in tests — no live services
+# CES-64 · test against in-memory adapters
 
-Tests must not require a running database, cloud credentials, or network access. Override
-external dependencies at the boundary using an in-memory equivalent. The canonical pattern
-for FastAPI + SQLModel: create a SQLite in-memory engine per test session, bootstrap all
-tables with `SQLModel.create_all`, and override the real `get_db_session` dependency on the
-`TestClient` so every route hits the same in-memory session.
+**Code:** `CES-64` &nbsp;·&nbsp; **Slug:** `test-in-memory-adapters` &nbsp;·&nbsp; **Tier:**
+judgment &nbsp;·&nbsp; **Tracker:** [#64](https://github.com/collectiveai-team/botica/issues/64)
 
-**Prefer:**
+## Directive
 
-```python
-# tests/conftest.py
-import pytest
-from sqlmodel import Session, SQLModel, create_engine
-from sqlmodel.pool import StaticPool
-from fastapi.testclient import TestClient
+Test logic against **in-memory implementations of your ports** (a real, working fake), not
+against `unittest.mock` stubs and not against live I/O. An in-memory repository/gateway runs the
+same interface production uses, so tests exercise real behaviour, fast and deterministically.
 
-from myapp.api.main import app
-from myapp.core.database.session import get_db_session
+## Why
 
-@pytest.fixture(name="session")
-def session_fixture():
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    SQLModel.metadata.create_all(engine)
-    with Session(engine) as session:
-        yield session
+- Mocks assert on *calls* ("was `save` called with X?"), which couples tests to implementation
+  detail and passes even when the real adapter is broken. An in-memory fake lets you assert on
+  *outcomes* ("after `save`, `get` returns it").
+- Real I/O (DB, network) makes tests slow, flaky, and order-dependent. A fake keeps them
+  millisecond-fast and hermetic while still going through the genuine seam (CES-65).
 
-@pytest.fixture(name="client")
-def client_fixture(session: Session):
-    app.dependency_overrides[get_db_session] = lambda: session
-    yield TestClient(app)
-    app.dependency_overrides.clear()
-```
-
-Split tests into `tests/api/` (endpoint tests using the `client` fixture) and
-`tests/core/` (unit tests using the `session` fixture directly).
-
-**Avoid:**
+## Pattern
 
 ```python
-# Hitting a real Postgres URL — breaks in CI without the service running
-engine = create_engine(os.getenv("DATABASE_URL"))
+repo = InMemoryUserRepository()      # implements the same Protocol as the SQL adapter
+service = UserService(repo)
+service.register("a@b.com")
+assert repo.get_by_email("a@b.com") is not None
 ```
 
-Reference: see `test-coverage-gap` for the overall testing baseline; `arch-interface-is-test-surface`
-for what to assert through the `TestClient`.
+See `.agents/snippets/tests/in_memory_repository.py` for a complete in-memory adapter + Protocol example.
+
+## Judgment
+
+Reach for a fake before a mock. Keep one in-memory adapter per port alongside the real one; use
+mocks only for the rare third-party boundary you can't reasonably fake.

@@ -13,7 +13,7 @@ The house Python toolchain is **ruff** for lint + format (100-char lines), **pyr
 checking, and **botica** (`botica lint`) for the house rules that can be checked
 deterministically — all wired through **prek** (`prek.toml`), not
 `pre-commit`. New projects use this; repos still on black/isort/pylint or mypy-as-the-only-checker
-migrate to it (see `py-legacy-lint-stack`, CES-58). Don't run two formatters at once.
+migrate to it (see `py-legacy-lint-migration`, CES-58). Don't run two formatters at once.
 
 **Prefer (pyproject.toml):**
 
@@ -112,6 +112,6 @@ python_version = "3.13"
 ```
 
 This replaces `black` + `isort` + `pylint` + `mypy`. Repos still on that stack migrate as a
-deliberate change (see `py-legacy-lint-stack`); don't add ruff alongside them. The rules that
+deliberate change (see `py-legacy-lint-migration`); don't add ruff alongside them. The rules that
 botica measures are documented only in its catalog (`uvx botica rules`, `uvx botica explain
 <slug>`); this bundle does not repeat them.

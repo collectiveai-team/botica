@@ -1,5 +1,5 @@
 ---
-title: Migrate a legacy black + isort + pylint + mypy stack to the house stack
+title: CES-58 · one modern lint stack
 section: py
 scope: general
 applies-to: python
@@ -7,44 +7,26 @@ status: current
 tags: python, black, isort, pylint, flake8, mypy, formatting, linting, migration
 ---
 
-## Migrate a legacy black + isort + pylint + mypy stack to the house stack
+# CES-58 · one modern lint stack
 
-A legacy lint stack uses `black` (88-char lines) + `isort` (profile=black) + `pylint` or
-`flake8`, with `mypy` as the only type checker and `pre-commit` as the runner. When you
-encounter this setup, plan a migration to the house stack — `ruff` + `ruff-format` +
-`pyrefly` + `botica`, run through `prek` (see `py-ruff-format-modern`, CES-58). Don't run
-ruff alongside black — they conflict on line length and quote style. Migrate as an explicit,
-standalone task, never as a side effect of feature work.
+**Code:** `CES-58` &nbsp;·&nbsp; **Slug:** `py-legacy-lint-stack` &nbsp;·&nbsp; **Tier:** judgment
+&nbsp;·&nbsp; **Tracker:** [#58](https://github.com/collectiveai-team/botica/issues/58)
 
-**Recognizing a legacy setup:**
+## Directive
 
-```toml
-# pyproject.toml — legacy indicators
-[tool.pylint.messages_control]
-disable = "C0330, C0326"
+Use the house Python toolchain — **ruff** (format + lint), **pyrefly** (types), **botica**
+(the rules that can be checked deterministically), all run through **prek**. Don't reintroduce the legacy stack: `black`,
+`isort`, `flake8` (+ plugins), `pylint`, `autopep8`, `yapf`, standalone `pyupgrade`.
 
-[tool.isort]
-profile = "black"
-length_sort = true
-combine_as_imports = true
-force_sort_within_sections = true
-# black default: line-length = 88
+## Why
 
-[tool.mypy]           # mypy as the only checker — pyrefly is the house checker
-python_version = "3.11"
-```
+- ruff subsumes black, isort, flake8, pyupgrade, and most of pylint in one fast tool with one
+  config. Stacking the old tools on top means overlapping, conflicting passes and a config spread
+  across five files.
+- One toolchain = one source of truth for "what clean looks like", faster CI, and no fights
+  between formatters.
 
-```ini
-# tox.ini or setup.cfg — flake8 variant
-[flake8]
-max-line-length = 88
-select = C,E,F,W,B,B950
-extend-ignore = E203,E501
-```
-
-A `.pre-commit-config.yaml` is the runner-level tell: hooks are declared in `prek.toml` here.
-
-**Replacements:**
+## Replacements
 
 | Legacy | House |
 |---|---|
@@ -53,22 +35,10 @@ A `.pre-commit-config.yaml` is the runner-level tell: hooks are declared in `pre
 | `flake8` + plugins | `ruff` lint rules |
 | `pyupgrade` | `ruff` (`UP`) |
 | `pylint` | `ruff` + `pyrefly` |
-| `mypy` (as the only checker) | `pyrefly` |
-| `pre-commit` (runner) | `prek` |
+| mypy (as the only checker) | `pyrefly` |
 
-**Avoid while the legacy stack is still in place:**
+## Judgment
 
-```toml
-# Don't add ruff or ruff-format without completing the migration
-[tool.ruff]
-line-length = 100   # conflicts with the existing black 88-char baseline
-```
-
-**Migration path:**
-
-1. Remove `black`, `isort`, `pylint`/`flake8`, `mypy` from deps and from the hook config.
-2. Add the ruff + pyrefly config and a `prek.toml` (see `py-ruff-format-modern`); delete
-   `.pre-commit-config.yaml` once its hooks are ported.
-3. Run `uv run ruff format .` once to reformat the whole repo in a single dedicated commit.
-4. Fix any lint errors surfaced by ruff, then the type errors surfaced by pyrefly.
-5. Update CI to run `uvx prek run --all-files` instead of the old tools.
+No linter forbids adding `black` — this is a judgment call. If you find a legacy tool creeping
+into `pyproject.toml` or `prek.toml`, remove it and express the intent through the house stack
+instead.
