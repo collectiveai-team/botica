@@ -1,5 +1,5 @@
 id = "api-request-schema-name"
-code = "BTFAST002"
+code = "BTFAST003"
 summary = "Request schemas are named {Name}Request"
 status = "preview"
 since = "0.9.0"

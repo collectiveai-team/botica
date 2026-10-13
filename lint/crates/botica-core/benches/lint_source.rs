@@ -4,7 +4,7 @@ use botica_core::{Engine, FileSizeGuard, NativeRule, NoUtils};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 const PY_RULES: [&str; 10] = [
-    include_str!("../../../rules/data-models/api-schemas-extra-forbid/python.yml"),
+    include_str!("../../../rules/fastapi/api-schemas-extra-forbid/python.yml"),
     include_str!("../../../rules/architecture/arch-database-package/python.yml"),
     include_str!("../../../rules/process/cli-typed-framework/python.yml"),
     include_str!("../../../rules/logging/log-get-logger/python.yml"),

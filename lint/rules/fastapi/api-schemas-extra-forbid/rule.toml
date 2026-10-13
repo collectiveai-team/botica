@@ -1,5 +1,5 @@
 id = "api-schemas-extra-forbid"
-code = "BTDM001"
+code = "BTFAST001"
 ces = "CES-4"
 summary = "Request and response schemas reject unknown fields"
 status = "stable"

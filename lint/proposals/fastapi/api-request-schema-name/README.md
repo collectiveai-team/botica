@@ -1,4 +1,4 @@
-# api-request-schema-name · `BTFAST002`
+# api-request-schema-name · `BTFAST003`
 
 **Standard:** none yet · **Family:** fastapi · **Languages:** Python · **Status:** proposed, not in the catalog
 
@@ -27,4 +27,4 @@ class CreateContract(BaseModel):
 
 ## Suppression
 
-Silence one line with `# botica: ignore[api-request-schema-name]` or `# noqa: BTFAST002`.
+Silence one line with `# botica: ignore[api-request-schema-name]` or `# noqa: BTFAST003`.

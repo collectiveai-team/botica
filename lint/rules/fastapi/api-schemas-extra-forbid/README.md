@@ -1,6 +1,6 @@
-# api-schemas-extra-forbid · `BTDM001`
+# api-schemas-extra-forbid · `BTFAST001`
 
-**Standard:** CES-4 (documentation only) · **Family:** data-models · **Languages:** Python
+**Standard:** CES-4 (documentation only) · **Family:** fastapi · **Languages:** Python
 
 ## Directive
 
@@ -45,4 +45,4 @@ class CreateUserRequest(BaseModel):
 
 ## Suppression
 
-Silence one line with `# botica: ignore[api-schemas-extra-forbid]` or `# noqa: BTDM001`.
+Silence one line with `# botica: ignore[api-schemas-extra-forbid]` or `# noqa: BTFAST001`.

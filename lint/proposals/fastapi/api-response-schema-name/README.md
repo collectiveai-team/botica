@@ -1,4 +1,4 @@
-# api-response-schema-name · `BTFAST003`
+# api-response-schema-name · `BTFAST004`
 
 **Standard:** none yet · **Family:** fastapi · **Languages:** Python · **Status:** proposed, not in the catalog
 
@@ -27,4 +27,4 @@ class Contract(BaseModel):
 
 ## Suppression
 
-Silence one line with `# botica: ignore[api-response-schema-name]` or `# noqa: BTFAST003`.
+Silence one line with `# botica: ignore[api-response-schema-name]` or `# noqa: BTFAST004`.
