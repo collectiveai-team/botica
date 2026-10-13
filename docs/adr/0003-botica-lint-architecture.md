@@ -139,6 +139,12 @@ The `scaffolding` Python package keeps its name until it is migrated, which is o
 
 - **A rule is its folder.** `build.rs` generates the catalog from `rules/<family>/<slug>/`, which
   avoids agnix's 6–9 hand-synced files per rule.
+- **Adding a rule touches only what its kind needs.** CI (`scripts/check_rule_change.py`) flags a
+  change that adds a rule and touches anything else as a contract change, which a maintainer
+  accepts by label. An ast-grep, extension or judgment rule needs its folder; a native rule also
+  the Rust of the core that implements it; the built-in catalog also the files that list it, which
+  are pinned on purpose. The same check applies to a project catalog, whose rules get their
+  folder and nothing else.
 - **One conformance runner exercises the rules with the same fixtures.** It runs each rule in its
   variants and compares the result with `fixtures/expected.json`, which makes a Python→Rust
   migration and `replaces` checkable.
@@ -166,5 +172,3 @@ What this ADR decides and the code does not have. Delete a line when it ships.
 - Catalogs of a project or declared externally (`.botica/rules/`).
 - `botica rules export`, the other `rules` subcommands (`test`, with `--against`; `new`), and the
   `botica-rule-author` skill. Only `botica rules list` exists.
-- A CI check that flags a change outside a rule's folder as a contract change. Today a new rule
-  also edits the lists of the catalog tests and the rules table of `lint/README.md`.

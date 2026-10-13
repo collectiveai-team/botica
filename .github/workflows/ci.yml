@@ -13,6 +13,7 @@ on:
   pull_request:
     paths:
       - "lint/**"
+      - "scripts/check_rule_change.py"
       - ".github/workflows/ci.yml"
   # Allow other workflows (e.g. a wheel release) to gate on this suite.
   workflow_call:
@@ -64,3 +65,29 @@ jobs:
 
       - name: Test
         run: cargo test --workspace --locked --no-fail-fast
+
+  # A change that adds a rule may only touch what that kind of rule needs (scripts/check_rule_change.py).
+  # Anything else is a contract change: label the pull request `contract-change` to accept it.
+  rule-contract:
+    name: rule contract
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: "0.11.12"
+          enable-cache: false
+
+      - name: Check the contract of the rules the change adds
+        env:
+          BASE: origin/${{ github.base_ref }}
+          ACKNOWLEDGED: ${{ contains(github.event.pull_request.labels.*.name, 'contract-change') }}
+        run: |
+          if [ "$ACKNOWLEDGED" = "true" ]; then set -- --acknowledged; else set --; fi
+          uv run --locked python scripts/check_rule_change.py "$BASE" "$@"

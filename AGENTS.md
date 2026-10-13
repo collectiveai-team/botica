@@ -32,6 +32,8 @@
 - `scripts/` — maintainer-only checks, not shipped. `check_skill_drift.py` guards
   the curated upstream catalog; the `skills-drift` workflow runs it. `check_skills.sh`
   runs the skill validator over `skills/`; the `skill-validator` hook of prek runs it.
+  `check_rule_change.py` flags a change that adds a botica rule and touches more than that rule
+  needs; the `rule-contract` job of `ci.yml` runs it.
 
 Agent targets are multi-valued (`--agent`, repeatable: `opencode`/`claude-code`/
 `codex`). The `agent-config` component writes per-agent config — `opencode.jsonc`
