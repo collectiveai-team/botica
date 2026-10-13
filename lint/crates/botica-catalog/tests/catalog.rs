@@ -456,6 +456,41 @@ fn an_ast_grep_implementation_must_name_its_file() {
 }
 
 #[test]
+fn the_id_of_an_ast_grep_yaml_must_be_the_slug_of_its_rule() {
+    let other = issues(vec![
+        vec![family("logging", "LOG")],
+        rule_with("logging", "log-no-print", "BTLOG001", "", AST_GREP_PYTHON),
+        vec![file("logging/log-no-print/python.yml", "id: no-print\n")],
+    ]);
+    assert!(other.contains("python.yml"), "{other}");
+    assert!(other.contains("no-print"), "{other}");
+    assert!(other.contains("log-no-print"), "{other}");
+
+    let none = issues(vec![
+        vec![family("logging", "LOG")],
+        rule_with("logging", "log-no-print", "BTLOG001", "", AST_GREP_PYTHON),
+        vec![file(
+            "logging/log-no-print/python.yml",
+            "language: python\n",
+        )],
+    ]);
+    assert!(none.contains("python.yml"), "{none}");
+
+    let quoted = catalog(vec![
+        vec![family("logging", "LOG")],
+        rule_with("logging", "log-no-print", "BTLOG001", "", AST_GREP_PYTHON),
+        vec![file(
+            "logging/log-no-print/python.yml",
+            "id: \"log-no-print\"\nrule:\n  id: nested\n",
+        )],
+    ]);
+    assert!(
+        quoted.is_ok(),
+        "a quoted top-level id is the id; a nested one is not"
+    );
+}
+
+#[test]
 fn a_yaml_file_no_implementation_names_is_rejected() {
     let message = issues(vec![
         vec![family("logging", "LOG")],

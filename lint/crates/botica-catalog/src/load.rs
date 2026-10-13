@@ -189,6 +189,26 @@ fn load_rules(
     rules
 }
 
+/// What is wrong with the top-level `id:` of an ast-grep YAML, if anything: diagnostics carry
+/// that id, so it has to be the slug the catalog, the selection and the suppressions know.
+fn id_problem(yaml: &str, slug: &str) -> Option<String> {
+    let found: Vec<&str> = yaml
+        .lines()
+        .filter_map(|line| line.strip_prefix("id:"))
+        .map(|id| id.trim().trim_matches(['"', '\'']))
+        .collect();
+    (found != [slug]).then(|| {
+        if found.is_empty() {
+            format!("the YAML must declare `id: {slug}`")
+        } else {
+            format!(
+                "the YAML must declare only `id: {slug}`, found `{}`",
+                found.join("`, `")
+            )
+        }
+    })
+}
+
 /// Gives each ast-grep implementation the text of the file it names, and rejects the files that
 /// are named by nobody, the ones that are missing and the implementations that name none.
 fn attach_sources(
@@ -211,7 +231,12 @@ fn attach_sources(
         };
         let path = format!("{base}/{name}");
         match sources.iter().find(|source| source.path == path) {
-            Some(source) => implementation.source = Some(source.text.clone()),
+            Some(source) => {
+                if let Some(problem) = id_problem(&source.text, &rule.id) {
+                    issues.push(issue(path, problem));
+                }
+                implementation.source = Some(source.text.clone());
+            }
             None => issues.push(issue(
                 path,
                 format!(
