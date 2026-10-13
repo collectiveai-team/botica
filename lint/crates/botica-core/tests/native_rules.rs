@@ -28,6 +28,24 @@ fn file_size_guard_thresholds_match_the_python_hook() {
 }
 
 #[test]
+fn the_size_warning_states_both_thresholds_and_does_not_judge() {
+    let engine = Engine::new(
+        vec![Box::new(FileSizeGuard {
+            warn_at: 5,
+            error_at: 9,
+        })],
+        AstGrepSet::default(),
+    );
+
+    let warn = engine.lint_source("a.py", &lines(6));
+
+    assert_eq!(
+        warn[0].message,
+        "CES-71 (file-size-guard): a.py has 6 lines (warns at 5, fails at 9)"
+    );
+}
+
+#[test]
 fn an_unterminated_last_line_counts_like_python() {
     let engine = native_engine();
     let text = format!("{}x = 1", "x = 1\n".repeat(399));

@@ -16,7 +16,7 @@
       "path": "warning.txt",
       "severity": "warning",
       "range": null,
-      "message": "CES-71 (file-size-guard): warning.txt is large (400 lines, recommended limit is 400)"
+      "message": "CES-71 (file-size-guard): warning.txt has 400 lines (warns at 400, fails at 700)"
     }
   ]
 }

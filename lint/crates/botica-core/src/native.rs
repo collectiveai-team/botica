@@ -60,8 +60,8 @@ impl NativeRule for FileSizeGuard {
             (
                 Severity::Warning,
                 format!(
-                    "CES-71 (file-size-guard): {} is large ({lines} lines, recommended limit is {})",
-                    doc.path, self.warn_at
+                    "CES-71 (file-size-guard): {} has {lines} lines (warns at {}, fails at {})",
+                    doc.path, self.warn_at, self.error_at
                 ),
             )
         } else {
