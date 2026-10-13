@@ -12,7 +12,7 @@ use botica_catalog::Catalog;
 use botica_config::{discover, load_file, Loaded, Resolution};
 use botica_core::{registry, CodeDir};
 
-use args::{ConfigOption, ScopeArg};
+use args::ConfigOption;
 
 pub use args::ProjectArgs;
 pub use natives::natives;
@@ -22,10 +22,6 @@ pub use policy::{rule_docs, suppression_policy};
 pub struct Project {
     pub loaded: Loaded,
     pub resolution: Resolution,
-    /// Whether the selection takes in the syntax rules embedded in the binary. They are not in
-    /// the catalog yet, so no selector can name them: they run only when the selection includes
-    /// `default` or `all`.
-    pub embedded_rules: bool,
     /// What `code_dirs_for_the_rules` found, searched once.
     for_the_rules: OnceLock<Vec<CodeDir>>,
 }
@@ -61,18 +57,9 @@ pub fn load(args: &ProjectArgs) -> Result<Project> {
         .config
         .with_command_line(&catalog, &args.command_line())?;
     let resolution = Resolution::new(&loaded.config, &catalog)?.only_scope(args.scope.only());
-    // The embedded syntax rules look at one file each.
-    let embedded_rules = args.scope != ScopeArg::Project
-        && loaded
-            .config
-            .select
-            .iter()
-            .chain(&loaded.config.extend_select)
-            .any(|selector| selector == "default" || selector == "all");
     Ok(Project {
         loaded,
         resolution,
-        embedded_rules,
         for_the_rules: OnceLock::new(),
     })
 }

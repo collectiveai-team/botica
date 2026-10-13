@@ -1,0 +1,72 @@
+{
+  "diagnostics": [
+    {
+      "path": "tool.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 15,
+          "line": 1,
+          "column": 16
+        }
+      },
+      "message": "CES-67 (cli-typed-framework): Build CLIs with a typed, declarative framework (Typer, Cyclopts, or pydantic-settings) + Rich — not argparse, click, or manual sys.argv plumbing. The framework choice is open; imperative arg handling is the anti-pattern."
+    },
+    {
+      "path": "tool.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 16,
+          "line": 2,
+          "column": 1
+        },
+        "end": {
+          "offset": 28,
+          "line": 2,
+          "column": 13
+        }
+      },
+      "message": "CES-67 (cli-typed-framework): Build CLIs with a typed, declarative framework (Typer, Cyclopts, or pydantic-settings) + Rich — not argparse, click, or manual sys.argv plumbing. The framework choice is open; imperative arg handling is the anti-pattern."
+    },
+    {
+      "path": "tool.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 40,
+          "line": 4,
+          "column": 1
+        },
+        "end": {
+          "offset": 75,
+          "line": 4,
+          "column": 36
+        }
+      },
+      "message": "CES-67 (cli-typed-framework): Build CLIs with a typed, declarative framework (Typer, Cyclopts, or pydantic-settings) + Rich — not argparse, click, or manual sys.argv plumbing. The framework choice is open; imperative arg handling is the anti-pattern."
+    },
+    {
+      "path": "tool.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 84,
+          "line": 6,
+          "column": 8
+        },
+        "end": {
+          "offset": 92,
+          "line": 6,
+          "column": 16
+        }
+      },
+      "message": "CES-67 (cli-typed-framework): Build CLIs with a typed, declarative framework (Typer, Cyclopts, or pydantic-settings) + Rich — not argparse, click, or manual sys.argv plumbing. The framework choice is open; imperative arg handling is the anti-pattern."
+    }
+  ]
+}

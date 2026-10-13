@@ -1,0 +1,15 @@
+id: cli-typed-framework
+language: python
+severity: warning
+message: "CES-67 (cli-typed-framework): Build CLIs with a typed, declarative framework (Typer, Cyclopts, or pydantic-settings) + Rich — not argparse, click, or manual sys.argv plumbing. The framework choice is open; imperative arg handling is the anti-pattern."
+# Naturally inert: a repo that uses none of these has no matches. Warning only — modern tools
+# are encouraged, not mandated.
+rule:
+  any:
+    - pattern: import argparse
+    - pattern: import argparse as $X
+    - pattern: from argparse import $$$X
+    - pattern: import click
+    - pattern: import click as $X
+    - pattern: from click import $$$X
+    - pattern: sys.argv

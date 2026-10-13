@@ -16,6 +16,7 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
         [
             "api-schemas-extra-forbid",
             "arch-database-package",
+            "cli-typed-framework",
             "file-size-guard",
             "invalid-suppression",
             "io-error",

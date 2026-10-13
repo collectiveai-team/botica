@@ -36,11 +36,21 @@ the run itself failed (it wins over `1`). `--exit-zero` forgives only the findin
 | `BTSTRUC003` | [`no-artifacts-in-package`](rules/structure/no-artifacts-in-package/README.md) | CES-32 | data, models and reports inside the code |
 | `BTSTRUC004` | [`no-notebooks`](rules/structure/no-notebooks/README.md) | CES-32 | notebooks inside the code |
 | `BTSTRUC005` | [`no-tests-in-package`](rules/structure/no-tests-in-package/README.md) | none yet | Python: tests inside the package |
+| `BTARCH001` | [`arch-database-package`](rules/architecture/arch-database-package/README.md) | CES-18 | Python: tables and engines outside a `database` package |
+| `BTARCH002` | [`settings-module`](rules/architecture/settings-module/README.md) | CES-76 | Python: `os.getenv` and `os.environ` outside the settings module |
+| `BTDM001` | [`api-schemas-extra-forbid`](rules/data-models/api-schemas-extra-forbid/README.md) | CES-4 | Python: API schemas without `extra="forbid"` |
+| `BTDM002` | [`no-dict-alias`](rules/data-models/no-dict-alias/README.md) | CES-79 | Python: a type alias for a raw `dict` |
+| `BTDM003` | [`no-dict-call-return`](rules/data-models/no-dict-call-return/README.md) | CES-79 | Python: `return dict(...)` |
+| `BTDM004` | [`no-dict-literal-return`](rules/data-models/no-dict-literal-return/README.md) | CES-79 | Python: returning a dict literal |
+| `BTDM005` | [`no-dict-return-annotation`](rules/data-models/no-dict-return-annotation/README.md) | CES-79 | Python: a function annotated to return `dict` |
+| `BTLOG001` | [`log-get-logger`](rules/logging/log-get-logger/README.md) | CES-45 | Python: `logging.getLogger` called directly |
 | `BTLOG002` | [`log-no-print`](rules/logging/log-no-print/README.md) | CES-46 | Python: `print()` in library code |
+| `BTLOG003` | [`no-console-log`](rules/logging/no-console-log/README.md) | none yet | TypeScript: `console.log` in library code |
+| `BTPROC001` | [`cli-typed-framework`](rules/process/cli-typed-framework/README.md) | CES-67 | Python: `argparse`, `click` and `sys.argv` |
 | `BT001`–`BT003` | `io-error`, `unused-suppression`, `invalid-suppression` | | the run and the suppressions |
 
-The embedded ast-grep rules run too, unless you pass `--no-astgrep`. Each rule has a README with
-its directive, its reasons and how to silence it.
+The rules written in ast-grep's YAML run too, unless you pass `--no-astgrep`. Each rule has a
+README with its directive, its reasons and how to silence it.
 
 ## Which files
 

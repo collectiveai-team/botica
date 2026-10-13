@@ -1,0 +1,17 @@
+id = "cli-typed-framework"
+code = "BTPROC001"
+ces = "CES-67"
+summary = "Command-line interfaces use a typed, declarative framework"
+status = "stable"
+since = "0.8.0"
+tags = ["cli"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = true
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

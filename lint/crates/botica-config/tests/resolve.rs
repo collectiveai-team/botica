@@ -96,6 +96,7 @@ fn the_default_selection_runs_every_rule_enabled_by_default() {
         [
             "api-schemas-extra-forbid",
             "arch-database-package",
+            "cli-typed-framework",
             "file-size-guard",
             "invalid-suppression",
             "io-error",
@@ -149,7 +150,7 @@ fn select_and_extend_select_are_added_together() {
     );
     assert_eq!(
         active(&resolve(&catalog, "select = []\nextend-select = [\"all\"]")).len(),
-        18
+        19
     );
 }
 
@@ -162,6 +163,7 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
         [
             "api-schemas-extra-forbid",
             "arch-database-package",
+            "cli-typed-framework",
             "invalid-suppression",
             "io-error",
             "log-get-logger",
@@ -193,6 +195,7 @@ fn a_rule_switched_off_in_its_own_section_stays_out() {
         [
             "api-schemas-extra-forbid",
             "arch-database-package",
+            "cli-typed-framework",
             "invalid-suppression",
             "io-error",
             "log-get-logger",
