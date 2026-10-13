@@ -108,11 +108,11 @@ configuration so it does not report `RUF102` for `BT` codes (the scaffolding tem
 # prek.toml: the mirror installs the wheel of the same version from PyPI
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
-rev = "v0.7.1"
+rev = "v0.8.0"
 
 [[repos.hooks]]
 id = "botica"
-args = ["--no-astgrep", "--select", "file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package"]
+args = ["--select", "file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package,no-dict-alias,no-dict-call-return,no-dict-literal-return,no-dict-return-annotation,api-schemas-extra-forbid,log-get-logger,log-no-print,settings-module,cli-typed-framework,arch-database-package"]
 ```
 
 The mirror's hook is `verbose`: prek hides the output of a passing hook, and a size warning does
