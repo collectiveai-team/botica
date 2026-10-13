@@ -35,5 +35,4 @@ log = logging.getLogger(__name__)
 
 ## Suppression
 
-Silence one line with `# botica: ignore[log-get-logger]` or `# noqa: BTLOG001`. The rule is written in ast-grep's
-YAML (`python.yml`), so `# ast-grep-ignore: log-get-logger` also works while `compat-ast-grep-ignore` is on.
+Silence one line with `# botica: ignore[log-get-logger]` or `# noqa: BTLOG001`.

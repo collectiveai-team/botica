@@ -10,10 +10,9 @@ tags: fastapi, config, pydantic-settings, settings, lru_cache
 ## Expose app config as a cached singleton via get_settings()
 
 App configuration is defined in a `pydantic-settings` `BaseSettings` subclass and exposed
-through a single `@lru_cache`-decorated factory. Callers always call `get_settings()` —
-they never instantiate `Settings()` directly. The cache ensures only one `Settings` object
-exists per process, env vars are read once, and FastAPI's `Depends(get_settings)` works
-without rebuilding the object on every request.
+through a single `@lru_cache`-decorated factory, `get_settings()`. The cache ensures only one
+`Settings` object exists per process, env vars are read once, and FastAPI's `Depends(get_settings)`
+works without rebuilding the object on every request.
 
 **Prefer:**
 
@@ -38,11 +37,4 @@ from app.config import get_settings
 settings = get_settings()   # ✓ cached singleton
 ```
 
-**Avoid:**
-
-```python
-settings = Settings()   # ✗ re-reads env on every import; breaks test overrides
-```
-
-**Direction:** prefer `@lru_cache` + `get_settings()` over a bare module-level
-`settings = Settings()` — the function form allows `app.dependency_overrides` in tests.
+The function form allows `app.dependency_overrides` in tests.

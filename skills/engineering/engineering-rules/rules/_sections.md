@@ -38,7 +38,7 @@ through prek, line 100, latest Python.
 
 - `pylayout-meta-slice` — `meta/` holds ABC interfaces + Pydantic domain models
 - `pylayout-adapters-slices` — concrete implementations live in sibling slices, not in meta/
-- `pylayout-pydantic-v2` — Pydantic v2 for domain data; pydantic-settings for app config
+- `pylayout-pydantic-v2` — Pydantic v2 for domain data shapes
 - `pylayout-src-layout` — use src/ only if the repo already does; avoid double-nesting
 
 ## 4. Architecture: Deep Modules (arch)
@@ -84,9 +84,9 @@ catalog.
 **Description:** API structure, settings, ORM, schemas, auth.
 
 - `api-structure` — app construction / routers / services split; lifespan for startup/shutdown
-- `api-pydantic-settings` — `get_settings()` lru_cache singleton; never instantiate Settings() directly
+- `api-pydantic-settings` — `get_settings()` lru_cache singleton over a `BaseSettings` subclass
 - `api-sqlmodel-alembic` — SQLModel + Alembic; from_attributes; migrations at startup
-- `api-schemas` — explicit request/response Pydantic models, ConfigDict(extra="forbid")
+- `api-schemas` — separate request and response Pydantic models; `from_attributes` on responses
 - `api-auth` — short-lived JWT (default) or OAuth/OIDC for SSO; avoid long-lived/localStorage tokens
 
 ## 9. LLM & AI (llm)

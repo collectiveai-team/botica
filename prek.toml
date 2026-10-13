@@ -181,5 +181,5 @@ args = ["--select", "file-size-guard,no-utils,no-notebooks,no-artifacts-in-packa
 # purpose), the template payload this repo ships to other repositories (a `tests/` snippet) and
 # the bundled skills.
 # Documentation is already left out by the rule's default `ignores`.
-exclude = "^(lint/rules/.*/fixtures/|scaffolding/templates/|skills/)"
+exclude = "^(lint/(rules|proposals)/.*/fixtures/|scaffolding/templates/|skills/)"
 priority = 2

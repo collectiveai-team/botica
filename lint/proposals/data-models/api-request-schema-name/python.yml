@@ -1,0 +1,17 @@
+id: api-request-schema-name
+language: python
+severity: warning
+message: "botica/api-request-schema-name: a request schema is named {Name}Request. Rename the class so that its name ends with `Request`."
+files:
+  - "**/api/**/schemas/requests/**/*.py"
+rule:
+  kind: class_definition
+  all:
+    - has:
+        field: superclasses
+        stopBy: end
+        regex: "BaseModel"
+    - not:
+        has:
+          field: name
+          regex: "Request$"

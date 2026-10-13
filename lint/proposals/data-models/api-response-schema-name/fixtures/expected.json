@@ -1,0 +1,21 @@
+{
+  "diagnostics": [
+    {
+      "path": "api/schemas/responses/contract.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 33,
+          "line": 4,
+          "column": 1
+        },
+        "end": {
+          "offset": 71,
+          "line": 5,
+          "column": 12
+        }
+      },
+      "message": "botica/api-response-schema-name: a response schema is named {Name}Out. Rename the class so that its name ends with `Out`."
+    }
+  ]
+}

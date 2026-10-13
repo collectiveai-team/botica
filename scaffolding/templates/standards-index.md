@@ -46,7 +46,7 @@ describes one, and the hook reports each finding with its slug and its message.
 - **CES-30 · respect the local repo** `[judgment]` — existing deliberate choices (pins, config,
   layout) win over house defaults; adopt standards as explicit migrations, never silent
   overwrites. Slug: `general-respect-local-repo`. → `@.agents/rules/general-respect-local-repo.md`
-- **CES-58 · one modern lint stack** `[judgment]` — ruff + pyrefly + ast-grep via prek; don't
+- **CES-58 · one modern lint stack** `[judgment]` — ruff + pyrefly + botica via prek; don't
   reintroduce black/isort/flake8/pylint. Slug: `py-legacy-lint-stack`. →
   `@.agents/rules/py-legacy-lint-stack.md`
 - **CES-64 · test against in-memory adapters** `[judgment]` — drive logic through working

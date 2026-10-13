@@ -45,6 +45,4 @@ args = parser.parse_args(sys.argv[1:])
 
 ## Suppression
 
-Silence one line with `# botica: ignore[cli-typed-framework]` or `# noqa: BTPROC001`. The rule is
-written in ast-grep's YAML (`python.yml`), so `# ast-grep-ignore: cli-typed-framework` also works
-while `compat-ast-grep-ignore` is on.
+Silence one line with `# botica: ignore[cli-typed-framework]` or `# noqa: BTPROC001`.

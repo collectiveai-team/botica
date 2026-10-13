@@ -41,6 +41,6 @@ shape for `file-size-guard`.
 
 ## Suppression
 
-`complexipy` is a prek hook with no per-function ast-grep ignore. If a single function
+`complexipy` is a prek hook with no per-function suppression comment. If a single function
 legitimately needs to stay complex (a generated parser, for example), exclude its file via the
 hook's file-pattern configuration rather than raising the global threshold.

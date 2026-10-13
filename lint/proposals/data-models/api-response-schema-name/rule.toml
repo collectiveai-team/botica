@@ -1,0 +1,16 @@
+id = "api-response-schema-name"
+code = "BTDM008"
+summary = "Response schemas are named {Name}Out"
+status = "preview"
+since = "0.9.0"
+tags = ["typing"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

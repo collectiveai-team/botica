@@ -1,0 +1,12 @@
+id: db-no-create-all
+language: python
+severity: warning
+message: "botica/db-no-create-all: the schema is created with metadata.create_all(), which bypasses the migrations. Change it with an Alembic migration."
+ignores:
+  - "**/conftest.py"
+  - "**/tests/**"
+rule:
+  pattern: $METADATA.create_all($$$ARGS)
+  has:
+    field: function
+    regex: "metadata\\.create_all$"

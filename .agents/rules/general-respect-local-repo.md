@@ -22,7 +22,7 @@ migration** — not a silent rewrite.
 
 - An existing `requires-python` pin wins over the CES-77 default (which is why CES-77 ships as a
   comment).
-- An existing `prek.toml` / `pyproject.toml` / `ast-grep` config is deferred, not replaced —
+- An existing `prek.toml` / `pyproject.toml` is deferred, not replaced —
   merge new rules in by hand, deliberately.
 - Adopt a house standard on the next natural touch, or as a named migration PR — never as a
   drive-by overwrite.

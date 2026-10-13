@@ -1,18 +1,17 @@
 ---
-title: Pydantic v2 for domain data; pydantic-settings for app config
+title: Pydantic v2 for domain data
 section: pylayout
 scope: general
 applies-to: all
 status: current
-tags: pydantic, pydantic-settings, domain-models, config, validation
+tags: pydantic, domain-models, validation
 ---
 
-## Pydantic v2 for domain data; pydantic-settings for app config
+## Pydantic v2 for domain data
 
 Use Pydantic v2 for domain data shapes (request/response models, retrieved documents,
-structured LLM output). Use `pydantic-settings` (`BaseSettings`) for reading app
-configuration from environment variables. Libraries with no app config surface read env
-directly rather than bundling a settings object.
+structured LLM output). How an app reads its configuration is a separate matter:
+see `api-pydantic-settings`.
 
 **Prefer (domain data):**
 
@@ -28,28 +27,12 @@ class RetrievedDocument(BaseModel):
 doc.model_dump_json()        # v2 — not .json() (deprecated)
 ```
 
-**Prefer (app config — services only):**
-
-```python
-from pydantic_settings import BaseSettings
-
-class Settings(BaseSettings):
-    database_url: str
-    log_level: str = "INFO"
-```
-
 **Avoid:**
 
 ```python
-from pydantic import BaseModel
-
-class Settings(BaseModel):   # use BaseSettings, not BaseModel, for env config
-    database_url: str = os.environ["DATABASE_URL"]
-
 doc.dict()      # v1 API — deprecated in v2
 doc.json()      # v1 API — use model_dump_json() instead
 Optional[int]   # use int | None instead (v2 style)
 ```
 
-Libraries use Pydantic for data shapes only — no settings class needed unless the library
-exposes a service or CLI.
+Libraries use Pydantic for data shapes only.

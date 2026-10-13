@@ -1,0 +1,38 @@
+{
+  "diagnostics": [
+    {
+      "path": "app/db.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 62,
+          "line": 5,
+          "column": 1
+        },
+        "end": {
+          "offset": 98,
+          "line": 5,
+          "column": 37
+        }
+      },
+      "message": "botica/db-no-create-all: the schema is created with metadata.create_all(), which bypasses the migrations. Change it with an Alembic migration."
+    },
+    {
+      "path": "app/db.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 99,
+          "line": 6,
+          "column": 1
+        },
+        "end": {
+          "offset": 136,
+          "line": 6,
+          "column": 38
+        }
+      },
+      "message": "botica/db-no-create-all: the schema is created with metadata.create_all(), which bypasses the migrations. Change it with an Alembic migration."
+    }
+  ]
+}

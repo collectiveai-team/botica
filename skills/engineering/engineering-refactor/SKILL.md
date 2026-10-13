@@ -34,7 +34,7 @@ lockfiles, Makefiles, CI workflows, existing tests, package layout, `README`, `C
 and ADRs if present. Determine, citing evidence:
 
 - Package manager + build backend (`py-package-manager`, `py-build-backend`).
-- Toolchain era — the house stack (uv + ruff + ruff-format + pyrefly + ast-grep via prek) or a legacy poetry+black/isort/mypy setup (`py-ruff-format-modern`, `py-legacy-lint-stack`).
+- Toolchain era — the house stack (uv + ruff + ruff-format + pyrefly + botica via prek) or a legacy poetry+black/isort/mypy setup (`py-ruff-format-modern`, `py-legacy-lint-stack`).
 - Python version, package layout, test layout, logging, runtime entrypoints, frontend (if any).
 
 Preserve the existing toolchain unless the user asked to migrate it (`general-respect-local-repo`).
@@ -68,7 +68,7 @@ seam, adapter, leverage, locality.
 Run the narrowest useful checks first, then broaden (`pr-run-checks`). Note that Makefiles here
 are docker-only — run linters/pytest directly (`infra-makefile-docker`).
 
-- House stack: `ruff check`, `ruff format --check`, `pyrefly check`, `ast-grep scan`, `pytest`
+- House stack: `ruff check`, `ruff format --check`, `pyrefly check`, `botica lint`, `pytest`
   (via `uv run` / `uvx`), or the whole hook set with `uvx prek run --all-files`.
 - Legacy repos: run what the repo actually has (`black`, `isort`, `pylint`/`flake8`, `mypy`,
   `pytest`) — don't introduce the house stack mid-refactor (`py-legacy-lint-stack`).

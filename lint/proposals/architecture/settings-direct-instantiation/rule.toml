@@ -1,0 +1,16 @@
+id = "settings-direct-instantiation"
+code = "BTARCH004"
+summary = "Settings are read through get_settings(), never built where they are used"
+status = "preview"
+since = "0.9.0"
+tags = ["config"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

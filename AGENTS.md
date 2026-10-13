@@ -82,7 +82,7 @@ source of truth). The rules below are the always-on summary; when adding, editin
 or referencing a rule in this repo, follow this convention:
 
 - **`CES-<issue#>`** is the citable catalog code; the **kebab-case slug** is the
-  machine id (ast-grep `id:`, prek hook id, `.agents/rules/<slug>.md`,
+  machine id (botica rule id, prek hook id, `.agents/rules/<slug>.md`,
   `# botica: ignore[<slug>]`). Never put the CES number in the machine id.
 - **Every CES has a tracker issue.** One CES = one standard; a standard may ship
   multiple slugs (e.g. `CES-79` ships the four `no-dict-*` patterns). The issue id
@@ -136,7 +136,7 @@ describes one, and the hook reports each finding with its slug and its message.
 - **CES-30 · respect the local repo** `[judgment]` — existing deliberate choices win over house
   defaults (the engine is clean-adds-only for this reason). →
   `@.agents/rules/general-respect-local-repo.md`
-- **CES-58 · one modern lint stack** `[judgment]` — ruff + pyrefly + ast-grep via prek; no
+- **CES-58 · one modern lint stack** `[judgment]` — ruff + pyrefly + botica via prek; no
   black/isort/flake8/pylint. → `@.agents/rules/py-legacy-lint-stack.md`
 - **CES-64 · test against in-memory adapters** `[judgment]` — fakes over mocks. →
   `@.agents/rules/test-in-memory-adapters.md`

@@ -1,0 +1,13 @@
+id: api-schema-in-route-module
+language: python
+severity: warning
+message: "botica/api-schema-in-route-module: a Pydantic schema is defined in a route module. Move it to the schemas/requests or schemas/responses package of api."
+files:
+  - "**/api/**/routers/**/*.py"
+  - "**/api/**/routes/**/*.py"
+rule:
+  kind: class_definition
+  has:
+    field: superclasses
+    stopBy: end
+    regex: "BaseModel"

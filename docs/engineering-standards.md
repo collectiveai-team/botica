@@ -6,7 +6,7 @@ Single source of truth for how house engineering rules are coded, cited, and shi
 ## What a CES is
 
 A **CES — Collective Engineering Standard** is one house rule that the scaffolder ships into
-target repos (as an ast-grep rule, a prek hook, a `pyproject` setting, or an AGENTS.md
+target repos (as a botica rule, a prek hook, a `pyproject` setting, or an AGENTS.md
 directive + detail file). Each standard is tracked by exactly one issue on the
 [`collectiveai-team/botica`](https://github.com/collectiveai-team/botica/issues) tracker, which is the
 SSOT for that rule's text and review state.
@@ -16,7 +16,7 @@ SSOT for that rule's text and review state.
 | Layer | Value | Used in |
 |---|---|---|
 | **Catalog code** | `CES-<issue#>` | AGENTS.md index, commit/PR refs, human citation, violation messages |
-| **Machine id** | kebab-case **slug** (`log-no-print`, `api-schemas-extra-forbid`) | ast-grep `id:`, prek hook id, `.agents/rules/<slug>.md`, `# botica: ignore[<slug>]` |
+| **Machine id** | kebab-case **slug** (`log-no-print`, `api-schemas-extra-forbid`) | botica rule id, prek hook id, `.agents/rules/<slug>.md`, `# botica: ignore[<slug>]` |
 
 Always written together where space allows: **`CES-46 · log-no-print`**.
 
@@ -27,7 +27,7 @@ on, so they must stay stable and semantic.
 
 - **Every CES has a tracker issue.** No rule gets a code by existing only in code.
 - **One CES = one standard.** A standard may ship **multiple slugs** — e.g. `CES-79` ships the
-  four `no-dict-*` ast-grep patterns; an architecture rule may ship an ast-grep rule *and* an
+  four `no-dict-*` botica rules; an architecture rule may ship a botica rule *and* an
   import-linter contract under the same CES.
 - **Number source = the issue id.** Gaps from declined proposals are expected and meaningful
   (PEP/RFC-style — a rejected number is never reused).

@@ -5,8 +5,8 @@
 
 ## Directive
 
-Use the house Python toolchain — **ruff** (format + lint), **pyrefly** (types), **ast-grep**
-(structural rules), all run through **prek**. Don't reintroduce the legacy stack: `black`,
+Use the house Python toolchain — **ruff** (format + lint), **pyrefly** (types), **botica**
+(the rules that can be checked deterministically), all run through **prek**. Don't reintroduce the legacy stack: `black`,
 `isort`, `flake8` (+ plugins), `pylint`, `autopep8`, `yapf`, standalone `pyupgrade`.
 
 ## Why

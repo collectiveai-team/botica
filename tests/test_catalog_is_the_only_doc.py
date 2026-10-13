@@ -19,6 +19,7 @@ from scaffolding.templates_registry import template_text
 
 ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "lint" / "rules"
+PROPOSALS = ROOT / "lint" / "proposals"
 SKILL_RULES = ROOT / "skills" / "engineering" / "engineering-rules" / "rules"
 
 # Rules of the skill that say what a catalog rule measures, under a name that is not its slug.
@@ -127,3 +128,59 @@ def test_the_skill_does_not_repeat_a_rule_of_the_catalog():
     )
 
     assert not repeated, f"the skill repeats the catalog: {repeated}"
+
+
+AST_GREP = re.compile(r"ast-grep|sgconfig", re.I)
+
+
+def _normative_texts() -> list[Path]:
+    """List what is installed in a target repo or read as the house standard, and the READMEs."""
+    templates = ROOT / "scaffolding" / "templates"
+    paths = [
+        *templates.rglob("*.md"),
+        *(ROOT / ".agents" / "rules").glob("*.md"),
+        *(ROOT / "skills").rglob("*.md"),
+        *CATALOG.glob("*/*/README.md"),
+        *PROPOSALS.glob("*/*/README.md"),
+        ROOT / "AGENTS.md",
+        ROOT / "docs" / "engineering-standards.md",
+    ]
+    return sorted(set(paths))
+
+
+def test_no_normative_text_describes_the_stack_or_a_rule_with_ast_grep():
+    """Botica is the tool; ast-grep is how some of its rules are written, and nobody has to know.
+
+    `compat-ast-grep-ignore` is documented once, in `lint/README.md`, not in every rule README.
+    """
+    found = {
+        str(path.relative_to(ROOT)): sorted({m.lower() for m in AST_GREP.findall(text)})
+        for path in _normative_texts()
+        if AST_GREP.search(text := path.read_text(encoding="utf-8"))
+    }
+
+    assert not found, f"texts that name ast-grep: {found}"
+
+
+def test_compat_ast_grep_ignore_is_documented_once_in_the_readme_of_botica():
+    text = (ROOT / "lint" / "README.md").read_text(encoding="utf-8")
+
+    assert "# ast-grep-ignore:" in text
+    assert "compat-ast-grep-ignore = true" in text
+
+
+def test_a_proposed_rule_is_not_in_the_catalog_and_takes_a_free_code():
+    """A proposal is moved into the catalog when it is integrated, never copied."""
+    catalog = {}
+    for rule_toml in CATALOG.glob("*/*/rule.toml"):
+        data = tomllib.loads(rule_toml.read_text(encoding="utf-8"))
+        catalog[data["id"]] = data["code"]
+    proposed = {}
+    for rule_toml in PROPOSALS.glob("*/*/rule.toml"):
+        data = tomllib.loads(rule_toml.read_text(encoding="utf-8"))
+        proposed[data["id"]] = data["code"]
+
+    assert proposed, "no proposal found"
+    assert not set(proposed) & set(catalog), "a proposal is already in the catalog"
+    assert not set(proposed.values()) & set(catalog.values()), "a proposal takes a used code"
+    assert len(set(proposed.values())) == len(proposed), "two proposals share a code"

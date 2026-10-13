@@ -48,6 +48,4 @@ class User(SQLModel, table=True):
 
 ## Suppression
 
-Silence one line with `# botica: ignore[arch-database-package]` or `# noqa: BTARCH001`. The rule is
-written in ast-grep's YAML (`python.yml`), so `# ast-grep-ignore: arch-database-package` also works
-while `compat-ast-grep-ignore` is on.
+Silence one line with `# botica: ignore[arch-database-package]` or `# noqa: BTARCH001`.

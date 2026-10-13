@@ -1,0 +1,16 @@
+id = "db-no-create-all"
+code = "BTARCH005"
+summary = "The schema changes through migrations, not metadata.create_all()"
+status = "preview"
+since = "0.9.0"
+tags = ["layout"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

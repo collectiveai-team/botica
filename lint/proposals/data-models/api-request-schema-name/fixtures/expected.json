@@ -1,0 +1,38 @@
+{
+  "diagnostics": [
+    {
+      "path": "api/schemas/requests/contract.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 33,
+          "line": 4,
+          "column": 1
+        },
+        "end": {
+          "offset": 73,
+          "line": 5,
+          "column": 14
+        }
+      },
+      "message": "botica/api-request-schema-name: a request schema is named {Name}Request. Rename the class so that its name ends with `Request`."
+    },
+    {
+      "path": "api/schemas/requests/contract.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 76,
+          "line": 8,
+          "column": 1
+        },
+        "end": {
+          "offset": 126,
+          "line": 9,
+          "column": 14
+        }
+      },
+      "message": "botica/api-request-schema-name: a request schema is named {Name}Request. Rename the class so that its name ends with `Request`."
+    }
+  ]
+}

@@ -10,23 +10,20 @@ tags: fastapi, pydantic, schemas, request, response, validation
 ## Use separate request and response Pydantic models; never reuse one for both
 
 Request schemas and response schemas are distinct classes. A request model can never
-double as a response model and vice versa. Put `ConfigDict(extra="forbid")` on request
-schemas to reject unknown fields. Put `ConfigDict(from_attributes=True)` on response
-schemas that are populated from ORM objects. All schema classes live in a dedicated
-`schemas.py` module — not inline in route files.
+double as a response model and vice versa. Put `ConfigDict(from_attributes=True)` on response
+schemas that are populated from ORM objects.
 
 **Prefer:**
 
 ```python
-# Request — forbid extra fields to catch client mistakes early
+# api/schemas/requests/dashboard.py
 class CreateDashboardRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
     name: str
     category: str = Field(pattern=r"^(finance|recruiting|marketing|general)$")
 
-# Response — from_attributes=True for ORM-to-schema conversion
+# api/schemas/responses/dashboard.py — from_attributes=True for ORM-to-schema conversion
 class DashboardOut(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(from_attributes=True)
     id: str
     name: str
     created_by: str
@@ -47,7 +44,5 @@ class Dashboard(SQLModel, table=True):
 def create(req: Dashboard): ...
 ```
 
-Follow the `{Name}Request` / `{Name}Out` naming convention and always add
-`ConfigDict(extra="forbid")` to request models. Response-only models (e.g. `Token`,
-`TokenPayload`, `UserPublic`) should be kept in their own files, separate from
-request schemas.
+Response-only models (e.g. `Token`, `TokenPayload`, `UserPublic`) are kept in their own files,
+separate from request schemas.

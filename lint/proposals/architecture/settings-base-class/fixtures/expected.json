@@ -1,0 +1,38 @@
+{
+  "diagnostics": [
+    {
+      "path": "settings.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 33,
+          "line": 4,
+          "column": 1
+        },
+        "end": {
+          "offset": 81,
+          "line": 5,
+          "column": 22
+        }
+      },
+      "message": "botica/settings-base-class: a settings class extends pydantic_settings.BaseSettings, not BaseModel. Change the base class so that the environment is read and validated."
+    },
+    {
+      "path": "settings.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 84,
+          "line": 8,
+          "column": 1
+        },
+        "end": {
+          "offset": 137,
+          "line": 9,
+          "column": 24
+        }
+      },
+      "message": "botica/settings-base-class: a settings class extends pydantic_settings.BaseSettings, not BaseModel. Change the base class so that the environment is read and validated."
+    }
+  ]
+}

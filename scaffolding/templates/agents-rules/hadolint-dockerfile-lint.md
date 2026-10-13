@@ -27,7 +27,7 @@ gating.
 ## License note
 
 `hadolint` is GPL-3.0, invoked purely as an external CLI/subprocess via prek — the same boundary
-already used for every other third-party tool in this stack (ruff, ast-grep, betterleaks) — so
+already used for every other third-party tool in this stack (ruff, betterleaks) — so
 this creates no copyleft obligation on a repo's own (typically MIT) source.
 
 ## Migration (existing repos)

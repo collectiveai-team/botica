@@ -28,6 +28,4 @@ export function run(): void {
 
 ## Suppression
 
-Silence one line with `// botica: ignore[no-console-log]` or `// noqa: BTLOG003`. The rule is
-written in ast-grep's YAML (`typescript.yml`), so `// ast-grep-ignore: no-console-log` also works
-while `compat-ast-grep-ignore` is on.
+Silence one line with `// botica: ignore[no-console-log]` or `// noqa: BTLOG003`.

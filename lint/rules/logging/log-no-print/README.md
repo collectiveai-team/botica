@@ -22,6 +22,4 @@ directory, `conftest.py`, anything under `tests/`, and any `print()` inside an
 
 ## Suppression
 
-Silence one line with `# botica: ignore[log-no-print]` or `# noqa: BTLOG002`. The rule is written
-in ast-grep's YAML (`python.yml`), so `# ast-grep-ignore: log-no-print` also works while
-`compat-ast-grep-ignore` is on.
+Silence one line with `# botica: ignore[log-no-print]` or `# noqa: BTLOG002`.

@@ -42,5 +42,4 @@ def payload() -> dict:
 
 ## Suppression
 
-Silence one line with `# botica: ignore[no-dict-return-annotation]` or `# noqa: BTDM005`. The rule is written in ast-grep's
-YAML (`python.yml`), so `# ast-grep-ignore: no-dict-return-annotation` also works while `compat-ast-grep-ignore` is on.
+Silence one line with `# botica: ignore[no-dict-return-annotation]` or `# noqa: BTDM005`.

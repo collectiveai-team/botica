@@ -14,8 +14,8 @@ repo-wide duplication-percentage threshold (`--threshold`) that fails the hook o
 
 Copy-pasted logic is a common, lazy AI-agent failure mode: an agent asked to add a similar feature
 copies the nearest existing block instead of extracting a shared helper, so a later bug fix in one
-copy silently doesn't apply to the other. Nothing else in the house stack (ruff, ast-grep,
-import-linter) detects this — ast-grep matches a single declared pattern, not "this block looks
+copy silently doesn't apply to the other. Nothing else in the house stack (ruff, botica,
+import-linter) detects this — a botica rule matches a single declared pattern, not "this block looks
 like that other block." `jscpd` is polyglot (tree-sitter, 223+ formats) so it also covers a
 frontend/Docker/YAML portion of a scaffolded repo, not just Python.
 

@@ -46,7 +46,12 @@ line-length = 100
 # verbatim into target repos) are independent artifacts; lint only the tool's code.
 # The botica lint rule fixtures are deliberately bad code (and carry `# noqa: BT…` codes ruff
 # would otherwise strip), so ruff leaves them alone.
-extend-exclude = ["skills", "scaffolding/templates", "lint/rules/**/fixtures"]
+extend-exclude = [
+  "skills",
+  "scaffolding/templates",
+  "lint/rules/**/fixtures",
+  "lint/proposals/**/fixtures",
+]
 force-exclude = true
 
 [tool.ruff.lint]

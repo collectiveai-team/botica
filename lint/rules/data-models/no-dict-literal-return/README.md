@@ -42,5 +42,4 @@ def payload():
 
 ## Suppression
 
-Silence one line with `# botica: ignore[no-dict-literal-return]` or `# noqa: BTDM004`. The rule is written in ast-grep's
-YAML (`python.yml`), so `# ast-grep-ignore: no-dict-literal-return` also works while `compat-ast-grep-ignore` is on.
+Silence one line with `# botica: ignore[no-dict-literal-return]` or `# noqa: BTDM004`.
