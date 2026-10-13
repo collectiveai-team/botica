@@ -169,6 +169,12 @@ describes one, and the hook reports each finding with its slug and its message.
 - **CES-114 · hadolint-dockerfile-lint** — no root `Dockerfile` / `docker` CI component in this
   repo.
 
+## Reading linter output
+
+Act on a finding by its severity. An **error** is fixed before committing. A **warning** is fixed
+only if your change introduced it; a warning that was already there is neither fixed nor reported.
+An **info** is ignored.
+
 ## Domain docs
 
 Single-context — `CONTEXT.md` + `docs/adr/` at the repo root (created lazily).
