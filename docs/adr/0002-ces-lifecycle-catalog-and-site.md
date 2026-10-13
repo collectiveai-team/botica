@@ -16,6 +16,11 @@
 > its number live instead is not decided**, so those points stay below as first written until it
 > is. The rule lifecycle, proposals as pull requests, Discussions and the generated site are
 > unaffected.
+>
+> **Amended 2026-10-13** (user decision). A CES lives **only as documentation**: botica carries no
+> text and no number of a CES, only the informational `ces` reference of a rule. The new definition
+> of a CES (where its text and its number are kept) is planned for a later stage of the botica lint
+> spec, so decisions 1 and 5 stay below as first written until then.
 
 Today a CES is born as a GitHub issue. The issue number is the CES number, the issue body is the
 standard's text, and its review state is a set of labels that a bot (`proposal-vote.yml`,

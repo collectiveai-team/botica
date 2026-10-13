@@ -57,6 +57,15 @@ before the first tag and publish nothing you have not looked at.
    2026-10-12** (reviewer: `jedzill4`); to change it, **Settings → Environments → pypi**.
 4. The repository variable `PUBLISH_TO_PYPI` = `true` turns the `pypi` job on. **Set on
    2026-10-12.** Delete it, or set it to anything else, to turn the job off again.
+5. Who may release. A tag `v*.*.*` publishes to PyPI, and the `pypi` environment has no reviewer
+   (removed on 2026-10-12), so the tag is the gate. The repository ruleset **botica release tags**
+   (target: tags, `refs/tags/v*`, active, created 2026-10-13) refuses to create, move or delete
+   those tags for everyone except the team `botique`, which today is exactly `jedzill4` and
+   `lionelchamorro`. A ruleset takes roles, teams and apps as exceptions, not single people, so who
+   may release is who is in that team (**Organization → Teams → botique**); to change the rule
+   itself, **Settings → Rules → Rulesets**. Repository admins can edit the ruleset: it is a gate
+   against mistakes, not a lock against an admin. Moving a tag after a failed release (step 4 of
+   "Each release") also needs the exception.
 
 The `botica-pre-commit` project is **not** created on PyPI: prek installs the mirror by cloning
 its GitHub repository, and the package in it only depends on `botica==X.Y.Z`.
