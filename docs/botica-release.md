@@ -24,21 +24,20 @@ A release does not need `main`: a tag runs the workflow as it is in the tagged c
 6. `pypi` uploads the wheels to PyPI. It is **off** until the repository variable
    `PUBLISH_TO_PYPI` is `true`.
 
-`0.7.0` was released on 2026-10-12 (run `38197175421`): every job passed, the seven wheels are on
-GitHub and on PyPI. The tag moved once on the way: the Linux jobs build in a container that owns
-`lint/dist`, so the checksums are written to `lint/sums` instead. The `publish` step that puts
-"latest" back was added afterwards and has not run on GitHub yet: look at it on the next release.
+`0.7.0` was released on 2026-10-12 (run `38197175421`), `0.7.1` the same day (run `38214642175`) and
+`0.8.0` on 2026-10-13 (run `38410864532`): every job passed, the seven wheels are on GitHub and on
+PyPI, and the `publish` step left `v0.6.0` as "latest" each time (it was first used on 0.7.1). The
+Linux jobs build in a container that owns `lint/dist`, so the checksums are written to `lint/sums`
+instead. The two calls to reusable workflows use GitHub's self-repository syntax
+(`uses: $/.github/workflows/ci.yml`, July 2026, github.com only, runner 2.336.0 or newer), which
+worked on GitHub from 0.7.1. `actionlint` 1.7.12 does not know the syntax yet (rhysd/actionlint
+issue 711) and reports it; until it does, run it with
+`-ignore 'reusable workflow call "\$/.+" at "uses" is not following the format'`.
 
-Checked by hand after the release: `uvx botica --version` and `uv tool install botica` install the
-wheel from PyPI and run it (`botica 0.7.0`, Linux x64), and prek installs the mirror repository at
-`v0.7.0` and runs the hook against that wheel. `zizmor` 1.30.1 finds nothing in the workflows. `botica-release.yml` calls `ci.yml` and `tests.yml`
-with GitHub's self-repository syntax (`uses: $/.github/workflows/ci.yml`, July 2026, github.com
-only, runner 2.336.0 or newer), which GitHub documents for reusable workflow calls and recommends
-over `./`. It has not run on GitHub yet: look at the first two jobs on the next release.
-`actionlint` 1.7.12 does not know the syntax yet (rhysd/actionlint issue 711) and reports it; until
-it does, run it with
-`-ignore 'reusable workflow call "\$/.+" at "uses" is not following the format'`. Not checked: that the wheels for musl, arm64,
-macOS and Windows run (they build and are published, nothing more).
+Checked by hand after each release: `uvx botica@X.Y.Z --version` installs the wheel from PyPI and
+runs it (Linux x64; PyPI's index can take a minute to list a new version), and prek installs the
+mirror repository at `vX.Y.Z` and runs the hook against that wheel. Not checked: that the wheels for
+musl, arm64, macOS and Windows run (they build and are published, nothing more).
 
 ## Set up PyPI once
 
@@ -72,12 +71,13 @@ builds are accepted. A wheel built on your machine for a rehearsal needs
 
 ## Each release
 
-1. Set `version` in `[workspace.package]` of `lint/Cargo.toml` (it is `0.7.0`, the first release,
-   and `Cargo.lock` already matches; later ones go up from there), and run `cargo update --workspace`
+1. Set `version` in `[workspace.package]` of `lint/Cargo.toml`, and run `cargo update --workspace`
    in `lint/`. Without it the build, which uses `--locked`, fails; the change to `Cargo.lock` is a
    few lines for the crates of the project.
-2. Commit it (`chore(lint): release X.Y.Z`) and push. Wait for `CI` to pass.
-3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+2. Set the same version and the `botica==` pin in `lint/distribution/botica-pre-commit/pyproject.toml`,
+   and the `rev` in its README. Commit (`chore(lint): release X.Y.Z`). The branch does not have to
+   be pushed: the tag carries the commit, and the workflow runs the `CI` suite itself.
+3. Tag and push: `git tag -a vX.Y.Z -m "botica X.Y.Z" && git push origin vX.Y.Z`.
 4. Watch the run. If a platform fails, fix it and move the tag, or delete the draft release and the
    tag and start again. Once `publish` has run, treat the version as final.
 5. Approve the `pypi` environment when it asks.
@@ -89,10 +89,12 @@ builds are accepted. A wheel built on your machine for a rehearsal needs
 wheel of the same version, so `rev` pins the binary. Its source is
 `lint/distribution/botica-pre-commit/` in this repository; copy it over after each release.
 
-1. In `lint/distribution/botica-pre-commit/pyproject.toml` set `version` and the `botica==` pin to
-   `X.Y.Z`, and commit it here.
+1. The `version` and the `botica==` pin of `lint/distribution/botica-pre-commit/pyproject.toml` are
+   already `X.Y.Z` (step 2 of "Each release").
 2. Copy that directory (and `LICENSE`) into a clone of the mirror, commit
-   (`chore: release X.Y.Z`), push, and tag `vX.Y.Z`.
+   (`chore: release X.Y.Z`), push, and tag `vX.Y.Z` with a **lightweight** tag (`git tag vX.Y.Z`):
+   prek does not install an annotated tag of the mirror. The tags of this repository can be
+   annotated.
 3. In a project, `rev = "vX.Y.Z"`; `prek autoupdate` moves it to the newest tag.
 
 The tag must come after the wheel is on PyPI, or prek cannot install the hook environment.
@@ -101,5 +103,8 @@ The tag must come after the wheel is on PyPI, or prek cannot install the hook en
 
 - `scaffolding/templates/prek-generic.toml` and this repository's own `prek.toml` use the mirror
   (`repo = "https://github.com/collectiveai-team/botica-pre-commit"`, `rev`, `args`). They are not
-  moved by a release: after the mirror has its new tag, set `rev` in both by hand.
+  moved by a release: after the mirror has its new tag, set `rev` in both by hand, and in the
+  examples of `lint/README.md` and of the mirror's README (the templates may name the next version
+  before it exists, as `0.8.0` was named; a repository using them cannot install the hook until
+  the mirror has the tag).
 - Not published, and not planned yet: npm, Homebrew, a GitHub Action, standalone binaries.
