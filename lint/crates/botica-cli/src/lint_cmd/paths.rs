@@ -107,6 +107,7 @@ pub(super) fn lint_paths(args: &LintArgs, setup: &Setup, root: &Path) -> Result<
         let unreadable = merged(unreadable, reached.walked.unreadable);
         let fingerprint = rules::fingerprint(
             setup.with_astgrep,
+            &setup.resolution,
             args.extra_rules.as_deref(),
             &setup.config_key,
         )?;

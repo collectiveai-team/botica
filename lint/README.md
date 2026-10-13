@@ -36,6 +36,7 @@ the run itself failed (it wins over `1`). `--exit-zero` forgives only the findin
 | `BTSTRUC003` | [`no-artifacts-in-package`](rules/structure/no-artifacts-in-package/README.md) | CES-32 | data, models and reports inside the code |
 | `BTSTRUC004` | [`no-notebooks`](rules/structure/no-notebooks/README.md) | CES-32 | notebooks inside the code |
 | `BTSTRUC005` | [`no-tests-in-package`](rules/structure/no-tests-in-package/README.md) | none yet | Python: tests inside the package |
+| `BTLOG002` | [`log-no-print`](rules/logging/log-no-print/README.md) | CES-46 | Python: `print()` in library code |
 | `BT001`–`BT003` | `io-error`, `unused-suppression`, `invalid-suppression` | | the run and the suppressions |
 
 The embedded ast-grep rules run too, unless you pass `--no-astgrep`. Each rule has a README with

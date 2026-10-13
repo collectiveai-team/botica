@@ -1,15 +1,17 @@
 use anyhow::Result;
 use botica_astgrep::{AstGrepRule, AstGrepSet, Tuning};
+use botica_catalog::Kind;
+use botica_config::Resolution;
 use botica_core::suppress::Policy;
 use botica_core::{Engine, Exclusion, NativePlanner, NativeRule};
 use std::path::Path;
 
-const EMBEDDED: [&str; 11] = [
+/// The syntax rules that are not in the catalog yet.
+const EMBEDDED: [&str; 10] = [
     include_str!("../../../../scaffolding/templates/ast-grep-rules/api-schemas-extra-forbid.yml"),
     include_str!("../../../../scaffolding/templates/ast-grep-rules/arch-database-package.yml"),
     include_str!("../../../../scaffolding/templates/ast-grep-rules/cli-typed-framework.yml"),
     include_str!("../../../../scaffolding/templates/ast-grep-rules/log-get-logger.yml"),
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/log-no-print.yml"),
     include_str!("../../../../scaffolding/templates/ast-grep-rules/no-dict-alias.yml"),
     include_str!("../../../../scaffolding/templates/ast-grep-rules/no-dict-call-return.yml"),
     include_str!("../../../../scaffolding/templates/ast-grep-rules/no-dict-literal-return.yml"),
@@ -27,8 +29,30 @@ fn embedded_slugs() -> impl Iterator<Item = &'static str> {
         .map(str::trim)
 }
 
+/// The slug and the YAML of every active rule of the catalog that is implemented with ast-grep.
+pub fn catalog_sources(resolution: &Resolution) -> Vec<(&str, &str)> {
+    resolution
+        .entries()
+        .iter()
+        .filter(|entry| entry.active)
+        .flat_map(|entry| {
+            entry
+                .rule
+                .implementations
+                .iter()
+                .filter(|implementation| implementation.kind == Kind::AstGrep)
+                .filter_map(|implementation| implementation.source.as_deref())
+                .map(|yaml| (entry.rule.id.as_str(), yaml))
+        })
+        .collect()
+}
+
 pub struct EngineOptions<'a> {
     pub astgrep: bool,
+    /// Whether the selection takes in the embedded rules that are not in the catalog yet: no
+    /// selector can name them, so they run only with `default` or `all`.
+    pub embedded: bool,
+    pub resolution: &'a Resolution,
     pub tuning: Tuning,
     /// Extra ast-grep YAML rules (`*.yml` in this directory), for parity checks on more languages.
     pub extra_rules: Option<&'a Path>,
@@ -43,9 +67,12 @@ pub fn build_engine(
     policy: Policy,
     exclusion: Option<Exclusion>,
 ) -> Result<Engine> {
+    let from_catalog = catalog_sources(options.resolution);
     let mut rules = Vec::new();
     if options.astgrep {
-        for yaml in EMBEDDED {
+        let embedded = if options.embedded { &EMBEDDED[..] } else { &[] };
+        let catalog_yaml = from_catalog.iter().map(|&(_, yaml)| yaml);
+        for yaml in catalog_yaml.chain(embedded.iter().copied()) {
             for mut rule in AstGrepRule::from_yaml(yaml)? {
                 if let Some(pattern) = declared_prefilter(rule.id()) {
                     rule.declare_prefilter(pattern);
@@ -76,7 +103,12 @@ pub fn build_engine(
 }
 
 /// Identifies everything that can change a file's diagnostics, for the result cache.
-pub fn fingerprint(with_astgrep: bool, extra_rules: Option<&Path>, config: &str) -> Result<String> {
+pub fn fingerprint(
+    with_astgrep: bool,
+    resolution: &Resolution,
+    extra_rules: Option<&Path>,
+    config: &str,
+) -> Result<String> {
     let mut hasher = blake3::Hasher::new();
     hasher.update(env!("CARGO_PKG_VERSION").as_bytes());
     // The shape of the stored diagnostics: v2 added where each one ends.
@@ -84,6 +116,9 @@ pub fn fingerprint(with_astgrep: bool, extra_rules: Option<&Path>, config: &str)
     hasher.update(&[u8::from(with_astgrep)]);
     hasher.update(config.as_bytes());
     for yaml in EMBEDDED {
+        hasher.update(yaml.as_bytes());
+    }
+    for (_, yaml) in catalog_sources(resolution) {
         hasher.update(yaml.as_bytes());
     }
     if with_astgrep {

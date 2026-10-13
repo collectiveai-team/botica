@@ -1,0 +1,17 @@
+id = "log-no-print"
+code = "BTLOG002"
+ces = "CES-46"
+summary = "Libraries log, they don't print"
+status = "stable"
+since = "0.8.0"
+tags = ["logging"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = true
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

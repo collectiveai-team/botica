@@ -1,0 +1,22 @@
+id: log-no-print
+language: python
+severity: warning
+message: "CES-46 (log-no-print): Libraries log, they don't print — use the house get_logger (.agents/snippets/core/logger.py) instead of print() in library code. CLI/__main__ entrypoints are exempt; this is for importable modules."
+ignores:
+  - "**/__main__.py"
+  - "**/cli.py"
+  - "**/cli/**"
+  - "**/conftest.py"
+  - "**/tests/**"
+rule:
+  pattern: print($$$ARGS)
+  not:
+    inside:
+      stopBy: end
+      any:
+        - pattern: |
+            if __name__ == "__main__":
+                $$$BODY
+        - pattern: |
+            if __name__ == '__main__':
+                $$$BODY

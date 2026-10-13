@@ -105,7 +105,8 @@ impl Setup {
     fn build(args: &LintArgs) -> Result<Self> {
         let project = project::load(&args.project)?;
         let project_root = project.loaded.root.clone();
-        let with_astgrep = !args.no_astgrep && project.embedded_rules;
+        let with_astgrep = !args.no_astgrep;
+        let embedded = project.embedded_rules;
         let io_error_active = project.is_active(IO_ERROR);
         let prefix = project.working_prefix();
         let config_key = project.fingerprint();
@@ -118,6 +119,8 @@ impl Setup {
         let engine = rules::build_engine(
             &rules::EngineOptions {
                 astgrep: with_astgrep,
+                embedded,
+                resolution: &resolution,
                 tuning: Tuning {
                     prefilter: !args.no_prefilter,
                     regions: !args.no_regions,

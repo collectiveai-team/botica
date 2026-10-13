@@ -97,6 +97,7 @@ fn the_default_selection_runs_every_rule_enabled_by_default() {
             "file-size-guard",
             "invalid-suppression",
             "io-error",
+            "log-no-print",
             "no-artifacts-in-package",
             "no-notebooks",
             "no-tests-in-package",
@@ -139,7 +140,7 @@ fn select_and_extend_select_are_added_together() {
     );
     assert_eq!(
         active(&resolve(&catalog, "select = []\nextend-select = [\"all\"]")).len(),
-        8
+        9
     );
 }
 
@@ -149,7 +150,12 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
     let resolution = resolve(&catalog, "ignore = [\"BTSTRUC\"]");
     assert_eq!(
         active(&resolution),
-        ["invalid-suppression", "io-error", "unused-suppression"]
+        [
+            "invalid-suppression",
+            "io-error",
+            "log-no-print",
+            "unused-suppression"
+        ]
     );
     assert_eq!(
         reason(&resolution, "no-utils"),
@@ -169,6 +175,7 @@ fn a_rule_switched_off_in_its_own_section_stays_out() {
         [
             "invalid-suppression",
             "io-error",
+            "log-no-print",
             "no-artifacts-in-package",
             "no-notebooks",
             "no-tests-in-package",

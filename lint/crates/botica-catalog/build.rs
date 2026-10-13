@@ -49,6 +49,12 @@ fn main() {
                     push(&mut table, &rules_dir, &file);
                 }
             }
+            // The YAML of the implementations (`file` in `rule.toml`).
+            for file in sorted_entries(&rule) {
+                if file.is_file() && file.extension().is_some_and(|e| e == "yml") {
+                    push(&mut table, &rules_dir, &file);
+                }
+            }
         }
     }
     table.push_str("];\n");

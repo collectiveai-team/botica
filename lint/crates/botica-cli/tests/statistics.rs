@@ -69,19 +69,32 @@ fn json_is_a_document_with_the_counts_and_the_errors_of_the_run() {
 fn a_rule_the_catalog_does_not_know_has_no_code() {
     let dir = project_in("statistics", "unknown", None);
     write(&dir, "log.py", "print('x')\n");
-    let text = stdout(&command(&dir, &["lint", ".", "--statistics"]));
+    write(
+        &dir,
+        "extra/print-anywhere.yml",
+        "id: print-anywhere\nlanguage: python\nseverity: warning\nmessage: m\n\
+         rule:\n  pattern: print($$$ARGS)\n",
+    );
+    let only_the_extra = [
+        "lint",
+        ".",
+        "--statistics",
+        "--ignore",
+        "log-no-print",
+        "--extra-rules",
+        "extra",
+    ];
+    let text = stdout(&command(&dir, &only_the_extra));
     assert_eq!(
         text.split_whitespace().collect::<Vec<_>>(),
-        ["1", "-", "log-no-print"]
+        ["1", "-", "print-anywhere"]
     );
-    let json = stdout(&command(
-        &dir,
-        &["lint", ".", "--statistics", "--output-format", "json"],
-    ));
+    let as_json = [&only_the_extra[..], &["--output-format", "json"]].concat();
+    let json = stdout(&command(&dir, &as_json));
     let document: serde_json::Value = serde_json::from_str(&json).expect("JSON");
     assert_eq!(
         document["statistics"],
-        json!([{"rule": "log-no-print", "code": null, "count": 1}])
+        json!([{"rule": "print-anywhere", "code": null, "count": 1}])
     );
 }
 
