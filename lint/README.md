@@ -102,6 +102,10 @@ A finding about a whole file (size, name, layout) has no line: use `ignore-file`
 `ignores`/`extend-ignores`, or `extend-exclude`. With ruff, put `lint.external = ["BT"]` in its
 configuration so it does not report `RUF102` for `BT` codes (the scaffolding template does).
 
+While a repository migrates from ast-grep, `compat-ast-grep-ignore = true` makes botica honour
+`# ast-grep-ignore: <rule>` too, on the line of a finding and on the line before it. It is off by
+default, and the README of a rule does not repeat it.
+
 ## prek
 
 ```toml
