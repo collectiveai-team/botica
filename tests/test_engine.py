@@ -128,8 +128,9 @@ def test_gitignore_partial_append(repo: Path):
 
 
 # test helper: a target->disposition lookup map is a legitimate dict boundary
-# ast-grep-ignore: no-dict-return-annotation
-def _standards_dispositions(plan) -> dict[str, Disposition]:
+def _standards_dispositions(  # botica: ignore[no-dict-return-annotation]
+    plan,
+) -> dict[str, Disposition]:
     return {op.target: op.disposition for op in plan.ops if op.component == "standards"}
 
 

@@ -169,18 +169,19 @@ priority = 2
 # The same structure rules as the generic template (CES-71 file-size-guard, CES-63 no-utils, CES-32
 # no-notebooks and no-artifacts-in-package, no-tests-in-package), run by `botica lint` through the
 # mirror, which installs botica from PyPI at the release `rev` names. Own `[[repos]]` table, so it
-# goes after the `local` hooks above, not among them. The syntax rules (CES-79, CES-45…) join it
-# when `rev` moves to v0.8.0, the first release that carries them: then `--no-astgrep` goes and
-# the selection is the one of `scaffolding/templates/prek-generic.toml`.
+# goes after the `local` hooks above, not among them. The selection is the one of
+# `scaffolding/templates/prek-generic.toml`: the structure rules and the syntax rules that the
+# `ast-grep` hook used to run.
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
-rev = "v0.7.1"
+rev = "v0.8.0"
 
 [[repos.hooks]]
 id = "botica"
-args = ["--no-astgrep", "--select", "file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package"]
+args = ["--select", "file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package,no-dict-alias,no-dict-call-return,no-dict-literal-return,no-dict-return-annotation,api-schemas-extra-forbid,log-get-logger,log-no-print,settings-module,cli-typed-framework,arch-database-package"]
 # Same exclusions as ruff above: the rules' own invalid fixtures (oversized, a utils.py, … on
-# purpose) and the template payload this repo ships to other repositories (a `tests/` snippet).
+# purpose), the template payload this repo ships to other repositories (a `tests/` snippet) and
+# the bundled skills.
 # Documentation is already left out by the rule's default `ignores`.
-exclude = "^(lint/rules/.*/fixtures/|scaffolding/templates/)"
+exclude = "^(lint/rules/.*/fixtures/|scaffolding/templates/|skills/)"
 priority = 2
