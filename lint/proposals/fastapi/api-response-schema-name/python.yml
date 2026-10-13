@@ -1,7 +1,7 @@
 id: api-response-schema-name
 language: python
 severity: warning
-message: "botica/api-response-schema-name: a response schema is named {Name}Out. Rename the class so that its name ends with `Out`."
+message: "botica/api-response-schema-name: a response schema is named {Name}Response. Rename the class so that its name ends with `Response`."
 files:
   - "**/api/**/schemas/responses/**/*.py"
 rule:
@@ -14,4 +14,4 @@ rule:
     - not:
         has:
           field: name
-          regex: "Out$"
+          regex: "Response$"

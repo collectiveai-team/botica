@@ -1,6 +1,6 @@
-# api-schema-in-route-module · `BTDM006`
+# api-schema-in-route-module · `BTFAST001`
 
-**Standard:** none yet · **Family:** data-models · **Languages:** Python · **Status:** proposed, not in the catalog
+**Standard:** none yet · **Family:** fastapi · **Languages:** Python · **Status:** proposed, not in the catalog
 
 ## Directive
 
@@ -30,4 +30,4 @@ class CreateContract(BaseModel):
 
 ## Suppression
 
-Silence one line with `# botica: ignore[api-schema-in-route-module]` or `# noqa: BTDM006`.
+Silence one line with `# botica: ignore[api-schema-in-route-module]` or `# noqa: BTFAST001`.

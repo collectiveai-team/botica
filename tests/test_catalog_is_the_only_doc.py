@@ -174,6 +174,20 @@ def test_compat_ast_grep_ignore_is_documented_once_in_the_readme_of_botica():
     assert "compat-ast-grep-ignore = true" in text
 
 
+def test_a_proposed_rule_takes_its_code_from_the_family_of_its_folder():
+    wrong = []
+    for rule_toml in PROPOSALS.glob("*/*/rule.toml"):
+        family = tomllib.loads(
+            (CATALOG / rule_toml.parent.parent.name / "family.toml").read_text(encoding="utf-8")
+        )
+        prefix = f"BT{family['code']}"
+        code = tomllib.loads(rule_toml.read_text(encoding="utf-8"))["code"]
+        if not re.fullmatch(rf"{prefix}\d{{3}}", code):
+            wrong.append(f"{rule_toml.parent.name}: {code} is not {prefix}NNN")
+
+    assert not wrong, wrong
+
+
 def test_a_proposed_rule_is_not_in_the_catalog_and_takes_a_free_code():
     """A proposal is moved into the catalog when it is integrated, never copied."""
     catalog = {}

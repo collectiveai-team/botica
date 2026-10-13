@@ -1,6 +1,6 @@
-id = "api-request-schema-name"
-code = "BTDM007"
-summary = "Request schemas are named {Name}Request"
+id = "api-response-schema-name"
+code = "BTFAST003"
+summary = "Response schemas are named {Name}Response"
 status = "preview"
 since = "0.9.0"
 tags = ["typing"]

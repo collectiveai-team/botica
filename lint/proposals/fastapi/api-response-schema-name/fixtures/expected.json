@@ -15,7 +15,7 @@
           "column": 12
         }
       },
-      "message": "botica/api-response-schema-name: a response schema is named {Name}Out. Rename the class so that its name ends with `Out`."
+      "message": "botica/api-response-schema-name: a response schema is named {Name}Response. Rename the class so that its name ends with `Response`."
     }
   ]
 }

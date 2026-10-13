@@ -11,9 +11,9 @@ integrated, its README here is where the text lives.
 
 | Code | Rule | Replaces guidance of |
 |---|---|---|
-| `BTDM006` | [`api-schema-in-route-module`](data-models/api-schema-in-route-module/README.md) | `api-schemas`: schemas are not defined in route files |
-| `BTDM007` | [`api-request-schema-name`](data-models/api-request-schema-name/README.md) | `api-schemas`: the `{Name}Request` convention |
-| `BTDM008` | [`api-response-schema-name`](data-models/api-response-schema-name/README.md) | `api-schemas`: the `{Name}Out` convention |
+| `BTFAST001` | [`api-schema-in-route-module`](fastapi/api-schema-in-route-module/README.md) | `api-schemas`: schemas are not defined in route files |
+| `BTFAST002` | [`api-request-schema-name`](fastapi/api-request-schema-name/README.md) | `api-schemas`: the `{Name}Request` convention |
+| `BTFAST003` | [`api-response-schema-name`](fastapi/api-response-schema-name/README.md) | `api-schemas`: the `{Name}Response` convention |
 | `BTARCH003` | [`settings-base-class`](architecture/settings-base-class/README.md) | `pylayout-pydantic-v2`: settings extend `BaseSettings` |
 | `BTARCH004` | [`settings-direct-instantiation`](architecture/settings-direct-instantiation/README.md) | `api-pydantic-settings`: callers never build `Settings()` |
 | `BTARCH005` | [`db-no-create-all`](architecture/db-no-create-all/README.md) | `api-sqlmodel-alembic`: never `metadata.create_all()` outside tests |

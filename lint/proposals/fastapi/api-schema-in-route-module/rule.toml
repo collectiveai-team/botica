@@ -1,6 +1,6 @@
-id = "api-response-schema-name"
-code = "BTDM008"
-summary = "Response schemas are named {Name}Out"
+id = "api-schema-in-route-module"
+code = "BTFAST001"
+summary = "Pydantic schemas are not defined in route modules"
 status = "preview"
 since = "0.9.0"
 tags = ["typing"]

@@ -1,6 +1,6 @@
-# api-request-schema-name · `BTDM007`
+# api-request-schema-name · `BTFAST002`
 
-**Standard:** none yet · **Family:** data-models · **Languages:** Python · **Status:** proposed, not in the catalog
+**Standard:** none yet · **Family:** fastapi · **Languages:** Python · **Status:** proposed, not in the catalog
 
 ## Directive
 
@@ -27,4 +27,4 @@ class CreateContract(BaseModel):
 
 ## Suppression
 
-Silence one line with `# botica: ignore[api-request-schema-name]` or `# noqa: BTDM007`.
+Silence one line with `# botica: ignore[api-request-schema-name]` or `# noqa: BTFAST002`.

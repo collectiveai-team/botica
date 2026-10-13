@@ -1,5 +1,5 @@
 from pydantic import BaseModel
 
 
-class ContractOut(BaseModel):
+class ContractResponse(BaseModel):
     id: str
