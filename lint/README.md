@@ -2,8 +2,9 @@
 
 A deterministic linter for the house engineering standards. It never calls a model or the
 network, reads your files once, and runs its rules in parallel. The design is in
-[ADR 0003](../docs/adr/0003-botica-lint-architecture.md); the standards it enforces are the CES
-catalogued in [`docs/engineering-standards.md`](../docs/engineering-standards.md).
+[ADR 0003](../docs/adr/0003-botica-lint-architecture.md). The catalog under `rules/` is the only
+documentation of the rules it measures: each rule has a README, and `botica rules` lists them. The
+CES are catalogued in [`docs/engineering-standards.md`](../docs/engineering-standards.md).
 
 ## Install
 

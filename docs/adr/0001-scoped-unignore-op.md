@@ -13,7 +13,7 @@ We added an `unignore` op that removes **one literal line drawn from an enumerat
 (`UNIGNORE_WHITELIST` in `scaffolding/skills.py`) from `.gitignore`, gated behind a `Decision`
 that defaults to yes. It refuses any line outside the whitelist by raising.
 
-Two properties keep the op honest, both learned the hard way:
+Two properties keep the op honest:
 
 - **Detection matches remediation.** The op is planned only when `.gitignore` carries the literal
   line. `git check-ignore` is satisfied by `*.json`, by `/skills-lock.json`, by
@@ -52,7 +52,7 @@ op: adding a new literal is a reviewable one-line change, whereas accepting a re
 caller-supplied string would give the capability away entirely.
 
 Note what this does **not** authorise. `skills-lock.json` is written only by the third-party
-`skills` CLI, as a side effect of a run op; the engine never writes it. An earlier draft of
-CES-107 had scaffolding reconstruct that file when it could not be parsed, which is a destructive
-write to an existing target outside the whitelist — exactly what this ADR exists to bound. That
-path was removed: an unparseable manifest is now deferred with a warning.
+`skills` CLI, as a side effect of a run op; the engine never writes it. Reconstructing the file
+when it cannot be parsed would be a destructive write to an existing target outside the
+whitelist, which is exactly what this ADR exists to bound, so an unparseable manifest is deferred
+with a warning.
