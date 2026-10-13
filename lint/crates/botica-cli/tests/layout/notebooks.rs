@@ -60,3 +60,31 @@ fn a_notebook_nobody_may_read_is_still_reported_by_its_name_and_is_no_failure() 
     );
     assert_eq!(output.status.code(), Some(1), "{}", stderr(&output));
 }
+
+#[test]
+fn what_tests_and_documentation_carry_is_left_alone_as_for_data() {
+    let dir = project("notebook-exempt");
+    backend(&dir);
+    for place in [
+        "tests",
+        "fixtures",
+        "testdata",
+        "examples",
+        "docs",
+        "snapshots",
+        "api_tests",
+        "e2e-tests",
+    ] {
+        write(&dir, &format!("backend/amarc/{place}/demo.ipynb"), "{}\n");
+    }
+    write(&dir, "backend/amarc/core/examples/demo.ipynb", "{}\n");
+    write(&dir, "backend/amarc/analysis.ipynb", "{}\n");
+
+    let text = lint(&dir);
+
+    assert_eq!(
+        reported(&text, "no-notebooks"),
+        ["backend/amarc/analysis.ipynb"],
+        "{text}"
+    );
+}

@@ -156,9 +156,13 @@ impl NativeRule for NoNotebooks {
     }
 
     fn check(&self, doc: &Document<'_>, out: &mut Vec<Diagnostic>) {
-        if extension(doc.path).as_deref() != Some("ipynb")
-            || within(&self.code_dirs, doc.path, |_| true).is_none()
-        {
+        if extension(doc.path).as_deref() != Some("ipynb") {
+            return;
+        }
+        let Some(inside) = within(&self.code_dirs, doc.path, |_| true) else {
+            return;
+        };
+        if split(inside).0.into_iter().any(is_exempt) {
             return;
         }
         out.push(found(

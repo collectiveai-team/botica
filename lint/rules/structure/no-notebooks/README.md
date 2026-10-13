@@ -20,6 +20,10 @@ manifests. Python: the directories with an `__init__.py` inside the project or i
 JavaScript and TypeScript, and Rust: `src/`. Go: `internal/`, `pkg/` and `cmd/`. Java, Kotlin and
 Scala: `src/main/java`, `kotlin` and `scala`. `botica explain no-notebooks` lists them.
 
+A notebook under `tests`, `test`, `__tests__`, `fixtures`, `testdata`, `examples`, `docs`,
+`benches`, `snapshots` or a `*_tests` / `*-tests` directory is left alone, the same directories
+`no-artifacts-in-package` leaves alone: a demo notebook in `examples/` is not code that ships.
+
 ## Suppression
 
 The finding is about a whole file and has no line, so it cannot be silenced with a line comment.
