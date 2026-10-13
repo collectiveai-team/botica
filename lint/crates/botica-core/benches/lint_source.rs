@@ -15,7 +15,7 @@ const PY_RULES: [&str; 10] = [
     include_str!("../../../../scaffolding/templates/ast-grep-rules/no-dict-return-annotation.yml"),
     include_str!("../../../../scaffolding/templates/ast-grep-rules/settings-module.yml"),
 ];
-const TS_RULE: &str = include_str!("../../botica-cli/rules/no-console-log.yml");
+const TS_RULE: &str = include_str!("../../../rules/logging/no-console-log/typescript.yml");
 
 const PY_BLOCK: &str = r#"
 import logging

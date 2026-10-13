@@ -1,0 +1,8 @@
+id: log-get-logger
+language: python
+severity: warning
+message: "CES-45 (log-get-logger): Don't call logging.getLogger directly — use the house get_logger (structlog: JSON in prod, colored console in dev, level from LOG_LEVEL). Drop in .agents/snippets/core/logger.py and `from <pkg>.core.logger import get_logger`."
+rule:
+  any:
+    - pattern: logging.getLogger($$$ARGS)
+    - pattern: getLogger($$$ARGS)

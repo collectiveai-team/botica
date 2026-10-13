@@ -1,0 +1,16 @@
+id = "no-console-log"
+code = "BTLOG003"
+summary = "No console.log in library code"
+status = "stable"
+since = "0.8.0"
+tags = ["logging"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = true
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["typescript"]
+file = "typescript.yml"

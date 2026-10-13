@@ -98,8 +98,10 @@ fn the_default_selection_runs_every_rule_enabled_by_default() {
             "file-size-guard",
             "invalid-suppression",
             "io-error",
+            "log-get-logger",
             "log-no-print",
             "no-artifacts-in-package",
+            "no-console-log",
             "no-dict-alias",
             "no-dict-call-return",
             "no-dict-literal-return",
@@ -145,7 +147,7 @@ fn select_and_extend_select_are_added_together() {
     );
     assert_eq!(
         active(&resolve(&catalog, "select = []\nextend-select = [\"all\"]")).len(),
-        14
+        16
     );
 }
 
@@ -159,7 +161,9 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
             "api-schemas-extra-forbid",
             "invalid-suppression",
             "io-error",
+            "log-get-logger",
             "log-no-print",
+            "no-console-log",
             "no-dict-alias",
             "no-dict-call-return",
             "no-dict-literal-return",
@@ -186,8 +190,10 @@ fn a_rule_switched_off_in_its_own_section_stays_out() {
             "api-schemas-extra-forbid",
             "invalid-suppression",
             "io-error",
+            "log-get-logger",
             "log-no-print",
             "no-artifacts-in-package",
+            "no-console-log",
             "no-dict-alias",
             "no-dict-call-return",
             "no-dict-literal-return",
