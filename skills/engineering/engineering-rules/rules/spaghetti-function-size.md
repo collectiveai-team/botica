@@ -52,6 +52,6 @@ def text_to_json(text):  # 45 lines, 3 levels of nesting
 - Deep `if/for/try` nesting makes the happy path hard to follow.
 - The function is hard to name without using "and" or "also".
 
-Reference: see `spaghetti-large-file-thresholds` for the file-level complement and
+Reference: see `file-size-guard` for the file-level complement and
 `arch-deep-modules` for the leverage framing — a well-named extracted function is itself
 a small deep module.

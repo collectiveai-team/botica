@@ -7,54 +7,25 @@
 
 Each rule is a **CES — Collective Engineering Standard** (`CES-<issue#>` is the citable code;
 the kebab-case slug is the machine id used by tooling and `# botica: ignore[<slug>]`
-suppressions). `[botica]` / `[prek]` rules are enforced automatically by `prek`; `[ci]` rules
+suppressions). `[prek]` rules are enforced automatically by `prek`; `[ci]` rules
 are enforced by a GitHub Actions workflow (no local hook); `[dependency]` rules ship as a
 dev-dependency that activates automatically, no separate check; `[judgment]` rules are
 reviewer/agent judgment; `[snippet]` ships canonical drop-in code. Full convention:
 `docs/engineering-standards.md`.
 
+The rules that `botica lint` measures are not listed here and have no detail file: the catalog
+of botica is their only documentation. `uvx botica rules` lists them, `uvx botica explain <slug>`
+describes one, and the hook reports each finding with its slug and its message.
+
 ### Standards
 
-- **CES-79 · no raw dicts at boundaries** `[botica]` — return, annotate, or alias a
-  `@dataclass` (internal boundaries) or a pydantic `BaseModel` (where validation is needed),
-  never a raw `dict`. Ships four slugs: `no-dict-return-annotation`, `no-dict-call-return`,
-  `no-dict-literal-return`, `no-dict-alias`. → `@.agents/rules/no-dict.md`
-- **CES-71 · keep files small** `[prek]` — split a module before it grows; the
-  `file-size-guard` rule of `botica lint` warns at 400 lines and errors at 700, in any language. A persistently large file is a
-  design smell, not a limit to raise. → `@.agents/rules/file-size-guard.md`
 - **CES-107 · track the skills manifest** `[script]` — commit `skills-lock.json`; `.agents/skills/`
   is derived from it and stays gitignored. Install restores from the manifest. It pins no version
   and verifies no hash, so call it a manifest, not a lock. Slug: `skills-manifest`. →
   `@.agents/rules/skills-manifest.md`
-- **CES-45 · use the house get_logger** `[botica]` — never call `logging.getLogger` directly;
-  acquire loggers via `get_logger` from `core/logger.py`. Slug: `log-get-logger`. →
-  `@.agents/rules/log-get-logger.md`
-- **CES-46 · libraries log, they don't print** `[botica]` — no `print()` in importable library
-  code; emit through `get_logger`. CLI/`__main__` entrypoints are exempt. Slug: `log-no-print`. →
-  `@.agents/rules/log-no-print.md`
 - **CES-74 · the house logger** `[snippet]` — `.agents/snippets/core/logger.py` is the canonical structlog
   setup (JSON in prod, colored console in dev, level from `LOG_LEVEL`). Drop it in at
   `<pkg>/core/logger.py`. Slug: `core-logger`. → `@.agents/rules/core-logger.md`
-- **CES-4 · API schemas forbid extras** `[botica]` — every request/response `BaseModel` under
-  `api/**/schemas/{requests,responses}` must set `model_config = ConfigDict(extra="forbid")`.
-  Placement-scoped: inert for internal/domain models and non-API repos. Slug:
-  `api-schemas-extra-forbid`. → `@.agents/rules/api-schemas-extra-forbid.md`
-- **CES-76 · config in a settings module** `[botica]` — read env/flags only in the
-  `BaseSettings` settings module (case-insensitive, via `get_settings()`); `os.getenv`/`os.environ`
-  anywhere else is flagged. Slug: `settings-module`. → `@.agents/rules/settings-module.md`
-- **CES-67 · typed, declarative CLIs** `[botica]` — build CLIs with Typer/Cyclopts/pydantic-settings
-  + Rich, not `argparse`/`click`/`sys.argv`. Warning (encouraged, not mandated); naturally inert
-  when unused. Slug: `cli-typed-framework`. → `@.agents/rules/cli-typed-framework.md`
-- **CES-18 · persistence in a database package** `[botica]` — SQLModel tables, `create_engine`,
-  and `sessionmaker` belong in a dedicated `database` package, not under `persistence/`/`meta/`/`core/`.
-  Placement-scoped; the import-linter contract lands commented in Slice 09. Slug:
-  `arch-database-package`. → `@.agents/rules/arch-database-package.md`
-- **CES-63 · no catch-all modules** `[prek]` — no `utils.py`/`helpers.py`/`aux.py`/`misc.py`/`common.py`
-  (outside `tests/`); name a module for what it holds. Slug: `no-utils`. →
-  `@.agents/rules/no-utils.md`
-- **CES-32 · keep non-code out of the package** `[prek]` — no notebooks, data/model files, or
-  non-code under `resources/`/`reports/`/`data/` inside the code of the project; `botica lint`
-  finds the code directories itself. Slug: `repo-shape`. → `@.agents/rules/repo-shape.md`
 - **CES-75 · Conventional Commits** `[prek]` — commit subjects follow `type(scope): description`;
   a commit-msg hook checks every commit and a CI workflow checks the PR title. Slug:
   `agents-conventional-commits`. → `@.agents/rules/agents-conventional-commits.md`

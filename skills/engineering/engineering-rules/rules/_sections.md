@@ -13,22 +13,21 @@ one. The pack defines one standard per concern and marks where existing code sho
 ## 1. General Baseline (general)
 
 **Scope:** general — applies everywhere.
-**Description:** Cross-repo defaults: respect local contracts, repo shape, internal deps.
+**Description:** Cross-repo defaults: respect local contracts, internal deps.
 
 - `general-respect-local-repo` — don't bulldoze a working repo's contracts in an unrelated change
-- `general-repo-shape` — package layout; keep notebooks/resources/reports out of the package
 - `general-internal-git-deps` — pin internal/shared deps by git tag, never a branch
 
 ## 2. Python Toolchain (py)
 
 **Scope:** general.
-**Description:** One standard toolchain — uv + ruff + ruff-format + pyrefly + ast-grep, run
+**Description:** One standard toolchain — uv + ruff + ruff-format + pyrefly + botica, run
 through prek, line 100, latest Python.
 
 - `py-package-manager` — use uv; commit the lockfile; migrate Poetry/pip repos to it
 - `py-build-backend` — use hatchling (+ hatch-vcs for git-tag versioning)
 - `py-version-support` — target the latest Python for new code; honor an existing repo's pin
-- `py-ruff-format-modern` — ruff + ruff-format + pyrefly + ast-grep via prek, line 100
+- `py-ruff-format-modern` — ruff + ruff-format + pyrefly + botica via prek, line 100
 - `py-legacy-lint-stack` — recognize a legacy black/isort/pylint/mypy setup and migrate it
 - `py-no-formatter-churn` — never reformat outside the touched area
 
@@ -40,7 +39,6 @@ through prek, line 100, latest Python.
 - `pylayout-meta-slice` — `meta/` holds ABC interfaces + Pydantic domain models
 - `pylayout-adapters-slices` — concrete implementations live in sibling slices, not in meta/
 - `pylayout-pydantic-v2` — Pydantic v2 for domain data; pydantic-settings for app config
-- `pylayout-cli-typer-rich` — a typed CLI framework (Typer/Cyclopts) + Rich for entrypoints
 - `pylayout-src-layout` — use src/ only if the repo already does; avoid double-nesting
 
 ## 4. Architecture: Deep Modules (arch)
@@ -59,9 +57,7 @@ through prek, line 100, latest Python.
 **Scope:** general. **Source:** a pragmatic house heuristic — NOT Matt Pocock (he rejects line ratios).
 **Description:** Concrete size/mixing heuristics for PR gating.
 
-- `spaghetti-large-file-thresholds` — 400 lines = large, 700 = enormous (house heuristic)
 - `spaghetti-mixed-orchestration` — don't pile transport+validation+domain+persistence+formatting in one file
-- `spaghetti-no-utils-dumping` — no catch-all `utils.py` / `helpers.py`
 - `spaghetti-function-size` — split functions over ~80 lines or with deep nesting
 
 ## 6. Testing (test)
@@ -77,10 +73,9 @@ through prek, line 100, latest Python.
 ## 7. Logging (log)
 
 **Scope:** general.
-**Description:** The house structlog get_logger convention; prod observability.
+**Description:** Production observability. What botica measures is documented only in its
+catalog.
 
-- `log-get-logger-structlog` — `get_logger(__name__)` = house structlog factory, level from `LOG_LEVEL`
-- `log-no-print` — libraries log, they don't `print`
 - `log-observability` — Logfire instrumentation in prod services
 
 ## 8. FastAPI (api)

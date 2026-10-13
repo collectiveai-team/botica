@@ -6,7 +6,7 @@ API boundary sets ``model_config = ConfigDict(extra="forbid")`` so an unknown fi
 stale client, an injected key) is rejected with a 422 instead of being silently ignored.
 
 Internal/domain models are NOT subject to this rule — it is scoped by placement to the api/
-schema packages. See ``.agents/rules/api-schemas-extra-forbid.md`` for the full rule.
+schema packages. See ``uvx botica explain api-schemas-extra-forbid`` for the full rule.
 """
 
 from __future__ import annotations

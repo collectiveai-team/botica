@@ -51,20 +51,11 @@ AGENTS_MARKER = "## Repo Workspace Defaults"
 # Marker-gated section the `standards` component owns in AGENTS.md (sibling to AGENTS_MARKER).
 STANDARDS_MARKER = "## Engineering Standards"
 # Per-CES detail files under .agents/rules/ shipped by the standards component. One file per
-# standard (a CES may ship several ast-grep/prek slugs but documents them in one detail file).
+# standard. A rule that botica measures has none: its README in the catalog (`lint/rules`) is its
+# only documentation (`tests/test_catalog_is_the_only_doc.py`).
 STANDARDS_RULE_DETAILS = [
-    "no-dict",
-    "file-size-guard",
     "skills-manifest",
-    "log-get-logger",
-    "log-no-print",
     "core-logger",
-    "api-schemas-extra-forbid",
-    "settings-module",
-    "cli-typed-framework",
-    "arch-database-package",
-    "no-utils",
-    "repo-shape",
     "agents-conventional-commits",
     "import-linter",
     "api-boundary-layout",

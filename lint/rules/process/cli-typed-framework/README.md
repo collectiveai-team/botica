@@ -9,6 +9,10 @@ Build command-line interfaces with a typed, declarative framework (Typer, Cyclop
 `sys.argv` access. The choice of framework is open; what it reports is argument handling written
 by hand. A warning by default: modern tools are encouraged, not required.
 
+Typer and Cyclopts are both approved; follow whichever the repository already uses. Cyclopts
+derives its commands from plain signatures and needs no decorator on every parameter, so it suits
+a CLI whose arguments are already typed.
+
 ## Why
 
 - A typed framework derives the parser from the signatures and type hints of the functions, so

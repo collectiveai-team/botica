@@ -35,4 +35,4 @@ def do_search(store, query, k):
 Reference: Matt Pocock `codebase-design` skill (github.com/mattpocock/skills). The deletion
 test and depth-as-leverage framing are his; he explicitly rejects Ousterhout's
 implementation-lines-to-interface-lines ratio. See `arch-deep-modules` for the full glossary
-and `spaghetti-no-utils-dumping` for the shallow pass-through anti-pattern.
+and `no-utils` for the shallow pass-through anti-pattern.

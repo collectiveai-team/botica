@@ -40,5 +40,5 @@ async def websocket_endpoint(websocket, vad_model, asr_model, queue, formatter, 
     ...  # 150 lines of mixed concerns
 ```
 
-Reference: see `arch-deep-modules` for seam placement principles and `spaghetti-large-file-thresholds`
+Reference: see `arch-deep-modules` for seam placement principles and `file-size-guard`
 for the size signals that should prompt this check.

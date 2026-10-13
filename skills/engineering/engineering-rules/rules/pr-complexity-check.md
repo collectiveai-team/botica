@@ -23,7 +23,7 @@ that silently adds complexity in any of these dimensions is not ready for review
    before opening.
 
 3. **Large-file growth** — list every touched file that crosses 400 lines (large) or 700
-   lines (enormous) after the change (`spaghetti-large-file-thresholds`). Name them in the
+   lines (enormous) after the change (`file-size-guard`). Name them in the
    PR description. Growth past 700 lines requires justification or a split.
 
 4. **New dependency surface** — new third-party packages added to `pyproject.toml` or
@@ -49,5 +49,5 @@ that silently adds complexity in any of these dimensions is not ready for review
 Opening a PR that adds a 900-line file, three new packages, and tests that only mock
 internal methods — with no acknowledgment of any of it.
 
-Reference: `arch-deletion-test`, `spaghetti-mixed-orchestration`, `spaghetti-large-file-thresholds`,
+Reference: `arch-deletion-test`, `spaghetti-mixed-orchestration`, `file-size-guard`,
 `py-package-manager`, `test-through-interface`.

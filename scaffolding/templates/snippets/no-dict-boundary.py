@@ -6,7 +6,8 @@ pattern. A function that crosses a boundary returns a typed structure, never a r
 - Use a ``@dataclass`` for internal boundaries (no validation needed).
 - Use a pydantic ``BaseModel`` where validation/serialization matters (e.g. API I/O).
 
-See ``.agents/rules/no-dict.md`` for the full rule.
+See ``uvx botica explain no-dict-return-annotation`` (and ``uvx botica rules`` for its
+siblings) for the full rule.
 """
 
 from __future__ import annotations

@@ -5,20 +5,21 @@ description: The house engineering ruleset — Python toolchain, package layout,
 
 # Engineering Rules
 
-The single source of the house engineering rules. This skill owns the ruleset; the workflows
-that apply it (`engineering-pr-review`, `engineering-refactor`) invoke this one rather than
-carrying their own copy.
+The single source of the house engineering rules that no tool measures. This skill owns that
+ruleset; the workflows that apply it (`engineering-pr-review`, `engineering-refactor`) invoke
+this one rather than carrying their own copy.
+
+The rules that `botica lint` measures deterministically are **not here**: the catalog of botica
+is their only documentation. `uvx botica rules` lists them and `uvx botica explain <slug>`
+describes one. A rule id that this bundle cites and that has no file in `rules/` is one of them.
 
 ## Reading protocol
 
-Read by need, not all at once. The ruleset is ~3,800 lines; loading it whole wastes context
-that the actual work needs.
+Read by need, not all at once. Loading the whole ruleset wastes context that the actual work needs.
 
 1. **`rules/_sections.md`** — the index. Every rule id, grouped by section, one line each.
    Start here always.
 2. **`rules/<id>.md`** — the specific rules the work touches. Read only these.
-3. **`AGENTS.md`** — the whole ruleset compiled into one document. For skimming everything at
-   once; not the default path.
 
 Rule ids are kebab-case and section-prefixed (`py-package-manager` is in section `py`), so the
 index tells you which files to open from the file paths alone.
@@ -45,10 +46,9 @@ detail of this bundle.
 
 ## Relationship to the CES catalog
 
-In a repo scaffolded by `collectiveai-team/botica`, the house standards also ship as
-always-on context: an index in `AGENTS.md` plus detail files under `.agents/rules/<slug>.md`,
-each carrying a `CES-<issue#>` code (see `docs/engineering-standards.md`).
-
-**Where both are present, `.agents/rules/` is authoritative** — it is the tracked, coded,
-enforced catalog, and several rule ids here share its slugs. This bundle exists to carry the
-rules into repos that have no `.agents/rules/` at all.
+In a repo scaffolded by `collectiveai-team/botica`, the house standards that botica does not
+measure also ship as always-on context: an index in `AGENTS.md` plus detail files under
+`.agents/rules/<slug>.md`, each carrying a `CES-<issue#>` code (see
+`docs/engineering-standards.md`). Where both are present, `.agents/rules/` is authoritative for
+the standards it carries. This bundle exists to carry the rules into repos that have no
+`.agents/rules/` at all.

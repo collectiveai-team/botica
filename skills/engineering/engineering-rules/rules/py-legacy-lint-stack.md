@@ -12,7 +12,7 @@ tags: python, black, isort, pylint, flake8, mypy, formatting, linting, migration
 A legacy lint stack uses `black` (88-char lines) + `isort` (profile=black) + `pylint` or
 `flake8`, with `mypy` as the only type checker and `pre-commit` as the runner. When you
 encounter this setup, plan a migration to the house stack — `ruff` + `ruff-format` +
-`pyrefly` + `ast-grep`, run through `prek` (see `py-ruff-format-modern`, CES-58). Don't run
+`pyrefly` + `botica`, run through `prek` (see `py-ruff-format-modern`, CES-58). Don't run
 ruff alongside black — they conflict on line length and quote style. Migrate as an explicit,
 standalone task, never as a side effect of feature work.
 

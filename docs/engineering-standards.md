@@ -55,15 +55,19 @@ A violation message states **its own** rule, the fix, and its CES code — nothi
 Scattering policy across sibling messages is context-poisoning: one rule ends up restating or
 superseding another's decision. The grouped rationale, the relationships between a standard's
 slugs, and the escape-hatch mechanism live **once**, in the standard's detail file
-(`.agents/rules/<slug>.md`) — the single source of truth. If a message needs more than "what +
+(`.agents/rules/<slug>.md`; for a rule that `botica lint` measures, the README of its folder in
+`lint/rules`) — the single source of truth. If a message needs more than "what +
 fix + code", that belongs in the detail file, not the message.
 
 ## Where the pieces live (in a target repo)
 
 - **Always-on index:** a marker-delimited `## Engineering Standards` section in `AGENTS.md`
-  listing every rule (terse directive + `[botica]`/`[prek]`/`[judgment]` marker + an
-  `@.agents/rules/<slug>.md` pointer).
-- **On-demand detail:** `.agents/rules/<slug>.md` — full rationale, examples, migration.
+  listing every rule that `botica lint` does not measure (terse directive + `[prek]`/`[judgment]`
+  marker + an `@.agents/rules/<slug>.md` pointer), and one sentence that sends the reader to
+  `uvx botica rules` and `uvx botica explain <slug>` for the rest.
+- **On-demand detail:** `.agents/rules/<slug>.md` — full rationale, examples, migration. A rule
+  that `botica lint` measures has no such file: the README of its catalog folder is its only
+  documentation, and its `ces` field names the standard it implements.
 - **Canonical code:** `.agents/snippets/` — drop-ins for new repos, comparison templates for existing
   ones.
 
@@ -135,9 +139,10 @@ Rules already shipped before the CES scheme, now coded via retroactive issues:
 
 | CES | Slugs | Ships as |
 |---|---|---|
-| **CES-79** | `no-dict-return-annotation`, `no-dict-call-return`, `no-dict-literal-return`, `no-dict-alias` | `botica lint` rules (`lint/rules/data-models/no-dict-*`), run by the `botica` hook of `templates/prek-generic.toml` |
-| **CES-71** | `file-size-guard` | `botica lint` rule, run by the `botica` hook of `templates/prek-generic.toml` (400 warn / 700 error, any language) |
 | **CES-107** | `skills-manifest` | `scaffolding check` + the `skills` component (`scaffolding/skills.py`) |
+
+The rules that `botica lint` measures are not in this table: the catalog (`lint/rules`) lists them,
+each with the CES it implements, and documents them.
 
 ## References
 

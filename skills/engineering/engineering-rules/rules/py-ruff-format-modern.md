@@ -1,16 +1,17 @@
 ---
-title: Standard lint stack — ruff + ruff-format + pyrefly + ast-grep, run through prek, line 100
+title: Standard lint stack — ruff + ruff-format + pyrefly + botica, run through prek, line 100
 section: py
 scope: general
 applies-to: all
 status: current
-tags: python, ruff, pyrefly, ast-grep, prek, formatting, linting, toolchain
+tags: python, ruff, pyrefly, botica, prek, formatting, linting, toolchain
 ---
 
-## Standard lint stack — ruff + ruff-format + pyrefly + ast-grep, run through prek, line 100
+## Standard lint stack — ruff + ruff-format + pyrefly + botica, run through prek, line 100
 
 The house Python toolchain is **ruff** for lint + format (100-char lines), **pyrefly** for type
-checking, and **ast-grep** for structural rules — all wired through **prek** (`prek.toml`), not
+checking, and **botica** (`botica lint`) for the house rules that can be checked
+deterministically — all wired through **prek** (`prek.toml`), not
 `pre-commit`. New projects use this; repos still on black/isort/pylint or mypy-as-the-only-checker
 migrate to it (see `py-legacy-lint-stack`, CES-58). Don't run two formatters at once.
 
@@ -82,14 +83,15 @@ types = ["python"]
 pass_filenames = false
 priority = 2
 
-# MARK: ast-grep
+# MARK: botica
+# The selection of rules is the one of the scaffolder's `prek-generic.toml`: copy it from there.
+[[repos]]
+repo = "https://github.com/collectiveai-team/botica-pre-commit"
+rev = "v0.8.0"
+
 [[repos.hooks]]
-id = "ast-grep"
-name = "ast-grep"
-entry = "uvx --from ast-grep-cli ast-grep scan"
-language = "system"
-types = ["python"]
-pass_filenames = false
+id = "botica"
+args = ["--select", "<the rules of prek-generic.toml>"]
 priority = 2
 ```
 
@@ -110,5 +112,6 @@ python_version = "3.13"
 ```
 
 This replaces `black` + `isort` + `pylint` + `mypy`. Repos still on that stack migrate as a
-deliberate change (see `py-legacy-lint-stack`); don't add ruff alongside them. Structural rules
-live in `ast-grep/rules/*.yml` with `sgconfig.yml` pointing at that directory.
+deliberate change (see `py-legacy-lint-stack`); don't add ruff alongside them. The rules that
+botica measures are documented only in its catalog (`uvx botica rules`, `uvx botica explain
+<slug>`); this bundle does not repeat them.

@@ -63,5 +63,5 @@ import logging
 logger = logging.getLogger(__name__)
 ```
 
-Reference: `log-get-logger-structlog` for the base logging factory. Langfuse is appropriate
+Reference: `log-get-logger` for the base logging factory. Langfuse is appropriate
 for experiment and notebook tracing; Logfire is for production service observability.

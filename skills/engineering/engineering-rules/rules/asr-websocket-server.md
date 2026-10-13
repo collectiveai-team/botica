@@ -48,4 +48,4 @@ manager = StreamManager(model, vad, policy, sr)  # shared — race conditions gu
   unilaterally.
 
 Reference: see `asr-threading-bridge` for how the handler offloads work to sync threads,
-and `pylayout-cli-typer-rich` for the Typer-wraps-FastAPI CLI entrypoint shape.
+and `cli-typed-framework` for the Typer-wraps-FastAPI CLI entrypoint shape.

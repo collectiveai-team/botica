@@ -13,13 +13,12 @@ Run every check that is practical for the diff and report results truthfully. A 
 that was not run must be named as such — do not imply it passed. A failing check blocks
 the PR until fixed or explicitly acknowledged with a reason.
 
-**House stack (ruff + pyrefly + ast-grep via prek + pytest):**
+**House stack (ruff + pyrefly + botica via prek + pytest):**
 
 ```bash
 uv run ruff check .
 uv run ruff format --check .
 uvx pyrefly check --config pyproject.toml
-uvx --from ast-grep-cli ast-grep scan
 uv run pytest      # or: uv run pytest tests/path/to/relevant/
 
 # Or run the whole hook set the way CI does:

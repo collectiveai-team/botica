@@ -140,8 +140,8 @@ def test_standards_clean_repo_adds_index_rules_snippets(repo: Path):
     disp = _standards_dispositions(plan)
     adds = {t for t, d in disp.items() if d is Disposition.ADD}
     assert "AGENTS.md" in adds
-    assert ".agents/rules/no-dict.md" in adds
-    assert ".agents/rules/file-size-guard.md" in adds
+    assert ".agents/rules/import-linter.md" in adds
+    assert ".agents/rules/core-logger.md" in adds
     assert ".agents/snippets/no-dict-boundary.py" in adds
     # the `agents` dependency is pulled in so AGENTS.md has a base to append to.
     assert any("required by standards" in n for n in plan.notices)
@@ -158,7 +158,7 @@ def test_standards_defers_and_skips_when_present(repo: Path):
     settings = Settings(skip_skills=True, skip_varlock=True)
     plan = build_plan(repo, _facts(repo), settings, requested=["standards"])
     apply(plan, repo)
-    assert (repo / ".agents/rules/no-dict.md").exists()
+    assert (repo / ".agents/rules/import-linter.md").exists()
     assert (repo / ".agents/snippets/no-dict-boundary.py").exists()
     body = (repo / "AGENTS.md").read_text()
     assert STANDARDS_MARKER in body
@@ -166,8 +166,8 @@ def test_standards_defers_and_skips_when_present(repo: Path):
 
     plan2 = build_plan(repo, _facts(repo), settings, requested=["standards"])
     disp = _standards_dispositions(plan2)
-    assert disp[".agents/rules/no-dict.md"] is Disposition.DEFER
-    assert disp[".agents/rules/file-size-guard.md"] is Disposition.DEFER
+    assert disp[".agents/rules/import-linter.md"] is Disposition.DEFER
+    assert disp[".agents/rules/core-logger.md"] is Disposition.DEFER
     assert disp[".agents/snippets/no-dict-boundary.py"] is Disposition.DEFER
     assert disp["AGENTS.md"] is Disposition.SKIP
 
@@ -178,13 +178,11 @@ def test_standards_defers_and_skips_when_present(repo: Path):
     assert AGENTS_MARKER in body2
 
 
-def test_standards_logging_family_adds_details_and_snippet(repo: Path):
+def test_standards_core_logger_adds_detail_and_snippet(repo: Path):
     (repo / "app.py").write_text("x = 1\n")
     plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
     disp = _standards_dispositions(plan)
     adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    assert ".agents/rules/log-get-logger.md" in adds
-    assert ".agents/rules/log-no-print.md" in adds
     assert ".agents/rules/core-logger.md" in adds
     assert ".agents/snippets/core/logger.py" in adds
 
@@ -195,47 +193,20 @@ def test_core_logger_snippet_is_a_structlog_drop_in():
     assert "def get_logger" in snippet
 
 
-def test_standards_api_schemas_rule_adds_detail_and_snippet(repo: Path):
+def test_standards_api_schemas_rule_adds_its_snippet(repo: Path):
     (repo / "app.py").write_text("x = 1\n")
     plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
     disp = _standards_dispositions(plan)
     adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    assert ".agents/rules/api-schemas-extra-forbid.md" in adds
     assert ".agents/snippets/api-schemas.py" in adds
 
 
-def test_standards_settings_module_rule_adds_detail_and_snippet(repo: Path):
+def test_standards_settings_module_rule_adds_its_snippet(repo: Path):
     (repo / "app.py").write_text("x = 1\n")
     plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
     disp = _standards_dispositions(plan)
     adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    assert ".agents/rules/settings-module.md" in adds
     assert ".agents/snippets/settings.py" in adds
-
-
-def test_standards_cli_framework_rule_adds_detail(repo: Path):
-    (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
-    disp = _standards_dispositions(plan)
-    adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    assert ".agents/rules/cli-typed-framework.md" in adds
-
-
-def test_standards_database_package_rule_adds_detail(repo: Path):
-    (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
-    disp = _standards_dispositions(plan)
-    adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    assert ".agents/rules/arch-database-package.md" in adds
-
-
-def test_standards_repo_hygiene_rules_add_details(repo: Path):
-    (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
-    disp = _standards_dispositions(plan)
-    adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    assert ".agents/rules/no-utils.md" in adds
-    assert ".agents/rules/repo-shape.md" in adds
 
 
 def test_prek_plan_ships_repo_hygiene_through_the_botica_hook(repo: Path):

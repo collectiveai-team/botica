@@ -46,9 +46,9 @@ Read the architecture rules — `arch-deep-modules`, `arch-deletion-test`,
 
 - Shallow wrappers whose interface is nearly as complex as their implementation (apply the **deletion test**).
 - Logic spread across callers that should live behind one module interface.
-- Files over 400 lines receiving unrelated behavior; files over 700 lines (`spaghetti-large-file-thresholds`).
+- Files over 400 lines receiving unrelated behavior; files over 700 lines (`file-size-guard`).
 - Orchestration mixing transport, validation, domain logic, persistence, formatting (`spaghetti-mixed-orchestration`).
-- Slices that don't match the conventions (`pylayout-meta-slice`, `pylayout-adapters-slices`, `log-get-logger-structlog`).
+- Slices that don't match the conventions (`pylayout-meta-slice`, `pylayout-adapters-slices`, `log-get-logger`).
 - Tests asserting internals instead of behavior at the interface (`test-through-interface`).
 
 Use the exact vocabulary from `arch-vocabulary`: module, interface, implementation, depth,

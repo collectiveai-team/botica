@@ -8,7 +8,7 @@ application config lives in a ``pydantic_settings.BaseSettings`` subclass that:
 - is reached everywhere else through a cached ``get_settings()`` — never a scattered
   ``os.getenv`` / ``os.environ`` (which ``settings-module`` flags outside this module).
 
-See ``.agents/rules/settings-module.md`` for the full rule.
+See ``uvx botica explain settings-module`` for the full rule.
 """
 
 from __future__ import annotations

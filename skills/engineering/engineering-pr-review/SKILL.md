@@ -58,7 +58,7 @@ Per the `spaghetti-*` rules:
 - List touched files over 400 lines (large) and over 700 lines (enormous) — these thresholds are a house heuristic, not Matt Pocock; use them to *trigger* judgement, then apply the deletion test.
 - For each large touched file, decide whether the PR makes it smaller, keeps the change narrowly localized, or piles on unrelated responsibility.
 - Reject changes that add branches to mixed orchestration without improving the seam (`spaghetti-mixed-orchestration`).
-- Watch for duplicated conditionals across callers, boolean-flag proliferation, catch-all `utils.py` (`spaghetti-no-utils-dumping`), and over-long functions (`spaghetti-function-size`).
+- Watch for duplicated conditionals across callers, boolean-flag proliferation, catch-all `utils.py` (`no-utils`), and over-long functions (`spaghetti-function-size`).
 
 ### 4. Verification check
 
