@@ -117,12 +117,12 @@ rev = "v0.8.0"
 
 [[repos.hooks]]
 id = "botica"
-args = ["--select", "file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package,no-dict-alias,no-dict-call-return,no-dict-literal-return,no-dict-return-annotation,api-schemas-extra-forbid,log-get-logger,log-no-print,settings-module,cli-typed-framework,arch-database-package"]
+args = ["--select", "<the rules of prek-generic.toml>"]
 ```
 
 The mirror's hook is `verbose`: prek hides the output of a passing hook, and a size warning does
 not fail it ([`distribution/botica-pre-commit`](distribution/botica-pre-commit/README.md)). The
-scaffolder ships this hook in `scaffolding/templates/prek-generic.toml`.
+scaffolder ships this hook, with the rules it selects, in `scaffolding/templates/prek-generic.toml`.
 
 ## Result cache
 

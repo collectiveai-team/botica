@@ -126,6 +126,39 @@ def test_botica_hook_runs_the_rules_the_templates_ship():
     assert set(args[args.index("--select") + 1].split(",")) == BOTICA_RULES
 
 
+ROOT = Path(__file__).resolve().parent.parent
+SELECT_ARG = re.compile(r'"--select",\s*"([^"]+)"')
+
+
+def test_this_repository_runs_the_selection_the_template_ships():
+    config = tomllib.loads((ROOT / "prek.toml").read_text(encoding="utf-8"))
+    hooks = [hook for repo in config["repos"] for hook in repo.get("hooks", [])]
+    args = next(hook["args"] for hook in hooks if hook["id"] == "botica")
+
+    assert set(args[args.index("--select") + 1].split(",")) == BOTICA_RULES
+
+
+def test_no_document_spells_out_the_selection_of_the_template():
+    """The template is where the rules are chosen; a copy in a README drifts from it."""
+    documents = [
+        ROOT / "README.md",
+        ROOT / "guide.md",
+        ROOT / "lint" / "README.md",
+        ROOT / "lint" / "distribution" / "botica-pre-commit" / "README.md",
+        *ROOT.glob("docs/**/*.md"),
+    ]
+    spelled = [
+        str(document.relative_to(ROOT))
+        for document in documents
+        if any(
+            set(selection.split(",")) == BOTICA_RULES
+            for selection in SELECT_ARG.findall(document.read_text(encoding="utf-8"))
+        )
+    ]
+
+    assert not spelled, f"documents that list the rules of the template: {spelled}"
+
+
 def _mirror_hook_block(hook_id: str) -> str:
     """Return the text of one hook in the mirror's `.pre-commit-hooks.yaml` (no YAML parser)."""
     text = MIRROR_HOOKS.read_text(encoding="utf-8")

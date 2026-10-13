@@ -12,7 +12,7 @@ rev = "v0.8.0"
 
 [[repos.hooks]]
 id = "botica"
-args = ["--select", "file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package,no-dict-alias,no-dict-call-return,no-dict-literal-return,no-dict-return-annotation,api-schemas-extra-forbid,log-get-logger,log-no-print,settings-module,cli-typed-framework,arch-database-package"]
+args = ["--select", "<the rules of prek-generic.toml>"]
 ```
 
 Hooks: `botica` (the rules that look at one file; gets the file names) and `botica-project` (the
