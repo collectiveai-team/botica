@@ -1,7 +1,7 @@
 # CES-79 · no raw dicts at boundaries
 
 **Code:** `CES-79` &nbsp;·&nbsp; **Slugs:** `no-dict-return-annotation`, `no-dict-call-return`,
-`no-dict-literal-return`, `no-dict-alias` &nbsp;·&nbsp; **Enforced by:** ast-grep (`error`)
+`no-dict-literal-return`, `no-dict-alias` &nbsp;·&nbsp; **Enforced by:** botica (`error`)
 &nbsp;·&nbsp; **Tracker:** [#79](https://github.com/collectiveai-team/botica/issues/79)
 
 ## Directive
@@ -58,7 +58,7 @@ A raw `dict` is sometimes genuinely correct (e.g. a JSON-serialization boundary)
 `dict` and add an explicit, visible suppression at the call site so the exception is auditable:
 
 ```python
-def payload() -> dict:  # ast-grep-ignore: no-dict-return-annotation
+def payload() -> dict:  # botica: ignore[no-dict-return-annotation]
     return {"ok": True}
 ```
 

@@ -84,7 +84,7 @@ into three buckets:
 - **Tier 0 — Facts** (auto-detected, never asked): git root, python?,
   Dockerfile?, repo visibility, available tools.
 - **Tier 1 — Clean-adds** (the CLI applies): gitignore lines, `opencode.jsonc`,
-  prek hooks, ast-grep config, the `AGENTS.md` section when absent.
+  prek hooks, the `AGENTS.md` section when absent.
 - **Tier 2 — Policy** (the USER decides, even on agentic install): CI opt-in and
   which parts; agent target(s) — any of `opencode`/`claude-code`/`codex`, one or
   more; `pyproject` name and description; skill set. Surface these from
@@ -130,14 +130,12 @@ If a Python repo has no `pyproject.toml`, the CLI creates one from the template
 with a guided `name`/`description`. If it exists, only add missing tool sections —
 never replace dependencies or project metadata without explicit approval.
 
-### `ast-grep`
+### Syntax rules
 
-The `ast-grep` hook in `prek-python.toml` runs `ast-grep scan`, which needs a
-root `sgconfig.yml` pointing at a rule dir. The CLI auto-includes `ast-grep` when
-`prek` is selected on a Python repo. When merging by hand, add both additively:
-
-- [sgconfig-template.yml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/sgconfig-template.yml) → root `sgconfig.yml` (`ruleDirs: [ast-grep/rules]`)
-- starter rules from [templates/ast-grep-rules/](https://github.com/collectiveai-team/botica/tree/main/scaffolding/templates/ast-grep-rules) → `ast-grep/rules/` (`no-dict-call-return`, `no-dict-literal-return`, `no-dict-return-annotation`).
+The syntax rules of the house standards (no raw dicts, the house logger, settings in one module…)
+run in the `botica` hook of `prek-generic.toml`, through the `botica-pre-commit` mirror, so there is
+no `sgconfig.yml` or rule directory to merge. A repo that keeps its own `ast-grep` hook keeps its
+own config; the CLI does not touch it.
 
 ### GitHub Actions CI
 

@@ -4,16 +4,16 @@ use botica_core::{Engine, FileSizeGuard, NativeRule, NoUtils};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 const PY_RULES: [&str; 10] = [
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/api-schemas-extra-forbid.yml"),
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/arch-database-package.yml"),
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/cli-typed-framework.yml"),
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/log-get-logger.yml"),
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/log-no-print.yml"),
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/no-dict-alias.yml"),
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/no-dict-call-return.yml"),
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/no-dict-literal-return.yml"),
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/no-dict-return-annotation.yml"),
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/settings-module.yml"),
+    include_str!("../../../rules/data-models/api-schemas-extra-forbid/python.yml"),
+    include_str!("../../../rules/architecture/arch-database-package/python.yml"),
+    include_str!("../../../rules/process/cli-typed-framework/python.yml"),
+    include_str!("../../../rules/logging/log-get-logger/python.yml"),
+    include_str!("../../../rules/logging/log-no-print/python.yml"),
+    include_str!("../../../rules/data-models/no-dict-alias/python.yml"),
+    include_str!("../../../rules/data-models/no-dict-call-return/python.yml"),
+    include_str!("../../../rules/data-models/no-dict-literal-return/python.yml"),
+    include_str!("../../../rules/data-models/no-dict-return-annotation/python.yml"),
+    include_str!("../../../rules/architecture/settings-module/python.yml"),
 ];
 const TS_RULE: &str = include_str!("../../../rules/logging/no-console-log/typescript.yml");
 

@@ -1,6 +1,6 @@
 # CES-46 · libraries log, they don't print
 
-**Code:** `CES-46` &nbsp;·&nbsp; **Slug:** `log-no-print` &nbsp;·&nbsp; **Enforced by:** ast-grep
+**Code:** `CES-46` &nbsp;·&nbsp; **Slug:** `log-no-print` &nbsp;·&nbsp; **Enforced by:** botica
 (`warning`) &nbsp;·&nbsp; **Tracker:**
 [#46](https://github.com/collectiveai-team/botica/issues/46)
 
@@ -48,7 +48,7 @@ def fetch(key: str) -> bytes:
 For a deliberate diagnostic in non-entrypoint code, keep the `print` and add a visible ignore:
 
 ```python
-print(banner)  # ast-grep-ignore: log-no-print
+print(banner)  # botica: ignore[log-no-print]
 ```
 
 The slug is the stable suppression key; the `CES-46` code in the message is for humans.

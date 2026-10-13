@@ -37,13 +37,24 @@ LOCKFILES = (
     "Gemfile.lock",
 )
 
-# The native rules the botica hook runs: CES-71, CES-63 and the layout rules (was `repo-shape`).
+# The rules the botica hook runs: CES-71, CES-63 and the layout rules (was `repo-shape`), and the
+# syntax rules that the `ast-grep` hook used to run.
 BOTICA_RULES = {
     "file-size-guard",
     "no-utils",
     "no-notebooks",
     "no-artifacts-in-package",
     "no-tests-in-package",
+    "api-schemas-extra-forbid",
+    "arch-database-package",
+    "cli-typed-framework",
+    "log-get-logger",
+    "log-no-print",
+    "no-dict-alias",
+    "no-dict-call-return",
+    "no-dict-literal-return",
+    "no-dict-return-annotation",
+    "settings-module",
 }
 
 
@@ -106,11 +117,11 @@ def test_botica_hook_comes_from_the_mirror_at_a_release_tag():
     assert re.fullmatch(r"v\d+\.\d+\.\d+", hook.rev), f"not a release tag: {hook.rev!r}"
 
 
-def test_botica_hook_runs_the_native_structure_rules():
+def test_botica_hook_runs_the_rules_the_templates_ship():
     args = _hook_setting("prek-generic.toml", "botica", "args")
 
     assert isinstance(args, list), "the mirror's entry is fixed, so the rules go in `args`"
-    assert "--no-astgrep" in args
+    assert "--no-astgrep" not in args, "the syntax rules are what the ast-grep hook used to run"
     assert "--select" in args, f"botica would run every rule it knows: {args!r}"
     assert set(args[args.index("--select") + 1].split(",")) == BOTICA_RULES
 
@@ -146,3 +157,12 @@ def test_the_botica_hook_is_declared_once_so_the_joined_config_has_no_duplicate_
     ids = [hook["id"] for repo in joined["repos"] for hook in repo.get("hooks", [])]
 
     assert ids.count("botica") == 1
+
+
+@pytest.mark.parametrize("template", ["prek-generic.toml", "prek-python.toml"])
+def test_no_template_ships_an_ast_grep_hook(template: str):
+    """The syntax rules run in the botica hook; the `ast-grep` hook and its config are retired."""
+    config = tomllib.loads(template_text(template))
+    ids = [hook["id"] for repo in config.get("repos", []) for hook in repo.get("hooks", [])]
+
+    assert "ast-grep" not in ids

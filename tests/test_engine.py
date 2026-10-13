@@ -49,29 +49,35 @@ def test_nonpython_full_install_excludes_python_and_ci(repo: Path):
     assert "opencode.jsonc" in _targets(plan, Disposition.ADD)
 
 
-def test_python_repo_includes_astgrep_and_pyproject(repo: Path):
+def test_python_repo_includes_pyproject_and_ships_no_ast_grep_files(repo: Path):
     (repo / "app.py").write_text("x = 1\n")
     plan = build_plan(repo, _facts(repo), Settings(skip_skills=True, skip_varlock=True))
     targets = _targets(plan, Disposition.ADD)
-    assert "sgconfig.yml" in targets
     assert "pyproject.toml" in targets
+    assert "sgconfig.yml" not in targets
+    assert not [t for t in targets if t.startswith("ast-grep/")]
     keys = {d.key for d in plan.decisions}
     assert {"pyproject_name", "pyproject_description"} <= keys
 
 
-def test_prek_pulls_astgrep_dependency_on_python(repo: Path):
-    (repo / "pyproject.toml").write_text("[project]\nname='x'\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["prek"])
+def test_ast_grep_is_no_longer_a_component(repo: Path):
+    with pytest.raises(UnknownComponent):
+        build_plan(repo, _facts(repo), Settings(), requested=["ast-grep"])
+
+
+def test_standards_pulls_agents_dependency(repo: Path):
+    (repo / "app.py").write_text("x = 1\n")
+    plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
     comps = {op.component for op in plan.ops}
-    assert "ast-grep" in comps
-    assert any("required by prek" in n for n in plan.notices)
+    assert "agents" in comps
+    assert any("required by standards" in n for n in plan.notices)
 
 
 def test_no_deps_suppresses_dependency(repo: Path):
     (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(no_deps=True), requested=["prek"])
+    plan = build_plan(repo, _facts(repo), Settings(no_deps=True), requested=["standards"])
     comps = {op.component for op in plan.ops}
-    assert "ast-grep" not in comps
+    assert "agents" not in comps
 
 
 def test_explicit_selection_overrides_gate_with_notice(repo: Path):
@@ -182,25 +188,7 @@ def test_standards_logging_family_adds_details_and_snippet(repo: Path):
     assert ".agents/snippets/core/logger.py" in adds
 
 
-def test_astgrep_ships_logging_rules(repo: Path):
-    (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["ast-grep"])
-    adds = {op.target for op in plan.by(Disposition.ADD) if op.component == "ast-grep"}
-    assert "ast-grep/rules/log-get-logger.yml" in adds
-    assert "ast-grep/rules/log-no-print.yml" in adds
-
-
-def test_logging_rules_embed_ces_codes_and_warn_severity():
-    for slug, code in (("log-get-logger", "CES-45"), ("log-no-print", "CES-46")):
-        body = template_text(f"ast-grep-rules/{slug}.yml")
-        assert f"{code} ({slug})" in body
-        assert f"id: {slug}" in body
-        assert "severity: warning" in body
-        assert "severity: info" not in body
-    # log-no-print exempts CLI entrypoints.
-    no_print = template_text("ast-grep-rules/log-no-print.yml")
-    assert "__main__" in no_print
-    # core-logger snippet drop-in is present and structlog-based.
+def test_core_logger_snippet_is_a_structlog_drop_in():
     snippet = template_text("snippets/core/logger.py")
     assert "structlog" in snippet
     assert "def get_logger" in snippet
@@ -215,24 +203,6 @@ def test_standards_api_schemas_rule_adds_detail_and_snippet(repo: Path):
     assert ".agents/snippets/api-schemas.py" in adds
 
 
-def test_astgrep_ships_api_schemas_rule(repo: Path):
-    (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["ast-grep"])
-    adds = {op.target for op in plan.by(Disposition.ADD) if op.component == "ast-grep"}
-    assert "ast-grep/rules/api-schemas-extra-forbid.yml" in adds
-
-
-def test_api_schemas_rule_is_ces_coded_and_placement_scoped():
-    body = template_text("ast-grep-rules/api-schemas-extra-forbid.yml")
-    assert "CES-4 (api-schemas-extra-forbid)" in body
-    assert "id: api-schemas-extra-forbid" in body
-    assert "severity: warning" in body
-    assert "severity: info" not in body
-    # placement-scoped via files: so it is inert outside api/ schema packages.
-    assert "**/api/**/schemas/requests/**/*.py" in body
-    assert "**/api/**/schemas/responses/**/*.py" in body
-
-
 def test_standards_settings_module_rule_adds_detail_and_snippet(repo: Path):
     (repo / "app.py").write_text("x = 1\n")
     plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
@@ -240,26 +210,6 @@ def test_standards_settings_module_rule_adds_detail_and_snippet(repo: Path):
     adds = {t for t, d in disp.items() if d is Disposition.ADD}
     assert ".agents/rules/settings-module.md" in adds
     assert ".agents/snippets/settings.py" in adds
-
-
-def test_astgrep_ships_settings_module_rule(repo: Path):
-    (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["ast-grep"])
-    adds = {op.target for op in plan.by(Disposition.ADD) if op.component == "ast-grep"}
-    assert "ast-grep/rules/settings-module.yml" in adds
-
-
-def test_settings_module_rule_is_ces_coded_and_exempts_settings():
-    body = template_text("ast-grep-rules/settings-module.yml")
-    assert "CES-76 (settings-module)" in body
-    assert "id: settings-module" in body
-    assert "severity: warning" in body
-    assert "severity: info" not in body
-    # the settings module itself is exempt so it can read env.
-    assert "**/settings.py" in body
-    snippet = template_text("snippets/settings.py")
-    assert "BaseSettings" in snippet
-    assert "def get_settings" in snippet
 
 
 def test_standards_cli_framework_rule_adds_detail(repo: Path):
@@ -270,47 +220,12 @@ def test_standards_cli_framework_rule_adds_detail(repo: Path):
     assert ".agents/rules/cli-typed-framework.md" in adds
 
 
-def test_astgrep_ships_cli_framework_rule(repo: Path):
-    (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["ast-grep"])
-    adds = {op.target for op in plan.by(Disposition.ADD) if op.component == "ast-grep"}
-    assert "ast-grep/rules/cli-typed-framework.yml" in adds
-
-
-def test_cli_framework_rule_is_ces_coded_and_warns():
-    body = template_text("ast-grep-rules/cli-typed-framework.yml")
-    assert "CES-67 (cli-typed-framework)" in body
-    assert "id: cli-typed-framework" in body
-    assert "severity: warning" in body  # encouraged, not mandated
-    assert "severity: info" not in body
-    assert "argparse" in body
-    assert "sys.argv" in body
-
-
 def test_standards_database_package_rule_adds_detail(repo: Path):
     (repo / "app.py").write_text("x = 1\n")
     plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
     disp = _standards_dispositions(plan)
     adds = {t for t, d in disp.items() if d is Disposition.ADD}
     assert ".agents/rules/arch-database-package.md" in adds
-
-
-def test_astgrep_ships_database_package_rule(repo: Path):
-    (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["ast-grep"])
-    adds = {op.target for op in plan.by(Disposition.ADD) if op.component == "ast-grep"}
-    assert "ast-grep/rules/arch-database-package.yml" in adds
-
-
-def test_database_package_rule_is_ces_coded_and_placement_scoped():
-    body = template_text("ast-grep-rules/arch-database-package.yml")
-    assert "CES-18 (arch-database-package)" in body
-    assert "id: arch-database-package" in body
-    assert "severity: warning" in body
-    assert "severity: info" not in body
-    # scoped to the common wrong homes; inert in a correct database/ package.
-    assert "**/persistence/**/*.py" in body
-    assert "**/core/**/*.py" in body
 
 
 def test_standards_repo_hygiene_rules_add_details(repo: Path):
@@ -557,18 +472,6 @@ def test_judgment_tier_index_entries_marked_judgment():
         "test-coverage-gap",
     ):
         assert f"@.agents/rules/{slug}.md" in index
-
-
-def test_ces_codes_embedded_in_as_built_rule_messages():
-    for slug in (
-        "no-dict-call-return",
-        "no-dict-literal-return",
-        "no-dict-return-annotation",
-        "no-dict-alias",
-    ):
-        body = template_text(f"ast-grep-rules/{slug}.yml")
-        assert f"CES-79 ({slug})" in body
-        assert f"id: {slug}" in body  # slug / suppression key unchanged
 
 
 def test_select_skip(repo: Path):

@@ -96,6 +96,26 @@ fn every_rule_has_valid_and_invalid_fixtures() {
 }
 
 #[test]
+fn the_message_of_an_ast_grep_rule_with_a_ces_carries_its_code_and_slug() {
+    let catalog = embedded();
+    for rule in catalog.rules() {
+        let Some(ces) = &rule.ces else { continue };
+        for yaml in rule
+            .implementations
+            .iter()
+            .filter_map(|implementation| implementation.source.as_deref())
+        {
+            let expected = format!("message: \"{ces} ({}):", rule.id);
+            assert!(
+                yaml.contains(&expected),
+                "{}: expected `{expected}`",
+                rule.id
+            );
+        }
+    }
+}
+
+#[test]
 fn no_ruff_prefix_starts_with_the_botica_header() {
     let output = match Command::new("ruff").arg("linter").output() {
         Ok(output) if output.status.success() => output,

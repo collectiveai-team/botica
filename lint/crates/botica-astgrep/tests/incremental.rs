@@ -2,9 +2,9 @@ use botica_astgrep::{AstGrepRule, AstGrepSet, Hit};
 use std::path::Path;
 
 const RULES: [&str; 3] = [
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/log-no-print.yml"),
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/no-dict-literal-return.yml"),
-    include_str!("../../../../scaffolding/templates/ast-grep-rules/no-dict-call-return.yml"),
+    include_str!("../../../rules/logging/log-no-print/python.yml"),
+    include_str!("../../../rules/data-models/no-dict-literal-return/python.yml"),
+    include_str!("../../../rules/data-models/no-dict-call-return/python.yml"),
 ];
 
 const SNIPPETS: [&str; 6] = [

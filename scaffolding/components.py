@@ -92,18 +92,6 @@ STANDARDS_SNIPPETS = [
     "settings.py",
     "tests/in_memory_repository.py",
 ]
-ASTGREP_RULES = [
-    "no-dict-call-return",
-    "no-dict-literal-return",
-    "no-dict-return-annotation",
-    "no-dict-alias",
-    "log-get-logger",
-    "log-no-print",
-    "api-schemas-extra-forbid",
-    "settings-module",
-    "cli-typed-framework",
-    "arch-database-package",
-]
 # MATTPOCOCK_REF / MATTPOCOCK_SKILLS / LOCAL_SKILLS now live in scaffolding/skills.py,
 # next to the manifest logic that consumes them (CES-107).
 DEFAULT_CI_PARTS = ["tests", "security", "docker"]
@@ -235,30 +223,6 @@ def plan_prek(ctx: Context) -> list[Op]:
             detail=detail,
         )
     ]
-
-
-def plan_astgrep(ctx: Context) -> list[Op]:
-    ops = [
-        write_if_absent(
-            "ast-grep",
-            ctx.root / "sgconfig.yml",
-            template_text("sgconfig-template.yml"),
-            "sgconfig.yml",
-            ctx.guide_url,
-        )
-    ]
-    for rule in ASTGREP_RULES:
-        dest = ctx.root / "ast-grep" / "rules" / f"{rule}.yml"
-        ops.append(
-            write_if_absent(
-                "ast-grep",
-                dest,
-                template_text(f"ast-grep-rules/{rule}.yml"),
-                f"ast-grep/rules/{rule}.yml",
-                ctx.guide_url,
-            )
-        )
-    return ops
 
 
 def plan_pyproject(ctx: Context) -> list[Op]:
@@ -616,9 +580,7 @@ REGISTRY: list[Component] = [
         True,
         _always,
         plan_prek,
-        deps=lambda f: ["ast-grep"] if f.is_python else [],
     ),
-    Component("ast-grep", "sgconfig.yml + starter rules", 1, True, _python, plan_astgrep),
     Component(
         "pyproject", "pyproject.toml (guided name/description)", 2, True, _python, plan_pyproject
     ),

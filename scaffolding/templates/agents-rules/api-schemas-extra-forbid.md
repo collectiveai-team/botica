@@ -1,7 +1,7 @@
 # CES-4 · API schemas forbid extra fields
 
 **Code:** `CES-4` &nbsp;·&nbsp; **Slug:** `api-schemas-extra-forbid` &nbsp;·&nbsp; **Enforced by:**
-ast-grep (`warning`, placement-scoped) &nbsp;·&nbsp; **Tracker:**
+botica (`warning`, placement-scoped) &nbsp;·&nbsp; **Tracker:**
 [#4](https://github.com/collectiveai-team/botica/issues/4)
 
 ## Directive
@@ -52,7 +52,7 @@ A boundary model that genuinely must accept arbitrary keys (e.g. a passthrough w
 the `BaseModel` and adds a visible ignore on the class line:
 
 ```python
-class WebhookEnvelope(BaseModel):  # ast-grep-ignore: api-schemas-extra-forbid
+class WebhookEnvelope(BaseModel):  # botica: ignore[api-schemas-extra-forbid]
     ...
 ```
 

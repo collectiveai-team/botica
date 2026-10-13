@@ -113,17 +113,6 @@ types = ["python"]
 pass_filenames = false
 priority = 2
 
-# MARK: ast-grep
-# The invalid fixtures of the rules in `lint/rules` break the rules on purpose.
-[[repos.hooks]]
-id = "ast-grep"
-name = "ast-grep"
-entry = "uvx --from ast-grep-cli ast-grep scan --globs '!lint/rules/**/fixtures/**'"
-language = "system"
-types = ["python"]
-pass_filenames = false
-priority = 2
-
 # MARK: deptry
 # CES-109: declared pyproject.toml dependencies must match the actual import graph.
 [[repos.hooks]]
@@ -180,7 +169,9 @@ priority = 2
 # The same structure rules as the generic template (CES-71 file-size-guard, CES-63 no-utils, CES-32
 # no-notebooks and no-artifacts-in-package, no-tests-in-package), run by `botica lint` through the
 # mirror, which installs botica from PyPI at the release `rev` names. Own `[[repos]]` table, so it
-# goes after the `local` hooks above, not among them.
+# goes after the `local` hooks above, not among them. The syntax rules (CES-79, CES-45…) join it
+# when `rev` moves to v0.8.0, the first release that carries them: then `--no-astgrep` goes and
+# the selection is the one of `scaffolding/templates/prek-generic.toml`.
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
 rev = "v0.7.1"

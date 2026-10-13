@@ -18,8 +18,9 @@ mkdir -p "$OUT" "$WORK/hooks" "$WORK/sg/rules"
 [ -d "$WORK/repo10k" ] || python3 "$BENCH/gen_repo.py" "$WORK/repo10k" 10000
 [ -d "$WORK/repo10k-clean" ] || python3 "$BENCH/gen_repo.py" "$WORK/repo10k-clean" 10000 clean
 
-cp "$ROOT"/scaffolding/templates/ast-grep-rules/*.yml "$WORK/sg/rules/"
-cp "$ROOT/lint/rules/logging/no-console-log/typescript.yml" "$WORK/sg/rules/no-console-log.yml"
+for yaml in "$ROOT"/lint/rules/*/*/python.yml "$ROOT"/lint/rules/*/*/typescript.yml; do
+  cp "$yaml" "$WORK/sg/rules/$(basename "$(dirname "$yaml")").yml"
+done
 printf 'ruleDirs:\n  - rules\n' >"$WORK/sg/sgconfig.yml"
 
 cat >"$WORK/hooks/fsg.sh" <<'EOF'

@@ -83,7 +83,7 @@ or referencing a rule in this repo, follow this convention:
 
 - **`CES-<issue#>`** is the citable catalog code; the **kebab-case slug** is the
   machine id (ast-grep `id:`, prek hook id, `.agents/rules/<slug>.md`,
-  `# ast-grep-ignore: <slug>`). Never put the CES number in the machine id.
+  `# botica: ignore[<slug>]`). Never put the CES number in the machine id.
 - **Every CES has a tracker issue.** One CES = one standard; a standard may ship
   multiple slugs (e.g. `CES-79` ships the four `no-dict-*` patterns). The issue id
   is the number — gaps from declined proposals are expected (PEP/RFC-style).

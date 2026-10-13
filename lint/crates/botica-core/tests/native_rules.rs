@@ -47,7 +47,7 @@ fn no_utils_flags_catch_all_modules_outside_tests() {
 
 #[test]
 fn embedded_ast_grep_rule_keeps_its_composite_semantics() {
-    let yaml = include_str!("../../../../scaffolding/templates/ast-grep-rules/log-no-print.yml");
+    let yaml = include_str!("../../../rules/logging/log-no-print/python.yml");
     let rules = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
     let engine = Engine::new(Vec::new(), rules);
 
@@ -62,7 +62,7 @@ fn embedded_ast_grep_rule_keeps_its_composite_semantics() {
 
 #[test]
 fn positions_are_reported_in_characters_after_non_ascii_text() {
-    let yaml = include_str!("../../../../scaffolding/templates/ast-grep-rules/log-no-print.yml");
+    let yaml = include_str!("../../../rules/logging/log-no-print/python.yml");
     let rules = AstGrepSet::new(AstGrepRule::from_yaml(yaml).unwrap());
     let engine = Engine::new(Vec::new(), rules);
 

@@ -16,7 +16,7 @@ SSOT for that rule's text and review state.
 | Layer | Value | Used in |
 |---|---|---|
 | **Catalog code** | `CES-<issue#>` | AGENTS.md index, commit/PR refs, human citation, violation messages |
-| **Machine id** | kebab-case **slug** (`log-no-print`, `api-schemas-extra-forbid`) | ast-grep `id:`, prek hook id, `.agents/rules/<slug>.md`, `# ast-grep-ignore: <slug>` |
+| **Machine id** | kebab-case **slug** (`log-no-print`, `api-schemas-extra-forbid`) | ast-grep `id:`, prek hook id, `.agents/rules/<slug>.md`, `# botica: ignore[<slug>]` |
 
 Always written together where space allows: **`CES-46 · log-no-print`**.
 
@@ -40,7 +40,7 @@ on, so they must stay stable and semantic.
 message: "CES-46 (log-no-print): libraries log, they don't print — use the house get_logger."
 ```
 
-The slug remains the suppression key (`# ast-grep-ignore: <slug>`), so embedding the code in
+The slug remains the suppression key (`# botica: ignore[<slug>]`), so embedding the code in
 the message text never affects tooling stability.
 
 ### Messages are self-contained (no cross-rule references)
@@ -50,7 +50,7 @@ A violation message states **its own** rule, the fix, and its CES code — nothi
 
 - name a sibling rule (e.g. "hidden from the no-dict-return rules"), or
 - prescribe another rule's suppression key (a message for `no-dict-alias` telling you to add
-  `# ast-grep-ignore: no-dict-return-annotation` is wrong — and wouldn't even silence itself).
+  `# botica: ignore[no-dict-return-annotation]` is wrong — and wouldn't even silence itself).
 
 Scattering policy across sibling messages is context-poisoning: one rule ends up restating or
 superseding another's decision. The grouped rationale, the relationships between a standard's
@@ -135,7 +135,7 @@ Rules already shipped before the CES scheme, now coded via retroactive issues:
 
 | CES | Slugs | Ships as |
 |---|---|---|
-| **CES-79** | `no-dict-return-annotation`, `no-dict-call-return`, `no-dict-literal-return`, `no-dict-alias` | ast-grep (`templates/ast-grep-rules/no-dict-*.yml`) |
+| **CES-79** | `no-dict-return-annotation`, `no-dict-call-return`, `no-dict-literal-return`, `no-dict-alias` | `botica lint` rules (`lint/rules/data-models/no-dict-*`), run by the `botica` hook of `templates/prek-generic.toml` |
 | **CES-71** | `file-size-guard` | `botica lint` rule, run by the `botica` hook of `templates/prek-generic.toml` (400 warn / 700 error, any language) |
 | **CES-107** | `skills-manifest` | `scaffolding check` + the `skills` component (`scaffolding/skills.py`) |
 

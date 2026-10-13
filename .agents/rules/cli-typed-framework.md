@@ -1,7 +1,7 @@
 # CES-67 · typed, declarative CLIs
 
 **Code:** `CES-67` &nbsp;·&nbsp; **Slug:** `cli-typed-framework` &nbsp;·&nbsp; **Enforced by:**
-ast-grep (`warning`) &nbsp;·&nbsp; **Tracker:**
+botica (`warning`) &nbsp;·&nbsp; **Tracker:**
 [#67](https://github.com/collectiveai-team/botica/issues/67)
 
 ## Directive
@@ -56,7 +56,7 @@ When a dependency forces `argparse`/`click` (e.g. extending a click-based third-
 the import and add a visible ignore:
 
 ```python
-import click  # ast-grep-ignore: cli-typed-framework
+import click  # botica: ignore[cli-typed-framework]
 ```
 
 The slug is the stable suppression key; the `CES-67` code in the message is for humans.

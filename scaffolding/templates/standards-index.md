@@ -6,7 +6,7 @@
 > the house pattern rather than your default one.
 
 Each rule is a **CES — Collective Engineering Standard** (`CES-<issue#>` is the citable code;
-the kebab-case slug is the machine id used by tooling and `# ast-grep-ignore: <slug>`
+the kebab-case slug is the machine id used by tooling and `# botica: ignore[<slug>]`
 suppressions). `[ast-grep]` / `[prek]` rules are enforced automatically by `prek`; `[ci]` rules
 are enforced by a GitHub Actions workflow (no local hook); `[dependency]` rules ship as a
 dev-dependency that activates automatically, no separate check; `[judgment]` rules are

@@ -1,6 +1,6 @@
 # CES-76 · config lives in a settings module
 
-**Code:** `CES-76` &nbsp;·&nbsp; **Slug:** `settings-module` &nbsp;·&nbsp; **Enforced by:** ast-grep
+**Code:** `CES-76` &nbsp;·&nbsp; **Slug:** `settings-module` &nbsp;·&nbsp; **Enforced by:** botica
 (`warning`) &nbsp;·&nbsp; **Tracker:**
 [#76](https://github.com/collectiveai-team/botica/issues/76)
 
@@ -53,7 +53,7 @@ A genuine one-off (e.g. reading `PATH` in a build script) keeps the call and add
 ignore:
 
 ```python
-venv = os.environ.get("VIRTUAL_ENV")  # ast-grep-ignore: settings-module
+venv = os.environ.get("VIRTUAL_ENV")  # botica: ignore[settings-module]
 ```
 
 The slug is the stable suppression key; the `CES-76` code in the message is for humans.

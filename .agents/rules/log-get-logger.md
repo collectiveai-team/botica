@@ -1,6 +1,6 @@
 # CES-45 · use the house get_logger
 
-**Code:** `CES-45` &nbsp;·&nbsp; **Slug:** `log-get-logger` &nbsp;·&nbsp; **Enforced by:** ast-grep
+**Code:** `CES-45` &nbsp;·&nbsp; **Slug:** `log-get-logger` &nbsp;·&nbsp; **Enforced by:** botica
 (`warning`) &nbsp;·&nbsp; **Tracker:**
 [#45](https://github.com/collectiveai-team/botica/issues/45)
 
@@ -43,7 +43,7 @@ If you must use the stdlib logger directly (e.g. configuring a third-party libra
 keep the call and add a visible suppression so the exception is auditable:
 
 ```python
-logging.getLogger("uvicorn.access").setLevel("WARNING")  # ast-grep-ignore: log-get-logger
+logging.getLogger("uvicorn.access").setLevel("WARNING")  # botica: ignore[log-get-logger]
 ```
 
 The slug is the stable suppression key; the `CES-45` code in the message is for humans.

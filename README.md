@@ -25,7 +25,7 @@ Personal repo bootstrap + agent skills for opencode / claude-code / codex.
 This repo does two things:
 
 1. **Bootstrap a repo** with my workspace defaults (gitignore, per-agent config,
-   `AGENTS.md` guidance, optional prek hooks, ast-grep, CI, Varlock secrets) via a
+   `AGENTS.md` guidance, optional prek hooks, CI, Varlock secrets) via a
    small Python CLI. This is a one-time-per-repo operation, run as an *agentic
    install* or directly — not an installed skill. Target one or more agents with
    `--agent` (repeatable / comma-separated; default `opencode`).
@@ -80,7 +80,7 @@ scaffolding check                   # verify bootstrap completeness (nonzero exi
 scaffolding doctor                  # diagnose environment + tools
 ```
 
-Components: `gitignore agent-config prek ast-grep pyproject ci agents standards
+Components: `gitignore agent-config prek pyproject ci agents standards
 skills varlock` (all default-on except `ci`, which is opt-in). Scope with
 positional names or `--skip a,b`. Useful flags: `--agent` (repeatable:
 `opencode`/`claude-code`/`codex`), `--ci/--no-ci`, `--ci-parts`,
@@ -241,7 +241,7 @@ repo's own `skills/`, not in `.agents/skills`.
 - `scaffolding/` — the bootstrap CLI (Cyclopts + Questionary + pydantic-settings
   + Rich). `cli.py`, `engine.py`/`plan.py`, `components.py`, and `templates/`
   (per-agent config — opencode.jsonc / .claude settings, prek hooks, pyproject,
-  ast-grep rules, CI workflows, AGENTS.md section).
+  CI workflows, AGENTS.md section).
 - `install.sh` — thin bootstrap shim (ensure `uv`, then run the CLI from git).
 - `guide.md` — the agentic-install guide (judgment layer).
 - `skills/productivity/journalist` — local daily session journals under `.journals/`.

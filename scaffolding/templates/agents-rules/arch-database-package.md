@@ -1,7 +1,7 @@
 # CES-18 · persistence lives in a database package
 
 **Code:** `CES-18` &nbsp;·&nbsp; **Slug:** `arch-database-package` &nbsp;·&nbsp; **Enforced by:**
-ast-grep (`warning`, placement-scoped) + a commented import-linter contract (CES-5, Slice 09)
+botica (`warning`, placement-scoped) + a commented import-linter contract (CES-5, Slice 09)
 &nbsp;·&nbsp; **Tracker:** [#18](https://github.com/collectiveai-team/botica/issues/18)
 
 ## Directive
@@ -65,7 +65,7 @@ class User(SQLModel, table=True):   # arch-database-package
 If a table genuinely must live elsewhere, keep it and add a visible ignore on the class/line:
 
 ```python
-class AuditEntry(SQLModel, table=True):  # ast-grep-ignore: arch-database-package
+class AuditEntry(SQLModel, table=True):  # botica: ignore[arch-database-package]
     ...
 ```
 
