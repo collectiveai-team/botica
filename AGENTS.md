@@ -30,7 +30,8 @@
   with `policy.allow_implicit_invocation: false` (and omitted for model-invoked
   skills, which Codex otherwise filters out entirely).
 - `scripts/` — maintainer-only checks, not shipped. `check_skill_drift.py` guards
-  the curated upstream catalog; the `skills-drift` workflow runs it.
+  the curated upstream catalog; the `skills-drift` workflow runs it. `check_skills.sh`
+  runs the skill validator over `skills/`; the `skill-validator` hook of prek runs it.
 
 Agent targets are multi-valued (`--agent`, repeatable: `opencode`/`claude-code`/
 `codex`). The `agent-config` component writes per-agent config — `opencode.jsonc`
@@ -43,29 +44,29 @@ After changing the CLI, validate with `uv run ruff check scaffolding` and
 
 ## Skill Development
 
-After creating or editing any skill under `skills/`, validate its `SKILL.md`
-before committing. `tessl review run` is a command group, not a command — pick a
-subcommand:
+After creating or editing any skill under `skills/`, validate it before committing:
 
 ```bash
-tessl review run security <SKILL.md>   # free
-tessl review run quality  <SKILL.md>   # ~10 credits per run
+prek run skill-validator --all-files
 ```
 
-Run both against each changed skill (e.g.
-`tessl review run quality skills/productivity/journalist/SKILL.md`) and resolve the
-reported issues before publishing.
+This is the `skill-validator` hook of `prek.toml` (agent-ecosystem/skill-validator; no
+account; needs Go on the `PATH`). `scripts/check_skills.sh` holds the flags. It checks the
+frontmatter, the directory layout, the links, the token counts and the content of every
+skill, and it fails on warnings. prek runs it on commit when a file under `skills/` changes.
+Fix what it reports; do not silence it.
 
-Setup: `tessl login`, plus a workspace (`tessl workspace create <name>`) — a fresh
-account has none and the review fails without one. `tessl org usage` shows the credit
-balance; the free plan carries 1,000 per month. In CI, `TESSL_TOKEN` replaces the
-interactive login.
+A skill is a `SKILL.md` plus, optionally, `references/`, `scripts/`, `assets/` and
+`agents/` (Codex reads `agents/openai.yaml`). Text a skill bundles goes under `references/`;
+any other directory or loose file at its root fails. The frontmatter fields that Claude and
+Codex read beyond the spec (`disable-model-invocation`, `argument-hint`) are allowed.
 
-**The review only reads `SKILL.md` and the `references/`, `scripts/` and `assets/`
-directories.** Anything a skill bundles elsewhere is not sent, and the run says so.
-For a skill whose substance lives outside those paths — `engineering-rules` keeps 70
-rule files under `rules/` — the score covers the `SKILL.md` alone. Read it as a check
-on the entry point, not on the bundle.
+One skill is judged more loosely: for `engineering-rules` only errors fail. Its
+`references/` hold about 30k tokens, above the validator's fixed warning of 25k, and the
+rules are read by need through an index that names them by id. Do not cut rules to silence
+that warning; it is a decision about the ruleset.
+
+`tessl review` is not used: it asks for an interactive login.
 
 The upstream skill catalog (`MATTPOCOCK_SKILLS` in `scaffolding/skills.py`) is
 the single source of truth — `README.md` and `guide.md` only copy it, and
