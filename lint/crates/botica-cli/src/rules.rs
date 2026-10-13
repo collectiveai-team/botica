@@ -120,3 +120,65 @@ fn extra_rule_texts(dir: Option<&Path>) -> Result<Vec<String>> {
         .map(|path| Ok(std::fs::read_to_string(path)?))
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use botica_catalog::{Catalog, SourceFile};
+    use botica_config::Config;
+
+    fn file(path: &str, text: &str) -> SourceFile {
+        SourceFile {
+            path: path.to_owned(),
+            text: text.to_owned(),
+        }
+    }
+
+    /// A catalog with one ast-grep rule, `log-no-print`, whose YAML and prefilter are given.
+    fn resolution(yaml: &str, prefilter: &str) -> Resolution {
+        let rule = format!(
+            "id = \"log-no-print\"\ncode = \"BTLOG001\"\nsummary = \"s\"\nstatus = \"stable\"\n\
+             since = \"0.1.0\"\n{prefilter}scope = \"file\"\nneeds = \"syntax\"\n\
+             run-on = [\"cli\"]\ndefault-enabled = true\ndefault-severity = \"error\"\n\n\
+             [[implementations]]\nkind = \"ast-grep\"\nlanguages = [\"python\"]\n\
+             file = \"python.yml\"\n"
+        );
+        let catalog = Catalog::from_files(&[
+            file(
+                "logging/family.toml",
+                "code = \"LOG\"\ndescription = \"d\"\n",
+            ),
+            file("logging/log-no-print/rule.toml", &rule),
+            file("logging/log-no-print/README.md", "# r\n"),
+            file("logging/log-no-print/python.yml", yaml),
+        ])
+        .expect("the catalog loads");
+        let config = Config::from_botica_toml("").expect("an empty configuration");
+        Resolution::new(&config, &catalog).expect("the catalog resolves")
+    }
+
+    fn print_of(resolution: &Resolution) -> String {
+        fingerprint(true, resolution, None, "config").expect("the fingerprint")
+    }
+
+    const YAML: &str = "id: log-no-print\nlanguage: python\n";
+
+    #[test]
+    fn the_fingerprint_changes_with_the_yaml_of_an_active_rule() {
+        let same = print_of(&resolution(YAML, ""));
+        assert_eq!(same, print_of(&resolution(YAML, "")));
+
+        let edited = format!("{YAML}severity: error\n");
+        assert_ne!(same, print_of(&resolution(&edited, "")));
+    }
+
+    #[test]
+    fn the_fingerprint_changes_with_the_prefilter_of_an_active_rule() {
+        let without = print_of(&resolution(YAML, ""));
+
+        assert_ne!(
+            without,
+            print_of(&resolution(YAML, "prefilter = 'print'\n"))
+        );
+    }
+}
