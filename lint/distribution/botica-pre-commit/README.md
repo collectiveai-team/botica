@@ -8,11 +8,11 @@ botica repository, copied here at each release (see "Releasing").
 # prek.toml
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
-rev = "v0.7.1"
+rev = "v0.8.0"
 
 [[repos.hooks]]
 id = "botica"
-args = ["--no-astgrep", "--select", "file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package"]
+args = ["--select", "file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package,no-dict-alias,no-dict-call-return,no-dict-literal-return,no-dict-return-annotation,api-schemas-extra-forbid,log-get-logger,log-no-print,settings-module,cli-typed-framework,arch-database-package"]
 ```
 
 Hooks: `botica` (the rules that look at one file; gets the file names) and `botica-project` (the
