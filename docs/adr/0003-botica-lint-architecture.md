@@ -173,4 +173,5 @@ What this ADR decides and the code does not have. Delete a line when it ships.
 - `botica rules export` in the formats other than `markdown` (`json`, `continue`, `abide`,
   `schema`), the other `rules` subcommands (`test`, with `--against`; `new`), and the
   `botica-rule-author` skill. Only `botica rules list` and `botica rules export --format markdown`
-  exist. The standards site that reads the Markdown export is not built either.
+  exist. The standards site that reads the Markdown export is built (`website/`) but not
+  published, and it has no discussion thread and no "edit this page" yet.

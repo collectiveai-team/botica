@@ -1,0 +1,77 @@
+name: Site
+
+# Build the standards site with scripts/build_site.sh and publish it to GitHub Pages from `main`.
+# A pull request only builds it, so a broken link or a rule page that does not render is caught
+# before the merge. GitHub Pages must be set to publish from GitHub Actions
+# (Settings -> Pages -> Source).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "website/**"
+      - "lint/rules/**"
+      - "lint/crates/botica-catalog/**"
+      - "lint/crates/botica-cli/src/rules_export.rs"
+      - "scripts/build_site.sh"
+      - ".github/workflows/site.yml"
+  pull_request:
+    paths:
+      - "website/**"
+      - "lint/rules/**"
+      - "lint/crates/botica-catalog/**"
+      - "lint/crates/botica-cli/src/rules_export.rs"
+      - "scripts/build_site.sh"
+      - ".github/workflows/site.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: site-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        # Pinned to an exact immutable tag, like the other workflows.
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: "0.11.12"
+          enable-cache: false
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Build the site
+        run: scripts/build_site.sh
+
+      - name: Upload the site
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: website/site
+
+  deploy:
+    name: deploy
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

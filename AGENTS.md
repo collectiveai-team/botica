@@ -17,6 +17,10 @@
   It has its own README (`lint/README.md`), release runbook (`docs/botica-release.md`) and design
   (`docs/adr/0003-botica-lint-architecture.md`). Ruff, pyrefly and deptry skip it; `ci.yml` runs
   its fmt, clippy and tests. No pipeline in `.github/workflows/` is specific to `lint`.
+- `website/` — the standards site, built with Zensical (`zensical.toml`; the version is pinned in
+  `requirements.txt`). `website/docs/rules/` is exported from the catalog by `scripts/build_site.sh`
+  (`botica rules export`) and is gitignored; only `website/docs/index.md` is written by hand.
+  `.github/workflows/site.yml` builds it on a pull request and publishes it from `main`.
 - `install.sh` — thin bootstrap shim (ensure `uv`, then `uvx … scaffolding
   install`). Keep it minimal and keep its raw URL pointing at
   `collectiveai-team/botica` on `main`.
@@ -33,7 +37,7 @@
   the curated upstream catalog; the `skills-drift` workflow runs it. `check_skills.sh`
   runs the skill validator over `skills/`; the `skill-validator` hook of prek runs it.
   `check_rule_change.py` flags a change that adds a botica rule and touches more than that rule
-  needs; the `rule-contract` job of `ci.yml` runs it.
+  needs; the `rule-contract` job of `ci.yml` runs it. `build_site.sh` builds the standards site.
 
 Agent targets are multi-valued (`--agent`, repeatable: `opencode`/`claude-code`/
 `codex`). The `agent-config` component writes per-agent config — `opencode.jsonc`

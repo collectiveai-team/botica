@@ -31,3 +31,7 @@ __pycache__/
 
 # rust (botica lint)
 lint/target/
+
+# standards site: the rule pages are exported from the catalog, the site is built from them
+website/docs/rules/
+website/site/
