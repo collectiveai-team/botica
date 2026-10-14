@@ -6,6 +6,7 @@ use serde::Serialize;
 
 use crate::project::{self, Project, ProjectArgs};
 use crate::rule_view::RuleView;
+use crate::rules_export::{self, ExportArgs};
 
 /// Version of the JSON document of `botica rules --json`.
 const SCHEMA_VERSION: u32 = 1;
@@ -22,6 +23,8 @@ pub struct RulesArgs {
 enum RulesCommand {
     /// Show which rules are active and why (what `botica rules` does by itself).
     List(ListArgs),
+    /// Write the catalog as documents, whatever the project selects.
+    Export(ExportArgs),
 }
 
 #[derive(Args)]
@@ -54,6 +57,7 @@ struct RulesDocument<'a> {
 
 pub fn run(args: &RulesArgs) -> Result<()> {
     let list = match &args.command {
+        Some(RulesCommand::Export(export)) => return rules_export::run(export),
         Some(RulesCommand::List(list)) => list,
         None => &args.list,
     };

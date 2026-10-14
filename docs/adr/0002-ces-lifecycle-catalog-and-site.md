@@ -43,9 +43,9 @@ would recreate the problem.
    request and embedded on each page of the site via giscus. Reactions are the advisory signal.
 6. **The standards website is generated from the catalog with Zensical**, in the manner of the
    documentation of Ruff, flake8 or the PEPs: it documents the rules, the catalogs and the CES. It
-   is in English, published from CI to GitHub Pages. A pre-build step (`botica rules export --format markdown`, not built
-   yet) renders one page per rule, so the site does not depend on Zensical's module/plugin
-   system. Pages offer "edit this page" (opens a pull request) and a giscus thread.
+   is in English, published from CI to GitHub Pages. A pre-build step
+   (`botica rules export --format markdown --output <dir>`) renders one page per rule and an
+   index, so the site does not depend on Zensical's module/plugin system. Pages offer "edit this page" (opens a pull request) and a giscus thread.
 
 ## Not decided
 

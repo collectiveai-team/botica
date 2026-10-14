@@ -5,6 +5,7 @@ mod project;
 mod rule_view;
 mod rules;
 mod rules_cmd;
+mod rules_export;
 mod timings;
 
 use clap::{Parser, Subcommand};

@@ -31,7 +31,7 @@ flowchart LR
   cli & lsp --> core[botica-core]
   core --> ext[[Extension processes<br/>Python · Node · command]]
   catalog[(Rule catalog<br/>rules/&lt;family&gt;/&lt;slug&gt;)] --> core
-  catalog --> export[botica rules export]:::planned
+  catalog --> export[botica rules export]
   export --> site[Standards site · ADR 0002]:::planned
   export --> judges[Judges: Continue checks · abide]:::planned
   classDef planned stroke-dasharray: 4 4
@@ -170,5 +170,7 @@ What this ADR decides and the code does not have. Delete a line when it ships.
   exist. Nor does the isolated, cached environment (uv for Python, npm for Node) for an
   extension's dependencies.
 - Catalogs of a project or declared externally (`.botica/rules/`).
-- `botica rules export`, the other `rules` subcommands (`test`, with `--against`; `new`), and the
-  `botica-rule-author` skill. Only `botica rules list` exists.
+- `botica rules export` in the formats other than `markdown` (`json`, `continue`, `abide`,
+  `schema`), the other `rules` subcommands (`test`, with `--against`; `new`), and the
+  `botica-rule-author` skill. Only `botica rules list` and `botica rules export --format markdown`
+  exist. The standards site that reads the Markdown export is not built either.
