@@ -50,7 +50,6 @@ extend-exclude = [
   "skills",
   "scaffolding/templates",
   "lint/rules/**/fixtures",
-  "lint/proposals/**/fixtures",
 ]
 force-exclude = true
 

@@ -19,7 +19,6 @@ from scaffolding.templates_registry import template_text
 
 ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "lint" / "rules"
-PROPOSALS = ROOT / "lint" / "proposals"
 SKILL_RULES = ROOT / "skills" / "engineering" / "engineering-rules" / "references"
 
 # Rules of the skill that say what a catalog rule measures, under a name that is not its slug.
@@ -146,7 +145,6 @@ def _normative_texts() -> list[Path]:
         *(ROOT / ".agents" / "rules").glob("*.md"),
         *(ROOT / "skills").rglob("*.md"),
         *CATALOG.glob("*/*/README.md"),
-        *PROPOSALS.glob("*/*/README.md"),
         ROOT / "AGENTS.md",
         ROOT / "docs" / "engineering-standards.md",
     ]
@@ -172,34 +170,3 @@ def test_compat_ast_grep_ignore_is_documented_once_in_the_readme_of_botica():
 
     assert "# ast-grep-ignore:" in text
     assert "compat-ast-grep-ignore = true" in text
-
-
-def test_a_proposed_rule_takes_its_code_from_the_family_of_its_folder():
-    wrong = []
-    for rule_toml in PROPOSALS.glob("*/*/rule.toml"):
-        family = tomllib.loads(
-            (CATALOG / rule_toml.parent.parent.name / "family.toml").read_text(encoding="utf-8")
-        )
-        prefix = f"BT{family['code']}"
-        code = tomllib.loads(rule_toml.read_text(encoding="utf-8"))["code"]
-        if not re.fullmatch(rf"{prefix}\d{{3}}", code):
-            wrong.append(f"{rule_toml.parent.name}: {code} is not {prefix}NNN")
-
-    assert not wrong, wrong
-
-
-def test_a_proposed_rule_is_not_in_the_catalog_and_takes_a_free_code():
-    """A proposal is moved into the catalog when it is integrated, never copied."""
-    catalog = {}
-    for rule_toml in CATALOG.glob("*/*/rule.toml"):
-        data = tomllib.loads(rule_toml.read_text(encoding="utf-8"))
-        catalog[data["id"]] = data["code"]
-    proposed = {}
-    for rule_toml in PROPOSALS.glob("*/*/rule.toml"):
-        data = tomllib.loads(rule_toml.read_text(encoding="utf-8"))
-        proposed[data["id"]] = data["code"]
-
-    assert PROPOSALS.is_dir(), "the proposals directory moved"
-    assert not set(proposed) & set(catalog), "a proposal is already in the catalog"
-    assert not set(proposed.values()) & set(catalog.values()), "a proposal takes a used code"
-    assert len(set(proposed.values())) == len(proposed), "two proposals share a code"
