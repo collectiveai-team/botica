@@ -24,9 +24,10 @@ A release does not need `main`: a tag runs the workflow as it is in the tagged c
 6. `pypi` uploads the wheels to PyPI. It is **off** until the repository variable
    `PUBLISH_TO_PYPI` is `true`.
 
-`0.7.0` was released on 2026-10-12 (run `38197175421`), `0.7.1` the same day (run `38214642175`) and
-`0.8.0` on 2026-10-13 (run `38410864532`): every job passed, the seven wheels are on GitHub and on
-PyPI, and the `publish` step left `v0.6.0` as "latest" each time (it was first used on 0.7.1). The
+`0.7.0` was released on 2026-10-12 (run `38197175421`), `0.7.1` the same day (run `38214642175`),
+`0.8.0` on 2026-10-13 (run `38410864532`) and `0.9.0` on 2026-10-14 (run `38595149595`): every job
+passed, the seven wheels are on GitHub and on PyPI, and the `publish` step left `v0.6.0` as "latest"
+each time (it was first used on 0.7.1). The
 Linux jobs build in a container that owns `lint/dist`, so the checksums are written to `lint/sums`
 instead. The two calls to reusable workflows use GitHub's self-repository syntax
 (`uses: $/.github/workflows/ci.yml`, July 2026, github.com only, runner 2.336.0 or newer), which
