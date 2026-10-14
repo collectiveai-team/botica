@@ -34,12 +34,16 @@ would recreate the problem.
 3. **A rule has its own lifecycle:** `preview` → `stable` → `deprecated` → `removed`, modelled on
    Ruff. Renamed ids keep `aliases` so configs and suppressions never break. Preview rules run only
    when explicitly opted in.
-4. **Proposals are pull requests.** The decision is the review of the pull request: approval rules
-   live in `CODEOWNERS` and branch protection, not in a comment-parsing bot.
+4. **Proposals are pull requests, and they carry the implementation.** A proposal adds the rule
+   folder (`rule.toml`, README, fixtures and what runs), not only its text, so the review judges
+   what would be enforced. A standard with nothing to run yet is a `judgment` rule. The decision
+   is the review of the pull request: approval rules live in `CODEOWNERS` and branch protection,
+   not in a comment-parsing bot.
 5. **Discussion happens in GitHub Discussions**, one category per area, linked from the pull
    request and embedded on each page of the site via giscus. Reactions are the advisory signal.
-6. **The standards website is generated from the catalog with Zensical**, in English, published
-   from CI to GitHub Pages. A pre-build step (`botica rules export --format markdown`, not built
+6. **The standards website is generated from the catalog with Zensical**, in the manner of the
+   documentation of Ruff, flake8 or the PEPs: it documents the rules, the catalogs and the CES. It
+   is in English, published from CI to GitHub Pages. A pre-build step (`botica rules export --format markdown`, not built
    yet) renders one page per rule, so the site does not depend on Zensical's module/plugin
    system. Pages offer "edit this page" (opens a pull request) and a giscus thread.
 
@@ -48,8 +52,7 @@ would recreate the problem.
 Where the text of a CES and its number live. It is planned for a later stage of the botica lint
 work, and until then the convention of `AGENTS.md` stands (`CES-<issue#>`, one tracker issue per
 CES). Everything that depends on it is open: how numbers are assigned, the lifecycle of a CES
-(its statuses and transitions), what a proposal adds in its pull request, and whether the site has
-a page per CES. The change that decides it also states the new invariant in `AGENTS.md`, for the
+(its statuses and transitions). The change that decides it also states the new invariant in `AGENTS.md`, for the
 reason ADR 0001 gives.
 
 ## Considered options
