@@ -3,7 +3,9 @@ name: Site
 # Build the standards site with scripts/build_site.sh and publish it to GitHub Pages from `main`.
 # Any other branch, and a pull request, only builds it, so a broken link or a rule page that does
 # not render is caught before the merge. GitHub Pages must be set to publish from GitHub Actions
-# (Settings -> Pages -> Source), and the `github-pages` environment only accepts `main`.
+# (Settings -> Pages -> Source). Until `feat/botica-lint` is merged it publishes too: when it is
+# merged, remove the branch from the three places that name it here and from the branch policies
+# of the `github-pages` environment (Settings -> Environments).
 
 on:
   push:
@@ -55,14 +57,14 @@ jobs:
         run: scripts/build_site.sh
 
       - name: Upload the site
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/botica-lint'
         uses: actions/upload-pages-artifact@v5
         with:
           path: website/site
 
   deploy:
     name: deploy
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/botica-lint'
     needs: build
     runs-on: ubuntu-latest
     permissions:
