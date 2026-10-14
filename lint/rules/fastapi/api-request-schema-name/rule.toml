@@ -1,9 +1,9 @@
-id = "settings-base-class"
-code = "BTARCH003"
-summary = "A settings class extends BaseSettings, not BaseModel"
+id = "api-request-schema-name"
+code = "BTFAST003"
+summary = "Request schemas are named {Name}Request"
 status = "preview"
-since = "0.9.0"
-tags = ["config"]
+since = "0.10.0"
+tags = ["typing"]
 scope = "file"
 needs = "syntax"
 run-on = ["cli", "save", "type"]

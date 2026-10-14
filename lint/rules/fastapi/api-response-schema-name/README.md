@@ -1,6 +1,6 @@
 # api-response-schema-name · `BTFAST004`
 
-**Standard:** none yet · **Family:** fastapi · **Languages:** Python · **Status:** proposed, not in the catalog
+**Standard:** none yet · **Family:** fastapi · **Languages:** Python · **Status:** preview, off by default (set `preview = true` and select it)
 
 ## Directive
 

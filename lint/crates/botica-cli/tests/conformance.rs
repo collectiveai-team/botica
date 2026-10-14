@@ -14,9 +14,13 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
     assert_eq!(
         names,
         [
+            "api-request-schema-name",
+            "api-response-schema-name",
+            "api-schema-in-route-module",
             "api-schemas-extra-forbid",
             "arch-database-package",
             "cli-typed-framework",
+            "db-no-create-all",
             "file-size-guard",
             "invalid-suppression",
             "io-error",
@@ -31,6 +35,8 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
             "no-notebooks",
             "no-tests-in-package",
             "no-utils",
+            "settings-base-class",
+            "settings-direct-instantiation",
             "settings-module",
             "unused-suppression"
         ]

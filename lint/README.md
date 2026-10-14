@@ -39,16 +39,25 @@ the run itself failed (it wins over `1`). `--exit-zero` forgives only the findin
 | `BTSTRUC005` | [`no-tests-in-package`](rules/structure/no-tests-in-package/README.md) | none yet | Python: tests inside the package |
 | `BTARCH001` | [`arch-database-package`](rules/architecture/arch-database-package/README.md) | CES-18 | Python: tables and engines outside a `database` package |
 | `BTARCH002` | [`settings-module`](rules/architecture/settings-module/README.md) | CES-76 | Python: `os.getenv` and `os.environ` outside the settings module |
+| `BTARCH003` | [`settings-base-class`](rules/architecture/settings-base-class/README.md) | none yet | Python: a settings class that extends `BaseModel` instead of `BaseSettings` |
+| `BTARCH004` | [`settings-direct-instantiation`](rules/architecture/settings-direct-instantiation/README.md) | none yet | Python: a settings class built where it is used, not through `get_settings()` |
+| `BTARCH005` | [`db-no-create-all`](rules/architecture/db-no-create-all/README.md) | none yet | Python: `metadata.create_all()` outside tests |
 | `BTDM002` | [`no-dict-alias`](rules/data-models/no-dict-alias/README.md) | CES-79 | Python: a type alias for a raw `dict` |
 | `BTDM003` | [`no-dict-call-return`](rules/data-models/no-dict-call-return/README.md) | CES-79 | Python: `return dict(...)` |
 | `BTDM004` | [`no-dict-literal-return`](rules/data-models/no-dict-literal-return/README.md) | CES-79 | Python: returning a dict literal |
 | `BTDM005` | [`no-dict-return-annotation`](rules/data-models/no-dict-return-annotation/README.md) | CES-79 | Python: a function annotated to return `dict` |
 | `BTFAST001` | [`api-schemas-extra-forbid`](rules/fastapi/api-schemas-extra-forbid/README.md) | CES-4 | Python: API schemas without `extra="forbid"` |
+| `BTFAST002` | [`api-schema-in-route-module`](rules/fastapi/api-schema-in-route-module/README.md) | none yet | Python: a Pydantic schema defined in a route module |
+| `BTFAST003` | [`api-request-schema-name`](rules/fastapi/api-request-schema-name/README.md) | none yet | Python: a request schema not named `{Name}Request` |
+| `BTFAST004` | [`api-response-schema-name`](rules/fastapi/api-response-schema-name/README.md) | none yet | Python: a response schema not named `{Name}Response` |
 | `BTLOG001` | [`log-get-logger`](rules/logging/log-get-logger/README.md) | CES-45 | Python: `logging.getLogger` called directly |
 | `BTLOG002` | [`log-no-print`](rules/logging/log-no-print/README.md) | CES-46 | Python: `print()` in library code |
 | `BTLOG003` | [`no-console-log`](rules/logging/no-console-log/README.md) | none yet | TypeScript: `console.log` in library code |
 | `BTPROC001` | [`cli-typed-framework`](rules/process/cli-typed-framework/README.md) | CES-67 | Python: `argparse`, `click` and `sys.argv` |
 | `BT001`–`BT003` | `io-error`, `unused-suppression`, `invalid-suppression` | | the run and the suppressions |
+
+`BTARCH003`–`BTARCH005` and `BTFAST002`–`BTFAST004` have the status `preview` and are off by
+default: they run only with `preview = true` and when you select them.
 
 The rules written in ast-grep's YAML run too, unless you pass `--no-astgrep`. Each rule has a
 README with its directive, its reasons and how to silence it.

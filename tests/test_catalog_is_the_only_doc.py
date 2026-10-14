@@ -199,7 +199,7 @@ def test_a_proposed_rule_is_not_in_the_catalog_and_takes_a_free_code():
         data = tomllib.loads(rule_toml.read_text(encoding="utf-8"))
         proposed[data["id"]] = data["code"]
 
-    assert proposed, "no proposal found"
+    assert PROPOSALS.is_dir(), "the proposals directory moved"
     assert not set(proposed) & set(catalog), "a proposal is already in the catalog"
     assert not set(proposed.values()) & set(catalog.values()), "a proposal takes a used code"
     assert len(set(proposed.values())) == len(proposed), "two proposals share a code"

@@ -102,6 +102,57 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
     );
 }
 
+const PROPOSED: [&str; 6] = [
+    "api-request-schema-name",
+    "api-response-schema-name",
+    "api-schema-in-route-module",
+    "db-no-create-all",
+    "settings-base-class",
+    "settings-direct-instantiation",
+];
+
+#[test]
+fn the_preview_rules_stay_out_of_the_default_selection_and_of_all() {
+    let catalog = embedded();
+    let by_default = resolve(&catalog, "");
+    let by_all = resolve(&catalog, "select = []\nextend-select = [\"all\"]");
+    for slug in PROPOSED {
+        assert_eq!(reason(&by_default, slug), Reason::NotSelected, "{slug}");
+        assert_eq!(reason(&by_all, slug), Reason::OnlyPreview, "{slug}");
+    }
+    assert_eq!(active(&by_all).len(), 19);
+}
+
+#[test]
+fn the_preview_rules_run_once_selected_with_preview_on() {
+    let catalog = embedded();
+    let resolution = resolve(&catalog, "select = [\"BTFAST\"]\npreview = true");
+    assert_eq!(
+        active(&resolution),
+        [
+            "api-request-schema-name",
+            "api-response-schema-name",
+            "api-schema-in-route-module",
+            "api-schemas-extra-forbid"
+        ]
+    );
+    let resolution = resolve(
+        &catalog,
+        "select = []\nextend-select = [\"all\"]\npreview = true",
+    );
+    assert_eq!(active(&resolution).len(), 25);
+    assert_eq!(
+        active(&resolve(&catalog, "select = [\"BTARCH\"]\npreview = true")),
+        [
+            "arch-database-package",
+            "db-no-create-all",
+            "settings-base-class",
+            "settings-direct-instantiation",
+            "settings-module"
+        ]
+    );
+}
+
 #[test]
 fn a_rule_switched_off_in_its_own_section_stays_out() {
     let catalog = embedded();
