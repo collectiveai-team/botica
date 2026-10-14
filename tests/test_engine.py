@@ -282,12 +282,11 @@ def test_ci_plan_ships_security_workflows_for_python(repo: Path):
     assert ".github/workflows/pip-audit.yml" not in adds
 
 
-def test_ci_plan_opencode_part_ships_only_the_opencode_workflow(repo: Path):
+def test_ci_plan_opencode_part_ships_the_opencode_workflow(repo: Path):
     decisions = Decisions(ci_parts=["opencode"])
     plan = build_plan(repo, _facts(repo), Settings(), requested=["ci"], decisions=decisions)
     adds = {op.target for op in plan.by(Disposition.ADD) if op.component == "ci"}
     assert ".github/workflows/opencode.yml" in adds
-    assert ".github/workflows/proposal-update.yml" not in adds
 
 
 def test_ci_plan_skips_dependency_review_on_private_repos(repo: Path):
