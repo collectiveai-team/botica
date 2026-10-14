@@ -54,7 +54,7 @@ fn render(catalog: &Catalog) -> Vec<Page> {
         for rule in &group.rules {
             pages.push(Page {
                 path: Path::new(group.name).join(format!("{}.md", rule.id)),
-                text: format!("{}\n{}", front_matter(rule), rule.readme),
+                text: format!("{}\n{}", front_matter(group.name, rule), rule.readme),
             });
         }
     }
@@ -96,7 +96,7 @@ fn json(value: &impl serde::Serialize) -> String {
     serde_json::to_string(value).expect("a rule field is JSON")
 }
 
-fn front_matter(rule: &Rule) -> String {
+fn front_matter(group: &str, rule: &Rule) -> String {
     let mut lines = vec![
         format!("rule: {}", json(&rule.id)),
         format!("code: {}", json(&rule.code)),
@@ -116,6 +116,10 @@ fn front_matter(rule: &Rule) -> String {
         format!("languages: {}", json(&rule.languages())),
         format!("tags: {}", json(&rule.tags)),
         format!("aliases: {}", json(&rule.aliases)),
+        format!(
+            "readme: {}",
+            json(&format!("{group}/{}/README.md", rule.id))
+        ),
     ]);
     format!("---\n{}\n---\n", lines.join("\n"))
 }

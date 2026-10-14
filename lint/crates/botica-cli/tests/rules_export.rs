@@ -98,6 +98,7 @@ fn a_page_is_the_front_matter_of_the_rule_followed_by_its_readme() {
          languages: [\"python\"]\n\
          tags: [\"typing\"]\n\
          aliases: []\n\
+         readme: \"fastapi/api-schemas-extra-forbid/README.md\"\n\
          ---\n\
          \n\
          {}",
@@ -122,6 +123,7 @@ fn a_rule_of_botica_itself_has_no_family_and_a_rule_without_a_standard_has_no_ce
          languages: [\"*\"]\n\
          tags: []\n\
          aliases: []\n\
+         readme: \"botica/io-error/README.md\"\n\
          ---\n\
          \n\
          {}",

@@ -5,7 +5,8 @@ name: Site
 # not render is caught before the merge. GitHub Pages must be set to publish from GitHub Actions
 # (Settings -> Pages -> Source). Until `feat/botica-lint` is merged it publishes too: when it is
 # merged, remove the branch from the three places that name it here and from the branch policies
-# of the `github-pages` environment (Settings -> Environments).
+# of the `github-pages` environment (Settings -> Environments), and replace it with `main` in the
+# two addresses of "edit this page" (`edit_uri` and `catalog_uri` of website/zensical.toml).
 
 on:
   push:

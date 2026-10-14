@@ -2,6 +2,16 @@
 site_name = "botica"
 site_description = "The rules of botica, one page each."
 site_url = "https://collectiveai-team.github.io/botica/"
+repo_url = "https://github.com/collectiveai-team/botica"
+
+# Where "edit this page" opens: a page of `docs_dir` at `edit_uri`, a rule page at `catalog_uri`,
+# because it is written in the README of its rule, which the export names in `readme`, relative to
+# the catalog (`partials/actions.html` joins them). Until `feat/botica-lint` is merged the files
+# only exist on that branch: replace it with `main` in both when it is.
+edit_uri = "edit/feat/botica-lint/website/docs/"
+
+[project.extra.edit]
+catalog_uri = "edit/feat/botica-lint/lint/rules/"
 
 # The ids of the Discussions of this repository, as any giscus snippet carries them: they are public.
 # The category of a rule page is the one named like its family; `fallback` takes the pages whose
@@ -24,6 +34,7 @@ structure = "DIC_kwDOS6BBd84DIcb-" # betterleaks:allow
 language = "en"
 custom_dir = "overrides"
 features = [
+  "content.action.edit",
   "content.code.copy",
   "navigation.footer",
   "navigation.indexes",
