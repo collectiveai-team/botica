@@ -3,8 +3,26 @@ site_name = "botica"
 site_description = "The rules of botica, one page each."
 site_url = "https://collectiveai-team.github.io/botica/"
 
+# The ids of the Discussions of this repository, as any giscus snippet carries them: they are public.
+# The category of a rule page is the one named like its family; `fallback` takes the pages whose
+# family has none. `partials/comments.html` reads them.
+[project.extra.giscus]
+repo = "collectiveai-team/botica"
+repo_id = "R_kgDOS6BBdw" # betterleaks:allow
+fallback = { name = "General", id = "DIC_kwDOS6BBd84DIcYi" } # betterleaks:allow
+
+[project.extra.giscus.categories]
+architecture = "DIC_kwDOS6BBd84DIcbn" # betterleaks:allow
+botica = "DIC_kwDOS6BBd84DIcb_" # betterleaks:allow
+data-models = "DIC_kwDOS6BBd84DIcbo" # betterleaks:allow
+fastapi = "DIC_kwDOS6BBd84DIcbv" # betterleaks:allow
+logging = "DIC_kwDOS6BBd84DIcb2" # betterleaks:allow
+process = "DIC_kwDOS6BBd84DIcb9" # betterleaks:allow
+structure = "DIC_kwDOS6BBd84DIcb-" # betterleaks:allow
+
 [project.theme]
 language = "en"
+custom_dir = "overrides"
 features = [
   "content.code.copy",
   "navigation.footer",
