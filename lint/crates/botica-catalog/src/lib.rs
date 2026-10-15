@@ -3,6 +3,7 @@ mod embedded;
 mod issue;
 mod load;
 mod model;
+mod readme;
 mod validate;
 
 pub use validate::is_kebab_case;
@@ -14,3 +15,4 @@ pub use model::{
     Event, Family, Implementation, Kind, Lifecycle, Needs, OptionSpec, OptionType, Rule, RunOn,
     Runtime, Scope, Severity, Status,
 };
+pub use readme::Section;

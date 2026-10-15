@@ -6,6 +6,7 @@ use anyhow::{Context, Result};
 use botica_catalog::{Catalog, Rule, OWN_RULES_DIR};
 use clap::{Args, ValueEnum};
 
+use crate::catalog_json;
 use crate::rule_page::{self, added_in, file_name, group_of, word};
 
 const OWN_RULES_DESCRIPTION: &str =
@@ -28,6 +29,8 @@ pub struct ExportArgs {
 enum Format {
     /// One page per rule and an index, for the standards site.
     Markdown,
+    /// The whole catalog in one file, `catalog.json`.
+    Json,
 }
 
 struct Page {
@@ -45,6 +48,10 @@ pub fn run(args: &ExportArgs) -> Result<()> {
     let catalog = Catalog::embedded()?;
     let pages = match args.format {
         Format::Markdown => render(&catalog),
+        Format::Json => vec![Page {
+            path: PathBuf::from("catalog.json"),
+            text: catalog_json::render(&catalog),
+        }],
     };
     write_pages(&args.output, &pages)
 }

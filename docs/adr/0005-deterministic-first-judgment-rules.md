@@ -98,7 +98,7 @@ no check at all.
 
 ## Not decided
 
-- The formats of `botica rules export` other than `abide`. The order is `json`, `agents-md`,
+- The formats of `botica rules export` other than `json` and `abide`. The order is `agents-md`,
   `skill`, `continue` and `abide`.
 - Who serves the API of TypeSafe for a local model.
 - The classification of each standard marked `[judgment]`, one pull request per standard.
@@ -130,6 +130,9 @@ no check at all.
   the level and the channel of a suppression of a judgment rule.
 - `botica rules export` gains `--format abide` and `--check`, and `botica rules test` gains
   `--judge abide`.
+- `botica rules export --format json` writes `catalog.json`, which the other exports read: its
+  `schema_version`, the families, and each rule in the order of its code with every field of its
+  `rule.toml`, `added`, `since`, the path of its README and the sections of the README.
 - The index of rules on the site needs a search with filters by kind, family, status and language,
   as Ruff's has.
 - The README of each rule follows the template of its kind, and the section that lists what a rule

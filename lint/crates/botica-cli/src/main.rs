@@ -1,3 +1,4 @@
+mod catalog_json;
 mod explain_cmd;
 mod extension;
 mod lint_cmd;

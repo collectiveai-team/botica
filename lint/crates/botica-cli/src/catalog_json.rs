@@ -1,0 +1,161 @@
+use std::collections::BTreeMap;
+
+use botica_catalog::{
+    Catalog, Family, Implementation, Kind, Needs, OptionSpec, Rule, RunOn, Runtime, Scope, Section,
+    Severity, Status,
+};
+use serde::Serialize;
+
+use crate::rule_page::group_of;
+
+const SCHEMA_VERSION: u32 = 1;
+
+/// The catalog as one JSON document, for the exports that read it.
+#[derive(Serialize)]
+struct CatalogView<'a> {
+    schema_version: u32,
+    families: Vec<&'a Family>,
+    rules: Vec<RuleView<'a>>,
+}
+
+/// A rule with every field of its `rule.toml`, the releases that added it and gave it its status,
+/// the path of its README relative to the catalog, and the sections of the README.
+#[derive(Serialize)]
+struct RuleView<'a> {
+    rule: &'a str,
+    code: &'a str,
+    family: Option<&'a str>,
+    standard: Option<&'a str>,
+    summary: &'a str,
+    status: Status,
+    added: Option<String>,
+    since: Option<String>,
+    aliases: &'a [String],
+    replaces: Option<&'a str>,
+    tags: &'a [String],
+    files: &'a [String],
+    ignores: &'a [String],
+    prefilter: Option<&'a str>,
+    scope: Scope,
+    needs: Needs,
+    run_on: &'a [RunOn],
+    default_enabled: bool,
+    default_severity: Severity,
+    dependencies: &'a [String],
+    options: &'a BTreeMap<String, OptionSpec>,
+    implementations: Vec<ImplementationView<'a>>,
+    readme: String,
+    sections: Vec<Section>,
+}
+
+/// An implementation with the status it runs with: its own, or the status of its rule.
+#[derive(Serialize)]
+struct ImplementationView<'a> {
+    kind: Kind,
+    runtime: Option<Runtime>,
+    languages: &'a [String],
+    status: Status,
+    file: Option<&'a str>,
+}
+
+impl<'a> RuleView<'a> {
+    fn new(catalog: &Catalog, rule: &'a Rule) -> Self {
+        let lifecycle = catalog.lifecycle(rule);
+        Self {
+            rule: &rule.id,
+            code: &rule.code,
+            family: rule.family.as_deref(),
+            standard: rule.standard.as_deref(),
+            summary: &rule.summary,
+            status: rule.status,
+            added: lifecycle.added,
+            since: lifecycle.since,
+            aliases: &rule.aliases,
+            replaces: rule.replaces.as_deref(),
+            tags: &rule.tags,
+            files: &rule.files,
+            ignores: &rule.ignores,
+            prefilter: rule.prefilter.as_deref(),
+            scope: rule.scope,
+            needs: rule.needs,
+            run_on: &rule.run_on,
+            default_enabled: rule.default_enabled,
+            default_severity: rule.default_severity,
+            dependencies: &rule.dependencies,
+            options: &rule.options,
+            implementations: rule
+                .implementations
+                .iter()
+                .map(|implementation| ImplementationView::new(rule, implementation))
+                .collect(),
+            readme: format!("{}/{}/README.md", group_of(rule), rule.id),
+            sections: rule.sections(),
+        }
+    }
+}
+
+impl<'a> ImplementationView<'a> {
+    fn new(rule: &Rule, implementation: &'a Implementation) -> Self {
+        Self {
+            kind: implementation.kind,
+            runtime: implementation.runtime,
+            languages: &implementation.languages,
+            status: rule.status_of(implementation),
+            file: implementation.file.as_deref(),
+        }
+    }
+}
+
+pub fn render(catalog: &Catalog) -> String {
+    let document = CatalogView {
+        schema_version: SCHEMA_VERSION,
+        families: catalog.families().iter().collect(),
+        rules: catalog
+            .rules()
+            .iter()
+            .map(|rule| RuleView::new(catalog, rule))
+            .collect(),
+    };
+    let mut text = serde_json::to_string_pretty(&document).expect("the catalog is JSON");
+    text.push('\n');
+    text
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use botica_catalog::SourceFile;
+
+    fn file(path: &str, text: &str) -> SourceFile {
+        SourceFile {
+            path: path.to_owned(),
+            text: text.to_owned(),
+        }
+    }
+
+    #[test]
+    fn a_rule_promoted_after_its_first_release_says_since_which_release_it_is_stable() {
+        let rule = "id = \"no-utils\"\ncode = \"BTSTRUC001\"\nsummary = \"s\"\n\
+                    status = \"stable\"\nscope = \"file\"\nneeds = \"path\"\n\
+                    run-on = [\"cli\"]\ndefault-enabled = true\ndefault-severity = \"error\"\n\n\
+                    [[implementations]]\nkind = \"native\"\nlanguages = [\"*\"]\n";
+        let history =
+            "[[event]]\nversion = \"0.1.0\"\nrule = \"no-utils\"\nstatus = \"preview\"\n\n\
+                       [[event]]\nversion = \"0.2.0\"\nrule = \"no-utils\"\nstatus = \"stable\"\n";
+        let catalog = Catalog::from_files(&[
+            file(
+                "structure/family.toml",
+                "code = \"STRUC\"\ndescription = \"d\"\n",
+            ),
+            file("structure/no-utils/rule.toml", rule),
+            file("structure/no-utils/README.md", "## Directive\n"),
+            file("history.toml", history),
+        ])
+        .expect("the catalog loads");
+
+        let document: serde_json::Value = serde_json::from_str(&render(&catalog)).expect("JSON");
+
+        assert_eq!(document["rules"][0]["added"], "0.1.0");
+        assert_eq!(document["rules"][0]["since"], "0.2.0");
+    }
+}
