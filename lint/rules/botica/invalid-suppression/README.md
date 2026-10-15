@@ -8,6 +8,9 @@ It applies to both channels: `# botica: ignore[...]` / `# botica: ignore-file[..
 - A malformed directive is reported on the directive: `botica: ignore` without `[...]`, an empty
   `[]`, a `[` that is never closed, or a verb other than `ignore` and `ignore-file`.
 - IDs are exact: a slug, a code or an alias. A family (`BTSTRUC`) or a prefix is unknown.
+- A judgment rule is suppressed for a whole file, with a reason:
+  `# botica: ignore-file[<slug>] -- <reason>`. A suppression of a judgment rule on a line, one
+  written as `noqa`, and one with no reason after `--` are reported on the ID.
 
 A known rule that is not active in that file, or that has nothing to silence on that line, is not
 invalid: it is `unused-suppression`.

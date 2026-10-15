@@ -37,6 +37,8 @@ pub(crate) enum Directive {
         channel: Channel,
         ids: Vec<Id>,
         span: Range<usize>,
+        /// Whether `--` and some text follow the directive.
+        reason: bool,
     },
     Malformed {
         span: Range<usize>,
@@ -110,6 +112,13 @@ fn skip_blanks(body: &str, from: usize) -> usize {
     from + (rest.len() - rest.trim_start_matches([' ', '\t']).len())
 }
 
+/// Whether the text after a directive is `--` followed by a reason.
+fn has_reason(rest: &str) -> bool {
+    rest.trim_start()
+        .strip_prefix("--")
+        .is_some_and(|reason| !reason.trim().is_empty())
+}
+
 /// Where to resume after a directive: the rest of the comment is a reason when it starts with `--`.
 fn after_reason(body: &str, from: usize) -> usize {
     if body[from..].trim_start().starts_with("--") {
@@ -149,6 +158,7 @@ fn list(
             channel: Channel::Botica,
             ids,
             span,
+            reason: has_reason(&body[close + 1..]),
         }
     });
     after_reason(body, close + 1)
@@ -235,6 +245,7 @@ fn noqa(body: &str, start: usize, base: usize, out: &mut Vec<Directive>) -> usiz
             channel: Channel::Noqa,
             ids,
             span: base + start..base + end,
+            reason: false,
         });
     }
     i.max(after)
@@ -254,6 +265,7 @@ fn ast_grep(body: &str, start: usize, base: usize, out: &mut Vec<Directive>) -> 
             channel: Channel::AstGrep,
             ids,
             span: base + start..base + body.trim_end().len(),
+            reason: false,
         });
     }
     body.len()

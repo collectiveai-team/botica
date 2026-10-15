@@ -1,7 +1,8 @@
 ## Directive
 
 A suppression comment that silences nothing is a warning. It applies to both channels:
-`# botica: ignore[...]` and `# noqa: BT...`.
+`# botica: ignore[...]` and `# noqa: BT...`. A suppression of a judgment rule is never unused:
+`botica lint` never runs a judgment rule, and a judge reads the suppression.
 
 ## Why
 

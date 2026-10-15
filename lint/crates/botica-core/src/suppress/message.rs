@@ -45,3 +45,14 @@ pub(super) fn unused_message(
     }
     Some(message)
 }
+
+pub(super) fn judgment_on_a_line(name: &str, slug: &str) -> String {
+    format!(
+        "`{name}` is a judgment rule: suppress it for the whole file with \
+         `botica: ignore-file[{slug}] -- <reason>`"
+    )
+}
+
+pub(super) fn judgment_without_reason(name: &str) -> String {
+    format!("A suppression of the judgment rule `{name}` needs a reason after `--`")
+}

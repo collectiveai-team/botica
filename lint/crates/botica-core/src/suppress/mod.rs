@@ -9,7 +9,7 @@ use crate::diagnostic::{Diagnostic, Severity};
 use crate::document::Document;
 use aho_corasick::AhoCorasick;
 use directive::{Channel, Channels, Directive, Malformed, Scope};
-use message::{malformed_message, unused_message};
+use message::{judgment_on_a_line, judgment_without_reason, malformed_message, unused_message};
 use scan::{allows_noqa, scan, Syntax};
 use std::collections::{HashMap, HashSet};
 use std::ops::Range;
@@ -26,6 +26,8 @@ pub struct Policy {
     spellings: HashMap<String, String>,
     /// Rules run by the ast-grep set: they are active in a file when the set covers it.
     astgrep: HashSet<String>,
+    /// Judgment rules: suppressed by file only, with a reason, and never unused.
+    judgment: HashSet<String>,
     external: Option<External>,
     compat_ast_grep_ignore: bool,
     unused: Option<Severity>,
@@ -47,6 +49,7 @@ impl Policy {
         Self {
             spellings: HashMap::new(),
             astgrep: HashSet::new(),
+            judgment: HashSet::new(),
             external: None,
             compat_ast_grep_ignore: false,
             unused: None,
@@ -65,6 +68,12 @@ impl Policy {
                 .insert((*spelling).to_owned(), slug.to_owned());
         }
         self
+    }
+
+    /// A judgment rule a suppression may name: a judge evaluates it, and botica never runs it.
+    pub fn with_judgment_rule(mut self, slug: &str, spellings: &[&str]) -> Self {
+        self.judgment.insert(slug.to_owned());
+        self.with_rule(slug, spellings)
     }
 
     /// Rules of the ast-grep set, known by slug only.
@@ -146,6 +155,7 @@ struct Found {
     comment_only: bool,
     span: Range<usize>,
     tokens: Vec<Token>,
+    reason: bool,
 }
 
 impl Policy {
@@ -224,6 +234,7 @@ impl Policy {
                     channel,
                     ids,
                     span,
+                    reason,
                 } => {
                     let tokens = ids
                         .into_iter()
@@ -248,6 +259,7 @@ impl Policy {
                         comment_only: is_comment_only(doc.text().unwrap_or_default(), span.start),
                         span,
                         tokens,
+                        reason,
                     });
                 }
             }
@@ -352,6 +364,11 @@ impl Policy {
             for (span, reason) in &malformed {
                 about.push(self.about(doc, INVALID, severity, span, malformed_message(reason)));
             }
+            for directive in &directives {
+                for (token, message) in self.judgment_problems(directive) {
+                    about.push(self.about(doc, INVALID, severity, &token.span, message));
+                }
+            }
         }
         if let Some(severity) = self.unused {
             for directive in directives.iter().filter(|d| d.channel != Channel::AstGrep) {
@@ -362,7 +379,11 @@ impl Policy {
                     let Some(slug) = token.slug.as_deref() else {
                         continue;
                     };
-                    if token.used || slug == UNUSED || slug == INVALID {
+                    if token.used
+                        || slug == UNUSED
+                        || slug == INVALID
+                        || self.judgment.contains(slug)
+                    {
                         continue;
                     }
                     if !self.is_known_active(slug, is_active) {
@@ -387,6 +408,27 @@ impl Policy {
             }
         }
         *found = kept;
+    }
+
+    /// What is wrong with how a directive suppresses the judgment rules it names.
+    fn judgment_problems<'a>(&self, directive: &'a Found) -> Vec<(&'a Token, String)> {
+        directive
+            .tokens
+            .iter()
+            .filter_map(|token| {
+                let slug = token.slug.as_deref()?;
+                if !self.judgment.contains(slug) || directive.channel == Channel::AstGrep {
+                    return None;
+                }
+                if directive.scope == Scope::Line {
+                    Some((token, judgment_on_a_line(&token.name, slug)))
+                } else if !directive.reason {
+                    Some((token, judgment_without_reason(&token.name)))
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     fn is_known_active(&self, slug: &str, is_active: &dyn Fn(&str) -> bool) -> bool {
