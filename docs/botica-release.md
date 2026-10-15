@@ -12,7 +12,8 @@ A release does not need `main`: a tag runs the workflow as it is in the tagged c
 
 1. `test` and `repo-tests` run the `CI` suite (fmt, clippy, `cargo test`) and the
    repository's `Tests` suite (prek, pytest).
-2. `version` fails unless `X.Y.Z` equals `version` in `[workspace.package]` of `lint/Cargo.toml`.
+2. `version` fails unless `X.Y.Z` equals `version` in `[workspace.package]` of `lint/Cargo.toml`
+   and `scripts/stamp_release.py check` finds every status of the catalog sealed in the history.
 3. `draft` creates a draft GitHub Release.
 4. `wheels` builds a wheel per platform and attaches it, with a `.sha256`, to the draft: Linux
    x64 and arm64 (glibc and musl), macOS arm64 and x64, Windows x64.
@@ -65,7 +66,7 @@ before the first tag and publish nothing you have not looked at.
    `lionelchamorro`. A ruleset takes roles, teams and apps as exceptions, not single people, so who
    may release is who is in that team (**Organization → Teams → botique**); to change the rule
    itself, **Settings → Rules → Rulesets**. Repository admins can edit the ruleset: it is a gate
-   against mistakes, not a lock against an admin. Moving a tag after a failed release (step 4 of
+   against mistakes, not a lock against an admin. Moving a tag after a failed release (step 5 of
    "Each release") also needs the exception.
 
 The `botica-pre-commit` project is **not** created on PyPI: prek installs the mirror by cloning
@@ -84,14 +85,17 @@ builds are accepted. A wheel built on your machine for a rehearsal needs
 1. Set `version` in `[workspace.package]` of `lint/Cargo.toml`, and run `cargo update --workspace`
    in `lint/`. Without it the build, which uses `--locked`, fails; the change to `Cargo.lock` is a
    few lines for the crates of the project.
-2. Set the same version and the `botica==` pin in `lint/distribution/botica-pre-commit/pyproject.toml`,
+2. Seal the history: `uv run --no-project --with cyclopts python scripts/stamp_release.py stamp X.Y.Z` appends
+   to `lint/rules/history.toml` the status of each rule that no release has recorded. The `version`
+   job runs `check` and fails the tag while one is left.
+3. Set the same version and the `botica==` pin in `lint/distribution/botica-pre-commit/pyproject.toml`,
    and the `rev` in its README. Commit (`chore(lint): release X.Y.Z`). The branch does not have to
    be pushed: the tag carries the commit, and the workflow runs the `CI` suite itself.
-3. Tag and push: `git tag -a vX.Y.Z -m "botica X.Y.Z" && git push origin vX.Y.Z`.
-4. Watch the run. If a platform fails, fix it and move the tag, or delete the draft release and the
+4. Tag and push: `git tag -a vX.Y.Z -m "botica X.Y.Z" && git push origin vX.Y.Z`.
+5. Watch the run. If a platform fails, fix it and move the tag, or delete the draft release and the
    tag and start again. Once `publish` has run, treat the version as final.
-5. Approve the `pypi` environment when it asks.
-6. Update the mirror, below.
+6. Approve the `pypi` environment when it asks.
+7. Update the mirror, below.
 
 ## The mirror repository
 

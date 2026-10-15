@@ -54,6 +54,15 @@ jobs:
             exit 1
           fi
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: "0.11.12"
+          enable-cache: false
+
+      - name: Check that the history seals every status of the catalog
+        run: uv run --no-project --python 3.14 --with cyclopts python scripts/stamp_release.py check
+
   draft:
     name: draft release
     needs: version
