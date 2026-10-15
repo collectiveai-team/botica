@@ -1,9 +1,7 @@
 ## Directive
 
-Don't use `print()` in Python or `console.log()` in TypeScript in importable library code. Emit
-through the logger of the project: the house `get_logger` in Python
-(`.agents/snippets/core/logger.py`), and the logger the project uses in TypeScript. A warning by
-default.
+Importable library code logs. It does not call `print()` in Python or `console.log()` in
+TypeScript. A warning by default.
 
 ## Why
 
@@ -13,13 +11,26 @@ lets the application decide where output goes.
 
 ## What is exempt
 
-Python: entrypoints, where stdout is the product: `__main__.py`, `cli.py`, anything under a `cli/`
-directory, `conftest.py`, anything under `tests/`, and any `print()` inside an
-`if __name__ == "__main__":` guard.
+### Python
 
-TypeScript: a call inside a `catch` clause, and the files named `*.test.ts`.
+The rule skips:
+
+- `__main__.py`, `cli.py` and every file under a `cli/` directory, because stdout is their output.
+- `conftest.py` and every file under `tests/`.
+- A `print()` inside an `if __name__ == "__main__":` block.
+
+### TypeScript
+
+The rule skips:
+
+- A `console.log()` inside a `catch` clause.
+- Files named `*.test.ts`.
 
 ## Do
+
+### Python
+
+Log through the house `get_logger` (`.agents/snippets/core/logger.py`):
 
 ```python
 log = get_logger(__name__)
@@ -29,6 +40,10 @@ def fetch(key):
     log.info("cache miss", key=key)
 ```
 
+### TypeScript
+
+Log through the logger of the project:
+
 ```ts
 export function run(): void {
   logger.info("running");
@@ -37,10 +52,14 @@ export function run(): void {
 
 ## Don't
 
+### Python
+
 ```python
 def fetch(key):
     print("cache miss", key)
 ```
+
+### TypeScript
 
 ```ts
 export function run(): void {
@@ -50,13 +69,19 @@ export function run(): void {
 
 ## Suppression
 
-Python takes a comment with the slug and a `noqa` with the code. TypeScript takes the comment with
-the slug.
+### Python
+
+Two comments silence one line. The first names the rule by its slug, the second by its code, and
+the text after `--` is the reason.
 
 ```python
 print("cache miss", key)  # botica: ignore[log-no-print]
 print("cache miss", key)  # noqa: BTLOG002 -- reason
 ```
+
+### TypeScript
+
+One comment silences one line. It names the rule by its slug.
 
 ```ts
 console.log("running"); // botica: ignore[log-no-print]
