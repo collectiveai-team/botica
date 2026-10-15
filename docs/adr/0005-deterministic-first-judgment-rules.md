@@ -133,6 +133,13 @@ no check at all.
   the level and the channel of a suppression of a judgment rule.
 - `botica rules export` gains `--format abide` and `--check`, and `botica rules test` gains
   `--judge abide`.
+- `botica rules new <family>/<slug> --kind <kind>` writes a folder that the catalog loads: a
+  `rule.toml` in preview and off by default with the next code of the family, a README with the
+  required sections of its template, empty fixtures and, for `ast-grep`, the YAML of its language.
+  It takes `ast-grep` and `extension`; a `native` rule has its code in botica-core, and the
+  `judgment` and `external` kinds come with their fields of `rule.toml`. Nothing runs an
+  `extension` rule of the catalog yet: `botica lint --ext <command>` runs an extension by its
+  command.
 - `botica rules export --format json` writes `catalog.json`, which the other exports read: its
   `schema_version`, the families, and each rule in the order of its code with every field of its
   `rule.toml`, `added`, `since`, the path of its README and the sections of the README.

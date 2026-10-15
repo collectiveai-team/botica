@@ -144,3 +144,22 @@ fn no_ruff_prefix_starts_with_the_botica_header() {
         "ruff now owns prefixes that start with BT: {clashes:?}"
     );
 }
+
+#[test]
+fn the_catalog_read_from_its_directory_is_the_built_in_one() {
+    let files = botica_catalog::read_files(&rules_dir()).expect("the rules directory is read");
+    let read = Catalog::from_files(&files).unwrap_or_else(|error| panic!("{error}"));
+
+    let ids = |catalog: &Catalog| -> Vec<String> {
+        catalog.rules().iter().map(|rule| rule.id.clone()).collect()
+    };
+    assert_eq!(ids(&read), ids(&embedded()));
+    assert_eq!(read.families(), embedded().families());
+    let yaml = read
+        .resolve("log-no-print")
+        .expect("log-no-print")
+        .implementations[0]
+        .source
+        .clone();
+    assert!(yaml.is_some_and(|text| text.starts_with("id: log-no-print\n")));
+}
