@@ -12,8 +12,8 @@ mistake.
 
 ## Why
 
-A raw `dict` hides the shape of a boundary from callers and from the type checker, and refactors
-drift silently. A named type makes the contract explicit.
+A raw `dict` carries no field names or types for callers and the type checker. A named type
+declares them.
 
 ## Exceptions
 

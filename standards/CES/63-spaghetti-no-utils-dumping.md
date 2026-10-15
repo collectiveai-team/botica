@@ -11,8 +11,8 @@ allowed: a directory is a namespace and forces its contents to be named.
 
 ## Why
 
-A catch-all file accretes unrelated helpers with no cohesion. A name that says what the module
-holds keeps it discoverable.
+A file named `utils.py` collects unrelated helpers. A module named for what it holds is found by
+that name.
 
 ## Exceptions
 

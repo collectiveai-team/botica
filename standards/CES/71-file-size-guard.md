@@ -10,6 +10,5 @@ module along a real seam before it crosses the hard limit.
 
 ## Why
 
-The length of a file is a cheap proxy for too many responsibilities. The thresholds trigger
-judgment, they do not replace it: a persistently large file is a design smell, and the fix is to
-extract a cohesive unit, not to raise the threshold.
+The length of a file is a proxy for the number of responsibilities it holds. A file that stays over
+a threshold is split by extracting a cohesive unit.

@@ -19,6 +19,6 @@ class CreateUserRequest(BaseModel):
 
 ## Why
 
-`extra="forbid"` rejects unexpected fields, so a client typo or a drift of the contract fails
-loudly instead of being dropped without notice. Scoping the standard by placement keeps it
-deterministic: nobody has to guess which models are public.
+`extra="forbid"` rejects unexpected fields, so a client typo or a drift of the contract returns a
+validation error. The standard is scoped by placement: a model is public when it lives in the
+schema modules of the API boundary.

@@ -6,14 +6,13 @@ title: Typed, declarative command lines
 ## Directive
 
 A command line program uses a typed, declarative framework, Typer or Cyclopts, and renders with
-Rich. It does not parse arguments by hand with `argparse`, `click` or `sys.argv`. Configuration
-that arrives from the environment or flags goes through `pydantic-settings`.
+Rich. The framework parses the arguments, and `argparse`, `click` and `sys.argv` are not used for
+that. Configuration that arrives from the environment or flags goes through `pydantic-settings`.
 
 ## Why
 
-A typed framework gives `--help`, coercion and validation for free and keeps an entry point
-readable as its surface grows. `click` is caught on purpose: Typer is built on it, and importing it
-directly bypasses the typed layer. The choice between Typer and Cyclopts is open.
+A typed framework provides `--help`, coercion and validation. Typer is built on `click`, and a
+direct import of `click` bypasses the typed layer. Typer and Cyclopts are both accepted.
 
 ## Exceptions
 

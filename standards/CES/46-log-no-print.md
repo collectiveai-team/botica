@@ -10,5 +10,5 @@ Library code logs and does not call `print`. Entry points of a command line prog
 
 ## Why
 
-`print` cannot be filtered, redirected by level or given context. It also pollutes the output of
-whoever imports the library.
+`print` writes to stdout with no level and no context. A program that imports the library receives
+that output.

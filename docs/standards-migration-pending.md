@@ -25,8 +25,7 @@ waits for the decisions below. Nothing here has been deleted.
    shipped). What remains once that is removed is a shorter standard, and CES-107 may be left with
    only its first paragraph.
 5. **The title convention.** Some titles carry the tool in parentheses (`Dependency hygiene
-   (deptry)`, `The house logger (core/logger.py)`), others do not. The sidebar now shows the
-   title, so the convention shows.
+   (deptry)`, `The house logger (core/logger.py)`), others do not. The sidebar shows the title.
 
 ## The smells
 
@@ -57,7 +56,7 @@ waits for the decisions below. Nothing here has been deleted.
 | 74 core-logger | S1 `Ships as: snippet`; S2 "the scaffolder never writes into your package path"; S3 `.agents/snippets/core/logger.py` twice; S5 `Behaviour`, `Usage`, `Adapting`; S6 one line |
 | 75 agents-conventional-commits | S1 `Enforced by: prek commit-msg hook + CI check`; S4 `feat(standards): ship the logging family (#81)` and `fix(engine): defer existing AGENTS.md instead of overwriting` are commits of the scaffolder; S5 `Allowed types`, `Suppression` |
 | 91 no-ai-coauthorship | S1 `Enforced by`; S5 `Two enforcement layers`, `Recommended tool settings`, `Suppression`; S6 nine lines |
-| 107 skills-manifest | S1 `Enforced by: scaffolding check`; S2 throughout: `scaffolding install`, `scaffolding check`, "seed", "restore ops", "the baseline in `components.py`", "never write it from scaffolding"; S3 `components.py`; S5 nine sections; S7 "Measured against `skills@1.5.22`", "Measured: adding `tdd triage no-such-skill-xyz`"; S8 "house baseline". It is a description of the scaffolder more than a standard (decision 4) |
+| 107 skills-manifest | S1 `Enforced by: scaffolding check`; S2 throughout: `scaffolding install`, `scaffolding check`, "seed", "restore ops", "the baseline in `components.py`", "never write it from scaffolding"; S3 `components.py`; S5 nine sections; S7 "Measured against `skills@1.5.22`", "Measured: adding `tdd triage no-such-skill-xyz`"; S8 "house baseline". Most of its text describes the scaffolder (decision 4) |
 | 109 dep-hygiene-deptry | S1 `Enforced by: prek hook`; S2 "This tool's own `pyproject.toml`", `extend_exclude = ["scaffolding/templates", "skills"]` and the paragraph that explains it; S5 `Scope and false positives`, `Migration`, `Suppression` |
 | 110 cognitive-complexity-complexipy | S1; S3 `pyproject-template.toml`; S5 `Threshold`, `When you hit a violation`, `Migration`, `Suppression`; S6 one line; S8 "this house's", "the shipped hook" |
 | 111 test-order-randomization | S1 `Enforced by: dev dependency (pytest plugin)`; S5 `Migration`, `Suppression`, `When a test fails under randomization` |
@@ -71,8 +70,6 @@ waits for the decisions below. Nothing here has been deleted.
 - The 11 standards written from their issues (4, 18, 32, 45, 46, 63, 67, 71, 76, 77, 79) use the
   same `## Directive` heading (S5) that `standards/CES/index.md` does not describe. Either the
   index or the 31 files must change.
-- `standards/CES/index.md` and ADR 0004 say that a standard can have several rules "from different
-  families". No standard does today: CES-79 and CES-32 have several, all of one family.
-- The rule page says `Standard: CES-71` as plain text. Linking it to the page of the standard needs
-  botica to know where the standards live, which ADR 0004 rules out; the list at the end of the
-  page of the standard is the link in the other direction.
+- The rule page says `Standard: CES-71` as plain text. A link to the page of the standard needs
+  botica to know where the standards live (ADR 0004 gives that to the site); the list at the end of
+  the page of the standard is the link in the other direction.

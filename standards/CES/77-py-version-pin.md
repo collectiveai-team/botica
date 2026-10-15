@@ -5,8 +5,8 @@ title: The Python version is a suggestion
 
 ## Directive
 
-The `requires-python` of a project is a suggestion and never a gate of CI or of a hook. The house
-default for a new repository is 3.14. The existing pin of a repository is honoured as it is
+The `requires-python` of a project is a suggestion; no CI job or hook checks it. The default for a
+new repository is 3.14. The existing pin of a repository is honoured as it is
 (CES-30).
 
 ## Why

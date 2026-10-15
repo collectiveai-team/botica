@@ -5,8 +5,8 @@ title: Relational persistence is its own package
 
 ## Directive
 
-Relational persistence is a unit of its own named `database`, not `persistence`, not `meta`, and
-not inside `core`. It holds only SQL concerns:
+Relational persistence is a unit of its own named `database`, outside `core`. It holds only SQL
+concerns:
 
 ```text
 database/
@@ -17,10 +17,11 @@ database/
 └── settings/       database configuration
 ```
 
-`core` keeps the pure domain models and the repository protocol; `database` keeps the tables and
+`core` holds the pure domain models and the repository protocol; `database` holds the tables and
 the concrete repositories. `sqlmodel`, `sqlalchemy` and `alembic` are imported only there.
 
 ## Why
 
-Confining the persistence libraries to one package keeps the domain testable without a database
-and makes the boundary between the domain and its storage visible in the layout.
+The persistence libraries are imported in one package, so the domain imports no database library
+and its tests run without a database. The boundary between the domain and its storage is a
+directory.

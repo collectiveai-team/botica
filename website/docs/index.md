@@ -19,26 +19,21 @@ uvx botica rules --all     # every rule, active or not, and why
 uvx botica explain <rule>  # one rule, as it is configured here
 ```
 
-[How to install, configure and silence it](use.md){ .md-button .md-button--primary }
-[The rules](rules/index.md){ .md-button }
+- [Use](use.md): install, run, configure, silence a finding, run on every commit.
+- [Standards](standards/index.md): the requirements, in sets.
+- [Rules](rules/index.md): the checks of `botica lint`, by family.
 
 ## Standards and rules
 
-A **standard** says what is required and why. A **rule** is one way to check it: botica evaluates
-rules and knows nothing about standards, but a rule may name the standard it implements, and a
-standard can have several rules.
-
-- [Standards](standards/index.md) are written by hand, one file each, in sets. The
-  [CES](standards/CES/index.md), the Collective Engineering Standard, is the set of Collective.
-- [Rules](rules/index.md) are listed by family, one page each: what the rule asks, why, and how to
-  silence it.
+A standard is a requirement and its reason, written in `standards/<set>/<number>-<slug>.md`. A rule
+is a check that `botica lint` runs. The `rule.toml` of a rule names the standard it implements
+(`standard = "CES-71"`), and the page of a standard lists its rules at the end. The
+[CES](standards/CES/index.md) is the set of standards of Collective.
 
 ## Propose a change
 
-A standard changes through a pull request that carries the implementation of its rules. The
-discussion happens in [GitHub Discussions](https://github.com/collectiveai-team/botica/discussions)
-and is shown at the end of the page of each rule and each standard.
-[How to propose a standard](standards/index.md#propose-or-change-a-standard).
-
-A rule with the status `preview` is off by default: it runs only with `preview = true` in the
-configuration, and when it is selected.
+A change to a standard is a pull request with the file of the standard and the folders of its
+rules. The discussion is in
+[GitHub Discussions](https://github.com/collectiveai-team/botica/discussions), at the end of the
+page of each rule and each standard. The steps are in
+[Propose or change a standard](standards/index.md#propose-or-change-a-standard).

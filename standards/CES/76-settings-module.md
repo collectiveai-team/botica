@@ -20,5 +20,5 @@ def get_settings() -> DatabaseSettings:
 
 ## Why
 
-Configuration enters the process once, through a typed and validated object. Reading the
-environment everywhere hides what a package needs and makes it hard to test.
+Configuration enters the process once, through a typed and validated object, and the settings
+class of a package lists what the package needs.

@@ -2,10 +2,10 @@
 
 **Status:** proposed
 
-ADR 0002 left open where the text of a standard lives. A standard is a level above a rule: it says
-what is required, a rule is one way to check it. One standard can have several rules, from
-different families, and a rule can implement none. Botica evaluates rules and knows nothing about
-standards. Collective writes the CES, and another team can write standards of its own.
+ADR 0002 left open where the text of a standard lives. A standard states what is required; a rule
+is one way to check it. A standard has any number of rules, none included, and a rule names at most
+one standard. Botica evaluates rules. Collective writes the CES, and another team can write
+standards of its own.
 
 ## Decision
 

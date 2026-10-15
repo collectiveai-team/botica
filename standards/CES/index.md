@@ -23,8 +23,9 @@ The reason, in a few sentences.
 
 ## Examples
 
-What follows the standard and what does not.
+Code that follows the standard and code that breaks it.
 ```
 
-The rules that implement a standard are the ones whose `standard` field names it. A standard can
-have several rules, from different families, and a rule can implement no standard.
+The rules of a standard are the rules whose `standard` field names it, and the page of the standard
+lists them at the end. A standard has any number of rules, none included. A rule names at most one
+standard.

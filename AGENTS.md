@@ -186,6 +186,28 @@ Act on a finding by its severity. An **error** is fixed before committing. A **w
 only if your change introduced it; a warning that was already there is neither fixed nor reported.
 An **info** is ignored.
 
+## Writing documentation
+
+State what a thing is and what it does, in plain sentences that a file of this repository backs.
+The patterns below are the signs of text written by a model (source: the Wikipedia guide
+`Wikipedia:Signs of AI writing`); none of them goes into a page, a standard, an ADR or a
+commit message.
+
+- **Definition by negation:** "X does not …", "knows nothing about …", "not X but Y", "Y rather
+  than X", "no A, no B, just C". Say what X is.
+- **Purpose or effect clauses:** "so the review judges …", "which keeps …", "ensuring …",
+  "enabling …", "making it …". Say what happens, not what it is for.
+- **Significance words:** key, crucial, pivotal, robust, seamless, powerful, vibrant, enhance,
+  foster, leverage, landscape.
+- **Copula avoidance:** "serves as", "acts as", "features", "offers", "provides". Write "is" and
+  "has".
+- **Rule of three** lists of adjectives or short phrases, "X and Y" headings, and a closing
+  paragraph that repeats the section.
+- **Hedges and vague attribution:** "typically", "usually", "some", "often", "it is worth noting".
+- **Format:** bold lead-ins in list items, bold for emphasis, spaced em dashes, title case in
+  headings, call-to-action buttons.
+- **A claim with no file behind it:** if no file, command output or issue says it, leave it out.
+
 ## Domain docs
 
 Single-context — `CONTEXT.md` + `docs/adr/` at the repo root (created lazily).
