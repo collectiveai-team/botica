@@ -1,6 +1,6 @@
 id = "file-size-guard"
 code = "BTSTRUC001"
-ces = "CES-71"
+standard = "CES-71"
 summary = "Keep source files small"
 status = "stable"
 since = "0.1.0"

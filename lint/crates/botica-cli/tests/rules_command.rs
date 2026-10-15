@@ -161,11 +161,11 @@ fn json_describes_each_active_rule_with_its_resolved_settings() {
 }
 
 #[test]
-fn json_does_not_carry_the_ces_of_a_rule() {
-    let document = json(&project("json-ces", None), &["rules", "--json"]);
+fn json_does_not_carry_the_standard_of_a_rule() {
+    let document = json(&project("json-standard", None), &["rules", "--json"]);
     assert!(
-        rule(&document, "file-size-guard").get("ces").is_none(),
-        "the CES is documentation of the rule, not part of a public format"
+        rule(&document, "file-size-guard").get("standard").is_none(),
+        "the standard is documentation of the rule, not part of a public format"
     );
 }
 

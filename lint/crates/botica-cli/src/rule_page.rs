@@ -43,8 +43,8 @@ fn front_matter(rule: &Rule) -> String {
     if let Some(family) = &rule.family {
         lines.push(format!("family: {}", json(family)));
     }
-    if let Some(ces) = &rule.ces {
-        lines.push(format!("ces: {}", json(ces)));
+    if let Some(standard) = &rule.standard {
+        lines.push(format!("standard: {}", json(standard)));
     }
     lines.extend([
         format!("description: {}", json(&rule.summary)),
@@ -98,8 +98,8 @@ fn identity(rule: &Rule) -> String {
         Some(family) => format!("Family: {family}"),
         None => "Rule of botica itself".to_owned(),
     }];
-    if let Some(ces) = &rule.ces {
-        parts.push(format!("Standard: {ces}"));
+    if let Some(standard) = &rule.standard {
+        parts.push(format!("Standard: {standard}"));
     }
     let languages: Vec<&str> = rule
         .languages()

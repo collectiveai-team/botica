@@ -1,6 +1,6 @@
 id = "no-dict-literal-return"
 code = "BTDM004"
-ces = "CES-79"
+standard = "CES-79"
 summary = "No function returning a dict literal"
 status = "stable"
 since = "0.8.0"

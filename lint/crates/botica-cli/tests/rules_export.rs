@@ -92,7 +92,7 @@ fn a_page_is_the_front_matter_a_header_and_the_prose_of_its_readme() {
          rule: \"api-schemas-extra-forbid\"\n\
          code: \"BTFAST001\"\n\
          family: \"fastapi\"\n\
-         ces: \"CES-4\"\n\
+         standard: \"CES-4\"\n\
          description: \"Request and response schemas reject unknown fields\"\n\
          status: \"stable\"\n\
          since: \"0.8.0\"\n\

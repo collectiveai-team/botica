@@ -1,6 +1,6 @@
 id = "log-get-logger"
 code = "BTLOG001"
-ces = "CES-45"
+standard = "CES-45"
 summary = "Loggers come from the house get_logger"
 status = "stable"
 since = "0.8.0"

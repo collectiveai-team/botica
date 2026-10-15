@@ -61,8 +61,8 @@ fn json_output_has_the_schema_version_the_codes_and_a_null_range_for_whole_files
     );
     assert_eq!(by_rule("io-error")["path"], "typo/");
     assert!(
-        diagnostics.iter().all(|d| d.get("ces").is_none()),
-        "ces is not a field of the format"
+        diagnostics.iter().all(|d| d.get("standard").is_none()),
+        "standard is not a field of the format"
     );
     assert_eq!(output.status.code(), Some(1));
 }

@@ -96,16 +96,18 @@ fn every_rule_has_valid_and_invalid_fixtures() {
 }
 
 #[test]
-fn the_message_of_an_ast_grep_rule_with_a_ces_carries_its_code_and_slug() {
+fn the_message_of_an_ast_grep_rule_with_a_standard_carries_its_code_and_slug() {
     let catalog = embedded();
     for rule in catalog.rules() {
-        let Some(ces) = &rule.ces else { continue };
+        let Some(standard) = &rule.standard else {
+            continue;
+        };
         for yaml in rule
             .implementations
             .iter()
             .filter_map(|implementation| implementation.source.as_deref())
         {
-            let expected = format!("message: \"{ces} ({}):", rule.id);
+            let expected = format!("message: \"{standard} ({}):", rule.id);
             assert!(
                 yaml.contains(&expected),
                 "{}: expected `{expected}`",

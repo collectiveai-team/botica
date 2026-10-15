@@ -1,6 +1,6 @@
 id = "cli-typed-framework"
 code = "BTPROC001"
-ces = "CES-67"
+standard = "CES-67"
 summary = "Command-line interfaces use a typed, declarative framework"
 status = "stable"
 since = "0.8.0"

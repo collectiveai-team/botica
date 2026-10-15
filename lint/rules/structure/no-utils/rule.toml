@@ -1,6 +1,6 @@
 id = "no-utils"
 code = "BTSTRUC002"
-ces = "CES-63"
+standard = "CES-63"
 summary = "No catch-all modules"
 status = "stable"
 since = "0.1.0"

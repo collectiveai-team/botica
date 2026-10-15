@@ -22,7 +22,7 @@ would recreate the problem.
 
 1. **A CES is documentation; a rule is what botica evaluates.** A CES is the unit of proposals.
    A rule's id is its slug, its code carries a family prefix (`BTSTRUC001`), and it may cite the
-   CES it implements in an informational `ces` field. Botica never selects, ignores or suppresses
+   standard it implements (a CES, or one that a user writes) in an informational `standard` field. Botica never selects, ignores or suppresses
    by CES, carries no text or number of one, and the CES is not a field of its output. One CES can
    bring several rules, from different families, and a rule can exist without a CES (the linter's
    own rules, and those that cite none yet).

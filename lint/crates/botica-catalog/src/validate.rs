@@ -39,9 +39,12 @@ fn check_since(since: &str) -> bool {
             .all(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit()))
 }
 
-fn check_ces(ces: &str) -> bool {
-    ces.strip_prefix("CES-")
-        .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
+fn check_standard(standard: &str) -> bool {
+    standard.split_once('-').is_some_and(|(set, number)| {
+        check_family_code(set).is_none()
+            && !number.is_empty()
+            && number.bytes().all(|b| b.is_ascii_digit())
+    })
 }
 
 pub(crate) fn check_rule(
@@ -65,9 +68,11 @@ pub(crate) fn check_rule(
     if let Some(message) = check_rule_code(&rule.code, family) {
         add(message);
     }
-    if let Some(ces) = &rule.ces {
-        if !check_ces(ces) {
-            add(format!("ces `{ces}` must look like `CES-71`"));
+    if let Some(standard) = &rule.standard {
+        if !check_standard(standard) {
+            add(format!(
+                "standard `{standard}` must look like `CES-71`: letters A-Z, a dash and a number"
+            ));
         }
     }
     for name in rule.options.keys() {

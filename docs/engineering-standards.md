@@ -67,7 +67,7 @@ fix + code", that belongs in the detail file, not the message.
   `uvx botica rules` and `uvx botica explain <slug>` for the rest.
 - **On-demand detail:** `.agents/rules/<slug>.md` — full rationale, examples, migration. A rule
   that `botica lint` measures has no such file: the README of its catalog folder is its only
-  documentation, and its `ces` field names the standard it implements.
+  documentation, and its `standard` field names the standard it implements.
 - **Canonical code:** `.agents/snippets/` — drop-ins for new repos, comparison templates for existing
   ones.
 

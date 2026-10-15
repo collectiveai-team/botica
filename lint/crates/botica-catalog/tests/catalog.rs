@@ -299,8 +299,47 @@ fn rejects_unknown_keys_and_reports_every_problem_at_once() {
 }
 
 #[test]
-fn ces_is_only_a_documentary_reference_and_must_look_like_one() {
-    let loaded = catalog(vec![
+fn standard_is_only_a_documentary_reference_and_must_look_like_one() {
+    for reference in ["CES-71", "ACME-3"] {
+        let loaded = catalog(vec![
+            vec![family("structure", "STRUC")],
+            rule_with(
+                "structure",
+                "one",
+                "BTSTRUC001",
+                &format!("standard = \"{reference}\""),
+                NATIVE_ALL,
+            ),
+        ])
+        .expect("a reference to a standard is allowed");
+        assert_eq!(
+            loaded.resolve("one").and_then(|r| r.standard.as_deref()),
+            Some(reference)
+        );
+        assert!(
+            loaded.resolve(reference).is_none(),
+            "a standard is not an ID"
+        );
+    }
+
+    for reference in ["71", "ces-71", "CES-", "CES-7a", "-71", "CES71"] {
+        let message = issues(vec![
+            vec![family("structure", "STRUC")],
+            rule_with(
+                "structure",
+                "one",
+                "BTSTRUC001",
+                &format!("standard = \"{reference}\""),
+                NATIVE_ALL,
+            ),
+        ]);
+        assert!(message.contains("standard"), "{reference}: {message}");
+    }
+}
+
+#[test]
+fn the_old_name_of_the_standard_field_is_no_longer_a_key() {
+    let message = issues(vec![
         vec![family("structure", "STRUC")],
         rule_with(
             "structure",
@@ -309,17 +348,6 @@ fn ces_is_only_a_documentary_reference_and_must_look_like_one() {
             "ces = \"CES-71\"",
             NATIVE_ALL,
         ),
-    ])
-    .expect("a CES reference is allowed");
-    assert_eq!(
-        loaded.resolve("one").and_then(|r| r.ces.as_deref()),
-        Some("CES-71")
-    );
-    assert!(loaded.resolve("CES-71").is_none(), "a CES is not an ID");
-
-    let message = issues(vec![
-        vec![family("structure", "STRUC")],
-        rule_with("structure", "one", "BTSTRUC001", "ces = \"71\"", NATIVE_ALL),
     ]);
     assert!(message.contains("ces"), "{message}");
 }

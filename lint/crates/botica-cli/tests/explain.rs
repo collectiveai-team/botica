@@ -34,7 +34,7 @@ fn says_what_the_rule_is_and_prints_its_readme() {
     assert!(line_with(&text, "family").contains("structure"));
     assert!(line_with(&text, "status").contains("stable"));
     assert!(line_with(&text, "languages").contains("python"));
-    assert!(line_with(&text, "CES").contains("CES-63"));
+    assert!(line_with(&text, "standard").contains("CES-63"));
     assert!(text.contains("## Directive"), "{text}");
     assert!(
         text.contains("Name a module for what it holds."),
@@ -43,9 +43,9 @@ fn says_what_the_rule_is_and_prints_its_readme() {
 }
 
 #[test]
-fn the_ces_line_names_the_standard_and_nothing_else() {
-    let text = text_of(&explain("ces-line", None, &["no-utils"]));
-    assert_eq!(line_with(&text, "CES"), "CES:       CES-63");
+fn the_standard_line_names_the_standard_and_nothing_else() {
+    let text = text_of(&explain("standard-line", None, &["no-utils"]));
+    assert_eq!(line_with(&text, "standard:"), "standard:  CES-63");
 }
 
 #[test]

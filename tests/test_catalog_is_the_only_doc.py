@@ -2,8 +2,8 @@
 
 A rule that `botica lint` checks deterministically is described once, in the README of its
 folder under `lint/rules`. Nothing else may describe it again: not the index of standards, not a
-detail file, not the skill. The CES a rule cites (`ces` in its `rule.toml`) is how the copies are
-found, since a detail file or an index entry is named after a CES, not always after a slug.
+detail file, not the skill. The CES a rule cites (`standard` in its `rule.toml`) is how the copies
+are found, since a detail file or an index entry is named after a CES, not always after a slug.
 """
 
 from __future__ import annotations
@@ -41,8 +41,9 @@ def _catalog() -> list[tuple[str, int | None]]:
     rules = []
     for rule_toml in sorted(CATALOG.glob("*/*/rule.toml")):
         data = tomllib.loads(rule_toml.read_text(encoding="utf-8"))
-        ces = data.get("ces")
-        rules.append((data["id"], int(ces.removeprefix("CES-")) if ces else None))
+        standard = data.get("standard", "")
+        number = standard.removeprefix("CES-") if standard.startswith("CES-") else None
+        rules.append((data["id"], int(number) if number else None))
     return rules
 
 

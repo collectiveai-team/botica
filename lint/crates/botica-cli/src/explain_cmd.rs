@@ -85,8 +85,8 @@ fn write_entry(
         "family:    {}",
         rule.family.as_deref().unwrap_or("none")
     )?;
-    if let Some(ces) = &rule.ces {
-        writeln!(out, "CES:       {ces}")?;
+    if let Some(standard) = &rule.standard {
+        writeln!(out, "standard:  {standard}")?;
     }
     writeln!(out, "languages: {}", rule.languages().join(", "))?;
     writeln!(out, "aliases:   {}", or_none(&rule.aliases))?;

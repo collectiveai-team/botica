@@ -1,6 +1,6 @@
 id = "no-notebooks"
 code = "BTSTRUC004"
-ces = "CES-32"
+standard = "CES-32"
 summary = "Keep Jupyter notebooks outside the code"
 status = "stable"
 since = "0.1.0"

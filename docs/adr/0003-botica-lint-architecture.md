@@ -60,7 +60,7 @@ and later WASM or MCP.
 
 **One rule, one folder, four kinds.** Every rule lives in `rules/<family>/<slug>/` (the family
 folder holds a `family.toml` with its code; the linter's own rules live in `rules/botica/`) with
-a `rule.toml` (id, code, status, scope, needs, typed options, an optional `ces` reference for the
+a `rule.toml` (id, code, status, scope, needs, typed options, an optional `standard` reference for the
 docs, and one `[[implementations]]` entry per language), a README, and `fixtures/{valid,invalid}`.
 Its id is its slug, unique across botica, and its code (`BTSTRUC001`) carries the prefix of its
 family. Only external and local catalogs prefix the slug (`acme/no-utils`). The `kind` of each

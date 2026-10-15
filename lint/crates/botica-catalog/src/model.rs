@@ -108,7 +108,7 @@ pub struct Family {
 pub struct Rule {
     pub id: String,
     pub code: String,
-    pub ces: Option<String>,
+    pub standard: Option<String>,
     pub summary: String,
     pub status: Status,
     pub since: String,
