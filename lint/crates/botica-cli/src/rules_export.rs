@@ -53,12 +53,18 @@ fn render(catalog: &Catalog) -> Vec<Page> {
     for group in &groups {
         for rule in &group.rules {
             pages.push(Page {
-                path: Path::new(group.name).join(format!("{}.md", rule.id)),
+                path: Path::new(group.name).join(file_name(rule)),
                 text: format!("{}\n{}", front_matter(group.name, rule), rule.readme),
             });
         }
     }
     pages
+}
+
+/// The code comes first, in lower case, so that a site which lists the pages by file name lists
+/// the rules of a family in the order of their codes (a code ends in three digits).
+fn file_name(rule: &Rule) -> String {
+    format!("{}-{}.md", rule.code.to_lowercase(), rule.id)
 }
 
 fn groups(catalog: &Catalog) -> Vec<Group<'_>> {
@@ -133,11 +139,11 @@ fn index(groups: &[Group<'_>]) -> String {
         ));
         for rule in &group.rules {
             text.push_str(&format!(
-                "| `{}` | [`{}`]({}/{}.md) | {} | {} |\n",
+                "| `{}` | [`{}`]({}/{}) | {} | {} |\n",
                 rule.code,
                 rule.id,
                 group.name,
-                rule.id,
+                file_name(rule),
                 json(&rule.status).trim_matches('"'),
                 rule.summary.replace('|', "\\|")
             ));

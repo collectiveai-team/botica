@@ -63,10 +63,13 @@ fn writes_one_page_per_rule_of_the_catalog_and_an_index() {
     assert!(rules.len() > 20, "{} rules", rules.len());
     for rule in rules {
         let slug = rule["rule"].as_str().expect("a slug");
+        let code = rule["code"].as_str().expect("a code").to_lowercase();
         let family = rule["family"].as_str().unwrap_or("botica");
         assert!(
-            site.join(family).join(format!("{slug}.md")).is_file(),
-            "no page for {family}/{slug}"
+            site.join(family)
+                .join(format!("{code}-{slug}.md"))
+                .is_file(),
+            "no page for {family}/{code}-{slug}"
         );
     }
 
@@ -104,7 +107,10 @@ fn a_page_is_the_front_matter_of_the_rule_followed_by_its_readme() {
          {}",
         readme("fastapi", "api-schemas-extra-forbid")
     );
-    assert_eq!(page(&site, "fastapi/api-schemas-extra-forbid.md"), expected);
+    assert_eq!(
+        page(&site, "fastapi/btfast001-api-schemas-extra-forbid.md"),
+        expected
+    );
 }
 
 #[test]
@@ -129,14 +135,17 @@ fn a_rule_of_botica_itself_has_no_family_and_a_rule_without_a_standard_has_no_ce
          {}",
         readme("botica", "io-error")
     );
-    assert_eq!(page(&site, "botica/io-error.md"), expected);
+    assert_eq!(page(&site, "botica/bt001-io-error.md"), expected);
 }
 
 #[test]
 fn a_preview_rule_says_it_is_off_by_default() {
     let site = exported(&workdir("preview"));
 
-    let text = page(&site, "architecture/settings-direct-instantiation.md");
+    let text = page(
+        &site,
+        "architecture/btarch004-settings-direct-instantiation.md",
+    );
     let front_matter: Vec<&str> = text.lines().take_while(|line| !line.is_empty()).collect();
     assert!(front_matter.contains(&"status: \"preview\""), "{text}");
     assert!(front_matter.contains(&"default-enabled: false"), "{text}");
@@ -155,8 +164,8 @@ fn the_index_groups_the_rules_by_family_in_the_order_of_their_codes() {
                    \n\
                    | Code | Rule | Status | Summary |\n\
                    |---|---|---|---|\n\
-                   | `BTFAST001` | [`api-schemas-extra-forbid`](fastapi/api-schemas-extra-forbid.md) | stable | Request and response schemas reject unknown fields |\n\
-                   | `BTFAST002` | [`api-schema-in-route-module`](fastapi/api-schema-in-route-module.md) | preview | Pydantic schemas are not defined in route modules |\n";
+                   | `BTFAST001` | [`api-schemas-extra-forbid`](fastapi/btfast001-api-schemas-extra-forbid.md) | stable | Request and response schemas reject unknown fields |\n\
+                   | `BTFAST002` | [`api-schema-in-route-module`](fastapi/btfast002-api-schema-in-route-module.md) | preview | Pydantic schemas are not defined in route modules |\n";
     assert!(index.contains(section), "{index}");
     let own = "## botica\n\
                \n\
@@ -164,8 +173,36 @@ fn the_index_groups_the_rules_by_family_in_the_order_of_their_codes() {
                \n\
                | Code | Rule | Status | Summary |\n\
                |---|---|---|---|\n\
-               | `BT001` | [`io-error`](botica/io-error.md) | stable | A path given on the command line cannot be read |\n";
+               | `BT001` | [`io-error`](botica/bt001-io-error.md) | stable | A path given on the command line cannot be read |\n";
     assert!(index.contains(own), "{index}");
+}
+
+#[test]
+fn the_pages_of_a_family_sort_by_code_when_their_names_are_sorted() {
+    let site = exported(&workdir("order"));
+
+    let mut names: Vec<String> = fs::read_dir(site.join("architecture"))
+        .expect("the family")
+        .map(|entry| {
+            entry
+                .expect("an entry")
+                .file_name()
+                .into_string()
+                .expect("UTF-8")
+        })
+        .collect();
+    names.sort();
+
+    assert_eq!(
+        names,
+        [
+            "btarch001-arch-database-package.md",
+            "btarch002-settings-module.md",
+            "btarch003-settings-base-class.md",
+            "btarch004-settings-direct-instantiation.md",
+            "btarch005-db-no-create-all.md",
+        ]
+    );
 }
 
 #[test]
@@ -178,8 +215,10 @@ fn it_describes_the_catalog_whatever_the_project_selects() {
     .expect("write the config");
     let site = exported(&dir);
 
-    assert!(site.join("structure/no-utils.md").is_file());
-    assert!(site.join("structure/file-size-guard.md").is_file());
+    assert!(site.join("structure/btstruc002-no-utils.md").is_file());
+    assert!(site
+        .join("structure/btstruc001-file-size-guard.md")
+        .is_file());
 }
 
 #[test]
@@ -187,12 +226,16 @@ fn running_it_again_rewrites_the_pages_and_keeps_every_other_file() {
     let dir = workdir("again");
     let site = exported(&dir);
     fs::write(site.join("keep.md"), "mine\n").expect("write another file");
-    fs::write(site.join("fastapi/api-schemas-extra-forbid.md"), "stale\n").expect("edit a page");
+    fs::write(
+        site.join("fastapi/btfast001-api-schemas-extra-forbid.md"),
+        "stale\n",
+    )
+    .expect("edit a page");
 
     let site = exported(&dir);
 
     assert_eq!(page(&site, "keep.md"), "mine\n");
-    assert!(page(&site, "fastapi/api-schemas-extra-forbid.md").starts_with("---\n"));
+    assert!(page(&site, "fastapi/btfast001-api-schemas-extra-forbid.md").starts_with("---\n"));
 }
 
 #[test]
