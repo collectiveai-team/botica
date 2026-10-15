@@ -24,7 +24,3 @@ the concrete repositories. `sqlmodel`, `sqlalchemy` and `alembic` are imported o
 
 Confining the persistence libraries to one package keeps the domain testable without a database
 and makes the boundary between the domain and its storage visible in the layout.
-
-## Rules
-
-- `arch-database-package`

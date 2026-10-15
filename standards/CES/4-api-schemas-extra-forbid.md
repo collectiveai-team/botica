@@ -22,7 +22,3 @@ class CreateUserRequest(BaseModel):
 `extra="forbid"` rejects unexpected fields, so a client typo or a drift of the contract fails
 loudly instead of being dropped without notice. Scoping the standard by placement keeps it
 deterministic: nobody has to guess which models are public.
-
-## Rules
-
-- `api-schemas-extra-forbid`

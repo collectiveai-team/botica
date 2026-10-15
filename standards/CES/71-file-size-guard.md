@@ -13,7 +13,3 @@ module along a real seam before it crosses the hard limit.
 The length of a file is a cheap proxy for too many responsibilities. The thresholds trigger
 judgment, they do not replace it: a persistently large file is a design smell, and the fix is to
 extract a cohesive unit, not to raise the threshold.
-
-## Rules
-
-- `file-size-guard`

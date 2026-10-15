@@ -19,10 +19,3 @@ drift silently. A named type makes the contract explicit.
 
 When a `dict` is correct, as at a JSON serialization boundary, keep the annotation and suppress the
 finding at that site (`# botica: ignore[<slug>]`), so the exception is visible.
-
-## Rules
-
-- `no-dict-return-annotation`
-- `no-dict-call-return`
-- `no-dict-literal-return`
-- `no-dict-alias`

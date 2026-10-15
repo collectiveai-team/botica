@@ -14,6 +14,14 @@
   display: none;
 }
 
+/* The sidebar names a rule by its slug and a standard by its title, with the code or the id under
+   it, smaller and grey. */
+.md-nav__link .md-ellipsis small {
+  display: block;
+  font-size: 0.85em;
+  color: var(--md-default-fg-color--light);
+}
+
 /* The home page shows the logo and the wordlogo side by side at one scale, as in the original SVG:
    the wordlogo is 114.28 / 255 of the height of the logo, and the gap between them 85 / 255. */
 .botica-brand {

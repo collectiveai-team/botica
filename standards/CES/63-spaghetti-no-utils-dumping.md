@@ -18,7 +18,3 @@ holds keeps it discoverable.
 
 A repository that already has such a file keeps it (CES-30). The standard applies to the files
 that are added.
-
-## Rules
-
-- `no-utils`

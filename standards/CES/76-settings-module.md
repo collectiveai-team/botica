@@ -22,7 +22,3 @@ def get_settings() -> DatabaseSettings:
 
 Configuration enters the process once, through a typed and validated object. Reading the
 environment everywhere hides what a package needs and makes it hard to test.
-
-## Rules
-
-- `settings-module`

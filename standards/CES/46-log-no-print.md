@@ -12,7 +12,3 @@ Library code logs and does not call `print`. Entry points of a command line prog
 
 `print` cannot be filtered, redirected by level or given context. It also pollutes the output of
 whoever imports the library.
-
-## Rules
-
-- `log-no-print`

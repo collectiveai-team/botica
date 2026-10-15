@@ -20,7 +20,3 @@ directly bypasses the typed layer. The choice between Typer and Cyclopts is open
 Reading `sys.argv[0]` for the name of the program, or handing `sys.argv` to a framework, is
 legitimate. A legacy entry point is migrated when it is touched for another reason, not in a
 change of its own.
-
-## Rules
-
-- `cli-typed-framework`

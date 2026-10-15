@@ -13,7 +13,3 @@ default for a new repository is 3.14. The existing pin of a repository is honour
 
 Enforcing one minor version fights the availability of dependencies, and the ecosystem of 3.14
 still has gaps. The pin is informational.
-
-## Rules
-
-None. It is judgment.

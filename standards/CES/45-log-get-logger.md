@@ -13,7 +13,3 @@ Get a logger with `get_logger(__name__)`, the house function of CES-74, and neve
 
 One entry point makes every module log the same way. Scattered `getLogger` calls drift into
 inconsistent formats and lost context.
-
-## Rules
-
-- `log-get-logger`

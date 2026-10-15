@@ -19,8 +19,3 @@ files. The import path stays pure code.
 
 A package that ships a small data file on purpose names it as an exception. The default is that
 artifacts go to the top level.
-
-## Rules
-
-- `no-notebooks`
-- `no-artifacts-in-package`
