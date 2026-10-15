@@ -5,7 +5,8 @@ engine, so a change that adds a rule and touches anything outside its contract i
 change and has to be acknowledged.
 
 A standard is a file, `standards/<set>/<number>-<slug>.md`. A change touches at most one, and no
-label says otherwise.
+label says otherwise. The number of a standard is the next free one of its set, so two standards of
+a set never share it.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from __future__ import annotations
 import re
 import subprocess
 import tomllib
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
@@ -86,6 +88,16 @@ def _open_to_any_rule(path: str, *, builtin: bool) -> bool:
     return path.startswith(STANDARDS) or (builtin and path in INDEX_FILES)
 
 
+def duplicated_standards(root: Path) -> list[str]:
+    """Return the `<set>/<number>` that more than one standard of the tree carries."""
+    numbers = Counter(
+        f"{match['set']}/{match['number']}"
+        for path in sorted((root / "standards").glob("*/*.md"))
+        if (match := STANDARD_FILE.match(path.relative_to(root).as_posix()))
+    )
+    return sorted(standard for standard, count in numbers.items() if count > 1)
+
+
 def standards_touched(changes: Sequence[Change]) -> list[str]:
     """Return the standards a change touches as `<set>/<number>`, whatever their slug is."""
     touched = set()
@@ -142,6 +154,12 @@ def check_branch(
         check=True,
     )
     changes = parse_name_status(diff.stdout)
+    duplicated = duplicated_standards(root)
+    if duplicated:
+        print("These standards share their number with another standard of the same set:")
+        for standard in duplicated:
+            print(f"  {standard}")
+        return 1
     touched = standards_touched(changes)
     if len(touched) > 1:
         print("This change touches more than one standard; a change touches one:")

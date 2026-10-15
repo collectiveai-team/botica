@@ -7,15 +7,14 @@ Single source of truth for how house engineering rules are coded, cited, and shi
 
 A **CES — Collective Engineering Standard** is one house rule that the scaffolder ships into
 target repos (as a botica rule, a prek hook, a `pyproject` setting, or an AGENTS.md
-directive + detail file). Each standard is tracked by exactly one issue on the
-[`collectiveai-team/botica`](https://github.com/collectiveai-team/botica/issues) tracker, and its
-text is the file `standards/CES/<number>-<slug>.md` (ADR 0004).
+directive + detail file). Each standard is the file `standards/CES/<number>-<slug>.md`, which holds
+its text (ADR 0004).
 
 ## Two identifiers, two jobs
 
 | Layer | Value | Used in |
 |---|---|---|
-| **Catalog code** | `CES-<issue#>` | AGENTS.md index, commit/PR refs, human citation, violation messages |
+| **Catalog code** | `CES-<number>` | AGENTS.md index, commit/PR refs, human citation, violation messages |
 | **Machine id** | kebab-case **slug** (`log-no-print`, `api-schemas-extra-forbid`) | botica rule id, prek hook id, `# botica: ignore[<slug>]` |
 
 Always written together where space allows: **`CES-46 · log-no-print`**.
@@ -25,14 +24,15 @@ on, so they must stay stable and semantic.
 
 ## Invariants
 
-- **Every CES has a tracker issue.** No rule gets a code by existing only in code.
+- **Every CES is a file.** A rule cites a CES only if `standards/CES/<number>-<slug>.md` exists.
 - **One CES = one standard.** A standard may ship **multiple slugs** — e.g. `CES-79` ships the
   four `no-dict-*` botica rules; an architecture rule may ship a botica rule *and* an
   import-linter contract under the same CES.
-- **Number source = the issue id.** Gaps from declined proposals are expected and meaningful
-  (PEP/RFC-style — a rejected number is never reused).
-- **Already-implemented rules get a retroactive AS-BUILT issue** so they satisfy the invariant.
-  Mark the issue body `AS-BUILT` and assign no new enforcement work beyond CES wiring.
+- **The number is the next free one of the set**, `max + 1`. The numbers up to `CES-119` are those
+  of the issues where the standards were first proposed and are kept; from `CES-120` on, `CES-N`
+  is no longer the issue `#N`. A number is never reused or changed.
+  `scripts/check_rule_change.py` fails a change that leaves two standards of a set with the same
+  number.
 
 ## Violation messages embed the code
 
@@ -74,18 +74,9 @@ fix + code", that belongs in the file of the standard, not the message.
 (Rationale for index-in-AGENTS.md over packaged skills: passive always-on context outperforms
 on-demand retrieval for horizontal standards — see PRD #78.)
 
-## Catalog of AS-BUILT codes
-
-Rules already shipped before the CES scheme, now coded via retroactive issues:
-
-| CES | Slugs | Ships as |
-|---|---|---|
-| **CES-107** | `skills-manifest` | `scaffolding check` + the `skills` component (`scaffolding/skills.py`) |
-
-The rules that `botica lint` measures are not in this table: the catalog (`lint/rules`) lists them,
-each with the CES it implements, and documents them.
-
 ## References
 
 - Roll-out plan: **PRD #78** (`meta/standards-integration`).
-- The text of each standard: `standards/CES/`. Its number is that of its tracker issue.
+- The text of each standard: `standards/CES/`.
+- The rules that `botica lint` measures: the catalog (`lint/rules`) lists them, each with the
+  standard it implements, and documents them.

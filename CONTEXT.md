@@ -70,9 +70,8 @@ _Avoid_: local skill, own skill
 ### Standards
 
 **CES**:
-Collective Engineering Standard — one house rule the scaffolder ships, tracked by exactly one
-issue. Cited as `CES-<issue#>`; its machine id is a kebab-case slug. See
-`docs/engineering-standards.md`.
+Collective Engineering Standard — one house rule, written in one file of `standards/CES/`. Cited
+as `CES-<number>`; its machine id is a kebab-case slug. See `docs/engineering-standards.md`.
 Documentation and the unit of proposals, not something a tool enforces: botica evaluates
 **rules**, and a rule may cite the CES it implements. See `docs/adr/0002-ces-lifecycle-catalog-and-site.md`.
 _Avoid_: rule, convention, lint rule

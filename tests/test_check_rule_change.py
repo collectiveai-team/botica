@@ -268,6 +268,46 @@ def test_a_branch_cannot_touch_two_standards_and_no_label_changes_that(tmp_path:
     assert "CES/79" in out
 
 
+def write_standards(root: Path, *paths: str) -> None:
+    for path in paths:
+        target = root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("x\n", encoding="utf-8")
+
+
+def test_two_standards_of_a_set_with_the_same_number_are_a_duplicate(tmp_path: Path):
+    write_standards(
+        tmp_path,
+        "standards/CES/120-keep-files-small.md",
+        "standards/CES/120-keep-files-short.md",
+        "standards/CES/121-other.md",
+    )
+
+    assert crc.duplicated_standards(tmp_path) == ["CES/120"]
+
+
+def test_the_same_number_in_two_sets_or_an_index_is_not_a_duplicate(tmp_path: Path):
+    write_standards(
+        tmp_path,
+        "standards/CES/3-a.md",
+        "standards/ACME/3-b.md",
+        "standards/CES/index.md",
+        "standards/ACME/index.md",
+        "standards/index.md",
+    )
+
+    assert crc.duplicated_standards(tmp_path) == []
+
+
+def test_a_branch_cannot_add_a_standard_with_a_number_that_is_taken(tmp_path: Path, capsys):
+    branch_that_touches_standards(
+        tmp_path, "standards/CES/120-keep-files-small.md", "standards/CES/120-keep-files-short.md"
+    )
+
+    assert crc.check_branch("main", tmp_path, acknowledged=True) == 1
+    assert "CES/120" in capsys.readouterr().out
+
+
 def test_a_branch_may_touch_one_standard_and_its_documentation(tmp_path: Path):
     branch_that_touches_standards(
         tmp_path, "standards/CES/71-keep-files-small.md", "standards/CES/index.md"

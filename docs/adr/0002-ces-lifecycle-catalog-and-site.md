@@ -49,9 +49,8 @@ would recreate the problem.
 
 ## Not decided
 
-Where the text of a standard lives is decided in ADR 0004. How the number of a CES is assigned and
-the lifecycle of a CES (its statuses and transitions) are still open, and until then the convention
-of `AGENTS.md` stands (`CES-<issue#>`, one tracker issue per CES).
+Where the text of a standard lives and how its number is assigned are decided in ADR 0004. The
+lifecycle of a CES (its statuses and transitions) is still open.
 
 ## Considered options
 

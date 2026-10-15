@@ -21,7 +21,8 @@ standard of any set names it the same way.
 
 ## Propose or change a standard
 
-A standard is one file, `standards/<set>/<number>-<slug>.md`, written by hand.
+A standard is one file, `standards/<set>/<number>-<slug>.md`, written by hand. Its number is the
+next free one of the set, and it never changes.
 
 1. Open a pull request that adds or edits the file of **one** standard, with the template for
    standards (add `?template=standard.md` to the address of the new pull request). A pull request

@@ -23,12 +23,16 @@ standards. Collective writes the CES, and another team can write standards of it
 4. **The discussion happens in GitHub Discussions**, shown at the end of the page of the standard.
 5. **The site copies `standards/`** into its documents (`scripts/build_site.sh`); the copy is never
    committed, and "edit this page" opens the file at the root.
+6. **The number of a standard is the next free one of its set**, `max + 1`. The standards that
+   existed as issues keep their number (up to `CES-119`); from `CES-120` on the number is no longer
+   that of an issue. A number is never reused or changed, and a standard that is rejected takes
+   none. `scripts/check_rule_change.py` fails a change that leaves two standards of a set with the
+   same number, which is what two proposals that pick the same one would do.
 
 ## Not decided
 
-How the number of a standard is assigned, and the lifecycle of a standard (its statuses and
-transitions). Until then the convention of `AGENTS.md` stands: `CES-<issue#>`. The existing CES
-move to `standards/CES/` one pull request each, as the rule above asks.
+The lifecycle of a standard (its statuses and transitions). The CES that no file described yet,
+the ten that only the catalog documents and CES-77, still have to be written.
 
 ## Considered options
 
@@ -36,5 +40,10 @@ move to `standards/CES/` one pull request each, as the rule above asks.
   standards, and a rule is not bound to one.
 - **Keep the text in the tracker issue.** Rejected for the reasons of ADR 0002: the text and the
   review state would live outside the repository.
+- **The number of a standard is the number of its pull request,** as in the RFCs of Rust. It never
+  repeats, and it does not clash with the issues, since GitHub shares one counter between issues
+  and pull requests. Rejected: the author does not know the number until the pull request is open,
+  and the rules that cite the standard, in `standard` and in the message of each violation, would
+  have to be renamed afterwards.
 - **`standards/` under `website/docs/`.** Rejected: the standards belong to the repository, and the
   site is one way to read them.

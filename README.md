@@ -259,5 +259,5 @@ repo's own `skills/`, not in `.agents/skills`.
   standard (toolchain, layout, tests, architecture) without bulldozing its local
   contracts.
 - `docs/engineering-standards.md` — **CES (Collective Engineering Standard)**: how house
-  rules are coded, cited (`CES-<issue#>` + slug), and shipped. Single source of truth,
+  rules are coded, cited (`CES-<number>` + slug), and shipped. Single source of truth,
   referenced by `AGENTS.md`.

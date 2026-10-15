@@ -90,18 +90,17 @@ Engineering Standard**. Canonical spec: **`docs/engineering-standards.md`** (sin
 source of truth). The rules below are the always-on summary; when adding, editing,
 or referencing a rule in this repo, follow this convention:
 
-- **`CES-<issue#>`** is the citable catalog code; the **kebab-case slug** is the
+- **`CES-<number>`** is the citable catalog code; the **kebab-case slug** is the
   machine id (botica rule id, prek hook id, `# botica: ignore[<slug>]`). Never put the CES
   number in the machine id.
-- **Every CES has a tracker issue.** One CES = one standard; a standard may ship
-  multiple slugs (e.g. `CES-79` ships the four `no-dict-*` patterns). The issue id
-  is the number — gaps from declined proposals are expected (PEP/RFC-style).
+- **Every CES is a file.** One CES = one standard; a standard may ship multiple slugs (e.g.
+  `CES-79` ships the four `no-dict-*` patterns). The number is the next free one of the set
+  (`max + 1`) and is never reused; up to `CES-119` it is the number of the issue where the
+  standard was proposed, and from `CES-120` on it is not an issue number.
 - **The text of a standard is a file**, `standards/<set>/<number>-<slug>.md` (ADR 0004), apart
   from the rules that implement it; a rule names its standard in the `standard` field of its
   `rule.toml`. **A pull request touches one standard**, carries its implementation and updates the
   documentation it affects; `scripts/check_rule_change.py` fails one that touches two.
-- **Already-implemented rules** get a retroactive AS-BUILT issue so they fit the
-  invariant — never assign a code to a rule that only exists in code.
 - **Violation messages must embed the code**, e.g.
   `message: "CES-46 (log-no-print): libraries log, they don't print …"`. Keep the
   slug as the suppression key so tooling stays stable.
