@@ -71,7 +71,7 @@ implementation picks how it runs:
 | `native` | in the binary | house rules, hot paths, expensive project rules |
 | `ast-grep` | in the binary (YAML compiled once) | most syntactic rules, any ast-grep language |
 | `extension` | separate process, `runtime = python \| node \| command` | logic YAML cannot express, third-party libraries, repo-local rules |
-| `judgment` | never run by lint | catalogued so judges and the site have one source; `covered-by` lists the detectors that enforce part of it |
+| `judgment` | never run by lint | what no deterministic check can express, even with configuration from the repository (ADR 0005); judges and the site read it from the catalog, and `covered-by` lists the deterministic rules that check part of it |
 
 The engine, not the rule, decides whether a rule is enabled. Selection, severity, per-path
 overrides, inline suppressions, and ordering are one central post-processing step, applied the
