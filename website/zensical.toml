@@ -3,6 +3,7 @@ site_name = "botica"
 site_description = "The rules of botica, one page each."
 site_url = "https://collectiveai-team.github.io/botica/"
 repo_url = "https://github.com/collectiveai-team/botica"
+extra_css = ["stylesheets/extra.css"]
 
 # Where "edit this page" opens: a page of `docs_dir` at `edit_uri`, a rule page at `catalog_uri`,
 # because it is written in the README of its rule, which the export names in `readme`, relative to
@@ -39,6 +40,8 @@ structure = "DIC_kwDOS6BBd84DIcb-" # betterleaks:allow
 [project.theme]
 language = "en"
 custom_dir = "overrides"
+logo = "assets/logo-light.svg"
+favicon = "assets/favicon.svg"
 features = [
   "content.action.edit",
   "content.code.copy",

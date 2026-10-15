@@ -1,4 +1,8 @@
-# botica
+---
+title: botica
+---
+
+# ![botica](assets/wordlogo-light.svg#only-light){ width="320" }![botica](assets/wordlogo-dark.svg#only-dark){ width="320" }
 
 botica checks, deterministically, the engineering standards that can be measured in one file. This
 site has one page per rule of its catalog: what the rule asks, why, and how to silence it.

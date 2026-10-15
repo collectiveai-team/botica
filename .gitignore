@@ -28,6 +28,7 @@ __pycache__/
 *.png
 *.svg
 !assets/logo.png
+!website/docs/assets/*.svg
 
 # rust (botica lint)
 lint/target/

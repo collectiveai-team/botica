@@ -1,0 +1,4 @@
+[data-md-color-scheme="default"] .md-logo img[src$="#only-dark"],
+[data-md-color-scheme="slate"] .md-logo img[src$="#only-light"] {
+  display: none;
+}
