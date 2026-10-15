@@ -33,7 +33,7 @@ migration** — not a silent rewrite.
   comment).
 - An existing `prek.toml` / `pyproject.toml` is deferred, not replaced —
   merge new rules in by hand, deliberately.
-- Adopt a house standard on the next natural touch, or as a named migration PR — never as a
+- Adopt a house standard on the next natural touch, or as a named migration pull request — never as a
   drive-by overwrite.
 
 ## Judgment
