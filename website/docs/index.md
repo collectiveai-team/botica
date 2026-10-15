@@ -1,7 +1,3 @@
----
-title: Botica
----
-
 <div class="botica-hero">
   <div class="botica-brand">
     <img class="botica-icon" src="assets/logo-light.svg#only-light" alt="">

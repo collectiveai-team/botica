@@ -3,30 +3,34 @@
   display: none;
 }
 
-/* The logo and the wordlogo sit side by side at one scale, as in the original SVG: the wordlogo is
-   114.28 / 255 of the height of the logo, and the gap between them 85 / 255. */
-.botica-brand,
-.md-header__button.md-logo {
-  --botica-height: 2rem;
+/* The header shows the wordlogo alone. The title block stays, empty, because it is what pushes the
+   search and the repository to the right. */
+.md-header__button.md-logo img.botica-wordlogo {
+  width: auto;
+  height: 1.25rem;
+}
+
+.md-header__title .md-header__ellipsis {
+  display: none;
+}
+
+/* The home page shows the logo and the wordlogo side by side at one scale, as in the original SVG:
+   the wordlogo is 114.28 / 255 of the height of the logo, and the gap between them 85 / 255. */
+.botica-brand {
+  --botica-height: min(8rem, 24vw);
   display: flex;
   align-items: center;
   gap: calc(var(--botica-height) * 0.33);
 }
 
-.botica-brand img.botica-icon,
-.md-header__button.md-logo img.botica-icon {
+.botica-brand img.botica-icon {
   width: auto;
   height: var(--botica-height);
 }
 
-.botica-brand img.botica-wordlogo,
-.md-header__button.md-logo img.botica-wordlogo {
+.botica-brand img.botica-wordlogo {
   width: auto;
   height: calc(var(--botica-height) * 0.448);
-}
-
-.md-header__title {
-  display: none;
 }
 
 .botica-hero {
@@ -35,10 +39,6 @@
   align-items: center;
   margin: 1.5rem 0 2rem;
   text-align: center;
-}
-
-.botica-hero .botica-brand {
-  --botica-height: min(8rem, 24vw);
 }
 
 .botica-hero h1 {
