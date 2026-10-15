@@ -1,6 +1,6 @@
 # log-get-logger · `BTLOG001`
 
-**Standard:** CES-45 (documentation only) · **Family:** logging · **Languages:** Python
+**Standard:** CES-45 · **Family:** logging · **Languages:** Python
 
 ## Directive
 

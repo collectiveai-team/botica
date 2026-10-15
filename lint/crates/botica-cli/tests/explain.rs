@@ -43,6 +43,12 @@ fn says_what_the_rule_is_and_prints_its_readme() {
 }
 
 #[test]
+fn the_ces_line_names_the_standard_and_nothing_else() {
+    let text = text_of(&explain("ces-line", None, &["no-utils"]));
+    assert_eq!(line_with(&text, "CES"), "CES:       CES-63");
+}
+
+#[test]
 fn a_rule_can_be_named_by_its_code() {
     let text = text_of(&explain("code", None, &["BTSTRUC001"]));
     assert!(text.starts_with("file-size-guard (BTSTRUC001)"), "{text}");

@@ -86,7 +86,7 @@ fn write_entry(
         rule.family.as_deref().unwrap_or("none")
     )?;
     if let Some(ces) = &rule.ces {
-        writeln!(out, "CES:       {ces} (documentation only)")?;
+        writeln!(out, "CES:       {ces}")?;
     }
     writeln!(out, "languages: {}", rule.languages().join(", "))?;
     writeln!(out, "aliases:   {}", or_none(&rule.aliases))?;

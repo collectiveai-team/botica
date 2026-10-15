@@ -1,6 +1,6 @@
 # api-schemas-extra-forbid · `BTFAST001`
 
-**Standard:** CES-4 (documentation only) · **Family:** fastapi · **Languages:** Python
+**Standard:** CES-4 · **Family:** fastapi · **Languages:** Python
 
 ## Directive
 

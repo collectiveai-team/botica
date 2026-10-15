@@ -1,6 +1,6 @@
 # cli-typed-framework · `BTPROC001`
 
-**Standard:** CES-67 (documentation only) · **Family:** process · **Languages:** Python
+**Standard:** CES-67 · **Family:** process · **Languages:** Python
 
 ## Directive
 

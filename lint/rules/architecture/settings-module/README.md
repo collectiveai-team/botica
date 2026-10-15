@@ -1,6 +1,6 @@
 # settings-module · `BTARCH002`
 
-**Standard:** CES-76 (documentation only) · **Family:** architecture · **Languages:** Python
+**Standard:** CES-76 · **Family:** architecture · **Languages:** Python
 
 ## Directive
 

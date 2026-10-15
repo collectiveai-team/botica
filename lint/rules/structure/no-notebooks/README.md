@@ -1,6 +1,6 @@
 # no-notebooks · `BTSTRUC004`
 
-**Standard:** CES-32 (documentation only) · **Family:** structure · **Ecosystems:** all
+**Standard:** CES-32 · **Family:** structure · **Ecosystems:** all
 
 ## Directive
 

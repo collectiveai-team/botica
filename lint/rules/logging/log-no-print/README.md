@@ -1,6 +1,6 @@
 # log-no-print · `BTLOG002`
 
-**Standard:** CES-46 (documentation only) · **Family:** logging · **Languages:** Python
+**Standard:** CES-46 · **Family:** logging · **Languages:** Python
 
 ## Directive
 

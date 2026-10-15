@@ -1,6 +1,6 @@
 # file-size-guard · `BTSTRUC001`
 
-**Standard:** CES-71 (documentation only) · **Family:** structure · **Languages:** all
+**Standard:** CES-71 · **Family:** structure · **Languages:** all
 
 ## Directive
 

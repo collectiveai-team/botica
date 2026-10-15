@@ -1,6 +1,6 @@
 # no-utils · `BTSTRUC002`
 
-**Standard:** CES-63 (documentation only) · **Family:** structure · **Languages:** Python
+**Standard:** CES-63 · **Family:** structure · **Languages:** Python
 
 ## Directive
 

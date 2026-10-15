@@ -1,6 +1,6 @@
 # arch-database-package · `BTARCH001`
 
-**Standard:** CES-18 (documentation only) · **Family:** architecture · **Languages:** Python
+**Standard:** CES-18 · **Family:** architecture · **Languages:** Python
 
 ## Directive
 

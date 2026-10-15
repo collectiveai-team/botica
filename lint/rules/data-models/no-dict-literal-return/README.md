@@ -1,6 +1,6 @@
 # no-dict-literal-return · `BTDM004`
 
-**Standard:** CES-79 (documentation only) · **Family:** data-models · **Languages:** Python
+**Standard:** CES-79 · **Family:** data-models · **Languages:** Python
 
 ## Directive
 
