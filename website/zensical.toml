@@ -35,6 +35,7 @@ data-models = "DIC_kwDOS6BBd84DIcbo" # betterleaks:allow
 fastapi = "DIC_kwDOS6BBd84DIcbv" # betterleaks:allow
 logging = "DIC_kwDOS6BBd84DIcb2" # betterleaks:allow
 process = "DIC_kwDOS6BBd84DIcb9" # betterleaks:allow
+standards = "DIC_kwDOS6BBd84DIeEU" # betterleaks:allow
 structure = "DIC_kwDOS6BBd84DIcb-" # betterleaks:allow
 
 [project.theme]

@@ -217,27 +217,27 @@ def test_a_rule_that_is_not_native_gets_no_native_zone(tmp_path: Path):
 
 def test_a_standard_is_named_by_its_set_and_its_number_whatever_its_slug_is():
     changes = [
-        crc.Change("D", "standards/ces/71-keep-files-small.md"),
-        added("standards/ces/71-keep-files-short.md"),
-        modified("standards/ces/index.md"),
+        crc.Change("D", "standards/CES/71-keep-files-small.md"),
+        added("standards/CES/71-keep-files-short.md"),
+        modified("standards/CES/index.md"),
         modified("standards/index.md"),
         modified("README.md"),
     ]
 
-    assert crc.standards_touched(changes) == ["ces/71"]
+    assert crc.standards_touched(changes) == ["CES/71"]
 
 
 def test_the_same_number_in_two_sets_is_two_standards():
-    changes = [added("standards/ces/3-a.md"), added("standards/acme/3-b.md")]
+    changes = [added("standards/CES/3-a.md"), added("standards/ACME/3-b.md")]
 
-    assert crc.standards_touched(changes) == ["acme/3", "ces/3"]
+    assert crc.standards_touched(changes) == ["ACME/3", "CES/3"]
 
 
 def test_a_new_rule_may_come_with_the_standard_it_implements(tmp_path: Path):
     add_rule(tmp_path, BUILTIN, "structure", "no-foo", "ast-grep")
     changes = [
         added("lint/rules/structure/no-foo/rule.toml"),
-        added("standards/ces/71-keep-files-small.md"),
+        added("standards/CES/71-keep-files-small.md"),
     ]
 
     assert crc.violations(changes, tmp_path) == []
@@ -259,18 +259,18 @@ def branch_that_touches_standards(root: Path, *paths: str) -> None:
 
 def test_a_branch_cannot_touch_two_standards_and_no_label_changes_that(tmp_path: Path, capsys):
     branch_that_touches_standards(
-        tmp_path, "standards/ces/71-keep-files-small.md", "standards/ces/79-no-raw-dicts.md"
+        tmp_path, "standards/CES/71-keep-files-small.md", "standards/CES/79-no-raw-dicts.md"
     )
 
     assert crc.check_branch("main", tmp_path, acknowledged=True) == 1
     out = capsys.readouterr().out
-    assert "ces/71" in out
-    assert "ces/79" in out
+    assert "CES/71" in out
+    assert "CES/79" in out
 
 
 def test_a_branch_may_touch_one_standard_and_its_documentation(tmp_path: Path):
     branch_that_touches_standards(
-        tmp_path, "standards/ces/71-keep-files-small.md", "standards/ces/index.md"
+        tmp_path, "standards/CES/71-keep-files-small.md", "standards/CES/index.md"
     )
 
     assert crc.check_branch("main", tmp_path) == 0

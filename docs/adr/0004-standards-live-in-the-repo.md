@@ -10,8 +10,9 @@ standards. Collective writes the CES, and another team can write standards of it
 ## Decision
 
 1. **A standard is a file written by hand**, `standards/<set>/<number>-<slug>.md`, at the root of
-   the repository. A set is the folder of the standards of one author (`ces`). The file carries
-   `id` and `title` in its front matter and prose after it.
+   the repository. A set is the folder of the standards of one author, named like the prefix of
+   their ids (`CES` for `CES-71`). The file carries `id` and `title` in its front matter and prose
+   after it.
 2. **A rule names the standard it implements** in the `standard` field of its `rule.toml`, as
    `<SET>-<number>` (`CES-71`, `ACME-3`). Botica only checks the format. That the file exists is
    checked outside botica.
@@ -27,7 +28,7 @@ standards. Collective writes the CES, and another team can write standards of it
 
 How the number of a standard is assigned, and the lifecycle of a standard (its statuses and
 transitions). Until then the convention of `AGENTS.md` stands: `CES-<issue#>`. The existing CES
-move to `standards/ces/` one pull request each, as the rule above asks.
+move to `standards/CES/` one pull request each, as the rule above asks.
 
 ## Considered options
 

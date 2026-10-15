@@ -37,6 +37,10 @@ def test_every_family_of_the_catalog_has_a_discussions_category():
     assert not missing, f"families with no Discussions category in zensical.toml: {sorted(missing)}"
 
 
+def test_the_standards_have_a_discussions_category_of_their_own():
+    assert "standards" in _giscus().categories
+
+
 def test_the_ids_of_the_categories_are_those_of_discussions():
     giscus = _giscus()
     ids = [*giscus.categories.values(), giscus.fallback_id]

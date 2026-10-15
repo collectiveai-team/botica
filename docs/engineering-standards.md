@@ -9,7 +9,7 @@ A **CES — Collective Engineering Standard** is one house rule that the scaffol
 target repos (as a botica rule, a prek hook, a `pyproject` setting, or an AGENTS.md
 directive + detail file). Each standard is tracked by exactly one issue on the
 [`collectiveai-team/botica`](https://github.com/collectiveai-team/botica/issues) tracker, and its
-text is the file `standards/ces/<number>-<slug>.md` (ADR 0004).
+text is the file `standards/CES/<number>-<slug>.md` (ADR 0004).
 
 ## Two identifiers, two jobs
 
@@ -88,4 +88,4 @@ each with the CES it implements, and documents them.
 ## References
 
 - Roll-out plan: **PRD #78** (`meta/standards-integration`).
-- The text of each standard: `standards/ces/`. Its number is that of its tracker issue.
+- The text of each standard: `standards/CES/`. Its number is that of its tracker issue.
