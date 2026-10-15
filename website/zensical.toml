@@ -46,6 +46,7 @@ favicon = "assets/favicon.svg"
 features = [
   "content.action.edit",
   "content.code.copy",
+  "content.tabs.link",
   "navigation.footer",
   "navigation.indexes",
   "navigation.instant",

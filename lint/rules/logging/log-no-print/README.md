@@ -21,11 +21,26 @@ TypeScript: a call inside a `catch` clause, and the files named `*.test.ts`.
 
 ## Do
 
+```python
+log = get_logger(__name__)
+
+
+def fetch(key):
+    log.info("cache miss", key=key)
+```
+
 ```ts
-logger.info("running");
+export function run(): void {
+  logger.info("running");
+}
 ```
 
 ## Don't
+
+```python
+def fetch(key):
+    print("cache miss", key)
+```
 
 ```ts
 export function run(): void {
@@ -35,5 +50,14 @@ export function run(): void {
 
 ## Suppression
 
-Silence one line with `# botica: ignore[log-no-print]` or `# noqa: BTLOG002` in Python, and with
-`// botica: ignore[log-no-print]` or `// noqa: BTLOG002` in TypeScript.
+Python takes a comment with the slug and a `noqa` with the code. TypeScript takes the comment with
+the slug.
+
+```python
+print("cache miss", key)  # botica: ignore[log-no-print]
+print("cache miss", key)  # noqa: BTLOG002 -- reason
+```
+
+```ts
+console.log("running"); // botica: ignore[log-no-print]
+```

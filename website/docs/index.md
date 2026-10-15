@@ -13,11 +13,13 @@
 
 ## Get started
 
-```bash
-uvx botica lint            # run the rules active in the current directory
-uvx botica rules --all     # every rule, active or not, and why
-uvx botica explain <rule>  # one rule, as it is configured here
-```
+=== "Bash"
+
+    ```bash
+    uvx botica lint            # run the rules active in the current directory
+    uvx botica rules --all     # every rule, active or not, and why
+    uvx botica explain <rule>  # one rule, as it is configured here
+    ```
 
 - [Use](use.md): install, run, configure, silence a finding, run on every commit.
 - [Standards](standards/index.md): the requirements, in sets.
