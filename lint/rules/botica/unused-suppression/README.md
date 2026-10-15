@@ -10,5 +10,9 @@ check (`RUF100`).
 
 ## Suppression
 
-This rule can silence itself, as `RUF100` does: list `unused-suppression` (or `BT002`) in the same
+The rule can silence itself, as `RUF100` does: list `unused-suppression` (or `BT002`) in the same
 comment.
+
+```python
+x = 1  # botica: ignore[no-utils, unused-suppression]
+```

@@ -24,6 +24,11 @@ The `code-dirs` of the project (see `no-notebooks`). Java and Kotlin resources l
 
 ## Suppression
 
-The finding is about a whole file and has no line, so it cannot be silenced with a line comment.
-Exclude the path with `ignores` or `extend-ignores` in the rule's configuration
-(`**/resources/**` allows package data), or exclude it in the project configuration.
+The finding belongs to a whole file. `extend-ignores` in the configuration of the rule leaves out
+the files that match a glob; `**/resources/**` allows package data.
+
+```toml
+# botica.toml
+[rules.no-artifacts-in-package]
+extend-ignores = ["**/resources/**"]
+```

@@ -31,4 +31,9 @@ log = logging.getLogger(__name__)
 
 ## Suppression
 
-Silence one line with `# botica: ignore[log-get-logger]` or `# noqa: BTLOG001`.
+A comment on the line of the `getLogger(...)` call silences it.
+
+```python
+log = logging.getLogger(__name__)  # botica: ignore[log-get-logger]
+log = logging.getLogger(__name__)  # noqa: BTLOG001 -- reason
+```

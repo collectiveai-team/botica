@@ -13,5 +13,9 @@ this rule: prek drops deleted files before it calls the hook.
 
 ## Suppression
 
-There is no file to hold a comment, so this finding cannot be suppressed in the source. Exclude it
-in the configuration.
+The finding is about a path with no file to hold a comment. The configuration turns the rule off:
+
+```toml
+# botica.toml
+ignore = ["io-error"]
+```

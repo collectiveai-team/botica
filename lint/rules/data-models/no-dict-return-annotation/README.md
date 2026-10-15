@@ -38,4 +38,9 @@ def payload() -> dict:
 
 ## Suppression
 
-Silence one line with `# botica: ignore[no-dict-return-annotation]` or `# noqa: BTDM005`.
+A comment on the `def` line silences it.
+
+```python
+def payload() -> dict:  # botica: ignore[no-dict-return-annotation]
+def payload() -> dict:  # noqa: BTDM005 -- reason
+```

@@ -41,4 +41,9 @@ args = parser.parse_args(sys.argv[1:])
 
 ## Suppression
 
-Silence one line with `# botica: ignore[cli-typed-framework]` or `# noqa: BTPROC001`.
+A comment on the line of the import or of the `sys.argv` access silences it.
+
+```python
+import argparse  # botica: ignore[cli-typed-framework]
+import argparse  # noqa: BTPROC001 -- reason
+```

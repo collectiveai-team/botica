@@ -22,6 +22,11 @@ A notebook under `tests`, `test`, `__tests__`, `fixtures`, `testdata`, `examples
 
 ## Suppression
 
-The finding is about a whole file and has no line, so it cannot be silenced with a line comment.
-Exclude the path with `ignores` or `extend-ignores` in the rule's configuration
-(`**/examples/*.ipynb`), or exclude it in the project configuration.
+The finding belongs to a whole file. `extend-ignores` in the configuration of the rule leaves out
+the files that match a glob.
+
+```toml
+# botica.toml
+[rules.no-notebooks]
+extend-ignores = ["**/examples/*.ipynb"]
+```

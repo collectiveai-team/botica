@@ -30,4 +30,9 @@ class Settings(BaseModel):
 
 ## Suppression
 
-Silence one line with `# botica: ignore[settings-base-class]` or `# noqa: BTARCH003`.
+A comment on the `class` line silences the finding.
+
+```python
+class Settings(BaseModel):  # botica: ignore[settings-base-class]
+class Settings(BaseModel):  # noqa: BTARCH003 -- reason
+```

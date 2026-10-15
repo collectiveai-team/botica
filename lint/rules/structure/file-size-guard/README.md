@@ -34,6 +34,28 @@ configuration.
 
 ## Suppression
 
-The finding is about the whole file and has no line, so it cannot be silenced with a line comment.
-Put `botica: ignore-file[file-size-guard]` in a comment of the file, or exclude the file in the
-configuration.
+The finding belongs to the whole file. An `ignore-file` comment anywhere in the file silences it,
+written in the comment syntax of the file: `#` in Python, shell, YAML and TOML, `//` in JavaScript
+and TypeScript, `<!-- -->` in HTML and Markdown.
+
+### Python
+
+```python
+# botica: ignore-file[file-size-guard]
+```
+
+### TypeScript
+
+```ts
+// botica: ignore-file[file-size-guard]
+```
+
+### Configuration
+
+`extend-ignores` leaves out the files that match a glob:
+
+```toml
+# botica.toml
+[rules.file-size-guard]
+extend-ignores = ["src/generated/**"]
+```

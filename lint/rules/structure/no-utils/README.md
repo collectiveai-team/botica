@@ -19,6 +19,16 @@ Don't create catch-all modules. A file named `utils.py`, `helpers.py`, `aux.py`,
 
 ## Suppression
 
-The finding is about the file name and has no line, so it cannot be silenced with a line comment.
-Put `botica: ignore-file[no-utils]` in a comment of the file, or exclude the file in the
-configuration.
+The finding belongs to the file name. An `ignore-file` comment anywhere in the file silences it:
+
+```python
+# botica: ignore-file[no-utils]
+```
+
+`extend-ignores` in the configuration of the rule leaves out the files that match a glob:
+
+```toml
+# botica.toml
+[rules.no-utils]
+extend-ignores = ["src/legacy/utils.py"]
+```

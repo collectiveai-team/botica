@@ -44,4 +44,10 @@ class User(SQLModel, table=True):
 
 ## Suppression
 
-Silence one line with `# botica: ignore[arch-database-package]` or `# noqa: BTARCH001`.
+A comment on the line where the finding starts silences it: the `class` line, or the line of the
+`create_engine(...)` or `sessionmaker(...)` call.
+
+```python
+class User(SQLModel, table=True):  # botica: ignore[arch-database-package]
+class User(SQLModel, table=True):  # noqa: BTARCH001 -- reason
+```

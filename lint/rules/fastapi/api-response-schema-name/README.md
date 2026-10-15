@@ -23,4 +23,9 @@ class Contract(BaseModel):
 
 ## Suppression
 
-Silence one line with `# botica: ignore[api-response-schema-name]` or `# noqa: BTFAST004`.
+A comment on the `class` line silences the finding.
+
+```python
+class Contract(BaseModel):  # botica: ignore[api-response-schema-name]
+class Contract(BaseModel):  # noqa: BTFAST004 -- reason
+```

@@ -1,7 +1,7 @@
 ## Directive
 
-Importable library code logs. It does not call `print()` in Python or `console.log()` in
-TypeScript. A warning by default.
+Importable library code logs through a logger. A `print()` in Python or a `console.log()` in
+TypeScript is a violation. A warning by default.
 
 ## Why
 
@@ -71,8 +71,8 @@ export function run(): void {
 
 ### Python
 
-Two comments silence one line. The first names the rule by its slug, the second by its code, and
-the text after `--` is the reason.
+A comment on the line silences it. There are two forms: `# botica: ignore[<slug>]` names the rule by
+its slug, and `# noqa: <code> -- <reason>` names it by its code, with the reason after `--`.
 
 ```python
 print("cache miss", key)  # botica: ignore[log-no-print]

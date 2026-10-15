@@ -19,5 +19,15 @@ comment looks right. Ruff has the same check (`RUF102`).
 
 ## Suppression
 
-Like any finding with a line: list `invalid-suppression` (or `BT003`) in the same comment, or in an
-`ignore-file[...]` of the file.
+Like any finding with a line, it is silenced by listing `invalid-suppression` (or `BT003`) in the
+same comment:
+
+```python
+ATTEMPTS = 3  # botica: ignore[no-utilz, invalid-suppression]
+```
+
+or in an `ignore-file[...]` comment of the file:
+
+```python
+# botica: ignore-file[invalid-suppression]
+```

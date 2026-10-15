@@ -10,9 +10,11 @@ defaults in one place, no validation, no list of what the application reads.
 
 ## What is exempt
 
-The settings module itself, since it is where the environment is read: `settings.py`, anything
-under `settings/`, `config.py`, anything under `config/`, `conftest.py` and anything under
-`tests/`.
+The rule skips the files where the environment is read on purpose:
+
+- `settings.py` and every file under `settings/`.
+- `config.py` and every file under `config/`.
+- `conftest.py` and every file under `tests/`.
 
 ## Do
 
@@ -35,4 +37,9 @@ if os.getenv("APP_DEBUG"):
 
 ## Suppression
 
-Silence one line with `# botica: ignore[settings-module]` or `# noqa: BTARCH002`.
+A comment on the line of the `os.getenv(...)` or `os.environ` read silences it.
+
+```python
+url = os.getenv("DATABASE_URL")  # botica: ignore[settings-module]
+url = os.getenv("DATABASE_URL")  # noqa: BTARCH002 -- reason
+```

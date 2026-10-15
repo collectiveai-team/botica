@@ -38,4 +38,10 @@ def payload():
 
 ## Suppression
 
-Silence one line with `# botica: ignore[no-dict-literal-return]` or `# noqa: BTDM004`.
+A comment on the `return` line silences it.
+
+```python
+def payload():
+    return {"ok": True}  # botica: ignore[no-dict-literal-return]
+    return {"ok": True}  # noqa: BTDM004 -- reason
+```

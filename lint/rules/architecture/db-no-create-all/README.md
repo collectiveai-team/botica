@@ -22,4 +22,9 @@ SQLModel.metadata.create_all(engine)
 
 ## Suppression
 
-Silence one line with `# botica: ignore[db-no-create-all]` or `# noqa: BTARCH005`.
+A comment on the line of the `create_all(...)` call silences it.
+
+```python
+SQLModel.metadata.create_all(engine)  # botica: ignore[db-no-create-all]
+SQLModel.metadata.create_all(engine)  # noqa: BTARCH005 -- reason
+```

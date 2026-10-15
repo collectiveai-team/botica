@@ -41,4 +41,9 @@ class CreateUserRequest(BaseModel):
 
 ## Suppression
 
-Silence one line with `# botica: ignore[api-schemas-extra-forbid]` or `# noqa: BTFAST001`.
+A comment on the `class` line silences the finding.
+
+```python
+class CreateUserRequest(BaseModel):  # botica: ignore[api-schemas-extra-forbid]
+class CreateUserRequest(BaseModel):  # noqa: BTFAST001 -- reason
+```

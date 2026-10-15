@@ -28,6 +28,11 @@ The rule goes by the names `pytest` collects, so a module that is code but is ca
 
 ## Suppression
 
-The finding is about a whole file and has no line, so it cannot be silenced with a line comment.
-Exclude the path with `ignores` or `extend-ignores` in the rule's configuration, or exclude it in
-the project configuration.
+The finding belongs to a whole file. `extend-ignores` in the configuration of the rule leaves out
+the files that match a glob.
+
+```toml
+# botica.toml
+[rules.no-tests-in-package]
+extend-ignores = ["**/connection_test.py"]
+```

@@ -24,4 +24,9 @@ settings = Settings()
 
 ## Suppression
 
-Silence one line with `# botica: ignore[settings-direct-instantiation]` or `# noqa: BTARCH004`.
+A comment on the line of the call silences it.
+
+```python
+settings = Settings()  # botica: ignore[settings-direct-instantiation]
+settings = Settings()  # noqa: BTARCH004 -- reason
+```

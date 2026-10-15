@@ -39,4 +39,9 @@ Counts = dict[str, int]
 
 ## Suppression
 
-Silence one line with `# botica: ignore[no-dict-alias]` or `# noqa: BTDM002`.
+A comment on the line of the alias silences it.
+
+```python
+Payload = dict  # botica: ignore[no-dict-alias]
+Payload = dict  # noqa: BTDM002 -- reason
+```
