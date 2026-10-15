@@ -261,7 +261,7 @@ mod tests {
             );
             let folder = format!("{}/{}", spec.family, spec.id);
             files.push(file(&format!("{folder}/rule.toml"), &rule));
-            files.push(file(&format!("{folder}/README.md"), "## Directive\n"));
+            files.push(file(&format!("{folder}/README.md"), "## Directive\n\nd\n\n## Why\n\nw\n\n## Do\n\ndo\n\n## Don\'t\n\ndont\n\n## Suppression\n\ns\n"));
             files.push(file(
                 &format!("{folder}/python.yml"),
                 &format!("id: {}\n", spec.id),

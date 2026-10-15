@@ -1,14 +1,14 @@
 mod common;
 
 use botica_catalog::{Catalog, SourceFile};
-use common::{catalog, family, file, issues, rule, rule_toml, NATIVE_ALL};
+use common::{catalog, family, file, issues, rule, rule_toml, NATIVE_ALL, README};
 
 fn rule_with_status(slug: &str, code: &str, status: &str) -> Vec<SourceFile> {
     let toml = rule_toml(slug, code, "", NATIVE_ALL)
         .replace("status = \"stable\"", &format!("status = \"{status}\""));
     vec![
         file(&format!("structure/{slug}/rule.toml"), &toml),
-        file(&format!("structure/{slug}/README.md"), "# readme\n"),
+        file(&format!("structure/{slug}/README.md"), README),
     ]
 }
 
@@ -166,7 +166,7 @@ fn since_is_no_longer_a_key_of_a_rule() {
         vec![family("structure", "STRUC")],
         vec![
             file("structure/one/rule.toml", &toml),
-            file("structure/one/README.md", "# readme\n"),
+            file("structure/one/README.md", README),
         ],
     ]);
 

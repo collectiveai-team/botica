@@ -5,6 +5,8 @@ a file of data or of a model (`csv`, `parquet`, `pkl`, `pt`, `h5`, `npy`, `onnx`
 an error. In a **Python** package, so is any file that is not code under a `data/`, `resources/`
 or `reports/` directory.
 
+The code of a project is its `code-dirs` (see `no-notebooks`).
+
 ## Why
 
 Datasets, generated reports and static assets are not importable code. Bundling them into the
@@ -16,11 +18,34 @@ The name of a directory is not enough: `data/` and `reports/` are often code (a 
 with an `__init__.py`). That is why the rule looks at the **kind of file**, and for the three
 names only at files that are not code.
 
-## What the code is
+## Exceptions
 
-The `code-dirs` of the project (see `no-notebooks`). Java and Kotlin resources live in
-`src/main/resources`, outside `src/main/java`, so they are never flagged. Files under `tests`,
-`fixtures`, `testdata`, `examples`, `docs`, `benches`, `snapshots` and `*_tests` are left alone.
+Java and Kotlin resources live in `src/main/resources`, outside `src/main/java`, so they are never
+flagged. Files under `tests`, `fixtures`, `testdata`, `examples`, `docs`, `benches`, `snapshots`
+and `*_tests` are left alone.
+
+## Do
+
+```text
+myproject/
+  data/raw/sales.csv
+  models/churn.pkl
+  reports/q3.html
+  src/myproject/
+    __init__.py
+    features.py
+```
+
+## Don't
+
+```text
+myproject/
+  src/myproject/
+    __init__.py
+    features.py
+    sales.csv
+    churn.pkl
+```
 
 ## Suppression
 

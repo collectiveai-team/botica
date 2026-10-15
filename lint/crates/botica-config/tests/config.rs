@@ -224,7 +224,7 @@ fn a_removed_rule_cannot_be_mentioned() {
         },
         SourceFile {
             path: "structure/old-rule/README.md".into(),
-            text: "# r\n".into(),
+            text: "## Directive\n\nd\n\n## Why\n\nw\n\n## Do\n\ndo\n\n## Don\'t\n\ndont\n\n## Suppression\n\ns\n".into(),
         },
     ];
     let catalog = Catalog::from_files(&files).expect("catalog with a removed rule");

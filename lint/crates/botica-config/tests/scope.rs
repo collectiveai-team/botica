@@ -24,7 +24,7 @@ fn catalog() -> Catalog {
         });
         files.push(SourceFile {
             path: format!("structure/{slug}/README.md"),
-            text: "# r\n".into(),
+            text: "## Directive\n\nd\n\n## Why\n\nw\n\n## Do\n\ndo\n\n## Don\'t\n\ndont\n\n## Suppression\n\ns\n".into(),
         });
     }
     Catalog::from_files(&files).unwrap_or_else(|error| panic!("catalog:\n{error}"))

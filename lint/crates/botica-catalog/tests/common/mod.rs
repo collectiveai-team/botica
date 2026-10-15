@@ -32,6 +32,13 @@ default-severity = "error"
     )
 }
 
+/// A README with the required sections of a rule of a family.
+pub const README: &str =
+    "## Directive\n\nd\n\n## Why\n\nw\n\n## Do\n\ndo\n\n## Don't\n\ndont\n\n## Suppression\n\ns\n";
+
+/// A README with the sections of a rule of botica itself.
+pub const OWN_README: &str = "## Directive\n\nd\n\n## Why\n\nw\n\n## Suppression\n\ns\n";
+
 pub const NATIVE_ALL: &str = "[[implementations]]\nkind = \"native\"\nlanguages = [\"*\"]\n";
 
 pub fn rule(dir: &str, slug: &str, code: &str) -> Vec<SourceFile> {
@@ -50,7 +57,10 @@ pub fn rule_with(
             &format!("{dir}/{slug}/rule.toml"),
             &rule_toml(slug, code, extra, implementation),
         ),
-        file(&format!("{dir}/{slug}/README.md"), "# readme\n"),
+        file(
+            &format!("{dir}/{slug}/README.md"),
+            if dir == "botica" { OWN_README } else { README },
+        ),
     ]
 }
 

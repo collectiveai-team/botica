@@ -24,9 +24,12 @@ no check at all.
    `kind = "judgment"` on the implementation. Their code is the next free number of the family, as
    for any rule. A rule that becomes deterministic changes its implementation and keeps its folder,
    slug and code, so configurations, suppressions and links keep working.
-4. **Each kind has a template, and the catalog enforces it.** `build.rs` fails on a folder that
-   does not match the template of its kind, and `botica rules new --kind <kind>` writes a folder
-   from it.
+4. **Each kind has a template, and the catalog enforces it.** The catalog does not load a folder
+   that does not match the template of its kind, so the tests of `botica-catalog` and every command
+   of botica fail on it, and `botica rules new --kind <kind>` writes a folder from it. The sections
+   of a README are a closed list in a fixed order: a section that the template does not name, one
+   out of its order, a missing required one and text before the first are errors. A rule of botica
+   itself (`rules/botica/`) has the sections Directive, Why and Suppression.
 
    | | Deterministic (`native`, `ast-grep`, `extension`) | `judgment` |
    |---|---|---|

@@ -11,11 +11,25 @@ Don't create catch-all modules. A file named `utils.py`, `helpers.py`, `aux.py`,
 - A precise name (`text_wrapping.py`, `retry.py`, `iso_dates.py`) forces you to decide what the
   module is about, which keeps responsibilities sharp.
 
-## When you reach for `utils.py`
+## Do
 
 1. Name the concept the helper serves and make a module for it.
 2. If it is one function used by one caller, inline it or keep it next to that caller.
 3. If several helpers cluster around a concept, that concept is the module name.
+
+```text
+myapp/
+  retry.py           # retry with backoff
+  iso_dates.py       # parse and format ISO 8601 dates
+  text_wrapping.py
+```
+
+## Don't
+
+```text
+myapp/
+  utils.py           # retry, date parsing and text wrapping
+```
 
 ## Suppression
 

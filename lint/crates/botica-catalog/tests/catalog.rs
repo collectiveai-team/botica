@@ -1,7 +1,7 @@
 mod common;
 
 use botica_catalog::Status;
-use common::{catalog, family, file, issues, rule, rule_toml, rule_with, NATIVE_ALL};
+use common::{catalog, family, file, issues, rule, rule_toml, rule_with, NATIVE_ALL, README};
 
 #[test]
 fn loads_families_and_rules_and_resolves_slug_code_and_alias() {
@@ -142,7 +142,7 @@ fn rejects_an_id_that_differs_from_its_folder() {
                 "structure/folder-name/rule.toml",
                 &rule_toml("other-name", "BTSTRUC001", "", NATIVE_ALL),
             ),
-            file("structure/folder-name/README.md", "# readme\n"),
+            file("structure/folder-name/README.md", README),
         ],
     ]);
     assert!(

@@ -12,9 +12,9 @@ Every Pydantic request or response model at the API boundary sets
 - Forbidding extras makes the schema a strict contract: the accepted shape is exactly the
   declared fields, and a mismatch fails loudly with a 422.
 
-## Where it applies
+## Exceptions
 
-By placement, not by guessing intent: only schemas under an api `schemas/requests` or
+The rule goes by the path of a file: it reads the schemas under an api `schemas/requests` or
 `schemas/responses` package. Domain models, and every model of a repository without an API, are
 left alone.
 

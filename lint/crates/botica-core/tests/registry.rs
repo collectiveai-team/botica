@@ -30,7 +30,7 @@ languages = ["*"]
     );
     vec![
         file(&format!("structure/{slug}/rule.toml"), &toml),
-        file(&format!("structure/{slug}/README.md"), "# readme\n"),
+        file(&format!("structure/{slug}/README.md"), "## Directive\n\nd\n\n## Why\n\nw\n\n## Do\n\ndo\n\n## Don\'t\n\ndont\n\n## Suppression\n\ns\n"),
         file(
             "structure/family.toml",
             "code = \"STRUC\"\ndescription = \"A family used by the tests\"\n",
