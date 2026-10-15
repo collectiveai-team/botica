@@ -14,9 +14,6 @@ from pathlib import Path
 
 import pytest
 
-from scaffolding.components import STANDARDS_RULE_DETAILS
-from scaffolding.templates_registry import template_text
-
 ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "lint" / "rules"
 SKILL_RULES = ROOT / "skills" / "engineering" / "engineering-rules" / "references"
@@ -32,7 +29,6 @@ SKILL_RULES_THAT_REPEATED_THE_CATALOG = (
 )
 
 CES_ENTRY = re.compile(r"^- \*\*CES-(\d+) · ", re.M)
-CES_HEADING = re.compile(r"\A# CES-(\d+) · ")
 CES_ROW = re.compile(r"^\| \*\*CES-(\d+)\*\* \|", re.M)
 
 
@@ -51,40 +47,9 @@ SLUGS = {slug for slug, _ in _catalog()}
 MEASURED_CES = {ces for _, ces in _catalog() if ces is not None}
 
 
-def _detail_dirs() -> list[Path]:
-    return [ROOT / "scaffolding" / "templates" / "agents-rules", ROOT / ".agents" / "rules"]
-
-
 def test_the_catalog_is_found():
     assert {"file-size-guard", "log-no-print", "no-dict-alias"} <= SLUGS
     assert {4, 18, 32, 45, 46, 63, 67, 71, 76, 79} <= MEASURED_CES
-
-
-@pytest.mark.parametrize("directory", _detail_dirs(), ids=lambda path: path.parent.name)
-def test_no_detail_file_describes_a_rule_the_catalog_measures(directory: Path):
-    found = []
-    for path in sorted(directory.glob("*.md")):
-        heading = CES_HEADING.match(path.read_text(encoding="utf-8"))
-        cites_a_measured_ces = bool(heading) and int(heading.group(1)) in MEASURED_CES
-        if path.stem in SLUGS or cites_a_measured_ces:
-            found.append(path.name)
-
-    assert not found, f"described in {directory.name} and in the catalog: {found}"
-
-
-def test_the_standards_component_ships_no_detail_of_a_measured_rule():
-    shipped = [
-        name
-        for name in STANDARDS_RULE_DETAILS
-        if name in SLUGS or _heading_ces(template_text(f"agents-rules/{name}.md")) in MEASURED_CES
-    ]
-
-    assert not shipped, f"STANDARDS_RULE_DETAILS names rules of the catalog: {shipped}"
-
-
-def _heading_ces(text: str) -> int | None:
-    heading = CES_HEADING.match(text)
-    return int(heading.group(1)) if heading else None
 
 
 @pytest.mark.parametrize(
@@ -143,7 +108,6 @@ def _normative_texts() -> list[Path]:
         *templates.rglob("*.yml"),
         *github.rglob("*.md"),
         *github.rglob("*.yml"),
-        *(ROOT / ".agents" / "rules").glob("*.md"),
         *(ROOT / "skills").rglob("*.md"),
         *CATALOG.glob("*/*/README.md"),
         ROOT / "AGENTS.md",

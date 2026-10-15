@@ -1,7 +1,9 @@
-# CES-30 · respect the local repo
+---
+id: CES-30
+title: respect the local repo
+---
 
-**Code:** `CES-30` &nbsp;·&nbsp; **Slug:** `general-respect-local-repo` &nbsp;·&nbsp; **Tier:**
-judgment &nbsp;·&nbsp; **Tracker:** [#30](https://github.com/collectiveai-team/botica/issues/30)
+**Tier:** judgment
 
 ## Directive
 

@@ -9,8 +9,8 @@ teaching a rev the repo no longer uses.
 Same posture as `test_skill_catalog.py`: a copy that cannot drift undetected is
 worth more than a copy nobody re-reads. When this fails, update the rule.
 
-A rule with a CES also ships in `scaffolding/templates/agents-rules/`, and the skill carries it
-for the repositories that have no `.agents/rules/`. The two copies must say the same.
+A standard of `standards/` is also carried by the skill, for the repositories that have no such
+folder. The two copies must say the same.
 """
 
 from __future__ import annotations
@@ -57,29 +57,31 @@ def test_rule_quotes_the_rev_prek_actually_pins(repo_url: str):
     )
 
 
-TEMPLATE_RULES = REPO_ROOT / "scaffolding" / "templates" / "agents-rules"
+STANDARDS = REPO_ROOT / "standards" / "CES"
 
 
-def _body(path: Path) -> str:
-    """Return a rule without the frontmatter the skill adds to it."""
+def _directive(path: Path) -> str:
+    """Return a standard from its first section on, without the header that each copy has."""
     text = path.read_text(encoding="utf-8")
-    if text.startswith("---\n"):
-        text = text.split("\n---\n", 1)[1]
-    return text.strip()
+    return text[text.index("\n## ") :].strip()
 
 
-def test_a_rule_the_skill_shares_with_the_templates_says_what_the_template_says():
+def _slug(standard: Path) -> str:
+    return standard.stem.split("-", 1)[1]
+
+
+def test_a_rule_the_skill_shares_with_the_standards_says_what_the_standard_says():
     shared = sorted(
-        rule.name
-        for rule in TEMPLATE_RULES.glob("*.md")
-        if (SKILL / "references" / rule.name).exists()
+        standard
+        for standard in STANDARDS.glob("[0-9]*.md")
+        if (SKILL / "references" / f"{_slug(standard)}.md").exists()
     )
     assert shared, "no rule is in both places: drop this test if that was deliberate"
 
     drifted = [
-        name
-        for name in shared
-        if _body(SKILL / "references" / name) != _body(TEMPLATE_RULES / name)
+        standard.name
+        for standard in shared
+        if _directive(SKILL / "references" / f"{_slug(standard)}.md") != _directive(standard)
     ]
 
-    assert not drifted, f"the skill says something else than the template: {drifted}"
+    assert not drifted, f"the skill says something else than the standard: {drifted}"

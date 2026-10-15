@@ -1,7 +1,9 @@
-# CES-8 · separate orchestration from logic
+---
+id: CES-8
+title: separate orchestration from logic
+---
 
-**Code:** `CES-8` &nbsp;·&nbsp; **Slug:** `spaghetti-mixed-orchestration` &nbsp;·&nbsp; **Tier:**
-judgment &nbsp;·&nbsp; **Tracker:** [#8](https://github.com/collectiveai-team/botica/issues/8)
+**Tier:** judgment
 
 ## Directive
 

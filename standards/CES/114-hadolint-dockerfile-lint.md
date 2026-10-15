@@ -1,8 +1,9 @@
-# CES-114 · Dockerfile lint (hadolint)
+---
+id: CES-114
+title: Dockerfile lint (hadolint)
+---
 
-**Code:** `CES-114` &nbsp;·&nbsp; **Slug:** `hadolint-dockerfile-lint` &nbsp;·&nbsp; **Enforced
-by:** prek hook (`hadolint-docker`, file-pattern-scoped) &nbsp;·&nbsp; **Tracker:**
-[#114](https://github.com/collectiveai-team/botica/issues/114)
+**Enforced by:** prek hook (`hadolint-docker`, file-pattern-scoped)
 
 ## Directive
 

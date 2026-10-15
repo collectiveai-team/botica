@@ -15,9 +15,8 @@ breaks it next to code that follows it, a file tree, or a diff. -->
 
 ## Implementation
 
-<!-- The rules that implement it (`standard = "..."` in their `rule.toml`). For each one: its kind
-(native, ast-grep, extension), the languages it applies to and its default severity. If there is
-none yet, say why. -->
+<!-- The rules that implement it (`standard = "..."` in their `rule.toml`). For each one: the
+languages it applies to and its default severity. If there is none yet, say why. -->
 
 ## Reasoning
 

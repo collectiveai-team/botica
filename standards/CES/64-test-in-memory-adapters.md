@@ -1,7 +1,9 @@
-# CES-64 · test against in-memory adapters
+---
+id: CES-64
+title: test against in-memory adapters
+---
 
-**Code:** `CES-64` &nbsp;·&nbsp; **Slug:** `test-in-memory-adapters` &nbsp;·&nbsp; **Tier:**
-judgment &nbsp;·&nbsp; **Tracker:** [#64](https://github.com/collectiveai-team/botica/issues/64)
+**Tier:** judgment
 
 ## Directive
 

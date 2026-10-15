@@ -1,8 +1,9 @@
-# CES-113 · dependency-review-action
+---
+id: CES-113
+title: dependency-review-action
+---
 
-**Code:** `CES-113` &nbsp;·&nbsp; **Slug:** `dependency-review-action` &nbsp;·&nbsp; **Enforced
-by:** CI workflow (`dependency-review.yml`) &nbsp;·&nbsp; **Tracker:**
-[#113](https://github.com/collectiveai-team/botica/issues/113)
+**Enforced by:** CI workflow (`dependency-review.yml`)
 
 ## Directive
 

@@ -1,7 +1,9 @@
-# CES-65 · test through the interface
+---
+id: CES-65
+title: test through the interface
+---
 
-**Code:** `CES-65` &nbsp;·&nbsp; **Slug:** `test-through-interface` &nbsp;·&nbsp; **Tier:** judgment
-&nbsp;·&nbsp; **Tracker:** [#65](https://github.com/collectiveai-team/botica/issues/65)
+**Tier:** judgment
 
 ## Directive
 

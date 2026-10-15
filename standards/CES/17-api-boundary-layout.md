@@ -1,9 +1,9 @@
-# CES-17 · API boundary layout
+---
+id: CES-17
+title: API boundary layout
+---
 
-**Code:** `CES-17` &nbsp;·&nbsp; **Slug:** `api-boundary-layout` &nbsp;·&nbsp; **Enforced by:**
-AGENTS directive + placement-scoped botica rules that depend on this layout (e.g. CES-4); a
-**commented** import-linter forbidden-contract skeleton in `pyproject.toml` &nbsp;·&nbsp;
-**Tracker:** [#17](https://github.com/collectiveai-team/botica/issues/17)
+**Enforced by:** AGENTS directive + placement-scoped botica rules that depend on this layout (e.g. CES-4); a **commented** import-linter forbidden-contract skeleton in `pyproject.toml`
 
 ## Directive
 

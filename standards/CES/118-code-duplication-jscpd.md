@@ -1,8 +1,9 @@
-# CES-118 · copy-paste duplication (jscpd)
+---
+id: CES-118
+title: copy-paste duplication (jscpd)
+---
 
-**Code:** `CES-118` &nbsp;·&nbsp; **Slug:** `code-duplication-jscpd` &nbsp;·&nbsp; **Enforced
-by:** prek hook &nbsp;·&nbsp; **Tracker:**
-[#118](https://github.com/collectiveai-team/botica/issues/118)
+**Enforced by:** prek hook
 
 ## Directive
 

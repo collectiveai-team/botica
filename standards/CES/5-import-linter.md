@@ -1,9 +1,9 @@
-# CES-5 · layered import direction
+---
+id: CES-5
+title: layered import direction
+---
 
-**Code:** `CES-5` &nbsp;·&nbsp; **Slug:** `import-linter` &nbsp;·&nbsp; **Enforced by:** AGENTS
-directive now; a **commented** `[tool.importlinter]` skeleton in `pyproject.toml` (uncomment once
-the package has layers) &nbsp;·&nbsp; **Tracker:**
-[#5](https://github.com/collectiveai-team/botica/issues/5)
+**Enforced by:** AGENTS directive now; a **commented** `[tool.importlinter]` skeleton in `pyproject.toml` (uncomment once the package has layers)
 
 ## Directive
 

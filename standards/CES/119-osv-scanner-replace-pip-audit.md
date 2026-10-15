@@ -1,8 +1,9 @@
-# CES-119 · dependency vulnerability scanning (osv-scanner)
+---
+id: CES-119
+title: dependency vulnerability scanning (osv-scanner)
+---
 
-**Code:** `CES-119` &nbsp;·&nbsp; **Slug:** `osv-scanner-replace-pip-audit` &nbsp;·&nbsp;
-**Enforced by:** CI workflow (`osv-scanner.yml`) &nbsp;·&nbsp; **Tracker:**
-[#119](https://github.com/collectiveai-team/botica/issues/119)
+**Enforced by:** CI workflow (`osv-scanner.yml`)
 
 ## Directive
 

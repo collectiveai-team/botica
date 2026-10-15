@@ -1,8 +1,9 @@
-# CES-109 · dependency hygiene (deptry)
+---
+id: CES-109
+title: dependency hygiene (deptry)
+---
 
-**Code:** `CES-109` &nbsp;·&nbsp; **Slug:** `dep-hygiene-deptry` &nbsp;·&nbsp; **Enforced by:**
-prek hook &nbsp;·&nbsp; **Tracker:**
-[#109](https://github.com/collectiveai-team/botica/issues/109)
+**Enforced by:** prek hook
 
 ## Directive
 

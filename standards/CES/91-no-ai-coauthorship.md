@@ -1,8 +1,9 @@
-# CES-91 · no AI co-authorship in commits
+---
+id: CES-91
+title: no AI co-authorship in commits
+---
 
-**Code:** `CES-91` &nbsp;·&nbsp; **Slug:** `no-ai-coauthorship` &nbsp;·&nbsp; **Enforced by:** prek
-commit-msg hook + CI (`commit-policy.yml`) &nbsp;·&nbsp; **Tracker:**
-[#91](https://github.com/collectiveai-team/botica/issues/91)
+**Enforced by:** prek commit-msg hook + CI (`commit-policy.yml`)
 
 ## Directive
 

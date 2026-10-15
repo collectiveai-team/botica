@@ -5,7 +5,7 @@ mock. Tests drive logic through it (CES-65: through the interface), assert on ou
 millisecond-fast and deterministic.
 
 Drop this beside your tests (e.g. ``tests/fakes/in_memory_repository.py``) and inject it where the
-real SQL/HTTP adapter would go. See ``.agents/rules/test-in-memory-adapters.md`` for the rule.
+real SQL/HTTP adapter would go. See CES-64 for the rule.
 """
 
 from __future__ import annotations

@@ -50,31 +50,6 @@ GITIGNORE_ENTRIES = [
 AGENTS_MARKER = "## Repo Workspace Defaults"
 # Marker-gated section the `standards` component owns in AGENTS.md (sibling to AGENTS_MARKER).
 STANDARDS_MARKER = "## Engineering Standards"
-# Per-CES detail files under .agents/rules/ shipped by the standards component. One file per
-# standard. A rule that botica measures has none: its README in the catalog (`lint/rules`) is its
-# only documentation (`tests/test_catalog_is_the_only_doc.py`).
-STANDARDS_RULE_DETAILS = [
-    "skills-manifest",
-    "core-logger",
-    "agents-conventional-commits",
-    "import-linter",
-    "api-boundary-layout",
-    "arch-vocabulary",
-    "spaghetti-mixed-orchestration",
-    "general-respect-local-repo",
-    "py-legacy-lint-stack",
-    "test-in-memory-adapters",
-    "test-through-interface",
-    "test-coverage-gap",
-    "no-ai-coauthorship",
-    "dep-hygiene-deptry",
-    "cognitive-complexity-complexipy",
-    "test-order-randomization-pytest-randomly",
-    "dependency-review-action",
-    "hadolint-dockerfile-lint",
-    "code-duplication-jscpd",
-    "osv-scanner-replace-pip-audit",
-]
 # Canonical drop-in / comparison code shipped under snippets/ (may be nested, e.g. core/logger.py).
 STANDARDS_SNIPPETS = [
     "no-dict-boundary.py",
@@ -434,16 +409,6 @@ def plan_standards(ctx: Context) -> list[Op]:
     ops += [
         write_if_absent(
             "standards",
-            ctx.root / ".agents" / "rules" / f"{slug}.md",
-            template_text(f"agents-rules/{slug}.md"),
-            f".agents/rules/{slug}.md",
-            ctx.guide_url,
-        )
-        for slug in STANDARDS_RULE_DETAILS
-    ]
-    ops += [
-        write_if_absent(
-            "standards",
             ctx.root / ".agents" / "snippets" / snippet,
             template_text(f"snippets/{snippet}"),
             f".agents/snippets/{snippet}",
@@ -577,7 +542,7 @@ REGISTRY: list[Component] = [
     Component("agents", "AGENTS.md workspace-defaults section", 1, True, _always, plan_agents),
     Component(
         "standards",
-        "Engineering Standards index + .agents/rules detail + snippets",
+        "Engineering Standards index + snippets",
         1,
         True,
         _python,

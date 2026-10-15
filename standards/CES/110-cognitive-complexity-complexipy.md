@@ -1,8 +1,9 @@
-# CES-110 · cognitive complexity (complexipy)
+---
+id: CES-110
+title: cognitive complexity (complexipy)
+---
 
-**Code:** `CES-110` &nbsp;·&nbsp; **Slug:** `cognitive-complexity-complexipy` &nbsp;·&nbsp;
-**Enforced by:** prek hook &nbsp;·&nbsp; **Tracker:**
-[#110](https://github.com/collectiveai-team/botica/issues/110)
+**Enforced by:** prek hook
 
 ## Directive
 

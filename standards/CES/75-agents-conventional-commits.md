@@ -1,8 +1,9 @@
-# CES-75 · Conventional Commits
+---
+id: CES-75
+title: Conventional Commits
+---
 
-**Code:** `CES-75` &nbsp;·&nbsp; **Slug:** `agents-conventional-commits` &nbsp;·&nbsp; **Enforced
-by:** prek commit-msg hook + CI PR-title check &nbsp;·&nbsp; **Tracker:**
-[#75](https://github.com/collectiveai-team/botica/issues/75)
+**Enforced by:** prek commit-msg hook + CI PR-title check
 
 ## Directive
 

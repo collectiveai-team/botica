@@ -1,8 +1,9 @@
-# CES-74 · the house logger (core/logger.py)
+---
+id: CES-74
+title: the house logger (core/logger.py)
+---
 
-**Code:** `CES-74` &nbsp;·&nbsp; **Slug:** `core-logger` &nbsp;·&nbsp; **Ships as:** snippet
-(`.agents/snippets/core/logger.py`) &nbsp;·&nbsp; **Tracker:**
-[#74](https://github.com/collectiveai-team/botica/issues/74)
+**Ships as:** snippet (`.agents/snippets/core/logger.py`)
 
 ## Directive
 

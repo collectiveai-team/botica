@@ -1,9 +1,8 @@
 ## Engineering Standards
 
 > **Retrieval-led, not training-led.** Prefer this repo's standards and snippets over
-> training-default patterns. Before writing code that touches a rule below, open its
-> `@.agents/rules/<slug>.md` detail file and the matching `.agents/snippets/` drop-in, and follow
-> the house pattern rather than your default one.
+> training-default patterns. Before writing code that touches a rule below, open the matching
+> `.agents/snippets/` drop-in and follow the house pattern rather than your default one.
 
 Each rule is a **CES — Collective Engineering Standard** (`CES-<issue#>` is the citable code;
 the kebab-case slug is the machine id used by tooling and `# botica: ignore[<slug>]`
@@ -21,69 +20,58 @@ describes one, and the hook reports each finding with its slug and its message.
 
 - **CES-107 · track the skills manifest** `[script]` — commit `skills-lock.json`; `.agents/skills/`
   is derived from it and stays gitignored. Install restores from the manifest. It pins no version
-  and verifies no hash, so call it a manifest, not a lock. Slug: `skills-manifest`. →
-  `@.agents/rules/skills-manifest.md`
+  and verifies no hash, so call it a manifest, not a lock. Slug: `skills-manifest`.
 - **CES-74 · the house logger** `[snippet]` — `.agents/snippets/core/logger.py` is the canonical structlog
   setup (JSON in prod, colored console in dev, level from `LOG_LEVEL`). Drop it in at
-  `<pkg>/core/logger.py`. Slug: `core-logger`. → `@.agents/rules/core-logger.md`
+  `<pkg>/core/logger.py`. Slug: `core-logger`.
 - **CES-75 · Conventional Commits** `[prek]` — commit subjects follow `type(scope): description`;
   a commit-msg hook checks every commit and a CI workflow checks the PR title. Slug:
-  `agents-conventional-commits`. → `@.agents/rules/agents-conventional-commits.md`
+  `agents-conventional-commits`.
 - **CES-77 · version pin** `[judgment]` — `requires-python` ships as a non-enforced comment
   (house default 3.14); an existing repo's pin wins. → see `pyproject.toml` comment.
 - **CES-5 · layered import direction** `[judgment]` — imports flow `entrypoints → api →
   database/impl → core`, never upward; ships as a commented `[tool.importlinter]` skeleton to
-  uncomment once layers exist. Slug: `import-linter`. → `@.agents/rules/import-linter.md`
+  uncomment once layers exist. Slug: `import-linter`.
 - **CES-17 · API boundary layout** `[judgment]` — inbound HTTP lives in a versioned `api` package
   (`api/<v>/schemas/{requests,responses}`, `routers/`); only `api` is the inbound boundary. Slug:
-  `api-boundary-layout`. → `@.agents/rules/api-boundary-layout.md`
+  `api-boundary-layout`.
 - **CES-16 · architectural vocabulary** `[judgment]` — name units with the house terms
   (`entrypoints`/`api`/`database`/`impl`/`core`, ports/adapters), not ad-hoc synonyms. Slug:
-  `arch-vocabulary`. → `@.agents/rules/arch-vocabulary.md`
+  `arch-vocabulary`.
 - **CES-8 · separate orchestration from logic** `[judgment]` — keep control flow thin; push
   business logic and I/O into named, separately-testable units. Slug:
-  `spaghetti-mixed-orchestration`. → `@.agents/rules/spaghetti-mixed-orchestration.md`
+  `spaghetti-mixed-orchestration`.
 - **CES-30 · respect the local repo** `[judgment]` — existing deliberate choices (pins, config,
   layout) win over house defaults; adopt standards as explicit migrations, never silent
-  overwrites. Slug: `general-respect-local-repo`. → `@.agents/rules/general-respect-local-repo.md`
+  overwrites. Slug: `general-respect-local-repo`.
 - **CES-58 · one modern lint stack** `[judgment]` — ruff + pyrefly + botica via prek; don't
-  reintroduce black/isort/flake8/pylint. Slug: `py-legacy-lint-stack`. →
-  `@.agents/rules/py-legacy-lint-stack.md`
+  reintroduce black/isort/flake8/pylint. Slug: `py-legacy-lint-stack`.
 - **CES-64 · test against in-memory adapters** `[judgment]` — drive logic through working
-  in-memory fakes of your ports, not mocks or live I/O. Slug: `test-in-memory-adapters`. →
-  `@.agents/rules/test-in-memory-adapters.md`
+  in-memory fakes of your ports, not mocks or live I/O. Slug: `test-in-memory-adapters`.
 - **CES-65 · test through the interface** `[judgment]` — assert on observable behaviour via the
-  public seam, never private internals. Slug: `test-through-interface`. →
-  `@.agents/rules/test-through-interface.md`
+  public seam, never private internals. Slug: `test-through-interface`.
 - **CES-66 · coverage gaps are a signal** `[judgment]` — treat an uncovered branch as a missing
-  test, dead code, or a seam to refactor — not a number to game. Slug: `test-coverage-gap`. →
-  `@.agents/rules/test-coverage-gap.md`
+  test, dead code, or a seam to refactor — not a number to game. Slug: `test-coverage-gap`.
 - **CES-91 · no AI co-authorship in commits** `[prek]` `[ci]` — commit messages must not carry
   `Co-authored-by:`/`Generated with`/etc AI-attribution trailers; a commit-msg hook gives local
-  feedback, `commit-policy.yml` is the CI source of truth. Slug: `no-ai-coauthorship`. →
-  `@.agents/rules/no-ai-coauthorship.md`
+  feedback, `commit-policy.yml` is the CI source of truth. Slug: `no-ai-coauthorship`.
 - **CES-109 · dependency hygiene** `[prek]` — declared `pyproject.toml` dependencies must match
   the actual import graph (no unused/missing/misplaced deps), via `deptry`. Slug:
-  `dep-hygiene-deptry`. → `@.agents/rules/dep-hygiene-deptry.md`
+  `dep-hygiene-deptry`.
 - **CES-110 · cognitive complexity** `[prek]` — a function's cognitive-complexity score (nesting
   depth + control-flow breaks, distinct from ruff's cyclomatic `C90`) stays under 15, via
-  `complexipy`. Slug: `cognitive-complexity-complexipy`. →
-  `@.agents/rules/cognitive-complexity-complexipy.md`
+  `complexipy`. Slug: `cognitive-complexity-complexipy`.
 - **CES-111 · randomize test order** `[dependency]` — `pytest-randomly` runs every test suite in
   a random, reproducibly-seeded order to catch state-leaking/order-dependent tests; activates
-  automatically, no separate hook. Slug: `test-order-randomization-pytest-randomly`. →
-  `@.agents/rules/test-order-randomization-pytest-randomly.md`
+  automatically, no separate hook. Slug: `test-order-randomization-pytest-randomly`.
 - **CES-113 · dependency review on PRs** `[ci]` — `dependency-review-action` comments a
   new-dependency/license/vulnerability summary on every PR that changes the dependency graph;
-  summary-only, not a merge gate. Slug: `dependency-review-action`. →
-  `@.agents/rules/dependency-review-action.md`
+  summary-only, not a merge gate. Slug: `dependency-review-action`.
 - **CES-114 · Dockerfile lint** `[prek]` — `hadolint`, scoped to `^Dockerfile`; inert unless a
-  Dockerfile is present. Slug: `hadolint-dockerfile-lint`. →
-  `@.agents/rules/hadolint-dockerfile-lint.md`
+  Dockerfile is present. Slug: `hadolint-dockerfile-lint`.
 - **CES-118 · no copy-paste duplication** `[prek]` — near-verbatim duplicated code blocks above a
   token threshold fail the build, via `jscpd` (polyglot, respects `.gitignore`). Slug:
-  `code-duplication-jscpd`. → `@.agents/rules/code-duplication-jscpd.md`
+  `code-duplication-jscpd`.
 - **CES-119 · dependency vulnerability scanning** `[ci]` — `osv-scanner` scans `uv.lock` (and any
   other ecosystem lockfile) against the OSV.dev database on every push/PR/weekly schedule;
-  replaces `pip-audit.yml`. Slug: `osv-scanner-replace-pip-audit`. →
-  `@.agents/rules/osv-scanner-replace-pip-audit.md`
+  replaces `pip-audit.yml`. Slug: `osv-scanner-replace-pip-audit`.

@@ -134,15 +134,14 @@ def _standards_dispositions(  # botica: ignore[no-dict-return-annotation]
     return {op.target: op.disposition for op in plan.ops if op.component == "standards"}
 
 
-def test_standards_clean_repo_adds_index_rules_snippets(repo: Path):
+def test_standards_clean_repo_adds_index_and_snippets_and_no_detail_files(repo: Path):
     (repo / "app.py").write_text("x = 1\n")
     plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
     disp = _standards_dispositions(plan)
     adds = {t for t, d in disp.items() if d is Disposition.ADD}
     assert "AGENTS.md" in adds
-    assert ".agents/rules/import-linter.md" in adds
-    assert ".agents/rules/core-logger.md" in adds
     assert ".agents/snippets/no-dict-boundary.py" in adds
+    assert not [target for target in disp if target.startswith(".agents/rules/")]
     # the `agents` dependency is pulled in so AGENTS.md has a base to append to.
     assert any("required by standards" in n for n in plan.notices)
 
@@ -158,7 +157,6 @@ def test_standards_defers_and_skips_when_present(repo: Path):
     settings = Settings(skip_skills=True, skip_varlock=True)
     plan = build_plan(repo, _facts(repo), settings, requested=["standards"])
     apply(plan, repo)
-    assert (repo / ".agents/rules/import-linter.md").exists()
     assert (repo / ".agents/snippets/no-dict-boundary.py").exists()
     body = (repo / "AGENTS.md").read_text()
     assert STANDARDS_MARKER in body
@@ -166,8 +164,6 @@ def test_standards_defers_and_skips_when_present(repo: Path):
 
     plan2 = build_plan(repo, _facts(repo), settings, requested=["standards"])
     disp = _standards_dispositions(plan2)
-    assert disp[".agents/rules/import-linter.md"] is Disposition.DEFER
-    assert disp[".agents/rules/core-logger.md"] is Disposition.DEFER
     assert disp[".agents/snippets/no-dict-boundary.py"] is Disposition.DEFER
     assert disp["AGENTS.md"] is Disposition.SKIP
 
@@ -178,12 +174,11 @@ def test_standards_defers_and_skips_when_present(repo: Path):
     assert AGENTS_MARKER in body2
 
 
-def test_standards_core_logger_adds_detail_and_snippet(repo: Path):
+def test_standards_core_logger_adds_the_snippet(repo: Path):
     (repo / "app.py").write_text("x = 1\n")
     plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
     disp = _standards_dispositions(plan)
     adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    assert ".agents/rules/core-logger.md" in adds
     assert ".agents/snippets/core/logger.py" in adds
 
 
@@ -219,14 +214,6 @@ def test_prek_plan_ships_repo_hygiene_through_the_botica_hook(repo: Path):
     for retired in ("file-size-guard", "no-utils", "repo-shape"):
         assert f'id = "{retired}"' not in content
     assert "{{ import_package }}" not in content
-
-
-def test_standards_conventional_commits_adds_detail(repo: Path):
-    (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
-    disp = _standards_dispositions(plan)
-    adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    assert ".agents/rules/agents-conventional-commits.md" in adds
 
 
 def test_prek_plan_ships_commit_msg_hook(repo: Path):
@@ -368,15 +355,6 @@ def test_pytest_randomly_ships_in_dev_group():
     assert "pytest-randomly" in body
 
 
-def test_standards_pyproject_layer_rules_add_details(repo: Path):
-    (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
-    disp = _standards_dispositions(plan)
-    adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    assert ".agents/rules/import-linter.md" in adds
-    assert ".agents/rules/api-boundary-layout.md" in adds
-
-
 def test_pyproject_plan_adds_on_clean_defers_on_existing(repo: Path):
     (repo / "app.py").write_text("x = 1\n")
     plan = build_plan(repo, _facts(repo), Settings(), requested=["pyproject"])
@@ -400,57 +378,22 @@ def test_pyproject_template_version_pin_and_importlinter_skeleton():
     assert "CES-17" in body
 
 
-def test_standards_judgment_tier_details_and_snippet(repo: Path):
+def test_standards_judgment_tier_snippet(repo: Path):
     (repo / "app.py").write_text("x = 1\n")
     plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
     disp = _standards_dispositions(plan)
     adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    for slug in (
-        "arch-vocabulary",
-        "spaghetti-mixed-orchestration",
-        "general-respect-local-repo",
-        "py-legacy-lint-stack",
-        "test-in-memory-adapters",
-        "test-through-interface",
-        "test-coverage-gap",
-    ):
-        assert f".agents/rules/{slug}.md" in adds
     assert ".agents/snippets/tests/in_memory_repository.py" in adds
-
-
-def test_standards_aug5_batch_adds_details(repo: Path):
-    (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
-    disp = _standards_dispositions(plan)
-    adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    for slug in (
-        "no-ai-coauthorship",
-        "dep-hygiene-deptry",
-        "cognitive-complexity-complexipy",
-        "test-order-randomization-pytest-randomly",
-        "dependency-review-action",
-        "hadolint-dockerfile-lint",
-        "code-duplication-jscpd",
-        "osv-scanner-replace-pip-audit",
-    ):
-        assert f".agents/rules/{slug}.md" in adds
 
 
 def test_judgment_tier_index_entries_marked_judgment():
     index = template_text("standards-index.md")
     for code in ("CES-16", "CES-8", "CES-30", "CES-58", "CES-64", "CES-65", "CES-66"):
         assert code in index
-    # all seven are judgment-tier and point at their detail files.
-    for slug in (
-        "arch-vocabulary",
-        "spaghetti-mixed-orchestration",
-        "general-respect-local-repo",
-        "py-legacy-lint-stack",
-        "test-in-memory-adapters",
-        "test-through-interface",
-        "test-coverage-gap",
-    ):
-        assert f"@.agents/rules/{slug}.md" in index
+
+
+def test_the_index_points_at_no_detail_file():
+    assert "@.agents/rules/" not in template_text("standards-index.md")
 
 
 def test_select_skip(repo: Path):

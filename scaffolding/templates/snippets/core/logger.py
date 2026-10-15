@@ -12,7 +12,7 @@ Configuration is applied exactly once, lazily, on the first ``get_logger`` call.
 with ``log = get_logger(__name__).bind(request_id=rid)`` and emit events as keyword pairs:
 ``log.info("user_created", user_id=user.id)``.
 
-See ``.agents/rules/core-logger.md`` for the full rule.
+See CES-74 for the full rule.
 """
 
 from __future__ import annotations

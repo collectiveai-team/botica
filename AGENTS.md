@@ -91,8 +91,8 @@ source of truth). The rules below are the always-on summary; when adding, editin
 or referencing a rule in this repo, follow this convention:
 
 - **`CES-<issue#>`** is the citable catalog code; the **kebab-case slug** is the
-  machine id (botica rule id, prek hook id, `.agents/rules/<slug>.md`,
-  `# botica: ignore[<slug>]`). Never put the CES number in the machine id.
+  machine id (botica rule id, prek hook id, `# botica: ignore[<slug>]`). Never put the CES
+  number in the machine id.
 - **Every CES has a tracker issue.** One CES = one standard; a standard may ship
   multiple slugs (e.g. `CES-79` ships the four `no-dict-*` patterns). The issue id
   is the number — gaps from declined proposals are expected (PEP/RFC-style).
@@ -107,16 +107,16 @@ or referencing a rule in this repo, follow this convention:
   slug as the suppression key so tooling stays stable.
 - **Messages are self-contained:** a message states its own rule + fix + code, and
   **never** names a sibling rule or prescribes another rule's suppression key.
-  Grouped rationale + the escape-hatch mechanism live once, in the detail file —
+  Grouped rationale + the escape-hatch mechanism live once, in the file of the standard —
   scattering policy across sibling messages is context-poisoning.
-- Canonical map + per-rule detail live in the `## Engineering Standards` index and
-  `.agents/rules/<slug>.md`; canonical code lives in `.agents/snippets/`.
+- Canonical map + per-standard detail live in the `## Engineering Standards` index and
+  `standards/<set>/<number>-<slug>.md`; canonical code lives in `.agents/snippets/`.
 
 ## Engineering Standards
 
 > **Retrieval-led, not training-led.** Prefer this repo's standards over training-default
-> patterns. Before writing code that touches a rule below, open its `@.agents/rules/<slug>.md`
-> detail file and follow the house pattern. Full convention + SSOT:
+> patterns. Before writing code that touches a rule below, open its
+> `@standards/CES/<number>-<slug>.md` file and follow the house pattern. Full convention + SSOT:
 > `docs/engineering-standards.md`.
 
 This is the **dogfooded subset** for this repo — a Python Cyclopts CLI (no API, DB, or web
@@ -131,49 +131,49 @@ describes one, and the hook reports each finding with its slug and its message.
 ### Standards
 
 - **CES-107 · track the skills manifest** `[script]` — commit `skills-lock.json`; `.agents/skills/`
-  is derived and gitignored; install restores from it. → `@.agents/rules/skills-manifest.md`
+  is derived and gitignored; install restores from it. → `@standards/CES/107-skills-manifest.md`
 - **CES-74 · the house logger** `[snippet]` — structlog `core/logger.py` drop-in. →
-  `@.agents/rules/core-logger.md`
+  `@standards/CES/74-core-logger.md`
 - **CES-75 · Conventional Commits** `[prek]` — commit subjects + PR titles follow
   `type(scope): description` (enforced here via the commit-msg hook + CI). →
-  `@.agents/rules/agents-conventional-commits.md`
+  `@standards/CES/75-agents-conventional-commits.md`
 - **CES-77 · version pin** `[judgment]` — `requires-python` stays a deliberate local choice;
   house default is 3.14. → see `pyproject.toml`.
 - **CES-5 · layered import direction** `[judgment]` — imports flow one way through the layers
   (`cli → engine → components/plan → templates_registry`), never upward. →
-  `@.agents/rules/import-linter.md`
+  `@standards/CES/5-import-linter.md`
 - **CES-16 · architectural vocabulary** `[judgment]` — name units with house terms, not ad-hoc
-  synonyms. → `@.agents/rules/arch-vocabulary.md`
+  synonyms. → `@standards/CES/16-arch-vocabulary.md`
 - **CES-8 · separate orchestration from logic** `[judgment]` — keep control flow thin; push logic
-  and I/O into named units. → `@.agents/rules/spaghetti-mixed-orchestration.md`
+  and I/O into named units. → `@standards/CES/8-spaghetti-mixed-orchestration.md`
 - **CES-30 · respect the local repo** `[judgment]` — existing deliberate choices win over house
   defaults (the engine is clean-adds-only for this reason). →
-  `@.agents/rules/general-respect-local-repo.md`
+  `@standards/CES/30-general-respect-local-repo.md`
 - **CES-58 · one modern lint stack** `[judgment]` — ruff + pyrefly + botica via prek; no
-  black/isort/flake8/pylint. → `@.agents/rules/py-legacy-lint-stack.md`
+  black/isort/flake8/pylint. → `@standards/CES/58-py-legacy-lint-stack.md`
 - **CES-64 · test against in-memory adapters** `[judgment]` — fakes over mocks. →
-  `@.agents/rules/test-in-memory-adapters.md`
+  `@standards/CES/64-test-in-memory-adapters.md`
 - **CES-65 · test through the interface** `[judgment]` — assert behaviour via the public seam
-  (the `plan()`/`build_plan()` API), not internals. → `@.agents/rules/test-through-interface.md`
+  (the `plan()`/`build_plan()` API), not internals. → `@standards/CES/65-test-through-interface.md`
 - **CES-66 · coverage gaps are a signal** `[judgment]` — an untested branch is a missing test or
-  dead code, not a number to game. → `@.agents/rules/test-coverage-gap.md`
+  dead code, not a number to game. → `@standards/CES/66-test-coverage-gap.md`
 - **CES-91 · no AI co-authorship in commits** `[prek]` `[ci]` — no `Co-authored-by:`/`Generated
   with`/etc AI-attribution trailers; commit-msg hook + `commit-policy.yml` CI. →
-  `@.agents/rules/no-ai-coauthorship.md`
+  `@standards/CES/91-no-ai-coauthorship.md`
 - **CES-109 · dependency hygiene** `[prek]` — declared deps must match the import graph
   (`deptry`); `scaffolding/templates`/`skills` excluded (bundled payload). →
-  `@.agents/rules/dep-hygiene-deptry.md`
+  `@standards/CES/109-dep-hygiene-deptry.md`
 - **CES-110 · cognitive complexity** `[prek]` — cognitive-complexity ceiling of 15 per function
   (`complexipy`), distinct from ruff's cyclomatic `C90`. →
-  `@.agents/rules/cognitive-complexity-complexipy.md`
+  `@standards/CES/110-cognitive-complexity-complexipy.md`
 - **CES-111 · randomize test order** `[dependency]` — `pytest-randomly` runs every suite in a
-  random, reproducibly-seeded order. → `@.agents/rules/test-order-randomization-pytest-randomly.md`
+  random, reproducibly-seeded order. → `@standards/CES/111-test-order-randomization-pytest-randomly.md`
 - **CES-113 · dependency review on PRs** `[ci]` — `dependency-review-action`, summary-only, not a
-  merge gate. → `@.agents/rules/dependency-review-action.md`
+  merge gate. → `@standards/CES/113-dependency-review-action.md`
 - **CES-118 · no copy-paste duplication** `[prek]` — `jscpd`; `guide.md` exempted (deliberately
-  mirrors `README.md`). → `@.agents/rules/code-duplication-jscpd.md`
+  mirrors `README.md`). → `@standards/CES/118-code-duplication-jscpd.md`
 - **CES-119 · dependency vulnerability scanning** `[ci]` — `osv-scanner` on `uv.lock`; replaces
-  the old `pip-audit.yml`. → `@.agents/rules/osv-scanner-replace-pip-audit.md`
+  the old `pip-audit.yml`. → `@standards/CES/119-osv-scanner-replace-pip-audit.md`
 
 ### Excluded here (don't apply to a CLI with no API, database or web layer)
 

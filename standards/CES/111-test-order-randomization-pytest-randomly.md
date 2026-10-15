@@ -1,8 +1,9 @@
-# CES-111 · test order randomization (pytest-randomly)
+---
+id: CES-111
+title: test order randomization (pytest-randomly)
+---
 
-**Code:** `CES-111` &nbsp;·&nbsp; **Slug:** `test-order-randomization-pytest-randomly`
-&nbsp;·&nbsp; **Enforced by:** dev dependency (pytest plugin) &nbsp;·&nbsp; **Tracker:**
-[#111](https://github.com/collectiveai-team/botica/issues/111)
+**Enforced by:** dev dependency (pytest plugin)
 
 ## Directive
 
