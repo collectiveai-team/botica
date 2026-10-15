@@ -40,28 +40,67 @@ no check at all.
 5. **The catalog is the only source of a judgment rule.** Its text is the README of its folder. The
    index in `AGENTS.md`, the `engineering-rules` skill and the files of each judge are generated
    from the catalog by `botica rules export`, and none of them is edited by hand.
-6. **Botica applies the suppressions of a judgment rule.** A judge reports its findings to botica
-   as SARIF (`botica lint --judged <file>`), and botica filters them with the same engine,
-   configuration and `overrides` as the findings of its own rules. It reports what remains. The
-   export also gives the judge the suppressions, and the filter is what holds them.
+6. **Botica applies the suppressions of a judgment rule, by file.** A judgment rule judges a
+   design, and its finding belongs to a file or to a whole change. Its suppressions are applied
+   before the judge runs, in the files botica exports, and again on what the judge reports: a judge
+   reports its findings as SARIF (`botica lint --judged <file>`), and botica filters them with the
+   same engine, configuration and `overrides` as the findings of its own rules.
 
-   | Level | Written as | Reaches the judge as |
+   | Level | Written as | Applied as |
    |---|---|---|
    | Repository | `ignore = ["<slug>"]` | the rule is left out of the export |
-   | Path | `ignores` or `extend-ignores` of the rule | globs subtracted from the `scope` of the rule |
-   | Code | `# botica: ignore[<slug>] -- <reason>` on the line, `botica: ignore-file[<slug>] -- <reason>` in the file | the filter of botica |
+   | Path | `ignores` or `extend-ignores` of the rule | the paths are left out of the `scope` of the rule |
+   | File | `botica: ignore-file[<slug>] -- <reason>` in a comment of the file | the file is left out of the `scope` of the rule |
 
-   For a judgment rule the code channel is `botica: ignore` alone, and the reason after `--` is
-   required. `noqa` does not suppress a judgment rule. `invalid-suppression` reports a suppression of
-   a judgment rule with no reason, or one written as `noqa`. `unused-suppression` does not evaluate
-   the suppressions of a judgment rule, since `botica lint` never runs it. A finding of a turn or of
-   a pull request has no line, and only the repository and path levels silence it. The Do not flag
-   section of the README lists what the rule leaves alone in every repository; a suppression is the
-   exception of one repository.
+   The reason after `--` is required. `invalid-suppression` reports a suppression of a judgment rule
+   with no reason, one on a line (`botica: ignore[<slug>]`) and one written as `noqa`.
+   `unused-suppression` does not evaluate the suppressions of a judgment rule, since `botica lint`
+   never runs it. A finding about a whole change names no file, and only the repository and path
+   levels silence it. The Do not flag section of the README lists what the rule leaves alone in
+   every repository; a suppression is the exception of one repository.
+7. **abide is the judge inside a coding session, and botica writes its rubric.** Botica runs no
+   judge of its own. `botica rules export --format abide` writes `.abide/rubric.json` with
+   `"manual": true`, which abide reads as written and never recompiles.
+
+   | Field of the rubric | From |
+   |---|---|
+   | `id`, `text` | the slug and the Directive |
+   | `source` | the line of the rule in the block of `AGENTS.md`, listed in `sources` |
+   | `when` | `when` of the rule; a rule with `pull-request` is left out |
+   | `scope` | the globs of the rule with the suppressions of decision 6 applied |
+   | `check` | a judgment rule: `type = "model"`, its `question`, with criteria from Flag and Do not flag; a deterministic rule: `type = "lint"`, `overlaps = <slug>` |
+
+   abide reads `scope` as globs joined by "or" (picomatch), and a negated glob in the list widens
+   the match: `["src/**", "!src/legacy/**"]` matches `src/legacy/a.py` and `docs/x.md`. Botica
+   writes positive globs only: a whole directory when nothing in it is excluded, and its files one by
+   one when something is. abide judges only `model` rules with status `active`; a `lint` rule is
+   counted and left to botica.
+
+   - A hook of prek, `botica rules export --format abide --check`, fails when the rubric differs
+     from the catalog, the configuration or the `ignore-file` comments of the repository. A new file
+     in a directory with exclusions is outside the `scope` until the next export.
+   - `botica rules test --judge abide` calibrates a rule: it runs `abide audit --json` on the
+     fixtures and compares the verdicts with `expected.json`. `abide audit` judges the rules with
+     `when = "edit"` only, in chunks of 150 lines, and reports each file with the verdicts of each
+     rule (`byFile[].verdicts[]`: `ruleId`, `probability`, `band`).
+   - In CI, `abide check --json` reports one section per phase. A section of the `edit` phase names
+     one file; the section of the `turn` phase names every file of the change. Botica turns them into
+     SARIF and filters them with `--judged`.
+   - abide has two thresholds for all its rules (`act` and `flag`), so the severity of a judgment
+     rule does not reach it. The diff goes to the endpoint of the key of the user (TypeSafe or the
+     Vercel AI Gateway); botica sends nothing.
+8. **A local model reaches abide through `TYPESAFE_AI_BASE_URL`.** With `TYPESAFE_AI_API_KEY` set,
+   abide sends its calls to `<base URL>/systemone` instead of `https://api.typesafe.ai/v1`. The
+   endpoint receives the model, the state (the diff, the file, the task) and one question per rule,
+   and answers each question as a `choice` or a `score` with its probabilities, or as a boolean
+   probability (`noul`). A local model needs an adapter that serves that API; Ollama and the
+   OpenAI-compatible servers do not serve it.
 
 ## Not decided
 
-- The formats of `botica rules export` for each consumer, and which consumer comes first.
+- The formats of `botica rules export` other than `abide`. The order is `json`, `agents-md`,
+  `skill`, `continue` and `abide`.
+- Who serves the API of TypeSafe for a local model.
 - The classification of each standard marked `[judgment]`, one pull request per standard.
 
 ## Considered options
@@ -72,6 +111,13 @@ no check at all.
 - **The judge applies the suppressions,** told by the export to skip a line that carries the
   comment. Rejected: a model may ignore the instruction, and the suppression would stop being
   deterministic.
+- **Suppressions on a line for judgment rules.** Rejected: abide answers one probability per rule
+  and per file or change, with no line, so a suppression on a line has nothing to apply to.
+- **A local proxy behind `TYPESAFE_AI_BASE_URL` that drops the questions of suppressed rules.**
+  Rejected: it ties botica to the API of TypeSafe, it does not work with a key of the gateway, and
+  it is a process that handles the credentials of the user.
+- **A judge of botica's own.** Rejected: it needs a calibrated decision model, hooks for each agent
+  and state per session, and abide has them.
 - **A judgment rule for every standard that depends on the repository.** Rejected: a model would
   give a probable answer where the configuration of the repository gives an exact one.
 
@@ -80,8 +126,10 @@ no check at all.
 - The kind table of ADR 0003 describes `judgment` as in this ADR.
 - `rule.toml` gains `when`, `question`, `covered-by` and `why-not-deterministic` for judgment rules,
   and options with no default for deterministic rules.
-- `botica lint` reads SARIF from a judge (`--judged`), and `invalid-suppression` checks the reason
-  and the channel of a suppression of a judgment rule.
+- `botica lint` reads SARIF from a judge (`--judged`), and `invalid-suppression` checks the reason,
+  the level and the channel of a suppression of a judgment rule.
+- `botica rules export` gains `--format abide` and `--check`, and `botica rules test` gains
+  `--judge abide`.
 - The index of rules on the site needs a search with filters by kind, family, status and language,
   as Ruff's has.
 - The README of each rule follows the template of its kind, and the section that lists what a rule
