@@ -47,6 +47,25 @@ SLUGS = {slug for slug, _ in _catalog()}
 MEASURED_CES = {ces for _, ces in _catalog() if ces is not None}
 
 
+def _standard_files() -> set[str]:
+    """Return the `<set>-<number>` of every standard written under `standards/`."""
+    return {
+        f"{path.parent.name}-{path.name.split('-', 1)[0]}"
+        for path in (ROOT / "standards").glob("*/[0-9]*.md")
+    }
+
+
+def test_every_standard_a_rule_cites_is_a_file():
+    cited = {
+        tomllib.loads(rule_toml.read_text(encoding="utf-8"))["standard"]
+        for rule_toml in CATALOG.glob("*/*/rule.toml")
+        if "standard" in tomllib.loads(rule_toml.read_text(encoding="utf-8"))
+    }
+
+    assert cited, "no rule cites a standard: drop this test if that was deliberate"
+    assert not cited - _standard_files(), f"no file for: {sorted(cited - _standard_files())}"
+
+
 def test_the_catalog_is_found():
     assert {"file-size-guard", "log-no-print", "no-dict-alias"} <= SLUGS
     assert {4, 18, 32, 45, 46, 63, 67, 71, 76, 79} <= MEASURED_CES

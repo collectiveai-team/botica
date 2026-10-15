@@ -137,7 +137,7 @@ describes one, and the hook reports each finding with its slug and its message.
   `type(scope): description` (enforced here via the commit-msg hook + CI). →
   `@standards/CES/75-agents-conventional-commits.md`
 - **CES-77 · version pin** `[judgment]` — `requires-python` stays a deliberate local choice;
-  house default is 3.14. → see `pyproject.toml`.
+  house default is 3.14. → `@standards/CES/77-py-version-pin.md`
 - **CES-5 · layered import direction** `[judgment]` — imports flow one way through the layers
   (`cli → engine → components/plan → templates_registry`), never upward. →
   `@standards/CES/5-import-linter.md`
