@@ -3,7 +3,7 @@ id: CES-75
 title: Conventional Commits
 ---
 
-**Enforced by:** prek commit-msg hook + CI PR-title check
+**Enforced by:** prek commit-msg hook + CI check of the title of the pull request
 
 ## Directive
 
@@ -14,7 +14,7 @@ Every commit subject follows [Conventional Commits](https://www.conventionalcomm
 ```
 
 A local `commit-msg` prek hook validates the message at commit time; a CI workflow validates the
-**PR title** on pull requests. Both embed `CES-75`.
+**title** of a pull request. Both embed `CES-75`.
 
 ## Allowed types
 

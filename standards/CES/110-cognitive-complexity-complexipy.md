@@ -36,7 +36,7 @@ repos should baseline first (see Migration below) rather than big-bang fixing ev
 ## Migration (existing repos)
 
 Use `complexipy --snapshot-create` to baseline current violations before enabling the hook as a
-hard error, so pre-existing complexity doesn't block unrelated PRs — this mirrors how CES-5's
+hard error, so pre-existing complexity doesn't block unrelated pull requests — this mirrors how CES-5's
 import-linter skeleton is meant to be filled in gradually, and CES-71's warn-then-error two-tier
 shape for `file-size-guard`.
 

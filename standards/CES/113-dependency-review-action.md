@@ -7,14 +7,14 @@ title: Dependency-review-action
 
 ## Directive
 
-Every PR that changes the dependency graph gets an automatic, PR-visible summary of what was
-added/removed/changed, via
+Every pull request that changes the dependency graph gets an automatic summary, visible in the
+pull request, of what was added/removed/changed, via
 [`actions/dependency-review-action`](https://github.com/actions/dependency-review-action).
 
 ## Why
 
 `pip-audit`/`osv-scanner` scan the *final resolved* dependency set for known CVEs — neither
-highlights *what changed in this PR* versus the base branch, so a reviewer has to notice a new
+highlights *what changed in this pull request* versus the base branch, so a reviewer has to notice a new
 dependency by reading `uv.lock`'s diff line by line. `dependency-review-action` is a direct,
 GitHub-native fix for the "dependency creep" failure mode: an agent reaching for a new library to
 make one HTTP call where the stdlib or an existing transitive dep would do.

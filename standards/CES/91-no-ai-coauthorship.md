@@ -20,7 +20,7 @@ This does **not** prohibit using approved AI tools — it only prohibits adding 
 ## Two enforcement layers
 
 1. **Local (`no-ai-coauthorship` prek hook, `commit-msg` stage)** — immediate developer feedback; can be bypassed with `git commit --no-verify`.
-2. **CI (`commit-policy.yml`)** — the source of truth. Walks every commit in the PR/push range (`git log --format=%B <base>..<head>`) and fails if any subject/body line matches the trailer pattern.
+2. **CI (`commit-policy.yml`)** — the source of truth. Walks every commit in the pull request or push range (`git log --format=%B <base>..<head>`) and fails if any subject/body line matches the trailer pattern.
 
 Both share one fixed, non-interpolated Python regex — no shell injection surface, and the same pattern is never duplicated with drift between the two layers.
 

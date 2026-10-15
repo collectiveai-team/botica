@@ -32,7 +32,9 @@ standards. Collective writes the CES, and another team can write standards of it
 ## Not decided
 
 The lifecycle of a standard (its statuses and transitions). The CES that no file described yet,
-the ten that only the catalog documents and CES-77, still have to be written.
+the ten that only the catalog documents and CES-77, still have to be written. How a standard says
+what enforces it when no rule does, and the rest of what the 20 migrated CES still carry of the
+scaffolder, is in [`docs/standards-migration-pending.md`](../standards-migration-pending.md).
 
 ## Considered options
 

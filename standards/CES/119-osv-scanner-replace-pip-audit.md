@@ -7,7 +7,7 @@ title: Dependency vulnerability scanning (osv-scanner)
 
 ## Directive
 
-Every push to `main` and every PR is scanned for known dependency vulnerabilities via
+Every push to `main` and every pull request is scanned for known dependency vulnerabilities via
 [`osv-scanner scan source`](https://github.com/google/osv-scanner) against `uv.lock` (and, once a
 non-Python template exists, whatever lockfile that ecosystem produces — same tool, same workflow).
 This **replaces** the previous `pip-audit.yml`, it does not supplement it.
