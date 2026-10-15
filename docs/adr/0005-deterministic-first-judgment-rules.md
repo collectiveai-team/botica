@@ -40,11 +40,27 @@ no check at all.
 5. **The catalog is the only source of a judgment rule.** Its text is the README of its folder. The
    index in `AGENTS.md`, the `engineering-rules` skill and the files of each judge are generated
    from the catalog by `botica rules export`, and none of them is edited by hand.
+6. **Botica applies the suppressions of a judgment rule.** A judge reports its findings to botica
+   as SARIF (`botica lint --judged <file>`), and botica filters them with the same engine,
+   configuration and `overrides` as the findings of its own rules. It reports what remains. The
+   export also gives the judge the suppressions, and the filter is what holds them.
+
+   | Level | Written as | Reaches the judge as |
+   |---|---|---|
+   | Repository | `ignore = ["<slug>"]` | the rule is left out of the export |
+   | Path | `ignores` or `extend-ignores` of the rule | globs subtracted from the `scope` of the rule |
+   | Code | `# botica: ignore[<slug>] -- <reason>` on the line, `botica: ignore-file[<slug>] -- <reason>` in the file | the filter of botica |
+
+   For a judgment rule the code channel is `botica: ignore` alone, and the reason after `--` is
+   required. `noqa` does not suppress a judgment rule. `invalid-suppression` reports a suppression of
+   a judgment rule with no reason, or one written as `noqa`. `unused-suppression` does not evaluate
+   the suppressions of a judgment rule, since `botica lint` never runs it. A finding of a turn or of
+   a pull request has no line, and only the repository and path levels silence it. The Do not flag
+   section of the README lists what the rule leaves alone in every repository; a suppression is the
+   exception of one repository.
 
 ## Not decided
 
-- How a judgment rule is suppressed: the channels, who applies them, and what `unused-suppression`
-  reports for a rule that `botica lint` never runs.
 - The formats of `botica rules export` for each consumer, and which consumer comes first.
 - The classification of each standard marked `[judgment]`, one pull request per standard.
 
@@ -53,6 +69,9 @@ no check at all.
 - **A separate tree for judgment rules** (`judgments/<family>/<slug>/`, with a code prefix of its
   own). The kind is visible from the path. Rejected: a rule that becomes deterministic changes its
   folder and its code, and the old code becomes an alias.
+- **The judge applies the suppressions,** told by the export to skip a line that carries the
+  comment. Rejected: a model may ignore the instruction, and the suppression would stop being
+  deterministic.
 - **A judgment rule for every standard that depends on the repository.** Rejected: a model would
   give a probable answer where the configuration of the repository gives an exact one.
 
@@ -61,6 +80,8 @@ no check at all.
 - The kind table of ADR 0003 describes `judgment` as in this ADR.
 - `rule.toml` gains `when`, `question`, `covered-by` and `why-not-deterministic` for judgment rules,
   and options with no default for deterministic rules.
+- `botica lint` reads SARIF from a judge (`--judged`), and `invalid-suppression` checks the reason
+  and the channel of a suppression of a judgment rule.
 - The index of rules on the site needs a search with filters by kind, family, status and language,
   as Ruff's has.
 - The README of each rule follows the template of its kind, and the section that lists what a rule
