@@ -2,3 +2,17 @@
 [data-md-color-scheme="slate"] .md-logo img[src$="#only-light"] {
   display: none;
 }
+
+.md-logo img {
+  box-sizing: content-box;
+  padding: 0.25rem 0.35rem;
+  border-radius: 0.4rem;
+}
+
+[data-md-color-scheme="default"] .md-logo img {
+  background: #1b2635;
+}
+
+[data-md-color-scheme="slate"] .md-logo img {
+  background: #f3ede4;
+}
