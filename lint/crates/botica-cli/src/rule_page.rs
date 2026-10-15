@@ -57,6 +57,8 @@ pub fn page(catalog: &Catalog, rule: &Rule) -> String {
 
 fn front_matter(catalog: &Catalog, rule: &Rule) -> String {
     let mut lines = vec![
+        format!("title: {}", json(&rule.id)),
+        format!("subtitle: {}", json(&rule.code)),
         format!("rule: {}", json(&rule.id)),
         format!("code: {}", json(&rule.code)),
     ];
@@ -274,6 +276,22 @@ mod tests {
 
     fn lines(text: &str) -> Vec<&str> {
         text.lines().collect()
+    }
+
+    #[test]
+    fn the_front_matter_names_the_page_by_the_slug_and_subtitles_it_with_the_code() {
+        let catalog = catalog(&[Spec {
+            family: "logging",
+            code: "BTLOG001",
+            id: "log-no-print",
+            extra: "status = \"stable\"\n",
+        }]);
+
+        let page = page_of(&catalog, "log-no-print");
+
+        let front_matter = lines(page.split("\n---\n").next().expect("a front matter"));
+        assert!(front_matter.contains(&"title: \"log-no-print\""), "{page}");
+        assert!(front_matter.contains(&"subtitle: \"BTLOG001\""), "{page}");
     }
 
     #[test]

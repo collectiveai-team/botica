@@ -89,6 +89,8 @@ fn a_page_is_the_front_matter_a_header_and_the_prose_of_its_readme() {
 
     let expected = format!(
         "---\n\
+         title: \"api-schemas-extra-forbid\"\n\
+         subtitle: \"BTFAST001\"\n\
          rule: \"api-schemas-extra-forbid\"\n\
          code: \"BTFAST001\"\n\
          family: \"fastapi\"\n\
@@ -125,6 +127,8 @@ fn a_rule_of_botica_itself_has_no_family_and_a_rule_without_a_standard_has_no_ce
 
     let expected = format!(
         "---\n\
+         title: \"io-error\"\n\
+         subtitle: \"BT001\"\n\
          rule: \"io-error\"\n\
          code: \"BT001\"\n\
          description: \"A path given on the command line cannot be read\"\n\
