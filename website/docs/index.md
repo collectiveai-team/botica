@@ -3,16 +3,16 @@ title: Botica
 ---
 
 <div class="botica-hero">
-  <img class="botica-icon" src="assets/logo-dark.svg#only-light" alt="">
-  <img class="botica-icon" src="assets/logo-light.svg#only-dark" alt="">
-  <h1 id="botica">
-    <img src="assets/wordlogo-light.svg#only-light" alt="Botica">
-    <img src="assets/wordlogo-dark.svg#only-dark" alt="Botica">
-  </h1>
-  <p class="botica-tagline">
-    A deterministic linter for the engineering standards that can be measured in one file.
-    It never calls a model or the network.
-  </p>
+  <div class="botica-brand">
+    <img class="botica-icon" src="assets/logo-light.svg#only-light" alt="">
+    <img class="botica-icon" src="assets/logo-dark.svg#only-dark" alt="">
+    <h1 id="botica">
+      <img class="botica-wordlogo" src="assets/wordlogo-light.svg#only-light" alt="Botica">
+      <img class="botica-wordlogo" src="assets/wordlogo-dark.svg#only-dark" alt="Botica">
+    </h1>
+  </div>
+  <p class="botica-tagline"><strong><em>Botica: recetas, alquimia y artilugios</em></strong></p>
+  <p>Recipes and standards for projects: deterministic rules, templates, and design decisions.</p>
 </div>
 
 ## Get started
