@@ -30,7 +30,7 @@ uvx botica explain <rule>  # one rule, as it is configured here
 
 A **standard** says what is required and why. A **rule** is one way to check it: botica evaluates
 rules and knows nothing about standards, but a rule may name the standard it implements, and a
-standard can have several rules, from different families.
+standard can have several rules.
 
 - [Standards](standards/index.md) are written by hand, one file each, in sets. The
   [CES](standards/CES/index.md), the Collective Engineering Standard, is the set of Collective.
@@ -39,10 +39,10 @@ standard can have several rules, from different families.
 
 ## Propose a change
 
-A standard or a rule changes through a pull request that carries the implementation, so the review
-judges what would be enforced and not only the text. The discussion happens in
-[GitHub Discussions](https://github.com/collectiveai-team/botica/discussions) and is shown at the
-end of every page. [How to propose a standard](standards/index.md#propose-or-change-a-standard).
+A standard changes through a pull request that carries the implementation of its rules. The
+discussion happens in [GitHub Discussions](https://github.com/collectiveai-team/botica/discussions)
+and is shown at the end of the page of each rule and each standard.
+[How to propose a standard](standards/index.md#propose-or-change-a-standard).
 
 A rule with the status `preview` is off by default: it runs only with `preview = true` in the
 configuration, and when it is selected.

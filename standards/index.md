@@ -28,7 +28,7 @@ next free one of the set, and it never changes.
    standards (add `?template=standard.md` to the address of the new pull request). A pull request
    never touches two standards, and the check of the repository fails it if it does.
 2. The same pull request carries the implementation: the folder of each rule that implements the
-   standard, so the review judges what would be enforced and not only the text.
+   standard.
 3. The same pull request updates the documentation that the change affects.
 4. The discussion happens in [GitHub Discussions](https://github.com/collectiveai-team/botica/discussions),
-   linked from the pull request and shown at the end of each page.
+   linked from the pull request and shown at the end of the page of each rule and each standard.
