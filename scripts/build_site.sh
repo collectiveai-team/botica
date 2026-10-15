@@ -4,7 +4,8 @@
 # that implement it (scripts/site_standards.py), put the code blocks of those pages in tabs by
 # language (scripts/site_language_tabs.py), write the configuration with the navigation of those
 # pages (scripts/site_nav.py), then run Zensical (the version is pinned in website/requirements.txt)
-# in strict mode, so a broken link fails the build. The pages of the rules and the standards and the
+# in strict mode, so a broken link fails the build, and write website/site/llms.txt with the address
+# of each rule and standard (scripts/site_llms.py). The pages of the rules and the standards and the
 # configuration with the navigation are generated, never committed.
 set -euo pipefail
 
@@ -21,3 +22,5 @@ uv run --no-project --python 3.14 --with cyclopts python scripts/site_nav.py \
   website/zensical.toml website/docs website/zensical.build.toml
 uv run --no-project --python 3.14 --with-requirements website/requirements.txt \
   zensical build --clean --strict --config-file website/zensical.build.toml
+uv run --no-project --python 3.14 --with cyclopts python scripts/site_llms.py \
+  website/zensical.toml website/docs website/site/llms.txt

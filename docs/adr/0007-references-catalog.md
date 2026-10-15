@@ -53,10 +53,18 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
 
    `show` uses the credentials of git of the user, which reach private repositories, and caches each
    reference by its commit.
+7. **The site publishes an `llms.txt`** in the format of https://llmstxt.org/, at the root of the
+   site. `scripts/site_llms.py` writes it when `scripts/build_site.sh` builds the site, from the
+   pages exported from the catalog and copied from `standards/`. It has the name and the description
+   of the site from `website/zensical.toml`, a section Rules with each rule by code, the address of
+   its page and its description, and a section Standards with each standard by number, the address
+   of its page and its title.
 
 ## Not decided
 
-- Whether the site publishes an `llms.txt` generated from the catalog.
+- Whether the site publishes a Markdown version of each page (`<page>/index.md`), which the format
+  of `llms.txt` recommends as the target of its links. The links of `llms.txt` point at the HTML
+  pages.
 
 ## Considered options
 
