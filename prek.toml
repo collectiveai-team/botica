@@ -183,6 +183,15 @@ files = "^skills/"
 pass_filenames = false
 priority = 2
 
+# MARK: agnix
+# Lints the files that agents read: AGENTS.md, SKILL.md, opencode.jsonc, the Claude settings and the
+# like. The mirror passes `--strict`, which fails the hook on a warning; `args = []` removes it, so
+# an error fails the hook and a warning does not. `uvx agnix .` lists the warnings.
+[[repos]]
+repo = "https://github.com/agent-sh/agnix"
+rev = "v0.57.0"
+hooks = [{ id = "agnix", args = [], priority = 2 }]
+
 # MARK: botica
 # The same structure rules as the generic template (CES-71 file-size-guard, CES-63 no-utils, CES-32
 # no-notebooks and no-artifacts-in-package, no-tests-in-package), run by `botica lint` through the
