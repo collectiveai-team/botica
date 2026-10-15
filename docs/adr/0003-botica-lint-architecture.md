@@ -1,4 +1,4 @@
-# botica lint: a Rust core with catalogued rules of four kinds and out-of-process extensions
+# botica lint: a Rust core with catalogued rules of five kinds and out-of-process extensions
 
 **Status:** accepted
 
@@ -58,7 +58,7 @@ The core lints text it is given (`lint_source(path, text, …)`) and does no I/O
 feature is enabled. That is what lets the same engine serve the CLI, the LSP (unsaved buffers),
 and later WASM or MCP.
 
-**One rule, one folder, four kinds.** Every rule lives in `rules/<family>/<slug>/` (the family
+**One rule, one folder, five kinds (ADR 0006 adds `external`).** Every rule lives in `rules/<family>/<slug>/` (the family
 folder holds a `family.toml` with its code; the linter's own rules live in `rules/botica/`) with
 a `rule.toml` (id, code, status, scope, needs, typed options, an optional `standard` reference for the
 docs, and one `[[implementations]]` entry per language), a README, and `fixtures/{valid,invalid}`.
@@ -71,6 +71,7 @@ implementation picks how it runs:
 | `native` | in the binary | house rules, hot paths, expensive project rules |
 | `ast-grep` | in the binary (YAML compiled once) | most syntactic rules, any ast-grep language |
 | `extension` | separate process, `runtime = python \| node \| command` | logic YAML cannot express, third-party libraries, repo-local rules |
+| `external` | by another tool, through its configuration | a standard that a tool such as ruff or complexipy enforces; botica checks that the tool is set up (ADR 0006) |
 | `judgment` | never run by lint | what no deterministic check can express, even with configuration from the repository (ADR 0005); judges and the site read it from the catalog, and `covered-by` lists the deterministic rules that check part of it |
 
 The engine, not the rule, decides whether a rule is enabled. Selection, severity, per-path

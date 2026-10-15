@@ -1,0 +1,79 @@
+# External rules and profiles: the catalog describes the tools that enforce a standard, and botica installs them
+
+**Status:** proposed
+
+Several standards are enforced by another tool, set up through its configuration: CES-109 by
+deptry, CES-110 by complexipy, CES-118 by jscpd, CES-58 by the stack of ruff and pyrefly, and the
+codes of ruff that `scaffolding/templates/pyproject-template.toml` selects (`C90` among them). What
+each tool needs lives in three places: the text of the standard, the templates of the scaffolder and
+`prek.toml`. `docs/standards-migration-pending.md` leaves open how a standard says what enforces it
+when no rule of botica does (decision 1) and where the knowledge of each tool goes (decision 3). The
+scaffolder writes the configuration of a repository from its own components, apart from the catalog.
+
+## Decision
+
+1. **A fifth kind of implementation, `external`.** A rule of kind `external` lives in
+   `rules/<family>/<slug>/` like the others, with its slug, its code and its `standard`. Another tool
+   enforces it, and the implementation names it:
+
+   ```toml
+   [[implementations]]
+   kind = "external"
+   tool = "complexipy"
+   docs = "https://rohaquinlop.github.io/complexipy/"
+   codes = []                    # the codes of the tool, e.g. ["C901"] for ruff
+   config = "config/prek.toml"   # the fragment of configuration the tool needs
+   ```
+
+   Its README has the sections Directive, Why, Tool (the tool, its documentation, and that the
+   configuration is what enforces the rule), Configuration, Do, Don't and Suppression, which gives
+   the channel of the tool (`# noqa: C901` for ruff). It answers decisions 1 and 3 of
+   `docs/standards-migration-pending.md`: a standard is enforced by its rules, `external` ones
+   included, and the knowledge of a tool is the README of its rule.
+2. **Botica checks the configuration of an external rule.** A native rule, `external-config`, reports
+   a repository where the fragment that an active external rule declares is missing from the file it
+   names (`pyproject.toml`, `prek.toml`). The tool checks the code; botica checks that the tool is set
+   up.
+3. **A profile is a file of the catalog,** `profiles/<name>.toml`. It lists rules of every kind and
+   the exports to run, and it composes with `extends`:
+
+   ```toml
+   # profiles/python.toml
+   extends = ["generic"]
+   rules = ["file-size-guard", "log-no-print", "cognitive-complexity", "dep-hygiene"]
+   judgment = ["test-through-interface", "arch-vocabulary"]
+   exports = ["agents-md", "abide"]
+   ```
+
+4. **`botica profile install <name>` writes what a repository lacks,** and `botica profile check`
+   reports how the repository differs from the profile. Install writes the configuration of botica,
+   the hooks of prek, the fragments of the external rules and the files of the exports. It adds a file
+   that does not exist and never edits, merges or overwrites one that does; what it cannot add, it
+   lists for a person or an agent to merge (CES-30). Both replace the commands of `scaffolding`,
+   whose components and templates become profiles and fragments of the catalog.
+
+## Not decided
+
+- The order in which the components of `scaffolding` move to profiles, and when the package is
+  removed.
+- The bounded edits that `scaffolding` performs today (the `unignore` op of ADR 0001) and how
+  `profile install` keeps them.
+- Where the drop-in code of a standard lives (`.agents/snippets/` today).
+
+## Considered options
+
+- **Keep the knowledge of a tool in the text of its standard.** Rejected: a standard may have several
+  tools, a tool may serve several standards, and botica could not check the configuration.
+- **Profiles outside the catalog, as templates of the scaffolder.** Rejected: there would be two
+  sources for what a repository needs.
+- **Botica runs the external tools.** Rejected in ADR 0003: prek runs each tool as its own hook.
+
+## Consequences
+
+- `rule.toml` accepts `kind = "external"` with `tool`, `docs`, `codes` and `config`, and the catalog
+  enforces the template of its README.
+- The standards marked `[prek]`, `[ci]` or `[dependency]` in `AGENTS.md` become external rules, one
+  pull request per standard.
+- The site shows the tool and its documentation on the page of an external rule.
+- `scaffolding install` and `scaffolding check` are replaced by `botica profile install` and
+  `botica profile check`.
