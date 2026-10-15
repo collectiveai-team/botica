@@ -49,11 +49,9 @@ would recreate the problem.
 
 ## Not decided
 
-Where the text of a CES and its number live. It is planned for a later stage of the botica lint
-work, and until then the convention of `AGENTS.md` stands (`CES-<issue#>`, one tracker issue per
-CES). Everything that depends on it is open: how numbers are assigned, the lifecycle of a CES
-(its statuses and transitions). The change that decides it also states the new invariant in `AGENTS.md`, for the
-reason ADR 0001 gives.
+Where the text of a standard lives is decided in ADR 0004. How the number of a CES is assigned and
+the lifecycle of a CES (its statuses and transitions) are still open, and until then the convention
+of `AGENTS.md` stands (`CES-<issue#>`, one tracker issue per CES).
 
 ## Considered options
 

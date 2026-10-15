@@ -21,6 +21,8 @@
   `requirements.txt`). `website/docs/rules/` is exported from the catalog by `scripts/build_site.sh`
   (`botica rules export`) and is gitignored; only `website/docs/index.md` is written by hand.
   `.github/workflows/site.yml` builds it on a pull request and publishes it from `main`.
+- `standards/` — the text of each standard, `standards/<set>/<number>-<slug>.md`, written by hand
+  and apart from the rules; `scripts/build_site.sh` copies it into the site (ADR 0004).
 - `install.sh` — thin bootstrap shim (ensure `uv`, then `uvx … scaffolding
   install`). Keep it minimal and keep its raw URL pointing at
   `collectiveai-team/botica` on `main`.
@@ -94,6 +96,10 @@ or referencing a rule in this repo, follow this convention:
 - **Every CES has a tracker issue.** One CES = one standard; a standard may ship
   multiple slugs (e.g. `CES-79` ships the four `no-dict-*` patterns). The issue id
   is the number — gaps from declined proposals are expected (PEP/RFC-style).
+- **The text of a standard is a file**, `standards/<set>/<number>-<slug>.md` (ADR 0004), apart
+  from the rules that implement it; a rule names its standard in the `standard` field of its
+  `rule.toml`. **A pull request touches one standard**, carries its implementation and updates the
+  documentation it affects; `scripts/check_rule_change.py` fails one that touches two.
 - **Already-implemented rules** get a retroactive AS-BUILT issue so they fit the
   invariant — never assign a code to a rule that only exists in code.
 - **Violation messages must embed the code**, e.g.

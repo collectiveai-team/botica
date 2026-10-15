@@ -1,6 +1,6 @@
 {% set giscus = config.extra.giscus %}
-{% if page.meta and page.meta.rule %}
-  {% set family = page.meta.family or "botica" %}
+{% if page.meta and (page.meta.rule or page.meta.id) %}
+  {% set family = (page.meta.family or "botica") if page.meta.rule else "standards" %}
   {% if family in giscus.categories %}
     {% set category = family %}
     {% set category_id = giscus.categories[family] %}

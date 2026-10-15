@@ -14,6 +14,7 @@ on:
     paths:
       - "website/**"
       - "lint/rules/**"
+      - "standards/**"
       - "lint/crates/botica-catalog/**"
       - "lint/crates/botica-cli/src/rules_export.rs"
       - "scripts/build_site.sh"
@@ -22,6 +23,7 @@ on:
     paths:
       - "website/**"
       - "lint/rules/**"
+      - "standards/**"
       - "lint/crates/botica-catalog/**"
       - "lint/crates/botica-cli/src/rules_export.rs"
       - "scripts/build_site.sh"

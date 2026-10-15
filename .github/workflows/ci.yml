@@ -13,6 +13,7 @@ on:
   pull_request:
     paths:
       - "lint/**"
+      - "standards/**"
       - "scripts/check_rule_change.py"
       - ".github/workflows/ci.yml"
   # Allow other workflows (e.g. a wheel release) to gate on this suite.
@@ -68,6 +69,7 @@ jobs:
 
   # A change that adds a rule may only touch what that kind of rule needs (scripts/check_rule_change.py).
   # Anything else is a contract change: label the pull request `contract-change` to accept it.
+  # A change touches at most one standard, and no label accepts more.
   rule-contract:
     name: rule contract
     if: github.event_name == 'pull_request'
@@ -84,7 +86,7 @@ jobs:
           version: "0.11.12"
           enable-cache: false
 
-      - name: Check the contract of the rules the change adds
+      - name: Check the contract of the rules and the standards the change touches
         env:
           BASE: origin/${{ github.base_ref }}
           ACKNOWLEDGED: ${{ contains(github.event.pull_request.labels.*.name, 'contract-change') }}

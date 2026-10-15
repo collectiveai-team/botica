@@ -3,10 +3,14 @@
 A rule is its folder, `<catalog>/<family>/<slug>/`. Adding one should not require editing the
 engine, so a change that adds a rule and touches anything outside its contract is a contract
 change and has to be acknowledged.
+
+A standard is a file, `standards/<set>/<number>-<slug>.md`. A change touches at most one, and no
+label says otherwise.
 """
 
 from __future__ import annotations
 
+import re
 import subprocess
 import tomllib
 from dataclasses import dataclass
@@ -28,6 +32,8 @@ NATIVE_FILES = (
     "lint/crates/botica-core/src/registry.rs",
 )
 NATIVE_TESTS = "lint/crates/botica-core/tests/"
+STANDARDS = "standards/"
+STANDARD_FILE = re.compile(r"^standards/(?P<set>[^/]+)/(?P<number>\d+)-[^/]+\.md$")
 # What lists the built-in catalog: pinned on purpose, so that a rule the runner stops running is
 # noticed. A new rule is added to each.
 INDEX_FILES = (
@@ -75,6 +81,21 @@ def _in_native_zone(path: str) -> bool:
     return path in NATIVE_FILES or path.startswith(NATIVE_TESTS)
 
 
+def _open_to_any_rule(path: str, *, builtin: bool) -> bool:
+    """Tell whether a rule may touch the path: its standard, or an index of the built-in catalog."""
+    return path.startswith(STANDARDS) or (builtin and path in INDEX_FILES)
+
+
+def standards_touched(changes: Sequence[Change]) -> list[str]:
+    """Return the standards a change touches as `<set>/<number>`, whatever their slug is."""
+    touched = set()
+    for change in changes:
+        match = STANDARD_FILE.match(change.path)
+        if match:
+            touched.add(f"{match['set']}/{match['number']}")
+    return sorted(touched)
+
+
 def violations(
     changes: Sequence[Change], root: Path, catalogs: Sequence[str] = (BUILTIN_CATALOG,)
 ) -> list[str]:
@@ -90,7 +111,7 @@ def violations(
         for change in changes
         if not any(change.path.startswith(f"{folder}/") for folder in folders)
         and change.path not in own_files
-        and not (builtin and change.path in INDEX_FILES)
+        and not _open_to_any_rule(change.path, builtin=bool(builtin))
         and not (native and _in_native_zone(change.path))
     )
 
@@ -120,7 +141,14 @@ def check_branch(
         text=True,
         check=True,
     )
-    found = violations(parse_name_status(diff.stdout), root, catalogs)
+    changes = parse_name_status(diff.stdout)
+    touched = standards_touched(changes)
+    if len(touched) > 1:
+        print("This change touches more than one standard; a change touches one:")
+        for standard in touched:
+            print(f"  {standard}")
+        return 1
+    found = violations(changes, root, catalogs)
     if not found:
         return 0
     print("This change adds a rule and also touches files outside the contract of that rule:")
