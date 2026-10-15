@@ -51,6 +51,25 @@ pub enum Kind {
     Judgment,
 }
 
+/// When a judge evaluates a judgment rule: on each edit of a file, at the end of a turn of an
+/// agent, or on a pull request.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum When {
+    Edit,
+    Turn,
+    PullRequest,
+}
+
+/// The form of the answer of a judge: yes or no, one of several choices, or a score.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Question {
+    Boolean,
+    Choice,
+    Score,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Runtime {
@@ -77,13 +96,19 @@ pub struct OptionSpec {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct Implementation {
     pub kind: Kind,
     pub runtime: Option<Runtime>,
     pub languages: Vec<String>,
     pub status: Option<Status>,
     pub file: Option<String>,
+    /// The fields of a judgment implementation.
+    pub when: Option<When>,
+    pub question: Option<Question>,
+    #[serde(default)]
+    pub covered_by: Vec<String>,
+    pub why_not_deterministic: Option<String>,
     /// The text of `file`, read by the catalog when it loads (never written in `rule.toml`).
     #[serde(skip)]
     pub source: Option<String>,
@@ -146,9 +171,11 @@ pub struct Rule {
     #[serde(default)]
     pub ignores: Vec<String>,
     pub prefilter: Option<String>,
-    pub scope: Scope,
-    pub needs: Needs,
-    pub run_on: Vec<RunOn>,
+    /// `scope`, `needs` and `run-on` are required in a deterministic rule and absent in a
+    /// judgment rule.
+    pub scope: Option<Scope>,
+    pub needs: Option<Needs>,
+    pub run_on: Option<Vec<RunOn>>,
     pub default_enabled: bool,
     pub default_severity: Severity,
     #[serde(default)]
@@ -164,6 +191,13 @@ pub struct Rule {
 }
 
 impl Rule {
+    /// Whether a judge evaluates the rule: its implementation is of kind `judgment`.
+    pub fn is_judgment(&self) -> bool {
+        self.implementations
+            .iter()
+            .any(|implementation| implementation.kind == Kind::Judgment)
+    }
+
     pub fn status_of(&self, implementation: &Implementation) -> Status {
         implementation.status.unwrap_or(self.status)
     }

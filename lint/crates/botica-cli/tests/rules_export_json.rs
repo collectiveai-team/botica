@@ -109,7 +109,11 @@ fn a_rule_carries_every_field_of_its_rule_toml_its_releases_and_the_path_of_its_
                 "runtime": null,
                 "languages": ["python"],
                 "status": "stable",
-                "file": "python.yml"
+                "file": "python.yml",
+                "when": null,
+                "question": null,
+                "covered_by": [],
+                "why_not_deterministic": null
             }],
             "readme": "fastapi/api-schemas-extra-forbid/README.md"
         })

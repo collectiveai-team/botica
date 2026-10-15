@@ -142,7 +142,7 @@ impl Resolution {
             Scope::Project => "project",
         };
         for entry in self.entries.iter_mut().filter(|entry| entry.active) {
-            if entry.rule.scope != scope {
+            if entry.rule.scope != Some(scope) {
                 entry.active = false;
                 entry.reason = Reason::OutOfScope(name.to_owned());
             }

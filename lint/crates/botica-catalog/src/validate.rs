@@ -89,6 +89,75 @@ fn check_standard(standard: &str) -> bool {
     })
 }
 
+/// The fields of the root of `rule.toml` that only a deterministic rule has, and whether each is
+/// set.
+fn deterministic_fields(rule: &Rule) -> [(&'static str, bool); 4] {
+    [
+        ("scope", rule.scope.is_some()),
+        ("needs", rule.needs.is_some()),
+        ("run-on", rule.run_on.is_some()),
+        ("prefilter", rule.prefilter.is_some()),
+    ]
+}
+
+fn check_deterministic(rule: &Rule, add: &mut impl FnMut(String)) {
+    for (field, set) in deterministic_fields(rule).into_iter().take(3) {
+        if !set {
+            add(format!("a deterministic rule needs `{field}`"));
+        }
+    }
+    for (index, implementation) in rule.implementations.iter().enumerate() {
+        let judgment_fields = [
+            ("when", implementation.when.is_some()),
+            ("question", implementation.question.is_some()),
+            ("covered-by", !implementation.covered_by.is_empty()),
+            (
+                "why-not-deterministic",
+                implementation.why_not_deterministic.is_some(),
+            ),
+        ];
+        for (field, _) in judgment_fields.into_iter().filter(|(_, set)| *set) {
+            add(format!(
+                "implementation {index}: `{field}` applies to a judgment implementation only"
+            ));
+        }
+    }
+}
+
+fn check_judgment(rule: &Rule, add: &mut impl FnMut(String)) {
+    for (field, _) in deterministic_fields(rule)
+        .into_iter()
+        .filter(|(_, set)| *set)
+    {
+        add(format!(
+            "`{field}` applies to a deterministic rule, and this one is judgment"
+        ));
+    }
+    if rule.implementations.len() > 1 {
+        add("a judgment rule has one implementation".to_owned());
+    }
+    let Some(implementation) = rule
+        .implementations
+        .iter()
+        .find(|implementation| implementation.kind == Kind::Judgment)
+    else {
+        return;
+    };
+    let why = implementation
+        .why_not_deterministic
+        .as_deref()
+        .is_some_and(|text| !text.trim().is_empty());
+    for (field, set) in [
+        ("when", implementation.when.is_some()),
+        ("question", implementation.question.is_some()),
+        ("why-not-deterministic", why),
+    ] {
+        if !set {
+            add(format!("a judgment implementation needs `{field}`"));
+        }
+    }
+}
+
 pub(crate) fn check_rule(
     path: &str,
     folder_slug: &str,
@@ -129,6 +198,11 @@ pub(crate) fn check_rule(
     if rule.implementations.is_empty() {
         add("a rule needs at least one implementation".to_owned());
     }
+    if rule.is_judgment() {
+        check_judgment(rule, &mut add);
+    } else {
+        check_deterministic(rule, &mut add);
+    }
     for (index, implementation) in rule.implementations.iter().enumerate() {
         if implementation.languages.is_empty() {
             add(format!(
@@ -161,6 +235,18 @@ const FAMILY_TEMPLATE: [(&str, bool); 7] = [
     ("Suppression", true),
 ];
 
+/// The sections of the README of a judgment rule, all required.
+const JUDGMENT_TEMPLATE: [(&str, bool); 8] = [
+    ("Directive", true),
+    ("Why", true),
+    ("Flag", true),
+    ("Do not flag", true),
+    ("Confirm", true),
+    ("Do", true),
+    ("Don't", true),
+    ("Suppression", true),
+];
+
 /// The sections of the README of a rule of botica itself.
 const OWN_TEMPLATE: [(&str, bool); 3] = [("Directive", true), ("Why", true), ("Suppression", true)];
 
@@ -176,6 +262,8 @@ fn has_text_before_the_first_section(readme: &str) -> bool {
 pub(crate) fn check_readme(path: &str, rule: &Rule) -> Vec<CatalogIssue> {
     let template: &[(&str, bool)] = if rule.family.is_none() {
         &OWN_TEMPLATE
+    } else if rule.is_judgment() {
+        &JUDGMENT_TEMPLATE
     } else {
         &FAMILY_TEMPLATE
     };
@@ -277,6 +365,27 @@ pub(crate) fn check_across(
                     format!("alias `{alias}` is already an alias of `{first}`"),
                 ));
             }
+        }
+    }
+    check_covered_by(rules, found);
+}
+
+/// `covered-by` names the deterministic rules that check part of a judgment rule.
+fn check_covered_by(rules: &[(String, Rule)], found: &mut Vec<CatalogIssue>) {
+    for (path, rule) in rules {
+        let covered = rule
+            .implementations
+            .iter()
+            .flat_map(|implementation| &implementation.covered_by);
+        for slug in covered {
+            let message = match rules.iter().find(|(_, other)| other.id == *slug) {
+                None => format!("covered-by `{slug}` is not a rule of the catalog"),
+                Some((_, other)) if other.is_judgment() => {
+                    format!("covered-by `{slug}` is a judgment rule")
+                }
+                Some(_) => continue,
+            };
+            found.push(issue(path.as_str(), message));
         }
     }
 }

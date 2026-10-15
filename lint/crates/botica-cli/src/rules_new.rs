@@ -30,6 +30,7 @@ pub struct NewArgs {
 enum NewKind {
     AstGrep,
     Extension,
+    Judgment,
     Native,
 }
 
@@ -56,6 +57,20 @@ TODO: what the rule asks, and the severity it reports by default.\n\n\
 ## Do\n\nTODO: code that follows the rule.\n\n\
 ## Don't\n\nTODO: code that breaks the rule.\n\n\
 ## Suppression\n\nTODO: the comment or the configuration that silences a finding.\n";
+
+const JUDGMENT_README: &str = "## Directive\n\n\
+TODO: what the judge asks of the code.\n\n\
+## Why\n\nTODO: what goes wrong without the rule.\n\n\
+## Flag\n\nTODO: what the judge reports.\n\n\
+## Do not flag\n\nTODO: what the judge leaves alone in every repository.\n\n\
+## Confirm\n\nTODO: what the judge checks before it reports.\n\n\
+## Do\n\nTODO: code that follows the rule.\n\n\
+## Don't\n\nTODO: code that breaks the rule.\n\n\
+## Suppression\n\nTODO: the `ignore-file` comment, with its reason, or the configuration that \
+silences the rule.\n";
+
+const WHY: &str =
+    "TODO: why no check of the code or of the configuration of a repository decides it";
 
 const EXPECTED: &str = "{\n  \"diagnostics\": []\n}\n";
 
@@ -166,32 +181,34 @@ fn rule_toml(args: &NewArgs, slug: &str, code: &str) -> String {
     if let Some(standard) = &args.standard {
         text.push_str(&format!("standard = \"{standard}\"\n"));
     }
-    let needs = if args.kind == NewKind::AstGrep {
-        "syntax"
-    } else {
-        "bytes"
+    text.push_str("summary = \"TODO: what the rule asks, in one line\"\nstatus = \"preview\"\n");
+    let needs = match args.kind {
+        NewKind::AstGrep => Some("syntax"),
+        NewKind::Extension => Some("bytes"),
+        NewKind::Judgment | NewKind::Native => None,
     };
-    text.push_str(&format!(
-        "summary = \"TODO: what the rule asks, in one line\"\n\
-         status = \"preview\"\n\
-         scope = \"file\"\n\
-         needs = \"{needs}\"\n\
-         run-on = [\"cli\", \"save\", \"type\"]\n\
-         default-enabled = false\n\
-         default-severity = \"warning\"\n\
-         \n\
-         [[implementations]]\n"
-    ));
+    if let Some(needs) = needs {
+        text.push_str(&format!(
+            "scope = \"file\"\nneeds = \"{needs}\"\nrun-on = [\"cli\", \"save\", \"type\"]\n"
+        ));
+    }
+    text.push_str(
+        "default-enabled = false\ndefault-severity = \"warning\"\n\n[[implementations]]\n",
+    );
     let language = &args.language;
-    match args.runtime {
-        Some(runtime) => text.push_str(&format!(
+    text.push_str(&match (args.kind, args.runtime) {
+        (NewKind::Judgment, _) => format!(
+            "kind = \"judgment\"\nlanguages = [\"{language}\"]\nwhen = \"edit\"\n\
+             question = \"boolean\"\nwhy-not-deterministic = \"{WHY}\"\n"
+        ),
+        (_, Some(runtime)) => format!(
             "kind = \"extension\"\nruntime = \"{}\"\nlanguages = [\"{language}\"]\n",
             runtime.word()
-        )),
-        None => text.push_str(&format!(
+        ),
+        _ => format!(
             "kind = \"ast-grep\"\nlanguages = [\"{language}\"]\nfile = \"{language}.yml\"\n"
-        )),
-    }
+        ),
+    });
     text
 }
 
@@ -216,7 +233,15 @@ fn draft(args: &NewArgs, catalog: &Catalog, family: &Family, slug: &str) -> Draf
     };
     let mut files = vec![
         file("rule.toml", rule_toml(args, slug, &code)),
-        file("README.md", README.to_owned()),
+        file(
+            "README.md",
+            if args.kind == NewKind::Judgment {
+                JUDGMENT_README
+            } else {
+                README
+            }
+            .to_owned(),
+        ),
     ];
     if args.kind == NewKind::AstGrep {
         files.push(file(

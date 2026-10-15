@@ -348,3 +348,68 @@ fn the_message_of_a_rule_without_a_standard_starts_with_its_slug() {
     let toml = read(&dir.join("cat/structure/no-foo/rule.toml"));
     assert!(!toml.contains("standard"), "{toml}");
 }
+
+#[test]
+fn a_judgment_rule_has_the_fields_of_a_judge_and_the_readme_of_its_kind() {
+    let dir = workdir("judgment");
+
+    let output = new_rule(
+        &dir,
+        &[
+            "testing/test-foo",
+            "--kind",
+            "judgment",
+            "--language",
+            "python",
+            "--standard",
+            "CES-65",
+        ],
+    );
+
+    succeeded(&output);
+    let folder = dir.join("cat/testing/test-foo");
+    assert_eq!(
+        read(&folder.join("rule.toml")),
+        "id = \"test-foo\"\n\
+         code = \"BTTEST001\"\n\
+         standard = \"CES-65\"\n\
+         summary = \"TODO: what the rule asks, in one line\"\n\
+         status = \"preview\"\n\
+         default-enabled = false\n\
+         default-severity = \"warning\"\n\
+         \n\
+         [[implementations]]\n\
+         kind = \"judgment\"\n\
+         languages = [\"python\"]\n\
+         when = \"edit\"\n\
+         question = \"boolean\"\n\
+         why-not-deterministic = \"TODO: why no check of the code or of the configuration of a \
+         repository decides it\"\n"
+    );
+    assert!(!folder.join("python.yml").exists());
+    let catalog = reload(&dir);
+    let rule = catalog.resolve("BTTEST001").expect("the new rule");
+    assert!(rule.is_judgment());
+    let titles: Vec<String> = rule
+        .sections()
+        .into_iter()
+        .map(|section| section.title)
+        .collect();
+    assert_eq!(
+        titles,
+        [
+            "Directive",
+            "Why",
+            "Flag",
+            "Do not flag",
+            "Confirm",
+            "Do",
+            "Don't",
+            "Suppression"
+        ]
+    );
+    assert!(rule
+        .sections()
+        .iter()
+        .all(|section| section.text.starts_with("TODO: ")));
+}

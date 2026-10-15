@@ -33,13 +33,17 @@ no check at all.
 
    | | Deterministic (`native`, `ast-grep`, `extension`) | `judgment` |
    |---|---|---|
-   | `rule.toml` | `scope`, `needs`, `run-on`, `options` | `scope` (globs), `when` (`edit`, `turn` or `pull-request`), `question` (`boolean`, `choice` or `score`), `covered-by`, `why-not-deterministic` |
+   | `rule.toml` | `scope`, `needs`, `run-on`, `options` | `files` and `ignores` (globs); on the implementation, `when` (`edit`, `turn` or `pull-request`), `question` (`boolean`, `choice` or `score`), `covered-by`, `why-not-deterministic` |
    | README | Directive, Why, Exceptions (optional), Do, Don't, Options (optional), Suppression | Directive, Why, Flag, Do not flag, Confirm, Do, Don't, Suppression |
    | Implementation | `python.yml`, `typescript.yml` or code in the core | none |
    | `fixtures/` | `valid/`, `invalid/` and `expected.json` with the range of each finding | `valid/`, `invalid/` and `expected.json` with the verdict of each file |
 
    `covered-by` lists the deterministic rules that check part of a judgment rule. The fixtures of a
-   judgment rule are the set a judge is calibrated against.
+   judgment rule are the set a judge is calibrated against. A judgment rule has one implementation,
+   of kind `judgment`, and the fields of a judge live on it: a rule that becomes deterministic
+   replaces that implementation and keeps the root of its `rule.toml`. A deterministic rule
+   requires `scope`, `needs` and `run-on`; a judgment rule rejects them and `prefilter`, and another
+   kind of implementation rejects the fields of a judge.
 5. **The catalog is the only source of a judgment rule.** Its text is the README of its folder. The
    index in `AGENTS.md`, the `engineering-rules` skill and the files of each judge are generated
    from the catalog by `botica rules export`, and none of them is edited by hand.
@@ -127,8 +131,8 @@ no check at all.
 ## Consequences
 
 - The kind table of ADR 0003 describes `judgment` as in this ADR.
-- `rule.toml` gains `when`, `question`, `covered-by` and `why-not-deterministic` for judgment rules,
-  and options with no default for deterministic rules.
+- The implementation of kind `judgment` in `rule.toml` has `when`, `question`, `covered-by` and
+  `why-not-deterministic`, and a deterministic rule gains options with no default.
 - `botica lint` reads SARIF from a judge (`--judged`), and `invalid-suppression` checks the reason,
   the level and the channel of a suppression of a judgment rule.
 - `botica rules export` gains `--format abide` and `--check`, and `botica rules test` gains
@@ -136,8 +140,9 @@ no check at all.
 - `botica rules new <family>/<slug> --kind <kind>` writes a folder that the catalog loads: a
   `rule.toml` in preview and off by default with the next code of the family, a README with the
   required sections of its template, empty fixtures and, for `ast-grep`, the YAML of its language.
-  It takes `ast-grep` and `extension`; a `native` rule has its code in botica-core, and the
-  `judgment` and `external` kinds come with their fields of `rule.toml`. Nothing runs an
+  It takes `ast-grep`, `extension` and `judgment`; a `native` rule has its code in botica-core,
+  and the `external` kind comes with its fields of `rule.toml`. The `expected.json` of a judgment
+  rule lists findings until `botica rules test --judge abide` sets the format of a verdict. Nothing runs an
   `extension` rule of the catalog yet: `botica lint --ext <command>` runs an extension by its
   command.
 - `botica rules export --format json` writes `catalog.json`, which the other exports read: its

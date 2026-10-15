@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use botica_catalog::{
-    Catalog, Family, Implementation, Kind, Needs, OptionSpec, Rule, RunOn, Runtime, Scope, Section,
-    Severity, Status,
+    Catalog, Family, Implementation, Kind, Needs, OptionSpec, Question, Rule, RunOn, Runtime,
+    Scope, Section, Severity, Status, When,
 };
 use serde::Serialize;
 
@@ -36,9 +36,9 @@ struct RuleView<'a> {
     files: &'a [String],
     ignores: &'a [String],
     prefilter: Option<&'a str>,
-    scope: Scope,
-    needs: Needs,
-    run_on: &'a [RunOn],
+    scope: Option<Scope>,
+    needs: Option<Needs>,
+    run_on: Option<&'a [RunOn]>,
     default_enabled: bool,
     default_severity: Severity,
     dependencies: &'a [String],
@@ -56,6 +56,10 @@ struct ImplementationView<'a> {
     languages: &'a [String],
     status: Status,
     file: Option<&'a str>,
+    when: Option<When>,
+    question: Option<Question>,
+    covered_by: &'a [String],
+    why_not_deterministic: Option<&'a str>,
 }
 
 impl<'a> RuleView<'a> {
@@ -78,7 +82,7 @@ impl<'a> RuleView<'a> {
             prefilter: rule.prefilter.as_deref(),
             scope: rule.scope,
             needs: rule.needs,
-            run_on: &rule.run_on,
+            run_on: rule.run_on.as_deref(),
             default_enabled: rule.default_enabled,
             default_severity: rule.default_severity,
             dependencies: &rule.dependencies,
@@ -102,6 +106,10 @@ impl<'a> ImplementationView<'a> {
             languages: &implementation.languages,
             status: rule.status_of(implementation),
             file: implementation.file.as_deref(),
+            when: implementation.when,
+            question: implementation.question,
+            covered_by: &implementation.covered_by,
+            why_not_deterministic: implementation.why_not_deterministic.as_deref(),
         }
     }
 }
