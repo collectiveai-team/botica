@@ -1,7 +1,3 @@
-# no-tests-in-package · `BTSTRUC005`
-
-**Family:** structure · **Ecosystems:** Python
-
 ## Directive
 
 Tests live in a `tests/` directory **beside** the package, not in it. Inside a Python package, a

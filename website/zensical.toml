@@ -13,6 +13,12 @@ edit_uri = "edit/feat/botica-lint/website/docs/"
 [project.extra.edit]
 catalog_uri = "edit/feat/botica-lint/lint/rules/"
 
+# The `status` of a rule page is the status of the rule; the sidebar shows what each one means.
+[project.extra.status]
+stable = "Stable"
+preview = "Preview: runs only with preview = true"
+removed = "Removed: kept for history"
+
 # The ids of the Discussions of this repository, as any giscus snippet carries them: they are public.
 # The category of a rule page is the one named like its family; `fallback` takes the pages whose
 # family has none. `partials/comments.html` reads them.

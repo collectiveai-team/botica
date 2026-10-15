@@ -84,7 +84,7 @@ fn writes_one_page_per_rule_of_the_catalog_and_an_index() {
 }
 
 #[test]
-fn a_page_is_the_front_matter_of_the_rule_followed_by_its_readme() {
+fn a_page_is_the_front_matter_a_header_and_the_prose_of_its_readme() {
     let site = exported(&workdir("page"));
 
     let expected = format!(
@@ -93,7 +93,7 @@ fn a_page_is_the_front_matter_of_the_rule_followed_by_its_readme() {
          code: \"BTFAST001\"\n\
          family: \"fastapi\"\n\
          ces: \"CES-4\"\n\
-         summary: \"Request and response schemas reject unknown fields\"\n\
+         description: \"Request and response schemas reject unknown fields\"\n\
          status: \"stable\"\n\
          since: \"0.8.0\"\n\
          default-enabled: true\n\
@@ -103,6 +103,12 @@ fn a_page_is_the_front_matter_of_the_rule_followed_by_its_readme() {
          aliases: []\n\
          readme: \"fastapi/api-schemas-extra-forbid/README.md\"\n\
          ---\n\
+         \n\
+         # api-schemas-extra-forbid (BTFAST001)\n\
+         \n\
+         Added in 0.8.0 · Stable · Enabled by default (warning)\n\
+         \n\
+         Family: fastapi · Standard: CES-4 · Languages: python\n\
          \n\
          {}",
         readme("fastapi", "api-schemas-extra-forbid")
@@ -121,7 +127,7 @@ fn a_rule_of_botica_itself_has_no_family_and_a_rule_without_a_standard_has_no_ce
         "---\n\
          rule: \"io-error\"\n\
          code: \"BT001\"\n\
-         summary: \"A path given on the command line cannot be read\"\n\
+         description: \"A path given on the command line cannot be read\"\n\
          status: \"stable\"\n\
          since: \"0.1.0\"\n\
          default-enabled: true\n\
@@ -132,6 +138,12 @@ fn a_rule_of_botica_itself_has_no_family_and_a_rule_without_a_standard_has_no_ce
          readme: \"botica/io-error/README.md\"\n\
          ---\n\
          \n\
+         # io-error (BT001)\n\
+         \n\
+         Added in 0.1.0 · Stable · Enabled by default (error)\n\
+         \n\
+         Rule of botica itself · Languages: all\n\
+         \n\
          {}",
         readme("botica", "io-error")
     );
@@ -139,7 +151,7 @@ fn a_rule_of_botica_itself_has_no_family_and_a_rule_without_a_standard_has_no_ce
 }
 
 #[test]
-fn a_preview_rule_says_it_is_off_by_default() {
+fn a_preview_rule_says_it_is_off_by_default_and_how_to_run_it() {
     let site = exported(&workdir("preview"));
 
     let text = page(
@@ -150,6 +162,18 @@ fn a_preview_rule_says_it_is_off_by_default() {
     assert!(front_matter.contains(&"status: \"preview\""), "{text}");
     assert!(front_matter.contains(&"default-enabled: false"), "{text}");
     assert!(front_matter.contains(&"since: \"0.10.0\""), "{text}");
+    let lines: Vec<&str> = text.lines().collect();
+    assert!(
+        lines.contains(&"Added in 0.10.0 · Preview · Off by default (warning)"),
+        "{text}"
+    );
+    assert!(
+        lines.contains(
+            &"This rule is unstable and in preview. It runs only with `preview = true`, \
+              and only when it is selected."
+        ),
+        "{text}"
+    );
 }
 
 #[test]
@@ -158,22 +182,29 @@ fn the_index_groups_the_rules_by_family_in_the_order_of_their_codes() {
 
     let index = page(&site, "index.md");
     assert!(index.starts_with("# Rules\n\n"), "{index}");
+    assert!(
+        index.contains(
+            "A rule is `stable`, `preview` (it runs only with `preview = true`), `deprecated` \
+             (it will be removed) or `removed` (documented for history).\n"
+        ),
+        "{index}"
+    );
     let section = "## fastapi\n\
                    \n\
                    Rules for FastAPI services.\n\
                    \n\
-                   | Code | Rule | Status | Summary |\n\
-                   |---|---|---|---|\n\
-                   | `BTFAST001` | [`api-schemas-extra-forbid`](fastapi/btfast001-api-schemas-extra-forbid.md) | stable | Request and response schemas reject unknown fields |\n\
-                   | `BTFAST002` | [`api-schema-in-route-module`](fastapi/btfast002-api-schema-in-route-module.md) | preview | Pydantic schemas are not defined in route modules |\n";
+                   | Code | Rule | Status | Added in | Default |\n\
+                   |---|---|---|---|---|\n\
+                   | `BTFAST001` | [`api-schemas-extra-forbid`](fastapi/btfast001-api-schemas-extra-forbid.md)<br>Request and response schemas reject unknown fields | stable | 0.8.0 | on |\n\
+                   | `BTFAST002` | [`api-schema-in-route-module`](fastapi/btfast002-api-schema-in-route-module.md)<br>Pydantic schemas are not defined in route modules | preview | 0.10.0 | off |\n";
     assert!(index.contains(section), "{index}");
     let own = "## botica\n\
                \n\
                What a run reports about itself: unreadable paths and suppression comments.\n\
                \n\
-               | Code | Rule | Status | Summary |\n\
-               |---|---|---|---|\n\
-               | `BT001` | [`io-error`](botica/bt001-io-error.md) | stable | A path given on the command line cannot be read |\n";
+               | Code | Rule | Status | Added in | Default |\n\
+               |---|---|---|---|---|\n\
+               | `BT001` | [`io-error`](botica/bt001-io-error.md)<br>A path given on the command line cannot be read | stable | 0.1.0 | on |\n";
     assert!(index.contains(own), "{index}");
 }
 

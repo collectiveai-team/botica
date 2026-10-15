@@ -1,7 +1,3 @@
-# log-get-logger · `BTLOG001`
-
-**Standard:** CES-45 · **Family:** logging · **Languages:** Python
-
 ## Directive
 
 Never call `logging.getLogger(...)`, or a bare `getLogger(...)`, directly. Get loggers from the

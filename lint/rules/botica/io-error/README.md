@@ -1,7 +1,3 @@
-# io-error · `BT001`
-
-**Family:** none (rule of the linter itself) · **Languages:** all
-
 ## Directive
 
 A path given on the command line that does not exist, or a file given explicitly that cannot be

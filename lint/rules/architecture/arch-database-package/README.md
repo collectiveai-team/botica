@@ -1,7 +1,3 @@
-# arch-database-package · `BTARCH001`
-
-**Standard:** CES-18 · **Family:** architecture · **Languages:** Python
-
 ## Directive
 
 Relational persistence lives in its own `database` package: SQLModel tables, repositories,

@@ -1,7 +1,3 @@
-# settings-base-class · `BTARCH003`
-
-**Standard:** none yet · **Family:** architecture · **Languages:** Python · **Status:** preview, off by default (set `preview = true` and select it)
-
 ## Directive
 
 A class whose name ends with `Settings` extends `pydantic_settings.BaseSettings`, not

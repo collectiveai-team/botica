@@ -1,7 +1,3 @@
-# api-schemas-extra-forbid · `BTFAST001`
-
-**Standard:** CES-4 · **Family:** fastapi · **Languages:** Python
-
 ## Directive
 
 Every Pydantic request or response model at the API boundary sets

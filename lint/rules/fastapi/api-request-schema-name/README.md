@@ -1,7 +1,3 @@
-# api-request-schema-name · `BTFAST003`
-
-**Standard:** none yet · **Family:** fastapi · **Languages:** Python · **Status:** preview, off by default (set `preview = true` and select it)
-
 ## Directive
 
 A Pydantic model under `api/**/schemas/requests/` is named `{Name}Request`. A warning by default.

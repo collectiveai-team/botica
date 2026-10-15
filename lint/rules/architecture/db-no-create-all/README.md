@@ -1,7 +1,3 @@
-# db-no-create-all · `BTARCH005`
-
-**Standard:** none yet · **Family:** architecture · **Languages:** Python · **Status:** preview, off by default (set `preview = true` and select it)
-
 ## Directive
 
 `metadata.create_all(...)` is reported outside the tests: the schema evolves through Alembic

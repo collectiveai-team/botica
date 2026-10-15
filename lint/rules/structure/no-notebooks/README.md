@@ -1,7 +1,3 @@
-# no-notebooks · `BTSTRUC004`
-
-**Standard:** CES-32 · **Family:** structure · **Ecosystems:** all
-
 ## Directive
 
 A Jupyter notebook (`*.ipynb`) inside the **code of a project** is an error. Keep notebooks beside

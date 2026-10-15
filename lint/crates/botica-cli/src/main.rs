@@ -2,6 +2,7 @@ mod explain_cmd;
 mod extension;
 mod lint_cmd;
 mod project;
+mod rule_page;
 mod rule_view;
 mod rules;
 mod rules_cmd;

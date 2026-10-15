@@ -170,3 +170,14 @@ def test_compat_ast_grep_ignore_is_documented_once_in_the_readme_of_botica():
 
     assert "# ast-grep-ignore:" in text
     assert "compat-ast-grep-ignore = true" in text
+
+
+def test_a_readme_holds_the_prose_of_a_rule_and_not_what_its_rule_toml_says():
+    """The title, the status, the family and the standard of a rule come from `rule.toml`."""
+    repeated = sorted(
+        str(readme.relative_to(CATALOG))
+        for readme in CATALOG.glob("*/*/README.md")
+        if not readme.read_text(encoding="utf-8").startswith("## ")
+    )
+
+    assert not repeated, f"READMEs that open with something other than a section: {repeated}"

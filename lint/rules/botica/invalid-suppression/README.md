@@ -1,7 +1,3 @@
-# invalid-suppression · `BT003`
-
-**Family:** none (rule of the linter itself) · **Languages:** all
-
 ## Directive
 
 A suppression comment that names a rule botica does not know, or that is malformed, is a warning.

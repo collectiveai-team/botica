@@ -1,7 +1,3 @@
-# settings-module · `BTARCH002`
-
-**Standard:** CES-76 · **Family:** architecture · **Languages:** Python
-
 ## Directive
 
 Read the environment in one place: the settings module. `os.getenv(...)` and `os.environ`

@@ -1,7 +1,3 @@
-# file-size-guard · `BTSTRUC001`
-
-**Standard:** CES-71 · **Family:** structure · **Languages:** all
-
 ## Directive
 
 Keep source files small. A file with **400 lines or more** gets a warning; **700 or more** is an

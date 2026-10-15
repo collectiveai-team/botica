@@ -1,7 +1,3 @@
-# unused-suppression · `BT002`
-
-**Family:** none (rule of the linter itself) · **Languages:** all
-
 ## Directive
 
 A suppression comment that silences nothing is a warning. It applies to both channels:

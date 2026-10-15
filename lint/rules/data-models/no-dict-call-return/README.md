@@ -1,7 +1,3 @@
-# no-dict-call-return · `BTDM003`
-
-**Standard:** CES-79 · **Family:** data-models · **Languages:** Python
-
 ## Directive
 
 A function that crosses a boundary returns a typed structure, never a raw `dict`: a

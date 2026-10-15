@@ -1,7 +1,3 @@
-# api-response-schema-name · `BTFAST004`
-
-**Standard:** none yet · **Family:** fastapi · **Languages:** Python · **Status:** preview, off by default (set `preview = true` and select it)
-
 ## Directive
 
 A Pydantic model under `api/**/schemas/responses/` is named `{Name}Response`. A warning by default.

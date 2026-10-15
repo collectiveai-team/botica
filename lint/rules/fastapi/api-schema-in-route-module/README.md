@@ -1,7 +1,3 @@
-# api-schema-in-route-module · `BTFAST002`
-
-**Standard:** none yet · **Family:** fastapi · **Languages:** Python · **Status:** preview, off by default (set `preview = true` and select it)
-
 ## Directive
 
 A route module holds routes. A Pydantic schema (`BaseModel`) defined in a module under

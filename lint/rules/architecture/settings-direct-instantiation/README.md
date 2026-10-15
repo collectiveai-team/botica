@@ -1,7 +1,3 @@
-# settings-direct-instantiation · `BTARCH004`
-
-**Standard:** none yet · **Family:** architecture · **Languages:** Python · **Status:** preview, off by default (set `preview = true` and select it)
-
 ## Directive
 
 A settings class is built in one place, the cached `get_settings()`. A call such as

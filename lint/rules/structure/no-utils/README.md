@@ -1,7 +1,3 @@
-# no-utils · `BTSTRUC002`
-
-**Standard:** CES-63 · **Family:** structure · **Languages:** Python
-
 ## Directive
 
 Don't create catch-all modules. A file named `utils.py`, `helpers.py`, `aux.py`, `misc.py` or

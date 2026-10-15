@@ -1,7 +1,3 @@
-# cli-typed-framework · `BTPROC001`
-
-**Standard:** CES-67 · **Family:** process · **Languages:** Python
-
 ## Directive
 
 Build command-line interfaces with a typed, declarative framework (Typer, Cyclopts or

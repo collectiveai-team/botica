@@ -1,7 +1,3 @@
-# no-artifacts-in-package · `BTSTRUC003`
-
-**Standard:** CES-32 · **Family:** structure · **Ecosystems:** all
-
 ## Directive
 
 Data, trained models and reports live **beside** the code of a project, not in it. Inside the code,

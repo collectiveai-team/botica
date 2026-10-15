@@ -1,7 +1,3 @@
-# no-console-log · `BTLOG003`
-
-**Standard:** none yet · **Family:** logging · **Languages:** TypeScript
-
 ## Directive
 
 Don't leave `console.log(...)` in library code: use the project's logger. A warning by default.

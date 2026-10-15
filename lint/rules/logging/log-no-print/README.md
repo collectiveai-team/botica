@@ -1,7 +1,3 @@
-# log-no-print · `BTLOG002`
-
-**Standard:** CES-46 · **Family:** logging · **Languages:** Python
-
 ## Directive
 
 Don't use `print()` in importable library code. Emit through the house `get_logger`
