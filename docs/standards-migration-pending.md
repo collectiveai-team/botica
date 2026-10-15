@@ -70,6 +70,3 @@ waits for the decisions below. Nothing here has been deleted.
 - The 11 standards written from their issues (4, 18, 32, 45, 46, 63, 67, 71, 76, 77, 79) use the
   same `## Directive` heading (S5) that `standards/CES/index.md` does not describe. Either the
   index or the 31 files must change.
-- The rule page says `Standard: CES-71` as plain text. A link to the page of the standard needs
-  botica to know where the standards live (ADR 0004 gives that to the site); the list at the end of
-  the page of the standard is the link in the other direction.

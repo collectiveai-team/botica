@@ -1,9 +1,10 @@
-"""Subtitle the page of each standard with its id and list the rules that implement it.
+"""Relate the pages of the standards and the pages of the rules on the site.
 
 `scripts/build_site.sh` copies `standards/` into the documents of the site after botica has
-exported the pages of the rules. Botica knows nothing about standards, so the list is made here,
-from the `standard` that the front matter of each rule page carries, and written at the end of the
-copy of the standard. The text of the standard in `standards/` is never touched.
+exported the pages of the rules. The relation is made here, from the `standard` that the front
+matter of each rule page carries: the page of a standard gets its id as subtitle and the list of
+its rules at the end, and the page of a rule links the standard it names. The text of the standard
+in `standards/` is never touched.
 """
 
 from __future__ import annotations
@@ -76,12 +77,32 @@ def _decorated(page: Path, rules: dict[str, list[RuleLink]]) -> str:
     return text
 
 
-def decorate(docs: Path) -> None:
-    """Rewrite the copy of each standard under `docs/standards` with its subtitle and its rules."""
-    rules = _rules_by_standard(docs)
+def _standard_pages(docs: Path) -> dict[str, Path]:
+    pages = {}
     for page in sorted((docs / "standards").glob("*/*.md")):
         if page.name != "index.md":
-            page.write_text(_decorated(page, rules), encoding="utf-8")
+            lines, _ = _split(page.read_text(encoding="utf-8"))
+            pages[_fields(lines)["id"]] = page
+    return pages
+
+
+def _link_standard(rule: RuleLink, standard: str, target: Path) -> None:
+    address = Path(os.path.relpath(target, rule.page.parent)).as_posix()
+    text = rule.page.read_text(encoding="utf-8")
+    plain, linked = f"Standard: {standard}", f"Standard: [{standard}]({address})"
+    rule.page.write_text(text.replace(plain, linked, 1), encoding="utf-8")
+
+
+def decorate(docs: Path) -> None:
+    """Rewrite the standards under `docs/standards` and the rules that name them."""
+    rules = _rules_by_standard(docs)
+    standards = _standard_pages(docs)
+    for page in standards.values():
+        page.write_text(_decorated(page, rules), encoding="utf-8")
+    for standard, links in rules.items():
+        for link in links:
+            if standard in standards:
+                _link_standard(link, standard, standards[standard])
 
 
 @app.default

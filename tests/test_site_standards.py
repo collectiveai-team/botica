@@ -24,11 +24,16 @@ def add_rule(docs: Path, family: str, slug: str, code: str, standard: str | None
     page = docs / "rules" / family / f"{code.lower()}-{slug}.md"
     page.parent.mkdir(parents=True, exist_ok=True)
     cited = f'standard: "{standard}"\n' if standard else ""
+    identity = f"Family: {family} · Standard: {standard} · Languages: all" if standard else "-"
     page.write_text(
         f'---\ntitle: "{slug}"\nsubtitle: "{code}"\nrule: "{slug}"\ncode: "{code}"\n{cited}---\n\n'
-        f"# {slug} ({code})\n",
+        f"# {slug} ({code})\n\n{identity}\n",
         encoding="utf-8",
     )
+
+
+def rule_text(docs: Path, family: str, slug: str, code: str) -> str:
+    return (docs / "rules" / family / f"{code.lower()}-{slug}.md").read_text(encoding="utf-8")
 
 
 def add_standard(docs: Path, number: int, slug: str = "a-standard") -> Path:
@@ -124,3 +129,37 @@ def test_a_standard_of_another_set_is_matched_by_its_own_prefix(tmp_path: Path):
     assert "no-utils" in text
     assert "file-size-guard" not in text
     assert "(../../rules/structure/btstruc002-no-utils.md)" in text
+
+
+def test_a_rule_links_the_standard_it_names_to_the_page_of_that_standard(tmp_path: Path):
+    add_standard(tmp_path, 71, "file-size-guard")
+    add_rule(tmp_path, "structure", "file-size-guard", "BTSTRUC001", "CES-71")
+
+    ss.decorate(tmp_path)
+
+    assert (
+        "Family: structure · Standard: [CES-71](../../standards/CES/71-file-size-guard.md)"
+        " · Languages: all"
+    ) in rule_text(tmp_path, "structure", "file-size-guard", "BTSTRUC001")
+
+
+def test_a_rule_that_names_a_standard_without_a_page_keeps_the_plain_text(tmp_path: Path):
+    add_standard(tmp_path, 71, "file-size-guard")
+    add_rule(tmp_path, "structure", "no-utils", "BTSTRUC002", "CES-63")
+
+    ss.decorate(tmp_path)
+
+    assert "Standard: CES-63 ·" in rule_text(tmp_path, "structure", "no-utils", "BTSTRUC002")
+
+
+def test_a_rule_links_a_standard_of_another_set_to_its_own_folder(tmp_path: Path):
+    acme = tmp_path / "standards" / "ACME" / "3-own.md"
+    acme.parent.mkdir(parents=True)
+    acme.write_text("---\nid: ACME-3\ntitle: Own\n---\n\nText.\n", encoding="utf-8")
+    add_rule(tmp_path, "structure", "no-utils", "BTSTRUC002", "ACME-3")
+
+    ss.decorate(tmp_path)
+
+    assert "[ACME-3](../../standards/ACME/3-own.md)" in rule_text(
+        tmp_path, "structure", "no-utils", "BTSTRUC002"
+    )
