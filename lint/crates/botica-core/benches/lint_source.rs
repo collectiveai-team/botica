@@ -15,7 +15,7 @@ const PY_RULES: [&str; 10] = [
     include_str!("../../../rules/data-models/no-dict-return-annotation/python.yml"),
     include_str!("../../../rules/architecture/settings-module/python.yml"),
 ];
-const TS_RULE: &str = include_str!("../../../rules/logging/no-console-log/typescript.yml");
+const TS_RULE: &str = include_str!("../../../rules/logging/log-no-print/typescript.yml");
 
 const PY_BLOCK: &str = r#"
 import logging

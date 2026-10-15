@@ -1,7 +1,7 @@
-id: no-console-log
+id: log-no-print
 language: typescript
 severity: warning
-message: "botica/no-console-log: remove console.log from library code; use the project logger."
+message: "CES-46 (log-no-print): Libraries log, they don't print — use the project logger instead of console.log() in library code."
 ignores:
   - "**/*.test.ts"
 rule:

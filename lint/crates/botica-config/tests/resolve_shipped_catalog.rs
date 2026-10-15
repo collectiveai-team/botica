@@ -22,7 +22,6 @@ fn the_default_selection_runs_every_rule_enabled_by_default() {
             "log-get-logger",
             "log-no-print",
             "no-artifacts-in-package",
-            "no-console-log",
             "no-dict-alias",
             "no-dict-call-return",
             "no-dict-literal-return",
@@ -69,7 +68,7 @@ fn select_and_extend_select_are_added_together() {
     );
     assert_eq!(
         active(&resolve(&catalog, "select = []\nextend-select = [\"all\"]")).len(),
-        19
+        18
     );
 }
 
@@ -87,7 +86,6 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
             "io-error",
             "log-get-logger",
             "log-no-print",
-            "no-console-log",
             "no-dict-alias",
             "no-dict-call-return",
             "no-dict-literal-return",
@@ -120,7 +118,7 @@ fn the_preview_rules_stay_out_of_the_default_selection_and_of_all() {
         assert_eq!(reason(&by_default, slug), Reason::NotSelected, "{slug}");
         assert_eq!(reason(&by_all, slug), Reason::OnlyPreview, "{slug}");
     }
-    assert_eq!(active(&by_all).len(), 19);
+    assert_eq!(active(&by_all).len(), 18);
 }
 
 #[test]
@@ -140,7 +138,7 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
         &catalog,
         "select = []\nextend-select = [\"all\"]\npreview = true",
     );
-    assert_eq!(active(&resolution).len(), 25);
+    assert_eq!(active(&resolution).len(), 24);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTARCH\"]\npreview = true")),
         [
@@ -171,7 +169,6 @@ fn a_rule_switched_off_in_its_own_section_stays_out() {
             "log-get-logger",
             "log-no-print",
             "no-artifacts-in-package",
-            "no-console-log",
             "no-dict-alias",
             "no-dict-call-return",
             "no-dict-literal-return",

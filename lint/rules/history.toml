@@ -68,11 +68,6 @@ status = "stable"
 
 [[event]]
 version = "0.8.0"
-rule = "no-console-log"
-status = "stable"
-
-[[event]]
-version = "0.8.0"
 rule = "no-dict-alias"
 status = "stable"
 

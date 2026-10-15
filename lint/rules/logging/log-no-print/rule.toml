@@ -14,3 +14,8 @@ default-severity = "warning"
 kind = "ast-grep"
 languages = ["python"]
 file = "python.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["typescript"]
+file = "typescript.yml"
