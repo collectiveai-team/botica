@@ -9,7 +9,7 @@ TypeScript is a violation. A warning by default.
 context, and a library that prints pollutes the stdout of every program that imports it. Logging
 lets the application decide where output goes.
 
-## What is exempt
+## Exceptions
 
 ### Python
 

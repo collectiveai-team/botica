@@ -8,7 +8,7 @@ anywhere else are reported. A warning by default.
 Scattered `os.getenv` calls are an invisible, untyped and undocumented configuration surface: no
 defaults in one place, no validation, no list of what the application reads.
 
-## What is exempt
+## Exceptions
 
 The rule skips the files where the environment is read on purpose:
 
