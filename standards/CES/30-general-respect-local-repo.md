@@ -1,6 +1,6 @@
 ---
 id: CES-30
-title: respect the local repo
+title: Respect the local repo
 ---
 
 **Tier:** judgment

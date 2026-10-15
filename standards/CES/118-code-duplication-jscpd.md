@@ -1,6 +1,6 @@
 ---
 id: CES-118
-title: copy-paste duplication (jscpd)
+title: Copy-paste duplication (jscpd)
 ---
 
 **Enforced by:** prek hook

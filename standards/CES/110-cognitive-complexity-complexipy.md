@@ -1,6 +1,6 @@
 ---
 id: CES-110
-title: cognitive complexity (complexipy)
+title: Cognitive complexity (complexipy)
 ---
 
 **Enforced by:** prek hook

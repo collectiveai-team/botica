@@ -1,6 +1,6 @@
 ---
 id: CES-58
-title: one modern lint stack
+title: One modern lint stack
 ---
 
 **Tier:** judgment

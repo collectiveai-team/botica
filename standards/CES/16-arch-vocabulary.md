@@ -1,6 +1,6 @@
 ---
 id: CES-16
-title: architectural vocabulary
+title: Architectural vocabulary
 ---
 
 **Tier:** judgment

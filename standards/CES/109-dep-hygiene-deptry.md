@@ -1,6 +1,6 @@
 ---
 id: CES-109
-title: dependency hygiene (deptry)
+title: Dependency hygiene (deptry)
 ---
 
 **Enforced by:** prek hook

@@ -1,6 +1,6 @@
 ---
 id: CES-74
-title: the house logger (core/logger.py)
+title: The house logger (core/logger.py)
 ---
 
 **Ships as:** snippet (`.agents/snippets/core/logger.py`)

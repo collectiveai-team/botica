@@ -1,6 +1,6 @@
 ---
 id: CES-66
-title: coverage gaps are a signal
+title: Coverage gaps are a signal
 ---
 
 **Tier:** judgment

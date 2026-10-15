@@ -1,6 +1,6 @@
 ---
 id: CES-91
-title: no AI co-authorship in commits
+title: No AI co-authorship in commits
 ---
 
 **Enforced by:** prek commit-msg hook + CI (`commit-policy.yml`)

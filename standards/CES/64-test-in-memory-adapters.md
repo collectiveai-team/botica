@@ -1,6 +1,6 @@
 ---
 id: CES-64
-title: test against in-memory adapters
+title: Test against in-memory adapters
 ---
 
 **Tier:** judgment

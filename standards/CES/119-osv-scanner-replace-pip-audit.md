@@ -1,6 +1,6 @@
 ---
 id: CES-119
-title: dependency vulnerability scanning (osv-scanner)
+title: Dependency vulnerability scanning (osv-scanner)
 ---
 
 **Enforced by:** CI workflow (`osv-scanner.yml`)

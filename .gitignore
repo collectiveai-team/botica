@@ -37,4 +37,5 @@ lint/target/
 # standards/, the site is built from them
 website/docs/rules/
 website/docs/standards/
+website/zensical.build.toml
 website/site/

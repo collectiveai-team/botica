@@ -1,6 +1,6 @@
 ---
 id: CES-113
-title: dependency-review-action
+title: Dependency-review-action
 ---
 
 **Enforced by:** CI workflow (`dependency-review.yml`)

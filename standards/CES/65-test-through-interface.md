@@ -1,6 +1,6 @@
 ---
 id: CES-65
-title: test through the interface
+title: Test through the interface
 ---
 
 **Tier:** judgment

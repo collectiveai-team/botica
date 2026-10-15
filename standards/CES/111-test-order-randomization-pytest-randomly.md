@@ -1,6 +1,6 @@
 ---
 id: CES-111
-title: test order randomization (pytest-randomly)
+title: Test order randomization (pytest-randomly)
 ---
 
 **Enforced by:** dev dependency (pytest plugin)

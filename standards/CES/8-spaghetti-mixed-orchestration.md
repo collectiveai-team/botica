@@ -1,6 +1,6 @@
 ---
 id: CES-8
-title: separate orchestration from logic
+title: Separate orchestration from logic
 ---
 
 **Tier:** judgment

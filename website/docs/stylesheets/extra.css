@@ -1,18 +1,67 @@
-[data-md-color-scheme="default"] .md-logo img[src$="#only-dark"],
-[data-md-color-scheme="slate"] .md-logo img[src$="#only-light"] {
+[data-md-color-scheme="default"] img[src$="#only-dark"],
+[data-md-color-scheme="slate"] img[src$="#only-light"] {
   display: none;
 }
 
-.md-logo img {
+/* The icon is shown in inverted colours on a base of the opposite brand colour: without the
+   base, the arch of the icon is lost against the page. */
+img.botica-icon {
   box-sizing: content-box;
   padding: 0.25rem 0.35rem;
   border-radius: 0.4rem;
 }
 
-[data-md-color-scheme="default"] .md-logo img {
+[data-md-color-scheme="default"] img.botica-icon {
   background: #1b2635;
 }
 
-[data-md-color-scheme="slate"] .md-logo img {
+[data-md-color-scheme="slate"] img.botica-icon {
   background: #f3ede4;
+}
+
+/* The header shows the wordlogo in place of the name of the site. */
+.md-header__button.md-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.md-header__button.md-logo img.botica-wordlogo {
+  width: auto;
+  height: 1rem;
+}
+
+.md-header__title {
+  display: none;
+}
+
+/* The home page. */
+.botica-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1.5rem 0 2rem;
+  text-align: center;
+}
+
+.botica-hero img.botica-icon {
+  height: 5.5rem;
+  width: auto;
+  padding: 0.7rem 0.9rem;
+  border-radius: 1rem;
+}
+
+.botica-hero h1 {
+  margin: 1.4rem 0 0.8rem;
+}
+
+.botica-hero h1 img {
+  width: min(20rem, 80vw);
+  height: auto;
+}
+
+.botica-hero .botica-tagline {
+  max-width: 34rem;
+  margin: 0;
+  font-size: 1.05rem;
 }

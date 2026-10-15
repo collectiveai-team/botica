@@ -1,6 +1,6 @@
 ---
 id: CES-107
-title: track the skills manifest
+title: Track the skills manifest
 ---
 
 **Enforced by:** `scaffolding check`

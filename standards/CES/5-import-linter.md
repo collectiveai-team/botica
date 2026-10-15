@@ -1,6 +1,6 @@
 ---
 id: CES-5
-title: layered import direction
+title: Layered import direction
 ---
 
 **Enforced by:** AGENTS directive now; a **commented** `[tool.importlinter]` skeleton in `pyproject.toml` (uncomment once the package has layers)
