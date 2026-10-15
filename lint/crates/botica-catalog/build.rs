@@ -34,6 +34,10 @@ fn main() {
     println!("cargo:rerun-if-changed={}", rules_dir.display());
 
     let mut table = String::from("pub(crate) const EMBEDDED_FILES: &[(&str, &str)] = &[\n");
+    let history = rules_dir.join("history.toml");
+    if history.is_file() {
+        push(&mut table, &rules_dir, &history);
+    }
     for family in sorted_entries(&rules_dir)
         .into_iter()
         .filter(|p| p.is_dir())

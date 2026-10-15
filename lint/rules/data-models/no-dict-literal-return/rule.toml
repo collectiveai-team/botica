@@ -3,7 +3,6 @@ code = "BTDM004"
 standard = "CES-79"
 summary = "No function returning a dict literal"
 status = "stable"
-since = "0.8.0"
 tags = ["typing"]
 prefilter = '(?-u)\breturn[\s\\]*\{'
 scope = "file"

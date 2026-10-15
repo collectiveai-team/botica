@@ -2,7 +2,6 @@ id = "db-no-create-all"
 code = "BTARCH005"
 summary = "The schema changes through migrations, not metadata.create_all()"
 status = "preview"
-since = "0.10.0"
 tags = ["layout"]
 scope = "file"
 needs = "syntax"

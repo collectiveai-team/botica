@@ -3,7 +3,6 @@ code = "BTARCH002"
 standard = "CES-76"
 summary = "Environment is read only in the settings module"
 status = "stable"
-since = "0.8.0"
 tags = ["config"]
 scope = "file"
 needs = "syntax"

@@ -210,7 +210,7 @@ fn an_empty_family_can_be_selected_but_a_prefix_must_match_a_rule() {
 
 #[test]
 fn a_removed_rule_cannot_be_mentioned() {
-    let removed = "id = \"old-rule\"\ncode = \"BTSTRUC009\"\nsummary = \"s\"\nstatus = \"removed\"\nsince = \"0.1.0\"\n\
+    let removed = "id = \"old-rule\"\ncode = \"BTSTRUC009\"\nsummary = \"s\"\nstatus = \"removed\"\n\
                    scope = \"file\"\nneeds = \"path\"\nrun-on = [\"cli\"]\ndefault-enabled = false\ndefault-severity = \"error\"\n\
                    [[implementations]]\nkind = \"native\"\nlanguages = [\"*\"]\n";
     let files = vec![

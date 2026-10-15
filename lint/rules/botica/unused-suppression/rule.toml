@@ -2,7 +2,6 @@ id = "unused-suppression"
 code = "BT002"
 summary = "A suppression comment that silences nothing"
 status = "stable"
-since = "0.1.0"
 scope = "file"
 needs = "bytes"
 run-on = ["cli", "save", "type"]

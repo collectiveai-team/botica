@@ -2,7 +2,6 @@ id = "settings-direct-instantiation"
 code = "BTARCH004"
 summary = "Settings are read through get_settings(), never built where they are used"
 status = "preview"
-since = "0.10.0"
 tags = ["config"]
 scope = "file"
 needs = "syntax"

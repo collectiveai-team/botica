@@ -2,7 +2,6 @@ id = "api-request-schema-name"
 code = "BTFAST003"
 summary = "Request schemas are named {Name}Request"
 status = "preview"
-since = "0.10.0"
 tags = ["typing"]
 scope = "file"
 needs = "syntax"

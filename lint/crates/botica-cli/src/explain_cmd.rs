@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use anyhow::{bail, Result};
-use botica_catalog::{Severity, Status};
+use botica_catalog::{Catalog, Severity, Status};
 use botica_config::{Entry, IgnoreOrigin};
 use botica_core::registry;
 use clap::Args;
@@ -30,7 +30,14 @@ pub fn run(args: &ExplainArgs) -> Result<()> {
     };
     let mut out = std::io::stdout().lock();
     let code_dirs = registry::uses_code_dirs(&entry.rule.id).then(|| project.describe_code_dirs());
-    write_entry(entry, &config, code_dirs.as_deref(), &mut out)?;
+    let since = Catalog::embedded()?.lifecycle(&entry.rule).since;
+    write_entry(
+        entry,
+        since.as_deref(),
+        &config,
+        code_dirs.as_deref(),
+        &mut out,
+    )?;
     Ok(())
 }
 
@@ -61,6 +68,7 @@ fn severity_name(severity: Severity) -> &'static str {
 
 fn write_entry(
     entry: &Entry,
+    since: Option<&str>,
     config: &str,
     code_dirs: Option<&str>,
     out: &mut impl Write,
@@ -76,9 +84,9 @@ fn write_entry(
     writeln!(out, "severity:  {}", severity_name(entry.severity))?;
     writeln!(
         out,
-        "status:    {} (since {})",
+        "status:    {} ({})",
         status_name(rule.status),
-        rule.since
+        since.map_or_else(|| "not released yet".to_owned(), |v| format!("since {v}"))
     )?;
     writeln!(
         out,

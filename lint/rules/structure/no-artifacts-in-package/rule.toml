@@ -3,7 +3,6 @@ code = "BTSTRUC003"
 standard = "CES-32"
 summary = "Keep data, models and reports outside the code"
 status = "stable"
-since = "0.1.0"
 tags = ["layout"]
 scope = "file"
 needs = "path"

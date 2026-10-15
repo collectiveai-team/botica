@@ -3,7 +3,6 @@ code = "BTSTRUC004"
 standard = "CES-32"
 summary = "Keep Jupyter notebooks outside the code"
 status = "stable"
-since = "0.1.0"
 tags = ["layout"]
 scope = "file"
 needs = "path"

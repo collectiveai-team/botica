@@ -2,7 +2,6 @@ id = "no-console-log"
 code = "BTLOG003"
 summary = "No console.log in library code"
 status = "stable"
-since = "0.8.0"
 tags = ["logging"]
 scope = "file"
 needs = "syntax"

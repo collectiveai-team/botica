@@ -3,7 +3,6 @@ code = "BTDM002"
 standard = "CES-79"
 summary = "No type alias that hides a raw dict"
 status = "stable"
-since = "0.8.0"
 tags = ["typing"]
 scope = "file"
 needs = "syntax"

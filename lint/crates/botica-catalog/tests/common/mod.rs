@@ -22,7 +22,6 @@ pub fn rule_toml(slug: &str, code: &str, extra: &str, implementation: &str) -> S
 code = "{code}"
 summary = "A rule used by the tests"
 status = "stable"
-since = "0.1.0"
 scope = "file"
 needs = "bytes"
 run-on = ["cli"]

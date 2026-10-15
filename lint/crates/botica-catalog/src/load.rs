@@ -3,10 +3,11 @@ use std::collections::BTreeMap;
 use serde::de::DeserializeOwned;
 
 use crate::issue::{issue, CatalogError, CatalogIssue};
-use crate::model::{Family, FamilyFile, Kind, Rule};
-use crate::validate::{check_across, check_family_code, check_rule, is_kebab_case};
+use crate::model::{Event, Family, FamilyFile, HistoryFile, Kind, Lifecycle, Rule};
+use crate::validate::{check_across, check_family_code, check_history, check_rule, is_kebab_case};
 
 pub const OWN_RULES_DIR: &str = "botica";
+pub const HISTORY_FILE: &str = "history.toml";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceFile {
@@ -19,6 +20,7 @@ pub struct Catalog {
     families: Vec<Family>,
     rules: Vec<Rule>,
     index: BTreeMap<String, usize>,
+    history: Vec<Event>,
 }
 
 #[derive(Default)]
@@ -42,6 +44,7 @@ impl Catalog {
         let families = load_families(&dirs, &mut issues);
         let rules = load_rules(&dirs, &families, &mut issues);
         check_across(&families, &rules, &mut issues);
+        let history = load_history(files, &rules, &mut issues);
         if !issues.is_empty() {
             return Err(CatalogError { issues });
         }
@@ -60,7 +63,20 @@ impl Catalog {
             families,
             rules,
             index,
+            history,
         })
+    }
+
+    /// When `rule` was released, from the history of the catalog.
+    pub fn lifecycle(&self, rule: &Rule) -> Lifecycle {
+        let mut events = self.history.iter().filter(|event| event.rule == rule.id);
+        let added = events.next().map(|event| event.version.clone());
+        let since = self
+            .history
+            .iter()
+            .rfind(|event| event.rule == rule.id && event.status == rule.status)
+            .map(|event| event.version.clone());
+        Lifecycle { added, since }
     }
 
     pub fn families(&self) -> &[Family] {
@@ -84,6 +100,7 @@ fn scan<'a>(
     for file in files {
         let parts: Vec<&str> = file.path.split('/').collect();
         match parts.as_slice() {
+            [HISTORY_FILE] => {}
             [dir, "family.toml"] => dirs.entry(dir).or_default().family = Some(file),
             [dir, slug, "rule.toml"] => {
                 dirs.entry(dir).or_default().rules.entry(slug).or_default().toml = Some(file);
@@ -96,7 +113,7 @@ fn scan<'a>(
             }
             _ => issues.push(issue(
                 file.path.as_str(),
-                "unexpected file: expected <family>/family.toml or <family>/<slug>/{rule.toml,README.md,<implementation>.yml}",
+                "unexpected file: expected history.toml, <family>/family.toml or <family>/<slug>/{rule.toml,README.md,<implementation>.yml}",
             )),
         }
     }
@@ -111,6 +128,21 @@ fn parse<T: DeserializeOwned>(file: &SourceFile, issues: &mut Vec<CatalogIssue>)
             None
         }
     }
+}
+
+fn load_history(
+    files: &[SourceFile],
+    rules: &[(String, Rule)],
+    issues: &mut Vec<CatalogIssue>,
+) -> Vec<Event> {
+    let Some(file) = files.iter().find(|file| file.path == HISTORY_FILE) else {
+        return Vec::new();
+    };
+    let Some(parsed) = parse::<HistoryFile>(file, issues) else {
+        return Vec::new();
+    };
+    check_history(&parsed.event, rules, issues);
+    parsed.event
 }
 
 fn load_families(

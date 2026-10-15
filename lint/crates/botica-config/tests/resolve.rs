@@ -44,7 +44,7 @@ fn custom(rules: &[R]) -> Catalog {
     }];
     for r in rules {
         let text = format!(
-            "id = \"{}\"\ncode = \"{}\"\nsummary = \"s\"\nstatus = \"{}\"\nsince = \"0.1.0\"\n{}\nscope = \"file\"\nneeds = \"path\"\n\
+            "id = \"{}\"\ncode = \"{}\"\nsummary = \"s\"\nstatus = \"{}\"\n{}\nscope = \"file\"\nneeds = \"path\"\n\
              run-on = [\"cli\"]\ndefault-enabled = {}\ndefault-severity = \"error\"\n{}",
             r.slug, r.code, r.status, r.extra, r.default_enabled, r.implementations
         );

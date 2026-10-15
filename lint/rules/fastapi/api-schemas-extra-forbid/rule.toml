@@ -3,7 +3,6 @@ code = "BTFAST001"
 standard = "CES-4"
 summary = "Request and response schemas reject unknown fields"
 status = "stable"
-since = "0.8.0"
 tags = ["typing"]
 scope = "file"
 needs = "syntax"

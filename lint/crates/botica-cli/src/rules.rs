@@ -138,7 +138,7 @@ mod tests {
     fn resolution(yaml: &str, prefilter: &str) -> Resolution {
         let rule = format!(
             "id = \"log-no-print\"\ncode = \"BTLOG001\"\nsummary = \"s\"\nstatus = \"stable\"\n\
-             since = \"0.1.0\"\n{prefilter}scope = \"file\"\nneeds = \"syntax\"\n\
+             {prefilter}scope = \"file\"\nneeds = \"syntax\"\n\
              run-on = [\"cli\"]\ndefault-enabled = true\ndefault-severity = \"error\"\n\n\
              [[implementations]]\nkind = \"ast-grep\"\nlanguages = [\"python\"]\n\
              file = \"python.yml\"\n"

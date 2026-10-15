@@ -2,7 +2,6 @@ id = "io-error"
 code = "BT001"
 summary = "A path given on the command line cannot be read"
 status = "stable"
-since = "0.1.0"
 scope = "file"
 needs = "path"
 run-on = ["cli"]

@@ -95,7 +95,7 @@ fn a_page_is_the_front_matter_a_header_and_the_prose_of_its_readme() {
          standard: \"CES-4\"\n\
          description: \"Request and response schemas reject unknown fields\"\n\
          status: \"stable\"\n\
-         since: \"0.8.0\"\n\
+         added: \"0.8.0\"\n\
          default-enabled: true\n\
          default-severity: \"warning\"\n\
          languages: [\"python\"]\n\
@@ -129,7 +129,7 @@ fn a_rule_of_botica_itself_has_no_family_and_a_rule_without_a_standard_has_no_ce
          code: \"BT001\"\n\
          description: \"A path given on the command line cannot be read\"\n\
          status: \"stable\"\n\
-         since: \"0.1.0\"\n\
+         added: \"0.1.0\"\n\
          default-enabled: true\n\
          default-severity: \"error\"\n\
          languages: [\"*\"]\n\
@@ -161,10 +161,13 @@ fn a_preview_rule_says_it_is_off_by_default_and_how_to_run_it() {
     let front_matter: Vec<&str> = text.lines().take_while(|line| !line.is_empty()).collect();
     assert!(front_matter.contains(&"status: \"preview\""), "{text}");
     assert!(front_matter.contains(&"default-enabled: false"), "{text}");
-    assert!(front_matter.contains(&"since: \"0.10.0\""), "{text}");
+    assert!(
+        !front_matter.iter().any(|line| line.starts_with("added:")),
+        "a rule that no release has added has no `added`:\n{text}"
+    );
     let lines: Vec<&str> = text.lines().collect();
     assert!(
-        lines.contains(&"Added in 0.10.0 · Preview · Off by default (warning)"),
+        lines.contains(&"Not released yet · Preview · Off by default (warning)"),
         "{text}"
     );
     assert!(
@@ -196,7 +199,7 @@ fn the_index_groups_the_rules_by_family_in_the_order_of_their_codes() {
                    | Code | Rule | Status | Added in | Default |\n\
                    |---|---|---|---|---|\n\
                    | `BTFAST001` | [`api-schemas-extra-forbid`](fastapi/btfast001-api-schemas-extra-forbid.md)<br>Request and response schemas reject unknown fields | stable | 0.8.0 | on |\n\
-                   | `BTFAST002` | [`api-schema-in-route-module`](fastapi/btfast002-api-schema-in-route-module.md)<br>Pydantic schemas are not defined in route modules | preview | 0.10.0 | off |\n";
+                   | `BTFAST002` | [`api-schema-in-route-module`](fastapi/btfast002-api-schema-in-route-module.md)<br>Pydantic schemas are not defined in route modules | preview | unreleased | off |\n";
     assert!(index.contains(section), "{index}");
     let own = "## botica\n\
                \n\

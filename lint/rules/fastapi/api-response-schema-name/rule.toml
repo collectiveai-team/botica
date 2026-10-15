@@ -2,7 +2,6 @@ id = "api-response-schema-name"
 code = "BTFAST004"
 summary = "Response schemas are named {Name}Response"
 status = "preview"
-since = "0.10.0"
 tags = ["typing"]
 scope = "file"
 needs = "syntax"

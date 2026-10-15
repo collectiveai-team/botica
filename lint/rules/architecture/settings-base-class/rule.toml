@@ -2,7 +2,6 @@ id = "settings-base-class"
 code = "BTARCH003"
 summary = "A settings class extends BaseSettings, not BaseModel"
 status = "preview"
-since = "0.10.0"
 tags = ["config"]
 scope = "file"
 needs = "syntax"

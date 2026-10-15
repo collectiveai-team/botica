@@ -2,7 +2,6 @@ id = "invalid-suppression"
 code = "BT003"
 summary = "A suppression comment that names an unknown rule or is malformed"
 status = "stable"
-since = "0.1.0"
 scope = "file"
 needs = "bytes"
 run-on = ["cli", "save", "type"]

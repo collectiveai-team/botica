@@ -3,7 +3,7 @@ use botica_config::{Config, Reason, Resolution};
 
 fn rule_toml(slug: &str, code: &str, scope: &str) -> String {
     format!(
-        "id = \"{slug}\"\ncode = \"{code}\"\nsummary = \"s\"\nstatus = \"stable\"\nsince = \"0.1.0\"\n\
+        "id = \"{slug}\"\ncode = \"{code}\"\nsummary = \"s\"\nstatus = \"stable\"\n\
          scope = \"{scope}\"\nneeds = \"path\"\nrun-on = [\"cli\"]\ndefault-enabled = true\n\
          default-severity = \"error\"\n[[implementations]]\nkind = \"native\"\nlanguages = [\"*\"]\n"
     )

@@ -3,7 +3,6 @@ code = "BTDM005"
 standard = "CES-79"
 summary = "No function annotated to return a raw dict"
 status = "stable"
-since = "0.8.0"
 tags = ["typing"]
 scope = "file"
 needs = "syntax"

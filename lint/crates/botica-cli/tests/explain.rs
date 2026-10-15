@@ -49,6 +49,21 @@ fn the_standard_line_names_the_standard_and_nothing_else() {
 }
 
 #[test]
+fn the_status_line_says_since_which_release_and_when_no_release_has_it_yet() {
+    let released = text_of(&explain("released", None, &["no-utils"]));
+    assert_eq!(
+        line_with(&released, "status:"),
+        "status:    stable (since 0.1.0)"
+    );
+
+    let fresh = text_of(&explain("fresh", None, &["settings-direct-instantiation"]));
+    assert_eq!(
+        line_with(&fresh, "status:"),
+        "status:    preview (not released yet)"
+    );
+}
+
+#[test]
 fn a_rule_can_be_named_by_its_code() {
     let text = text_of(&explain("code", None, &["BTSTRUC001"]));
     assert!(text.starts_with("file-size-guard (BTSTRUC001)"), "{text}");

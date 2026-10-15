@@ -19,6 +19,26 @@ pub fn word(value: &impl serde::Serialize) -> String {
         .expect("a status and a severity are words")
 }
 
+/// The release that added a rule, `unreleased` while no release has.
+pub fn added_in(catalog: &Catalog, rule: &Rule) -> String {
+    catalog
+        .lifecycle(rule)
+        .added
+        .unwrap_or_else(|| "unreleased".to_owned())
+}
+
+/// The status of a rule; a deprecated or removed one says since which release.
+pub fn status_text(catalog: &Catalog, rule: &Rule) -> String {
+    let name = capitalized(&word(&rule.status));
+    if !matches!(rule.status, Status::Deprecated | Status::Removed) {
+        return name;
+    }
+    match catalog.lifecycle(rule).since {
+        Some(version) => format!("{name} (since {version})"),
+        None => format!("{name} (unreleased)"),
+    }
+}
+
 /// A JSON value is also a YAML one, so it quotes and escapes what the front matter holds.
 fn json(value: &impl serde::Serialize) -> String {
     serde_json::to_string(value).expect("a rule field is JSON")
@@ -29,13 +49,13 @@ fn json(value: &impl serde::Serialize) -> String {
 pub fn page(catalog: &Catalog, rule: &Rule) -> String {
     format!(
         "{}\n{}{}",
-        front_matter(rule),
+        front_matter(catalog, rule),
         header(catalog, rule),
         rule.readme
     )
 }
 
-fn front_matter(rule: &Rule) -> String {
+fn front_matter(catalog: &Catalog, rule: &Rule) -> String {
     let mut lines = vec![
         format!("rule: {}", json(&rule.id)),
         format!("code: {}", json(&rule.code)),
@@ -49,7 +69,11 @@ fn front_matter(rule: &Rule) -> String {
     lines.extend([
         format!("description: {}", json(&rule.summary)),
         format!("status: {}", json(&rule.status)),
-        format!("since: {}", json(&rule.since)),
+    ]);
+    if let Some(added) = catalog.lifecycle(rule).added {
+        lines.push(format!("added: {}", json(&added)));
+    }
+    lines.extend([
         format!("default-enabled: {}", rule.default_enabled),
         format!("default-severity: {}", json(&rule.default_severity)),
         format!("languages: {}", json(&rule.languages())),
@@ -67,9 +91,9 @@ fn header(catalog: &Catalog, rule: &Rule) -> String {
     let mut paragraphs = vec![
         format!("# {} ({})", rule.id, rule.code),
         format!(
-            "Added in {} · {} · {}",
-            rule.since,
-            capitalized(&word(&rule.status)),
+            "{} · {} · {}",
+            added_text(catalog, rule),
+            status_text(catalog, rule),
             default_selection(rule)
         ),
         identity(rule),
@@ -82,6 +106,13 @@ fn header(catalog: &Catalog, rule: &Rule) -> String {
     }
     paragraphs.extend(status_notes(catalog, rule));
     format!("{}\n\n", paragraphs.join("\n\n"))
+}
+
+fn added_text(catalog: &Catalog, rule: &Rule) -> String {
+    match catalog.lifecycle(rule).added {
+        Some(version) => format!("Added in {version}"),
+        None => "Not released yet".to_owned(),
+    }
 }
 
 fn default_selection(rule: &Rule) -> String {
@@ -203,7 +234,12 @@ mod tests {
     }
 
     fn catalog(specs: &[Spec<'_>]) -> Catalog {
+        catalog_with_history(specs, "")
+    }
+
+    fn catalog_with_history(specs: &[Spec<'_>], history: &str) -> Catalog {
         let mut files = vec![
+            file("history.toml", history),
             file(
                 "logging/family.toml",
                 "code = \"LOG\"\ndescription = \"d\"\n",
@@ -215,7 +251,7 @@ mod tests {
         ];
         for spec in specs {
             let rule = format!(
-                "id = \"{}\"\ncode = \"{}\"\nsummary = \"s\"\nsince = \"0.1.0\"\nscope = \"file\"\n\
+                "id = \"{}\"\ncode = \"{}\"\nsummary = \"s\"\nscope = \"file\"\n\
                  needs = \"syntax\"\nrun-on = [\"cli\"]\ndefault-enabled = true\n\
                  default-severity = \"error\"\n{}\n[[implementations]]\nkind = \"ast-grep\"\n\
                  languages = [\"python\"]\nfile = \"python.yml\"\n",
@@ -242,24 +278,33 @@ mod tests {
 
     #[test]
     fn a_deprecated_rule_warns_and_points_to_the_rule_that_replaces_it() {
-        let catalog = catalog(&[
-            Spec {
-                family: "logging",
-                code: "BTLOG001",
-                id: "old",
-                extra: "status = \"deprecated\"\n",
-            },
-            Spec {
-                family: "logging",
-                code: "BTLOG002",
-                id: "new",
-                extra: "status = \"stable\"\nreplaces = \"old\"\n",
-            },
-        ]);
+        let catalog = catalog_with_history(
+            &[
+                Spec {
+                    family: "logging",
+                    code: "BTLOG001",
+                    id: "old",
+                    extra: "status = \"deprecated\"\n",
+                },
+                Spec {
+                    family: "logging",
+                    code: "BTLOG002",
+                    id: "new",
+                    extra: "status = \"stable\"\nreplaces = \"old\"\n",
+                },
+            ],
+            &events(&[
+                ("0.1.0", "old", "stable"),
+                ("0.2.0", "old", "deprecated"),
+                ("0.2.0", "new", "stable"),
+            ]),
+        );
 
         let old = page_of(&catalog, "old");
         assert!(
-            lines(&old).contains(&"Added in 0.1.0 · Deprecated · Enabled by default (error)"),
+            lines(&old).contains(
+                &"Added in 0.1.0 · Deprecated (since 0.2.0) · Enabled by default (error)"
+            ),
             "{old}"
         );
         assert!(
@@ -283,24 +328,28 @@ mod tests {
 
     #[test]
     fn a_removed_rule_says_it_is_kept_for_history_and_links_across_families() {
-        let catalog = catalog(&[
-            Spec {
-                family: "logging",
-                code: "BTLOG001",
-                id: "old",
-                extra: "status = \"removed\"\n",
-            },
-            Spec {
-                family: "process",
-                code: "BTPROC001",
-                id: "new",
-                extra: "status = \"stable\"\nreplaces = \"old\"\n",
-            },
-        ]);
+        let catalog = catalog_with_history(
+            &[
+                Spec {
+                    family: "logging",
+                    code: "BTLOG001",
+                    id: "old",
+                    extra: "status = \"removed\"\n",
+                },
+                Spec {
+                    family: "process",
+                    code: "BTPROC001",
+                    id: "new",
+                    extra: "status = \"stable\"\nreplaces = \"old\"\n",
+                },
+            ],
+            &events(&[("0.1.0", "old", "stable"), ("0.4.0", "old", "removed")]),
+        );
 
         let old = page_of(&catalog, "old");
         assert!(
-            lines(&old).contains(&"Added in 0.1.0 · Removed · Enabled by default (error)"),
+            lines(&old)
+                .contains(&"Added in 0.1.0 · Removed (since 0.4.0) · Enabled by default (error)"),
             "{old}"
         );
         assert!(
@@ -313,6 +362,54 @@ mod tests {
             lines(&old).contains(&"Use [`new`](../process/btproc001-new.md) instead."),
             "{old}"
         );
+    }
+
+    #[test]
+    fn a_status_that_no_release_has_recorded_yet_says_so() {
+        let catalog = catalog_with_history(
+            &[Spec {
+                family: "logging",
+                code: "BTLOG001",
+                id: "old",
+                extra: "status = \"deprecated\"\n",
+            }],
+            &events(&[("0.1.0", "old", "stable")]),
+        );
+
+        let old = page_of(&catalog, "old");
+        assert!(
+            lines(&old)
+                .contains(&"Added in 0.1.0 · Deprecated (unreleased) · Enabled by default (error)"),
+            "{old}"
+        );
+    }
+
+    #[test]
+    fn a_rule_no_release_has_added_is_not_released_yet() {
+        let catalog = catalog(&[Spec {
+            family: "logging",
+            code: "BTLOG001",
+            id: "fresh",
+            extra: "status = \"preview\"\n",
+        }]);
+
+        let fresh = page_of(&catalog, "fresh");
+        assert!(
+            lines(&fresh).contains(&"Not released yet · Preview · Enabled by default (error)"),
+            "{fresh}"
+        );
+        assert!(!fresh.contains("added:"), "{fresh}");
+    }
+
+    fn events(list: &[(&str, &str, &str)]) -> String {
+        list.iter()
+            .map(|(version, rule, status)| {
+                format!(
+                    "[[event]]\nversion = \"{version}\"\nrule = \"{rule}\"\nstatus = \"{status}\"\n"
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 
     #[test]

@@ -103,6 +103,31 @@ pub struct Family {
     pub description: String,
 }
 
+/// One line of `history.toml`: from `version` on, `rule` has `status`. The file is written by the
+/// release, never by hand.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Event {
+    pub version: String,
+    pub rule: String,
+    pub status: Status,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct HistoryFile {
+    #[serde(default)]
+    pub event: Vec<Event>,
+}
+
+/// When a rule was released: the version that added it and the one that gave it its current
+/// status. A `None` is a change that no release has recorded yet.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Lifecycle {
+    pub added: Option<String>,
+    pub since: Option<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct Rule {
@@ -111,7 +136,6 @@ pub struct Rule {
     pub standard: Option<String>,
     pub summary: String,
     pub status: Status,
-    pub since: String,
     #[serde(default)]
     pub aliases: Vec<String>,
     pub replaces: Option<String>,

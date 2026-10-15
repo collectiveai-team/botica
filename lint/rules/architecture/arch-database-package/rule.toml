@@ -3,7 +3,6 @@ code = "BTARCH001"
 standard = "CES-18"
 summary = "Relational persistence lives in a database package"
 status = "stable"
-since = "0.8.0"
 tags = ["layout"]
 scope = "file"
 needs = "syntax"

@@ -6,7 +6,7 @@ use anyhow::{Context, Result};
 use botica_catalog::{Catalog, Rule, OWN_RULES_DIR};
 use clap::{Args, ValueEnum};
 
-use crate::rule_page::{self, file_name, group_of, word};
+use crate::rule_page::{self, added_in, file_name, group_of, word};
 
 const OWN_RULES_DESCRIPTION: &str =
     "What a run reports about itself: unreadable paths and suppression comments.";
@@ -53,7 +53,7 @@ fn render(catalog: &Catalog) -> Vec<Page> {
     let groups = groups(catalog);
     let mut pages = vec![Page {
         path: PathBuf::from("index.md"),
-        text: index(&groups),
+        text: index(catalog, &groups),
     }];
     for group in &groups {
         for rule in &group.rules {
@@ -95,7 +95,7 @@ fn describe<'a>(catalog: &'a Catalog, group: &str) -> &'a str {
         .map_or("", |family| family.description.as_str())
 }
 
-fn index(groups: &[Group<'_>]) -> String {
+fn index(catalog: &Catalog, groups: &[Group<'_>]) -> String {
     let mut text = format!("# Rules\n\n{INDEX_INTRO}\n\n");
     for group in groups {
         text.push_str(&format!(
@@ -111,7 +111,7 @@ fn index(groups: &[Group<'_>]) -> String {
                 file_name(rule),
                 rule.summary.replace('|', "\\|"),
                 word(&rule.status),
-                rule.since,
+                added_in(catalog, rule),
                 if rule.default_enabled { "on" } else { "off" }
             ));
         }
@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn a_pipe_in_a_summary_does_not_split_the_cell_of_the_index() {
         let rule = "id = \"log-no-print\"\ncode = \"BTLOG001\"\nsummary = \"a | b\"\n\
-                    status = \"stable\"\nsince = \"0.1.0\"\nscope = \"file\"\nneeds = \"syntax\"\n\
+                    status = \"stable\"\nscope = \"file\"\nneeds = \"syntax\"\n\
                     run-on = [\"cli\"]\ndefault-enabled = true\ndefault-severity = \"error\"\n\n\
                     [[implementations]]\nkind = \"ast-grep\"\nlanguages = [\"python\"]\n\
                     file = \"python.yml\"\n";
