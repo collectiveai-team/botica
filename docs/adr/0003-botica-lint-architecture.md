@@ -251,5 +251,8 @@ What this ADR decides and the code does not have. Delete a line when it ships.
   `--kind ast-grep`, `judgment` or `external`, and with `--kind extension --runtime <runtime>`
   for a catalog of a project (`--catalog .botica/rules/<name>`); the built-in catalog takes no
   extension.
+- `botica refs pin` and `botica refs update`, and the references to code of another repository
+  (ADR 0007). `botica refs list`, `show` and `check` read the topics of `references/` and the
+  references to files of the same repository; an external reference is reported as not supported yet.
 - Profiles (`profiles/<name>.toml`, `botica profile install` and `botica profile check`, ADR 0006). The standards site that reads the Markdown export is built (`website/`) but not
   published, and it has no discussion thread and no "edit this page" yet.

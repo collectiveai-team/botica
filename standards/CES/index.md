@@ -26,6 +26,10 @@ The reason, in a few sentences.
 Code that follows the standard and code that breaks it.
 ```
 
+The front matter can also carry `references`, a JSON list of the ids of the topics of
+`references/` that show code for the standard: `references: ["structured-logging"]`. The page of the
+standard lists those topics at the end.
+
 The rules of a standard are the rules whose `standard` field names it, and the page of the standard
 lists them at the end. A standard has any number of rules, none included. A rule names at most one
 standard.

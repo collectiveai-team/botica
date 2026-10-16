@@ -60,8 +60,55 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
    its page and its description, and a section Standards with each standard by number, the address
    of its page and its title.
 
+8. **A reference is internal or external.** An internal reference has no `repo`, `rev` or
+   `license`, and its `path` goes from the root of the repository that holds `references/`. An
+   external reference has `repo`, `rev` and `license`. The parser accepts both forms and rejects
+   `repo` without `rev`, `rev` without `repo`, an external reference without `license` and a
+   `license` without `repo`. `note` and `path` are required. `lines` is `<first>-<last>` or one line,
+   counted from 1, and a reference without it is the whole file.
+9. **`references/` is read from disk at the root of the project,** beside `standards/`, like the
+   standards (ADR 0004); the binary has none of it. The loader is a module of `botica-catalog`.
+10. **A rule cites topics in `rule.toml`** with `references = ["<topic>"]`, as kebab-case ids that
+    the catalog checks when it loads. A standard cites them in its front matter with
+    `references: ["<topic>"]`, a JSON list (ADR 0004). The page of a rule has the field in its front
+    matter, and `catalog.json` has it in every rule.
+11. **`botica refs list`, `show` and `check` are built for internal references.**
+    - `list` prints each topic with its references and the rules and standards that cite it.
+    - `show` takes a topic, a rule (slug, code or alias, also of a catalog of the project) or a
+      standard, and prints the README of each topic, its `docs` and, for each reference, its note and
+      the lines of the file.
+    - `check` fails (exit 1) when a file is gone, `lines` is past the end, `anchor` is not in the
+      lines, a path is absolute or leaves the project, a `topic.toml` does not load, or a standard or
+      a rule of a catalog of the project cites a topic that does not exist.
+    - `show` and `check` report an external reference as not supported yet.
+12. **`check` leaves the citations of the built-in rules to a test of this checkout.** Those rules
+    cite the topics of this repository, and a project that has none of them would fail on every run.
+    `lint/crates/botica-cli/tests/repo_references.rs` checks them, and `botica refs check` runs in
+    the job `test` of `ci.yml`.
+13. **The site has a page per topic,** `references/<topic>/`, written by
+    `scripts/site_references.py` when `scripts/build_site.sh` builds the site: the README, the
+    `docs`, each reference with the lines of its file, and the rules and standards that cite the
+    topic. The page of a rule or a standard lists its topics at the end. The navigation and
+    `llms.txt` have a section References.
+14. **The first topics are `structured-logging` and `in-memory-adapters`,** and they point at the
+    snippets of `scaffolding/templates/snippets/`. `log-get-logger` and `log-no-print` cite the first,
+    and so does CES-74.
+
+## Not built yet
+
+- `botica refs pin` and `botica refs update`.
+- External references: `show` and `check` with the network and a cache by commit.
+- The removal of `.agents/snippets/` and `scaffolding/templates/snippets/`. The two topics point at
+  the snippets of the scaffolder, so removing them means moving each reference to the code it came
+  from.
+- The instruction of the skill to run `botica refs show <rule>` before writing code.
+
 ## Not decided
 
+- Whether CES-64 cites `in-memory-adapters`. A pull request touches one standard, so the citation
+  goes in its own.
+- Whether `check` also verifies the citations of the built-in rules in a project that has the
+  topics they name.
 - Whether the site publishes a Markdown version of each page (`<page>/index.md`), which the format
   of `llms.txt` recommends as the target of its links. The links of `llms.txt` point at the HTML
   pages.
@@ -74,6 +121,13 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
 - **Context7 for the documentation of libraries.** It indexes the documentation of public libraries
   and serves it through MCP; private sources need a paid plan. Left out: a direct link to the page of
   the documentation needs no service.
+- **`lint/references/` embedded in the binary, like `lint/rules/`.** Rejected: the standards are not
+  embedded (ADR 0004), and a topic that points at files of the repository needs those files.
+- **`botica refs check` verifies the citations of the built-in rules everywhere.** Rejected: it
+  would fail in every project that does not have the topics of this repository. An option to ask for
+  it was left out as one more flag.
+- **`botica refs export` writes the pages of the topics.** Rejected: `scripts/build_site.sh` already
+  decorates the standards with a script, and the pages of the topics are written the same way.
 - **A search of code of botica's own.** Rejected: grep.app, the MCP of Sourcegraph and the Librarian
   of Amp search code on GitHub. Botica keeps the selection: `refs pin` records what a search found.
 

@@ -35,6 +35,9 @@ botica rules export --format agents-md --output AGENTS.md [--check]
                                # the active judgment rules, between <!-- botica:rules --> and <!-- /botica:rules -->
 botica rules export --format abide [--check]   # the rubric of abide, .abide/rubric.json, with the
                                # judgment rules of the block of AGENTS.md (--agents-md names another file)
+botica refs list               # the topics of references/, their references and the rules and standards that cite them
+botica refs show log-no-print  # the references of a topic, or of the topics that a rule or a standard cites
+botica refs check              # fails when a reference no longer resolves or a citation names no topic
 botica rules test --judge abide [test-through-interface]
                                # abide judges the fixtures of each judgment rule; compared with expected.json
 botica rules conform lint/rules   # each rule over its fixtures, with and without each optimisation;
@@ -90,6 +93,37 @@ missing.
 
 The rules written in ast-grep's YAML run too, unless you pass `--no-astgrep`. Each rule has a
 README with its directive, its reasons and how to silence it.
+
+## References
+
+`references/<topic>/` at the root of the project holds code to read. A topic is a `topic.toml` and a
+`README.md` that says what to read in each reference and what to adapt. Botica reads the folder from
+disk when it runs.
+
+```toml
+# references/structured-logging/topic.toml
+title = "Structured logging with structlog"
+docs = ["https://www.structlog.org/en/stable/getting-started.html"]
+
+[[references]]
+path = "scaffolding/templates/snippets/core/logger.py"   # from the root of the project
+lines = "72-75"                       # optional: a range or one line; without it, the whole file
+anchor = "def get_logger"             # optional: text that the lines hold
+note = "the function that every module imports"
+```
+
+A rule cites topics with `references = ["structured-logging"]` in its `rule.toml`, and a standard
+with `references: ["structured-logging"]` in its front matter. The site lists the topics at the end
+of the page of each rule and standard, and has a page per topic.
+
+`botica refs check` exits with 1 when a file of a reference is gone, when its `lines` are past the
+end of the file, when its `anchor` is not in them, when a standard or a rule of a catalog of the
+project cites a topic that does not exist, or when a `topic.toml` does not load. The topics that
+the built-in rules cite are those of the checkout of botica, so a test of that checkout
+(`crates/botica-cli/tests/repo_references.rs`) checks them.
+
+A reference to a file of another repository has `repo`, `rev` (a commit) and `license` as well.
+`refs show` and `refs check` report it as not supported yet.
 
 ## Which files
 
