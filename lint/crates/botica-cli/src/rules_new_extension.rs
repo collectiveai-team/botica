@@ -87,7 +87,8 @@ fn node(id: &str, language: &str) -> String {
          path: file.path,\n        rule: RULE,\n        severity: \"warning\",\n        ...found,\n      }})),\n    );\n    \
          reply(request.id, {{ diagnostics }});\n  \
          }} else if (request.method === \"shutdown\") {{\n    \
-         reply(request.id, null);\n    break;\n  }}\n}}\n"
+         reply(request.id, null);\n    break;\n  }}\n}}\n\n\
+         process.exit(0);\n"
     )
 }
 
