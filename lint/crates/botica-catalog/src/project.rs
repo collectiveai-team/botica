@@ -53,6 +53,7 @@ impl Catalog {
         let mut merged = self.clone();
         for (name, parts) in loaded {
             check_aliases(&merged, name, &parts, &mut issues);
+            check_extends(&merged, name, &parts, &mut issues);
             merged.append(parts);
         }
         if issues.is_empty() {
@@ -153,6 +154,27 @@ fn check_codes(codes: &[(&str, String)], issues: &mut Vec<CatalogIssue>) {
                     ),
                 ));
             }
+        }
+    }
+}
+
+/// What a family of the project extends is a family of the built-in catalog.
+fn check_extends(merged: &Catalog, name: &str, parts: &Parts, issues: &mut Vec<CatalogIssue>) {
+    for family in &parts.families {
+        let Some(target) = &family.extends else {
+            continue;
+        };
+        let known = merged
+            .families()
+            .iter()
+            .any(|other| other.catalog.is_none() && &other.name == target);
+        if !known {
+            issues.push(issue(
+                format!("{name}/{}/family.toml", family.name),
+                format!(
+                    "`extends` names `{target}`, which is not a family of the built-in catalog"
+                ),
+            ));
         }
     }
 }

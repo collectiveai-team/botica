@@ -137,6 +137,8 @@ impl Implementation {
 pub(crate) struct FamilyFile {
     pub code: String,
     pub description: String,
+    /// A family of a project catalog that extends the built-in family of this name.
+    pub extends: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -151,6 +153,9 @@ pub struct Family {
     /// The catalog of a project that holds the family; `None` for the built-in catalog.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub catalog: Option<String>,
+    /// The built-in family that a family of a project extends on purpose.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extends: Option<String>,
 }
 
 impl Family {
@@ -221,6 +226,9 @@ pub struct Rule {
     /// The catalog of a project that holds the rule; `None` for the built-in catalog.
     #[serde(skip)]
     pub catalog: Option<String>,
+    /// The built-in family that the family of the rule extends, when it says so.
+    #[serde(skip)]
+    pub extends: Option<String>,
     #[serde(skip)]
     pub readme: String,
 }

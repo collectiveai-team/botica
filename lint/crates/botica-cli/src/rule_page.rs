@@ -1,10 +1,11 @@
 use botica_catalog::{Catalog, Rule, Status, OWN_RULES_DIR};
 
-/// The folder that holds the page of a rule: the catalog of a project that holds it, else its
-/// family, or the folder of the rules of botica.
+/// The folder that holds the page of a rule: the built-in family that its family extends, else
+/// the catalog of a project that holds it, else its family, or the folder of the rules of botica.
 pub fn group_of(rule: &Rule) -> &str {
-    rule.catalog
+    rule.extends
         .as_deref()
+        .or(rule.catalog.as_deref())
         .or(rule.family.as_deref())
         .unwrap_or(OWN_RULES_DIR)
 }

@@ -139,7 +139,9 @@ a `catalog.toml` on top: `.botica/rules/<catalog>/catalog.toml` holds its `code`
 starting with `BT`, and not a text prefix of the code of another catalog), each family has its
 `family.toml`, and each rule its folder, `<catalog>/<family>/<slug>/`. The id of a rule is
 `<catalog>/<slug>` and its code is `<catalog code><family code>` plus 3 digits (`ACMESTRUC001`).
-It takes rules of every kind but `native`, whose code lives in botica-core. A project replaces a built-in rule only when the
+A family of a project with the name of a built-in family is legal, because ids and codes do not
+collide, and gets a warning unless its `family.toml` says `extends = "<built-in family>"`; the
+export then lists its rules under that family. It takes rules of every kind but `native`, whose code lives in botica-core. A project replaces a built-in rule only when the
 replacement declares `replaces = "<id>"` *and* the project config confirms it; suppressions
 written for the original keep working.
 

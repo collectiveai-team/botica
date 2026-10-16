@@ -67,6 +67,9 @@ pub fn load(args: &ProjectArgs) -> Result<Project> {
     let catalog = catalog
         .with_projects(&files)
         .with_context(|| format!("the catalogs of the project in `{PROJECT_RULES}` do not load"))?;
+    for warning in catalog.warnings() {
+        eprintln!("botica: warning: {warning}");
+    }
     let catalogs = files
         .iter()
         .map(|file| format!("{}\0{}\0", file.path, file.text))

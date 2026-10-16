@@ -208,19 +208,24 @@ fn render(catalog: &Catalog) -> Vec<Page> {
     pages
 }
 
-/// The groups of the built-in catalog by name, then those of the catalogs of the project.
+/// The groups of the built-in catalog by name, then those of the catalogs of the project. A
+/// family of a project that extends a built-in one has its rules in the group of that one, after
+/// the built-in rules.
 fn groups(catalog: &Catalog) -> Vec<Group<'_>> {
     let mut by_name: BTreeMap<(bool, &str), Vec<&Rule>> = BTreeMap::new();
     for rule in catalog.rules() {
+        let own_group = rule.catalog.is_some() && rule.extends.is_none();
         by_name
-            .entry((rule.catalog.is_some(), group_of(rule)))
+            .entry((own_group, group_of(rule)))
             .or_default()
             .push(rule);
     }
     by_name
         .into_iter()
         .map(|((project, name), mut rules)| {
-            rules.sort_by(|a, b| a.code.cmp(&b.code));
+            rules.sort_by(|a, b| {
+                (a.catalog.is_some(), &a.code).cmp(&(b.catalog.is_some(), &b.code))
+            });
             Group {
                 name,
                 description: if project {

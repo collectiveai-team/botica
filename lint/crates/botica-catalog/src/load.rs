@@ -128,6 +128,26 @@ impl Catalog {
         &self.rules
     }
 
+    /// What is legal in the catalogs and probably not what their author meant: a family of a
+    /// project with the name of a built-in family and no `extends` that says it is on purpose.
+    pub fn warnings(&self) -> Vec<String> {
+        let built_in = || self.families.iter().filter(|f| f.catalog.is_none());
+        self.families
+            .iter()
+            .filter(|family| family.extends.is_none())
+            .filter_map(|family| {
+                let catalog = family.catalog.as_deref()?;
+                built_in().find(|other| other.name == family.name)?;
+                Some(format!(
+                    "the family `{name}` of the catalog `{catalog}` has the name of a family of the built-in catalog: \
+                     add `extends = \"{name}\"` to `{catalog}/{name}/family.toml` to extend that family on purpose, \
+                     or give it another name",
+                    name = family.name
+                ))
+            })
+            .collect()
+    }
+
     pub fn resolve(&self, key: &str) -> Option<&Rule> {
         self.index.get(key).map(|position| &self.rules[*position])
     }
@@ -256,12 +276,19 @@ fn load_families(
         if let Some(message) = check_family_code(&parsed.code) {
             issues.push(issue(file.path.as_str(), message));
         }
+        if parsed.extends.is_some() && origin.is_built_in() {
+            issues.push(issue(
+                file.path.as_str(),
+                "`extends` is for a family of a catalog of a project: the built-in catalog has no family to extend",
+            ));
+        }
         families.push(Family {
             name: (*dir).to_owned(),
             code: parsed.code,
             description: parsed.description,
             header: origin.header().to_owned(),
             catalog: origin.catalog(),
+            extends: parsed.extends,
         });
     }
     families
@@ -295,6 +322,7 @@ fn load_rules(
             attach_scripts(&base, &mut rule, &files.scripts, issues);
             rule.family = family.map(|f| f.name.clone());
             rule.catalog = origin.catalog();
+            rule.extends = family.and_then(|f| f.extends.clone());
             rule.readme = readme.text.clone();
             issues.extend(check_readme(&readme.path, &rule));
             rules.push((toml_file.path.clone(), rule));

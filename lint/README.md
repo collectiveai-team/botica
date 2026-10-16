@@ -146,6 +146,21 @@ The id of a rule is `<catalog>/<slug>` and its code is the code of the catalog, 
 family and 3 digits. The code of a catalog is letters A-Z, does not start with `BT` and is not a
 text prefix of the code of another catalog. A catalog takes rules of every kind but `native`.
 
+A family of a project may have the name of a built-in family, as `structure` above. Every command
+then prints a warning on stderr, unless its `family.toml` says that it extends the built-in family
+on purpose:
+
+```toml
+code = "STRUC"
+description = "…"
+extends = "structure"   # a family of the built-in catalog
+```
+
+`extends` changes one thing: `botica rules export` puts the rules of the family in the folder and
+the section of the built-in family, after its rules. The ids and the codes stay those of the
+catalog. A project replaces a built-in rule with `replaces` in its `rule.toml` and `[replace]` in
+`botica.toml`; `botica rules --all` shows which rule replaces which.
+
 A rule of kind `extension` is a program that `botica lint` starts, one process for each active
 rule, in the root of the project. It is sent only the files where the rule applies and answers
 with findings over JSON-RPC (ADR 0003). Its implementation says what runs:
