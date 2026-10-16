@@ -50,7 +50,7 @@ flowchart TD
   config --> catalog
   core --> astgrep[botica-astgrep]
   core --> ext[botica-ext<br/>extension host]
-  sdk[botica-ext-sdk · sdk/python · sdk/node]:::planned -. protocol .-> ext
+  sdk[SDKs · python · node · go · rust]:::planned -. protocol .-> ext
   classDef planned stroke-dasharray: 4 4
 ```
 
@@ -102,12 +102,19 @@ rule is in its folder and the catalog loads it as it loads the YAML of an ast-gr
 | `node` | `file = "<name>.js"` or `.mjs` | `node <file>`, with the `node_modules` the rule brings, if any |
 | `command` | `command = ["<argv>", …]`, no `file` | the command, from the root of the project; a rule of the built-in catalog cannot use it |
 
-The SDK of each language follows the protocol and the version of botica. The one of Python is the
-module `botica.sdk` of the wheel `botica` (`from botica.sdk import rule, serve`), and the extra
-`botica[extension]` adds `ast-grep-py`: a script declares `botica[extension]==<version>`. The one of
-TypeScript is the npm package `@botica/sdk`, from `lint/sdk/node`, released with the same tag. The
-one of Go is the module `github.com/collectiveai-team/botica/lint/sdk/go`, tagged
-`lint/sdk/go/vX.Y.Z`, with a runtime `go` of its own. `botica lint --ext <command>` runs one
+The SDK of each language follows the protocol and the version of botica. There are four, for
+Python, TypeScript, Go and Rust; any other language speaks the protocol through `command`.
+
+| SDK | Published as | Parses with |
+|---|---|---|
+| Python | the module `botica.sdk` of the wheel `botica` (`from botica.sdk import rule, serve`); the extra `botica[sdk]` adds `ast-grep-py`, and a script declares `botica[sdk]==<version>` | `ast-grep-py` |
+| TypeScript | the npm package `@botica/sdk`, from `lint/sdk/node`, released with the same tag | `@ast-grep/napi` |
+| Go | the module `github.com/collectiveai-team/botica/lint/sdk/go`, tagged `lint/sdk/go/vX.Y.Z` | the bindings of tree-sitter for Go, with the grammars of ast-grep: the same kinds of node, without the patterns of ast-grep |
+| Rust | the crate `botica-ext-sdk`, from `lint/sdk/rust` | `ast-grep-core` |
+
+A rule in Go or Rust runs as WASM: a fourth runtime, `wasm`, takes `file = "<name>.wasm"`, built
+from Rust or from Go with TinyGo, and botica runs it in the binary with no toolchain in the project.
+`botica lint --ext <command>` runs one
 extension by its command, outside any catalog. The conformance runner checks an extension rule with
 its fixtures, as any other.
 
@@ -185,7 +192,7 @@ The `scaffolding` Python package keeps its name until it is migrated, which is o
   instead of relying on a placeholder.
 - **Botica maintains a protocol, two SDKs, and a per-platform release matrix.** These are real,
   ongoing costs.
-- **Later, not now:** `--diff <base>` rules, autofix with safety levels, WASM extensions, catalogs
+- **Later, not now:** `--diff <base>` rules, autofix with safety levels, catalogs
   distributed via PyPI or npm, an MCP server, a VS Code client, and architecture-conformance
   rules that read a declared model (e.g. LikeC4) and check real imports against it.
 
@@ -194,8 +201,9 @@ The `scaffolding` Python package keeps its name until it is migrated, which is o
 What this ADR decides and the code does not have. Delete a line when it ships.
 
 - The editor front-end: `botica-lsp` and `botica server`.
-- The extension SDKs: the first is `sdk/python/botica_ext.py`; `botica.sdk`,
-  `botica[extension]`, `@botica/sdk` and the module of Go do not exist.
+- The extension SDKs: the first is `sdk/python/botica_ext.py`; `botica.sdk`, `botica[sdk]`,
+  `@botica/sdk`, the module of Go and `botica-ext-sdk` do not exist, and neither does the
+  runtime `wasm`.
 - Catalogs of a project or declared externally (`.botica/rules/`), and the run of the `extension`
   rules of a catalog: only `--ext` runs an extension.
 - `botica rules export` in the formats other than `markdown` and `json` (`continue`, `abide`,
