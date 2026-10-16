@@ -6,8 +6,12 @@ use serde_json::{json, Value};
 use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
+use std::time::{Duration, Instant};
 
 pub const PROTOCOL_VERSION: u32 = 1;
+
+/// How long an extension has to end after `shutdown` before it is killed.
+const SHUTDOWN_GRACE: Duration = Duration::from_secs(5);
 
 #[derive(Debug, Serialize)]
 pub struct FileIn<'a> {
@@ -90,9 +94,22 @@ impl ExtensionHost {
         Ok(result.diagnostics)
     }
 
+    /// Asks the extension to end and waits `SHUTDOWN_GRACE` for it to do so; a process that is
+    /// still running then is killed and the shutdown is an error.
     pub fn shutdown(mut self) -> Result<()> {
         let _: Value = self.call("shutdown", Value::Null)?;
-        self.child.wait()?;
+        let deadline = Instant::now() + SHUTDOWN_GRACE;
+        while self.child.try_wait()?.is_none() {
+            if Instant::now() >= deadline {
+                self.child.kill()?;
+                self.child.wait()?;
+                bail!(
+                    "extension did not end within {} seconds of `shutdown` and was killed",
+                    SHUTDOWN_GRACE.as_secs()
+                );
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
         Ok(())
     }
 

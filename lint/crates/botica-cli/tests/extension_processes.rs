@@ -3,7 +3,8 @@
 mod common;
 
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output};
+use std::process::{Command, Output, Stdio};
+use std::time::{Duration, Instant};
 
 use common::extension::{
     add_rule, findings, folder, implementation, lint, project, rule_toml, script, README,
@@ -23,6 +24,43 @@ fn a_process_that_fails_is_a_failure_of_the_run_and_the_other_findings_stay() {
     assert_eq!(findings(&output), ["app.py acme/other"]);
     assert!(
         stderr(&output).contains("acme/by-sh"),
+        "{}",
+        stderr(&output)
+    );
+}
+
+#[test]
+fn a_process_that_does_not_end_after_shutdown_is_killed_and_is_a_failure_of_the_run() {
+    let dir = project("lingering", "");
+    add_rule(&dir, "by-sh", "ACMESTRUC001", "", "acme/by-sh");
+    add_rule(&dir, "other", "ACMESTRUC002", "", "acme/other");
+    let lingering = script("acme/by-sh", "error").replace("exit 0 ;;", "exec sleep 600 ;;");
+    write(&dir, &format!("{}/ext.sh", folder("by-sh")), &lingering);
+
+    let mut child = Command::new(env!("CARGO_BIN_EXE_botica"))
+        .args(["lint", "."])
+        .current_dir(&dir)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("run botica");
+    let deadline = Instant::now() + Duration::from_secs(60);
+    while child.try_wait().expect("wait for botica").is_none() {
+        if Instant::now() > deadline {
+            let _ = child.kill();
+            panic!("botica lint is still waiting for a process that does not end");
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    let output = child.wait_with_output().expect("the output");
+
+    assert_eq!(output.status.code(), Some(2), "{}", stdout(&output));
+    assert_eq!(
+        findings(&output),
+        ["app.py acme/by-sh", "app.py acme/other"]
+    );
+    assert!(
+        stderr(&output).contains("acme/by-sh") && stderr(&output).contains("shutdown"),
         "{}",
         stderr(&output)
     );
