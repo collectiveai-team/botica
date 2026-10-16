@@ -118,3 +118,50 @@ def test_the_rules_of_two_families_are_listed_by_code_and_not_by_family(tmp_path
     text = llms(tmp_path, config, docs)
 
     assert text.index("(BT001)") < text.index("(BTARCH002)")
+
+
+def add_topic(docs: Path, topic_id: str, title: str) -> None:
+    page = docs / "references" / f"{topic_id}.md"
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text(
+        f'---\ntitle: "{title}"\nsubtitle: "{topic_id}"\n---\n\n# {title}\n', encoding="utf-8"
+    )
+
+
+def test_each_topic_is_listed_by_id_with_the_address_of_its_page_and_its_title(tmp_path: Path):
+    config, docs = site(tmp_path)
+    add_topic(docs, "structured-logging", "Structured logging with structlog")
+    add_topic(docs, "in-memory-adapters", "In-memory adapters for tests")
+
+    assert (
+        "\n## References\n\n"
+        "- [in-memory-adapters](https://example.org/botica/references/in-memory-adapters/):"
+        " In-memory adapters for tests\n"
+        "- [structured-logging](https://example.org/botica/references/structured-logging/):"
+        " Structured logging with structlog\n"
+    ) in llms(tmp_path, config, docs)
+
+
+def test_the_references_come_after_the_rules_and_the_standards(tmp_path: Path):
+    config, docs = site(tmp_path)
+    add_rule(docs, "structure", "no-utils", "BTSTRUC002", "No catch-all modules")
+    add_standard(docs, 71, "file-size-guard", "Keep files small")
+    add_topic(docs, "structured-logging", "Structured logging")
+
+    text = llms(tmp_path, config, docs)
+
+    assert text.index("## Rules") < text.index("## Standards") < text.index("## References")
+
+
+def test_the_index_of_the_references_is_not_listed(tmp_path: Path):
+    config, docs = site(tmp_path)
+    add_topic(docs, "structured-logging", "Structured logging")
+    (docs / "references" / "index.md").write_text("---\ntitle: References\n---\n", encoding="utf-8")
+
+    assert "references/index/" not in llms(tmp_path, config, docs)
+
+
+def test_a_site_without_topics_has_no_section_of_references(tmp_path: Path):
+    config, docs = site(tmp_path)
+
+    assert "## References" not in llms(tmp_path, config, docs)

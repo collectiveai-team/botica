@@ -1,9 +1,10 @@
 """Write the configuration of the site with the navigation that its pages call for.
 
-Zensical orders the pages of a folder by name, which puts `rules` before `standards`, and its
-`nav` takes pages and not folders. The pages of the rules and of the standards are copies made by
-`scripts/build_site.sh`, so the list is made here, from what the folders hold, and added to the
-configuration that the build reads. The titles of the pages are left to Zensical.
+Zensical orders the pages of a folder by name, which puts `references` and `rules` before
+`standards`, and its `nav` takes pages and not folders. The pages of the rules, of the standards and
+of the topics of references are made by `scripts/build_site.sh`, so the list is made here, from
+what the folders hold, and added to the configuration that the build reads. The titles of the pages
+are left to Zensical.
 """
 
 from __future__ import annotations
@@ -49,7 +50,7 @@ def _folders(root: Path) -> list[Path]:
 
 
 def navigation(docs: Path) -> list[object]:
-    """Return the `nav` of the site: the home, how to use it, the standards and the rules."""
+    """Return the `nav` of the site: the home, the standards, the rules and the topics."""
     nav: list[object] = [{"Botica": "index.md"}]
     if (docs / "use.md").is_file():
         nav.append({"Use": "use.md"})
@@ -61,6 +62,9 @@ def navigation(docs: Path) -> list[object]:
     if rules.is_dir():
         families = [_section(_title(path.name), _pages(path, docs)) for path in _folders(rules)]
         nav.append(_section("Rules", ["rules/index.md", *families]))
+    references = docs / "references"
+    if references.is_dir():
+        nav.append(_section("References", _pages(references, docs)))
     return nav
 
 
