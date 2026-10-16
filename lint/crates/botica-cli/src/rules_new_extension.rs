@@ -88,7 +88,7 @@ fn node(id: &str, language: &str) -> String {
          reply(request.id, {{ diagnostics }});\n  \
          }} else if (request.method === \"shutdown\") {{\n    \
          reply(request.id, null);\n    break;\n  }}\n}}\n\n\
-         process.exit(0);\n"
+         process.stdin.destroy();\n"
     )
 }
 
