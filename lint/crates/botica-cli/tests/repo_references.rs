@@ -22,7 +22,12 @@ fn topics() -> References {
 fn the_references_of_this_repository_resolve() {
     let output = command(&checkout(), &["refs", "check"]);
 
-    assert!(output.status.success(), "{}{}", stdout(&output), stderr(&output));
+    assert!(
+        output.status.success(),
+        "{}{}",
+        stdout(&output),
+        stderr(&output)
+    );
 }
 
 #[test]
