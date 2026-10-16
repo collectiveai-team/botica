@@ -11,6 +11,7 @@ mod rules;
 mod rules_cmd;
 mod rules_export;
 mod rules_new;
+mod rules_test;
 mod timings;
 
 use clap::{Parser, Subcommand};
@@ -35,7 +36,7 @@ enum Command {
 fn main() -> ExitCode {
     let result = match Cli::parse().command {
         Command::Lint(args) => lint_cmd::run(args),
-        Command::Rules(args) => rules_cmd::run(&args).map(|()| ExitCode::SUCCESS),
+        Command::Rules(args) => rules_cmd::run(&args),
         Command::Explain(args) => explain_cmd::run(&args).map(|()| ExitCode::SUCCESS),
     };
     match result {

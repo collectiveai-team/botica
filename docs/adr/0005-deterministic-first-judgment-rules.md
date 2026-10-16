@@ -119,6 +119,17 @@ no check at all.
      fixtures and compares the verdicts with `expected.json`. `abide audit` judges the rules with
      `when = "edit"` only, in chunks of 150 lines, and reports each file with the verdicts of each
      rule (`byFile[].verdicts[]`: `ruleId`, `probability`, `band`).
+     The `expected.json` of a judgment rule is `{"verdicts": [{"file", "band", "min", "max"}]}`:
+     one verdict for each file of `valid/` and `invalid/`, `band` `clear` for a valid file and
+     `act` or `flag` for an invalid one, and `min` and `max`, optional, the range of the
+     probability. A fixture matches when abide gives it that band and a probability in the range.
+     `rules test` checks `expected.json` before it runs abide, and runs it in
+     `.botica/judge/<slug>`, a git repository with the fixtures and a rubric with the rule alone,
+     emptied at each run and left to be read; `.botica/judge` ignores itself, as `.botica/cache`
+     does. abide reads its key there from the environment or `~/.abide/.env`, and adds the rules
+     of `~/.abide/global.json`, whose verdicts botica leaves out. A rule with `turn` or
+     `pull-request` is skipped. The exit code is 0 when every fixture matches, 1 when one does not,
+     and 2 when the run fails.
    - In CI, `abide check --json` reports one section per phase. A section of the `edit` phase names
      one file; the section of the `turn` phase names every file of the change. Botica turns them into
      SARIF and filters them with `--judged`.
@@ -176,7 +187,7 @@ no check at all.
   required sections of its template, empty fixtures and, for `ast-grep`, the YAML of its language.
   It takes `ast-grep`, `extension` and `judgment`; a `native` rule has its code in botica-core,
   and the `external` kind comes with its fields of `rule.toml`. The `expected.json` of a judgment
-  rule lists findings until `botica rules test --judge abide` sets the format of a verdict. Nothing runs an
+  rule gives `valid/` the band `clear` and `invalid/` the band `act`. Nothing runs an
   `extension` rule of the catalog yet: `botica lint --ext <command>` runs an extension by its
   command.
 - `botica rules export --format json` writes `catalog.json`, which the other exports read: its

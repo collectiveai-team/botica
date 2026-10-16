@@ -30,6 +30,8 @@ botica rules export --format agents-md --output AGENTS.md [--check]
                                # the active judgment rules, between <!-- botica:rules --> and <!-- /botica:rules -->
 botica rules export --format abide [--check]   # the rubric of abide, .abide/rubric.json, with the
                                # judgment rules of the block of AGENTS.md (--agents-md names another file)
+botica rules test --judge abide [test-through-interface]
+                               # abide judges the fixtures of each judgment rule; compared with expected.json
 botica rules new structure/no-foo --kind ast-grep --language python --standard CES-63
                                # the folder of a new rule (ast-grep, extension or judgment) in lint/rules
 ```

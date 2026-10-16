@@ -49,7 +49,8 @@ struct RubricRule<'a> {
 #[derive(Serialize)]
 struct RuleSource {
     path: String,
-    line: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    line: Option<usize>,
 }
 
 #[derive(Serialize)]
@@ -103,35 +104,68 @@ pub fn rubric<'a>(inputs: &Inputs<'a>, compiled_at: String) -> Result<Rubric<'a>
         if scope.is_empty() {
             continue;
         }
-        let implementation = &rule.implementations[0];
-        rules.push(RubricRule {
-            id: &rule.id,
-            text: rule.directive(),
-            source: RuleSource {
-                path: inputs.agents_md_path.to_owned(),
-                line: line_of(inputs, rule)?,
-            },
-            scope,
-            when: implementation.when.unwrap_or(When::Edit),
-            check: Check {
-                kind: "model",
-                question: implementation
-                    .question
-                    .as_ref()
-                    .expect("a judgment rule has a question"),
-            },
-        });
+        let source = RuleSource {
+            path: inputs.agents_md_path.to_owned(),
+            line: Some(line_of(inputs, rule)?),
+        };
+        rules.push(rubric_rule(rule, source, scope));
     }
-    Ok(Rubric {
+    let sources = vec![Source {
+        path: inputs.agents_md_path.to_owned(),
+    }];
+    Ok(with_rules(sources, rules, compiled_at))
+}
+
+/// A rubric with `rule` alone, judged on the files of `scope`, for a test of the rule: its
+/// source is `source`, with no line.
+pub fn single<'a>(
+    rule: &'a Rule,
+    source: &str,
+    scope: Vec<String>,
+    compiled_at: String,
+) -> Rubric<'a> {
+    let source = RuleSource {
+        path: source.to_owned(),
+        line: None,
+    };
+    with_rules(
+        Vec::new(),
+        vec![rubric_rule(rule, source, scope)],
+        compiled_at,
+    )
+}
+
+fn with_rules<'a>(
+    sources: Vec<Source>,
+    rules: Vec<RubricRule<'a>>,
+    compiled_at: String,
+) -> Rubric<'a> {
+    Rubric {
         version: VERSION,
         compiled_at,
         compiled_by: format!("botica {}", env!("CARGO_PKG_VERSION")),
         manual: true,
-        sources: vec![Source {
-            path: inputs.agents_md_path.to_owned(),
-        }],
+        sources,
         rules,
-    })
+    }
+}
+
+fn rubric_rule<'a>(rule: &'a Rule, source: RuleSource, scope: Vec<String>) -> RubricRule<'a> {
+    let implementation = &rule.implementations[0];
+    RubricRule {
+        id: &rule.id,
+        text: rule.directive(),
+        source,
+        scope,
+        when: implementation.when.unwrap_or(When::Edit),
+        check: Check {
+            kind: "model",
+            question: implementation
+                .question
+                .as_ref()
+                .expect("a judgment rule has a question"),
+        },
+    }
 }
 
 fn when(rule: &Rule) -> Option<When> {

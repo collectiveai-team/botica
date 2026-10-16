@@ -390,6 +390,11 @@ fn a_judgment_rule_has_the_fields_of_a_judge_and_the_readme_of_its_kind() {
          instructions = \"TODO: the question the judge answers about the code\"\n"
     );
     assert!(!folder.join("python.yml").exists());
+    assert_eq!(
+        read(&folder.join("fixtures/expected.json")),
+        "{\n  \"verdicts\": [\n    { \"file\": \"valid/example.py\", \"band\": \"clear\" },\n    \
+         { \"file\": \"invalid/example.py\", \"band\": \"act\" }\n  ]\n}\n"
+    );
     let catalog = reload(&dir);
     let rule = catalog.resolve("BTTEST001").expect("the new rule");
     assert!(rule.is_judgment());

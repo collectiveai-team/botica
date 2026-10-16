@@ -254,14 +254,21 @@ fn draft(args: &NewArgs, catalog: &Catalog, family: &Family, slug: &str) -> Draf
     }
     let (extension, comment) = (file_extension(&args.language), comment(&args.language));
     files.extend([
-        file("fixtures/expected.json", EXPECTED.to_owned()),
+        file("fixtures/expected.json", expected(args.kind, extension)),
         file(
             &format!("fixtures/valid/example.{extension}"),
             format!("{comment} TODO: code that follows the rule\n"),
         ),
         file(
             &format!("fixtures/invalid/example.{extension}"),
-            format!("{comment} TODO: code that breaks the rule, with its findings in ../expected.json\n"),
+            format!(
+                "{comment} TODO: code that breaks the rule, with its {} in ../expected.json\n",
+                if args.kind == NewKind::Judgment {
+                    "verdict"
+                } else {
+                    "findings"
+                }
+            ),
         ),
     ]);
     Draft {
@@ -269,6 +276,18 @@ fn draft(args: &NewArgs, catalog: &Catalog, family: &Family, slug: &str) -> Draf
         code,
         files,
     }
+}
+
+/// The `expected.json` of a new rule: no finding, or for a judgment rule the band that abide must
+/// give each fixture.
+fn expected(kind: NewKind, extension: &str) -> String {
+    if kind != NewKind::Judgment {
+        return EXPECTED.to_owned();
+    }
+    format!(
+        "{{\n  \"verdicts\": [\n    {{ \"file\": \"valid/example.{extension}\", \"band\": \"clear\" }},\n    \
+         {{ \"file\": \"invalid/example.{extension}\", \"band\": \"act\" }}\n  ]\n}}\n"
+    )
 }
 
 fn write(catalog: &Path, files: &[SourceFile]) -> Result<()> {
