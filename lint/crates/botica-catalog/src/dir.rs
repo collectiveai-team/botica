@@ -73,23 +73,46 @@ pub fn read_files(dir: &Path) -> io::Result<Vec<SourceFile>> {
 /// exist holds no catalog.
 pub fn read_project_files(dir: &Path) -> io::Result<Vec<SourceFile>> {
     let mut files = Vec::new();
-    if !dir.is_dir() {
-        return Ok(files);
+    for (name, catalog) in project_catalog_dirs(dir)? {
+        files.extend(read_catalog_files(&name, &catalog)?);
     }
-    for catalog in sorted(dir)?.into_iter().filter(|path| path.is_dir()) {
-        let name = catalog
-            .file_name()
-            .map_or_else(String::new, |name| name.to_string_lossy().into_owned());
-        let catalog_toml = catalog.join(CATALOG_FILE);
-        if catalog_toml.is_file() {
-            push(&mut files, dir, &catalog_toml)?;
-        }
-        for file in read_files(&catalog)? {
-            files.push(SourceFile {
-                path: format!("{name}/{}", file.path),
-                text: file.text,
-            });
-        }
+    Ok(files)
+}
+
+/// The folders of `dir` that are catalogs, as `(name, folder)`: each folder is a catalog and its
+/// name is the name of the folder. A `dir` that does not exist holds none.
+pub fn project_catalog_dirs(dir: &Path) -> io::Result<Vec<(String, PathBuf)>> {
+    if !dir.is_dir() {
+        return Ok(Vec::new());
+    }
+    Ok(sorted(dir)?
+        .into_iter()
+        .filter(|path| path.is_dir())
+        .map(|catalog| {
+            let name = catalog
+                .file_name()
+                .map_or_else(String::new, |name| name.to_string_lossy().into_owned());
+            (name, catalog)
+        })
+        .collect())
+}
+
+/// The files of the catalog `name` that is in the folder `catalog`: its `catalog.toml` and what
+/// `read_files` reads of it, with paths from the folder of the catalogs, `<name>/…`.
+pub fn read_catalog_files(name: &str, catalog: &Path) -> io::Result<Vec<SourceFile>> {
+    let mut files = Vec::new();
+    let catalog_toml = catalog.join(CATALOG_FILE);
+    if catalog_toml.is_file() {
+        files.push(SourceFile {
+            path: format!("{name}/{CATALOG_FILE}"),
+            text: fs::read_to_string(&catalog_toml)?,
+        });
+    }
+    for file in read_files(catalog)? {
+        files.push(SourceFile {
+            path: format!("{name}/{}", file.path),
+            text: file.text,
+        });
     }
     Ok(files)
 }

@@ -216,8 +216,10 @@ What this ADR decides and the code does not have. Delete a line when it ships.
   Go one in `lint/sdk/go`; none of the three is published (npm, crates.io, a tag of the module) and
   none parses with ast-grep yet. Until the runtime `wasm` exists, a rule in Rust or Go runs as a
   program of the runtime `command`.
-- Catalogs declared externally. The catalogs of the project in `.botica/rules/` load and their
-  `extension` rules run.
+- Catalogs fetched from elsewhere: a git repository, PyPI or npm. The catalogs of the project in
+  the `rule-dirs` folders (`.botica/rules/` by default) and those that `[catalogs]` declares by
+  `path` load and their `extension` rules run. A catalog name is the folder name or the key, is
+  unique, and is not the name of a built-in family.
 - `botica rules export` with the formats `continue` and `schema` (ADR 0005 leaves `continue`
   and `skill` undecided). The formats `markdown`, `json`, `agents-md` and `abide` exist, and so do
   `botica rules test --judge abide`, `botica rules conform` and `botica rules new` with

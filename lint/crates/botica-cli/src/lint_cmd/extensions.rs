@@ -2,7 +2,7 @@
 //! where the rule applies.
 
 use std::collections::{BTreeMap, HashMap};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use botica_catalog::{Implementation, Rule, Runtime};
 use botica_core::report::{ErrorKind, RunError};
@@ -10,7 +10,7 @@ use botica_core::walk::SourceFile;
 use botica_core::Diagnostic;
 
 use super::{LintArgs, Setup};
-use crate::project::{self, extensions_at, PROJECT_RULES};
+use crate::project::{self, extensions_at};
 use crate::{extension, timings};
 
 /// What the extension rules found, and why some of them did not finish.
@@ -37,7 +37,7 @@ pub(super) fn run(args: &LintArgs, setup: &Setup, sources: &[SourceFile]) -> Ran
     let done: Vec<Done<'_>> = std::thread::scope(|scope| {
         let started: Vec<_> = jobs
             .iter()
-            .map(|job| scope.spawn(|| execute(job, &setup.project_root, args.batch)))
+            .map(|job| scope.spawn(|| execute(job, setup, args.batch)))
             .collect();
         started
             .into_iter()
@@ -94,9 +94,9 @@ fn jobs<'a>(setup: &'a Setup, sources: &'a [SourceFile]) -> Vec<Job<'a>> {
     jobs.into_values().collect()
 }
 
-fn execute<'a>(job: &Job<'a>, root: &Path, batch: usize) -> Done<'a> {
-    let outcome = match command_of(root, job.rule, job.implementation) {
-        Ok(argv) => extension::run_files(&argv, root, &job.files, batch),
+fn execute<'a>(job: &Job<'a>, setup: &Setup, batch: usize) -> Done<'a> {
+    let outcome = match command_of(&setup.catalog_dirs, job.rule, job.implementation) {
+        Ok(argv) => extension::run_files(&argv, &setup.project_root, &job.files, batch),
         Err(message) => extension::Outcome {
             found: Vec::new(),
             failure: Some(anyhow::anyhow!(message)),
@@ -112,7 +112,7 @@ fn execute<'a>(job: &Job<'a>, root: &Path, batch: usize) -> Done<'a> {
 /// What runs the implementation: `uv run --script` on the script of a Python rule, `node` on the
 /// script of a Node rule, the command of a rule that names one.
 fn command_of(
-    root: &Path,
+    catalog_dirs: &BTreeMap<String, PathBuf>,
     rule: &Rule,
     implementation: &Implementation,
 ) -> Result<Vec<String>, String> {
@@ -123,7 +123,8 @@ fn command_of(
             .clone()
             .ok_or_else(|| named("`command`")),
         Some(runtime) => {
-            let script = script_of(root, rule, implementation).ok_or_else(|| named("script"))?;
+            let script =
+                script_of(catalog_dirs, rule, implementation).ok_or_else(|| named("script"))?;
             let script = script.to_string_lossy().into_owned();
             Ok(match runtime {
                 Runtime::Python => ["uv", "run", "--script"]
@@ -138,13 +139,16 @@ fn command_of(
     }
 }
 
-/// The script of the rule, in its folder of `.botica/rules/<catalog>/<family>/<slug>/`.
-fn script_of(root: &Path, rule: &Rule, implementation: &Implementation) -> Option<PathBuf> {
+/// The script of the rule, in its folder of `<catalog>/<family>/<slug>/`, where the catalog is.
+fn script_of(
+    catalog_dirs: &BTreeMap<String, PathBuf>,
+    rule: &Rule,
+    implementation: &Implementation,
+) -> Option<PathBuf> {
     let catalog = rule.catalog.as_deref()?;
     let slug = rule.id.strip_prefix(catalog)?.strip_prefix('/')?;
-    let folder = root
-        .join(PROJECT_RULES)
-        .join(catalog)
+    let folder = catalog_dirs
+        .get(catalog)?
         .join(rule.family.as_deref()?)
         .join(slug);
     Some(folder.join(implementation.file.as_deref()?))

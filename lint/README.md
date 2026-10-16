@@ -149,6 +149,21 @@ the built-in catalog (`structure`, `logging`…): a catalog with such a name doe
 takes rules of every kind but `native`. The `covered-by` of a judgment rule of a catalog names the
 rules of that catalog by id (`acme/no-blobs`) and those of the built-in catalog by slug.
 
+`rule-dirs` (`[".botica/rules"]` by default) lists the folders whose subfolders are catalogs, and
+`[catalogs]` declares one catalog by the folder it is in, relative to the folder of `botica.toml`:
+
+```toml
+rule-dirs = [".botica/rules", "team-rules"]
+
+[catalogs]
+shared = { path = "../shared-rules" }   # the catalog `shared`; the folder holds its catalog.toml
+```
+
+The name of a catalog is the name of its folder in a `rule-dirs` folder, or its key in
+`[catalogs]`, and it is used once. A folder of the project that holds catalogs is left out of the
+walk, as `.botica` is. The rules of a declared catalog are read from its folder: an extension script
+is found there.
+
 A family of a project may have the name of a built-in family, as `structure` above. Every command
 then prints a warning on stderr, unless its `family.toml` says that it extends the built-in family
 on purpose:

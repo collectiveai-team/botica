@@ -1,18 +1,21 @@
 mod args;
+mod catalogs;
 mod code_dirs;
 mod natives;
 mod paths;
 mod policy;
 
-use std::path::Path;
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 use anyhow::{bail, Context, Result};
-use botica_catalog::{read_project_files, Catalog};
+use botica_catalog::Catalog;
 use botica_config::{discover, load_file, Loaded, Resolution};
 use botica_core::{registry, CodeDir};
 
 use args::ConfigOption;
+use catalogs::ProjectCatalogs;
 
 pub use args::ProjectArgs;
 pub use natives::natives;
@@ -29,9 +32,12 @@ pub struct Project {
     /// The files of the catalogs of the project, joined: what they say changes what the rules
     /// report.
     catalogs: String,
+    /// The folder of each catalog of the project, by name.
+    pub catalog_dirs: BTreeMap<String, PathBuf>,
 }
 
-/// Where the catalogs of a project are, from its root.
+/// Where the catalogs of a project are by default, from its root: the `rule-dirs` of the
+/// configuration say otherwise.
 pub const PROJECT_RULES: &str = ".botica/rules";
 
 pub fn load(args: &ProjectArgs) -> Result<Project> {
@@ -61,12 +67,15 @@ pub fn load(args: &ProjectArgs) -> Result<Project> {
     let mut loaded = loaded.with_inline(&settings)?;
     let catalog = Catalog::embedded()?;
     registry::check_catalog(&catalog)?;
-    let rules_dir = loaded.root.join(PROJECT_RULES);
-    let files = read_project_files(&rules_dir)
-        .with_context(|| format!("cannot read the catalogs of the project in `{PROJECT_RULES}`"))?;
+    let ProjectCatalogs {
+        files,
+        dirs,
+        excluded,
+    } = catalogs::read(&loaded.root, &loaded.config)?;
+    loaded.config.extend_exclude.extend(excluded);
     let catalog = catalog
         .with_projects(&files)
-        .with_context(|| format!("the catalogs of the project in `{PROJECT_RULES}` do not load"))?;
+        .context("the catalogs of the project do not load")?;
     for warning in catalog.warnings() {
         eprintln!("botica: warning: {warning}");
     }
@@ -84,6 +93,7 @@ pub fn load(args: &ProjectArgs) -> Result<Project> {
         resolution,
         for_the_rules: OnceLock::new(),
         catalogs,
+        catalog_dirs: dirs,
     })
 }
 

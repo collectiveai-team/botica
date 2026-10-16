@@ -7,6 +7,7 @@ use botica_core::report::{self, ErrorKind, Format, Report, RunError};
 use botica_core::walk::{SourceFile, Unreadable};
 use botica_core::{postprocess, Diagnostic, Engine, Severity};
 use clap::{Args, ValueEnum};
+use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -108,12 +109,15 @@ struct Setup {
     has_extensions: bool,
     /// Where the configuration was found (the working directory when there is none).
     project_root: PathBuf,
+    /// The folder of each catalog of the project, by name.
+    catalog_dirs: BTreeMap<String, PathBuf>,
 }
 
 impl Setup {
     fn build(args: &LintArgs) -> Result<Self> {
         let project = project::load(&args.project)?;
         let project_root = project.loaded.root.clone();
+        let catalog_dirs = project.catalog_dirs.clone();
         let with_astgrep = !args.no_astgrep;
         let io_error_active = project.is_active(IO_ERROR);
         let prefix = project.working_prefix();
@@ -166,6 +170,7 @@ impl Setup {
             with_astgrep,
             has_extensions,
             project_root,
+            catalog_dirs,
         })
     }
 }
