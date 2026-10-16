@@ -134,7 +134,12 @@ no check at all.
 - The implementation of kind `judgment` in `rule.toml` has `when`, `question`, `covered-by` and
   `why-not-deterministic`, and a deterministic rule gains options with no default.
 - `botica lint` reads SARIF from a judge (`--judged`), and `invalid-suppression` checks the reason,
-  the level and the channel of a suppression of a judgment rule.
+  the level and the channel of a suppression of a judgment rule. With `--judged`, botica lints no
+  file: it reports the results of the active judgment rules at the paths and in the languages they
+  apply to, with their configured severity, minus the files that an `ignore-file` comment
+  silences. A result with no location is about the whole change: it has no path, the text output
+  shows it as `(change)`, and only the selection of the rule silences it. A result of a rule that
+  is not a judgment rule of the catalog is left out with a warning on stderr.
 - `botica rules export` gains `--format abide` and `--check`, and `botica rules test` gains
   `--judge abide`.
 - `botica rules new <family>/<slug> --kind <kind>` writes a folder that the catalog loads: a

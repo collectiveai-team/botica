@@ -1,5 +1,5 @@
 use crate::{extension, project, rules, timings};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use botica_astgrep::Tuning;
 use botica_config::Resolution;
 use botica_core::registry::IO_ERROR;
@@ -13,6 +13,7 @@ use std::process::ExitCode;
 use std::sync::Arc;
 use std::time::Instant;
 
+mod judged;
 mod paths;
 
 use paths::{lint_paths, Linted};
@@ -40,6 +41,10 @@ pub struct LintArgs {
     /// Extension command, e.g. "uv run --script ext.py".
     #[arg(long)]
     ext: Option<String>,
+    /// Report the findings of a judge, read from this SARIF file, instead of linting: the ones of
+    /// the active judgment rules, filtered by the configuration and the `ignore-file` comments.
+    #[arg(long, conflicts_with_all = ["paths", "ext", "statistics"])]
+    judged: Option<PathBuf>,
     /// Files per `lint/files` request.
     #[arg(long, default_value_t = 256)]
     batch: usize,
@@ -154,6 +159,9 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     let total = Instant::now();
 
     let setup = Setup::build(&args)?;
+    if let Some(sarif) = &args.judged {
+        return run_judged(&args, format, &setup, sarif);
+    }
     let root = std::env::current_dir()?;
     let Linted {
         sources,
@@ -186,6 +194,26 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         );
     }
     Ok(exit_code(&errors, &diagnostics, args.exit_zero))
+}
+
+fn run_judged(
+    args: &LintArgs,
+    format: Format,
+    setup: &Setup,
+    sarif: &std::path::Path,
+) -> Result<ExitCode> {
+    let text = std::fs::read_to_string(sarif)
+        .with_context(|| format!("cannot read `{}`", sarif.display()))?;
+    let judged = judged::filter(&setup.resolution, setup.prefix.as_deref(), &text, |path| {
+        std::fs::read_to_string(path).ok()
+    })?;
+    for rule in &judged.left_out {
+        eprintln!(
+            "botica: `{rule}` is not a judgment rule of the catalog: its finding is left out"
+        );
+    }
+    write_report(args, format, setup, &judged.diagnostics, &[])?;
+    Ok(exit_code(&[], &judged.diagnostics, args.exit_zero))
 }
 
 fn check_statistics_format(args: &LintArgs, format: Format) -> Result<()> {

@@ -292,12 +292,29 @@ impl Policy {
         }
     }
 
+    /// Drops from `found` what the comments of the file at `path` silence: the findings of a
+    /// judge, which botica reads apart from the rules it runs. It adds no finding about the
+    /// comments.
+    pub fn silence(&self, path: &str, text: &str, found: &mut Vec<Diagnostic>) {
+        self.filter(&Document::new(path, text), &|_| true, found, false);
+    }
+
     /// Drops what the comments of the file silence and adds the findings about the comments.
     pub(crate) fn apply(
         &self,
         doc: &Document<'_>,
         is_active: &dyn Fn(&str) -> bool,
         found: &mut Vec<Diagnostic>,
+    ) {
+        self.filter(doc, is_active, found, true);
+    }
+
+    fn filter(
+        &self,
+        doc: &Document<'_>,
+        is_active: &dyn Fn(&str) -> bool,
+        found: &mut Vec<Diagnostic>,
+        report: bool,
     ) {
         let Some(syntax) = Syntax::of(doc.path) else {
             return;
@@ -342,7 +359,7 @@ impl Policy {
         }
 
         let mut about = Vec::new();
-        if let Some(severity) = self.invalid {
+        if let Some(severity) = self.invalid.filter(|_| report) {
             for directive in &directives {
                 for token in directive
                     .tokens
@@ -370,7 +387,7 @@ impl Policy {
                 }
             }
         }
-        if let Some(severity) = self.unused {
+        if let Some(severity) = self.unused.filter(|_| report) {
             for directive in directives.iter().filter(|d| d.channel != Channel::AstGrep) {
                 let mut unused = Vec::new();
                 let mut disabled = Vec::new();

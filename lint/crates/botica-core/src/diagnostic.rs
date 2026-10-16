@@ -79,7 +79,17 @@ impl Diagnostic {
 }
 
 impl fmt::Display for Diagnostic {
+    /// A finding about a whole change, which has no path, shows as `(change)`.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.path.is_empty() {
+            return write!(
+                f,
+                "(change): {} [{}] {}",
+                self.severity.as_str(),
+                self.rule,
+                self.message
+            );
+        }
         write!(
             f,
             "{}:{}:{}: {} [{}] {}",

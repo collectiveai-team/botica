@@ -21,6 +21,7 @@ botica lint                    # the current directory
 botica lint src tests/a.py     # directories to walk, or files (as prek passes them)
 botica lint --select file-size-guard,no-utils
 botica lint --output-format json   # text (default), json, sarif or github
+botica lint --judged judge.sarif   # the findings of a judge, filtered by the configuration and comments
 botica rules                   # which rules are active, and why (--all adds the inactive ones)
 botica explain no-notebooks    # what a rule is and how it is configured here
 botica rules export --format markdown --output site   # one page per rule of the catalog, and an index

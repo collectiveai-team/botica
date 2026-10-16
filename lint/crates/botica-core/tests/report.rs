@@ -297,3 +297,18 @@ fn json_carries_the_schema_version_the_diagnostics_and_the_errors_apart() {
         })
     );
 }
+
+#[test]
+fn text_shows_a_finding_about_a_whole_change_as_change() {
+    let change = whole_file(
+        "",
+        "test-through-interface",
+        Severity::Warning,
+        "a test reaches into a private helper",
+    );
+
+    assert_eq!(
+        rendered(&[change], &[], Format::Text),
+        "(change): warning [test-through-interface] a test reaches into a private helper\n"
+    );
+}
