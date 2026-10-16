@@ -83,11 +83,33 @@ same way to every kind.
 
 **Extensions run out of process over a versioned protocol.** The protocol is JSON-RPC 2.0 over
 stdio, one message per line. Botica sends batches of files with their text and receives
-diagnostics as byte ranges. Each extension declares its dependencies; botica builds an isolated,
-cached environment for it (uv for Python, npm for Node). The SDKs parse with the ast-grep
+diagnostics as byte ranges. Each extension declares its dependencies: uv builds an isolated,
+cached environment for a Python one, and a Node one brings its `node_modules`. The SDKs parse with the ast-grep
 bindings, so an extension sees the same node kinds as the core, and a rule can be ported to Rust
 under the same id and fixtures. Extensions load only from catalogs the project declares or from
 `.botica/rules/`, never by discovery.
+
+`botica lint` runs each active `extension` rule of a catalog as a process of its own, and sends it
+only the files where the rule applies (its languages, `files`, `ignores` and the `overrides` of the
+configuration). A finding whose `rule` is not the slug of its rule is left out with a warning on
+stderr; a finding keeps its severity unless the configuration names one. A process that fails is a
+failure of the run (exit 2) and leaves the findings of the other rules as they are. The code of the
+rule is in its folder and the catalog loads it as it loads the YAML of an ast-grep rule:
+
+| `runtime` | The rule names | botica runs |
+|---|---|---|
+| `python` | `file = "<name>.py"` | `uv run --script <file>`; the script declares its dependencies (PEP 723) and uv caches its environment |
+| `node` | `file = "<name>.js"` or `.mjs` | `node <file>`, with the `node_modules` the rule brings, if any |
+| `command` | `command = ["<argv>", …]`, no `file` | the command, from the root of the project; a rule of the built-in catalog cannot use it |
+
+The SDK of each language follows the protocol and the version of botica. The one of Python is the
+module `botica.sdk` of the wheel `botica` (`from botica.sdk import rule, serve`), and the extra
+`botica[extension]` adds `ast-grep-py`: a script declares `botica[extension]==<version>`. The one of
+TypeScript is the npm package `@botica/sdk`, from `lint/sdk/node`, released with the same tag. The
+one of Go is the module `github.com/collectiveai-team/botica/lint/sdk/go`, tagged
+`lint/sdk/go/vX.Y.Z`, with a runtime `go` of its own. `botica lint --ext <command>` runs one
+extension by its command, outside any catalog. The conformance runner checks an extension rule with
+its fixtures, as any other.
 
 **Suppressions.** Two comment channels silence a rule on the line of its finding: `# botica:
 ignore[<id>]` in any language with comments, and `# noqa: <code>` in Python. An id is exact (slug,
@@ -97,8 +119,13 @@ in the configuration. `unused-suppression` reports a comment that silences nothi
 `invalid-suppression` one that names an unknown id or is malformed.
 
 **Catalogs and overrides.** The built-in rules (the families and `botica`) are compiled in.
-Projects add `.botica/rules/<catalog>/<slug>/` and declared external catalogs; which catalog
-names are reserved for those is not decided. A project replaces a built-in rule only when the
+Projects add `.botica/rules/<catalog>/` and declared external catalogs; which catalog names are
+reserved for those is not decided. A catalog of a project has the layout of the built-in one with
+a `catalog.toml` on top: `.botica/rules/<catalog>/catalog.toml` holds its `code` (letters A-Z, not
+starting with `BT`, and not a text prefix of the code of another catalog), each family has its
+`family.toml`, and each rule its folder, `<catalog>/<family>/<slug>/`. The id of a rule is
+`<catalog>/<slug>` and its code is `<catalog code><family code>` plus 3 digits (`ACMESTRUC001`).
+It takes rules of every kind but `native`, whose code lives in botica-core. A project replaces a built-in rule only when the
 replacement declares `replaces = "<id>"` *and* the project config confirms it; suppressions
 written for the original keep working.
 
@@ -167,10 +194,10 @@ The `scaffolding` Python package keeps its name until it is migrated, which is o
 What this ADR decides and the code does not have. Delete a line when it ships.
 
 - The editor front-end: `botica-lsp` and `botica server`.
-- The extension SDKs: `sdk/python` is a first version; `botica-ext-sdk` and `sdk/node` do not
-  exist. Nor does the isolated, cached environment (uv for Python, npm for Node) for an
-  extension's dependencies.
-- Catalogs of a project or declared externally (`.botica/rules/`).
+- The extension SDKs: the first is `sdk/python/botica_ext.py`; `botica.sdk`,
+  `botica[extension]`, `@botica/sdk` and the module of Go do not exist.
+- Catalogs of a project or declared externally (`.botica/rules/`), and the run of the `extension`
+  rules of a catalog: only `--ext` runs an extension.
 - `botica rules export` in the formats other than `markdown` and `json` (`continue`, `abide`,
   `schema`), `botica rules test` (with `--against`), and the `botica-rule-author` skill. Only
   `botica rules list`, `botica rules export` with `--format markdown` or `--format json`, and
