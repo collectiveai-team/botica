@@ -197,8 +197,13 @@ if __name__ == "__main__":
     serve()
 ```
 
+A script of the runtime `node` can write its rule with [`@botica/sdk`](sdk/node/README.md)
+(`rule`, `byteOffsets`, `serve`), which is not published to npm yet; `botica rules new --runtime
+node` writes a script that speaks the protocol with no dependency.
+
 A finding with another `rule` than the id of its rule is left out, with a warning on stderr. A
-process that fails stops the run with exit code 2 and the findings of the other rules stay. The
+process that fails, or that is still running 5 seconds after `shutdown` and is killed, stops the
+run with exit code 2 and the findings of the other rules stay. The
 built-in catalog takes no extension: an extension is a program of the project.
 
 `acme/no-blobs` and `ACMESTRUC001` name a rule and `ACMESTRUC` a family, in `select`, `ignore`,
