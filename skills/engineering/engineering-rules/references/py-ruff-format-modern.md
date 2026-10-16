@@ -87,7 +87,7 @@ priority = 2
 # The selection of rules is the one of the scaffolder's `prek-generic.toml`: copy it from there.
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
-rev = "v0.10.0"
+rev = "v0.11.0"
 
 [[repos.hooks]]
 id = "botica"
