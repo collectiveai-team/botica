@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
-use botica_catalog::{read_files, Catalog, Family, SourceFile};
+use botica_catalog::{read_files, Catalog, Family, SourceFile, CONFIG_DIR};
 use clap::{Args, ValueEnum};
 
 #[derive(Args)]
@@ -21,6 +21,16 @@ pub struct NewArgs {
     /// The standard the rule implements, e.g. `CES-63`.
     #[arg(long)]
     standard: Option<String>,
+    /// The tool that enforces an external rule, e.g. `complexipy`.
+    #[arg(long, required_if_eq("kind", "external"))]
+    tool: Option<String>,
+    /// The address of the documentation of the tool of an external rule.
+    #[arg(long, required_if_eq("kind", "external"))]
+    docs: Option<String>,
+    /// The file of the project that the configuration of the tool goes into, e.g. `prek.toml`:
+    /// the rule gets the fragment `config/<file>` to fill in.
+    #[arg(long)]
+    config: Option<String>,
     /// The directory of the catalog.
     #[arg(long, default_value = "lint/rules")]
     catalog: PathBuf,
@@ -31,6 +41,7 @@ enum NewKind {
     AstGrep,
     Extension,
     Judgment,
+    External,
     Native,
 }
 
@@ -68,6 +79,15 @@ TODO: what the judge asks of the code.\n\n\
 ## Don't\n\nTODO: code that breaks the rule.\n\n\
 ## Suppression\n\nTODO: the `ignore-file` comment, with its reason, or the configuration that \
 silences the rule.\n";
+
+const EXTERNAL_README: &str = "## Directive\n\n\
+TODO: what the rule asks, and the tool that measures it.\n\n\
+## Why\n\nTODO: what goes wrong without the rule.\n\n\
+## Tool\n\nTODO: the tool, its documentation, and the configuration that enforces the rule.\n\n\
+## Configuration\n\nTODO: the configuration the tool needs, as a repository writes it.\n\n\
+## Do\n\nTODO: code that follows the rule.\n\n\
+## Don't\n\nTODO: code that breaks the rule.\n\n\
+## Suppression\n\nTODO: how the tool silences a finding.\n";
 
 const WHY: &str =
     "TODO: why no check of the code or of the configuration of a repository decides it";
@@ -124,6 +144,10 @@ fn check_kind(args: &NewArgs) -> Result<()> {
     }
     if args.kind != NewKind::Extension && args.runtime.is_some() {
         bail!("--runtime applies to an extension only");
+    }
+    let tool_flags = args.tool.is_some() || args.docs.is_some() || args.config.is_some();
+    if args.kind != NewKind::External && tool_flags {
+        bail!("--tool, --docs and --config apply to an external rule only");
     }
     Ok(())
 }
@@ -187,7 +211,7 @@ fn rule_toml(args: &NewArgs, slug: &str, code: &str) -> String {
     let needs = match args.kind {
         NewKind::AstGrep => Some("syntax"),
         NewKind::Extension => Some("bytes"),
-        NewKind::Judgment | NewKind::Native => None,
+        NewKind::Judgment | NewKind::External | NewKind::Native => None,
     };
     if let Some(needs) = needs {
         text.push_str(&format!(
@@ -204,6 +228,7 @@ fn rule_toml(args: &NewArgs, slug: &str, code: &str) -> String {
              why-not-deterministic = \"{WHY}\"\n\n[implementations.question]\n\
              type = \"boolean\"\ninstructions = \"{INSTRUCTIONS}\"\n"
         ),
+        (NewKind::External, _) => external_implementation(args),
         (_, Some(runtime)) => format!(
             "kind = \"extension\"\nruntime = \"{}\"\nlanguages = [\"{language}\"]\n",
             runtime.word()
@@ -212,6 +237,19 @@ fn rule_toml(args: &NewArgs, slug: &str, code: &str) -> String {
             "kind = \"ast-grep\"\nlanguages = [\"{language}\"]\nfile = \"{language}.yml\"\n"
         ),
     });
+    text
+}
+
+fn external_implementation(args: &NewArgs) -> String {
+    let mut text = format!(
+        "kind = \"external\"\nlanguages = [\"{}\"]\ntool = \"{}\"\ndocs = \"{}\"\ncodes = []\n",
+        args.language,
+        args.tool.as_deref().unwrap_or_default(),
+        args.docs.as_deref().unwrap_or_default()
+    );
+    if let Some(target) = &args.config {
+        text.push_str(&format!("config = \"{CONFIG_DIR}{target}\"\n"));
+    }
     text
 }
 
@@ -238,14 +276,30 @@ fn draft(args: &NewArgs, catalog: &Catalog, family: &Family, slug: &str) -> Draf
         file("rule.toml", rule_toml(args, slug, &code)),
         file(
             "README.md",
-            if args.kind == NewKind::Judgment {
-                JUDGMENT_README
-            } else {
-                README
+            match args.kind {
+                NewKind::Judgment => JUDGMENT_README,
+                NewKind::External => EXTERNAL_README,
+                _ => README,
             }
             .to_owned(),
         ),
     ];
+    if args.kind == NewKind::External {
+        if let Some(target) = &args.config {
+            files.push(file(
+                &format!("{CONFIG_DIR}{target}"),
+                format!(
+                    "# TODO: the configuration of {} in {target} that enforces the rule\n",
+                    args.tool.as_deref().unwrap_or_default()
+                ),
+            ));
+        }
+        return Draft {
+            folder,
+            code,
+            files,
+        };
+    }
     if args.kind == NewKind::AstGrep {
         files.push(file(
             &format!("{}.yml", args.language),

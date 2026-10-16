@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::issue::{issue, CatalogIssue};
-use crate::model::{Event, Family, Kind, Rule, Status};
+use crate::model::{Event, Family, Implementation, Kind, Rule, Status};
 use crate::question::check_question;
 
 pub(crate) const HEADER: &str = "BT";
@@ -102,9 +102,21 @@ fn deterministic_fields(rule: &Rule) -> [(&'static str, bool); 4] {
 }
 
 fn check_deterministic(rule: &Rule, add: &mut impl FnMut(String)) {
-    for (field, set) in deterministic_fields(rule).into_iter().take(3) {
-        if !set {
-            add(format!("a deterministic rule needs `{field}`"));
+    if rule.is_external_only() {
+        for (field, _) in deterministic_fields(rule)
+            .into_iter()
+            .filter(|(_, set)| *set)
+        {
+            add(format!(
+                "`{field}` applies to a rule that `botica lint` runs, and another tool enforces \
+                 this one"
+            ));
+        }
+    } else {
+        for (field, set) in deterministic_fields(rule).into_iter().take(3) {
+            if !set {
+                add(format!("a deterministic rule needs `{field}`"));
+            }
         }
     }
     for (index, implementation) in rule.implementations.iter().enumerate() {
@@ -227,8 +239,43 @@ pub(crate) fn check_rule(
                 "implementation {index}: runtime only applies to extensions"
             ));
         }
+        check_external(index, implementation, &mut add);
     }
     found
+}
+
+/// What an external implementation needs, and the fields that only it may have.
+fn check_external(index: usize, implementation: &Implementation, add: &mut impl FnMut(String)) {
+    let fields = [
+        ("tool", implementation.tool.is_some()),
+        ("docs", implementation.docs.is_some()),
+        ("codes", !implementation.codes.is_empty()),
+        ("config", implementation.config.is_some()),
+    ];
+    if implementation.kind != Kind::External {
+        for (field, _) in fields.into_iter().filter(|(_, set)| *set) {
+            add(format!(
+                "implementation {index}: `{field}` applies to an external implementation only"
+            ));
+        }
+        return;
+    }
+    for (field, set) in fields.into_iter().take(2) {
+        if !set {
+            add(format!("an external implementation needs `{field}`"));
+        }
+    }
+    if let Some(config) = &implementation.config {
+        let valid = implementation.target().is_some_and(|name| {
+            name.strip_suffix(".toml")
+                .is_some_and(|stem| !stem.is_empty() && !stem.contains('/'))
+        });
+        if !valid {
+            add(format!(
+                "config `{config}` must be `config/<file>.toml`, the file of the project it goes into"
+            ));
+        }
+    }
 }
 
 pub(crate) fn check_across(

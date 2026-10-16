@@ -1,64 +1,6 @@
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::process::{Command, Output};
+mod common;
 
-use botica_catalog::{read_files, Catalog};
-
-fn copy(from: &Path, to: &Path) {
-    fs::create_dir_all(to).expect("create a directory");
-    for entry in fs::read_dir(from).expect("read the catalog").flatten() {
-        let target = to.join(entry.file_name());
-        if entry.path().is_dir() {
-            copy(&entry.path(), &target);
-        } else {
-            fs::copy(entry.path(), target).expect("copy a file");
-        }
-    }
-}
-
-/// A working directory with a copy of the catalog of this checkout under `cat/`.
-fn workdir(name: &str) -> PathBuf {
-    let dir = Path::new(env!("CARGO_TARGET_TMPDIR"))
-        .join("rules-new")
-        .join(name);
-    let _ = fs::remove_dir_all(&dir);
-    copy(
-        &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../rules"),
-        &dir.join("cat"),
-    );
-    dir
-}
-
-fn new_rule(dir: &Path, args: &[&str]) -> Output {
-    Command::new(env!("CARGO_BIN_EXE_botica"))
-        .args(["rules", "new"])
-        .args(args)
-        .args(["--catalog", "cat"])
-        .current_dir(dir)
-        .output()
-        .expect("run botica")
-}
-
-fn succeeded(output: &Output) {
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-}
-
-fn read(path: &Path) -> String {
-    fs::read_to_string(path).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
-}
-
-fn reload(dir: &Path) -> Catalog {
-    let files = read_files(&dir.join("cat")).expect("read the catalog");
-    Catalog::from_files(&files).unwrap_or_else(|error| panic!("the catalog loads:\n{error}"))
-}
-
-fn stderr(output: &Output) -> String {
-    String::from_utf8_lossy(&output.stderr).into_owned()
-}
+use common::new_rule::{new_rule, read, reload, stderr_of as stderr, succeeded, workdir};
 
 #[test]
 fn an_ast_grep_rule_gets_the_next_code_of_its_family_and_a_folder_that_loads() {
@@ -82,7 +24,7 @@ fn an_ast_grep_rule_gets_the_next_code_of_its_family_and_a_folder_that_loads() {
     assert_eq!(
         read(&folder.join("rule.toml")),
         "id = \"no-foo\"\n\
-         code = \"BTSTRUC006\"\n\
+         code = \"BTSTRUC007\"\n\
          standard = \"CES-63\"\n\
          summary = \"TODO: what the rule asks, in one line\"\n\
          status = \"preview\"\n\
@@ -119,7 +61,7 @@ fn an_ast_grep_rule_gets_the_next_code_of_its_family_and_a_folder_that_loads() {
     );
 
     let catalog = reload(&dir);
-    let rule = catalog.resolve("BTSTRUC006").expect("the new rule");
+    let rule = catalog.resolve("BTSTRUC007").expect("the new rule");
     assert_eq!(rule.id, "no-foo");
     let titles: Vec<String> = rule
         .sections()
@@ -133,7 +75,7 @@ fn an_ast_grep_rule_gets_the_next_code_of_its_family_and_a_folder_that_loads() {
         .all(|section| section.text.starts_with("TODO: ")));
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
-        stdout.contains("BTSTRUC006") && stdout.contains("structure/no-foo"),
+        stdout.contains("BTSTRUC007") && stdout.contains("structure/no-foo"),
         "{stdout}"
     );
 }

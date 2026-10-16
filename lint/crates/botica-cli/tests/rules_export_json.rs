@@ -113,11 +113,32 @@ fn a_rule_carries_every_field_of_its_rule_toml_its_releases_and_the_path_of_its_
                 "when": null,
                 "question": null,
                 "covered_by": [],
-                "why_not_deterministic": null
+                "why_not_deterministic": null,
+                "tool": null,
+                "docs": null,
+                "codes": [],
+                "config": null
             }],
             "readme": "fastapi/api-schemas-extra-forbid/README.md"
         })
     );
+}
+
+#[test]
+fn an_external_rule_carries_its_tool_its_documentation_and_its_configuration() {
+    let document = catalog("external");
+
+    let external = rule(&document, "cognitive-complexity");
+    assert_eq!(external["scope"], Value::Null);
+    let implementation = &external["implementations"][0];
+    assert_eq!(implementation["kind"], "external");
+    assert_eq!(implementation["tool"], "complexipy");
+    assert_eq!(
+        implementation["docs"],
+        "https://rohaquinlop.github.io/complexipy/"
+    );
+    assert_eq!(implementation["codes"], json!([]));
+    assert_eq!(implementation["config"], "config/prek.toml");
 }
 
 #[test]

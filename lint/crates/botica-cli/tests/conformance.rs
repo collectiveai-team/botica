@@ -21,6 +21,7 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
             "arch-database-package",
             "cli-typed-framework",
             "db-no-create-all",
+            "external-config",
             "file-size-guard",
             "invalid-suppression",
             "io-error",

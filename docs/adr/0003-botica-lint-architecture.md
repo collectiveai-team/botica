@@ -174,5 +174,6 @@ What this ADR decides and the code does not have. Delete a line when it ships.
 - `botica rules export` in the formats other than `markdown` and `json` (`continue`, `abide`,
   `schema`), `botica rules test` (with `--against`), and the `botica-rule-author` skill. Only
   `botica rules list`, `botica rules export` with `--format markdown` or `--format json`, and
-  `botica rules new` with `--kind ast-grep`, `extension` or `judgment` exist. The standards site that reads the Markdown export is built (`website/`) but not
+  `botica rules new` with `--kind ast-grep`, `extension`, `judgment` or `external` exist.
+- Profiles (`profiles/<name>.toml`, `botica profile install` and `botica profile check`, ADR 0006). The standards site that reads the Markdown export is built (`website/`) but not
   published, and it has no discussion thread and no "edit this page" yet.

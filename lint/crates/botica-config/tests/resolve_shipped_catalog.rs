@@ -16,6 +16,7 @@ fn the_default_selection_runs_every_rule_enabled_by_default() {
             "api-schemas-extra-forbid",
             "arch-database-package",
             "cli-typed-framework",
+            "external-config",
             "file-size-guard",
             "invalid-suppression",
             "io-error",
@@ -60,7 +61,12 @@ fn select_and_extend_select_are_added_together() {
     assert_eq!(reason(&resolution, "file-size-guard"), Reason::NotSelected);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BT0\"]")),
-        ["invalid-suppression", "io-error", "unused-suppression"]
+        [
+            "external-config",
+            "invalid-suppression",
+            "io-error",
+            "unused-suppression"
+        ]
     );
     assert_eq!(
         active(&resolve(&catalog, "select = [\"tag:size\"]")),
@@ -68,7 +74,7 @@ fn select_and_extend_select_are_added_together() {
     );
     assert_eq!(
         active(&resolve(&catalog, "select = []\nextend-select = [\"all\"]")).len(),
-        18
+        19
     );
 }
 
@@ -82,6 +88,7 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
             "api-schemas-extra-forbid",
             "arch-database-package",
             "cli-typed-framework",
+            "external-config",
             "invalid-suppression",
             "io-error",
             "log-get-logger",
@@ -100,10 +107,11 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
     );
 }
 
-const PROPOSED: [&str; 6] = [
+const PROPOSED: [&str; 7] = [
     "api-request-schema-name",
     "api-response-schema-name",
     "api-schema-in-route-module",
+    "cognitive-complexity",
     "db-no-create-all",
     "settings-base-class",
     "settings-direct-instantiation",
@@ -118,7 +126,7 @@ fn the_preview_rules_stay_out_of_the_default_selection_and_of_all() {
         assert_eq!(reason(&by_default, slug), Reason::NotSelected, "{slug}");
         assert_eq!(reason(&by_all, slug), Reason::OnlyPreview, "{slug}");
     }
-    assert_eq!(active(&by_all).len(), 18);
+    assert_eq!(active(&by_all).len(), 19);
 }
 
 #[test]
@@ -138,7 +146,7 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
         &catalog,
         "select = []\nextend-select = [\"all\"]\npreview = true",
     );
-    assert_eq!(active(&resolution).len(), 24);
+    assert_eq!(active(&resolution).len(), 26);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTARCH\"]\npreview = true")),
         [
@@ -164,6 +172,7 @@ fn a_rule_switched_off_in_its_own_section_stays_out() {
             "api-schemas-extra-forbid",
             "arch-database-package",
             "cli-typed-framework",
+            "external-config",
             "invalid-suppression",
             "io-error",
             "log-get-logger",

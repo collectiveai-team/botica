@@ -67,6 +67,19 @@ const FAMILY_TEMPLATE: [(&str, bool); 7] = [
     ("Suppression", true),
 ];
 
+/// The sections of the README of a rule that another tool enforces, in one language at least.
+const EXTERNAL_TEMPLATE: [(&str, bool); 9] = [
+    ("Directive", true),
+    ("Why", true),
+    ("Exceptions", false),
+    ("Tool", true),
+    ("Configuration", true),
+    ("Do", true),
+    ("Don't", true),
+    ("Options", false),
+    ("Suppression", true),
+];
+
 /// The longest Directive of a judgment rule: it is the `text` of the rule in the rubric of abide.
 const MAX_DIRECTIVE: usize = 600;
 
@@ -99,6 +112,8 @@ pub(crate) fn check_readme(path: &str, rule: &Rule) -> Vec<CatalogIssue> {
         &OWN_TEMPLATE
     } else if rule.is_judgment() {
         &JUDGMENT_TEMPLATE
+    } else if rule.has_external() {
+        &EXTERNAL_TEMPLATE
     } else {
         &FAMILY_TEMPLATE
     };

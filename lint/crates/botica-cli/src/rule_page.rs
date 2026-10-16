@@ -140,6 +140,11 @@ fn identity(rule: &Rule) -> String {
         .map(|language| if language == "*" { "all" } else { language })
         .collect();
     parts.push(format!("Languages: {}", languages.join(", ")));
+    for implementation in &rule.implementations {
+        if let (Some(tool), Some(docs)) = (&implementation.tool, &implementation.docs) {
+            parts.push(format!("Tool: [{tool}]({docs})"));
+        }
+    }
     parts.join(" · ")
 }
 

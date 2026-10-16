@@ -13,6 +13,7 @@ use std::process::ExitCode;
 use std::sync::Arc;
 use std::time::Instant;
 
+mod external;
 mod judged;
 mod paths;
 
@@ -179,6 +180,11 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         errors.extend(run_extension(&args, command, &sources, &mut diagnostics));
     }
     diagnostics.extend(io_errors);
+    diagnostics.extend(external::findings(
+        &setup.resolution,
+        &setup.project_root,
+        setup.prefix.as_deref(),
+    ));
     let diagnostics = postprocess::apply(
         diagnostics,
         project::verdicts(&setup.resolution, setup.prefix.as_deref()),

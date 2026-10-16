@@ -1,0 +1,13 @@
+id = "external-config"
+code = "BT004"
+summary = "The file that an active external rule names holds the configuration of its tool"
+status = "stable"
+scope = "project"
+needs = "bytes"
+run-on = ["cli"]
+default-enabled = true
+default-severity = "error"
+
+[[implementations]]
+kind = "native"
+languages = ["*"]

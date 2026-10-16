@@ -33,7 +33,9 @@ botica rules export --format abide [--check]   # the rubric of abide, .abide/rub
 botica rules test --judge abide [test-through-interface]
                                # abide judges the fixtures of each judgment rule; compared with expected.json
 botica rules new structure/no-foo --kind ast-grep --language python --standard CES-63
-                               # the folder of a new rule (ast-grep, extension or judgment) in lint/rules
+                               # the folder of a new rule (ast-grep, extension, judgment or external) in lint/rules
+botica rules new structure/dep-hygiene --kind external --language python --tool deptry \
+  --docs https://deptry.com/ --config prek.toml   # an external rule and its fragment config/prek.toml
 ```
 
 Exit code: `0` clean (a warning does not fail the run), `1` a finding of severity error, `2`
@@ -48,6 +50,7 @@ the run itself failed (it wins over `1`). `--exit-zero` forgives only the findin
 | `BTSTRUC003` | [`no-artifacts-in-package`](rules/structure/no-artifacts-in-package/README.md) | CES-32 | data, models and reports inside the code |
 | `BTSTRUC004` | [`no-notebooks`](rules/structure/no-notebooks/README.md) | CES-32 | notebooks inside the code |
 | `BTSTRUC005` | [`no-tests-in-package`](rules/structure/no-tests-in-package/README.md) | none yet | Python: tests inside the package |
+| `BTSTRUC006` | [`cognitive-complexity`](rules/structure/cognitive-complexity/README.md) | CES-110 | external: complexipy measures it, through its hook in `prek.toml` |
 | `BTARCH001` | [`arch-database-package`](rules/architecture/arch-database-package/README.md) | CES-18 | Python: tables and engines outside a `database` package |
 | `BTARCH002` | [`settings-module`](rules/architecture/settings-module/README.md) | CES-76 | Python: `os.getenv` and `os.environ` outside the settings module |
 | `BTARCH003` | [`settings-base-class`](rules/architecture/settings-base-class/README.md) | none yet | Python: a settings class that extends `BaseModel` instead of `BaseSettings` |
@@ -65,9 +68,16 @@ the run itself failed (it wins over `1`). `--exit-zero` forgives only the findin
 | `BTLOG002` | [`log-no-print`](rules/logging/log-no-print/README.md) | CES-46 | Python and TypeScript: `print()` and `console.log()` in library code |
 | `BTPROC001` | [`cli-typed-framework`](rules/process/cli-typed-framework/README.md) | CES-67 | Python: `argparse`, `click` and `sys.argv` |
 | `BT001`–`BT003` | `io-error`, `unused-suppression`, `invalid-suppression` | | the run and the suppressions |
+| `BT004` | [`external-config`](rules/botica/external-config/README.md) | | the files of configuration that the active external rules name |
 
-`BTARCH003`–`BTARCH005` and `BTFAST002`–`BTFAST004` have the status `preview` and are off by
-default: they run only with `preview = true` and when you select them.
+`BTARCH003`–`BTARCH005`, `BTFAST002`–`BTFAST004` and `BTSTRUC006` have the status `preview` and
+are off by default: they run only with `preview = true` and when you select them.
+
+Another tool enforces an external rule (`kind = "external"`) through its configuration. The rule
+names the tool, the address of its documentation and, in `config/<file>.toml` of its folder,
+the fragment of configuration that goes into `<file>.toml` at the root of the project.
+`external-config` reports that file, on every run, when an active external rule finds its fragment
+missing.
 
 The rules written in ast-grep's YAML run too, unless you pass `--no-astgrep`. Each rule has a
 README with its directive, its reasons and how to silence it.

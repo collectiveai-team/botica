@@ -277,8 +277,20 @@ fn a_catalog_directory_is_checked_rule_by_rule_in_name_order() {
         ("botica", "quiet-rule", good()),
     ] {
         let rule = rules.join(family).join(slug);
-        write(&rule, "rule.toml", "id = \"x\"\n");
+        write(
+            &rule,
+            "rule.toml",
+            "id = \"x\"\n[[implementations]]\nkind = \"external\"\n\n\
+             [[implementations]]\nkind = \"native\"\n",
+        );
         lay_out(&rule, &fixtures);
+    }
+    for (slug, kind) in [("by-a-tool", "external"), ("by-a-judge", "judgment")] {
+        write(
+            &rules.join("structure").join(slug),
+            "rule.toml",
+            &format!("id = \"{slug}\"\n[[implementations]]\nkind = \"{kind}\"\n"),
+        );
     }
     write(
         &rules,

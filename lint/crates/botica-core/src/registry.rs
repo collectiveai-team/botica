@@ -3,6 +3,7 @@ use std::fmt;
 
 use botica_catalog::{Catalog, Kind};
 
+use crate::external_config::EXTERNAL_CONFIG;
 use crate::layout::{CodeDir, NoArtifactsInPackage, NoNotebooks, NoTestsInPackage};
 use crate::native::{FileSizeGuard, NativeRule, NoUtils};
 use crate::suppress::{INVALID, UNUSED};
@@ -28,11 +29,12 @@ enum Provider {
         /// it sees and a search for them is only made when one of these is active.
         reads_code_dirs: bool,
     },
-    /// The engine reports these itself while it lints (suppression comments, unreadable files).
+    /// The engine reports these itself while it lints (suppression comments, unreadable files), or
+    /// the run once for the whole project (`external-config`).
     Engine,
 }
 
-const NATIVES: [(&str, Provider); 8] = [
+const NATIVES: [(&str, Provider); 9] = [
     (
         "file-size-guard",
         Provider::Rule {
@@ -71,6 +73,7 @@ const NATIVES: [(&str, Provider); 8] = [
     (IO_ERROR, Provider::Engine),
     (UNUSED, Provider::Engine),
     (INVALID, Provider::Engine),
+    (EXTERNAL_CONFIG, Provider::Engine),
 ];
 
 pub fn uses_code_dirs(slug: &str) -> bool {

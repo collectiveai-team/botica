@@ -16,7 +16,7 @@ pub use issue::{CatalogError, CatalogIssue};
 pub use load::{Catalog, SourceFile, HISTORY_FILE, OWN_RULES_DIR};
 pub use model::{
     Event, Family, Implementation, Kind, Lifecycle, Needs, OptionSpec, OptionType, Rule, RunOn,
-    Runtime, Scope, Severity, Status, When,
+    Runtime, Scope, Severity, Status, When, CONFIG_DIR,
 };
 pub use question::{BooleanCriteria, Choices, Question};
 pub use readme::Section;

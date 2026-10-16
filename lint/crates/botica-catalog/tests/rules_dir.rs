@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use botica_catalog::{Catalog, OWN_RULES_DIR};
+use botica_catalog::{Catalog, Kind, OWN_RULES_DIR};
 
 fn rules_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../rules")
@@ -80,9 +80,13 @@ fn the_linters_own_rules_have_no_family() {
 }
 
 #[test]
-fn every_rule_has_valid_and_invalid_fixtures() {
+fn every_rule_that_botica_or_a_judge_evaluates_has_valid_and_invalid_fixtures() {
     let catalog = embedded();
-    for rule in catalog.rules() {
+    for rule in catalog
+        .rules()
+        .iter()
+        .filter(|rule| !rule.is_external_only())
+    {
         let family = rule.family.as_deref().unwrap_or(OWN_RULES_DIR);
         let fixtures = rules_dir().join(family).join(&rule.id).join("fixtures");
         for kind in ["valid", "invalid"] {
@@ -105,6 +109,7 @@ fn the_message_of_an_ast_grep_rule_with_a_standard_carries_its_code_and_slug() {
         for yaml in rule
             .implementations
             .iter()
+            .filter(|implementation| implementation.kind == Kind::AstGrep)
             .filter_map(|implementation| implementation.source.as_deref())
         {
             let expected = format!("message: \"{standard} ({}):", rule.id);

@@ -1,0 +1,10 @@
+{
+  "diagnostics": [
+    {
+      "path": "prek.toml",
+      "severity": "error",
+      "range": null,
+      "message": "prek.toml lacks the configuration of complexipy that `cognitive-complexity` (CES-110) needs: `botica explain cognitive-complexity` shows it"
+    }
+  ]
+}

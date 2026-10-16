@@ -1,0 +1,15 @@
+id = "cognitive-complexity"
+code = "BTSTRUC006"
+standard = "CES-110"
+summary = "A Python function has a cognitive complexity under 15"
+status = "preview"
+tags = ["complexity"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["python"]
+tool = "complexipy"
+docs = "https://rohaquinlop.github.io/complexipy/"
+config = "config/prek.toml"

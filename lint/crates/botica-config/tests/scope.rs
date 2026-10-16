@@ -27,6 +27,20 @@ fn catalog() -> Catalog {
             text: "## Directive\n\nd\n\n## Why\n\nw\n\n## Do\n\ndo\n\n## Don\'t\n\ndont\n\n## Suppression\n\ns\n".into(),
         });
     }
+    files.push(SourceFile {
+        path: "structure/by-a-tool/rule.toml".into(),
+        text: "id = \"by-a-tool\"\ncode = \"BTSTRUC003\"\nsummary = \"s\"\nstatus = \"stable\"\n\
+               default-enabled = true\ndefault-severity = \"error\"\n[[implementations]]\n\
+               kind = \"external\"\nlanguages = [\"python\"]\ntool = \"complexipy\"\n\
+               docs = \"https://rohaquinlop.github.io/complexipy/\"\n"
+            .into(),
+    });
+    files.push(SourceFile {
+        path: "structure/by-a-tool/README.md".into(),
+        text: "## Directive\n\nd\n\n## Why\n\nw\n\n## Tool\n\nt\n\n## Configuration\n\nc\n\n\
+               ## Do\n\ndo\n\n## Don\'t\n\ndont\n\n## Suppression\n\ns\n"
+            .into(),
+    });
     Catalog::from_files(&files).unwrap_or_else(|error| panic!("catalog:\n{error}"))
 }
 
@@ -47,13 +61,16 @@ fn active(scope: Option<Scope>) -> (Vec<String>, Resolution) {
 
 #[test]
 fn without_a_scope_every_rule_runs() {
-    assert_eq!(active(None).0, ["per-file", "whole-project"]);
+    assert_eq!(active(None).0, ["by-a-tool", "per-file", "whole-project"]);
 }
 
 #[test]
-fn a_scope_keeps_only_the_rules_of_that_scope() {
-    assert_eq!(active(Some(Scope::File)).0, ["per-file"]);
-    assert_eq!(active(Some(Scope::Project)).0, ["whole-project"]);
+fn a_scope_keeps_only_the_rules_of_that_scope_and_those_that_lint_does_not_run() {
+    assert_eq!(active(Some(Scope::File)).0, ["by-a-tool", "per-file"]);
+    assert_eq!(
+        active(Some(Scope::Project)).0,
+        ["by-a-tool", "whole-project"]
+    );
 }
 
 #[test]

@@ -155,6 +155,21 @@ fn a_rule_of_botica_itself_has_no_family_and_a_rule_without_a_standard_has_no_ce
 }
 
 #[test]
+fn the_page_of_an_external_rule_names_its_tool_with_the_address_of_its_documentation() {
+    let site = exported(&workdir("external"));
+
+    let text = page(&site, "structure/btstruc006-cognitive-complexity.md");
+
+    assert!(
+        text.contains(
+            "\nFamily: structure · Standard: CES-110 · Languages: python · \
+             Tool: [complexipy](https://rohaquinlop.github.io/complexipy/)\n"
+        ),
+        "{text}"
+    );
+}
+
+#[test]
 fn a_preview_rule_says_it_is_off_by_default_and_how_to_run_it() {
     let site = exported(&workdir("preview"));
 

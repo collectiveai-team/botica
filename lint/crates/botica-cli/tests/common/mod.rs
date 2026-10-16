@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+pub mod new_rule;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};

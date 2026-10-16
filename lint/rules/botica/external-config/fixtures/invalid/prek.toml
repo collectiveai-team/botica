@@ -1,0 +1,7 @@
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "deptry"
+entry = "uvx deptry ."
+language = "system"

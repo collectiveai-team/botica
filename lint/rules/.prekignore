@@ -1,0 +1,3 @@
+# The prek.toml files of the catalog are fragments of external rules and fixtures of
+# external-config, not projects of prek. prek reads this file for directories only.
+*/

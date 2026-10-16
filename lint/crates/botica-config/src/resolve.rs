@@ -132,7 +132,8 @@ impl Resolution {
     }
 
     /// Keeps active only the rules of this scope (`None` keeps them all). A rule that was not
-    /// active keeps the reason it had.
+    /// active keeps the reason it had, and a rule with no scope (`botica lint` does not run it: a
+    /// judge or another tool does) stays as it is.
     pub fn only_scope(mut self, scope: Option<Scope>) -> Self {
         let Some(scope) = scope else {
             return self;
@@ -142,7 +143,7 @@ impl Resolution {
             Scope::Project => "project",
         };
         for entry in self.entries.iter_mut().filter(|entry| entry.active) {
-            if entry.rule.scope != Some(scope) {
+            if entry.rule.scope.is_some_and(|own| own != scope) {
                 entry.active = false;
                 entry.reason = Reason::OutOfScope(name.to_owned());
             }

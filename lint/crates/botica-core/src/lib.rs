@@ -1,6 +1,7 @@
 mod diagnostic;
 mod document;
 mod engine;
+pub mod external_config;
 mod layout;
 mod native;
 pub mod postprocess;

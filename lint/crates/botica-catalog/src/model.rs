@@ -51,6 +51,7 @@ pub enum Kind {
     AstGrep,
     Extension,
     Judgment,
+    External,
 }
 
 /// When a judge evaluates a judgment rule: on each edit of a file, at the end of a turn of an
@@ -102,9 +103,30 @@ pub struct Implementation {
     #[serde(default)]
     pub covered_by: Vec<String>,
     pub why_not_deterministic: Option<String>,
-    /// The text of `file`, read by the catalog when it loads (never written in `rule.toml`).
+    /// The fields of an external implementation: the tool that enforces the rule, the address of
+    /// its documentation, its codes, and the fragment of configuration it needs,
+    /// `config/<file>.toml`.
+    pub tool: Option<String>,
+    pub docs: Option<String>,
+    #[serde(default)]
+    pub codes: Vec<String>,
+    pub config: Option<String>,
+    /// The text of `file` or of `config`, read by the catalog when it loads (never written in
+    /// `rule.toml`).
     #[serde(skip)]
     pub source: Option<String>,
+}
+
+/// The folder of a rule that holds the fragments of configuration of its external
+/// implementations.
+pub const CONFIG_DIR: &str = "config/";
+
+impl Implementation {
+    /// The file of the project that the fragment of `config` goes into, from the root of the
+    /// project: `config/prek.toml` goes into `prek.toml`.
+    pub fn target(&self) -> Option<&str> {
+        self.config.as_deref()?.strip_prefix(CONFIG_DIR)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -189,6 +211,23 @@ impl Rule {
         self.implementations
             .iter()
             .any(|implementation| implementation.kind == Kind::Judgment)
+    }
+
+    /// Whether another tool enforces the whole rule: every implementation is of kind `external`,
+    /// so `botica lint` runs none of it.
+    pub fn is_external_only(&self) -> bool {
+        !self.implementations.is_empty()
+            && self
+                .implementations
+                .iter()
+                .all(|implementation| implementation.kind == Kind::External)
+    }
+
+    /// Whether another tool enforces the rule, in one language at least.
+    pub fn has_external(&self) -> bool {
+        self.implementations
+            .iter()
+            .any(|implementation| implementation.kind == Kind::External)
     }
 
     pub fn status_of(&self, implementation: &Implementation) -> Status {

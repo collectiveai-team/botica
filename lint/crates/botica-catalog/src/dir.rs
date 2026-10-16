@@ -26,7 +26,8 @@ fn push(files: &mut Vec<SourceFile>, root: &Path, path: &Path) -> io::Result<()>
 }
 
 /// The files of the catalog under `dir` that `build.rs` embeds in the binary: `history.toml`, the
-/// `family.toml` of each family, and the `rule.toml`, `README.md` and YAML of each rule.
+/// `family.toml` of each family, and the `rule.toml`, `README.md`, YAML and `config/*.toml` of
+/// each rule.
 pub fn read_files(dir: &Path) -> io::Result<Vec<SourceFile>> {
     let mut files = Vec::new();
     let history = dir.join(HISTORY_FILE);
@@ -47,6 +48,14 @@ pub fn read_files(dir: &Path) -> io::Result<Vec<SourceFile>> {
             for file in sorted(&rule)? {
                 if file.is_file() && file.extension().is_some_and(|ext| ext == "yml") {
                     push(&mut files, dir, &file)?;
+                }
+            }
+            let config = rule.join("config");
+            if config.is_dir() {
+                for file in sorted(&config)? {
+                    if file.is_file() && file.extension().is_some_and(|ext| ext == "toml") {
+                        push(&mut files, dir, &file)?;
+                    }
                 }
             }
         }

@@ -60,6 +60,10 @@ struct ImplementationView<'a> {
     question: Option<&'a Question>,
     covered_by: &'a [String],
     why_not_deterministic: Option<&'a str>,
+    tool: Option<&'a str>,
+    docs: Option<&'a str>,
+    codes: &'a [String],
+    config: Option<&'a str>,
 }
 
 impl<'a> RuleView<'a> {
@@ -110,6 +114,10 @@ impl<'a> ImplementationView<'a> {
             question: implementation.question.as_ref(),
             covered_by: &implementation.covered_by,
             why_not_deterministic: implementation.why_not_deterministic.as_deref(),
+            tool: implementation.tool.as_deref(),
+            docs: implementation.docs.as_deref(),
+            codes: &implementation.codes,
+            config: implementation.config.as_deref(),
         }
     }
 }

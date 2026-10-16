@@ -59,6 +59,12 @@ fn main() {
                     push(&mut table, &rules_dir, &file);
                 }
             }
+            // The fragments of configuration of the external implementations (`config`).
+            for file in sorted_entries(&rule.join("config")) {
+                if file.is_file() && file.extension().is_some_and(|e| e == "toml") {
+                    push(&mut table, &rules_dir, &file);
+                }
+            }
         }
     }
     table.push_str("];\n");

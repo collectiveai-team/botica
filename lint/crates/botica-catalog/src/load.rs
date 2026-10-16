@@ -30,6 +30,8 @@ struct RuleEntry<'a> {
     readme: Option<&'a SourceFile>,
     /// The YAML files of the implementations.
     sources: Vec<&'a SourceFile>,
+    /// The fragments of configuration of the external implementations, `config/<file>.toml`.
+    configs: Vec<&'a SourceFile>,
 }
 
 #[derive(Default)]
@@ -112,9 +114,12 @@ fn scan<'a>(
             [dir, slug, name] if name.ends_with(".yml") => {
                 dirs.entry(dir).or_default().rules.entry(slug).or_default().sources.push(file);
             }
+            [dir, slug, "config", name] if name.ends_with(".toml") => {
+                dirs.entry(dir).or_default().rules.entry(slug).or_default().configs.push(file);
+            }
             _ => issues.push(issue(
                 file.path.as_str(),
-                "unexpected file: expected history.toml, <family>/family.toml or <family>/<slug>/{rule.toml,README.md,<implementation>.yml}",
+                "unexpected file: expected history.toml, <family>/family.toml or <family>/<slug>/{rule.toml,README.md,<implementation>.yml,config/<file>.toml}",
             )),
         }
     }
@@ -214,6 +219,7 @@ fn load_rules(
             };
             issues.extend(check_rule(&toml_file.path, slug, &rule, family));
             attach_sources(&base, &mut rule, &files.sources, issues);
+            attach_configs(&base, &mut rule, &files.configs, issues);
             rule.family = family.map(|f| f.name.clone());
             rule.readme = readme.text.clone();
             issues.extend(check_readme(&readme.path, &rule));
@@ -281,14 +287,58 @@ fn attach_sources(
         }
         named.push(name);
     }
-    for source in sources {
+    reject_unnamed(base, sources, &named, "file", issues);
+}
+
+/// Gives each external implementation the text of the fragment that `config` names, and rejects
+/// the fragments that are named by nobody, the ones that are missing and those that are not TOML.
+fn attach_configs(
+    base: &str,
+    rule: &mut Rule,
+    configs: &[&SourceFile],
+    issues: &mut Vec<CatalogIssue>,
+) {
+    let mut named = Vec::new();
+    for implementation in &mut rule.implementations {
+        let Some(name) = implementation.config.clone() else {
+            continue;
+        };
+        let path = format!("{base}/{name}");
+        match configs.iter().find(|config| config.path == path) {
+            Some(config) => {
+                if let Err(error) = config.text.parse::<toml::Table>() {
+                    issues.push(issue(path, error.message().to_owned()));
+                }
+                implementation.source = Some(config.text.clone());
+            }
+            None => issues.push(issue(
+                path,
+                format!(
+                    "`{name}` is named by an implementation of `{}` and is missing",
+                    rule.id
+                ),
+            )),
+        }
+        named.push(name);
+    }
+    reject_unnamed(base, configs, &named, "config", issues);
+}
+
+fn reject_unnamed(
+    base: &str,
+    files: &[&SourceFile],
+    named: &[String],
+    field: &str,
+    issues: &mut Vec<CatalogIssue>,
+) {
+    for file in files {
         let used = named
             .iter()
-            .any(|name| source.path == format!("{base}/{name}"));
+            .any(|name| file.path == format!("{base}/{name}"));
         if !used {
             issues.push(issue(
-                source.path.as_str(),
-                "no implementation names this file with `file`",
+                file.path.as_str(),
+                format!("no implementation names this file with `{field}`"),
             ));
         }
     }

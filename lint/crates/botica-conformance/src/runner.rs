@@ -52,12 +52,14 @@ impl Runner {
     }
 
     /// Checks every rule of a catalog directory (`<family>/<slug>/rule.toml`, the slug being the
-    /// rule's ID), in slug order.
+    /// rule's ID) that `botica lint` runs, in slug order. A judge or another tool evaluates the
+    /// rules whose implementations are all of kind `judgment` or `external`.
     pub fn check_catalog(&self, rules_dir: &Path) -> Result<Vec<Outcome>> {
         let mut rules = Vec::new();
         for family in subdirectories(rules_dir)? {
             for rule in subdirectories(&family)? {
-                if rule.join("rule.toml").is_file() {
+                let toml = rule.join("rule.toml");
+                if toml.is_file() && runs_in_lint(&toml)? {
                     rules.push(rule);
                 }
             }
@@ -217,6 +219,23 @@ fn read_expected(path: &Path) -> Result<Vec<FixtureDiagnostic>> {
         .iter()
         .map(FixtureDiagnostic::from_json)
         .collect()
+}
+
+/// Whether one implementation of the rule is of a kind that `botica lint` runs.
+fn runs_in_lint(rule_toml: &Path) -> Result<bool> {
+    let text =
+        fs::read_to_string(rule_toml).with_context(|| format!("read {}", rule_toml.display()))?;
+    let rule: toml::Table = text
+        .parse()
+        .with_context(|| format!("{} is not TOML", rule_toml.display()))?;
+    let implementations = rule
+        .get("implementations")
+        .and_then(toml::Value::as_array)
+        .map_or(&[][..], Vec::as_slice);
+    Ok(implementations.iter().any(|implementation| {
+        let kind = implementation.get("kind").and_then(toml::Value::as_str);
+        !matches!(kind, Some("judgment" | "external"))
+    }))
 }
 
 fn subdirectories(dir: &Path) -> Result<Vec<PathBuf>> {
