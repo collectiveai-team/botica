@@ -73,3 +73,37 @@ pub fn issues(parts: Vec<Vec<SourceFile>>) -> String {
         .expect_err("the catalog should be rejected")
         .to_string()
 }
+
+/// A README with the sections of a judgment rule.
+pub const JUDGMENT_README: &str = "## Directive\n\nd\n\n## Why\n\nw\n\n## Flag\n\nf\n\n\
+## Do not flag\n\nn\n\n## Confirm\n\nc\n\n## Do\n\ndo\n\n## Don't\n\ndont\n\n\
+## Suppression\n\ns\n";
+
+/// The root of the `rule.toml` of `test-through-interface`, a judgment rule of `testing`.
+pub const JUDGMENT_HEAD: &str = "id = \"test-through-interface\"\ncode = \"BTTEST001\"\n\
+summary = \"Tests assert behaviour through the public seam\"\nstatus = \"preview\"\n\
+default-enabled = false\ndefault-severity = \"warning\"\n";
+
+/// The fields of the root of a judgment implementation, before the table of its question.
+pub const JUDGMENT_FIELDS: &str =
+    "[[implementations]]\nkind = \"judgment\"\nlanguages = [\"python\"]\nwhen = \"edit\"\n\
+why-not-deterministic = \"Whether a seam is public depends on the design of the module.\"\n";
+
+/// A boolean question, the table after the fields of a judgment implementation.
+pub const BOOLEAN_QUESTION: &str = "\n[implementations.question]\ntype = \"boolean\"\n\
+instructions = \"Does the test assert through the public seam?\"\n";
+
+pub fn judgment(head_extra: &str, implementation: &str) -> Vec<SourceFile> {
+    vec![
+        family("testing", "TEST"),
+        file(
+            "testing/test-through-interface/rule.toml",
+            &format!("{JUDGMENT_HEAD}{head_extra}\n{implementation}"),
+        ),
+        file("testing/test-through-interface/README.md", JUDGMENT_README),
+    ]
+}
+
+pub fn judgment_implementation() -> String {
+    format!("{JUDGMENT_FIELDS}{BOOLEAN_QUESTION}")
+}

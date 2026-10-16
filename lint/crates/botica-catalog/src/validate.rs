@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
 use crate::issue::{issue, CatalogIssue};
-use crate::model::{Choices, Event, Family, Kind, Question, Rule, Status};
+use crate::model::{Event, Family, Kind, Rule, Status};
+use crate::question::check_question;
 
 pub(crate) const HEADER: &str = "BT";
 
@@ -161,75 +162,6 @@ fn check_judgment(rule: &Rule, add: &mut impl FnMut(String)) {
         for message in check_question(question) {
             add(format!("implementation {index}: question: {message}"));
         }
-    }
-}
-
-const MAX_INSTRUCTIONS: usize = 2000;
-const MAX_CRITERION: usize = 1000;
-
-/// What `@coldtea/abide-schema` 0.0.5 rejects in a question.
-fn check_question(question: &Question) -> Vec<String> {
-    let mut found = Vec::new();
-    let length = question.instructions().chars().count();
-    if !(1..=MAX_INSTRUCTIONS).contains(&length) {
-        found.push(format!(
-            "`instructions` has 1 to {MAX_INSTRUCTIONS} characters"
-        ));
-    }
-    if question
-        .criteria()
-        .iter()
-        .any(|text| text.chars().count() > MAX_CRITERION)
-    {
-        found.push(format!(
-            "a criterion has at most {MAX_CRITERION} characters"
-        ));
-    }
-    match question {
-        Question::Boolean { .. } => {}
-        Question::Choice {
-            criteria,
-            violating,
-            ..
-        } => check_choice(criteria, violating, &mut found),
-        Question::Score {
-            criteria,
-            violating_from,
-            ..
-        } => {
-            if criteria.len() < 2 {
-                found.push("a score question needs at least two levels".to_owned());
-            }
-            if *violating_from < 1 || *violating_from >= criteria.len() {
-                found.push(
-                    "`violatingFrom` is 1 or more and points at one of the levels".to_owned(),
-                );
-            }
-        }
-    }
-    found
-}
-
-fn check_choice(criteria: &Choices, violating: &[String], found: &mut Vec<String>) {
-    let options = &criteria.0;
-    if options.len() < 2 {
-        found.push("a choice question needs at least two options".to_owned());
-    }
-    if options.iter().any(|(name, _)| name.is_empty()) {
-        found.push("an option of a choice needs a name".to_owned());
-    }
-    if violating.is_empty() {
-        found.push("a choice question needs at least one violating option".to_owned());
-    }
-    for name in violating {
-        if !options.iter().any(|(option, _)| option == name) {
-            found.push(format!(
-                "violating option `{name}` is not one of the criteria"
-            ));
-        }
-    }
-    if violating.len() >= options.len() {
-        found.push("at least one option must be compliant".to_owned());
     }
 }
 

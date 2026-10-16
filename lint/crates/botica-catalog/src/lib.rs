@@ -4,6 +4,7 @@ mod embedded;
 mod issue;
 mod load;
 mod model;
+mod question;
 mod readme;
 mod validate;
 
@@ -14,7 +15,8 @@ pub use ecosystem::Ecosystem;
 pub use issue::{CatalogError, CatalogIssue};
 pub use load::{Catalog, SourceFile, HISTORY_FILE, OWN_RULES_DIR};
 pub use model::{
-    BooleanCriteria, Choices, Event, Family, Implementation, Kind, Lifecycle, Needs, OptionSpec,
-    OptionType, Question, Rule, RunOn, Runtime, Scope, Severity, Status, When,
+    Event, Family, Implementation, Kind, Lifecycle, Needs, OptionSpec, OptionType, Rule, RunOn,
+    Runtime, Scope, Severity, Status, When,
 };
+pub use question::{BooleanCriteria, Choices, Question};
 pub use readme::Section;
