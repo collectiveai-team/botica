@@ -7,6 +7,7 @@ members = [
     "crates/botica-conformance",
     "crates/botica-ext",
     "crates/botica-core",
+    "crates/botica-lsp",
     "crates/botica-cli",
     "sdk/rust",
 ]

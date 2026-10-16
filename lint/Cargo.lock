@@ -248,6 +248,7 @@ dependencies = [
  "botica-conformance",
  "botica-core",
  "botica-ext",
+ "botica-lsp",
  "clap",
  "serde",
  "serde_json",
@@ -307,6 +308,14 @@ dependencies = [
 name = "botica-ext-sdk"
 version = "0.9.0"
 dependencies = [
+ "serde_json",
+]
+
+[[package]]
+name = "botica-lsp"
+version = "0.9.0"
+dependencies = [
+ "botica-core",
  "serde_json",
 ]
 

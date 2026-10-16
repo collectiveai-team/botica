@@ -78,6 +78,51 @@ pub struct LintArgs {
     no_subtree_skip: bool,
 }
 
+impl LintArgs {
+    /// The arguments of a run that lints no path: what an editor session builds its engine from.
+    fn for_editor(project: project::ProjectArgs) -> Self {
+        Self {
+            paths: Vec::new(),
+            project,
+            output_format: OutputFormat::Text,
+            force_exclude: false,
+            statistics: false,
+            exit_zero: false,
+            ext: None,
+            judged: None,
+            batch: 256,
+            no_astgrep: false,
+            no_prefilter: false,
+            cache_dir: None,
+            cache: false,
+            timings: false,
+            extra_rules: None,
+            no_regions: false,
+            no_subtree_skip: false,
+        }
+    }
+}
+
+/// What lints the buffers of an editor: the engine of a run, built once. It runs the rules of the
+/// engine (native and ast-grep); the extension rules are processes of a whole run and are not
+/// started.
+pub struct Editor {
+    setup: Setup,
+}
+
+impl Editor {
+    pub fn build(project: project::ProjectArgs) -> Result<Self> {
+        Ok(Self {
+            setup: Setup::build(&LintArgs::for_editor(project))?,
+        })
+    }
+
+    /// The findings in `text`, the content of the file `path`, given from the working directory.
+    pub fn lint(&self, path: &str, text: &str) -> Vec<Diagnostic> {
+        self.setup.engine.lint_source(path, text)
+    }
+}
+
 #[derive(Clone, Copy, ValueEnum)]
 enum OutputFormat {
     Text,

@@ -15,6 +15,7 @@ mod rules_new;
 mod rules_new_extension;
 mod rules_new_target;
 mod rules_test;
+mod server_cmd;
 mod timings;
 
 use clap::{Parser, Subcommand};
@@ -34,6 +35,8 @@ enum Command {
     Rules(rules_cmd::RulesArgs),
     /// Say what a rule is, how it is configured here and why it is or is not active.
     Explain(explain_cmd::ExplainArgs),
+    /// Serve the findings of the rules to an editor, over the Language Server Protocol on stdio.
+    Server(server_cmd::ServerArgs),
 }
 
 fn main() -> ExitCode {
@@ -41,6 +44,7 @@ fn main() -> ExitCode {
         Command::Lint(args) => lint_cmd::run(args),
         Command::Rules(args) => rules_cmd::run(&args),
         Command::Explain(args) => explain_cmd::run(&args).map(|()| ExitCode::SUCCESS),
+        Command::Server(args) => server_cmd::run(args).map(|()| ExitCode::SUCCESS),
     };
     match result {
         Ok(code) => code,

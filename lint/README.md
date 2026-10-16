@@ -23,6 +23,8 @@ botica lint --select file-size-guard,no-utils
 botica lint --output-format json   # text (default), json, sarif or github
 botica lint --judged judge.sarif   # the findings of a judge, filtered by the configuration and comments
 botica rules                   # which rules are active, and why (--all adds the inactive ones)
+botica server                  # the Language Server Protocol on stdio: the findings for the buffers of an
+                               # editor (native and pattern rules; extension rules do not run), paths from the working directory
 botica explain no-notebooks    # what a rule is and how it is configured here
 botica rules export --format markdown --output site   # one page per rule of the catalog, and an index;
                                # the catalogs of .botica/rules get a folder and an index section each
