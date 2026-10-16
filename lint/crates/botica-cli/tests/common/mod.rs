@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 pub mod new_rule;
+pub mod node;
 pub mod project_catalog;
 
 use std::fs;

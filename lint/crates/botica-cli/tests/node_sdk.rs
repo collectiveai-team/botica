@@ -50,13 +50,6 @@ fn sdk_entry() -> PathBuf {
         .expect("the SDK is in lint/sdk/node")
 }
 
-fn node_is_installed() -> bool {
-    Command::new("node")
-        .arg("--version")
-        .output()
-        .is_ok_and(|output| output.status.success())
-}
-
 /// Runs the script with `node` and gives it the requests while its stdin stays open: the replies
 /// are one line for each request, and the script has to end by itself after the last.
 fn talk(script: &Path, requests: &[&str]) -> Vec<String> {
@@ -122,8 +115,7 @@ const SHUTDOWN: &str = r#"{"jsonrpc":"2.0","id":3,"method":"shutdown"}"#;
 
 #[test]
 fn a_script_with_the_sdk_answers_the_protocol_and_ends_after_shutdown() {
-    if !node_is_installed() {
-        eprintln!("node is not installed: skipped");
+    if !common::node::installed() {
         return;
     }
     let dir = lay_out("protocol");
@@ -151,8 +143,7 @@ fn a_script_with_the_sdk_answers_the_protocol_and_ends_after_shutdown() {
 
 #[test]
 fn offsets_are_bytes_and_not_characters() {
-    if !node_is_installed() {
-        eprintln!("node is not installed: skipped");
+    if !common::node::installed() {
         return;
     }
     let dir = lay_out("bytes");
@@ -170,8 +161,7 @@ fn offsets_are_bytes_and_not_characters() {
 
 #[test]
 fn an_unknown_method_gets_an_error_and_the_script_goes_on() {
-    if !node_is_installed() {
-        eprintln!("node is not installed: skipped");
+    if !common::node::installed() {
         return;
     }
     let dir = lay_out("unknown");
@@ -193,8 +183,7 @@ fn an_unknown_method_gets_an_error_and_the_script_goes_on() {
 
 #[test]
 fn botica_lint_runs_a_rule_written_with_the_sdk() {
-    if !node_is_installed() {
-        eprintln!("node is not installed: skipped");
+    if !common::node::installed() {
         return;
     }
     let dir = lay_out("lint");

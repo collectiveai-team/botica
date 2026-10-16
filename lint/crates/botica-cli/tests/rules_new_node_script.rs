@@ -10,17 +10,9 @@ use common::{command, project_in, stderr, write};
 
 const CATALOG: &str = ".botica/rules/acme";
 
-fn node_is_installed() -> bool {
-    Command::new("node")
-        .arg("--version")
-        .output()
-        .is_ok_and(|output| output.status.success())
-}
-
 #[test]
 fn the_node_script_answers_the_protocol_and_exits_when_it_is_asked_to_shut_down() {
-    if !node_is_installed() {
-        eprintln!("node is not installed: skipped");
+    if !common::node::installed() {
         return;
     }
     let dir = project_in("rules-new-node-script", "exits", Some(""));
