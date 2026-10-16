@@ -162,9 +162,6 @@ describes one, and the hook reports each finding with its slug and its message.
 - **CES-109 · dependency hygiene** `[prek]` — declared deps must match the import graph
   (`deptry`); `scaffolding/templates`/`skills` excluded (bundled payload). →
   `@standards/CES/109-dep-hygiene-deptry.md`
-- **CES-110 · cognitive complexity** `[prek]` — cognitive-complexity ceiling of 15 per function
-  (`complexipy`), distinct from ruff's cyclomatic `C90`. →
-  `@standards/CES/110-cognitive-complexity-complexipy.md`
 - **CES-111 · randomize test order** `[dependency]` — `pytest-randomly` runs every suite in a
   random, reproducibly-seeded order. → `@standards/CES/111-test-order-randomization-pytest-randomly.md`
 - **CES-113 · dependency review on PRs** `[ci]` — `dependency-review-action`, summary-only, not a

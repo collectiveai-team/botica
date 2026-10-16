@@ -58,9 +58,6 @@ describes one, and the hook reports each finding with its slug and its message.
 - **CES-109 · dependency hygiene** `[prek]` — declared `pyproject.toml` dependencies must match
   the actual import graph (no unused/missing/misplaced deps), via `deptry`. Slug:
   `dep-hygiene-deptry`.
-- **CES-110 · cognitive complexity** `[prek]` — a function's cognitive-complexity score (nesting
-  depth + control-flow breaks, distinct from ruff's cyclomatic `C90`) stays under 15, via
-  `complexipy`. Slug: `cognitive-complexity-complexipy`.
 - **CES-111 · randomize test order** `[dependency]` — `pytest-randomly` runs every test suite in
   a random, reproducibly-seeded order to catch state-leaking/order-dependent tests; activates
   automatically, no separate hook. Slug: `test-order-randomization-pytest-randomly`.
