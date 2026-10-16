@@ -20,6 +20,8 @@ pub fn suppression_policy(resolution: &Arc<Resolution>) -> Policy {
             .collect();
         policy = if entry.rule.is_judgment() {
             policy.with_judgment_rule(&entry.rule.id, &spellings)
+        } else if entry.rule.has_extension() {
+            policy.with_extension_rule(&entry.rule.id, &spellings)
         } else {
             policy.with_rule(&entry.rule.id, &spellings)
         };

@@ -66,6 +66,46 @@ pub(crate) fn attach_sources(
     reject_unnamed(base, sources, &named, "file", issues);
 }
 
+/// Whether a file of the folder of a rule is a script of an extension: Python or Node.
+pub(crate) fn is_script(name: &str) -> bool {
+    [".py", ".js", ".mjs"]
+        .iter()
+        .any(|extension| name.ends_with(extension))
+}
+
+/// Gives each extension that names a script the text of it, and rejects the ones whose script is
+/// missing. The other scripts of the folder are the modules that the named ones import.
+pub(crate) fn attach_scripts(
+    base: &str,
+    rule: &mut Rule,
+    scripts: &[&SourceFile],
+    issues: &mut Vec<CatalogIssue>,
+) {
+    for implementation in &mut rule.implementations {
+        if implementation.kind != Kind::Extension {
+            continue;
+        }
+        let Some(name) = implementation
+            .file
+            .clone()
+            .filter(|name| !name.contains('/'))
+        else {
+            continue;
+        };
+        let path = format!("{base}/{name}");
+        match scripts.iter().find(|script| script.path == path) {
+            Some(script) => implementation.source = Some(script.text.clone()),
+            None => issues.push(issue(
+                path,
+                format!(
+                    "`{name}` is named by an implementation of `{}` and is missing",
+                    rule.id
+                ),
+            )),
+        }
+    }
+}
+
 /// Gives each external implementation the text of the fragment that `config` names, and rejects
 /// the fragments that are named by nobody, the ones that are missing and those that are not TOML.
 pub(crate) fn attach_configs(

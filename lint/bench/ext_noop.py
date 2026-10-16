@@ -4,9 +4,9 @@ import sys
 from collections.abc import Iterator
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "sdk" / "python"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "python"))
 
-from botica_ext import rule, serve
+from botica.sdk import rule, serve
 
 
 @rule("bench/noop", ["python"])

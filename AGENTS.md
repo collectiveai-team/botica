@@ -13,7 +13,7 @@
   reported under `edits`, not `clean_adds`. Do not widen it, and do not remove it
   as an invariant violation — see `docs/adr/0001-scoped-unignore-op.md`.
 - `lint/` — the `botica` Rust workspace (`botica lint`, more subcommands later), published to
-  PyPI as `botica` (binary-only wheels) and used by prek through the `botica-pre-commit` mirror.
+  PyPI as `botica` (wheels with the binary and the Python module `botica.sdk`) and used by prek through the `botica-pre-commit` mirror.
   It has its own README (`lint/README.md`), release runbook (`docs/botica-release.md`) and design
   (`docs/adr/0003-botica-lint-architecture.md`). Ruff, pyrefly and deptry skip it; `ci.yml` runs
   its fmt, clippy and tests. No pipeline in `.github/workflows/` is specific to `lint`.

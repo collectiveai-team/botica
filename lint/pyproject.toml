@@ -18,7 +18,13 @@ classifiers = [
     "Topic :: Software Development :: Quality Assurance",
 ]
 
+# `botica[sdk]` is what an extension script declares to write its rule with `botica.sdk` and to
+# parse with ast-grep.
+[project.optional-dependencies]
+sdk = ["ast-grep-py"]
+
 [tool.maturin]
 bindings = "bin"
 manifest-path = "crates/botica-cli/Cargo.toml"
+python-source = "python"
 strip = true

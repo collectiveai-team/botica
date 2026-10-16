@@ -4,7 +4,7 @@ name: Botica release
 # lint/Cargo.toml ([workspace.package]) and Cargo.lock in sync. v0.1.0 to v0.6.0 are scaffolding's
 # releases: botica starts at 0.7.0. The release does not take "latest" while main still publishes
 # scaffolding releases (the publish job puts the old one back). The file name is the one the PyPI trusted publisher is registered with.
-# Gated on the CI suite and on the repository's own Tests suite. Builds binary-only wheels
+# Gated on the CI suite and on the repository's own Tests suite. Builds wheels with the binary and `botica.sdk`
 # (maturin, bindings = "bin") per platform, attaches them with a .sha256 each to a GitHub Release,
 # and uploads them to PyPI (trusted publishing) when PUBLISH_TO_PYPI is "true".
 

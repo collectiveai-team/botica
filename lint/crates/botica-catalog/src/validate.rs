@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::extension::check_extension;
 use crate::issue::{issue, CatalogIssue};
 use crate::model::{Event, Family, Implementation, Kind, Rule, Status};
 use crate::origin::{check_origin, Origin};
@@ -248,6 +249,7 @@ pub(crate) fn check_rule(
             ));
         }
         check_external(index, implementation, &mut add);
+        check_extension(index, implementation, &mut add);
         check_origin(index, rule, implementation, origin, &mut add);
     }
     found

@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::time::{Duration, Instant};
 
 use botica_core::{walk, Diagnostic, ExtensionRun};
@@ -24,11 +25,33 @@ pub struct Outcome {
     pub time: ExtensionTime,
 }
 
+/// `--ext`: runs the command, which says which languages it reads, over the texts.
 pub fn run(command: &str, sources: &[walk::SourceFile], batch: usize) -> Outcome {
-    let mut time = ExtensionTime::default();
     let argv: Vec<String> = command.split_whitespace().map(str::to_owned).collect();
+    run_with(&argv, None, |run| {
+        let files = sources
+            .iter()
+            .filter_map(|f| Some((f.path.as_str(), f.text()?)));
+        run.lint(files, batch)
+    })
+}
+
+/// A rule of a catalog: runs `argv` from `dir` over the files that the rule applies to, as
+/// `(path, text)`.
+pub fn run_files(argv: &[String], dir: &Path, files: &[(&str, &str)], batch: usize) -> Outcome {
+    run_with(argv, Some(dir), |run| {
+        run.lint_all(files.iter().copied(), batch)
+    })
+}
+
+fn run_with(
+    argv: &[String],
+    dir: Option<&Path>,
+    lint: impl FnOnce(&mut ExtensionRun) -> anyhow::Result<Vec<Diagnostic>>,
+) -> Outcome {
+    let mut time = ExtensionTime::default();
     let started = Instant::now();
-    let started_run = ExtensionRun::start(&argv);
+    let started_run = ExtensionRun::start_in(argv, dir);
     time.start = started.elapsed();
     let mut run = match started_run {
         Ok(run) => run,
@@ -40,11 +63,8 @@ pub fn run(command: &str, sources: &[walk::SourceFile], batch: usize) -> Outcome
             }
         }
     };
-    let files = sources
-        .iter()
-        .filter_map(|f| Some((f.path.as_str(), f.text()?)));
     let linting = Instant::now();
-    let linted = run.lint(files, batch);
+    let linted = lint(&mut run);
     time.lint = linting.elapsed();
     let found = match linted {
         Ok(found) => found,

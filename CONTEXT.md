@@ -79,7 +79,7 @@ _Avoid_: rule, convention, lint rule
 ### Botica
 
 **Botica**:
-The Rust package published on PyPI as `botica` (binary-only wheels), built from `lint/`. `lint` is
+The Rust package published on PyPI as `botica` (wheels with the binary and the Python module `botica.sdk`), built from `lint/`. `lint` is
 its first subcommand and scaffolding will migrate into it, so no pipeline of its own is specific to
 `lint`. See `docs/adr/0003-botica-lint-architecture.md`.
 _Avoid_: botica lint (for the package)

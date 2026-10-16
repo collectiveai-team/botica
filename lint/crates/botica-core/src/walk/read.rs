@@ -1,6 +1,7 @@
 use super::{relative_path, sort, Walked};
 use crate::diagnostic::Diagnostic;
-use crate::engine::{language_of, Engine, Plan};
+use crate::engine::{Engine, Plan};
+use crate::extension_run::language_of;
 use rayon::prelude::*;
 use std::io;
 use std::path::{Path, PathBuf};

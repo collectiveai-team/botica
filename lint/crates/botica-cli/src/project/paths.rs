@@ -2,10 +2,11 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use botica_catalog::{Implementation, Kind, Rule};
 use botica_config::{FileRule, Resolution};
 use botica_core::postprocess::Verdict;
 use botica_core::registry::IO_ERROR;
-use botica_core::{language_of, Exclusion, Inclusion, NativePlanner, Severity};
+use botica_core::{language_of, Exclusion, Inclusion, NativePlanner, PathTest, Severity};
 
 /// A path as the configuration sees it: from the project root, not from where botica runs.
 fn from_root<'p>(prefix: Option<&str>, path: &'p str) -> Cow<'p, str> {
@@ -27,6 +28,33 @@ pub fn planner(
             .filter_map(|file_rule| index.get(file_rule.rule.id.as_str()).copied())
             .collect()
     })
+}
+
+/// The extension implementations that apply to a file, each with its rule: the rule is active
+/// there (its `files`, `ignores` and the overrides of the configuration), and the file is in a
+/// language of the implementation.
+pub fn extensions_at<'r>(
+    resolution: &'r Resolution,
+    prefix: Option<&str>,
+    path: &str,
+) -> Vec<(&'r Rule, &'r Implementation)> {
+    resolution
+        .rules_for(&from_root(prefix, path), language_of(path))
+        .into_iter()
+        .flat_map(|file_rule| {
+            let rule = file_rule.rule;
+            file_rule
+                .implementations
+                .into_iter()
+                .filter(|implementation| implementation.kind == Kind::Extension)
+                .map(move |implementation| (rule, implementation))
+        })
+        .collect()
+}
+
+/// Whether an extension rule reads this file, for the engine to list and read it.
+pub fn extension_paths(resolution: Arc<Resolution>, prefix: Option<String>) -> PathTest {
+    Box::new(move |path| !extensions_at(&resolution, prefix.as_deref(), path).is_empty())
 }
 
 /// What `extend-exclude` leaves out of the walk, or `None` when it names nothing.

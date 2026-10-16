@@ -86,7 +86,7 @@ fn cache_location(args: &LintArgs, project_root: &Path) -> Option<PathBuf> {
 
 pub(super) fn lint_paths(args: &LintArgs, setup: &Setup, root: &Path) -> Result<Linted> {
     let cache_dir = cache_location(args, &setup.project_root);
-    let overlapped = cache_dir.is_none() && args.ext.is_none();
+    let overlapped = cache_dir.is_none() && args.ext.is_none() && !setup.has_extensions;
     let reached = reach(args, setup, root, overlapped);
     let engine = &setup.engine;
     let io_errors = reached.io_errors;

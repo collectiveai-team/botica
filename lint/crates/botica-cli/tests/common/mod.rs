@@ -79,3 +79,4 @@ pub fn stderr(output: &Output) -> String {
 pub fn stdout(output: &Output) -> String {
     String::from_utf8(output.stdout.clone()).expect("UTF-8 output")
 }
+pub mod extension;

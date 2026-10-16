@@ -1,6 +1,6 @@
 # Releasing botica
 
-`botica` is built from the Rust workspace in `lint/` and shipped as binary-only wheels. A tag
+`botica` is built from the Rust workspace in `lint/` and shipped as wheels that carry the binary and the Python module `botica.sdk`. A tag
 `vX.Y.Z` runs `.github/workflows/botica-release.yml` (the file name is the one the PyPI trusted
 publisher is registered with). `v0.1.0` to `v0.6.0` exist from `scaffolding`, so botica starts at
 `0.7.0`. While `main` still publishes `scaffolding` releases, do not cut a `v*` tag there that

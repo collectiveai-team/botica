@@ -141,6 +141,41 @@ The id of a rule is `<catalog>/<slug>` and its code is the code of the catalog, 
 family and 3 digits. The code of a catalog is letters A-Z, does not start with `BT` and is not a
 text prefix of the code of another catalog. A catalog takes rules of every kind but `native`.
 
+A rule of kind `extension` is a program that `botica lint` starts, one process for each active
+rule, in the root of the project. It is sent only the files where the rule applies and answers
+with findings over JSON-RPC (ADR 0003). Its implementation says what runs:
+
+```toml
+[[implementations]]
+kind = "extension"
+runtime = "python"          # python | node | command
+languages = ["python"]
+file = "no-blobs.py"        # python: `uv run --script`; node: `node` (.js or .mjs)
+# command = ["sh", ".botica/rules/acme/structure/no-blobs/check.sh"]   # runtime = "command", no file
+```
+
+A script of the runtime `python` declares its dependencies (PEP 723) and writes its rule with the
+module `botica.sdk` of the wheel `botica`; the extra `botica[sdk]` brings `ast-grep-py`:
+
+```python
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["botica[sdk]"]
+# ///
+from botica.sdk import rule, serve
+
+@rule("acme/no-blobs", ["python"], severity="error")
+def no_blobs(path, text):
+    yield (0, 1, "acme/no-blobs: a finding is a start and an end in bytes, and a message")
+
+if __name__ == "__main__":
+    serve()
+```
+
+A finding with another `rule` than the id of its rule is left out, with a warning on stderr. A
+process that fails stops the run with exit code 2 and the findings of the other rules stay. The
+built-in catalog takes no extension: an extension is a program of the project.
+
 `acme/no-blobs` and `ACMESTRUC001` name a rule and `ACMESTRUC` a family, in `select`, `ignore`,
 `--select` and `--ignore`; `botica explain` takes a rule. `[rules."acme/no-blobs"]` configures it,
 and `# botica: ignore[acme/no-blobs]` or `# noqa: ACMESTRUC001` silences it. A catalog that does

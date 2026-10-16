@@ -28,6 +28,8 @@ pub struct Policy {
     astgrep: HashSet<String>,
     /// Judgment rules: suppressed by file only, with a reason, and never unused.
     judgment: HashSet<String>,
+    /// Rules that an extension runs after the walk: never reported unused.
+    extension: HashSet<String>,
     external: Option<External>,
     /// What the codes in a `noqa` comment start with when they are botica's.
     code_prefixes: Vec<String>,
@@ -52,6 +54,7 @@ impl Policy {
             spellings: HashMap::new(),
             astgrep: HashSet::new(),
             judgment: HashSet::new(),
+            extension: HashSet::new(),
             external: None,
             code_prefixes: vec!["BT".to_owned()],
             compat_ast_grep_ignore: false,
@@ -76,6 +79,14 @@ impl Policy {
     /// A judgment rule a suppression may name: a judge evaluates it, and botica never runs it.
     pub fn with_judgment_rule(mut self, slug: &str, spellings: &[&str]) -> Self {
         self.judgment.insert(slug.to_owned());
+        self.with_rule(slug, spellings)
+    }
+
+    /// A rule that an extension runs after the walk. A comment may name it, but the engine does
+    /// not see its findings, so it cannot tell whether the comment silences any: it is never
+    /// reported as unused.
+    pub fn with_extension_rule(mut self, slug: &str, spellings: &[&str]) -> Self {
+        self.extension.insert(slug.to_owned());
         self.with_rule(slug, spellings)
     }
 
@@ -411,6 +422,7 @@ impl Policy {
                         || slug == UNUSED
                         || slug == INVALID
                         || self.judgment.contains(slug)
+                        || self.extension.contains(slug)
                     {
                         continue;
                     }

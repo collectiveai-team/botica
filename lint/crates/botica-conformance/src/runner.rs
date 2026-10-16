@@ -40,6 +40,9 @@ pub struct Runner {
     binary: PathBuf,
     scratch: PathBuf,
     variants: Vec<Variant>,
+    /// The catalog of a project that the rules checked belong to: its name and its folder. Each
+    /// project the runner builds holds a copy of it in `.botica/rules/<name>`.
+    project_catalog: Option<(String, PathBuf)>,
 }
 
 impl Runner {
@@ -48,6 +51,7 @@ impl Runner {
             binary: binary.into(),
             scratch: scratch.into(),
             variants: Variant::standard(),
+            project_catalog: None,
         }
     }
 
@@ -55,22 +59,40 @@ impl Runner {
     /// rule's ID) that `botica lint` runs, in slug order. A judge or another tool evaluates the
     /// rules whose implementations are all of kind `judgment` or `external`.
     pub fn check_catalog(&self, rules_dir: &Path) -> Result<Vec<Outcome>> {
-        let mut rules = Vec::new();
-        for family in subdirectories(rules_dir)? {
-            for rule in subdirectories(&family)? {
-                let toml = rule.join("rule.toml");
-                if toml.is_file() && runs_in_lint(&toml)? {
-                    rules.push(rule);
-                }
-            }
-        }
-        rules.sort_by_key(|rule| rule.file_name().map(ToOwned::to_owned));
-        rules
+        rule_folders(rules_dir)?
             .iter()
             .map(|rule| {
                 let slug = rule.file_name().and_then(|name| name.to_str());
                 self.check(
                     slug.context("a rule folder name is not UTF-8")?,
+                    &rule.join("fixtures"),
+                )
+            })
+            .collect()
+    }
+
+    /// Like `check_catalog` for a catalog of a project, `.botica/rules/<catalog>`. The rule ids
+    /// are `<catalog>/<slug>`, and each project the runner builds holds a copy of the catalog.
+    pub fn check_project_catalog(&self, catalog_dir: &Path) -> Result<Vec<Outcome>> {
+        let name = catalog_dir
+            .file_name()
+            .and_then(|name| name.to_str())
+            .context("the folder of a catalog has no UTF-8 name")?;
+        let runner = Self {
+            binary: self.binary.clone(),
+            scratch: self.scratch.clone(),
+            variants: self.variants.clone(),
+            project_catalog: Some((name.to_owned(), catalog_dir.to_owned())),
+        };
+        rule_folders(catalog_dir)?
+            .iter()
+            .map(|rule| {
+                let slug = rule.file_name().and_then(|name| name.to_str());
+                runner.check(
+                    &format!(
+                        "{name}/{}",
+                        slug.context("a rule folder name is not UTF-8")?
+                    ),
                     &rule.join("fixtures"),
                 )
             })
@@ -154,6 +176,9 @@ impl Runner {
             .join(side.folder());
         let _ = fs::remove_dir_all(&project);
         copy_tree(source, &project)?;
+        if let Some((name, catalog)) = &self.project_catalog {
+            copy_tree(catalog, &project.join(".botica/rules").join(name))?;
+        }
         fs::create_dir_all(project.join(".git"))?;
         let output = Command::new(&self.binary)
             .args([
@@ -180,6 +205,21 @@ impl Runner {
             .with_context(|| format!("the output for {} is not JSON", source.display()))?;
         diagnostics_of(&report, rule)
     }
+}
+
+/// The rule folders of a catalog directory that `botica lint` runs, in slug order.
+fn rule_folders(rules_dir: &Path) -> Result<Vec<PathBuf>> {
+    let mut rules = Vec::new();
+    for family in subdirectories(rules_dir)? {
+        for rule in subdirectories(&family)? {
+            let toml = rule.join("rule.toml");
+            if toml.is_file() && runs_in_lint(&toml)? {
+                rules.push(rule);
+            }
+        }
+    }
+    rules.sort_by_key(|rule| rule.file_name().map(ToOwned::to_owned));
+    Ok(rules)
 }
 
 /// What botica is told to lint: the paths one per line in `cli-args.txt`, as a command line would

@@ -1,6 +1,7 @@
 mod dir;
 mod ecosystem;
 mod embedded;
+mod extension;
 mod issue;
 mod load;
 mod model;

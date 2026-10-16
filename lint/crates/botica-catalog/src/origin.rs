@@ -1,4 +1,4 @@
-use crate::model::{Implementation, Kind, Rule, Runtime};
+use crate::model::{Implementation, Kind, Rule};
 
 /// What the codes of the built-in catalog start with.
 pub(crate) const HEADER: &str = "BT";
@@ -41,8 +41,8 @@ impl<'a> Origin<'a> {
 }
 
 /// What only the built-in catalog or only a catalog of a project may have: the code of a native
-/// rule is in botica-core, which a project cannot add to, and a command is code of the project
-/// that the built-in catalog does not run.
+/// rule is in botica-core, which a project cannot add to, and an extension is a program that the
+/// project runs, which a binary that is installed alone does not have.
 pub(crate) fn check_origin(
     index: usize,
     rule: &Rule,
@@ -56,9 +56,10 @@ pub(crate) fn check_origin(
             rule.id
         ));
     }
-    if origin.is_built_in() && implementation.runtime == Some(Runtime::Command) {
+    if origin.is_built_in() && implementation.kind == Kind::Extension {
         add(format!(
-            "implementation {index}: the runtime `command` runs code of the project, and a rule of the built-in catalog cannot use it"
+            "implementation {index}: `{}` is an extension, which runs code of the project: a rule of the built-in catalog is native, ast-grep, judgment or external",
+            rule.id
         ));
     }
 }

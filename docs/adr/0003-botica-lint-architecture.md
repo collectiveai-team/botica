@@ -70,7 +70,7 @@ implementation picks how it runs:
 |---|---|---|
 | `native` | in the binary | house rules, hot paths, expensive project rules |
 | `ast-grep` | in the binary (YAML compiled once) | most syntactic rules, any ast-grep language |
-| `extension` | separate process, `runtime = python \| node \| command` | logic YAML cannot express, third-party libraries, repo-local rules |
+| `extension` | separate process, `runtime = python \| node \| command`; catalogs of a project only | logic YAML cannot express, third-party libraries, repo-local rules |
 | `external` | by another tool, through its configuration | a standard that a tool such as ruff or complexipy enforces; botica checks that the tool is set up (ADR 0006) |
 | `judgment` | never run by lint | what no deterministic check can express, even with configuration from the repository (ADR 0005); judges and the site read it from the catalog, and `covered-by` lists the deterministic rules that check part of it |
 
@@ -89,18 +89,23 @@ bindings, so an extension sees the same node kinds as the core, and a rule can b
 under the same id and fixtures. Extensions load only from catalogs the project declares or from
 `.botica/rules/`, never by discovery.
 
-`botica lint` runs each active `extension` rule of a catalog as a process of its own, and sends it
-only the files where the rule applies (its languages, `files`, `ignores` and the `overrides` of the
-configuration). A finding whose `rule` is not the slug of its rule is left out with a warning on
-stderr; a finding keeps its severity unless the configuration names one. A process that fails is a
-failure of the run (exit 2) and leaves the findings of the other rules as they are. The code of the
-rule is in its folder and the catalog loads it as it loads the YAML of an ast-grep rule:
+`botica lint` runs each active `extension` rule of a catalog of the project as a process of its own,
+started in the root of the project, and sends it only the files where the rule applies (its
+languages, `files`, `ignores` and the `overrides` of the configuration). A finding whose `rule` is
+not the id of its rule is left out with a warning on stderr; a finding keeps its severity unless
+the configuration names one. A process that fails is a failure of the run (exit 2) and leaves the
+findings of the other rules as they are. `# botica: ignore[<id>]` and `# noqa: <code>` silence a
+finding of an extension, and a comment that names an extension rule is never reported as unused,
+because the engine does not see its findings. The code of the rule is in its folder and the catalog
+loads it as it loads the YAML of an ast-grep rule. An extension is a program that the project runs,
+and the built-in catalog is compiled into the binary, which has no folder with such a program: the
+built-in catalog takes no `extension` rule.
 
 | `runtime` | The rule names | botica runs |
 |---|---|---|
 | `python` | `file = "<name>.py"` | `uv run --script <file>`; the script declares its dependencies (PEP 723) and uv caches its environment |
 | `node` | `file = "<name>.js"` or `.mjs` | `node <file>`, with the `node_modules` the rule brings, if any |
-| `command` | `command = ["<argv>", …]`, no `file` | the command, from the root of the project; a rule of the built-in catalog cannot use it |
+| `command` | `command = ["<argv>", …]`, no `file` | the command, from the root of the project |
 
 The SDK of each language follows the protocol and the version of botica. There are four, for
 Python, TypeScript, Go and Rust; any other language speaks the protocol through `command`.
@@ -142,8 +147,8 @@ keys and unknown rule ids are errors, and the schema is published as JSON Schema
 
 **Distribution.** `botica` is the whole package and `lint` is its first subcommand, so no
 pipeline is specific to `lint`. The binary is built once per platform (Linux x64 and arm64 with
-glibc and musl, macOS x64 and arm64, Windows x64) and repackaged as binary-only PyPI wheels
-(maturin) under the name `botica`, released from a `vX.Y.Z` tag and published through PyPI trusted
+glibc and musl, macOS x64 and arm64, Windows x64) and repackaged as PyPI wheels
+(maturin) under the name `botica`, each with the binary and the Python module `botica.sdk`, released from a `vX.Y.Z` tag and published through PyPI trusted
 publishing. Botica starts at 0.7.0 because `v0.1.0` to `v0.6.0` are releases of `scaffolding`. A
 mirror repo, `botica-pre-commit`, gives prek a pinnable hook whose tag pins the matching wheel.
 The `scaffolding` Python package keeps its name until it is migrated, which is out of scope here.
@@ -201,14 +206,15 @@ The `scaffolding` Python package keeps its name until it is migrated, which is o
 What this ADR decides and the code does not have. Delete a line when it ships.
 
 - The editor front-end: `botica-lsp` and `botica server`.
-- The extension SDKs: the first is `sdk/python/botica_ext.py`; `botica.sdk`, `botica[sdk]`,
-  `@botica/sdk`, the module of Go and `botica-ext-sdk` do not exist, and neither does the
-  runtime `wasm`.
-- Catalogs declared externally, and the run of the `extension` rules of a catalog: a catalog of
-  the project in `.botica/rules/` loads, but only `--ext` runs an extension.
+- The extension SDKs of TypeScript, Go and Rust (`@botica/sdk`, the module of Go and
+  `botica-ext-sdk`) and the runtime `wasm`. The Python SDK, `botica.sdk` with the extra
+  `botica[sdk]`, is built.
+- Catalogs declared externally. The catalogs of the project in `.botica/rules/` load and their
+  `extension` rules run.
 - `botica rules export` in the formats other than `markdown` and `json` (`continue`, `abide`,
   `schema`), `botica rules test` (with `--against`), and the `botica-rule-author` skill. Only
   `botica rules list`, `botica rules export` with `--format markdown` or `--format json`, and
-  `botica rules new` with `--kind ast-grep`, `extension`, `judgment` or `external` exist.
+  `botica rules new` with `--kind ast-grep`, `judgment` or `external` exist (it writes the
+  built-in catalog, which takes no extension).
 - Profiles (`profiles/<name>.toml`, `botica profile install` and `botica profile check`, ADR 0006). The standards site that reads the Markdown export is built (`website/`) but not
   published, and it has no discussion thread and no "edit this page" yet.

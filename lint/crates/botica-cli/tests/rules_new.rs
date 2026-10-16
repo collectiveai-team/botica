@@ -81,7 +81,7 @@ fn an_ast_grep_rule_gets_the_next_code_of_its_family_and_a_folder_that_loads() {
 }
 
 #[test]
-fn an_extension_rule_names_its_runtime_and_has_no_yaml() {
+fn an_extension_is_not_a_kind_of_the_built_in_catalog() {
     let dir = workdir("extension");
 
     let output = new_rule(
@@ -91,39 +91,13 @@ fn an_extension_rule_names_its_runtime_and_has_no_yaml() {
             "--kind",
             "extension",
             "--language",
-            "typescript",
-            "--runtime",
-            "node",
+            "python",
         ],
     );
 
-    succeeded(&output);
-    let folder = dir.join("cat/logging/log-foo");
-    let toml = read(&folder.join("rule.toml"));
-    assert!(
-        toml.starts_with("id = \"log-foo\"\ncode = \"BTLOG003\"\nsummary = "),
-        "{toml}"
-    );
-    assert!(toml.contains("needs = \"bytes\"\n"), "{toml}");
-    assert!(
-        toml.ends_with(
-            "[[implementations]]\nkind = \"extension\"\nruntime = \"node\"\n\
-             languages = [\"typescript\"]\n"
-        ),
-        "{toml}"
-    );
-    assert!(!folder.join("typescript.yml").exists());
-    assert_eq!(
-        read(&folder.join("fixtures/valid/example.ts")),
-        "// TODO: code that follows the rule\n"
-    );
-    assert!(folder.join("fixtures/invalid/example.ts").is_file());
-    assert_eq!(
-        reload(&dir)
-            .resolve("BTLOG003")
-            .map(|rule| rule.id.as_str()),
-        Some("log-foo")
-    );
+    assert_eq!(output.status.code(), Some(2));
+    assert!(stderr(&output).contains("extension"), "{}", stderr(&output));
+    assert!(!dir.join("cat/logging/log-foo").exists());
 }
 
 #[test]
@@ -222,48 +196,6 @@ fn a_rule_the_catalog_would_reject_is_not_written() {
         assert_eq!(output.status.code(), Some(2), "{slug} {standard}");
         assert!(!dir.join(format!("cat/structure/{slug}")).exists());
     }
-}
-
-#[test]
-fn an_extension_needs_a_runtime_and_only_an_extension_takes_one() {
-    let dir = workdir("runtime");
-
-    let no_runtime = new_rule(
-        &dir,
-        &[
-            "structure/no-foo",
-            "--kind",
-            "extension",
-            "--language",
-            "python",
-        ],
-    );
-    assert_eq!(no_runtime.status.code(), Some(2));
-    assert!(
-        stderr(&no_runtime).contains("--runtime"),
-        "{}",
-        stderr(&no_runtime)
-    );
-
-    let runtime = new_rule(
-        &dir,
-        &[
-            "structure/no-foo",
-            "--kind",
-            "ast-grep",
-            "--language",
-            "python",
-            "--runtime",
-            "python",
-        ],
-    );
-    assert_eq!(runtime.status.code(), Some(2));
-    assert!(
-        stderr(&runtime).contains("--runtime applies to an extension only"),
-        "{}",
-        stderr(&runtime)
-    );
-    assert!(!dir.join("cat/structure/no-foo").exists());
 }
 
 #[test]

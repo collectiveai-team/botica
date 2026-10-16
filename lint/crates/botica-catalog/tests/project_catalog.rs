@@ -2,12 +2,8 @@
 
 mod common;
 
-use botica_catalog::{Catalog, Kind};
-use common::project::{
-    acme, built_in, native, project_rule, rejected, AST_GREP_PYTHON, EXTENSION_COMMAND,
-    EXTENSION_PYTHON,
-};
-use common::{family, file, rule_toml};
+use common::project::{acme, built_in, native, project_rule, rejected, AST_GREP_PYTHON};
+use common::{file, rule_toml};
 
 #[test]
 fn a_project_catalog_adds_its_rules_after_the_built_in_ones() {
@@ -235,56 +231,4 @@ fn a_project_catalog_takes_every_kind_but_native() {
 
     assert!(message.contains("native"), "{message}");
     assert!(message.contains("acme/plain"), "{message}");
-}
-
-#[test]
-fn a_project_catalog_takes_extension_rules() {
-    let mut files = acme();
-    files.extend(project_rule(
-        "acme",
-        "structure",
-        "by-script",
-        "ACMESTRUC002",
-        "",
-        EXTENSION_PYTHON,
-    ));
-
-    let loaded = built_in().with_projects(&files).expect("loads");
-
-    let rule = loaded.resolve("acme/by-script").expect("the rule");
-    assert_eq!(rule.implementations[0].kind, Kind::Extension);
-}
-
-#[test]
-fn the_command_runtime_is_for_a_project_catalog_and_never_for_the_built_in_one() {
-    let mut files = acme();
-    files.extend(project_rule(
-        "acme",
-        "structure",
-        "by-command",
-        "ACMESTRUC002",
-        "",
-        EXTENSION_COMMAND,
-    ));
-    built_in()
-        .with_projects(&files)
-        .expect("a project may use it");
-
-    let message = Catalog::from_files(
-        &[
-            vec![family("structure", "STRUC")],
-            common::rule_with(
-                "structure",
-                "by-command",
-                "BTSTRUC001",
-                "",
-                EXTENSION_COMMAND,
-            ),
-        ]
-        .concat(),
-    )
-    .expect_err("the built-in catalog may not")
-    .to_string();
-
-    assert!(message.contains("command"), "{message}");
 }

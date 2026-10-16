@@ -4,6 +4,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::io::{BufRead, BufReader, Write};
+use std::path::Path;
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 
 pub const PROTOCOL_VERSION: u32 = 1;
@@ -50,9 +51,18 @@ pub struct ExtensionHost {
 
 impl ExtensionHost {
     pub fn spawn(command: &[String]) -> Result<Self> {
+        Self::spawn_in(command, None)
+    }
+
+    /// Starts the extension with `dir` as its working directory (botica's own when `None`).
+    pub fn spawn_in(command: &[String], dir: Option<&Path>) -> Result<Self> {
         let (program, args) = command.split_first().context("empty extension command")?;
-        let mut child = Command::new(program)
-            .args(args)
+        let mut process = Command::new(program);
+        process.args(args);
+        if let Some(dir) = dir {
+            process.current_dir(dir);
+        }
+        let mut child = process
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())

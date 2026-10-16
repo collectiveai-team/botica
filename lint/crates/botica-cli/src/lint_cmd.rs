@@ -13,6 +13,7 @@ use std::process::ExitCode;
 use std::sync::Arc;
 use std::time::Instant;
 
+mod extensions;
 mod external;
 mod judged;
 mod paths;
@@ -103,6 +104,8 @@ struct Setup {
     io_error_active: bool,
     config_key: String,
     with_astgrep: bool,
+    /// Whether an active rule is an extension, so the run keeps the texts of the files to send.
+    has_extensions: bool,
     /// Where the configuration was found (the working directory when there is none).
     project_root: PathBuf,
 }
@@ -117,6 +120,10 @@ impl Setup {
         let config_key = project.fingerprint();
         let natives = project::natives(&project);
         let resolution = Arc::new(project.resolution);
+        let has_extensions = resolution
+            .entries()
+            .iter()
+            .any(|entry| entry.active && entry.rule.has_extension());
         let policy = project::suppression_policy(&resolution);
         let planner = project::planner(Arc::clone(&resolution), natives.index, prefix.clone());
         let exclusion = project::exclusion(Arc::clone(&resolution), prefix.clone());
@@ -142,6 +149,14 @@ impl Setup {
             Some(inclusion) => engine.with_inclusion(inclusion),
             None => engine,
         };
+        let engine = if has_extensions {
+            engine.with_extension_paths(project::extension_paths(
+                Arc::clone(&resolution),
+                prefix.clone(),
+            ))
+        } else {
+            engine
+        };
         Ok(Self {
             engine,
             resolution,
@@ -149,6 +164,7 @@ impl Setup {
             io_error_active,
             config_key,
             with_astgrep,
+            has_extensions,
             project_root,
         })
     }
@@ -178,6 +194,11 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     let mut errors = read_errors(unreadable);
     if let Some(command) = &args.ext {
         errors.extend(run_extension(&args, command, &sources, &mut diagnostics));
+    }
+    if setup.has_extensions {
+        let ran = extensions::run(&args, &setup, &sources);
+        diagnostics.extend(ran.found);
+        errors.extend(ran.errors);
     }
     diagnostics.extend(io_errors);
     diagnostics.extend(external::findings(

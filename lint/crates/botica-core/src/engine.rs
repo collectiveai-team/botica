@@ -3,10 +3,7 @@ use crate::document::Document;
 use crate::native::{NativeRule, Needs};
 use crate::suppress::Policy;
 use crate::timings::{RuleTime, TimedKind, Timings};
-use anyhow::Result;
 use botica_astgrep::AstGrepSet;
-use botica_ext::{ExtensionHost, FileIn};
-use std::collections::HashMap;
 
 /// For a path relative to the project root: the indexes of the native rules that apply to it.
 pub type NativePlanner = Box<dyn Fn(&str) -> Vec<usize> + Send + Sync>;
@@ -55,6 +52,7 @@ pub struct Engine {
     suppressions: Option<Policy>,
     exclusion: Option<Exclusion>,
     inclusion: Option<Inclusion>,
+    extensions: Option<PathTest>,
     timings: Option<Timings>,
 }
 
@@ -68,8 +66,16 @@ impl Engine {
             suppressions: None,
             exclusion: None,
             inclusion: None,
+            extensions: None,
             timings: None,
         }
+    }
+
+    /// Tells which paths an extension rule reads. The engine runs none of them, and the paths are
+    /// listed and read all the same, so that the caller can send them to the extension.
+    pub fn with_extension_paths(mut self, reads: PathTest) -> Self {
+        self.extensions = Some(reads);
+        self
     }
 
     /// Starts timing each rule (`rule_times`). Slows the run down a little: leave it off unless
@@ -191,7 +197,9 @@ impl Engine {
                 .suppressions
                 .as_ref()
                 .is_some_and(|policy| policy.reads(path));
+        let extension = self.extensions.as_ref().is_some_and(|reads| reads(path));
         let content = astgrep
+            || extension
             || native
                 .iter()
                 .any(|&index| self.native[index].needs() != Needs::Path)
@@ -199,7 +207,7 @@ impl Engine {
                 .suppressions
                 .as_ref()
                 .is_some_and(|policy| policy.can_silence(path));
-        (!native.is_empty() || astgrep || comments_only).then_some(Plan {
+        (!native.is_empty() || astgrep || comments_only || extension).then_some(Plan {
             native,
             astgrep,
             content,
@@ -297,87 +305,5 @@ impl Engine {
         }
         out.sort_by(|a, b| (a.start, &a.rule).cmp(&(b.start, &b.rule)));
         out
-    }
-}
-
-pub struct ExtensionRun {
-    host: ExtensionHost,
-    languages: Vec<String>,
-}
-
-/// Each language that a rule may name, with the extensions of its files.
-const LANGUAGES: [(&str, &[&str]); 3] = [
-    ("python", &["py", "pyi"]),
-    ("typescript", &["ts", "tsx", "mts", "cts"]),
-    ("javascript", &["js", "jsx", "mjs", "cjs"]),
-];
-
-pub fn language_of(path: &str) -> Option<&'static str> {
-    let extension = path.rsplit_once('.')?.1;
-    LANGUAGES
-        .iter()
-        .find(|(_, extensions)| extensions.contains(&extension))
-        .map(|(language, _)| *language)
-}
-
-/// The extensions of the files of `language`, none for a language botica does not know.
-pub fn extensions_of(language: &str) -> &'static [&'static str] {
-    LANGUAGES
-        .iter()
-        .find(|(name, _)| *name == language)
-        .map_or(&[], |(_, extensions)| extensions)
-}
-
-impl ExtensionRun {
-    pub fn start(command: &[String]) -> Result<Self> {
-        let host = ExtensionHost::spawn(command)?;
-        let languages = host
-            .rules
-            .iter()
-            .flat_map(|rule| rule.languages.iter().cloned())
-            .collect();
-        Ok(Self { host, languages })
-    }
-
-    pub fn lint<'a>(
-        &mut self,
-        files: impl IntoIterator<Item = (&'a str, &'a str)>,
-        batch_size: usize,
-    ) -> Result<Vec<Diagnostic>> {
-        let wanted: Vec<FileIn<'_>> = files
-            .into_iter()
-            .filter(|(path, _)| {
-                language_of(path).is_some_and(|l| self.languages.iter().any(|x| x == l))
-            })
-            .map(|(path, text)| FileIn { path, text })
-            .collect();
-        let mut out = Vec::new();
-        for batch in wanted.chunks(batch_size.max(1)) {
-            let texts: HashMap<&str, &str> = batch.iter().map(|f| (f.path, f.text)).collect();
-            for wire in self.host.lint_files(batch)? {
-                let text = texts.get(wire.path.as_str()).copied().unwrap_or("");
-                let doc = Document::new(&wire.path, text);
-                let (line, column) = doc.position(wire.start);
-                let (end_line, end_column) = doc.position(wire.end);
-                out.push(Diagnostic {
-                    path: wire.path,
-                    rule: wire.rule,
-                    severity: Severity::parse(&wire.severity),
-                    start: wire.start,
-                    end: wire.end,
-                    line,
-                    column,
-                    end_line,
-                    end_column,
-                    file_level: false,
-                    message: wire.message,
-                });
-            }
-        }
-        Ok(out)
-    }
-
-    pub fn finish(self) -> Result<()> {
-        self.host.shutdown()
     }
 }

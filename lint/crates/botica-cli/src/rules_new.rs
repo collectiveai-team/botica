@@ -15,9 +15,6 @@ pub struct NewArgs {
     /// The language the rule reads, as ast-grep names it (`python`, `typescript`…).
     #[arg(long)]
     language: String,
-    /// What runs an extension.
-    #[arg(long, value_enum, required_if_eq("kind", "extension"))]
-    runtime: Option<NewRuntime>,
     /// The standard the rule implements, e.g. `CES-63`.
     #[arg(long)]
     standard: Option<String>,
@@ -39,27 +36,9 @@ pub struct NewArgs {
 #[derive(Clone, Copy, PartialEq, Eq, ValueEnum)]
 enum NewKind {
     AstGrep,
-    Extension,
     Judgment,
     External,
     Native,
-}
-
-#[derive(Clone, Copy, ValueEnum)]
-enum NewRuntime {
-    Python,
-    Node,
-    Command,
-}
-
-impl NewRuntime {
-    fn word(self) -> &'static str {
-        match self {
-            Self::Python => "python",
-            Self::Node => "node",
-            Self::Command => "command",
-        }
-    }
 }
 
 const README: &str = "## Directive\n\n\
@@ -142,9 +121,6 @@ fn check_kind(args: &NewArgs) -> Result<()> {
              add its folder by hand with that code"
         );
     }
-    if args.kind != NewKind::Extension && args.runtime.is_some() {
-        bail!("--runtime applies to an extension only");
-    }
     let tool_flags = args.tool.is_some() || args.docs.is_some() || args.config.is_some();
     if args.kind != NewKind::External && tool_flags {
         bail!("--tool, --docs and --config apply to an external rule only");
@@ -210,7 +186,6 @@ fn rule_toml(args: &NewArgs, slug: &str, code: &str) -> String {
     text.push_str("summary = \"TODO: what the rule asks, in one line\"\nstatus = \"preview\"\n");
     let needs = match args.kind {
         NewKind::AstGrep => Some("syntax"),
-        NewKind::Extension => Some("bytes"),
         NewKind::Judgment | NewKind::External | NewKind::Native => None,
     };
     if let Some(needs) = needs {
@@ -222,17 +197,13 @@ fn rule_toml(args: &NewArgs, slug: &str, code: &str) -> String {
         "default-enabled = false\ndefault-severity = \"warning\"\n\n[[implementations]]\n",
     );
     let language = &args.language;
-    text.push_str(&match (args.kind, args.runtime) {
-        (NewKind::Judgment, _) => format!(
+    text.push_str(&match args.kind {
+        NewKind::Judgment => format!(
             "kind = \"judgment\"\nlanguages = [\"{language}\"]\nwhen = \"edit\"\n\
              why-not-deterministic = \"{WHY}\"\n\n[implementations.question]\n\
              type = \"boolean\"\ninstructions = \"{INSTRUCTIONS}\"\n"
         ),
-        (NewKind::External, _) => external_implementation(args),
-        (_, Some(runtime)) => format!(
-            "kind = \"extension\"\nruntime = \"{}\"\nlanguages = [\"{language}\"]\n",
-            runtime.word()
-        ),
+        NewKind::External => external_implementation(args),
         _ => format!(
             "kind = \"ast-grep\"\nlanguages = [\"{language}\"]\nfile = \"{language}.yml\"\n"
         ),

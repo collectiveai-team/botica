@@ -16,7 +16,7 @@ use args::ConfigOption;
 
 pub use args::ProjectArgs;
 pub use natives::natives;
-pub use paths::{exclusion, inclusion, planner, verdicts};
+pub use paths::{exclusion, extension_paths, extensions_at, inclusion, planner, verdicts};
 pub use policy::{keep_judged, rule_docs, suppression_policy};
 
 pub struct Project {
@@ -30,7 +30,7 @@ pub struct Project {
 }
 
 /// Where the catalogs of a project are, from its root.
-const PROJECT_RULES: &str = ".botica/rules";
+pub const PROJECT_RULES: &str = ".botica/rules";
 
 pub fn load(args: &ProjectArgs) -> Result<Project> {
     let files: Vec<&Path> = args

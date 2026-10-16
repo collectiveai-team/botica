@@ -6,7 +6,7 @@ use crate::issue::{issue, CatalogError, CatalogIssue};
 use crate::model::{Event, Family, FamilyFile, HistoryFile, Lifecycle, Rule};
 use crate::origin::{Origin, HEADER};
 use crate::readme::check_readme;
-use crate::sources::{attach_configs, attach_sources};
+use crate::sources::{attach_configs, attach_scripts, attach_sources, is_script};
 use crate::validate::{check_across, check_family_code, check_history, check_rule, is_kebab_case};
 
 pub const OWN_RULES_DIR: &str = "botica";
@@ -43,6 +43,8 @@ struct RuleEntry<'a> {
     sources: Vec<&'a SourceFile>,
     /// The fragments of configuration of the external implementations, `config/<file>.toml`.
     configs: Vec<&'a SourceFile>,
+    /// The scripts of the folder: the ones the extensions name and the modules they import.
+    scripts: Vec<&'a SourceFile>,
 }
 
 #[derive(Default)]
@@ -171,6 +173,9 @@ fn scan<'a>(
             [dir, slug, "README.md"] => {
                 dirs.entry(dir).or_default().rules.entry(slug).or_default().readme = Some(file);
             }
+            [dir, slug, name] if is_script(name) => {
+                dirs.entry(dir).or_default().rules.entry(slug).or_default().scripts.push(file);
+            }
             [dir, slug, name] if name.ends_with(".yml") => {
                 dirs.entry(dir).or_default().rules.entry(slug).or_default().sources.push(file);
             }
@@ -179,7 +184,7 @@ fn scan<'a>(
             }
             _ => issues.push(issue(
                 file.path.as_str(),
-                "unexpected file: expected history.toml, <family>/family.toml or <family>/<slug>/{rule.toml,README.md,<implementation>.yml,config/<file>.toml}",
+                "unexpected file: expected history.toml, <family>/family.toml or <family>/<slug>/{rule.toml,README.md,<implementation>.yml,<script>.py|.js|.mjs,config/<file>.toml}",
             )),
         }
     }
@@ -287,6 +292,7 @@ fn load_rules(
             issues.extend(check_rule(&toml_file.path, slug, &rule, family, origin));
             attach_sources(&base, &mut rule, &files.sources, issues);
             attach_configs(&base, &mut rule, &files.configs, issues);
+            attach_scripts(&base, &mut rule, &files.scripts, issues);
             rule.family = family.map(|f| f.name.clone());
             rule.catalog = origin.catalog();
             rule.readme = readme.text.clone();

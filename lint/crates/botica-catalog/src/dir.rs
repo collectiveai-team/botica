@@ -3,6 +3,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use crate::load::{SourceFile, CATALOG_FILE, HISTORY_FILE};
+use crate::sources::is_script;
 
 fn sorted(dir: &Path) -> io::Result<Vec<PathBuf>> {
     let mut entries = fs::read_dir(dir)?
@@ -46,7 +47,11 @@ pub fn read_files(dir: &Path) -> io::Result<Vec<SourceFile>> {
                 }
             }
             for file in sorted(&rule)? {
-                if file.is_file() && file.extension().is_some_and(|ext| ext == "yml") {
+                let name = file.file_name().map(|name| name.to_string_lossy());
+                let wanted = name
+                    .as_deref()
+                    .is_some_and(|name| name.ends_with(".yml") || is_script(name));
+                if file.is_file() && wanted {
                     push(&mut files, dir, &file)?;
                 }
             }

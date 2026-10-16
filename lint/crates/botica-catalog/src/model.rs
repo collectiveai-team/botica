@@ -97,6 +97,9 @@ pub struct Implementation {
     pub languages: Vec<String>,
     pub status: Option<Status>,
     pub file: Option<String>,
+    /// The program and arguments of an extension with the runtime `command`, run from the root of
+    /// the project.
+    pub command: Option<Vec<String>>,
     /// The fields of a judgment implementation.
     pub when: Option<When>,
     pub question: Option<Question>,
@@ -238,6 +241,13 @@ impl Rule {
                 .implementations
                 .iter()
                 .all(|implementation| implementation.kind == Kind::External)
+    }
+
+    /// Whether a program of the project runs the rule, in one language at least.
+    pub fn has_extension(&self) -> bool {
+        self.implementations
+            .iter()
+            .any(|implementation| implementation.kind == Kind::Extension)
     }
 
     /// Whether another tool enforces the rule, in one language at least.

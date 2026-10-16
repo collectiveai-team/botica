@@ -79,6 +79,36 @@ fn the_catalogs_of_a_project_are_read_from_its_rules_folder() {
 }
 
 #[test]
+fn the_scripts_of_a_rule_are_read_and_the_ones_of_its_fixtures_are_not() {
+    let dir = fresh("project_catalog_scripts");
+    lay_out_acme(&dir);
+    let rule = "acme/structure/no-blobs";
+    write(&dir, &format!("{rule}/check.py"), "print(1)\n");
+    write(&dir, &format!("{rule}/check.js"), "1\n");
+    write(&dir, &format!("{rule}/check.mjs"), "2\n");
+    write(&dir, &format!("{rule}/notes.txt"), "no\n");
+    write(&dir, &format!("{rule}/fixtures/invalid/bad.py"), "x\n");
+    write(&dir, &format!("{rule}/sub/inner.py"), "x\n");
+
+    let files = read_project_files(&dir).expect("read");
+
+    let mut paths: Vec<&str> = files.iter().map(|f| f.path.as_str()).collect();
+    paths.retain(|path| {
+        path.starts_with(rule) && !path.ends_with(".toml") && !path.ends_with(".md")
+    });
+    paths.sort_unstable();
+    assert_eq!(
+        paths,
+        [
+            "acme/structure/no-blobs/check.js",
+            "acme/structure/no-blobs/check.mjs",
+            "acme/structure/no-blobs/check.py",
+            "acme/structure/no-blobs/python.yml",
+        ]
+    );
+}
+
+#[test]
 fn a_rules_folder_that_does_not_exist_holds_no_catalog() {
     let dir = fresh("project_catalog_absent").join("no-such-folder");
 

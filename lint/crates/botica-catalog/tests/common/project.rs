@@ -7,12 +7,6 @@ use super::{family, file, rule, rule_toml, README};
 pub const AST_GREP_PYTHON: &str =
     "[[implementations]]\nkind = \"ast-grep\"\nlanguages = [\"python\"]\nfile = \"python.yml\"\n";
 
-pub const EXTENSION_PYTHON: &str =
-    "[[implementations]]\nkind = \"extension\"\nruntime = \"python\"\nlanguages = [\"python\"]\n";
-
-pub const EXTENSION_COMMAND: &str =
-    "[[implementations]]\nkind = \"extension\"\nruntime = \"command\"\nlanguages = [\"python\"]\n";
-
 pub fn built_in() -> Catalog {
     Catalog::from_files(
         &[
