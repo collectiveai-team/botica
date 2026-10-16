@@ -367,3 +367,45 @@ fn every_ecosystem_has_a_name_that_parses_back_to_it() {
     }
     assert_eq!(botica_catalog::Ecosystem::parse("typescript"), None);
 }
+
+#[test]
+fn a_rule_cites_the_topics_of_references_by_id() {
+    let loaded = catalog(vec![
+        vec![family("structure", "STRUC")],
+        rule_with(
+            "structure",
+            "file-size-guard",
+            "BTSTRUC001",
+            "references = [\"structured-logging\", \"in-memory-adapters\"]",
+            NATIVE_ALL,
+        ),
+        rule("botica", "io-error", "BT001"),
+    ])
+    .expect("a valid catalog loads");
+
+    assert_eq!(
+        loaded.resolve("file-size-guard").expect("rule").references,
+        ["structured-logging", "in-memory-adapters"]
+    );
+    assert!(loaded
+        .resolve("io-error")
+        .expect("rule")
+        .references
+        .is_empty());
+}
+
+#[test]
+fn rejects_a_cited_topic_that_is_not_kebab_case() {
+    let message = issues(vec![
+        vec![family("structure", "STRUC")],
+        rule_with(
+            "structure",
+            "file-size-guard",
+            "BTSTRUC001",
+            "references = [\"Structured_Logging\"]",
+            NATIVE_ALL,
+        ),
+    ]);
+    assert!(message.contains("Structured_Logging"), "{message}");
+    assert!(message.contains("kebab-case"), "{message}");
+}

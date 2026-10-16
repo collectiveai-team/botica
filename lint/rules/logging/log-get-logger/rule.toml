@@ -1,6 +1,7 @@
 id = "log-get-logger"
 code = "BTLOG001"
 standard = "CES-45"
+references = ["structured-logging"]
 summary = "Loggers come from the house get_logger"
 status = "stable"
 tags = ["logging"]

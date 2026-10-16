@@ -327,3 +327,16 @@ fn it_fails_when_the_output_cannot_be_written() {
         "{stderr}"
     );
 }
+
+#[test]
+fn the_front_matter_of_a_rule_that_cites_topics_lists_them() {
+    let site = exported(&workdir("references"));
+
+    let text = page(&site, "logging/btlog001-log-get-logger.md");
+    assert!(
+        text.contains("\nstandard: \"CES-45\"\nreferences: [\"structured-logging\"]\ndescription:"),
+        "{text}"
+    );
+    let plain = page(&site, "fastapi/btfast001-api-schemas-extra-forbid.md");
+    assert!(!plain.contains("references"), "{plain}");
+}

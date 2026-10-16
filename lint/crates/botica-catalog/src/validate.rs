@@ -214,6 +214,13 @@ pub(crate) fn check_rule(
             ));
         }
     }
+    for topic in &rule.references {
+        if !is_kebab_case(topic) {
+            add(format!(
+                "reference `{topic}` must be the kebab-case id of a topic of references/"
+            ));
+        }
+    }
     for name in rule.options.keys() {
         if RESERVED_OPTION_NAMES.contains(&name.as_str()) {
             add(format!(

@@ -196,6 +196,9 @@ pub struct Rule {
     pub id: String,
     pub code: String,
     pub standard: Option<String>,
+    /// The ids of the topics of `references/` that show code for the rule.
+    #[serde(default)]
+    pub references: Vec<String>,
     pub summary: String,
     pub status: Status,
     #[serde(default)]

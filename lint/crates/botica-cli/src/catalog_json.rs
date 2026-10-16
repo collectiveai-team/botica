@@ -28,6 +28,7 @@ struct RuleView<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     catalog: Option<&'a str>,
     standard: Option<&'a str>,
+    references: &'a [String],
     summary: &'a str,
     status: Status,
     added: Option<String>,
@@ -77,6 +78,7 @@ impl<'a> RuleView<'a> {
             family: rule.family.as_deref(),
             catalog: rule.catalog.as_deref(),
             standard: rule.standard.as_deref(),
+            references: &rule.references,
             summary: &rule.summary,
             status: rule.status,
             added: lifecycle.added,

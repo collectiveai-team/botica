@@ -95,6 +95,9 @@ fn front_matter(catalog: &Catalog, rule: &Rule) -> String {
     if let Some(standard) = &rule.standard {
         lines.push(format!("standard: {}", json(standard)));
     }
+    if !rule.references.is_empty() {
+        lines.push(format!("references: {}", json(&rule.references)));
+    }
     lines.extend([
         format!("description: {}", json(&rule.summary)),
         format!("status: {}", json(&rule.status)),

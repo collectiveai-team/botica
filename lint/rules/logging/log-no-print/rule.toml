@@ -1,6 +1,7 @@
 id = "log-no-print"
 code = "BTLOG002"
 standard = "CES-46"
+references = ["structured-logging"]
 summary = "Libraries log, they don't print"
 status = "stable"
 tags = ["logging"]

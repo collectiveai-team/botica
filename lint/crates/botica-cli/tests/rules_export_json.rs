@@ -87,6 +87,7 @@ fn a_rule_carries_every_field_of_its_rule_toml_its_releases_and_the_path_of_its_
             "code": "BTFAST001",
             "family": "fastapi",
             "standard": "CES-4",
+            "references": [],
             "summary": "Request and response schemas reject unknown fields",
             "status": "stable",
             "added": "0.8.0",
@@ -219,4 +220,14 @@ fn lists_the_families_of_the_catalog_by_name_with_their_code_and_description() {
         "code": "FAST",
         "description": "Rules for FastAPI services."
     })));
+}
+
+#[test]
+fn a_rule_lists_the_topics_of_references_that_it_cites() {
+    let document = catalog("references");
+
+    assert_eq!(
+        rule(&document, "log-get-logger")["references"],
+        json!(["structured-logging"])
+    );
 }
