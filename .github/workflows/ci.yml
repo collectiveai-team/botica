@@ -69,6 +69,10 @@ jobs:
       - name: Test
         run: cargo test --workspace --locked --no-fail-fast
 
+      - name: Test the Go SDK
+        working-directory: lint/sdk/go
+        run: go vet ./... && go test ./...
+
   # A change that adds a rule may only touch what that kind of rule needs (scripts/check_rule_change.py).
   # Anything else is a contract change: label the pull request `contract-change` to accept it.
   # A change touches at most one standard, and no label accepts more.

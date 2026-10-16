@@ -51,8 +51,7 @@ flowchart TD
   config --> catalog
   core --> astgrep[botica-astgrep]
   core --> ext[botica-ext<br/>extension host]
-  sdk[SDK · python · node · rust] -. protocol .-> ext
-  sdks[SDK · go]:::planned -. protocol .-> ext
+  sdk[SDK · python · node · go · rust] -. protocol .-> ext
   classDef planned stroke-dasharray: 4 4
 ```
 
@@ -212,11 +211,11 @@ The `scaffolding` Python package keeps its name until it is migrated, which is o
 What this ADR decides and the code does not have. Delete a line when it ships.
 
 - The editor front-end: `botica-lsp` and `botica server`.
-- The extension SDK of Go (the module of Go) and the runtime `wasm`. The Python SDK, `botica.sdk`
-  with the extra `botica[sdk]`, is built. So are the TypeScript one in `lint/sdk/node` and the
-  Rust one, `botica-ext-sdk` in `lint/sdk/rust`; neither is published (npm, crates.io) and neither
-  parses with ast-grep yet. Until the runtime `wasm` exists, a rule in Rust runs as a program of
-  the runtime `command`.
+- The runtime `wasm`. The Python SDK, `botica.sdk` with the extra `botica[sdk]`, is built. So are
+  the TypeScript one in `lint/sdk/node`, the Rust one, `botica-ext-sdk` in `lint/sdk/rust`, and the
+  Go one in `lint/sdk/go`; none of the three is published (npm, crates.io, a tag of the module) and
+  none parses with ast-grep yet. Until the runtime `wasm` exists, a rule in Rust or Go runs as a
+  program of the runtime `command`.
 - Catalogs declared externally. The catalogs of the project in `.botica/rules/` load and their
   `extension` rules run.
 - `botica rules export` with the formats `continue` and `schema` (ADR 0005 leaves `continue`

@@ -200,7 +200,8 @@ if __name__ == "__main__":
 A script of the runtime `node` can write its rule with [`@botica/sdk`](sdk/node/README.md)
 (`rule`, `byteOffsets`, `serve`), which is not published to npm yet; `botica rules new --runtime
 node` writes a script that speaks the protocol with no dependency. A program in Rust uses the crate
-[`botica-ext-sdk`](sdk/rust/README.md) and runs as a rule of the runtime `command`.
+[`botica-ext-sdk`](sdk/rust/README.md) and a program in Go uses the [Go module](sdk/go/README.md);
+both run as a rule of the runtime `command`.
 
 A finding with another `rule` than the id of its rule is left out, with a warning on stderr. A
 process that fails, or that is still running 5 seconds after `shutdown` and is killed, stops the
