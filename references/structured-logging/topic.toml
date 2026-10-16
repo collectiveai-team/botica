@@ -1,0 +1,14 @@
+title = "Structured logging with structlog"
+docs = ["https://www.structlog.org/en/stable/getting-started.html"]
+
+[[references]]
+path = "scaffolding/templates/snippets/core/logger.py"
+lines = "44-69"
+anchor = "def _configure"
+note = "the configuration: JSON in production, a console in development, applied once"
+
+[[references]]
+path = "scaffolding/templates/snippets/core/logger.py"
+lines = "72-75"
+anchor = "def get_logger"
+note = "the function that every module imports"

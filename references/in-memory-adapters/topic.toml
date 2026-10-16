@@ -1,0 +1,19 @@
+title = "In-memory adapters for tests"
+
+[[references]]
+path = "scaffolding/templates/snippets/tests/in_memory_repository.py"
+lines = "23-28"
+anchor = "class UserRepository(Protocol)"
+note = "the port: the Protocol that the SQL adapter and the fake both implement"
+
+[[references]]
+path = "scaffolding/templates/snippets/tests/in_memory_repository.py"
+lines = "31-41"
+anchor = "class InMemoryUserRepository"
+note = "the fake: the same interface as the real repository, with a dict and no I/O"
+
+[[references]]
+path = "scaffolding/templates/snippets/tests/in_memory_repository.py"
+lines = "44-50"
+anchor = "def test_register_persists_user"
+note = "a test that injects the fake and asserts through the public interface"

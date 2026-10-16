@@ -1,6 +1,7 @@
 ---
 id: CES-74
 title: The house logger (core/logger.py)
+references: ["structured-logging"]
 ---
 
 **Ships as:** snippet (`.agents/snippets/core/logger.py`)
