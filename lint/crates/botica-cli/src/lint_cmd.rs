@@ -1,3 +1,4 @@
+use crate::extension_pool::ExtensionPool;
 use crate::{extension, project, rules, timings};
 use anyhow::{Context, Result};
 use botica_astgrep::Tuning;
@@ -7,7 +8,6 @@ use botica_core::report::{self, ErrorKind, Format, Report, RunError};
 use botica_core::walk::{SourceFile, Unreadable};
 use botica_core::{postprocess, Diagnostic, Engine, Severity};
 use clap::{Args, ValueEnum};
-use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -154,8 +154,8 @@ struct Setup {
     has_extensions: bool,
     /// Where the configuration was found (the working directory when there is none).
     project_root: PathBuf,
-    /// The folder of each catalog of the project, by name.
-    catalog_dirs: BTreeMap<String, PathBuf>,
+    /// The extension rules of the project.
+    pool: ExtensionPool,
 }
 
 impl Setup {
@@ -169,6 +169,12 @@ impl Setup {
         let config_key = project.fingerprint();
         let natives = project::natives(&project);
         let resolution = Arc::new(project.resolution);
+        let pool = ExtensionPool::new(
+            Arc::clone(&resolution),
+            prefix.clone(),
+            catalog_dirs,
+            project_root.clone(),
+        );
         let has_extensions = resolution
             .entries()
             .iter()
@@ -215,7 +221,7 @@ impl Setup {
             with_astgrep,
             has_extensions,
             project_root,
-            catalog_dirs,
+            pool,
         })
     }
 }

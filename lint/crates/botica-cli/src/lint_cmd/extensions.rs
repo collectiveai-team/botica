@@ -2,15 +2,15 @@
 //! where the rule applies.
 
 use std::collections::{BTreeMap, HashMap};
-use std::path::PathBuf;
 
-use botica_catalog::{Implementation, Rule, Runtime};
+use botica_catalog::{Implementation, Rule};
 use botica_core::report::{ErrorKind, RunError};
 use botica_core::walk::SourceFile;
 use botica_core::Diagnostic;
 
 use super::{LintArgs, Setup};
-use crate::project::{self, extensions_at};
+use crate::extension_pool::own_findings;
+use crate::project;
 use crate::{extension, timings};
 
 /// What the extension rules found, and why some of them did not finish.
@@ -73,9 +73,7 @@ fn jobs<'a>(setup: &'a Setup, sources: &'a [SourceFile]) -> Vec<Job<'a>> {
         let Some(text) = source.text() else {
             continue;
         };
-        for (rule, implementation) in
-            extensions_at(&setup.resolution, setup.prefix.as_deref(), &source.path)
-        {
+        for (rule, implementation) in setup.pool.at(&source.path) {
             let position = rule
                 .implementations
                 .iter()
@@ -95,8 +93,8 @@ fn jobs<'a>(setup: &'a Setup, sources: &'a [SourceFile]) -> Vec<Job<'a>> {
 }
 
 fn execute<'a>(job: &Job<'a>, setup: &Setup, batch: usize) -> Done<'a> {
-    let outcome = match command_of(&setup.catalog_dirs, job.rule, job.implementation) {
-        Ok(argv) => extension::run_files(&argv, &setup.project_root, &job.files, batch),
+    let outcome = match setup.pool.command_of(job.rule, job.implementation) {
+        Ok(argv) => extension::run_files(&argv, setup.pool.project_root(), &job.files, batch),
         Err(message) => extension::Outcome {
             found: Vec::new(),
             failure: Some(anyhow::anyhow!(message)),
@@ -107,71 +105,6 @@ fn execute<'a>(job: &Job<'a>, setup: &Setup, batch: usize) -> Done<'a> {
         rule: job.rule,
         outcome,
     }
-}
-
-/// What runs the implementation: `uv run --script` on the script of a Python rule, `node` on the
-/// script of a Node rule, the command of a rule that names one.
-fn command_of(
-    catalog_dirs: &BTreeMap<String, PathBuf>,
-    rule: &Rule,
-    implementation: &Implementation,
-) -> Result<Vec<String>, String> {
-    let named = |what: &str| format!("`{}` has no {what}", rule.id);
-    match implementation.runtime {
-        Some(Runtime::Command) => implementation
-            .command
-            .clone()
-            .ok_or_else(|| named("`command`")),
-        Some(runtime) => {
-            let script =
-                script_of(catalog_dirs, rule, implementation).ok_or_else(|| named("script"))?;
-            let script = script.to_string_lossy().into_owned();
-            Ok(match runtime {
-                Runtime::Python => ["uv", "run", "--script"]
-                    .map(str::to_owned)
-                    .into_iter()
-                    .chain([script])
-                    .collect(),
-                _ => vec!["node".to_owned(), script],
-            })
-        }
-        None => Err(named("runtime")),
-    }
-}
-
-/// The script of the rule, in its folder of `<catalog>/<family>/<slug>/`, where the catalog is.
-fn script_of(
-    catalog_dirs: &BTreeMap<String, PathBuf>,
-    rule: &Rule,
-    implementation: &Implementation,
-) -> Option<PathBuf> {
-    let catalog = rule.catalog.as_deref()?;
-    let slug = rule.id.strip_prefix(catalog)?.strip_prefix('/')?;
-    let folder = catalog_dirs
-        .get(catalog)?
-        .join(rule.family.as_deref()?)
-        .join(slug);
-    Some(folder.join(implementation.file.as_deref()?))
-}
-
-/// The findings that are about the rule. A finding about another rule is left out, and said once.
-fn own_findings(rule: &Rule, found: Vec<Diagnostic>) -> Vec<Diagnostic> {
-    let (own, foreign): (Vec<Diagnostic>, Vec<Diagnostic>) = found
-        .into_iter()
-        .partition(|finding| finding.rule == rule.id);
-    let mut named: Vec<&str> = foreign
-        .iter()
-        .map(|finding| finding.rule.as_str())
-        .collect();
-    named.sort_unstable();
-    named.dedup();
-    for other in named {
-        eprintln!(
-            "botica: `{}` answered with a finding of `{other}`: left out",
-            rule.id
-        );
-    }
-    own
 }
 
 /// What the comments of the files leave of the findings. The engine did not see these findings,

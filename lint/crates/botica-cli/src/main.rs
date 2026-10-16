@@ -2,6 +2,7 @@ mod agents_md;
 mod catalog_json;
 mod explain_cmd;
 mod extension;
+mod extension_pool;
 mod lint_cmd;
 mod project;
 mod rubric;
