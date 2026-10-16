@@ -33,7 +33,8 @@ flowchart LR
   catalog[(Rule catalog<br/>rules/&lt;family&gt;/&lt;slug&gt;)] --> core
   catalog --> export[botica rules export]
   export --> site[Standards site · ADR 0002]:::planned
-  export --> judges[Judges: Continue checks · abide]:::planned
+  export --> abide[Judge: abide]
+  export --> continue[Judge: Continue checks]:::planned
   classDef planned stroke-dasharray: 4 4
 ```
 
@@ -215,11 +216,11 @@ What this ADR decides and the code does not have. Delete a line when it ships.
   `botica[sdk]`, is built.
 - Catalogs declared externally. The catalogs of the project in `.botica/rules/` load and their
   `extension` rules run.
-- `botica rules export` in the formats other than `markdown` and `json` (`continue`, `abide`,
-  `schema`), `botica rules test` (with `--against`), and the `botica-rule-author` skill. Only
-  `botica rules list`, `botica rules export` with `--format markdown` or `--format json`, and
-  `botica rules new` with `--kind ast-grep`, `judgment` or `external` exist, and with
-  `--kind extension --runtime <runtime>` for a catalog of a project (`--catalog
-  .botica/rules/<name>`); the built-in catalog takes no extension.
+- `botica rules export` with the formats `continue` and `schema` (ADR 0005 leaves `continue`
+  and `skill` undecided). The formats `markdown`, `json`, `agents-md` and `abide` exist, and so do
+  `botica rules test --judge abide`, `botica rules conform` and `botica rules new` with
+  `--kind ast-grep`, `judgment` or `external`, and with `--kind extension --runtime <runtime>`
+  for a catalog of a project (`--catalog .botica/rules/<name>`); the built-in catalog takes no
+  extension.
 - Profiles (`profiles/<name>.toml`, `botica profile install` and `botica profile check`, ADR 0006). The standards site that reads the Markdown export is built (`website/`) but not
   published, and it has no discussion thread and no "edit this page" yet.
