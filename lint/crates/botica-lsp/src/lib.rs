@@ -1,135 +1,287 @@
 //! The Language Server Protocol front-end of botica: the findings of the rules for the buffers
 //! of an editor, framed as the protocol frames them (`Content-Length` headers, JSON-RPC 2.0).
 //!
-//! The server holds no documents: each `didOpen` and `didChange` lints the text the editor sends
-//! and publishes the findings, and `didClose` clears them. Columns are counted in characters,
-//! which are the units of the protocol for text in the Basic Multilingual Plane.
+//! Each `didOpen` and `didChange` lints the text the editor sends with the engine and publishes
+//! the findings, and `didClose` clears them. The extension rules, when they are asked for, run in
+//! their own processes, one thread for each rule: the text of a document is sent to them when it
+//! has stayed as it is for the debounce, and what they find is published after the findings of
+//! the engine, together with them. Columns are counted in characters, which are the units of the
+//! protocol for text in the Basic Multilingual Plane.
 
+mod extensions;
+mod wire;
+
+use std::collections::{BTreeMap, HashMap};
 use std::io::{self, BufRead, Write};
 use std::path::Path;
+use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
+use std::thread::Scope;
+use std::time::{Duration, Instant};
 
-use botica_core::{Diagnostic, Severity};
+use botica_core::Diagnostic;
 use serde_json::{json, Value};
+
+use extensions::{work, Event, Job};
+pub use extensions::{Extensions, Process, MAX_RESTARTS};
+use wire::{path_of, publish, read_message, reply, write_message};
 
 /// What lints a document: its path from the root of the project, and its text.
 pub type Lint<'a> = &'a dyn Fn(&str, &str) -> Vec<Diagnostic>;
 
-fn read_message(input: &mut impl BufRead) -> io::Result<Option<Value>> {
-    let mut length = None;
-    loop {
-        let mut line = String::new();
-        if input.read_line(&mut line)? == 0 {
-            return Ok(None);
-        }
-        let line = line.trim_end();
-        if line.is_empty() {
-            break;
-        }
-        if let Some(value) = line.strip_prefix("Content-Length:") {
-            length = value.trim().parse::<usize>().ok();
+/// How long the text of a document has to stay as it is before the extensions lint it.
+pub const DEBOUNCE: Duration = Duration::from_millis(250);
+
+/// What the server runs besides the engine.
+pub struct Options<'a> {
+    /// The extension rules of the project, if there are any to run.
+    pub extensions: Option<&'a dyn Extensions>,
+    /// Whether the extensions run although the editor did not ask for them.
+    pub enabled: bool,
+    pub debounce: Duration,
+}
+
+impl Default for Options<'_> {
+    fn default() -> Self {
+        Self {
+            extensions: None,
+            enabled: false,
+            debounce: DEBOUNCE,
         }
     }
-    let Some(length) = length else {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "a message without Content-Length",
-        ));
-    };
-    let mut body = vec![0; length];
-    input.read_exact(&mut body)?;
-    Ok(Some(serde_json::from_slice(&body)?))
 }
 
-fn write_message(output: &mut impl Write, message: &Value) -> io::Result<()> {
-    let body = message.to_string();
-    write!(output, "Content-Length: {}\r\n\r\n{body}", body.len())?;
-    output.flush()
+/// What the server knows of an open document: its text, what the engine found and what each rule
+/// found. `revision` counts the texts it has had, and `due` is when the extensions are given this
+/// one, if they have not been.
+struct Document {
+    path: String,
+    text: String,
+    revision: u64,
+    engine: Vec<Diagnostic>,
+    found: BTreeMap<String, Vec<Diagnostic>>,
+    due: Option<Instant>,
 }
 
-fn percent_decode(text: &str) -> String {
-    let bytes = text.as_bytes();
-    let mut decoded = Vec::with_capacity(bytes.len());
-    let mut index = 0;
-    while index < bytes.len() {
-        let hex = bytes
-            .get(index + 1..index + 3)
-            .and_then(|pair| std::str::from_utf8(pair).ok())
-            .and_then(|pair| u8::from_str_radix(pair, 16).ok());
-        match (bytes[index], hex) {
-            (b'%', Some(byte)) => {
-                decoded.push(byte);
-                index += 3;
+impl Document {
+    fn findings(&self) -> Vec<Diagnostic> {
+        self.engine
+            .iter()
+            .chain(self.found.values().flatten())
+            .cloned()
+            .collect()
+    }
+}
+
+struct Server<'scope, 'env, W: Write> {
+    output: W,
+    root: &'env Path,
+    lint: Lint<'env>,
+    options: Options<'env>,
+    scope: &'scope Scope<'scope, 'env>,
+    events: Sender<Event>,
+    /// Whether the editor asked for the extensions in `initialize`.
+    asked: bool,
+    documents: HashMap<String, Document>,
+    workers: HashMap<String, Sender<Job>>,
+}
+
+impl<'scope, 'env, W: Write> Server<'scope, 'env, W> {
+    fn run(&mut self, inbox: &Receiver<Event>) -> io::Result<()> {
+        loop {
+            let event = match self.next_due() {
+                Some(due) => {
+                    match inbox.recv_timeout(due.saturating_duration_since(Instant::now())) {
+                        Ok(event) => event,
+                        Err(RecvTimeoutError::Timeout) => {
+                            self.hand_over_due();
+                            continue;
+                        }
+                        Err(RecvTimeoutError::Disconnected) => return Ok(()),
+                    }
+                }
+                None => match inbox.recv() {
+                    Ok(event) => event,
+                    Err(_) => return Ok(()),
+                },
+            };
+            match event {
+                Event::Input(Ok(Some(message))) => {
+                    if self.handle(&message)? {
+                        return Ok(());
+                    }
+                }
+                Event::Input(Ok(None)) => return Ok(()),
+                Event::Input(Err(error)) => return Err(error),
+                Event::Found {
+                    key,
+                    uri,
+                    revision,
+                    found,
+                } => self.add(key, &uri, revision, found)?,
+                Event::Warn(message) => write_message(
+                    &mut self.output,
+                    &json!({"jsonrpc": "2.0", "method": "window/showMessage",
+                            "params": {"type": 2, "message": message}}),
+                )?,
             }
-            (byte, _) => {
-                decoded.push(byte);
-                index += 1;
-            }
         }
     }
-    String::from_utf8_lossy(&decoded).into_owned()
-}
 
-/// The path of a `file://` URI, from `root` when it is inside it.
-fn path_of(uri: &str, root: &Path) -> String {
-    let path = percent_decode(uri.strip_prefix("file://").unwrap_or(uri));
-    match Path::new(&path).strip_prefix(root) {
-        Ok(inside) => inside.to_string_lossy().into_owned(),
-        Err(_) => path,
+    /// Answers a message; `true` when it is `exit`.
+    fn handle(&mut self, message: &Value) -> io::Result<bool> {
+        let method = message["method"].as_str().unwrap_or_default();
+        let params = &message["params"];
+        let uri = params["textDocument"]["uri"].as_str().unwrap_or_default();
+        match method {
+            "exit" => return Ok(true),
+            "initialize" => {
+                self.asked = params["initializationOptions"]["extensions"] == json!(true);
+                write_message(
+                    &mut self.output,
+                    &reply(
+                        &message["id"],
+                        json!({
+                            "capabilities": {"textDocumentSync": {"openClose": true, "change": 1}},
+                            "serverInfo": {"name": "botica"},
+                        }),
+                    ),
+                )?;
+            }
+            "shutdown" => write_message(&mut self.output, &reply(&message["id"], Value::Null))?,
+            "textDocument/didOpen" => {
+                let text = params["textDocument"]["text"].as_str().unwrap_or_default();
+                self.lint_and_publish(uri, text, false)?;
+            }
+            "textDocument/didChange" => {
+                let changes = params["contentChanges"].as_array();
+                if let Some(text) = changes
+                    .and_then(|changes| changes.last())
+                    .and_then(|change| change["text"].as_str())
+                {
+                    self.lint_and_publish(uri, text, true)?;
+                }
+            }
+            "textDocument/didClose" => {
+                self.documents.remove(uri);
+                publish(&mut self.output, uri, &[])?;
+            }
+            _ if message.get("id").is_some() => write_message(
+                &mut self.output,
+                &json!({"jsonrpc": "2.0", "id": message["id"],
+                        "error": {"code": -32601, "message": method}}),
+            )?,
+            _ => {}
+        }
+        Ok(false)
     }
-}
 
-const fn level(severity: Severity) -> u8 {
-    match severity {
-        Severity::Error => 1,
-        Severity::Warning => 2,
-        Severity::Info => 3,
-        Severity::Hint => 4,
+    /// The extensions that the server runs: those it has and the editor asked for.
+    fn extensions(&self) -> Option<&'env dyn Extensions> {
+        self.options
+            .extensions
+            .filter(|_| self.options.enabled || self.asked)
     }
-}
 
-fn position(line: usize, column: usize) -> Value {
-    json!({"line": line.saturating_sub(1), "character": column.saturating_sub(1)})
-}
+    /// Publishes what the engine finds in `text`. The extensions get the text at once, or after
+    /// the debounce when it is a change: the next change may come before.
+    fn lint_and_publish(&mut self, uri: &str, text: &str, change: bool) -> io::Result<()> {
+        let path = path_of(uri, self.root);
+        let engine = (self.lint)(&path, text);
+        publish(&mut self.output, uri, &engine)?;
+        let revision = self
+            .documents
+            .get(uri)
+            .map_or(1, |known| known.revision + 1);
+        let debounced = change && self.extensions().is_some();
+        self.documents.insert(
+            uri.to_owned(),
+            Document {
+                path,
+                text: text.to_owned(),
+                revision,
+                engine,
+                found: BTreeMap::new(),
+                due: debounced.then(|| Instant::now() + self.options.debounce),
+            },
+        );
+        if !change {
+            self.hand_over(uri);
+        }
+        Ok(())
+    }
 
-fn diagnostic(found: &Diagnostic) -> Value {
-    let (start, end) = if found.file_level {
-        (position(1, 1), position(1, 1))
-    } else {
-        (
-            position(found.line, found.column),
-            position(found.end_line, found.end_column),
-        )
-    };
-    json!({
-        "range": {"start": start, "end": end},
-        "severity": level(found.severity),
-        "code": found.rule,
-        "source": "botica",
-        "message": found.message,
-    })
-}
+    fn next_due(&self) -> Option<Instant> {
+        self.documents
+            .values()
+            .filter_map(|document| document.due)
+            .min()
+    }
 
-fn publish(output: &mut impl Write, uri: &str, findings: &[Diagnostic]) -> io::Result<()> {
-    let diagnostics: Vec<Value> = findings.iter().map(diagnostic).collect();
-    write_message(
-        output,
-        &json!({"jsonrpc": "2.0", "method": "textDocument/publishDiagnostics",
-                "params": {"uri": uri, "diagnostics": diagnostics}}),
-    )
-}
+    fn hand_over_due(&mut self) {
+        let now = Instant::now();
+        let due: Vec<String> = self
+            .documents
+            .iter()
+            .filter(|(_, document)| document.due.is_some_and(|due| due <= now))
+            .map(|(uri, _)| uri.clone())
+            .collect();
+        for uri in due {
+            if let Some(document) = self.documents.get_mut(&uri) {
+                document.due = None;
+            }
+            self.hand_over(&uri);
+        }
+    }
 
-fn lint_and_publish(
-    output: &mut impl Write,
-    root: &Path,
-    lint: Lint<'_>,
-    uri: &str,
-    text: &str,
-) -> io::Result<()> {
-    publish(output, uri, &lint(&path_of(uri, root), text))
-}
+    /// Gives the document to each extension rule that reads it, starting the thread of the rule
+    /// the first time.
+    fn hand_over(&mut self, uri: &str) {
+        let Some(extensions) = self.extensions() else {
+            return;
+        };
+        let Some(document) = self.documents.get(uri) else {
+            return;
+        };
+        let (path, text, revision) = (
+            document.path.clone(),
+            document.text.clone(),
+            document.revision,
+        );
+        for key in extensions.at(&path) {
+            let jobs = self.workers.entry(key.clone()).or_insert_with(|| {
+                let (jobs, queue) = mpsc::channel();
+                let events = self.events.clone();
+                self.scope
+                    .spawn(move || work(&key, extensions, &queue, &events));
+                jobs
+            });
+            let _ = jobs.send(Job {
+                uri: uri.to_owned(),
+                revision,
+                path: path.clone(),
+                text: text.clone(),
+            });
+        }
+    }
 
-fn reply(id: &Value, result: Value) -> Value {
-    json!({"jsonrpc": "2.0", "id": id, "result": result})
+    /// Adds what a rule found to the findings of the document, unless the document is closed or
+    /// has another text now.
+    fn add(
+        &mut self,
+        key: String,
+        uri: &str,
+        revision: u64,
+        found: Vec<Diagnostic>,
+    ) -> io::Result<()> {
+        let Some(document) = self.documents.get_mut(uri) else {
+            return Ok(());
+        };
+        if document.revision != revision {
+            return Ok(());
+        }
+        document.found.insert(key, found);
+        publish(&mut self.output, uri, &document.findings())
+    }
 }
 
 /// Serves the messages of `input` until `exit` or the end of `input`. `lint` lints a document by
@@ -138,51 +290,50 @@ fn reply(id: &Value, result: Value) -> Value {
 /// # Errors
 /// Fails when `input` or `output` does, or when a message is not framed or is not JSON.
 pub fn serve_on(
-    mut input: impl BufRead,
-    mut output: impl Write,
+    input: impl BufRead + Send + 'static,
+    output: impl Write,
     root: &Path,
     lint: Lint<'_>,
 ) -> io::Result<()> {
-    while let Some(message) = read_message(&mut input)? {
-        let method = message["method"].as_str().unwrap_or_default();
-        let params = &message["params"];
-        let uri = params["textDocument"]["uri"].as_str().unwrap_or_default();
-        match method {
-            "exit" => return Ok(()),
-            "initialize" => write_message(
-                &mut output,
-                &reply(
-                    &message["id"],
-                    json!({
-                        "capabilities": {"textDocumentSync": {"openClose": true, "change": 1}},
-                        "serverInfo": {"name": "botica"},
-                    }),
-                ),
-            )?,
-            "shutdown" => write_message(&mut output, &reply(&message["id"], Value::Null))?,
-            "textDocument/didOpen" => {
-                let text = params["textDocument"]["text"].as_str().unwrap_or_default();
-                lint_and_publish(&mut output, root, lint, uri, text)?;
-            }
-            "textDocument/didChange" => {
-                let changes = params["contentChanges"].as_array();
-                if let Some(text) = changes
-                    .and_then(|changes| changes.last())
-                    .and_then(|change| change["text"].as_str())
-                {
-                    lint_and_publish(&mut output, root, lint, uri, text)?;
-                }
-            }
-            "textDocument/didClose" => publish(&mut output, uri, &[])?,
-            _ if message.get("id").is_some() => write_message(
-                &mut output,
-                &json!({"jsonrpc": "2.0", "id": message["id"],
-                        "error": {"code": -32601, "message": method}}),
-            )?,
-            _ => {}
+    serve_with(input, output, root, lint, Options::default())
+}
+
+/// As [`serve_on`], and the extension rules of `options` lint the documents too.
+///
+/// # Errors
+/// As [`serve_on`].
+pub fn serve_with(
+    mut input: impl BufRead + Send + 'static,
+    output: impl Write,
+    root: &Path,
+    lint: Lint<'_>,
+    options: Options<'_>,
+) -> io::Result<()> {
+    let (events, inbox) = mpsc::channel();
+    let reader = events.clone();
+    std::thread::spawn(move || loop {
+        let message = read_message(&mut input);
+        let last = !matches!(message, Ok(Some(_)));
+        if reader.send(Event::Input(message)).is_err() || last {
+            break;
         }
-    }
-    Ok(())
+    });
+    std::thread::scope(|scope| {
+        let mut server = Server {
+            output,
+            root,
+            lint,
+            options,
+            scope,
+            events,
+            asked: false,
+            documents: HashMap::new(),
+            workers: HashMap::new(),
+        };
+        let served = server.run(&inbox);
+        drop(server);
+        served
+    })
 }
 
 /// Serves on stdin and stdout.
@@ -190,5 +341,10 @@ pub fn serve_on(
 /// # Errors
 /// As [`serve_on`].
 pub fn serve(root: &Path, lint: Lint<'_>) -> io::Result<()> {
-    serve_on(io::stdin().lock(), io::stdout().lock(), root, lint)
+    serve_on(
+        io::BufReader::new(io::stdin()),
+        io::stdout().lock(),
+        root,
+        lint,
+    )
 }
