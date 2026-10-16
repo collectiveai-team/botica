@@ -27,5 +27,4 @@ pub use model::{
 };
 pub use question::{BooleanCriteria, Choices, Question};
 pub use readme::Section;
-pub use references::{Lines, Place, Reference, Topic, Topics, TOPIC_FILE};
 pub use references::{Reference, References, Topic, REFERENCES_DIR, TOPIC_FILE};
