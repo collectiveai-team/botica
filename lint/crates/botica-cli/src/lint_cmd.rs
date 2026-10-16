@@ -103,9 +103,8 @@ impl LintArgs {
     }
 }
 
-/// What lints the buffers of an editor: the engine of a run, built once. It runs the rules of the
-/// engine (native and ast-grep); the extension rules are processes of a whole run and are not
-/// started.
+/// What lints the buffers of an editor: the engine of a run, built once. `lint` runs the rules of
+/// the engine (native and ast-grep); the extension rules are the processes of `extensions`.
 pub struct Editor {
     setup: Setup,
 }
@@ -120,6 +119,11 @@ impl Editor {
     /// The findings in `text`, the content of the file `path`, given from the working directory.
     pub fn lint(&self, path: &str, text: &str) -> Vec<Diagnostic> {
         self.setup.engine.lint_source(path, text)
+    }
+
+    /// The extension rules of the project.
+    pub const fn extensions(&self) -> &ExtensionPool {
+        &self.setup.pool
     }
 }
 

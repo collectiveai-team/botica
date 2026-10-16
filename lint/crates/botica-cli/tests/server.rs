@@ -3,9 +3,7 @@
 
 mod common;
 
-use std::io::{BufRead, BufReader, Write};
-use std::process::{Command, Stdio};
-
+use common::lsp::{initialize, open, Session};
 use common::{project_in, write};
 use serde_json::{json, Value};
 
@@ -39,29 +37,6 @@ fn lay_out_acme(dir: &std::path::Path) {
     );
 }
 
-fn frame(message: &Value) -> String {
-    let body = message.to_string();
-    format!("Content-Length: {}\r\n\r\n{body}", body.len())
-}
-
-fn read_frame(output: &mut impl BufRead) -> Value {
-    let mut length = 0;
-    loop {
-        let mut line = String::new();
-        output.read_line(&mut line).expect("a header line");
-        let line = line.trim_end();
-        if line.is_empty() {
-            break;
-        }
-        length = line
-            .strip_prefix("Content-Length: ")
-            .map_or(length, |value| value.parse().expect("a number"));
-    }
-    let mut body = vec![0; length];
-    output.read_exact(&mut body).expect("the body");
-    serde_json::from_slice(&body).expect("JSON")
-}
-
 #[test]
 fn a_buffer_that_is_not_on_disk_gets_the_findings_of_the_rules_of_the_project() {
     let dir = project_in("server", "buffer", Some(""));
@@ -69,42 +44,12 @@ fn a_buffer_that_is_not_on_disk_gets_the_findings_of_the_rules_of_the_project() 
     lay_out_acme(&dir);
     let uri = format!("file://{}/scratch.py", dir.display());
 
-    let mut child = Command::new(env!("CARGO_BIN_EXE_botica"))
-        .arg("server")
-        .current_dir(&dir)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()
-        .expect("start botica server");
-    let mut stdin = child.stdin.take().expect("stdin");
-    let mut stdout = BufReader::new(child.stdout.take().expect("stdout"));
-
-    stdin
-        .write_all(
-            frame(&json!({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}))
-                .as_bytes(),
-        )
-        .expect("initialize");
-    let initialized = read_frame(&mut stdout);
-    stdin
-        .write_all(
-            frame(
-                &json!({"jsonrpc": "2.0", "method": "textDocument/didOpen", "params": {
-                "textDocument": {"uri": uri, "languageId": "python", "version": 1,
-                                 "text": "x = 1\neval(\"1\")\n"}}}),
-            )
-            .as_bytes(),
-        )
-        .expect("didOpen");
-    let published = read_frame(&mut stdout);
-    stdin
-        .write_all(frame(&json!({"jsonrpc": "2.0", "id": 2, "method": "shutdown"})).as_bytes())
-        .expect("shutdown");
-    let shut_down = read_frame(&mut stdout);
-    stdin
-        .write_all(frame(&json!({"jsonrpc": "2.0", "method": "exit"})).as_bytes())
-        .expect("exit");
-    let status = child.wait().expect("botica ends");
+    let mut editor = Session::start(&dir, &["server"]);
+    editor.send(&initialize(&Value::Null));
+    let initialized = editor.read();
+    editor.send(&open(&uri, "x = 1\neval(\"1\")\n"));
+    let published = editor.read();
+    let (rest, status) = editor.finish();
 
     assert_eq!(initialized["result"]["serverInfo"]["name"], "botica");
     assert_eq!(published["method"], "textDocument/publishDiagnostics");
@@ -117,6 +62,6 @@ fn a_buffer_that_is_not_on_disk_gets_the_findings_of_the_rules_of_the_project() 
         published["params"]["diagnostics"].as_array().map(Vec::len),
         Some(1)
     );
-    assert_eq!(shut_down["result"], Value::Null);
+    assert_eq!(rest[0]["result"], Value::Null);
     assert!(status.success());
 }

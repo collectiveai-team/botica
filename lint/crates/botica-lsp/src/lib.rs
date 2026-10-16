@@ -336,15 +336,16 @@ pub fn serve_with(
     })
 }
 
-/// Serves on stdin and stdout.
+/// Serves on stdin and stdout, as [`serve_with`].
 ///
 /// # Errors
 /// As [`serve_on`].
-pub fn serve(root: &Path, lint: Lint<'_>) -> io::Result<()> {
-    serve_on(
+pub fn serve(root: &Path, lint: Lint<'_>, options: Options<'_>) -> io::Result<()> {
+    serve_with(
         io::BufReader::new(io::stdin()),
         io::stdout().lock(),
         root,
         lint,
+        options,
     )
 }
