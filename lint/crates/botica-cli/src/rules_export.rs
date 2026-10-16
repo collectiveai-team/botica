@@ -1,15 +1,19 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, bail, Context, Result};
 use botica_catalog::{Catalog, Rule, OWN_RULES_DIR};
 use botica_config::Resolution;
+use botica_core::walk;
 use clap::{Args, ValueEnum};
 
 use crate::agents_md;
 use crate::catalog_json;
 use crate::project::{self, ProjectArgs};
+use crate::rubric;
 use crate::rule_page::{self, added_in, file_name, group_of, word};
 
 const OWN_RULES_DESCRIPTION: &str =
@@ -24,9 +28,13 @@ pub struct ExportArgs {
     #[arg(long, value_enum)]
     format: Format,
     /// Where to write: a directory for `markdown` and `json` (created if it is missing; no file in
-    /// it is deleted), and the file that holds the block for `agents-md`.
+    /// it is deleted), the file that holds the block for `agents-md`, and the rubric for `abide`
+    /// (`.abide/rubric.json`, where abide reads it, by default).
     #[arg(long)]
-    output: PathBuf,
+    output: Option<PathBuf>,
+    /// The file with the block of the judgment rules, whose lines the rubric of `abide` names.
+    #[arg(long, default_value = rubric::DEFAULT_AGENTS_MD)]
+    agents_md: PathBuf,
     /// Write nothing, and fail when what the export would write differs from what is there.
     #[arg(long)]
     check: bool,
@@ -46,6 +54,9 @@ enum Format {
     /// The judgment rules that the project runs, between `<!-- botica:rules -->` and
     /// `<!-- /botica:rules -->` in the file of `--output`.
     AgentsMd,
+    /// The rubric of abide: the judgment rules that the project runs, with their questions and
+    /// the files they apply to.
+    Abide,
 }
 
 struct Page {
@@ -61,8 +72,15 @@ struct Group<'a> {
 
 pub fn run(args: &ExportArgs) -> Result<()> {
     if args.check && matches!(args.format, Format::Markdown | Format::Json) {
-        bail!("--check applies to --format agents-md");
+        bail!("--check applies to --format agents-md and abide");
     }
+    if matches!(args.format, Format::Abide) {
+        return export_abide(args);
+    }
+    let output = args
+        .output
+        .as_deref()
+        .with_context(|| format!("--format {} needs --output", args.format.name()))?;
     let catalog = Catalog::embedded()?;
     let pages = match args.format {
         Format::Markdown => render(&catalog),
@@ -70,17 +88,25 @@ pub fn run(args: &ExportArgs) -> Result<()> {
             path: PathBuf::from("catalog.json"),
             text: catalog_json::render(&catalog),
         }],
-        Format::AgentsMd => return export_agents_md(args),
+        Format::AgentsMd => return export_agents_md(args, output),
+        Format::Abide => unreachable!("the rubric is exported above"),
     };
-    write_pages(&args.output, &pages)
+    write_pages(output, &pages)
 }
 
-fn export_agents_md(args: &ExportArgs) -> Result<()> {
+impl Format {
+    fn name(self) -> String {
+        self.to_possible_value()
+            .map(|value| value.get_name().to_owned())
+            .unwrap_or_default()
+    }
+}
+
+fn export_agents_md(args: &ExportArgs, path: &Path) -> Result<()> {
     let project = project::load(&args.project)?;
-    let path = &args.output;
     let text =
         fs::read_to_string(path).with_context(|| format!("cannot read `{}`", path.display()))?;
-    match updated_agents_md(args, &project.resolution, &text)? {
+    match updated_agents_md(args, path, &project.resolution, &text)? {
         Some(updated) => {
             fs::write(path, updated).with_context(|| format!("cannot write `{}`", path.display()))
         }
@@ -92,10 +118,11 @@ fn export_agents_md(args: &ExportArgs) -> Result<()> {
 /// already there. With `--check` a block that differs is an error.
 fn updated_agents_md(
     args: &ExportArgs,
+    path: &Path,
     resolution: &Resolution,
     text: &str,
 ) -> Result<Option<String>> {
-    let path = args.output.display();
+    let path = path.display();
     let block = agents_md::block(resolution, &args.base_url);
     let replaced =
         agents_md::replace(text, &block).map_err(|reason| anyhow!("`{path}` {reason}"))?;
@@ -109,6 +136,58 @@ fn updated_agents_md(
         );
     }
     Ok(Some(replaced))
+}
+
+/// The files of the project from its root, minus what its `extend-exclude` leaves out of a walk.
+fn project_files(root: &Path, resolution: &Arc<Resolution>) -> Vec<String> {
+    let exclusion = project::exclusion(Arc::clone(resolution), None);
+    walk::files(root, exclusion.as_ref())
+}
+
+/// Writes the rubric of the project, unless the one there has its sources and rules; with
+/// `--check` a rubric that differs or is missing is an error.
+fn export_abide(args: &ExportArgs) -> Result<()> {
+    let project = project::load(&args.project)?;
+    let root = project.loaded.root.clone();
+    let resolution = Arc::new(project.resolution);
+    let files = project_files(&root, &resolution);
+    let agents_md = fs::read_to_string(&args.agents_md)
+        .with_context(|| format!("cannot read `{}`", args.agents_md.display()))?;
+    let read = |path: &str| fs::read_to_string(root.join(path)).ok();
+    let agents_md_path = args.agents_md.to_string_lossy();
+    let inputs = rubric::Inputs {
+        resolution: &resolution,
+        files: &files,
+        read: &read,
+        agents_md_path: &agents_md_path,
+        agents_md: &agents_md,
+    };
+    let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+    let rubric = rubric::rubric(&inputs, rubric::rfc3339(now)).map_err(|reason| anyhow!(reason))?;
+    let output = args
+        .output
+        .clone()
+        .unwrap_or_else(|| PathBuf::from(rubric::DEFAULT_OUTPUT));
+    let existing = fs::read_to_string(&output).ok();
+    if existing.is_some_and(|text| rubric::unchanged(&text, &rubric)) {
+        return Ok(());
+    }
+    if args.check {
+        bail!(
+            "`{}` differs from the catalog, the configuration or the `ignore-file` comments of \
+             the project: run `botica rules export --format abide`",
+            output.display()
+        );
+    }
+    if let Some(parent) = output
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("cannot create `{}`", parent.display()))?;
+    }
+    fs::write(&output, rubric::render(&rubric))
+        .with_context(|| format!("cannot write `{}`", output.display()))
 }
 
 fn render(catalog: &Catalog) -> Vec<Page> {
@@ -231,6 +310,24 @@ mod tests {
         assert!(index.contains("<br>a \\| b | stable |"), "{index}");
     }
 
+    #[test]
+    fn the_rubric_looks_at_the_files_that_extend_exclude_leaves_in_the_walk() {
+        let root =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/unit-tests/project-files");
+        let _ = fs::remove_dir_all(&root);
+        for file in ["src/a.py", "vendor/b.py"] {
+            let path = root.join(file);
+            fs::create_dir_all(path.parent().expect("a parent")).expect("a directory");
+            fs::write(path, "x\n").expect("a file");
+        }
+        let catalog = Catalog::embedded().expect("the catalog");
+        let config = botica_config::Config::from_botica_toml("extend-exclude = [\"vendor\"]\n")
+            .expect("a valid configuration");
+        let resolution = Arc::new(Resolution::new(&config, &catalog).expect("it resolves"));
+
+        assert_eq!(project_files(&root, &resolution), ["src/a.py"]);
+    }
+
     #[derive(clap::Parser)]
     struct Command {
         #[command(flatten)]
@@ -245,12 +342,18 @@ mod tests {
 
     #[test]
     fn the_block_of_agents_md_links_each_rule_under_the_base_url() {
-        let resolution = crate::agents_md::tests::resolution("");
+        use crate::agents_md::tests::{resolution_with, Judgment};
+        let resolution = resolution_with(&[Judgment::new("testing", "test-one", "BTTEST901")], "");
         let text = "<!-- botica:rules -->\n<!-- /botica:rules -->\n";
 
-        let updated = updated_agents_md(&args(&["--base-url", "https://x.org"]), &resolution, text)
-            .expect("the markers are there")
-            .expect("the block changes");
+        let updated = updated_agents_md(
+            &args(&["--base-url", "https://x.org"]),
+            Path::new("AGENTS.md"),
+            &resolution,
+            text,
+        )
+        .expect("the markers are there")
+        .expect("the block changes");
 
         assert!(
             updated.contains(" → https://x.org/rules/testing/bttest901-test-one/\n"),

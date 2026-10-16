@@ -17,7 +17,7 @@ use args::ConfigOption;
 pub use args::ProjectArgs;
 pub use natives::natives;
 pub use paths::{exclusion, inclusion, planner, verdicts};
-pub use policy::{rule_docs, suppression_policy};
+pub use policy::{keep_judged, rule_docs, suppression_policy};
 
 pub struct Project {
     pub loaded: Loaded,

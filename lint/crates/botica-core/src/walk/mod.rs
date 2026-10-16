@@ -1,7 +1,7 @@
 mod read;
 
 use crate::diagnostic::Diagnostic;
-use crate::engine::Engine;
+use crate::engine::{Engine, Exclusion};
 use ignore::WalkBuilder;
 use std::path::{Component, Path, PathBuf};
 
@@ -306,6 +306,42 @@ impl Drop for Flush<'_> {
             all.asked_for.append(&mut self.found.asked_for);
         }
     }
+}
+
+/// Every file under `root` that a walk reaches, from `root` and sorted: the walk honours
+/// `.gitignore`, never enters a directory of a tool, and leaves out what `exclusion` names.
+pub fn files(root: &Path, exclusion: Option<&Exclusion>) -> Vec<String> {
+    let found = std::sync::Mutex::new(Vec::new());
+    WalkBuilder::new(root)
+        .hidden(false)
+        .build_parallel()
+        .run(|| {
+            let found = &found;
+            Box::new(move |entry| {
+                let Ok(entry) = entry else {
+                    return ignore::WalkState::Continue;
+                };
+                let path = relative_path(root, entry.path());
+                let is_dir = entry.file_type().is_some_and(|t| t.is_dir());
+                let skipped = entry.depth() > 0
+                    && (is_tool_dir(entry.file_name())
+                        || exclusion.is_some_and(|exclusion| (exclusion.entry)(&path, is_dir)));
+                if skipped {
+                    return ignore::WalkState::Skip;
+                }
+                let kept = entry.file_type().is_some_and(|t| t.is_file())
+                    && !exclusion.is_some_and(|exclusion| (exclusion.path)(&path));
+                if kept {
+                    if let Ok(mut found) = found.lock() {
+                        found.push(path);
+                    }
+                }
+                ignore::WalkState::Continue
+            })
+        });
+    let mut found = found.into_inner().unwrap_or_default();
+    found.sort();
+    found
 }
 
 /// `path` as the rules and the output see it: from `root` and without `./`.

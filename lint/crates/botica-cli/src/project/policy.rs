@@ -1,9 +1,12 @@
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use botica_config::Resolution;
 use botica_core::report::RuleDoc;
 use botica_core::suppress::{Policy, INVALID, UNUSED};
-use botica_core::Severity;
+use botica_core::{postprocess, Diagnostic, Severity};
+
+use super::verdicts;
 
 /// What the suppression comments may name, and whether the rules about them report.
 pub fn suppression_policy(resolution: &Arc<Resolution>) -> Policy {
@@ -33,6 +36,26 @@ pub fn suppression_policy(resolution: &Arc<Resolution>) -> Policy {
         policy = policy.report_invalid(level);
     }
     policy
+}
+
+/// What the project keeps of findings of judgment rules, grouped by path: those that no
+/// `ignore-file` comment of their file silences and that the configuration applies at their path
+/// and in their language, with the severity it names there. `read` gives the text of a file.
+pub fn keep_judged(
+    resolution: &Arc<Resolution>,
+    prefix: Option<&str>,
+    by_path: BTreeMap<String, Vec<Diagnostic>>,
+    read: impl Fn(&str) -> Option<String>,
+) -> Vec<Diagnostic> {
+    let policy = suppression_policy(resolution);
+    let mut found = Vec::new();
+    for (path, mut findings) in by_path {
+        if let Some(text) = read(&path) {
+            policy.silence(&path, &text, &mut findings);
+        }
+        found.extend(findings);
+    }
+    postprocess::apply(found, verdicts(resolution, prefix))
 }
 
 /// The catalog's rules as the output formats describe them.

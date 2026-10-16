@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use botica_config::Resolution;
-use botica_core::{postprocess, Diagnostic, Severity};
+use botica_core::{Diagnostic, Severity};
 use serde::Deserialize;
 
 use crate::project;
@@ -153,15 +153,7 @@ pub fn filter(
             by_path.entry(found.path.clone()).or_default().push(found);
         }
     }
-    let policy = project::suppression_policy(resolution);
-    let mut found = Vec::new();
-    for (path, mut findings) in by_path {
-        if let Some(text) = read(&path) {
-            policy.silence(&path, &text, &mut findings);
-        }
-        found.extend(findings);
-    }
-    let mut diagnostics = postprocess::apply(found, project::verdicts(resolution, prefix));
+    let mut diagnostics = project::keep_judged(resolution, prefix, by_path, read);
     change.extend(diagnostics);
     diagnostics = change;
     Ok(Judged {

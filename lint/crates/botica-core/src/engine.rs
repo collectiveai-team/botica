@@ -305,13 +305,27 @@ pub struct ExtensionRun {
     languages: Vec<String>,
 }
 
+/// Each language that a rule may name, with the extensions of its files.
+const LANGUAGES: [(&str, &[&str]); 3] = [
+    ("python", &["py", "pyi"]),
+    ("typescript", &["ts", "tsx", "mts", "cts"]),
+    ("javascript", &["js", "jsx", "mjs", "cjs"]),
+];
+
 pub fn language_of(path: &str) -> Option<&'static str> {
-    match path.rsplit_once('.')?.1 {
-        "py" | "pyi" => Some("python"),
-        "ts" | "tsx" | "mts" | "cts" => Some("typescript"),
-        "js" | "jsx" | "mjs" | "cjs" => Some("javascript"),
-        _ => None,
-    }
+    let extension = path.rsplit_once('.')?.1;
+    LANGUAGES
+        .iter()
+        .find(|(_, extensions)| extensions.contains(&extension))
+        .map(|(language, _)| *language)
+}
+
+/// The extensions of the files of `language`, none for a language botica does not know.
+pub fn extensions_of(language: &str) -> &'static [&'static str] {
+    LANGUAGES
+        .iter()
+        .find(|(name, _)| *name == language)
+        .map_or(&[], |(_, extensions)| extensions)
 }
 
 impl ExtensionRun {

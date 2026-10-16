@@ -4,6 +4,7 @@ mod explain_cmd;
 mod extension;
 mod lint_cmd;
 mod project;
+mod rubric;
 mod rule_page;
 mod rule_view;
 mod rules;

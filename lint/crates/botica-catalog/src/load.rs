@@ -4,9 +4,8 @@ use serde::de::DeserializeOwned;
 
 use crate::issue::{issue, CatalogError, CatalogIssue};
 use crate::model::{Event, Family, FamilyFile, HistoryFile, Kind, Lifecycle, Rule};
-use crate::validate::{
-    check_across, check_family_code, check_history, check_readme, check_rule, is_kebab_case,
-};
+use crate::readme::check_readme;
+use crate::validate::{check_across, check_family_code, check_history, check_rule, is_kebab_case};
 
 pub const OWN_RULES_DIR: &str = "botica";
 pub const HISTORY_FILE: &str = "history.toml";

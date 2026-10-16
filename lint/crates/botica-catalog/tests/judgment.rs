@@ -228,3 +228,55 @@ fn the_readme_of_a_judgment_rule_follows_the_template_of_its_kind() {
         "{message}"
     );
 }
+
+fn with_directive(directive: &str) -> Vec<botica_catalog::SourceFile> {
+    let mut parts = judgment("", &judgment_implementation());
+    parts[2].text = common::JUDGMENT_README.replace(
+        "## Directive\n\nd\n",
+        &format!("## Directive\n\n{directive}\n"),
+    );
+    parts
+}
+
+#[test]
+fn the_directive_of_a_judgment_rule_is_its_text_in_the_rubric_and_has_at_most_600_characters() {
+    let words = "word ".repeat(120);
+    let fits = words.trim_end();
+    assert_eq!(fits.chars().count(), 599);
+    let loaded = catalog(vec![with_directive(&format!("{fits}x"))])
+        .unwrap_or_else(|error| panic!("{error}"));
+    assert_eq!(
+        loaded
+            .resolve("test-through-interface")
+            .expect("the rule")
+            .directive()
+            .chars()
+            .count(),
+        600
+    );
+
+    let message = issues(vec![with_directive(&format!("{fits}xy"))]);
+
+    assert!(
+        message.contains(
+            "testing/test-through-interface/README.md: the Directive of a judgment rule has at \
+             most 600 characters, and this one has 601"
+        ),
+        "{message}"
+    );
+}
+
+#[test]
+fn the_directive_is_read_with_one_space_between_words_and_a_blank_line_between_paragraphs() {
+    let loaded = catalog(vec![with_directive(
+        "Tests assert   behaviour\nthrough the seam.\n\nA second\n  paragraph.",
+    )])
+    .unwrap_or_else(|error| panic!("{error}"));
+
+    let rule = loaded.resolve("test-through-interface").expect("the rule");
+
+    assert_eq!(
+        rule.directive(),
+        "Tests assert behaviour through the seam.\n\nA second paragraph."
+    );
+}
