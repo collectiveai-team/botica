@@ -5,6 +5,10 @@ mod extension;
 mod extension_pool;
 mod lint_cmd;
 mod project;
+mod refs_check;
+mod refs_cmd;
+mod refs_collection;
+mod refs_standards;
 mod rubric;
 mod rule_page;
 mod rule_view;
@@ -36,6 +40,8 @@ enum Command {
     Rules(rules_cmd::RulesArgs),
     /// Say what a rule is, how it is configured here and why it is or is not active.
     Explain(explain_cmd::ExplainArgs),
+    /// Read the code that the rules and the standards point at, in `references/`.
+    Refs(refs_cmd::RefsArgs),
     /// Serve the findings of the rules to an editor, over the Language Server Protocol on stdio.
     Server(server_cmd::ServerArgs),
 }
@@ -45,6 +51,7 @@ fn main() -> ExitCode {
         Command::Lint(args) => lint_cmd::run(args),
         Command::Rules(args) => rules_cmd::run(&args),
         Command::Explain(args) => explain_cmd::run(&args).map(|()| ExitCode::SUCCESS),
+        Command::Refs(args) => refs_cmd::run(&args),
         Command::Server(args) => server_cmd::run(args).map(|()| ExitCode::SUCCESS),
     };
     match result {
