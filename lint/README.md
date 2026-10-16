@@ -252,7 +252,7 @@ default, and the README of a rule does not repeat it.
 # prek.toml: the mirror installs the wheel of the same version from PyPI
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
-rev = "v0.9.0"
+rev = "v0.10.0"
 
 [[repos.hooks]]
 id = "botica"

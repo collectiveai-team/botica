@@ -200,7 +200,7 @@ hooks = [{ id = "agnix", args = [], priority = 2 }]
 # `scaffolding/templates/prek-generic.toml`: the structure rules and the syntax rules.
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
-rev = "v0.9.0"
+rev = "v0.10.0"
 
 [[repos.hooks]]
 id = "botica"
