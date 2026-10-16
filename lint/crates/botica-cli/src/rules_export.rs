@@ -66,7 +66,7 @@ struct Page {
 
 struct Group<'a> {
     name: &'a str,
-    description: &'a str,
+    description: String,
     rules: Vec<&'a Rule>,
 }
 
@@ -81,12 +81,13 @@ pub fn run(args: &ExportArgs) -> Result<()> {
         .output
         .as_deref()
         .with_context(|| format!("--format {} needs --output", args.format.name()))?;
-    let catalog = Catalog::embedded()?;
+    let project = project::load(&args.project)?;
+    let catalog = &project.catalog;
     let pages = match args.format {
-        Format::Markdown => render(&catalog),
+        Format::Markdown => render(catalog),
         Format::Json => vec![Page {
             path: PathBuf::from("catalog.json"),
-            text: catalog_json::render(&catalog),
+            text: catalog_json::render(catalog),
         }],
         Format::AgentsMd => return export_agents_md(args, output),
         Format::Abide => unreachable!("the rubric is exported above"),
@@ -207,18 +208,26 @@ fn render(catalog: &Catalog) -> Vec<Page> {
     pages
 }
 
+/// The groups of the built-in catalog by name, then those of the catalogs of the project.
 fn groups(catalog: &Catalog) -> Vec<Group<'_>> {
-    let mut by_name: BTreeMap<&str, Vec<&Rule>> = BTreeMap::new();
+    let mut by_name: BTreeMap<(bool, &str), Vec<&Rule>> = BTreeMap::new();
     for rule in catalog.rules() {
-        by_name.entry(group_of(rule)).or_default().push(rule);
+        by_name
+            .entry((rule.catalog.is_some(), group_of(rule)))
+            .or_default()
+            .push(rule);
     }
     by_name
         .into_iter()
-        .map(|(name, mut rules)| {
+        .map(|((project, name), mut rules)| {
             rules.sort_by(|a, b| a.code.cmp(&b.code));
             Group {
                 name,
-                description: describe(catalog, name),
+                description: if project {
+                    format!("Rules of the catalog `{name}` of the project.")
+                } else {
+                    describe(catalog, name).to_owned()
+                },
                 rules,
             }
         })

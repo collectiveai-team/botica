@@ -149,7 +149,7 @@ pub struct Family {
     #[serde(skip)]
     pub header: String,
     /// The catalog of a project that holds the family; `None` for the built-in catalog.
-    #[serde(skip)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub catalog: Option<String>,
 }
 

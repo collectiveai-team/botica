@@ -6,7 +6,7 @@ use botica_catalog::{
 };
 use serde::Serialize;
 
-use crate::rule_page::group_of;
+use crate::rule_page::readme_path;
 
 const SCHEMA_VERSION: u32 = 1;
 
@@ -25,6 +25,8 @@ struct RuleView<'a> {
     rule: &'a str,
     code: &'a str,
     family: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    catalog: Option<&'a str>,
     standard: Option<&'a str>,
     summary: &'a str,
     status: Status,
@@ -73,6 +75,7 @@ impl<'a> RuleView<'a> {
             rule: &rule.id,
             code: &rule.code,
             family: rule.family.as_deref(),
+            catalog: rule.catalog.as_deref(),
             standard: rule.standard.as_deref(),
             summary: &rule.summary,
             status: rule.status,
@@ -96,7 +99,7 @@ impl<'a> RuleView<'a> {
                 .iter()
                 .map(|implementation| ImplementationView::new(rule, implementation))
                 .collect(),
-            readme: format!("{}/{}/README.md", group_of(rule), rule.id),
+            readme: readme_path(rule),
             sections: rule.sections(),
         }
     }

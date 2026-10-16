@@ -21,6 +21,8 @@ pub use policy::{keep_judged, rule_docs, suppression_policy};
 
 pub struct Project {
     pub loaded: Loaded,
+    /// The built-in catalog and the catalogs of the project, after it.
+    pub catalog: Catalog,
     pub resolution: Resolution,
     /// What `code_dirs_for_the_rules` found, searched once.
     for_the_rules: OnceLock<Vec<CodeDir>>,
@@ -75,6 +77,7 @@ pub fn load(args: &ProjectArgs) -> Result<Project> {
     let resolution = Resolution::new(&loaded.config, &catalog)?.only_scope(args.scope.only());
     Ok(Project {
         loaded,
+        catalog,
         resolution,
         for_the_rules: OnceLock::new(),
         catalogs,

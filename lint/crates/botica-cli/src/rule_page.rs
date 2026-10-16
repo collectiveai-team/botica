@@ -1,14 +1,37 @@
 use botica_catalog::{Catalog, Rule, Status, OWN_RULES_DIR};
 
-/// The folder that holds the page of a rule: its family, or the folder of the rules of botica.
+/// The folder that holds the page of a rule: the catalog of a project that holds it, else its
+/// family, or the folder of the rules of botica.
 pub fn group_of(rule: &Rule) -> &str {
-    rule.family.as_deref().unwrap_or(OWN_RULES_DIR)
+    rule.catalog
+        .as_deref()
+        .or(rule.family.as_deref())
+        .unwrap_or(OWN_RULES_DIR)
+}
+
+/// The name of the folder of a rule: its id, without the name of the catalog of a project.
+fn slug_of(rule: &Rule) -> &str {
+    rule.id.rsplit('/').next().unwrap_or(&rule.id)
+}
+
+/// The README of a rule, from the catalog it is in; from the folder of the catalogs of the
+/// project for a rule of one of them.
+pub fn readme_path(rule: &Rule) -> String {
+    let folder = format!(
+        "{}/{}/README.md",
+        rule.family.as_deref().unwrap_or(OWN_RULES_DIR),
+        slug_of(rule)
+    );
+    match &rule.catalog {
+        Some(catalog) => format!("{catalog}/{folder}"),
+        None => folder,
+    }
 }
 
 /// The code comes first, in lower case, so that a site which lists the pages by file name lists
 /// the rules of a family in the order of their codes (a code ends in three digits).
 pub fn file_name(rule: &Rule) -> String {
-    format!("{}-{}.md", rule.code.to_lowercase(), rule.id)
+    format!("{}-{}.md", rule.code.to_lowercase(), slug_of(rule))
 }
 
 /// A status or a severity as the word that `rule.toml` writes.
@@ -65,6 +88,9 @@ fn front_matter(catalog: &Catalog, rule: &Rule) -> String {
     if let Some(family) = &rule.family {
         lines.push(format!("family: {}", json(family)));
     }
+    if let Some(catalog) = &rule.catalog {
+        lines.push(format!("catalog: {}", json(catalog)));
+    }
     if let Some(standard) = &rule.standard {
         lines.push(format!("standard: {}", json(standard)));
     }
@@ -81,10 +107,7 @@ fn front_matter(catalog: &Catalog, rule: &Rule) -> String {
         format!("languages: {}", json(&rule.languages())),
         format!("tags: {}", json(&rule.tags)),
         format!("aliases: {}", json(&rule.aliases)),
-        format!(
-            "readme: {}",
-            json(&format!("{}/{}/README.md", group_of(rule), rule.id))
-        ),
+        format!("readme: {}", json(&readme_path(rule))),
     ]);
     format!("---\n{}\n---\n", lines.join("\n"))
 }
@@ -131,6 +154,9 @@ fn identity(rule: &Rule) -> String {
         Some(family) => format!("Family: {family}"),
         None => "Rule of botica itself".to_owned(),
     }];
+    if let Some(catalog) = &rule.catalog {
+        parts.push(format!("Catalog: {catalog}"));
+    }
     if let Some(standard) = &rule.standard {
         parts.push(format!("Standard: {standard}"));
     }
