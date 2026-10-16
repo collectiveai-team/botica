@@ -26,6 +26,8 @@ botica rules                   # which rules are active, and why (--all adds the
 botica explain no-notebooks    # what a rule is and how it is configured here
 botica rules export --format markdown --output site   # one page per rule of the catalog, and an index
 botica rules export --format json --output out       # the whole catalog in out/catalog.json
+botica rules export --format agents-md --output AGENTS.md [--check]
+                               # the active judgment rules, between <!-- botica:rules --> and <!-- /botica:rules -->
 botica rules new structure/no-foo --kind ast-grep --language python --standard CES-63
                                # the folder of a new rule (ast-grep, extension or judgment) in lint/rules
 ```

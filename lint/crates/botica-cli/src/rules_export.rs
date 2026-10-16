@@ -2,11 +2,14 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use botica_catalog::{Catalog, Rule, OWN_RULES_DIR};
+use botica_config::Resolution;
 use clap::{Args, ValueEnum};
 
+use crate::agents_md;
 use crate::catalog_json;
+use crate::project::{self, ProjectArgs};
 use crate::rule_page::{self, added_in, file_name, group_of, word};
 
 const OWN_RULES_DESCRIPTION: &str =
@@ -20,9 +23,18 @@ pub struct ExportArgs {
     /// What to write.
     #[arg(long, value_enum)]
     format: Format,
-    /// The directory to write to. It is created if it is missing, and no file in it is deleted.
+    /// Where to write: a directory for `markdown` and `json` (created if it is missing; no file in
+    /// it is deleted), and the file that holds the block for `agents-md`.
     #[arg(long)]
     output: PathBuf,
+    /// Write nothing, and fail when what the export would write differs from what is there.
+    #[arg(long)]
+    check: bool,
+    /// The address of the standards site, where `agents-md` links each rule.
+    #[arg(long, default_value = agents_md::SITE)]
+    base_url: String,
+    #[command(flatten)]
+    project: ProjectArgs,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -31,6 +43,9 @@ enum Format {
     Markdown,
     /// The whole catalog in one file, `catalog.json`.
     Json,
+    /// The judgment rules that the project runs, between `<!-- botica:rules -->` and
+    /// `<!-- /botica:rules -->` in the file of `--output`.
+    AgentsMd,
 }
 
 struct Page {
@@ -45,6 +60,9 @@ struct Group<'a> {
 }
 
 pub fn run(args: &ExportArgs) -> Result<()> {
+    if args.check && matches!(args.format, Format::Markdown | Format::Json) {
+        bail!("--check applies to --format agents-md");
+    }
     let catalog = Catalog::embedded()?;
     let pages = match args.format {
         Format::Markdown => render(&catalog),
@@ -52,8 +70,45 @@ pub fn run(args: &ExportArgs) -> Result<()> {
             path: PathBuf::from("catalog.json"),
             text: catalog_json::render(&catalog),
         }],
+        Format::AgentsMd => return export_agents_md(args),
     };
     write_pages(&args.output, &pages)
+}
+
+fn export_agents_md(args: &ExportArgs) -> Result<()> {
+    let project = project::load(&args.project)?;
+    let path = &args.output;
+    let text =
+        fs::read_to_string(path).with_context(|| format!("cannot read `{}`", path.display()))?;
+    match updated_agents_md(args, &project.resolution, &text)? {
+        Some(updated) => {
+            fs::write(path, updated).with_context(|| format!("cannot write `{}`", path.display()))
+        }
+        None => Ok(()),
+    }
+}
+
+/// The text of the file of `--output` with the block of the project, or `None` when the block is
+/// already there. With `--check` a block that differs is an error.
+fn updated_agents_md(
+    args: &ExportArgs,
+    resolution: &Resolution,
+    text: &str,
+) -> Result<Option<String>> {
+    let path = args.output.display();
+    let block = agents_md::block(resolution, &args.base_url);
+    let replaced =
+        agents_md::replace(text, &block).map_err(|reason| anyhow!("`{path}` {reason}"))?;
+    if replaced == text {
+        return Ok(None);
+    }
+    if args.check {
+        bail!(
+            "the block of `{path}` differs from the catalog and the configuration: run \
+             `botica rules export --format agents-md --output {path}`"
+        );
+    }
+    Ok(Some(replaced))
 }
 
 fn render(catalog: &Catalog) -> Vec<Page> {
@@ -174,5 +229,32 @@ mod tests {
 
         let index = &pages[0].text;
         assert!(index.contains("<br>a \\| b | stable |"), "{index}");
+    }
+
+    #[derive(clap::Parser)]
+    struct Command {
+        #[command(flatten)]
+        export: ExportArgs,
+    }
+
+    fn args(extra: &[&str]) -> ExportArgs {
+        use clap::Parser;
+        let base = ["export", "--format", "agents-md", "--output", "AGENTS.md"];
+        Command::parse_from(base.iter().chain(extra)).export
+    }
+
+    #[test]
+    fn the_block_of_agents_md_links_each_rule_under_the_base_url() {
+        let resolution = crate::agents_md::tests::resolution("");
+        let text = "<!-- botica:rules -->\n<!-- /botica:rules -->\n";
+
+        let updated = updated_agents_md(&args(&["--base-url", "https://x.org"]), &resolution, text)
+            .expect("the markers are there")
+            .expect("the block changes");
+
+        assert!(
+            updated.contains(" → https://x.org/rules/testing/bttest901-test-one/\n"),
+            "{updated}"
+        );
     }
 }

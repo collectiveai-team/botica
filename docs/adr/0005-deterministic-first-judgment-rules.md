@@ -67,7 +67,9 @@ no check at all.
    every repository; a suppression is the exception of one repository.
 7. **abide is the judge inside a coding session, and botica writes its rubric.** Botica runs no
    judge of its own. `botica rules export --format abide` writes `.abide/rubric.json` with
-   `"manual": true`, which abide reads as written and never recompiles.
+   `"manual": true`, which abide reads as written and never recompiles. The rubric holds the
+   active judgment rules of the project and no deterministic rule: abide never runs a `lint`
+   rule, and `botica lint` runs them.
 
    | Field of the rubric | From |
    |---|---|
@@ -75,7 +77,7 @@ no check at all.
    | `source` | the line of the rule in the block of `AGENTS.md`, listed in `sources` |
    | `when` | `when` of the rule; a rule with `pull-request` is left out |
    | `scope` | the globs of the rule with the suppressions of decision 6 applied |
-   | `check` | a judgment rule: `type = "model"` and its `question` as `rule.toml` writes it; a deterministic rule: `type = "lint"`, `how` that names botica and `overlaps = <slug>` |
+   | `check` | `type = "model"` and its `question` as `rule.toml` writes it |
 
    The question of a judgment rule lives in `rule.toml`, in the form abide reads
    (`@coldtea/abide-schema` 0.0.5): a table `[implementations.question]` with `type` (`boolean`,
@@ -86,9 +88,12 @@ no check at all.
    The block of `AGENTS.md` is written by `botica rules export --format agents-md --output
    AGENTS.md`, which replaces the text between `<!-- botica:rules -->` and `<!-- /botica:rules -->`
    and leaves the rest of the file as it is; it fails when the markers are missing, and `--check`
-   fails when the block differs. The block has one line per active rule of the project, by family:
-   `- **<code> · <slug>** [botica]` (or `[judgment]`) `— <first sentence of the Directive> → <URL of
-   its page>`. The rubric is exported after it, so `source` names the line of each rule.
+   fails when the block differs. The block lists the active judgment rules of the project and no
+   deterministic rule, since an agent has no choice about a rule that `botica lint` runs. It has a
+   heading `### <family>` per family, and under it one line per rule in the order of their codes:
+   ``- <code> `<slug>`: <first sentence of the Directive> → <URL of its page>``. The URL starts with
+   `--base-url`, the standards site by default. The rubric is exported after it, so `source` names
+   the line of each rule.
 
    `--check` of the rubric compares `sources` and `rules` only: it ignores `compiledAt`,
    `compiledBy`, the `sha` of each source and a `status = "active"` written out, which
@@ -97,8 +102,7 @@ no check at all.
    abide reads `scope` as globs joined by "or" (picomatch), and a negated glob in the list widens
    the match: `["src/**", "!src/legacy/**"]` matches `src/legacy/a.py` and `docs/x.md`. Botica
    writes positive globs only: a whole directory when nothing in it is excluded, and its files one by
-   one when something is. abide judges only `model` rules with status `active`; a `lint` rule is
-   counted and left to botica.
+   one when something is. abide judges only `model` rules with status `active`.
 
    - A hook of prek, `botica rules export --format abide --check`, fails when the rubric differs
      from the catalog, the configuration or the `ignore-file` comments of the repository. A new file

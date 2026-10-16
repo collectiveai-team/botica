@@ -1,3 +1,4 @@
+mod agents_md;
 mod catalog_json;
 mod explain_cmd;
 mod extension;

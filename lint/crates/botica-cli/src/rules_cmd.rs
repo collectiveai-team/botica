@@ -24,7 +24,8 @@ pub struct RulesArgs {
 enum RulesCommand {
     /// Show which rules are active and why (what `botica rules` does by itself).
     List(ListArgs),
-    /// Write the catalog as documents, whatever the project selects.
+    /// Write the catalog as documents: the site and `catalog.json` hold every rule, and the block
+    /// of `AGENTS.md` the judgment rules that the project selects.
     Export(ExportArgs),
     /// Write the folder of a new rule in the catalog of a checkout, with the next code of its
     /// family, a README with the sections of its template and empty fixtures.
