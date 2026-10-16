@@ -97,6 +97,34 @@ fn the_name_of_a_catalog_is_kebab_case() {
 }
 
 #[test]
+fn a_catalog_does_not_take_the_name_of_a_family_of_the_built_in_catalog() {
+    let files = [
+        vec![
+            catalog_toml("structure", "ACME"),
+            family("structure/arch", "ARCH"),
+        ],
+        project_rule(
+            "structure",
+            "arch",
+            "one",
+            "ACMEARCH001",
+            "",
+            AST_GREP_PYTHON,
+        ),
+        vec![file("structure/arch/one/python.yml", "id: structure/one\n")],
+    ]
+    .concat();
+
+    let message = rejected(&files);
+
+    assert!(message.contains("`structure`"), "{message}");
+    assert!(
+        message.contains("family of the built-in catalog"),
+        "{message}"
+    );
+}
+
+#[test]
 fn an_alias_of_a_project_rule_cannot_be_the_id_or_the_code_of_a_built_in_one() {
     for alias in ["no-utils", "BTSTRUC001"] {
         let mut files = acme();

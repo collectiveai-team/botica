@@ -29,9 +29,12 @@ impl Catalog {
     pub fn with_projects(&self, files: &[SourceFile]) -> Result<Self, CatalogError> {
         let mut issues = Vec::new();
         let folders = split(files, &mut issues);
+        let families = self.built_in_family_names();
         let codes: Vec<(&str, String)> = folders
             .iter()
-            .filter_map(|(name, folder)| Some((*name, read_code(name, folder, &mut issues)?)))
+            .filter_map(|(name, folder)| {
+                Some((*name, read_code(name, folder, &families, &mut issues)?))
+            })
             .collect();
         check_codes(&codes, &mut issues);
 
@@ -64,6 +67,16 @@ impl Catalog {
     }
 }
 
+impl Catalog {
+    fn built_in_family_names(&self) -> Vec<&str> {
+        self.families()
+            .iter()
+            .filter(|family| family.catalog.is_none())
+            .map(|family| family.name.as_str())
+            .collect()
+    }
+}
+
 fn split<'a>(files: &'a [SourceFile], issues: &mut Vec<CatalogIssue>) -> BTreeMap<&'a str, Folder> {
     let mut folders: BTreeMap<&str, Folder> = BTreeMap::new();
     for file in files {
@@ -89,11 +102,25 @@ fn split<'a>(files: &'a [SourceFile], issues: &mut Vec<CatalogIssue>) -> BTreeMa
 }
 
 /// The code a catalog declares in its `catalog.toml`, when the folder and the file are in order.
-fn read_code(name: &str, folder: &Folder, issues: &mut Vec<CatalogIssue>) -> Option<String> {
+fn read_code(
+    name: &str,
+    folder: &Folder,
+    built_in_families: &[&str],
+    issues: &mut Vec<CatalogIssue>,
+) -> Option<String> {
     if !is_kebab_case(name) {
         issues.push(issue(
             name,
             format!("folder `{name}` must be a kebab-case catalog name"),
+        ));
+        return None;
+    }
+    if built_in_families.contains(&name) {
+        issues.push(issue(
+            name,
+            format!(
+                "folder `{name}` has the name of a family of the built-in catalog: name the catalog another way"
+            ),
         ));
         return None;
     }

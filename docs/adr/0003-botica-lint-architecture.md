@@ -142,7 +142,8 @@ starting with `BT`, and not a text prefix of the code of another catalog), each 
 `<catalog>/<slug>` and its code is `<catalog code><family code>` plus 3 digits (`ACMESTRUC001`).
 A family of a project with the name of a built-in family is legal, because ids and codes do not
 collide, and gets a warning unless its `family.toml` says `extends = "<built-in family>"`; the
-export then lists its rules under that family. It takes rules of every kind but `native`, whose code lives in botica-core. A project replaces a built-in rule only when the
+export then lists its rules under that family. A catalog cannot have the name of a built-in family:
+the export would mix its folder with that of the family, so it does not load. It takes rules of every kind but `native`, whose code lives in botica-core. A project replaces a built-in rule only when the
 replacement declares `replaces = "<id>"` *and* the project config confirms it; suppressions
 written for the original keep working.
 
