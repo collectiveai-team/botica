@@ -75,7 +75,24 @@ no check at all.
    | `source` | the line of the rule in the block of `AGENTS.md`, listed in `sources` |
    | `when` | `when` of the rule; a rule with `pull-request` is left out |
    | `scope` | the globs of the rule with the suppressions of decision 6 applied |
-   | `check` | a judgment rule: `type = "model"`, its `question`, with criteria from Flag and Do not flag; a deterministic rule: `type = "lint"`, `overlaps = <slug>` |
+   | `check` | a judgment rule: `type = "model"` and its `question` as `rule.toml` writes it; a deterministic rule: `type = "lint"`, `how` that names botica and `overlaps = <slug>` |
+
+   The question of a judgment rule lives in `rule.toml`, in the form abide reads
+   (`@coldtea/abide-schema` 0.0.5): a table `[implementations.question]` with `type` (`boolean`,
+   `choice` or `score`), `instructions`, and `criteria`: `{ true, false }` for a boolean, a map of
+   options with `violating` for a choice, a list from compliant to violating with `violatingFrom`
+   for a score.
+
+   The block of `AGENTS.md` is written by `botica rules export --format agents-md --output
+   AGENTS.md`, which replaces the text between `<!-- botica:rules -->` and `<!-- /botica:rules -->`
+   and leaves the rest of the file as it is; it fails when the markers are missing, and `--check`
+   fails when the block differs. The block has one line per active rule of the project, by family:
+   `- **<code> · <slug>** [botica]` (or `[judgment]`) `— <first sentence of the Directive> → <URL of
+   its page>`. The rubric is exported after it, so `source` names the line of each rule.
+
+   `--check` of the rubric compares `sources` and `rules` only: it ignores `compiledAt`,
+   `compiledBy`, the `sha` of each source and a `status = "active"` written out, which
+   `abide rubric validate` adds when it rewrites the file.
 
    abide reads `scope` as globs joined by "or" (picomatch), and a negated glob in the list widens
    the match: `["src/**", "!src/legacy/**"]` matches `src/legacy/a.py` and `docs/x.md`. Botica
@@ -105,8 +122,8 @@ no check at all.
 
 ## Not decided
 
-- The formats of `botica rules export` other than `json` and `abide`. The order is `agents-md`,
-  `skill`, `continue` and `abide`.
+- The formats `skill` and `continue` of `botica rules export`. The order is `agents-md`, `abide`,
+  `skill` and `continue`.
 - Who serves the API of TypeSafe for a local model.
 - The classification of each standard marked `[judgment]`, one pull request per standard.
 
