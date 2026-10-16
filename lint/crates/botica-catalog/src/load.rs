@@ -3,12 +3,15 @@ use std::collections::BTreeMap;
 use serde::de::DeserializeOwned;
 
 use crate::issue::{issue, CatalogError, CatalogIssue};
-use crate::model::{Event, Family, FamilyFile, HistoryFile, Kind, Lifecycle, Rule};
+use crate::model::{Event, Family, FamilyFile, HistoryFile, Lifecycle, Rule};
+use crate::origin::{Origin, HEADER};
 use crate::readme::check_readme;
+use crate::sources::{attach_configs, attach_sources};
 use crate::validate::{check_across, check_family_code, check_history, check_rule, is_kebab_case};
 
 pub const OWN_RULES_DIR: &str = "botica";
 pub const HISTORY_FILE: &str = "history.toml";
+pub(crate) const CATALOG_FILE: &str = "catalog.toml";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceFile {
@@ -22,6 +25,14 @@ pub struct Catalog {
     rules: Vec<Rule>,
     index: BTreeMap<String, usize>,
     history: Vec<Event>,
+}
+
+/// What one load of files produced: the families, the rules with the path of each `rule.toml`,
+/// and the history, once the files have passed every check.
+pub(crate) struct Parts {
+    pub families: Vec<Family>,
+    pub rules: Vec<(String, Rule)>,
+    pub history: Vec<Event>,
 }
 
 #[derive(Default)]
@@ -43,31 +54,39 @@ struct DirEntry<'a> {
 impl Catalog {
     pub fn from_files(files: &[SourceFile]) -> Result<Self, CatalogError> {
         let mut issues = Vec::new();
-        let dirs = scan(files, &mut issues);
-        let families = load_families(&dirs, &mut issues);
-        let rules = load_rules(&dirs, &families, &mut issues);
-        check_across(&families, &rules, &mut issues);
-        let history = load_history(files, &rules, &mut issues);
+        let parts = load_parts(files, Origin::BuiltIn, &mut issues);
         if !issues.is_empty() {
             return Err(CatalogError { issues });
         }
+        let mut catalog = Self {
+            families: Vec::new(),
+            rules: Vec::new(),
+            index: BTreeMap::new(),
+            history: Vec::new(),
+        };
+        catalog.append(parts);
+        Ok(catalog)
+    }
 
-        let mut rules: Vec<Rule> = rules.into_iter().map(|(_, rule)| rule).collect();
-        rules.sort_by(|a, b| a.code.cmp(&b.code));
-        let mut index = BTreeMap::new();
-        for (position, rule) in rules.iter().enumerate() {
-            index.insert(rule.id.clone(), position);
-            index.insert(rule.code.clone(), position);
+    /// Adds what a load produced after what the catalog holds: its families, its rules in the
+    /// order of their codes, and its history.
+    pub(crate) fn append(&mut self, parts: Parts) {
+        self.families.extend(parts.families);
+        for (_, rule) in parts.rules {
+            let position = self.rules.len();
+            self.index.insert(rule.id.clone(), position);
+            self.index.insert(rule.code.clone(), position);
             for alias in &rule.aliases {
-                index.insert(alias.clone(), position);
+                self.index.insert(alias.clone(), position);
             }
+            self.rules.push(rule);
         }
-        Ok(Self {
-            families,
-            rules,
-            index,
-            history,
-        })
+        self.history.extend(parts.history);
+    }
+
+    /// Whether `key` is the id, the code or an alias of a rule.
+    pub(crate) fn knows(&self, key: &str) -> bool {
+        self.index.contains_key(key)
     }
 
     /// When `rule` was released, from the history of the catalog.
@@ -86,6 +105,23 @@ impl Catalog {
         &self.families
     }
 
+    /// The code of each catalog of a project that has a family, in the order of the catalogs.
+    pub fn project_codes(&self) -> Vec<&str> {
+        let mut codes: Vec<&str> = Vec::new();
+        for family in self.families.iter().filter(|f| f.catalog.is_some()) {
+            if !codes.contains(&family.header.as_str()) {
+                codes.push(&family.header);
+            }
+        }
+        codes
+    }
+
+    /// Whether `letters` is what the codes of a catalog start with: `BT` for the built-in
+    /// catalog, or the code of a catalog of a project that has a family.
+    pub fn has_header(&self, letters: &str) -> bool {
+        letters == HEADER || self.families.iter().any(|family| family.header == letters)
+    }
+
     pub fn rules(&self) -> &[Rule] {
         &self.rules
     }
@@ -95,15 +131,39 @@ impl Catalog {
     }
 }
 
+/// Loads the files of one catalog, with paths from its folder, and reports what is wrong.
+pub(crate) fn load_parts(
+    files: &[SourceFile],
+    origin: Origin<'_>,
+    issues: &mut Vec<CatalogIssue>,
+) -> Parts {
+    let dirs = scan(files, origin, issues);
+    let families = load_families(&dirs, origin, issues);
+    let mut rules = load_rules(&dirs, &families, origin, issues);
+    check_across(&families, &rules, origin, issues);
+    let history = if origin.is_built_in() {
+        load_history(files, &rules, issues)
+    } else {
+        Vec::new()
+    };
+    rules.sort_by(|(_, a), (_, b)| a.code.cmp(&b.code));
+    Parts {
+        families,
+        rules,
+        history,
+    }
+}
+
 fn scan<'a>(
     files: &'a [SourceFile],
+    origin: Origin<'_>,
     issues: &mut Vec<CatalogIssue>,
 ) -> BTreeMap<&'a str, DirEntry<'a>> {
     let mut dirs: BTreeMap<&str, DirEntry> = BTreeMap::new();
     for file in files {
         let parts: Vec<&str> = file.path.split('/').collect();
         match parts.as_slice() {
-            [HISTORY_FILE] => {}
+            [HISTORY_FILE] if origin.is_built_in() => {}
             [dir, "family.toml"] => dirs.entry(dir).or_default().family = Some(file),
             [dir, slug, "rule.toml"] => {
                 dirs.entry(dir).or_default().rules.entry(slug).or_default().toml = Some(file);
@@ -153,22 +213,26 @@ fn load_history(
 
 fn load_families(
     dirs: &BTreeMap<&str, DirEntry<'_>>,
+    origin: Origin<'_>,
     issues: &mut Vec<CatalogIssue>,
 ) -> Vec<Family> {
     let mut families = Vec::new();
+    // Only the built-in catalog has a folder for the rules of the linter itself.
+    let own_dir = origin.is_built_in().then_some(OWN_RULES_DIR);
     for (dir, entry) in dirs {
         let Some(file) = entry.family else {
-            if *dir != OWN_RULES_DIR {
+            if Some(*dir) != own_dir {
+                let exempt = own_dir
+                    .map(|own| format!(" (only `{own}/` is exempt)"))
+                    .unwrap_or_default();
                 issues.push(issue(
                     format!("{dir}/family.toml"),
-                    format!(
-                        "folder `{dir}` has no family.toml (only `{OWN_RULES_DIR}/` is exempt)"
-                    ),
+                    format!("folder `{dir}` has no family.toml{exempt}"),
                 ));
             }
             continue;
         };
-        if *dir == OWN_RULES_DIR {
+        if Some(*dir) == own_dir {
             issues.push(issue(
                 file.path.as_str(),
                 format!("`{OWN_RULES_DIR}/` holds the linter's own rules and takes no family.toml"),
@@ -191,6 +255,8 @@ fn load_families(
             name: (*dir).to_owned(),
             code: parsed.code,
             description: parsed.description,
+            header: origin.header().to_owned(),
+            catalog: origin.catalog(),
         });
     }
     families
@@ -199,6 +265,7 @@ fn load_families(
 fn load_rules(
     dirs: &BTreeMap<&str, DirEntry<'_>>,
     families: &[Family],
+    origin: Origin<'_>,
     issues: &mut Vec<CatalogIssue>,
 ) -> Vec<(String, Rule)> {
     let mut rules = Vec::new();
@@ -217,129 +284,15 @@ fn load_rules(
             let Some(mut rule) = parse::<Rule>(toml_file, issues) else {
                 continue;
             };
-            issues.extend(check_rule(&toml_file.path, slug, &rule, family));
+            issues.extend(check_rule(&toml_file.path, slug, &rule, family, origin));
             attach_sources(&base, &mut rule, &files.sources, issues);
             attach_configs(&base, &mut rule, &files.configs, issues);
             rule.family = family.map(|f| f.name.clone());
+            rule.catalog = origin.catalog();
             rule.readme = readme.text.clone();
             issues.extend(check_readme(&readme.path, &rule));
             rules.push((toml_file.path.clone(), rule));
         }
     }
     rules
-}
-
-/// What is wrong with the top-level `id:` of an ast-grep YAML, if anything: diagnostics carry
-/// that id, so it has to be the slug the catalog, the selection and the suppressions know.
-fn id_problem(yaml: &str, slug: &str) -> Option<String> {
-    let found: Vec<&str> = yaml
-        .lines()
-        .filter_map(|line| line.strip_prefix("id:"))
-        .map(|id| id.trim().trim_matches(['"', '\'']))
-        .collect();
-    (found != [slug]).then(|| {
-        if found.is_empty() {
-            format!("the YAML must declare `id: {slug}`")
-        } else {
-            format!(
-                "the YAML must declare only `id: {slug}`, found `{}`",
-                found.join("`, `")
-            )
-        }
-    })
-}
-
-/// Gives each ast-grep implementation the text of the file it names, and rejects the files that
-/// are named by nobody, the ones that are missing and the implementations that name none.
-fn attach_sources(
-    base: &str,
-    rule: &mut Rule,
-    sources: &[&SourceFile],
-    issues: &mut Vec<CatalogIssue>,
-) {
-    let mut named = Vec::new();
-    for implementation in &mut rule.implementations {
-        if implementation.kind != Kind::AstGrep {
-            continue;
-        }
-        let Some(name) = implementation.file.clone() else {
-            issues.push(issue(
-                format!("{base}/rule.toml"),
-                "an ast-grep implementation must name its YAML with `file`",
-            ));
-            continue;
-        };
-        let path = format!("{base}/{name}");
-        match sources.iter().find(|source| source.path == path) {
-            Some(source) => {
-                if let Some(problem) = id_problem(&source.text, &rule.id) {
-                    issues.push(issue(path, problem));
-                }
-                implementation.source = Some(source.text.clone());
-            }
-            None => issues.push(issue(
-                path,
-                format!(
-                    "`{name}` is named by an implementation of `{}` and is missing",
-                    rule.id
-                ),
-            )),
-        }
-        named.push(name);
-    }
-    reject_unnamed(base, sources, &named, "file", issues);
-}
-
-/// Gives each external implementation the text of the fragment that `config` names, and rejects
-/// the fragments that are named by nobody, the ones that are missing and those that are not TOML.
-fn attach_configs(
-    base: &str,
-    rule: &mut Rule,
-    configs: &[&SourceFile],
-    issues: &mut Vec<CatalogIssue>,
-) {
-    let mut named = Vec::new();
-    for implementation in &mut rule.implementations {
-        let Some(name) = implementation.config.clone() else {
-            continue;
-        };
-        let path = format!("{base}/{name}");
-        match configs.iter().find(|config| config.path == path) {
-            Some(config) => {
-                if let Err(error) = config.text.parse::<toml::Table>() {
-                    issues.push(issue(path, error.message().to_owned()));
-                }
-                implementation.source = Some(config.text.clone());
-            }
-            None => issues.push(issue(
-                path,
-                format!(
-                    "`{name}` is named by an implementation of `{}` and is missing",
-                    rule.id
-                ),
-            )),
-        }
-        named.push(name);
-    }
-    reject_unnamed(base, configs, &named, "config", issues);
-}
-
-fn reject_unnamed(
-    base: &str,
-    files: &[&SourceFile],
-    named: &[String],
-    field: &str,
-    issues: &mut Vec<CatalogIssue>,
-) {
-    for file in files {
-        let used = named
-            .iter()
-            .any(|name| file.path == format!("{base}/{name}"));
-        if !used {
-            issues.push(issue(
-                file.path.as_str(),
-                format!("no implementation names this file with `{field}`"),
-            ));
-        }
-    }
 }

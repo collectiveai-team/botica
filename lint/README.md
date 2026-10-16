@@ -120,6 +120,32 @@ Keys: `select`, `extend-select`, `ignore`, `preview`, `languages`, `extend-exclu
 the layout rules. Without it they are detected from `pyproject.toml`, `package.json`,
 `Cargo.toml`, `go.mod` and the like; `botica explain no-notebooks` lists what was found.
 
+## Rules of the project
+
+A project adds rules in `.botica/rules/<catalog>/`, under the folder of `botica.toml`. A catalog has
+the layout of `lint/rules/` with a `catalog.toml` on top:
+
+```text
+.botica/rules/acme/
+  catalog.toml           # code = "ACME"
+  structure/
+    family.toml          # code = "STRUC", description = "…"
+    no-blobs/
+      rule.toml          # id = "acme/no-blobs", code = "ACMESTRUC001"
+      README.md
+      python.yml         # id: acme/no-blobs
+      fixtures/
+```
+
+The id of a rule is `<catalog>/<slug>` and its code is the code of the catalog, the code of the
+family and 3 digits. The code of a catalog is letters A-Z, does not start with `BT` and is not a
+text prefix of the code of another catalog. A catalog takes rules of every kind but `native`.
+
+`acme/no-blobs` and `ACMESTRUC001` name a rule and `ACMESTRUC` a family, in `select`, `ignore`,
+`--select` and `--ignore`; `botica explain` takes a rule. `[rules."acme/no-blobs"]` configures it,
+and `# botica: ignore[acme/no-blobs]` or `# noqa: ACMESTRUC001` silences it. A catalog that does
+not load stops the command with exit code 2 and names the file and the problem.
+
 ## Silence a finding
 
 ```python

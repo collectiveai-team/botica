@@ -2,7 +2,7 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use crate::load::{SourceFile, HISTORY_FILE};
+use crate::load::{SourceFile, CATALOG_FILE, HISTORY_FILE};
 
 fn sorted(dir: &Path) -> io::Result<Vec<PathBuf>> {
     let mut entries = fs::read_dir(dir)?
@@ -58,6 +58,32 @@ pub fn read_files(dir: &Path) -> io::Result<Vec<SourceFile>> {
                     }
                 }
             }
+        }
+    }
+    Ok(files)
+}
+
+/// The files of the catalogs of a project under `dir`, its `.botica/rules`, with paths from `dir`:
+/// each folder gives its `catalog.toml` and what `read_files` reads of it. A `dir` that does not
+/// exist holds no catalog.
+pub fn read_project_files(dir: &Path) -> io::Result<Vec<SourceFile>> {
+    let mut files = Vec::new();
+    if !dir.is_dir() {
+        return Ok(files);
+    }
+    for catalog in sorted(dir)?.into_iter().filter(|path| path.is_dir()) {
+        let name = catalog
+            .file_name()
+            .map_or_else(String::new, |name| name.to_string_lossy().into_owned());
+        let catalog_toml = catalog.join(CATALOG_FILE);
+        if catalog_toml.is_file() {
+            push(&mut files, dir, &catalog_toml)?;
+        }
+        for file in read_files(&catalog)? {
+            files.push(SourceFile {
+                path: format!("{name}/{}", file.path),
+                text: file.text,
+            });
         }
     }
     Ok(files)

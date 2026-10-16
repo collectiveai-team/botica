@@ -2,9 +2,8 @@ use std::collections::BTreeMap;
 
 use crate::issue::{issue, CatalogIssue};
 use crate::model::{Event, Family, Implementation, Kind, Rule, Status};
+use crate::origin::{check_origin, Origin};
 use crate::question::check_question;
-
-pub(crate) const HEADER: &str = "BT";
 
 const RESERVED_OPTION_NAMES: [&str; 4] = ["severity", "enabled", "ignores", "extend-ignores"];
 
@@ -25,8 +24,8 @@ pub(crate) fn check_family_code(code: &str) -> Option<String> {
     })
 }
 
-fn check_rule_code(code: &str, family: Option<&Family>) -> Option<String> {
-    let prefix = format!("{HEADER}{}", family.map_or("", |f| f.code.as_str()));
+fn check_rule_code(code: &str, header: &str, family: Option<&Family>) -> Option<String> {
+    let prefix = format!("{header}{}", family.map_or("", |f| f.code.as_str()));
     let digits = code.strip_prefix(prefix.as_str());
     let valid = digits.is_some_and(|d| d.len() == 3 && d.bytes().all(|b| b.is_ascii_digit()));
     (!valid).then(|| format!("code `{code}` must be `{prefix}` followed by exactly 3 digits"))
@@ -182,6 +181,7 @@ pub(crate) fn check_rule(
     folder_slug: &str,
     rule: &Rule,
     family: Option<&Family>,
+    origin: Origin<'_>,
 ) -> Vec<CatalogIssue> {
     let mut found = Vec::new();
     let mut add = |message: String| found.push(issue(path, message));
@@ -189,13 +189,21 @@ pub(crate) fn check_rule(
     if !is_kebab_case(folder_slug) {
         add(format!("folder `{folder_slug}` must be a kebab-case slug"));
     }
-    if rule.id != folder_slug {
-        add(format!(
-            "id `{}` must equal its folder name `{folder_slug}`",
-            rule.id
-        ));
+    let expected = origin.id_of(folder_slug);
+    if rule.id != expected {
+        add(if origin.is_built_in() {
+            format!(
+                "id `{}` must equal its folder name `{folder_slug}`",
+                rule.id
+            )
+        } else {
+            format!(
+                "id `{}` must equal `{expected}`: the name of its catalog and its folder name",
+                rule.id
+            )
+        });
     }
-    if let Some(message) = check_rule_code(&rule.code, family) {
+    if let Some(message) = check_rule_code(&rule.code, origin.header(), family) {
         add(message);
     }
     if let Some(standard) = &rule.standard {
@@ -240,6 +248,7 @@ pub(crate) fn check_rule(
             ));
         }
         check_external(index, implementation, &mut add);
+        check_origin(index, rule, implementation, origin, &mut add);
     }
     found
 }
@@ -281,6 +290,7 @@ fn check_external(index: usize, implementation: &Implementation, add: &mut impl 
 pub(crate) fn check_across(
     families: &[Family],
     rules: &[(String, Rule)],
+    origin: Origin<'_>,
     found: &mut Vec<CatalogIssue>,
 ) {
     let mut family_codes: BTreeMap<&str, &str> = BTreeMap::new();
@@ -299,8 +309,12 @@ pub(crate) fn check_across(
                 found.push(issue(
                     format!("{}/family.toml", short.name),
                     format!(
-                        "family code `{}` is a text prefix of `{}` (`{}`): selecting `{HEADER}{}` would be ambiguous",
-                        short.code, long.code, long.name, short.code
+                        "family code `{}` is a text prefix of `{}` (`{}`): selecting `{}{}` would be ambiguous",
+                        short.code,
+                        long.code,
+                        long.name,
+                        origin.header(),
+                        short.code
                     ),
                 ));
             }

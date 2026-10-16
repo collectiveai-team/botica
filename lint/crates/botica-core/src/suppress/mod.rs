@@ -29,6 +29,8 @@ pub struct Policy {
     /// Judgment rules: suppressed by file only, with a reason, and never unused.
     judgment: HashSet<String>,
     external: Option<External>,
+    /// What the codes in a `noqa` comment start with when they are botica's.
+    code_prefixes: Vec<String>,
     compat_ast_grep_ignore: bool,
     unused: Option<Severity>,
     invalid: Option<Severity>,
@@ -51,6 +53,7 @@ impl Policy {
             astgrep: HashSet::new(),
             judgment: HashSet::new(),
             external: None,
+            code_prefixes: vec!["BT".to_owned()],
             compat_ast_grep_ignore: false,
             unused: None,
             invalid: None,
@@ -82,6 +85,13 @@ impl Policy {
             self.spellings.insert(slug.to_owned(), slug.to_owned());
             self.astgrep.insert(slug.to_owned());
         }
+        self
+    }
+
+    /// The code of a catalog of the project: a `noqa` code that starts with it is a code of botica,
+    /// and one that names no rule is reported as unknown.
+    pub fn with_code_prefix(mut self, prefix: &str) -> Self {
+        self.code_prefixes.push(prefix.to_owned());
         self
     }
 
@@ -322,6 +332,7 @@ impl Policy {
         let channels = Channels {
             noqa: allows_noqa(doc.path),
             ast_grep: self.compat_ast_grep_ignore,
+            prefixes: &self.code_prefixes,
         };
         let Some(text) = doc.text() else {
             return;

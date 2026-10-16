@@ -8,7 +8,7 @@ use std::path::Path;
 use std::sync::OnceLock;
 
 use anyhow::{bail, Context, Result};
-use botica_catalog::Catalog;
+use botica_catalog::{read_project_files, Catalog};
 use botica_config::{discover, load_file, Loaded, Resolution};
 use botica_core::{registry, CodeDir};
 
@@ -24,7 +24,13 @@ pub struct Project {
     pub resolution: Resolution,
     /// What `code_dirs_for_the_rules` found, searched once.
     for_the_rules: OnceLock<Vec<CodeDir>>,
+    /// The files of the catalogs of the project, joined: what they say changes what the rules
+    /// report.
+    catalogs: String,
 }
+
+/// Where the catalogs of a project are, from its root.
+const PROJECT_RULES: &str = ".botica/rules";
 
 pub fn load(args: &ProjectArgs) -> Result<Project> {
     let files: Vec<&Path> = args
@@ -53,6 +59,16 @@ pub fn load(args: &ProjectArgs) -> Result<Project> {
     let mut loaded = loaded.with_inline(&settings)?;
     let catalog = Catalog::embedded()?;
     registry::check_catalog(&catalog)?;
+    let rules_dir = loaded.root.join(PROJECT_RULES);
+    let files = read_project_files(&rules_dir)
+        .with_context(|| format!("cannot read the catalogs of the project in `{PROJECT_RULES}`"))?;
+    let catalog = catalog
+        .with_projects(&files)
+        .with_context(|| format!("the catalogs of the project in `{PROJECT_RULES}` do not load"))?;
+    let catalogs = files
+        .iter()
+        .map(|file| format!("{}\0{}\0", file.path, file.text))
+        .collect();
     loaded.config = loaded
         .config
         .with_command_line(&catalog, &args.command_line())?;
@@ -61,6 +77,7 @@ pub fn load(args: &ProjectArgs) -> Result<Project> {
         loaded,
         resolution,
         for_the_rules: OnceLock::new(),
+        catalogs,
     })
 }
 
@@ -145,10 +162,11 @@ impl Project {
             .map(|entry| entry.rule.id.as_str())
             .collect();
         format!(
-            "{:?}|{}|{:?}",
+            "{:?}|{}|{:?}|{}",
             self.loaded.config,
             active.join(","),
-            self.code_dirs_for_the_rules()
+            self.code_dirs_for_the_rules(),
+            self.catalogs
         )
     }
 }

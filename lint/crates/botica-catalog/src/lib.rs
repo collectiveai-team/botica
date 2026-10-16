@@ -4,13 +4,16 @@ mod embedded;
 mod issue;
 mod load;
 mod model;
+mod origin;
+mod project;
 mod question;
 mod readme;
+mod sources;
 mod validate;
 
 pub use validate::is_kebab_case;
 
-pub use dir::read_files;
+pub use dir::{read_files, read_project_files};
 pub use ecosystem::Ecosystem;
 pub use issue::{CatalogError, CatalogIssue};
 pub use load::{Catalog, SourceFile, HISTORY_FILE, OWN_RULES_DIR};

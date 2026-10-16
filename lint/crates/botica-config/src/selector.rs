@@ -1,14 +1,14 @@
 use botica_catalog::{is_kebab_case, Catalog, Rule, Status};
 
-const HEADER: &str = "BT";
-
+/// What a selector names. The letters of a code carry the code of its catalog: `BTSTRUC` is the
+/// family `STRUC` of the built-in catalog and `ACMESTRUC` the one of the catalog `ACME`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Selector {
     Default,
     All,
     Tag(String),
     Family(String),
-    CodePrefix { family: String, digits: String },
+    CodePrefix { letters: String, digits: String },
     Code(String),
     Slug(String),
 }
@@ -29,39 +29,33 @@ impl Selector {
                 ))
             };
         }
-        if let Some(rest) = text.strip_prefix(HEADER) {
-            if let Some(selector) = Self::parse_code(text, rest)? {
-                return Ok(selector);
-            }
+        if let Some(selector) = Self::parse_code(text)? {
+            return Ok(selector);
         }
-        if is_kebab_case(text) {
+        if is_rule_id(text) {
             return Ok(Self::Slug(text.to_owned()));
         }
         Err(format!(
-            "`{text}` is not a selector: use `default`, `all`, a family (`BTSTRUC`), a code or code prefix (`BTSTRUC001`, `BTSTRUC0`), a rule slug or `tag:<tag>`"
+            "`{text}` is not a selector: use `default`, `all`, a family (`BTSTRUC`), a code or code prefix (`BTSTRUC001`, `BTSTRUC0`), a rule id (`no-utils`, or `acme/no-utils` in a catalog of the project) or `tag:<tag>`"
         ))
     }
 
-    fn parse_code(text: &str, rest: &str) -> Result<Option<Self>, String> {
-        let letters: String = rest.chars().take_while(char::is_ascii_uppercase).collect();
-        let digits = &rest[letters.len()..];
-        if !digits.bytes().all(|b| b.is_ascii_digit()) {
+    /// A code, a code prefix or a family: capital letters, then up to 3 digits.
+    fn parse_code(text: &str) -> Result<Option<Self>, String> {
+        let letters: String = text.chars().take_while(char::is_ascii_uppercase).collect();
+        let digits = &text[letters.len()..];
+        if letters.is_empty() || !digits.bytes().all(|b| b.is_ascii_digit()) {
             return Ok(None);
-        }
-        if letters.is_empty() && digits.is_empty() {
-            return Err(format!(
-                "`{text}` alone selects nothing in particular: use `all` to select every rule"
-            ));
         }
         match digits.len() {
             0 => Ok(Some(Self::Family(letters))),
             1 | 2 => Ok(Some(Self::CodePrefix {
-                family: letters,
+                letters,
                 digits: digits.to_owned(),
             })),
             3 => Ok(Some(Self::Code(text.to_owned()))),
             _ => Err(format!(
-                "`{text}` has more than 3 digits: a code is `{HEADER}<FAMILY>` plus 3 digits"
+                "`{text}` has more than 3 digits: a code is the letters of its family plus 3 digits"
             )),
         }
     }
@@ -71,9 +65,9 @@ impl Selector {
             Self::Default => rule.default_enabled,
             Self::All => true,
             Self::Tag(tag) => rule.tags.contains(tag),
-            Self::Family(code) => family_of(&rule.code).is_some_and(|family| family == code),
-            Self::CodePrefix { family, digits } => {
-                rule.code.starts_with(&format!("{HEADER}{family}{digits}"))
+            Self::Family(prefix) => letters_of(&rule.code) == prefix,
+            Self::CodePrefix { letters, digits } => {
+                rule.code.starts_with(&format!("{letters}{digits}"))
             }
             Self::Code(key) | Self::Slug(key) => catalog
                 .resolve(key)
@@ -90,32 +84,49 @@ impl Selector {
                 .any(|rule| rule.tags.contains(tag))
                 .then_some(())
                 .ok_or_else(|| format!("no rule has the tag `{tag}`")),
-            Self::Family(code) => catalog
-                .families()
-                .iter()
-                .any(|family| &family.code == code)
-                .then_some(())
-                .ok_or_else(|| format!("unknown family `{HEADER}{code}`")),
-            Self::CodePrefix { family, digits } => check_prefix(catalog, family, digits),
+            Self::Family(prefix) => check_family(catalog, prefix),
+            Self::CodePrefix { letters, digits } => check_prefix(catalog, letters, digits),
             Self::Code(code) => check_rule(catalog.resolve(code), code),
             Self::Slug(slug) => check_rule(catalog.resolve(slug), slug),
         }
     }
 }
 
-fn family_of(code: &str) -> Option<&str> {
-    let rest = code.strip_prefix(HEADER)?;
-    let letters = &rest[..rest
-        .find(|c: char| !c.is_ascii_uppercase())
-        .unwrap_or(rest.len())];
-    (!letters.is_empty()).then_some(letters)
+/// A slug, or a slug prefixed by the name of a catalog of the project: `no-utils`,
+/// `acme/no-utils`.
+fn is_rule_id(text: &str) -> bool {
+    match text.split_once('/') {
+        Some((catalog, slug)) => is_kebab_case(catalog) && is_kebab_case(slug),
+        None => is_kebab_case(text),
+    }
 }
 
-fn check_prefix(catalog: &Catalog, family: &str, digits: &str) -> Result<(), String> {
-    if !family.is_empty() && !catalog.families().iter().any(|f| f.code == family) {
-        return Err(format!("unknown family `{HEADER}{family}`"));
+/// The capital letters a code starts with: the code of its catalog and of its family.
+fn letters_of(code: &str) -> &str {
+    &code[..code
+        .find(|c: char| !c.is_ascii_uppercase())
+        .unwrap_or(code.len())]
+}
+
+fn check_family(catalog: &Catalog, prefix: &str) -> Result<(), String> {
+    if catalog.families().iter().any(|f| f.prefix() == prefix) {
+        Ok(())
+    } else if catalog.has_header(prefix) {
+        Err(format!(
+            "`{prefix}` alone selects nothing in particular: use `all` to select every rule"
+        ))
+    } else {
+        Err(format!("unknown family `{prefix}`"))
     }
-    let prefix = format!("{HEADER}{family}{digits}");
+}
+
+fn check_prefix(catalog: &Catalog, letters: &str, digits: &str) -> Result<(), String> {
+    let known =
+        catalog.has_header(letters) || catalog.families().iter().any(|f| f.prefix() == letters);
+    if !known {
+        return Err(format!("unknown family `{letters}`"));
+    }
+    let prefix = format!("{letters}{digits}");
     catalog
         .rules()
         .iter()

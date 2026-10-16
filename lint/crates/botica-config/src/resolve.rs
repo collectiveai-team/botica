@@ -151,6 +151,11 @@ impl Resolution {
         self
     }
 
+    /// The code of each catalog of the project, which the codes of its rules start with.
+    pub fn project_codes(&self) -> Vec<&str> {
+        self.catalog.project_codes()
+    }
+
     /// Whether a suppression may name `id` without a warning although no rule has it.
     pub fn is_external(&self, id: &str) -> bool {
         self.external.is_match(id)

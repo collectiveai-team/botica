@@ -204,8 +204,8 @@ What this ADR decides and the code does not have. Delete a line when it ships.
 - The extension SDKs: the first is `sdk/python/botica_ext.py`; `botica.sdk`, `botica[sdk]`,
   `@botica/sdk`, the module of Go and `botica-ext-sdk` do not exist, and neither does the
   runtime `wasm`.
-- Catalogs of a project or declared externally (`.botica/rules/`), and the run of the `extension`
-  rules of a catalog: only `--ext` runs an extension.
+- Catalogs declared externally, and the run of the `extension` rules of a catalog: a catalog of
+  the project in `.botica/rules/` loads, but only `--ext` runs an extension.
 - `botica rules export` in the formats other than `markdown` and `json` (`continue`, `abide`,
   `schema`), `botica rules test` (with `--against`), and the `botica-rule-author` skill. Only
   `botica rules list`, `botica rules export` with `--format markdown` or `--format json`, and

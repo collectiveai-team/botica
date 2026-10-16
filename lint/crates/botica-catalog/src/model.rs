@@ -141,6 +141,20 @@ pub struct Family {
     pub name: String,
     pub code: String,
     pub description: String,
+    /// What the code of each rule of the family starts with before the family code: `BT` for the
+    /// built-in catalog, the code of the catalog for a catalog of a project.
+    #[serde(skip)]
+    pub header: String,
+    /// The catalog of a project that holds the family; `None` for the built-in catalog.
+    #[serde(skip)]
+    pub catalog: Option<String>,
+}
+
+impl Family {
+    /// The letters that every code of the family starts with: `BTSTRUC`, `ACMESTRUC`.
+    pub fn prefix(&self) -> String {
+        format!("{}{}", self.header, self.code)
+    }
 }
 
 /// One line of `history.toml`: from `version` on, `rule` has `status`. The file is written by the
@@ -201,6 +215,9 @@ pub struct Rule {
     pub implementations: Vec<Implementation>,
     #[serde(skip)]
     pub family: Option<String>,
+    /// The catalog of a project that holds the rule; `None` for the built-in catalog.
+    #[serde(skip)]
+    pub catalog: Option<String>,
     #[serde(skip)]
     pub readme: String,
 }

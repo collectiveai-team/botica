@@ -47,9 +47,12 @@ pub(crate) enum Directive {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct Channels {
+pub(crate) struct Channels<'a> {
     pub noqa: bool,
     pub ast_grep: bool,
+    /// What the codes of botica start with in a `noqa` comment: `BT`, and the code of each
+    /// catalog of the project.
+    pub prefixes: &'a [String],
 }
 
 const BOTICA: &str = "botica:";
@@ -64,7 +67,7 @@ fn starts_a_word(body: &str, at: usize) -> bool {
 }
 
 /// The earliest marker that starts a word, as `(offset, which)`.
-fn next_marker(body: &str, from: usize, channels: Channels) -> Option<(usize, Channel)> {
+fn next_marker(body: &str, from: usize, channels: Channels<'_>) -> Option<(usize, Channel)> {
     let mut markers = vec![(BOTICA, Channel::Botica)];
     if channels.noqa {
         markers.push(("noqa", Channel::Noqa));
@@ -200,8 +203,15 @@ fn is_code(token: &str) -> bool {
     letters > 0 && letters < token.len() && token[letters..].bytes().all(|b| b.is_ascii_digit())
 }
 
-/// Parses `noqa: A1, BTX001 -- reason`. Codes that do not start with `BT` belong to other tools.
-fn noqa(body: &str, start: usize, base: usize, out: &mut Vec<Directive>) -> usize {
+/// Parses `noqa: A1, BTX001 -- reason`. Codes that do not start with one of `prefixes` (`BT`, the
+/// codes of the catalogs of the project) belong to other tools.
+fn noqa(
+    body: &str,
+    start: usize,
+    base: usize,
+    prefixes: &[String],
+    out: &mut Vec<Directive>,
+) -> usize {
     let after = start + "noqa".len();
     let colon = skip_blanks(body, after);
     if !body[colon..].starts_with(':') {
@@ -231,7 +241,10 @@ fn noqa(body: &str, start: usize, base: usize, out: &mut Vec<Directive>) -> usiz
             i = token_start;
             break;
         }
-        if token.starts_with("BT") {
+        if prefixes
+            .iter()
+            .any(|prefix| token.starts_with(prefix.as_str()))
+        {
             ids.push(Id {
                 name: token.to_owned(),
                 span: base + token_start..base + i,
@@ -272,7 +285,7 @@ fn ast_grep(body: &str, start: usize, base: usize, out: &mut Vec<Directive>) -> 
 }
 
 /// Reads every directive in the text of one comment that starts at absolute offset `base`.
-pub(crate) fn parse(body: &str, base: usize, channels: Channels, out: &mut Vec<Directive>) {
+pub(crate) fn parse(body: &str, base: usize, channels: Channels<'_>, out: &mut Vec<Directive>) {
     let mut cursor = 0;
     while cursor < body.len() {
         let Some((at, channel)) = next_marker(body, cursor, channels) else {
@@ -280,7 +293,7 @@ pub(crate) fn parse(body: &str, base: usize, channels: Channels, out: &mut Vec<D
         };
         cursor = match channel {
             Channel::Botica => botica(body, at, base, out),
-            Channel::Noqa => noqa(body, at, base, out),
+            Channel::Noqa => noqa(body, at, base, channels.prefixes, out),
             Channel::AstGrep => ast_grep(body, at, base, out),
         };
     }

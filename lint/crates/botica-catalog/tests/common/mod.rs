@@ -107,3 +107,5 @@ pub fn judgment(head_extra: &str, implementation: &str) -> Vec<SourceFile> {
 pub fn judgment_implementation() -> String {
     format!("{JUDGMENT_FIELDS}{BOOLEAN_QUESTION}")
 }
+
+pub mod project;

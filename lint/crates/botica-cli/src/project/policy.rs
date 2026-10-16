@@ -11,6 +11,9 @@ use super::verdicts;
 /// What the suppression comments may name, and whether the rules about them report.
 pub fn suppression_policy(resolution: &Arc<Resolution>) -> Policy {
     let mut policy = Policy::new().with_compat_ast_grep_ignore(resolution.compat_ast_grep_ignore());
+    for code in resolution.project_codes() {
+        policy = policy.with_code_prefix(code);
+    }
     for entry in resolution.entries() {
         let spellings: Vec<&str> = std::iter::once(entry.rule.code.as_str())
             .chain(entry.rule.aliases.iter().map(String::as_str))
