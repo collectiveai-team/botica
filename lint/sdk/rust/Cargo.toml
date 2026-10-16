@@ -1,0 +1,10 @@
+[package]
+name = "botica-ext-sdk"
+description = "SDK to write a botica lint rule as an extension in Rust"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde_json.workspace = true

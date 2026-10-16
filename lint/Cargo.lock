@@ -304,6 +304,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "botica-ext-sdk"
+version = "0.9.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
 name = "bstr"
 version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -8,6 +8,7 @@ members = [
     "crates/botica-ext",
     "crates/botica-core",
     "crates/botica-cli",
+    "sdk/rust",
 ]
 
 [workspace.package]
