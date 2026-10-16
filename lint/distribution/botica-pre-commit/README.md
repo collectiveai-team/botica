@@ -8,7 +8,7 @@ botica repository, copied here at each release (see "Releasing").
 # prek.toml
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
-rev = "v0.10.0"
+rev = "v0.11.0"
 
 [[repos.hooks]]
 id = "botica"
