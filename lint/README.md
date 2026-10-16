@@ -35,7 +35,9 @@ botica rules test --judge abide [test-through-interface]
 botica rules conform lint/rules   # each rule over its fixtures, with and without each optimisation;
                                # .botica/rules/<name> for a catalog of a project (it has a catalog.toml)
 botica rules new structure/no-foo --kind ast-grep --language python --standard CES-63
-                               # the folder of a new rule (ast-grep, extension, judgment or external) in lint/rules
+                               # the folder of a new rule (ast-grep, judgment or external) in lint/rules
+botica rules new structure/no-blobs --kind extension --runtime python --language python \
+  --catalog .botica/rules/acme   # a rule of a catalog of a project: id acme/no-blobs, code ACMESTRUC001
 botica rules new structure/dep-hygiene --kind external --language python --tool deptry \
   --docs https://deptry.com/ --config prek.toml   # an external rule and its fragment config/prek.toml
 ```

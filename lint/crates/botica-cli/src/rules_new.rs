@@ -2,19 +2,26 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
-use botica_catalog::{read_files, Catalog, Family, SourceFile, CONFIG_DIR};
+use botica_catalog::{Catalog, Family, SourceFile, CONFIG_DIR};
 use clap::{Args, ValueEnum};
+
+use crate::project::PROJECT_RULES;
+use crate::rules_new_extension::{self, NewRuntime};
+use crate::rules_new_target::Target;
 
 #[derive(Args)]
 pub struct NewArgs {
     /// The folder of the rule in the catalog, `<family>/<slug>`.
     rule: String,
-    /// How the rule is implemented.
+    /// How the rule is implemented. An `extension` goes into a catalog of a project only.
     #[arg(long, value_enum)]
     kind: NewKind,
     /// The language the rule reads, as ast-grep names it (`python`, `typescript`…).
     #[arg(long)]
     language: String,
+    /// What runs an extension: its script with `python` or `node`, or a command.
+    #[arg(long, value_enum)]
+    runtime: Option<NewRuntime>,
     /// The standard the rule implements, e.g. `CES-63`.
     #[arg(long)]
     standard: Option<String>,
@@ -28,7 +35,8 @@ pub struct NewArgs {
     /// the rule gets the fragment `config/<file>` to fill in.
     #[arg(long)]
     config: Option<String>,
-    /// The directory of the catalog.
+    /// The directory of the catalog: `lint/rules` for the built-in one, or `.botica/rules/<name>`
+    /// for a catalog of a project (the one with a `catalog.toml`).
     #[arg(long, default_value = "lint/rules")]
     catalog: PathBuf,
 }
@@ -38,6 +46,7 @@ enum NewKind {
     AstGrep,
     Judgment,
     External,
+    Extension,
     Native,
 }
 
@@ -89,22 +98,27 @@ pub fn run(args: &NewArgs) -> Result<()> {
         .split_once('/')
         .filter(|(family, slug)| !family.is_empty() && !slug.contains('/'))
         .with_context(|| format!("`{}` must be `<family>/<slug>`", args.rule))?;
-    let existing = read_files(&args.catalog)
-        .with_context(|| format!("cannot read the catalog `{}`", args.catalog.display()))?;
-    let catalog = Catalog::from_files(&existing)?;
-    let family = find_family(&catalog, family)?;
+    let target = Target::load(&args.catalog)?;
+    check_extension(args, &target)?;
+    let family = find_family(&target, family)?;
     if args.catalog.join(&family.name).join(slug).exists() {
         bail!("`{}/{slug}` exists in the catalog", family.name);
     }
 
-    let draft = draft(args, &catalog, family, slug);
+    let draft = draft(args, &target, family, slug);
     let catalog_files: Vec<SourceFile> = draft
         .files
         .iter()
-        .filter(|file| !file.path.contains("/fixtures/"))
+        .filter(|file| {
+            !file.path.contains("/fixtures/")
+                && !file
+                    .path
+                    .ends_with(&format!("/{}", rules_new_extension::COMMAND_SCRIPT))
+        })
         .cloned()
         .collect();
-    Catalog::from_files(&[existing, catalog_files].concat())
+    target
+        .loads_with(&catalog_files)
         .with_context(|| format!("the catalog would not load with `{}`", draft.folder))?;
     write(&args.catalog, &draft.files)?;
     println!("{} ({}):", draft.folder, draft.code);
@@ -125,18 +139,35 @@ fn check_kind(args: &NewArgs) -> Result<()> {
     if args.kind != NewKind::External && tool_flags {
         bail!("--tool, --docs and --config apply to an external rule only");
     }
+    if args.kind != NewKind::Extension && args.runtime.is_some() {
+        bail!("--runtime applies to an extension only");
+    }
     Ok(())
 }
 
-fn find_family<'a>(catalog: &'a Catalog, name: &str) -> Result<&'a Family> {
-    catalog
+fn check_extension(args: &NewArgs, target: &Target) -> Result<()> {
+    if args.kind != NewKind::Extension {
+        return Ok(());
+    }
+    if target.project.is_none() {
+        bail!(
+            "an extension is a program of a project, which the built-in catalog does not take: \
+             write it in a catalog of the project with `--catalog .botica/rules/<name>`"
+        );
+    }
+    if args.runtime.is_none() {
+        bail!("an extension needs --runtime: python, node or command");
+    }
+    Ok(())
+}
+
+fn find_family<'a>(target: &'a Target, name: &str) -> Result<&'a Family> {
+    target
         .families()
-        .iter()
         .find(|family| family.name == name)
         .with_context(|| {
-            let names: Vec<&str> = catalog
+            let names: Vec<&str> = target
                 .families()
-                .iter()
                 .map(|family| family.name.as_str())
                 .collect();
             format!(
@@ -148,7 +179,7 @@ fn find_family<'a>(catalog: &'a Catalog, name: &str) -> Result<&'a Family> {
 
 /// The code after the highest one of the family: a code is never reused.
 fn next_code(catalog: &Catalog, family: &Family) -> String {
-    let prefix = format!("BT{}", family.code);
+    let prefix = family.prefix();
     let highest = catalog
         .rules()
         .iter()
@@ -178,19 +209,27 @@ fn comment(language: &str) -> &'static str {
     }
 }
 
-fn rule_toml(args: &NewArgs, slug: &str, code: &str) -> String {
-    let mut text = format!("id = \"{slug}\"\ncode = \"{code}\"\n");
+/// How a new rule is named: the folder, the id, and the folder from the root of the project.
+struct Names<'a> {
+    slug: &'a str,
+    id: String,
+    root: String,
+}
+
+fn rule_toml(args: &NewArgs, names: &Names, code: &str) -> String {
+    let mut text = format!("id = \"{}\"\ncode = \"{code}\"\n", names.id);
     if let Some(standard) = &args.standard {
         text.push_str(&format!("standard = \"{standard}\"\n"));
     }
     text.push_str("summary = \"TODO: what the rule asks, in one line\"\nstatus = \"preview\"\n");
-    let needs = match args.kind {
-        NewKind::AstGrep => Some("syntax"),
+    let scope = match args.kind {
+        NewKind::AstGrep => Some("\"cli\", \"save\", \"type\""),
+        NewKind::Extension => Some("\"cli\""),
         NewKind::Judgment | NewKind::External | NewKind::Native => None,
     };
-    if let Some(needs) = needs {
+    if let Some(run_on) = scope {
         text.push_str(&format!(
-            "scope = \"file\"\nneeds = \"{needs}\"\nrun-on = [\"cli\", \"save\", \"type\"]\n"
+            "scope = \"file\"\nneeds = \"syntax\"\nrun-on = [{run_on}]\n"
         ));
     }
     text.push_str(
@@ -204,6 +243,15 @@ fn rule_toml(args: &NewArgs, slug: &str, code: &str) -> String {
              type = \"boolean\"\ninstructions = \"{INSTRUCTIONS}\"\n"
         ),
         NewKind::External => external_implementation(args),
+        NewKind::Extension => format!(
+            "kind = \"extension\"\n{}",
+            rules_new_extension::implementation(
+                args.runtime.unwrap_or(NewRuntime::Command),
+                language,
+                names.slug,
+                &names.root
+            )
+        ),
         _ => format!(
             "kind = \"ast-grep\"\nlanguages = [\"{language}\"]\nfile = \"{language}.yml\"\n"
         ),
@@ -224,27 +272,35 @@ fn external_implementation(args: &NewArgs) -> String {
     text
 }
 
-fn ast_grep_yaml(args: &NewArgs, slug: &str) -> String {
+fn ast_grep_yaml(args: &NewArgs, id: &str) -> String {
     let label = match &args.standard {
-        Some(standard) => format!("{standard} ({slug})"),
-        None => slug.to_owned(),
+        Some(standard) => format!("{standard} ({id})"),
+        None => id.to_owned(),
     };
     format!(
-        "id: {slug}\nlanguage: {}\nseverity: warning\n\
+        "id: {id}\nlanguage: {}\nseverity: warning\n\
          message: \"{label}: TODO: the rule and its fix\"\nrule:\n  pattern: TODO\n",
         args.language
     )
 }
 
-fn draft(args: &NewArgs, catalog: &Catalog, family: &Family, slug: &str) -> Draft {
+fn draft(args: &NewArgs, target: &Target, family: &Family, slug: &str) -> Draft {
     let folder = format!("{}/{slug}", family.name);
-    let code = next_code(catalog, family);
+    let code = next_code(&target.catalog, family);
+    let names = Names {
+        slug,
+        id: target.id(slug),
+        root: match &target.project {
+            Some(project) => format!("{PROJECT_RULES}/{project}/{folder}"),
+            None => folder.clone(),
+        },
+    };
     let file = |name: &str, text: String| SourceFile {
         path: format!("{folder}/{name}"),
         text,
     };
     let mut files = vec![
-        file("rule.toml", rule_toml(args, slug, &code)),
+        file("rule.toml", rule_toml(args, &names, &code)),
         file(
             "README.md",
             match args.kind {
@@ -274,8 +330,12 @@ fn draft(args: &NewArgs, catalog: &Catalog, family: &Family, slug: &str) -> Draf
     if args.kind == NewKind::AstGrep {
         files.push(file(
             &format!("{}.yml", args.language),
-            ast_grep_yaml(args, slug),
+            ast_grep_yaml(args, &names.id),
         ));
+    }
+    if let (NewKind::Extension, Some(runtime)) = (args.kind, args.runtime) {
+        let script = rules_new_extension::script(runtime, &names.id, &args.language, slug);
+        files.push(file(&script.name, script.text));
     }
     let (extension, comment) = (file_extension(&args.language), comment(&args.language));
     files.extend([

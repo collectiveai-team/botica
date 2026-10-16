@@ -12,6 +12,8 @@ mod rules_cmd;
 mod rules_conform;
 mod rules_export;
 mod rules_new;
+mod rules_new_extension;
+mod rules_new_target;
 mod rules_test;
 mod timings;
 

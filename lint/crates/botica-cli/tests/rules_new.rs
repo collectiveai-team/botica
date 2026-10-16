@@ -90,13 +90,19 @@ fn an_extension_is_not_a_kind_of_the_built_in_catalog() {
             "logging/log-foo",
             "--kind",
             "extension",
+            "--runtime",
+            "python",
             "--language",
             "python",
         ],
     );
 
     assert_eq!(output.status.code(), Some(2));
-    assert!(stderr(&output).contains("extension"), "{}", stderr(&output));
+    assert!(
+        stderr(&output).contains("an extension is a program of a project"),
+        "{}",
+        stderr(&output)
+    );
     assert!(!dir.join("cat/logging/log-foo").exists());
 }
 
