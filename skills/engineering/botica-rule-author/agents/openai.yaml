@@ -1,0 +1,3 @@
+interface:
+  display_name: "Botica Rule Author"
+  short_description: "Write a botica lint rule with its fixtures and check it conforms"
