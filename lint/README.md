@@ -155,12 +155,14 @@ file = "no-blobs.py"        # python: `uv run --script`; node: `node` (.js or .m
 ```
 
 A script of the runtime `python` declares its dependencies (PEP 723) and writes its rule with the
-module `botica.sdk` of the wheel `botica`; the extra `botica[sdk]` brings `ast-grep-py`:
+module `botica.sdk` of the wheel `botica`; the extra `botica[sdk]` brings `ast-grep-py`. The script
+pins the version of `botica` that the project runs (`<version>` below is the output of
+`botica --version`):
 
 ```python
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["botica[sdk]"]
+# dependencies = ["botica[sdk]==<version>"]
 # ///
 from botica.sdk import rule, serve
 

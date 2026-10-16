@@ -50,7 +50,8 @@ flowchart TD
   config --> catalog
   core --> astgrep[botica-astgrep]
   core --> ext[botica-ext<br/>extension host]
-  sdk[SDKs · python · node · go · rust]:::planned -. protocol .-> ext
+  sdk[SDK · python] -. protocol .-> ext
+  sdks[SDKs · node · go · rust]:::planned -. protocol .-> ext
   classDef planned stroke-dasharray: 4 4
 ```
 
