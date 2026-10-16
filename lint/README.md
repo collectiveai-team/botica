@@ -24,7 +24,9 @@ botica lint --output-format json   # text (default), json, sarif or github
 botica lint --judged judge.sarif   # the findings of a judge, filtered by the configuration and comments
 botica rules                   # which rules are active, and why (--all adds the inactive ones)
 botica server                  # the Language Server Protocol on stdio: the findings for the buffers of an
-                               # editor (native and pattern rules; extension rules do not run), paths from the working directory
+                               # editor (native and pattern rules), paths from the working directory
+botica server --extensions     # and the extension rules of the project: heavy, and it runs the scripts
+                               # of the project (see "Rules of the project")
 botica explain no-notebooks    # what a rule is and how it is configured here
 botica rules export --format markdown --output site   # one page per rule of the catalog, and an index;
                                # the catalogs of .botica/rules get a folder and an index section each
@@ -224,6 +226,20 @@ A finding with another `rule` than the id of its rule is left out, with a warnin
 process that fails, or that is still running 5 seconds after `shutdown` and is killed, stops the
 run with exit code 2 and the findings of the other rules stay. The
 built-in catalog takes no extension: an extension is a program of the project.
+
+`botica server` runs the extension rules only when the editor asks for them: the flag
+`--extensions`, or the option `{"extensions": true}` in the `initializationOptions` of
+`initialize`. `botica.toml` has no key for it. It is heavy, because each rule is a process that
+stays alive for the whole session, and it is a risk, because opening a repository in the editor
+then runs the scripts of that repository (Python, Node, commands). A rule of `scope = "file"` has
+its process started when the first document in one of its languages opens. It is sent the text of
+the buffer, not the file on disk: at once when the document opens, and after the text has stayed
+as it is for 250 ms when it changes. What it finds is published after the findings of the engine,
+in a second `publishDiagnostics` with both, and leaves the buffer when its text changes, until the
+rule answers again. A rule of `scope = "project"` does not run on a buffer. A process that fails is
+started again up to 3 times, with a `window/showMessage` warning each time; after that the rule
+does not run until the server restarts. At `exit`, or at the end of the input, each process gets
+`shutdown` and is killed after 5 seconds if it is still running.
 
 `acme/no-blobs` and `ACMESTRUC001` name a rule and `ACMESTRUC` a family, in `select`, `ignore`,
 `--select` and `--ignore`; `botica explain` takes a rule. `[rules."acme/no-blobs"]` configures it,

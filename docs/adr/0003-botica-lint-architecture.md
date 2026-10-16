@@ -103,6 +103,22 @@ loads it as it loads the YAML of an ast-grep rule. An extension is a program tha
 and the built-in catalog is compiled into the binary, which has no folder with such a program: the
 built-in catalog takes no `extension` rule.
 
+`botica server` runs the `extension` rules of file scope on the buffers of an editor when the editor
+asks for them: the flag `--extensions`, or the option `{"extensions": true}` in the
+`initializationOptions` of `initialize`. The switch is in the editor and `botica.toml` has no key
+for it. It is off by default, it is heavy, and it is a risk: opening a repository in the editor runs
+the scripts of the project. `botica lint` and the server share one `ExtensionPool` (the files where
+a rule applies, the command of each implementation, the findings that are the rule's own); `lint`
+starts a process, sends it the files and ends it, and the server keeps it for the session. There is
+one process for each implementation of a rule, started when the first document in one of its
+languages opens, and one thread for each process, so a slow rule does not hold the others. A text
+reaches a rule at once when the document opens and after 250 ms without a change when it changes.
+The findings of the rules are published after those of the engine, in a second `publishDiagnostics`
+with both; a result for a text that has changed, or for a document that was closed, is dropped. A
+process that fails is started again up to 3 times and the editor gets a `window/showMessage`
+warning each time; after the limit the rule does not run until the server restarts. A rule of
+`scope = "project"` does not run on a buffer.
+
 | `runtime` | The rule names | botica runs |
 |---|---|---|
 | `python` | `file = "<name>.py"` | `uv run --script <file>`; the script declares its dependencies (PEP 723) and uv caches its environment |
@@ -212,9 +228,10 @@ The `scaffolding` Python package keeps its name until it is migrated, which is o
 What this ADR decides and the code does not have. Delete a line when it ships.
 
 - The editor front-end beyond diagnostics: `botica-lsp` and `botica server` publish the findings
-  of the native and pattern rules for open buffers (full-text sync, columns in characters).
-  Missing: the extension rules, code actions, incremental sync, UTF-16 columns and a client for
-  VS Code.
+  of the native and pattern rules for open buffers (full-text sync, columns in characters), and
+  those of the extension rules when the editor asks for them. Missing: code actions, incremental
+  sync, UTF-16 columns and a client for VS Code. No extension has run in a real editor: the tests
+  speak the protocol.
 - The runtime `wasm`. The Python SDK, `botica.sdk` with the extra `botica[sdk]`, is built. So are
   the TypeScript one in `lint/sdk/node`, the Rust one, `botica-ext-sdk` in `lint/sdk/rust`, and the
   Go one in `lint/sdk/go`; none of the three is published (npm, crates.io, a tag of the module) and
