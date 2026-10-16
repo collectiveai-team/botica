@@ -3,6 +3,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use crate::load::{SourceFile, CATALOG_FILE, HISTORY_FILE};
+use crate::references::TOPIC_FILE;
 use crate::sources::is_script;
 
 fn sorted(dir: &Path) -> io::Result<Vec<PathBuf>> {
@@ -62,6 +63,23 @@ pub fn read_files(dir: &Path) -> io::Result<Vec<SourceFile>> {
                         push(&mut files, dir, &file)?;
                     }
                 }
+            }
+        }
+    }
+    Ok(files)
+}
+
+/// The files of the topics under `dir`, the `references/` of a repository: the `topic.toml` and
+/// the `README.md` of each folder, with paths from `dir`. A `dir` that does not exist holds none.
+pub fn read_references(dir: &Path) -> io::Result<Vec<SourceFile>> {
+    let mut files = Vec::new();
+    if !dir.is_dir() {
+        return Ok(files);
+    }
+    for topic in sorted(dir)?.into_iter().filter(|path| path.is_dir()) {
+        for name in ["README.md", TOPIC_FILE] {
+            if topic.join(name).is_file() {
+                push(&mut files, dir, &topic.join(name))?;
             }
         }
     }
