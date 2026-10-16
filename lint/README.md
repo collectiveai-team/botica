@@ -146,7 +146,8 @@ The id of a rule is `<catalog>/<slug>` and its code is the code of the catalog, 
 family and 3 digits. The code of a catalog is letters A-Z, does not start with `BT` and is not a
 text prefix of the code of another catalog. The name of a catalog is not the name of a family of
 the built-in catalog (`structure`, `logging`…): a catalog with such a name does not load. A catalog
-takes rules of every kind but `native`.
+takes rules of every kind but `native`. The `covered-by` of a judgment rule of a catalog names the
+rules of that catalog by id (`acme/no-blobs`) and those of the built-in catalog by slug.
 
 A family of a project may have the name of a built-in family, as `structure` above. Every command
 then prints a warning on stderr, unless its `family.toml` says that it extends the built-in family

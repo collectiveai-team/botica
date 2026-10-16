@@ -56,7 +56,7 @@ struct DirEntry<'a> {
 impl Catalog {
     pub fn from_files(files: &[SourceFile]) -> Result<Self, CatalogError> {
         let mut issues = Vec::new();
-        let parts = load_parts(files, Origin::BuiltIn, &mut issues);
+        let parts = load_parts(files, Origin::BuiltIn, &[], &mut issues);
         if !issues.is_empty() {
             return Err(CatalogError { issues });
         }
@@ -157,12 +157,13 @@ impl Catalog {
 pub(crate) fn load_parts(
     files: &[SourceFile],
     origin: Origin<'_>,
+    outer: &[Rule],
     issues: &mut Vec<CatalogIssue>,
 ) -> Parts {
     let dirs = scan(files, origin, issues);
     let families = load_families(&dirs, origin, issues);
     let mut rules = load_rules(&dirs, &families, origin, issues);
-    check_across(&families, &rules, origin, issues);
+    check_across(&families, &rules, outer, origin, issues);
     let history = if origin.is_built_in() {
         load_history(files, &rules, issues)
     } else {

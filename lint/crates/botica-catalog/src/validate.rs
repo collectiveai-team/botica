@@ -292,6 +292,7 @@ fn check_external(index: usize, implementation: &Implementation, add: &mut impl 
 pub(crate) fn check_across(
     families: &[Family],
     rules: &[(String, Rule)],
+    outer: &[Rule],
     origin: Origin<'_>,
     found: &mut Vec<CatalogIssue>,
 ) {
@@ -359,20 +360,26 @@ pub(crate) fn check_across(
             }
         }
     }
-    check_covered_by(rules, found);
+    check_covered_by(rules, outer, found);
 }
 
-/// `covered-by` names the deterministic rules that check part of a judgment rule.
-fn check_covered_by(rules: &[(String, Rule)], found: &mut Vec<CatalogIssue>) {
+/// `covered-by` names the deterministic rules that check part of a judgment rule: those of its
+/// catalog and, for a catalog of a project, those of the catalogs loaded before it (`outer`).
+fn check_covered_by(rules: &[(String, Rule)], outer: &[Rule], found: &mut Vec<CatalogIssue>) {
     for (path, rule) in rules {
         let covered = rule
             .implementations
             .iter()
             .flat_map(|implementation| &implementation.covered_by);
         for slug in covered {
-            let message = match rules.iter().find(|(_, other)| other.id == *slug) {
+            let named = rules
+                .iter()
+                .map(|(_, other)| other)
+                .chain(outer)
+                .find(|other| other.id == *slug);
+            let message = match named {
                 None => format!("covered-by `{slug}` is not a rule of the catalog"),
-                Some((_, other)) if other.is_judgment() => {
+                Some(other) if other.is_judgment() => {
                     format!("covered-by `{slug}` is a judgment rule")
                 }
                 Some(_) => continue,

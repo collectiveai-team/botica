@@ -42,7 +42,7 @@ impl Catalog {
         for (name, code) in &codes {
             let origin = Origin::Project { name, code };
             let mut local = Vec::new();
-            let parts = load_parts(&folders[name].files, origin, &mut local);
+            let parts = load_parts(&folders[name].files, origin, self.rules(), &mut local);
             issues.extend(local.into_iter().map(|found| CatalogIssue {
                 path: format!("{name}/{}", found.path),
                 message: found.message,
