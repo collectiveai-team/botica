@@ -61,13 +61,98 @@ pub enum When {
     PullRequest,
 }
 
-/// The form of the answer of a judge: yes or no, one of several choices, or a score.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "kebab-case")]
+/// The question a judge answers about a rule, in the form of `@coldtea/abide-schema` 0.0.5: yes or
+/// no, one of several options, or a level of a score.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(tag = "type", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Question {
-    Boolean,
-    Choice,
-    Score,
+    Boolean {
+        instructions: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        criteria: Option<BooleanCriteria>,
+    },
+    Choice {
+        instructions: String,
+        criteria: Choices,
+        violating: Vec<String>,
+    },
+    Score {
+        instructions: String,
+        /// The levels, from compliant (the first) to the worst.
+        criteria: Vec<String>,
+        /// The first level that is a violation.
+        #[serde(rename = "violatingFrom")]
+        violating_from: usize,
+    },
+}
+
+/// What a yes and a no to a boolean question mean.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct BooleanCriteria {
+    #[serde(rename = "true", default, skip_serializing_if = "Option::is_none")]
+    pub yes: Option<String>,
+    #[serde(rename = "false", default, skip_serializing_if = "Option::is_none")]
+    pub no: Option<String>,
+}
+
+/// The options of a choice question, each with its text, in the order of `rule.toml`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Choices(pub Vec<(String, String)>);
+
+impl<'de> Deserialize<'de> for Choices {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = Choices;
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a table of options, each with its text")
+            }
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> Result<Choices, A::Error> {
+                let mut options = Vec::new();
+                while let Some(option) = map.next_entry()? {
+                    options.push(option);
+                }
+                Ok(Choices(options))
+            }
+        }
+        deserializer.deserialize_map(Visitor)
+    }
+}
+
+impl Serialize for Choices {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.collect_map(self.0.iter().map(|(name, text)| (name, text)))
+    }
+}
+
+impl Question {
+    pub fn instructions(&self) -> &str {
+        match self {
+            Self::Boolean { instructions, .. }
+            | Self::Choice { instructions, .. }
+            | Self::Score { instructions, .. } => instructions,
+        }
+    }
+
+    /// The texts of its criteria, in their order.
+    pub fn criteria(&self) -> Vec<&str> {
+        match self {
+            Self::Boolean { criteria, .. } => criteria
+                .iter()
+                .flat_map(|criteria| [&criteria.yes, &criteria.no])
+                .flatten()
+                .map(String::as_str)
+                .collect(),
+            Self::Choice { criteria, .. } => {
+                criteria.0.iter().map(|(_, text)| text.as_str()).collect()
+            }
+            Self::Score { criteria, .. } => criteria.iter().map(String::as_str).collect(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]

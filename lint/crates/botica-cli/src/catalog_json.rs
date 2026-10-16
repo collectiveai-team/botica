@@ -57,7 +57,7 @@ struct ImplementationView<'a> {
     status: Status,
     file: Option<&'a str>,
     when: Option<When>,
-    question: Option<Question>,
+    question: Option<&'a Question>,
     covered_by: &'a [String],
     why_not_deterministic: Option<&'a str>,
 }
@@ -107,7 +107,7 @@ impl<'a> ImplementationView<'a> {
             status: rule.status_of(implementation),
             file: implementation.file.as_deref(),
             when: implementation.when,
-            question: implementation.question,
+            question: implementation.question.as_ref(),
             covered_by: &implementation.covered_by,
             why_not_deterministic: implementation.why_not_deterministic.as_deref(),
         }
@@ -165,5 +165,41 @@ mod tests {
 
         assert_eq!(document["rules"][0]["added"], "0.1.0");
         assert_eq!(document["rules"][0]["since"], "0.2.0");
+    }
+
+    #[test]
+    fn the_question_of_a_judgment_rule_is_written_as_abide_reads_it() {
+        let rule = "id = \"test-foo\"\ncode = \"BTTEST001\"\nsummary = \"s\"\n\
+                    status = \"preview\"\ndefault-enabled = false\ndefault-severity = \"warning\"\n\n\
+                    [[implementations]]\nkind = \"judgment\"\nlanguages = [\"python\"]\n\
+                    when = \"edit\"\nwhy-not-deterministic = \"w\"\n\n\
+                    [implementations.question]\ntype = \"choice\"\ninstructions = \"i\"\n\
+                    violating = [\"mock\"]\ncriteria = { real = \"r\", mock = \"m\", fake = \"f\" }\n";
+        let catalog = Catalog::from_files(&[
+            file(
+                "testing/family.toml",
+                "code = \"TEST\"\ndescription = \"d\"\n",
+            ),
+            file("testing/test-foo/rule.toml", rule),
+            file("testing/test-foo/README.md", "## Directive\n\nd\n\n## Why\n\nw\n\n## Flag\n\nf\n\n## Do not flag\n\nn\n\n## Confirm\n\nc\n\n## Do\n\ndo\n\n## Don\'t\n\ndont\n\n## Suppression\n\ns\n"),
+        ])
+        .expect("the catalog loads");
+
+        let text = render(&catalog);
+
+        let document: serde_json::Value = serde_json::from_str(&text).expect("JSON");
+        assert_eq!(
+            document["rules"][0]["implementations"][0]["question"],
+            serde_json::json!({
+                "type": "choice",
+                "instructions": "i",
+                "criteria": { "real": "r", "mock": "m", "fake": "f" },
+                "violating": ["mock"],
+            })
+        );
+        assert!(
+            text.contains("\"real\": \"r\",\n") && text.find("\"real\"") < text.find("\"fake\""),
+            "the options keep their order: {text}"
+        );
     }
 }

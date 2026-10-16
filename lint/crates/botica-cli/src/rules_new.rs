@@ -72,6 +72,8 @@ silences the rule.\n";
 const WHY: &str =
     "TODO: why no check of the code or of the configuration of a repository decides it";
 
+const INSTRUCTIONS: &str = "TODO: the question the judge answers about the code";
+
 const EXPECTED: &str = "{\n  \"diagnostics\": []\n}\n";
 
 /// What `rules new` writes: the path of each file under the catalog and its text.
@@ -199,7 +201,8 @@ fn rule_toml(args: &NewArgs, slug: &str, code: &str) -> String {
     text.push_str(&match (args.kind, args.runtime) {
         (NewKind::Judgment, _) => format!(
             "kind = \"judgment\"\nlanguages = [\"{language}\"]\nwhen = \"edit\"\n\
-             question = \"boolean\"\nwhy-not-deterministic = \"{WHY}\"\n"
+             why-not-deterministic = \"{WHY}\"\n\n[implementations.question]\n\
+             type = \"boolean\"\ninstructions = \"{INSTRUCTIONS}\"\n"
         ),
         (_, Some(runtime)) => format!(
             "kind = \"extension\"\nruntime = \"{}\"\nlanguages = [\"{language}\"]\n",

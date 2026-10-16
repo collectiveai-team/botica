@@ -45,7 +45,7 @@ rayon = "1"
 schemars = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-toml = "0.9"
+toml = { version = "0.9", features = ["preserve_order"] }
 
 [profile.release]
 lto = "thin"

@@ -14,7 +14,7 @@ pub use ecosystem::Ecosystem;
 pub use issue::{CatalogError, CatalogIssue};
 pub use load::{Catalog, SourceFile, HISTORY_FILE, OWN_RULES_DIR};
 pub use model::{
-    Event, Family, Implementation, Kind, Lifecycle, Needs, OptionSpec, OptionType, Question, Rule,
-    RunOn, Runtime, Scope, Severity, Status, When,
+    BooleanCriteria, Choices, Event, Family, Implementation, Kind, Lifecycle, Needs, OptionSpec,
+    OptionType, Question, Rule, RunOn, Runtime, Scope, Severity, Status, When,
 };
 pub use readme::Section;

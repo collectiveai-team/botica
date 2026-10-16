@@ -382,9 +382,12 @@ fn a_judgment_rule_has_the_fields_of_a_judge_and_the_readme_of_its_kind() {
          kind = \"judgment\"\n\
          languages = [\"python\"]\n\
          when = \"edit\"\n\
-         question = \"boolean\"\n\
          why-not-deterministic = \"TODO: why no check of the code or of the configuration of a \
-         repository decides it\"\n"
+         repository decides it\"\n\
+         \n\
+         [implementations.question]\n\
+         type = \"boolean\"\n\
+         instructions = \"TODO: the question the judge answers about the code\"\n"
     );
     assert!(!folder.join("python.yml").exists());
     let catalog = reload(&dir);

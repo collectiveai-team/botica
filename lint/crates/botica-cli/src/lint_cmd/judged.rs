@@ -182,7 +182,8 @@ mod tests {
     const RULE: &str = "id = \"test-foo\"\ncode = \"BTTEST001\"\nsummary = \"s\"\n\
         status = \"stable\"\ndefault-enabled = true\ndefault-severity = \"warning\"\n\n\
         [[implementations]]\nkind = \"judgment\"\nlanguages = [\"python\"]\nwhen = \"edit\"\n\
-        question = \"boolean\"\nwhy-not-deterministic = \"w\"\n";
+        why-not-deterministic = \"w\"\n\n\
+        [implementations.question]\ntype = \"boolean\"\ninstructions = \"q\"\n";
 
     const README: &str = "## Directive\n\nd\n\n## Why\n\nw\n\n## Flag\n\nf\n\n\
         ## Do not flag\n\nn\n\n## Confirm\n\nc\n\n## Do\n\ndo\n\n## Don't\n\ndont\n\n\
