@@ -9,6 +9,7 @@ mod rule_page;
 mod rule_view;
 mod rules;
 mod rules_cmd;
+mod rules_conform;
 mod rules_export;
 mod rules_new;
 mod rules_test;

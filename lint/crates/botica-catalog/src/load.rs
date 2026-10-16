@@ -11,7 +11,7 @@ use crate::validate::{check_across, check_family_code, check_history, check_rule
 
 pub const OWN_RULES_DIR: &str = "botica";
 pub const HISTORY_FILE: &str = "history.toml";
-pub(crate) const CATALOG_FILE: &str = "catalog.toml";
+pub const CATALOG_FILE: &str = "catalog.toml";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceFile {

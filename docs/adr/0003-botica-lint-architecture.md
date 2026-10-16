@@ -122,7 +122,8 @@ A rule in Go or Rust runs as WASM: a fourth runtime, `wasm`, takes `file = "<nam
 from Rust or from Go with TinyGo, and botica runs it in the binary with no toolchain in the project.
 `botica lint --ext <command>` runs one
 extension by its command, outside any catalog. The conformance runner checks an extension rule with
-its fixtures, as any other.
+its fixtures, as any other; `botica rules conform <catalog>` runs it over a catalog, built-in or of a
+project.
 
 **Suppressions.** Two comment channels silence a rule on the line of its finding: `# botica:
 ignore[<id>]` in any language with comments, and `# noqa: <code>` in Python. An id is exact (slug,

@@ -7,6 +7,7 @@ use serde::Serialize;
 
 use crate::project::{self, Project, ProjectArgs};
 use crate::rule_view::RuleView;
+use crate::rules_conform::{self, ConformArgs};
 use crate::rules_export::{self, ExportArgs};
 use crate::rules_new::{self, NewArgs};
 use crate::rules_test::{self, TestArgs};
@@ -35,6 +36,9 @@ enum RulesCommand {
     /// Have a judge answer the fixtures of each judgment rule of the catalog of a checkout and
     /// compare its verdicts with the `expected.json` of the rule.
     Test(TestArgs),
+    /// Run each rule of a catalog over its fixtures, with and without each optimisation, and
+    /// compare the findings with the `expected.json` of the rule.
+    Conform(ConformArgs),
 }
 
 #[derive(Args)]
@@ -70,6 +74,7 @@ pub fn run(args: &RulesArgs) -> Result<ExitCode> {
         Some(RulesCommand::Export(export)) => return rules_export::run(export).map(success),
         Some(RulesCommand::New(new)) => return rules_new::run(new).map(success),
         Some(RulesCommand::Test(test)) => return rules_test::run(test),
+        Some(RulesCommand::Conform(conform)) => return rules_conform::run(conform),
         Some(RulesCommand::List(list)) => list,
         None => &args.list,
     };
