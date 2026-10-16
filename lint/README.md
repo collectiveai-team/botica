@@ -223,9 +223,12 @@ node` writes a script that speaks the protocol with no dependency. A program in 
 both run as a rule of the runtime `command`.
 
 A finding with another `rule` than the id of its rule is left out, with a warning on stderr. A
-process that fails, or that is still running 5 seconds after `shutdown` and is killed, stops the
-run with exit code 2 and the findings of the other rules stay. The
-built-in catalog takes no extension: an extension is a program of the project.
+process that fails, that does not answer a request in time, or that is still running 5 seconds
+after `shutdown`, is killed and stops the run with exit code 2; the findings of the other rules
+stay. The process has 120 seconds to answer `initialize`, because a script run with `uv` may
+download its dependencies first, and 60 seconds to answer `lint/files` and `shutdown`. The
+variable `BOTICA_EXTENSION_TIMEOUT`, a number of seconds, sets both. The built-in catalog takes no
+extension: an extension is a program of the project.
 
 `botica server` runs the extension rules only when the editor asks for them: the flag
 `--extensions`, or the option `{"extensions": true}` in the `initializationOptions` of
@@ -236,7 +239,8 @@ its process started when the first document in one of its languages opens. It is
 the buffer, not the file on disk: at once when the document opens, and after the text has stayed
 as it is for 250 ms when it changes. What it finds is published after the findings of the engine,
 in a second `publishDiagnostics` with both, and leaves the buffer when its text changes, until the
-rule answers again. A rule of `scope = "project"` does not run on a buffer. A process that fails is
+rule answers again. A rule of `scope = "project"` does not run on a buffer. A process that fails, or
+does not answer within its deadline, is
 started again up to 3 times, with a `window/showMessage` warning each time; after that the rule
 does not run until the server restarts. At `exit`, or at the end of the input, each process gets
 `shutdown` and is killed after 5 seconds if it is still running.

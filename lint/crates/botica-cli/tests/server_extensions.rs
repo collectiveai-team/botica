@@ -233,3 +233,39 @@ fn each_implementation_of_a_rule_is_a_process_of_its_own() {
         ]
     );
 }
+
+#[test]
+fn a_process_that_does_not_answer_in_time_is_warned_about_and_does_not_hold_the_server() {
+    let dir = with_a_rule("silent", "");
+    let silent = r#"read -r line
+printf '%s\n' '{"jsonrpc":"2.0","id":1,"result":{"rules":[]}}'
+exec sleep 600
+"#;
+    write(&dir, &format!("{}/ext.sh", folder("by-sh")), silent);
+    let uri = uri_of(&dir, "scratch.py");
+
+    let mut editor = Session::start_with_env(
+        &dir,
+        &["server", "--extensions"],
+        &[("BOTICA_EXTENSION_TIMEOUT", "1")],
+    );
+    editor.send(&initialize(&json!({})));
+    editor.read();
+    editor.send(&open(&uri, "x = 1\n"));
+    let engine = editor.read();
+    let warning = editor.read();
+    let (_, status) = editor.finish();
+
+    assert_eq!(engine["method"], "textDocument/publishDiagnostics");
+    assert_eq!(warning["method"], "window/showMessage");
+    assert_eq!(warning["params"]["type"], 2);
+    let message = warning["params"]["message"].as_str().expect("a message");
+    assert!(
+        message.contains("`acme/by-sh`")
+            && message.contains("`lint/files`")
+            && message.contains("within 1s")
+            && message.contains("starting it again"),
+        "{message}"
+    );
+    assert!(status.success());
+}

@@ -37,22 +37,7 @@ fn a_process_that_does_not_end_after_shutdown_is_killed_and_is_a_failure_of_the_
     let lingering = script("acme/by-sh", "error").replace("exit 0 ;;", "exec sleep 600 ;;");
     write(&dir, &format!("{}/ext.sh", folder("by-sh")), &lingering);
 
-    let mut child = Command::new(env!("CARGO_BIN_EXE_botica"))
-        .args(["lint", "."])
-        .current_dir(&dir)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("run botica");
-    let deadline = Instant::now() + Duration::from_secs(60);
-    while child.try_wait().expect("wait for botica").is_none() {
-        if Instant::now() > deadline {
-            let _ = child.kill();
-            panic!("botica lint is still waiting for a process that does not end");
-        }
-        std::thread::sleep(Duration::from_millis(100));
-    }
-    let output = child.wait_with_output().expect("the output");
+    let output = lint_within_a_minute(&dir, &[]);
 
     assert_eq!(output.status.code(), Some(2), "{}", stdout(&output));
     assert_eq!(
@@ -63,6 +48,87 @@ fn a_process_that_does_not_end_after_shutdown_is_killed_and_is_a_failure_of_the_
         stderr(&output).contains("acme/by-sh") && stderr(&output).contains("shutdown"),
         "{}",
         stderr(&output)
+    );
+}
+
+/// Runs `botica lint .` with the extension deadline of the test and gives up on it after a minute:
+/// a run that hangs is a failure of the test, not a hung suite.
+fn lint_within_a_minute(dir: &Path, env: &[(&str, &str)]) -> Output {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_botica"))
+        .args(["lint", "."])
+        .envs(env.iter().copied())
+        .current_dir(dir)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("run botica");
+    let deadline = Instant::now() + Duration::from_secs(60);
+    while child.try_wait().expect("wait for botica").is_none() {
+        if Instant::now() > deadline {
+            let _ = child.kill();
+            panic!("botica lint is still waiting for a process that does not answer");
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    child.wait_with_output().expect("the output")
+}
+
+/// A script that notes its pid in `pid.log` and then runs `rest`, which ends in `exec sleep 600`.
+fn silent_after(rest: &str) -> String {
+    format!("echo $$ > pid.log\n{rest}\nexec sleep 600\n")
+}
+
+#[test]
+fn a_process_that_does_not_answer_lint_files_is_killed_and_is_a_failure_of_the_run() {
+    let dir = project("silent-lint", "");
+    add_rule(&dir, "by-sh", "ACMESTRUC001", "", "acme/by-sh");
+    add_rule(&dir, "other", "ACMESTRUC002", "", "acme/other");
+    let silent = silent_after(
+        r#"read -r line
+printf '%s\n' '{"jsonrpc":"2.0","id":1,"result":{"rules":[]}}'
+read -r line"#,
+    );
+    write(&dir, &format!("{}/ext.sh", folder("by-sh")), &silent);
+
+    let output = lint_within_a_minute(&dir, &[("BOTICA_EXTENSION_TIMEOUT", "1")]);
+
+    assert_eq!(output.status.code(), Some(2), "{}", stdout(&output));
+    assert_eq!(findings(&output), ["app.py acme/other"]);
+    let message = stderr(&output);
+    assert!(
+        message.contains("acme/by-sh")
+            && message.contains("`lint/files`")
+            && message.contains("within 1s"),
+        "{message}"
+    );
+    let pid = std::fs::read_to_string(dir.join("pid.log")).expect("the process started");
+    assert!(
+        !Path::new("/proc").join(pid.trim()).exists(),
+        "the process {pid} is still running"
+    );
+}
+
+#[test]
+fn a_process_that_does_not_answer_initialize_is_killed_and_is_a_failure_of_the_run() {
+    let dir = project("silent-initialize", "");
+    add_rule(&dir, "by-sh", "ACMESTRUC001", "", "acme/by-sh");
+    add_rule(&dir, "other", "ACMESTRUC002", "", "acme/other");
+    write(
+        &dir,
+        &format!("{}/ext.sh", folder("by-sh")),
+        &silent_after("read -r line"),
+    );
+
+    let output = lint_within_a_minute(&dir, &[("BOTICA_EXTENSION_TIMEOUT", "1")]);
+
+    assert_eq!(output.status.code(), Some(2), "{}", stdout(&output));
+    assert_eq!(findings(&output), ["app.py acme/other"]);
+    let message = stderr(&output);
+    assert!(
+        message.contains("acme/by-sh")
+            && message.contains("`initialize`")
+            && message.contains("within 1s"),
+        "{message}"
     );
 }
 

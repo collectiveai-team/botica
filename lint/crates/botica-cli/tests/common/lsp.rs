@@ -40,8 +40,14 @@ fn read_frame(output: &mut impl BufRead) -> Option<Value> {
 impl Session {
     /// Starts `botica` with `args` in `dir`.
     pub fn start(dir: &Path, args: &[&str]) -> Self {
+        Self::start_with_env(dir, args, &[])
+    }
+
+    /// Starts `botica` with `args` in `dir` and the variables `env` added to its environment.
+    pub fn start_with_env(dir: &Path, args: &[&str], env: &[(&str, &str)]) -> Self {
         let mut child = Command::new(env!("CARGO_BIN_EXE_botica"))
             .args(args)
+            .envs(env.iter().copied())
             .current_dir(dir)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

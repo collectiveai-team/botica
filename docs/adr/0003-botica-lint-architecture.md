@@ -96,7 +96,11 @@ started in the root of the project, and sends it only the files where the rule a
 languages, `files`, `ignores` and the `overrides` of the configuration). A finding whose `rule` is
 not the id of its rule is left out with a warning on stderr; a finding keeps its severity unless
 the configuration names one. A process that fails is a failure of the run (exit 2) and leaves the
-findings of the other rules as they are. `# botica: ignore[<id>]` and `# noqa: <code>` silence a
+findings of the other rules as they are. `ExtensionHost` gives a process 120 seconds to answer
+`initialize` and 60 seconds to answer `lint/files` and `shutdown`, and kills one that has not
+answered by then; the failure names the method and the deadline. A thread reads the stdout of the
+process and another writes its stdin, so a process that does not read a large request is also
+killed at the deadline. `BOTICA_EXTENSION_TIMEOUT`, in seconds, replaces both deadlines. `# botica: ignore[<id>]` and `# noqa: <code>` silence a
 finding of an extension, and a comment that names an extension rule is never reported as unused,
 because the engine does not see its findings. The code of the rule is in its folder and the catalog
 loads it as it loads the YAML of an ast-grep rule. An extension is a program that the project runs,
