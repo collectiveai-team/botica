@@ -1,3 +1,5 @@
+mod common;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -171,12 +173,12 @@ fn the_page_of_an_external_rule_names_its_tool_with_the_address_of_its_documenta
 
 #[test]
 fn a_preview_rule_says_it_is_off_by_default_and_how_to_run_it() {
-    let site = exported(&workdir("preview"));
+    let dir = workdir("preview");
+    common::write(&dir, "botica.toml", "");
+    common::fresh_rule::lay_out(&dir);
+    let site = exported(&dir);
 
-    let text = page(
-        &site,
-        "architecture/btarch004-settings-direct-instantiation.md",
-    );
+    let text = page(&site, "acme/acmestruc001-no-eval.md");
     let front_matter: Vec<&str> = text.lines().take_while(|line| !line.is_empty()).collect();
     assert!(front_matter.contains(&"status: \"preview\""), "{text}");
     assert!(front_matter.contains(&"default-enabled: false"), "{text}");
@@ -217,8 +219,7 @@ fn the_index_groups_the_rules_by_family_in_the_order_of_their_codes() {
                    \n\
                    | Code | Rule | Status | Added in | Default |\n\
                    |---|---|---|---|---|\n\
-                   | `BTFAST001` | [`api-schemas-extra-forbid`](fastapi/btfast001-api-schemas-extra-forbid.md)<br>Request and response schemas reject unknown fields | stable | 0.8.0 | on |\n\
-                   | `BTFAST002` | [`api-schema-in-route-module`](fastapi/btfast002-api-schema-in-route-module.md)<br>Pydantic schemas are not defined in route modules | preview | unreleased | off |\n";
+                   | `BTFAST001` | [`api-schemas-extra-forbid`](fastapi/btfast001-api-schemas-extra-forbid.md)<br>Request and response schemas reject unknown fields | stable | 0.8.0 | on |\n";
     assert!(index.contains(section), "{index}");
     let own = "## botica\n\
                \n\

@@ -90,3 +90,43 @@ status = "stable"
 version = "0.8.0"
 rule = "settings-module"
 status = "stable"
+
+[[event]]
+version = "0.10.0"
+rule = "api-request-schema-name"
+status = "preview"
+
+[[event]]
+version = "0.10.0"
+rule = "api-response-schema-name"
+status = "preview"
+
+[[event]]
+version = "0.10.0"
+rule = "api-schema-in-route-module"
+status = "preview"
+
+[[event]]
+version = "0.10.0"
+rule = "cognitive-complexity"
+status = "preview"
+
+[[event]]
+version = "0.10.0"
+rule = "db-no-create-all"
+status = "preview"
+
+[[event]]
+version = "0.10.0"
+rule = "external-config"
+status = "stable"
+
+[[event]]
+version = "0.10.0"
+rule = "settings-base-class"
+status = "preview"
+
+[[event]]
+version = "0.10.0"
+rule = "settings-direct-instantiation"
+status = "preview"

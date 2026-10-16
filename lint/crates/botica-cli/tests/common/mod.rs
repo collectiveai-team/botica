@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+pub mod fresh_rule;
 pub mod new_rule;
 pub mod node;
 pub mod project_catalog;

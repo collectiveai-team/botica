@@ -56,7 +56,9 @@ fn the_status_line_says_since_which_release_and_when_no_release_has_it_yet() {
         "status:    stable (since 0.1.0)"
     );
 
-    let fresh = text_of(&explain("fresh", None, &["settings-direct-instantiation"]));
+    let dir = project_in("explain", "fresh", None);
+    common::fresh_rule::lay_out(&dir);
+    let fresh = text_of(&command(&dir, &["explain", "acme/no-eval"]));
     assert_eq!(
         line_with(&fresh, "status:"),
         "status:    preview (not released yet)"
