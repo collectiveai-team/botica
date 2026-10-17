@@ -92,7 +92,7 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
     `llms.txt` have a section References.
 14. **The first topics are `structured-logging` and `in-memory-adapters`,** and they point at the
     snippets of `scaffolding/templates/snippets/`. `log-get-logger` and `log-no-print` cite the first,
-    and so does CES-74.
+    and so does CES-74. CES-64 cites `in-memory-adapters`.
 
 ## Not built yet
 
@@ -105,8 +105,6 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
 
 ## Not decided
 
-- Whether CES-64 cites `in-memory-adapters`. A pull request touches one standard, so the citation
-  goes in its own.
 - Whether `check` also verifies the citations of the built-in rules in a project that has the
   topics they name.
 - Whether the site publishes a Markdown version of each page (`<page>/index.md`), which the format

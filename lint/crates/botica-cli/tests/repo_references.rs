@@ -75,3 +75,11 @@ fn the_topic_of_in_memory_adapters_shows_the_port_and_its_fake() {
     assert!(text.contains("class UserRepository(Protocol)"), "{text}");
     assert!(text.contains("class InMemoryUserRepository"), "{text}");
 }
+
+#[test]
+fn the_standard_of_in_memory_adapters_shows_its_topic() {
+    let output = command(&checkout(), &["refs", "show", "CES-64"]);
+
+    assert!(output.status.success(), "{}", stderr(&output));
+    assert!(stdout(&output).contains("class InMemoryUserRepository"));
+}
