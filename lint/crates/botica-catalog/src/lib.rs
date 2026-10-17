@@ -10,6 +10,7 @@ mod project;
 mod question;
 mod readme;
 mod references;
+mod references_merge;
 mod sources;
 mod validate;
 
@@ -27,4 +28,4 @@ pub use model::{
 };
 pub use question::{BooleanCriteria, Choices, Question};
 pub use readme::Section;
-pub use references::{Reference, References, Topic, REFERENCES_DIR, TOPIC_FILE};
+pub use references::{Origin, Reference, References, Topic, REFERENCES_DIR, TOPIC_FILE};

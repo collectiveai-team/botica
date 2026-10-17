@@ -1,0 +1,23 @@
+title = "Structured logging with structlog"
+
+[[references]]
+repo = "github.com/collectiveai-team/botica"
+rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"
+license = "MIT"
+path = "scaffolding/templates/snippets/core/logger.py"
+lines = "44-69"
+anchor = "def _configure"
+note = "the configuration: JSON in production, a console in development, applied once"
+
+[[references]]
+repo = "github.com/collectiveai-team/botica"
+rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"
+license = "MIT"
+path = "scaffolding/templates/snippets/core/logger.py"
+lines = "72-75"
+anchor = "def get_logger"
+note = "the function that every module imports"
+
+[[references]]
+url = "https://www.structlog.org/en/stable/getting-started.html"
+note = "the getting-started page of the documentation of structlog"

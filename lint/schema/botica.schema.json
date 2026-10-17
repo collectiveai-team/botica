@@ -88,6 +88,9 @@
       "type": "boolean",
       "default": false
     },
+    "references": {
+      "$ref": "#/$defs/ReferencesConfig"
+    },
     "replace": {
       "description": "Rule to replace -> rule that replaces it.",
       "type": "object",
@@ -168,6 +171,21 @@
       "required": [
         "files"
       ]
+    },
+    "ReferencesConfig": {
+      "description": "Settings of `botica refs`.",
+      "type": "object",
+      "properties": {
+        "replace": {
+          "description": "Ids of the built-in topics that a topic of `references/` replaces. A topic of the project\nwith the id of a built-in one is an error unless the id is listed here.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
     },
     "RuleConfig": {
       "description": "Settings of one rule. Any other key is an option declared by that rule.",

@@ -69,6 +69,22 @@ fn main() {
     }
     table.push_str("];\n");
 
+    let references_dir = manifest.join("../../references");
+    println!("cargo:rerun-if-changed={}", references_dir.display());
+    table.push_str("pub(crate) const EMBEDDED_REFERENCES: &[(&str, &str)] = &[\n");
+    for topic in sorted_entries(&references_dir)
+        .into_iter()
+        .filter(|p| p.is_dir())
+    {
+        for name in ["topic.toml", "README.md"] {
+            let file = topic.join(name);
+            if file.is_file() {
+                push(&mut table, &references_dir, &file);
+            }
+        }
+    }
+    table.push_str("];\n");
+
     let out = PathBuf::from(std::env::var("OUT_DIR").expect("cargo sets OUT_DIR"))
         .join("embedded_files.rs");
     fs::write(out, table).expect("the generated table can be written");

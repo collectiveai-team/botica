@@ -40,10 +40,20 @@ struct TopicFile {
     references: Vec<Reference>,
 }
 
+/// Where a topic comes from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Origin {
+    /// Carried by the binary, from `lint/references/` of botica.
+    BuiltIn,
+    /// The `references/` folder of the project.
+    Project,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Topic {
     /// The name of its folder.
     pub id: String,
+    pub origin: Origin,
     pub title: String,
     pub references: Vec<Reference>,
     pub readme: String,
@@ -51,7 +61,7 @@ pub struct Topic {
 
 #[derive(Debug, Clone, Default)]
 pub struct References {
-    topics: Vec<Topic>,
+    pub(crate) topics: Vec<Topic>,
 }
 
 impl Reference {
@@ -125,6 +135,16 @@ impl References {
     /// Loads the topics from the files of `references/`, with paths from that folder:
     /// `<topic>/topic.toml` and `<topic>/README.md`.
     pub fn from_files(files: &[SourceFile]) -> Result<Self, CatalogError> {
+        Self::load(files, Origin::Project)
+    }
+
+    /// Loads the topics that a binary carries. They point at external files and pages only: a
+    /// file of the project is not there to read.
+    pub fn from_builtin_files(files: &[SourceFile]) -> Result<Self, CatalogError> {
+        Self::load(files, Origin::BuiltIn)
+    }
+
+    fn load(files: &[SourceFile], origin: Origin) -> Result<Self, CatalogError> {
         let mut issues = Vec::new();
         let mut entries: BTreeMap<&str, TopicEntry> = BTreeMap::new();
         for file in files {
@@ -139,7 +159,7 @@ impl References {
         }
         let topics = entries
             .into_iter()
-            .filter_map(|(id, entry)| load_topic(id, &entry, &mut issues))
+            .filter_map(|(id, entry)| load_topic(id, origin, &entry, &mut issues))
             .collect();
         if issues.is_empty() {
             Ok(Self { topics })
@@ -157,7 +177,12 @@ impl References {
     }
 }
 
-fn load_topic(id: &str, entry: &TopicEntry<'_>, issues: &mut Vec<CatalogIssue>) -> Option<Topic> {
+fn load_topic(
+    id: &str,
+    origin: Origin,
+    entry: &TopicEntry<'_>,
+    issues: &mut Vec<CatalogIssue>,
+) -> Option<Topic> {
     if !is_kebab_case(id) {
         issues.push(issue(
             format!("{id}/{TOPIC_FILE}"),
@@ -180,7 +205,11 @@ fn load_topic(id: &str, entry: &TopicEntry<'_>, issues: &mut Vec<CatalogIssue>) 
         }
     };
     for (position, reference) in parsed.references.iter().enumerate() {
-        for message in check_reference(reference) {
+        let mut problems = check_reference(reference);
+        if origin == Origin::BuiltIn && reference.path.is_some() && !reference.is_external() {
+            problems.push("a built-in topic points at external files and pages only".to_owned());
+        }
+        for message in problems {
             issues.push(issue(
                 toml.path.as_str(),
                 format!("references[{position}]: {message}"),
@@ -189,6 +218,7 @@ fn load_topic(id: &str, entry: &TopicEntry<'_>, issues: &mut Vec<CatalogIssue>) 
     }
     Some(Topic {
         id: id.to_owned(),
+        origin,
         title: parsed.title,
         references: parsed.references,
         readme: readme.text.clone(),

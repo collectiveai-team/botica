@@ -48,6 +48,16 @@ pub struct Override {
     pub severity: BTreeMap<String, RuleSeverity>,
 }
 
+/// Settings of `botica refs`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct ReferencesConfig {
+    /// Ids of the built-in topics that a topic of `references/` replaces. A topic of the project
+    /// with the id of a built-in one is an error unless the id is listed here.
+    #[serde(default)]
+    pub replace: Vec<String>,
+}
+
 /// Settings of `botica lint`: `botica.toml`, or the `[tool.botica]` table of `pyproject.toml`.
 #[derive(Debug, Clone, PartialEq, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
@@ -99,6 +109,8 @@ pub struct Config {
     pub rules: BTreeMap<String, RuleConfig>,
     #[serde(default)]
     pub overrides: Vec<Override>,
+    #[serde(default)]
+    pub references: ReferencesConfig,
 }
 
 fn default_select() -> Vec<String> {
@@ -127,6 +139,7 @@ impl Default for Config {
             replace: BTreeMap::new(),
             rules: BTreeMap::new(),
             overrides: Vec::new(),
+            references: ReferencesConfig::default(),
         }
     }
 }
