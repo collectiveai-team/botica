@@ -44,6 +44,7 @@ class Reference:
     url: str = ""
     lines: str | None = None
     anchor: str | None = None
+    quote: str = ""
     repo: str | None = None
     rev: str | None = None
     license: str | None = None
@@ -98,6 +99,7 @@ def _reference(raw: dict[str, str | None]) -> Reference:
         url=raw["url"] or "",
         lines=raw["lines"],
         anchor=raw["anchor"],
+        quote=(raw["quote"] or "").strip(),
         repo=raw["repo"],
         rev=raw["rev"],
         license=raw["license"],
@@ -172,9 +174,15 @@ def _permalink(reference: Reference) -> str:
     return f"https://{repo}/blob/{reference.rev}/{reference.path}{anchor}"
 
 
+def _block_quote(text: str) -> str:
+    """Return `text` as a Markdown block quote, a line at a time."""
+    return "".join(f"> {line}\n" if line else ">\n" for line in text.splitlines())
+
+
 def _reference_text(reference: Reference) -> str:
     if reference.url:
-        return f"### <{reference.url}>\n\n{reference.note}\n"
+        text = f"### <{reference.url}>\n\n{reference.note}\n"
+        return f"{text}\n{_block_quote(reference.quote)}" if reference.quote else text
     place = reference.path + (f":{reference.lines}" if reference.lines else "")
     text = f"### `{place}`\n\n{reference.note}\n"
     if reference.repo:

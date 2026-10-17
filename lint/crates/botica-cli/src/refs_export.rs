@@ -56,6 +56,7 @@ fn reference_json(collection: &Collection, topic: &Topic, reference: &Reference)
         "url": reference.url,
         "lines": reference.lines,
         "anchor": reference.anchor,
+        "quote": reference.quote,
         "note": reference.note,
         "text": text,
     }))

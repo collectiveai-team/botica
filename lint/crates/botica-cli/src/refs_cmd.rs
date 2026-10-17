@@ -181,6 +181,10 @@ fn topic_text(collection: &Collection, topic: &Topic) -> Result<String> {
 fn reference_text(collection: &Collection, reference: &Reference) -> Result<String> {
     let mut head = format!("## {}\n\n{}\n\n", label(reference), reference.note);
     let Some(path) = &reference.path else {
+        if let Some(quote) = &reference.quote {
+            head.push_str(&block_quote(quote));
+            head.push('\n');
+        }
         return Ok(head);
     };
     let mut meta = String::new();
@@ -203,6 +207,22 @@ fn reference_text(collection: &Collection, reference: &Reference) -> Result<Stri
     }
     let fence = fence_for(&shown);
     Ok(format!("{head}{fence}\n{shown}{fence}\n\n"))
+}
+
+/// `text` as a Markdown block quote, a line at a time.
+fn block_quote(text: &str) -> String {
+    text.trim()
+        .lines()
+        .map(|line| {
+            if line.is_empty() {
+                ">".to_owned()
+            } else {
+                format!("> {line}")
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+        + "\n"
 }
 
 /// The address of the lines of a file of GitHub at its commit.

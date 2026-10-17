@@ -19,5 +19,11 @@ anchor = "def get_logger"
 note = "the function that every module imports"
 
 [[references]]
-url = "https://www.structlog.org/en/stable/getting-started.html"
-note = "the getting-started page of the documentation of structlog"
+url = "https://www.structlog.org/en/stable/getting-started.html#building-a-context"
+note = "binding context: a logger is immutable, and `bind()` returns a new one that carries the context"
+quote = "Each logger with its context is immutable. You manipulate the context by creating new loggers using bind() and unbind()."
+
+[[references]]
+url = "https://www.structlog.org/en/stable/getting-started.html#rendering"
+note = "the renderer is the last processor, and `JSONRenderer` is the one for production"
+quote = "So assuming you want to follow best practices and render your event dictionary to JSON that is picked up by a log aggregation system like ELK or Graylog, structlog comes with batteries included - you just have to tell it to use its JSONRenderer."

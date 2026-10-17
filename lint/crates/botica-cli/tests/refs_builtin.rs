@@ -33,7 +33,7 @@ fn run(dir: &Path, args: &[&str], cache: &Path) -> std::process::Output {
 }
 
 const OWN_TOPIC: &str = "title = \"The logging of this project\"\n\n[[references]]\n\
-                         path = \"src/log.py\"\nnote = \"our logger\"\n";
+                         path = \"src/log.py\"\nlines = \"1-2\"\nnote = \"our logger\"\n";
 
 /// A project whose `references/` holds a topic with the id of a built-in one.
 fn project_with_own_logging(name: &str, config: Option<&str>) -> PathBuf {

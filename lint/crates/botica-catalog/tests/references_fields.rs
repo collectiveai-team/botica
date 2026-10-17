@@ -193,3 +193,69 @@ fn rejects_a_license_on_an_internal_reference() {
     )]);
     assert!(message.contains("`license` needs a `repo`"), "{message}");
 }
+
+#[test]
+fn a_page_reference_may_quote_the_passage_that_matters() {
+    let toml = format!("{PAGE}quote = \"Call configure() once.\"\n");
+
+    let loaded = load(vec![topic("t", &toml)]).expect("loads");
+
+    let reference = &loaded.topic("t").expect("topic").references[0];
+    assert_eq!(reference.quote.as_deref(), Some("Call configure() once."));
+}
+
+#[test]
+fn a_quote_belongs_to_a_page_and_is_not_empty() {
+    let message = rejected(vec![topic("t", &format!("{INTERNAL}quote = \"x\"\n"))]);
+    assert!(
+        message.contains("`quote` does not apply to a file reference"),
+        "{message}"
+    );
+
+    for empty in ["", "  \\n "] {
+        let message = rejected(vec![topic("t", &format!("{PAGE}quote = \"{empty}\"\n"))]);
+        assert!(message.contains("`quote` is empty"), "{empty:?}: {message}");
+    }
+}
+
+fn first(toml: &str) -> botica_catalog::Reference {
+    load(vec![topic("t", toml)])
+        .expect("loads")
+        .topic("t")
+        .expect("topic")
+        .references[0]
+        .clone()
+}
+
+#[test]
+fn a_file_without_lines_is_a_whole_file_and_the_reference_suggests_lines() {
+    let whole = first(&INTERNAL.replace("lines = \"18-30\"\n", ""));
+    let advice = whole.suggestion().expect("a suggestion");
+    assert!(advice.contains("points at the whole file"), "{advice}");
+    assert!(advice.contains("`lines`"), "{advice}");
+
+    assert_eq!(first(INTERNAL).suggestion(), None);
+    assert_eq!(
+        first(EXTERNAL)
+            .suggestion()
+            .map(|a| a.contains("whole file")),
+        Some(true)
+    );
+}
+
+#[test]
+fn a_page_without_a_fragment_or_a_quote_is_a_whole_page_and_the_reference_suggests_one() {
+    let advice = first(PAGE).suggestion().expect("a suggestion");
+    assert!(advice.contains("points at the whole page"), "{advice}");
+    assert!(advice.contains("`#fragment`"), "{advice}");
+    assert!(advice.contains("`quote`"), "{advice}");
+
+    let fragment = PAGE.replace("getting-started.html", "getting-started.html#configuration");
+    assert_eq!(first(&fragment).suggestion(), None);
+    assert_eq!(
+        first(&format!("{PAGE}quote = \"a passage\"\n")).suggestion(),
+        None
+    );
+    let empty_fragment = PAGE.replace("getting-started.html", "getting-started.html#");
+    assert!(first(&empty_fragment).suggestion().is_some());
+}

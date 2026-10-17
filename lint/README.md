@@ -116,13 +116,16 @@ license = "MIT"
 note = "the function that every module imports"
 
 [[references]]
-url = "https://www.structlog.org/en/stable/getting-started.html"
-note = "the getting-started page of the documentation of structlog"
+url = "https://www.structlog.org/en/stable/getting-started.html#building-a-context"
+note = "binding context: `bind()` returns a new logger that carries the context"
+quote = "Each logger with its context is immutable."   # optional: the passage, as the page words it
 ```
 
-A reference has a `path` or a `url`. A `url` is a page of documentation, and `note` is its only other
-field. A `path` is a file: of the project when the reference has no `repo`, `rev` and `license`,
-and of another repository at a commit when it has the three. `rev` is a full commit SHA, and `repo`
+A reference points at a fragment. It has a `path` or a `url`. A `url` is a page of documentation:
+it ends with the `#fragment` of a section, or has a `quote` of the passage, and `note` says why. A
+reference to a whole file or a whole page loads, and `botica refs check` warns about it. A `path`
+is a file: of the project when the reference has no `repo`, `rev` and `license`, and of another
+repository at a commit when it has the three. `rev` is a full commit SHA, and `repo`
 is `<host>/<path>` with no scheme.
 
 A rule cites topics with `references = ["structured-logging"]` in its `rule.toml`, and a standard

@@ -10,10 +10,12 @@ use crate::refs_standards::Problem;
 /// references point at botica, and botica checks them.
 pub fn run(collection: &Collection, all: bool) -> ExitCode {
     let mut problems = collection.standard_problems.clone();
+    let mut warnings = Vec::new();
     let topics = match &collection.topics {
         Ok(topics) => {
             let checked = checked(topics, all);
             problems.extend(topic_problems(collection, &checked));
+            warnings = topic_warnings(&checked);
             problems.extend(citation_problems(collection, topics));
             checked
         }
@@ -25,10 +27,18 @@ pub fn run(collection: &Collection, all: bool) -> ExitCode {
             Vec::new()
         }
     };
+    for warning in &warnings {
+        eprintln!("warning: {warning}");
+    }
     if problems.is_empty() {
         let references: usize = topics.iter().map(|topic| topic.references.len()).sum();
+        let advice = if warnings.is_empty() {
+            String::new()
+        } else {
+            format!(", {}", plural(warnings.len(), "warning"))
+        };
         println!(
-            "{} and {} resolve",
+            "{} and {} resolve{advice}",
             plural(topics.len(), "topic"),
             plural(references, "reference")
         );
@@ -79,6 +89,24 @@ fn topic_problems(collection: &Collection, topics: &[&Topic]) -> Vec<Problem> {
         }
     }
     problems
+}
+
+/// The references that point at a whole file or a whole page: advice, not a failure.
+fn topic_warnings(topics: &[&Topic]) -> Vec<Problem> {
+    topics
+        .iter()
+        .flat_map(|topic| {
+            topic
+                .references
+                .iter()
+                .enumerate()
+                .filter_map(|(position, reference)| {
+                    reference
+                        .suggestion()
+                        .map(|advice| topic_problem(topic, position, &advice))
+                })
+        })
+        .collect()
 }
 
 fn topic_problem(topic: &Topic, position: usize, message: &str) -> Problem {

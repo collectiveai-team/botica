@@ -61,7 +61,7 @@ fn list_prints_the_address_of_a_page_reference_with_its_note() {
     let text = ok(&refs(&dir, &["list"]));
 
     assert!(
-        text.contains("  https://example.invalid/docs  the documentation of the library\n"),
+        text.contains("  https://example.invalid/docs#setup  the documentation of the library\n"),
         "{text}"
     );
 }
@@ -72,14 +72,16 @@ fn show_prints_a_page_reference_as_its_address_and_its_note_without_a_code_block
     add_topic(
         &dir,
         "demo",
-        "title = \"Demo topic\"\n\n[[references]]\nurl = \"https://example.invalid/docs\"\n\
+        "title = \"Demo topic\"\n\n[[references]]\nurl = \"https://example.invalid/docs#setup\"\n\
          note = \"the documentation of the library\"\n",
     );
 
     let text = ok(&refs(&dir, &["show", "demo"]));
 
     assert!(
-        text.contains("## https://example.invalid/docs\n\nthe documentation of the library\n"),
+        text.contains(
+            "## https://example.invalid/docs#setup\n\nthe documentation of the library\n"
+        ),
         "{text}"
     );
     assert!(
@@ -99,7 +101,7 @@ fn show_prints_the_pages_and_the_files_of_a_topic_in_the_order_of_its_file() {
 
     let file = text.find("## src/app.py:3-4").expect("the file reference");
     let page = text
-        .find("## https://example.invalid/docs")
+        .find("## https://example.invalid/docs#setup")
         .expect("the page reference");
     assert!(file < page, "{text}");
 }

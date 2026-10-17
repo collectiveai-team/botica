@@ -70,7 +70,7 @@ fn a_topic_of_the_project_comes_with_its_readme_and_the_text_of_each_reference()
     assert_eq!(file["note"], "the setup");
     assert_eq!(file["text"], "def get_logger():\n    pass\n");
     assert_eq!(file["repo"], Value::Null);
-    assert_eq!(page["url"], "https://example.invalid/docs");
+    assert_eq!(page["url"], "https://example.invalid/docs#setup");
     assert_eq!(page["note"], "the documentation of the library");
     assert_eq!(page["text"], Value::Null);
 }

@@ -29,6 +29,8 @@ pub struct Reference {
     pub lines: Option<String>,
     /// Text that the lines hold, found again when the reference is updated.
     pub anchor: Option<String>,
+    /// The passage of a page that matters, as the page words it; absent in a file reference.
+    pub quote: Option<String>,
     pub note: String,
 }
 
@@ -71,6 +73,27 @@ impl Reference {
 
     pub fn is_page(&self) -> bool {
         self.url.is_some()
+    }
+
+    /// What a reference that points at a whole file or a whole page could name instead: a block of
+    /// lines, a `#fragment` of the page or a `quote` of it. It is advice, and the catalog loads
+    /// the reference without it.
+    pub fn suggestion(&self) -> Option<String> {
+        if let Some(url) = &self.url {
+            let fragment = url
+                .split_once('#')
+                .is_some_and(|(_, rest)| !rest.is_empty());
+            return (!fragment && self.quote.is_none()).then(|| {
+                "points at the whole page: end the `url` with a `#fragment` of the section, or add a \
+                 `quote` of the passage"
+                    .to_owned()
+            });
+        }
+        self.lines.is_none().then(|| {
+            "points at the whole file: add `lines` for the block that matters, or one reference \
+             for each block"
+                .to_owned()
+        })
     }
 
     /// The first and the last line of `lines`, counted from 1. `from_files` rejects a reference
@@ -243,6 +266,10 @@ fn check_reference(reference: &Reference) -> Vec<String> {
         problems.extend(check_page(reference, url));
         return problems;
     }
+    if reference.quote.is_some() {
+        problems
+            .push("`quote` does not apply to a file reference: the lines are its text".to_owned());
+    }
     if let Some(lines) = &reference.lines {
         if parse_lines(lines).is_none() {
             problems.push(format!(
@@ -300,6 +327,13 @@ fn check_page(reference: &Reference, url: &str) -> Vec<String> {
     ];
     for (field, _) in present.iter().filter(|(_, present)| *present) {
         problems.push(format!("`{field}` does not apply to a `url` reference"));
+    }
+    if reference
+        .quote
+        .as_deref()
+        .is_some_and(|quote| quote.trim().is_empty())
+    {
+        problems.push("`quote` is empty".to_owned());
     }
     problems
 }

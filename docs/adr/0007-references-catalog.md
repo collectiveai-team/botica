@@ -41,8 +41,12 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
    cited by several standards and rules, and it may hold several references.
 3. **Any repository can be a reference,** of Collective or external. Each reference to a file of
    another repository records the license of the code it shows.
-4. **A reference is a file or a page.** A page has a `url` where a file has a `path`: it is the
-   documentation of a library, with its note.
+4. **A reference is a file or a page, and it points at a fragment.** A page has a `url` where a
+   file has a `path`: the documentation of a library, with its note. A reference to a file names
+   the `lines` of a block, and one block is one reference; a reference to a page ends its `url` with
+   the `#fragment` of a section, or carries a `quote`, the passage that matters as the page words
+   it. The repository, the commit and the site are the context of the fragment. The fragment is a
+   strong suggestion: the catalog loads a whole file or a whole page, and `botica refs check` warns.
 5. **A reference is code to read and adapt.** Botica does not copy a reference into a repository,
    and the snippets of the scaffolder become references to the code they came from.
 6. **`botica refs` reads the collection,** apart from `botica lint`:
@@ -71,7 +75,7 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
    repository): a branch or a tag moves, and a remote cannot be asked for an abbreviated SHA. `repo`
    is `<host>/<path>` with no scheme, no user and no port, and botica asks `https://<host>/<path>.git`.
    `note` is required. `lines` is `<first>-<last>` or one line, counted from 1, and a file reference
-   without it is the whole file.
+   without it is the whole file. `quote` belongs to a page and is not empty.
 9. **The topics that the built-in rules cite are in the binary,** in `lint/references/`, compiled
    in like `lint/rules/`. They point at pages and at external files only. A project adds its own in
    `references/` at its root, read from disk like the standards (ADR 0004). The loader is a module
@@ -89,13 +93,16 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
       comes from (`built-in` or `project`).
     - `show` takes a topic, a rule (slug, code or alias, also of a catalog of the project) or a
       standard, and prints the README of each topic and, for each reference, its note and the lines
-      of the file. A page is its address and its note. An external file also has its license and, on
+      of the file. A page is its address, its note and its quote as a block quote. An external file also has its license and, on
       GitHub, the permalink of its lines.
+    - `check` warns, on stderr and with exit 0, for each reference that points at a whole file (no
+      `lines`) or at a whole page (no `#fragment` in the `url` and no `quote`), and counts the
+      warnings in its last line.
     - `check` fails (exit 1) when a file cannot be read, `lines` is past the end, `anchor` is not in
       the lines, a path is absolute or leaves the project or the repository, a `topic.toml` does not
       load, or a rule or a standard cites a topic that does not exist. A page is not fetched.
-    - `export` prints the topics as JSON, with the text of each file reference, for the pages of
-      the site. It stops at the first reference that cannot be read.
+    - `export` prints the topics as JSON, with the text of each file reference and the quote of
+      each page, for the pages of the site. It stops at the first reference that cannot be read.
     - A file is shown inside a fence of backticks one longer than the longest run of them in the
       lines, and of three at least. A Markdown file with blocks of code cannot close it.
 12. **External files are read with `git`,** the one of the user, with its credentials, its helpers
@@ -120,7 +127,7 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
     output of `botica refs export`, which prints every topic as JSON and gives each file reference
     the text it shows: the lines, read from the project or fetched at the commit. A page is the
     README, each reference and the rules and standards that cite the topic. A page reference is a
-    link with its note. A file has its lines in a block of code, and an external file also its
+    link with its note and its quote. A file has its lines in a block of code, and an external file also its
     repository, its commit, its license and, on GitHub, its permalink: a reader does not leave the
     page to understand a reference. The build needs `git` and the network for external files, and
     stops when a reference cannot be read. The page of a rule or a standard lists its topics at the
@@ -142,7 +149,8 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
 - Whether the site publishes a Markdown version of each page (`<page>/index.md`), which the format
   of `llms.txt` recommends as the target of its links. The links of `llms.txt` point at the HTML
   pages.
-- Whether the site also shows the content of a page reference. It shows its address and its note.
+- Whether `check` verifies the `quote` of a page against the page. It fetches no page.
+- Whether the warnings about a whole file or a whole page become errors.
 
 ## Considered options
 

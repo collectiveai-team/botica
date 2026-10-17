@@ -12,7 +12,7 @@ pub const SOURCE: &str = "import os\n\ndef get_logger():\n    pass\n\nTAIL = 1\n
 
 /// A reference to a page of the web, to append to `topic_toml`. The host never resolves: a command
 /// that fetched it would fail.
-pub const PAGE: &str = "\n[[references]]\nurl = \"https://example.invalid/docs\"\n\
+pub const PAGE: &str = "\n[[references]]\nurl = \"https://example.invalid/docs#setup\"\n\
                     note = \"the documentation of the library\"\n";
 
 pub fn topic_toml(extra: &str) -> String {

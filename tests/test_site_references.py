@@ -38,6 +38,7 @@ class Ref:
     url: str | None = None
     lines: str | None = None
     anchor: str | None = None
+    quote: str | None = None
     repo: str | None = None
     rev: str | None = None
     license: str | None = None
@@ -136,6 +137,23 @@ def test_a_page_reference_shows_its_address_and_its_note_without_code(site: Site
     page = "### <https://example.com/docs>\n\nthe documentation\n\n### `src"
     assert f"\n## References\n\n{page}" in text
     assert text.count("```") == 2, "only the file has a block of code"
+
+
+def test_a_page_reference_shows_its_quote_as_a_block_quote_after_its_note(site: Site):
+    site.topic(
+        references=[
+            Ref(url="https://example.com/docs#setup", note="setup", quote="\n First.\n\nSecond.\n"),
+            Ref(url="https://example.com/docs#next", note="next"),
+        ]
+    )
+
+    site.build()
+
+    text = site.page("structured-logging")
+    assert (
+        "### <https://example.com/docs#setup>\n\nsetup\n\n> First.\n>\n> Second.\n\n### <" in text
+    )
+    assert text.count("> ") == 2, "a reference without a quote has no block quote"
 
 
 def test_a_reference_shows_its_path_its_lines_its_note_and_the_text_of_those_lines(site: Site):
