@@ -148,6 +148,41 @@ def test_the_language_of_the_block_comes_from_the_extension_of_the_file(site: Si
     assert "```\nplain\n```" in text
 
 
+@pytest.mark.parametrize(
+    ("guide", "fence"),
+    [
+        ("# Guide\n\n```python\nx = 1\n```\n", "````"),
+        ("a\n`````\nb\n``\n", "``````"),
+        ("Call `x` and ``y``.\n", "```"),
+    ],
+)
+def test_the_fence_is_longer_than_the_longest_run_of_backticks_in_the_file(
+    site: Site, guide: str, fence: str
+):
+    (site.root / "docs").mkdir()
+    (site.root / "docs" / "guide.md").write_text(guide, encoding="utf-8")
+    site.topic(toml='title = "T"\n\n[[references]]\npath = "docs/guide.md"\nnote = "n"\n')
+
+    site.build()
+
+    text = site.page("structured-logging")
+    assert f"\n{fence}markdown\n{guide}{fence}\n" in text
+
+
+def test_the_fence_depends_on_the_lines_that_are_shown_and_not_on_the_rest_of_the_file(site: Site):
+    (site.root / "docs").mkdir()
+    (site.root / "docs" / "guide.md").write_text("plain\n```\nx\n```\n", encoding="utf-8")
+    site.topic(
+        toml='title = "T"\n\n[[references]]\npath = "docs/guide.md"\nlines = "1"\nnote = "n"\n'
+    )
+
+    site.build()
+
+    text = site.page("structured-logging")
+    assert "\n```markdown\nplain\n```\n" in text
+    assert "````" not in text
+
+
 def test_an_external_reference_shows_its_repository_its_commit_and_its_license_without_code(
     site: Site,
 ):

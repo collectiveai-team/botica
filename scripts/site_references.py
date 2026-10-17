@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -148,6 +149,12 @@ def _excerpt(text: str, lines: str | None) -> str:
     return "".join(text.splitlines(keepends=True)[start - 1 : end])
 
 
+def _fence(text: str) -> str:
+    """Return a fence of backticks longer than any run of them in `text`, and of three at least."""
+    longest = max((len(run) for run in re.findall(r"`+", text)), default=0)
+    return "`" * (max(longest, 2) + 1)
+
+
 def _reference_text(root: Path, reference: Reference) -> str:
     if reference.url:
         return f"### <{reference.url}>\n\n{reference.note}\n"
@@ -157,7 +164,8 @@ def _reference_text(root: Path, reference: Reference) -> str:
         return f"{text}\n{reference.repo} at {reference.rev} ({reference.license})\n"
     shown = _excerpt((root / reference.path).read_text(encoding="utf-8"), reference.lines)
     language = LANGUAGES.get(Path(reference.path).suffix, "")
-    return f"{text}\n```{language}\n{shown.removesuffix(chr(10))}\n```\n"
+    fence = _fence(shown)
+    return f"{text}\n{fence}{language}\n{shown.removesuffix(chr(10))}\n{fence}\n"
 
 
 def _topic_page(root: Path, topic: Topic, cited_by: list[str]) -> str:

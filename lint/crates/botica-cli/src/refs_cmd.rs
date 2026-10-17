@@ -145,5 +145,17 @@ fn reference_text(collection: &Collection, topic: &Topic, reference: &Reference)
         );
     }
     let file = read_text(collection.root(), path).map_err(anyhow::Error::msg)?;
-    Ok(format!("{head}```\n{}```\n\n", reference.excerpt(&file)))
+    let mut shown = reference.excerpt(&file);
+    if !shown.ends_with('\n') {
+        shown.push('\n');
+    }
+    let fence = fence_for(&shown);
+    Ok(format!("{head}{fence}\n{shown}{fence}\n\n"))
+}
+
+/// A fence of backticks longer than any run of them in `text`, and of three at least: a Markdown
+/// file with blocks of code cannot close it.
+fn fence_for(text: &str) -> String {
+    let longest = text.split(|c| c != '`').map(str::len).max().unwrap_or(0);
+    "`".repeat(longest.max(2) + 1)
 }
