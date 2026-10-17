@@ -14,19 +14,23 @@ on:
     paths:
       - "website/**"
       - "lint/rules/**"
+      - "lint/references/**"
       - "standards/**"
       - "lint/crates/botica-catalog/**"
       - "lint/crates/botica-cli/src/rules_export.rs"
       - "scripts/build_site.sh"
+      - "scripts/site_references.py"
       - ".github/workflows/site.yml"
   pull_request:
     paths:
       - "website/**"
       - "lint/rules/**"
+      - "lint/references/**"
       - "standards/**"
       - "lint/crates/botica-catalog/**"
       - "lint/crates/botica-cli/src/rules_export.rs"
       - "scripts/build_site.sh"
+      - "scripts/site_references.py"
       - ".github/workflows/site.yml"
   workflow_dispatch:
 

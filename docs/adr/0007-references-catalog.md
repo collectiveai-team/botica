@@ -94,6 +94,8 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
     - `check` fails (exit 1) when a file cannot be read, `lines` is past the end, `anchor` is not in
       the lines, a path is absolute or leaves the project or the repository, a `topic.toml` does not
       load, or a rule or a standard cites a topic that does not exist. A page is not fetched.
+    - `export` prints the topics as JSON, with the text of each file reference, for the pages of
+      the site. It stops at the first reference that cannot be read.
     - A file is shown inside a fence of backticks one longer than the longest run of them in the
       lines, and of three at least. A Markdown file with blocks of code cannot close it.
 12. **External files are read with `git`,** the one of the user, with its credentials, its helpers
@@ -114,12 +116,15 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
     `test` of `ci.yml` runs `botica refs check --all`. Without the network `check` fails for the
     files that the cache does not hold.
 15. **The site has a page per topic,** `references/<topic>/`, written by
-    `scripts/site_references.py` when `scripts/build_site.sh` builds the site from `lint/references/`:
-    the README, each reference and the rules and standards that cite the topic. A page reference is a
-    link with its note. An internal file has its lines in a block. An external file has its
-    repository, its commit, its license and, on GitHub, its permalink: the build fetches nothing. The
-    page of a rule or a standard lists its topics at the end. The navigation and `llms.txt` have a
-    section References.
+    `scripts/site_references.py` when `scripts/build_site.sh` builds the site. The script reads the
+    output of `botica refs export`, which prints every topic as JSON and gives each file reference
+    the text it shows: the lines, read from the project or fetched at the commit. A page is the
+    README, each reference and the rules and standards that cite the topic. A page reference is a
+    link with its note. A file has its lines in a block of code, and an external file also its
+    repository, its commit, its license and, on GitHub, its permalink: a reader does not leave the
+    page to understand a reference. The build needs `git` and the network for external files, and
+    stops when a reference cannot be read. The page of a rule or a standard lists its topics at the
+    end. The navigation and `llms.txt` have a section References.
 16. **The first topics are `structured-logging` and `in-memory-adapters`,** in `lint/references/`.
     They point at the snippets of `scaffolding/templates/snippets/` at the commit `9c225ad`.
     `log-get-logger` and `log-no-print` cite the first, and so does CES-74. CES-64 cites
@@ -137,9 +142,7 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
 - Whether the site publishes a Markdown version of each page (`<page>/index.md`), which the format
   of `llms.txt` recommends as the target of its links. The links of `llms.txt` point at the HTML
   pages.
-- Whether the site shows the code of the external references. The pages of the built-in topics show
-  a link to each file, where they showed its lines when the topics pointed at files of this
-  repository.
+- Whether the site also shows the content of a page reference. It shows its address and its note.
 
 ## Considered options
 
@@ -175,6 +178,12 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
   collision is an error between rules, and the configuration says when it is intended.
 - **`botica refs export` writes the pages of the topics.** Rejected: `scripts/build_site.sh` already
   decorates the standards with a script, and the pages of the topics are written the same way.
+  `export` prints JSON, and the script writes the pages.
+- **The site does not fetch the external files and links them.** Rejected: a reader would have to
+  open another site to understand a reference.
+- **The script of the site runs `botica refs show` or `git` by itself.** Rejected: the output of
+  `show` is text for a terminal, and a second implementation of the fetch and the cache would drift
+  from the first.
 - **A search of code of botica's own.** Rejected: grep.app, the MCP of Sourcegraph and the Librarian
   of Amp search code on GitHub. Botica keeps the selection: `refs pin` records what a search found.
 

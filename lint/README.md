@@ -38,6 +38,7 @@ botica rules export --format abide [--check]   # the rubric of abide, .abide/rub
 botica refs list               # the topics (built-in and of references/), their references and who cites them
 botica refs show log-no-print  # the references of a topic, or of the topics that a rule or a standard cites
 botica refs check [--all]      # fails when a reference no longer resolves or a citation names no topic
+botica refs export             # every topic as JSON, with the text of each file reference (the site reads it)
 botica rules test --judge abide [test-through-interface]
                                # abide judges the fixtures of each judgment rule; compared with expected.json
 botica rules conform lint/rules   # each rule over its fixtures, with and without each optimisation;
@@ -126,7 +127,9 @@ is `<host>/<path>` with no scheme.
 
 A rule cites topics with `references = ["structured-logging"]` in its `rule.toml`, and a standard
 with `references: ["structured-logging"]` in its front matter. The site lists the topics at the end
-of the page of each rule and standard, and has a page per topic.
+of the page of each rule and standard, and has a page per topic with the lines of each file
+reference, so a reader does not leave the page to understand it. The build of the site runs
+`botica refs export`, which fetches the external files.
 
 `botica refs show` reads the file of an external reference with the `git` of the user: private
 repositories open with the credentials that git has, and a missing credential is an error. It runs
