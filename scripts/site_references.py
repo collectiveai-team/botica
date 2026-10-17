@@ -1,10 +1,11 @@
-"""Write the pages of the topics of `references/` and list each topic on the pages that cite it.
+"""Write the pages of the topics and list each topic on the pages that cite it.
 
-`scripts/build_site.sh` runs it after `scripts/site_standards.py`. Each folder of `references/`
-becomes the page `references/<topic>.md` of the site, with the README of the topic, each reference
-(the address of a page, or the lines of the file it points at), and the rules and standards that
-cite it. The page of a rule or a standard that cites topics, by the `references` field of its
-front matter, gets the list of them at the end. The files of `references/` are never touched.
+`scripts/build_site.sh` runs it after `scripts/site_standards.py`, with the output of
+`botica refs export`: every topic, with the text of the lines that each file reference shows. Each
+topic becomes the page `references/<topic>.md` of the site, with its README, each reference (the
+address of a page, or the lines of a file in a block of code) and the rules and standards that cite
+it. The page of a rule or a standard that cites topics, by the `references` field of its front
+matter, gets the list of them at the end.
 """
 
 from __future__ import annotations
@@ -12,7 +13,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -37,7 +37,7 @@ LANGUAGES = {
 
 @dataclass(frozen=True)
 class Reference:
-    """A file or a page that a topic points at, as `topic.toml` writes it: `url` or `path`."""
+    """A file or a page that a topic points at: `url` or `path`, and the lines of a file."""
 
     note: str
     path: str = ""
@@ -47,6 +47,7 @@ class Reference:
     repo: str | None = None
     rev: str | None = None
     license: str | None = None
+    text: str = ""
 
 
 @dataclass(frozen=True)
@@ -90,20 +91,32 @@ def _cited(fields: dict[str, object]) -> list[str]:
     return [str(item) for item in value] if isinstance(value, list) else []
 
 
-def _topic(folder: Path) -> Topic:
-    parsed = tomllib.loads((folder / "topic.toml").read_text(encoding="utf-8"))
-    return Topic(
-        id=folder.name,
-        title=parsed["title"],
-        readme=(folder / "README.md").read_text(encoding="utf-8"),
-        references=[Reference(**reference) for reference in parsed.get("references", [])],
+def _reference(raw: dict[str, str | None]) -> Reference:
+    return Reference(
+        note=raw["note"] or "",
+        path=raw["path"] or "",
+        url=raw["url"] or "",
+        lines=raw["lines"],
+        anchor=raw["anchor"],
+        repo=raw["repo"],
+        rev=raw["rev"],
+        license=raw["license"],
+        text=raw["text"] or "",
     )
 
 
-def _topics(references: Path) -> list[Topic]:
-    if not references.is_dir():
-        return []
-    return [_topic(folder) for folder in sorted(references.iterdir()) if folder.is_dir()]
+def _topics(export: Path) -> list[Topic]:
+    """Return the topics of the output of `botica refs export`, by id."""
+    parsed = json.loads(export.read_text(encoding="utf-8"))
+    return [
+        Topic(
+            id=raw["id"],
+            title=raw["title"],
+            readme=raw["readme"],
+            references=[_reference(reference) for reference in raw["references"]],
+        )
+        for raw in sorted(parsed["topics"], key=lambda raw: raw["id"])
+    ]
 
 
 def _link(target: Path, origin: Path) -> str:
@@ -141,14 +154,6 @@ def _citations(docs: Path) -> list[Citation]:
     return sorted(found, key=lambda citation: citation.sort)
 
 
-def _excerpt(text: str, lines: str | None) -> str:
-    if lines is None:
-        return text
-    first, _, last = lines.partition("-")
-    start, end = int(first), int(last or first)
-    return "".join(text.splitlines(keepends=True)[start - 1 : end])
-
-
 def _fence(text: str) -> str:
     """Return a fence of backticks longer than any run of them in `text`, and of three at least."""
     longest = max((len(run) for run in re.findall(r"`+", text)), default=0)
@@ -167,29 +172,28 @@ def _permalink(reference: Reference) -> str:
     return f"https://{repo}/blob/{reference.rev}/{reference.path}{anchor}"
 
 
-def _reference_text(root: Path, reference: Reference) -> str:
+def _reference_text(reference: Reference) -> str:
     if reference.url:
         return f"### <{reference.url}>\n\n{reference.note}\n"
     place = reference.path + (f":{reference.lines}" if reference.lines else "")
     text = f"### `{place}`\n\n{reference.note}\n"
     if reference.repo:
-        place = f"{reference.repo} at {reference.rev} ({reference.license})\n"
+        origin = f"{reference.repo} at {reference.rev} ({reference.license})\n"
         link = _permalink(reference)
-        return f"{text}\n{place}" + (f"\n<{link}>\n" if link else "")
-    shown = _excerpt((root / reference.path).read_text(encoding="utf-8"), reference.lines)
+        text += f"\n{origin}" + (f"\n<{link}>\n" if link else "")
     language = LANGUAGES.get(Path(reference.path).suffix, "")
-    fence = _fence(shown)
-    return f"{text}\n{fence}{language}\n{shown.removesuffix(chr(10))}\n{fence}\n"
+    fence = _fence(reference.text)
+    return f"{text}\n{fence}{language}\n{reference.text.removesuffix(chr(10))}\n{fence}\n"
 
 
-def _topic_page(root: Path, topic: Topic, cited_by: list[str]) -> str:
+def _topic_page(topic: Topic, cited_by: list[str]) -> str:
     text = (
         f"---\ntitle: {json.dumps(topic.title)}\nsubtitle: {json.dumps(topic.id)}\n---\n\n"
         f"# {topic.title}\n\n{topic.readme.rstrip()}\n"
     )
     if topic.references:
         text += "\n## References\n\n" + "\n".join(
-            _reference_text(root, reference) for reference in topic.references
+            _reference_text(reference) for reference in topic.references
         )
     if cited_by:
         text += "\n## Cited by\n\n" + "".join(f"- {item}\n" for item in cited_by)
@@ -200,7 +204,7 @@ def _index_page(topics: list[Topic]) -> str:
     items = "".join(f"- [{topic.id}]({topic.id}.md): {topic.title}\n" for topic in topics)
     return (
         "---\ntitle: References\n---\n\n# References\n\n"
-        "A topic collects the code that rules and standards point at. "
+        "A topic collects the code and the documentation that rules and standards point at. "
         "`botica refs show <topic, rule or standard>` prints it.\n\n" + items
     )
 
@@ -215,9 +219,9 @@ def _check(citations: list[Citation], topics: list[Topic], docs: Path) -> None:
                 raise ValueError(message)
 
 
-def build(references: Path, docs: Path) -> None:
-    """Write the topic pages of REFERENCES under DOCS and list them where they are cited."""
-    topics = _topics(references)
+def build(export: Path, docs: Path) -> None:
+    """Write the topic pages of EXPORT under DOCS and list them where they are cited."""
+    topics = _topics(export)
     if not topics:
         return
     citations = _citations(docs)
@@ -231,7 +235,7 @@ def build(references: Path, docs: Path) -> None:
             for citation in citations
             if topic.id in citation.topics
         ]
-        page.write_text(_topic_page(references.parent, topic, cited_by), encoding="utf-8")
+        page.write_text(_topic_page(topic, cited_by), encoding="utf-8")
     (folder / "index.md").write_text(_index_page(topics), encoding="utf-8")
     titles = {topic.id: topic.title for topic in topics}
     for citation in citations:
@@ -244,9 +248,9 @@ def build(references: Path, docs: Path) -> None:
 
 
 @app.default
-def main(references: Path, docs: Path) -> None:
-    """Write the topic pages of REFERENCES under DOCS and list them where they are cited."""
-    build(references, docs)
+def main(export: Path, docs: Path) -> None:
+    """Write the topic pages of EXPORT under DOCS and list them where they are cited."""
+    build(export, docs)
 
 
 if __name__ == "__main__":

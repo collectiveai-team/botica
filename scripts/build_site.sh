@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build the standards site into website/site: export the rule pages from the catalog of this
 # checkout, copy the standards of standards/ and add to each its subtitle and the list of the rules
-# that implement it (scripts/site_standards.py), write a page per topic of lint/references/ and
+# that implement it (scripts/site_standards.py), write a page per topic of `botica refs export`, with the lines that its references show, and
 # list the topics on the pages of the rules and the standards that cite them
 # (scripts/site_references.py),
 # put the code blocks of the pages of the rules and the standards in tabs by
@@ -14,13 +14,18 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+topics="$(mktemp)"
+trap 'rm -f "${topics}"' EXIT
+
 rm -rf website/docs/rules website/docs/standards website/docs/references website/site
 cargo run --quiet --locked --manifest-path lint/Cargo.toml -p botica-cli -- \
   rules export --format markdown --output website/docs/rules
 cp -r standards website/docs/standards
 uv run --no-project --python 3.14 --with cyclopts python scripts/site_standards.py website/docs
+cargo run --quiet --locked --manifest-path lint/Cargo.toml -p botica-cli -- \
+  refs export > "${topics}"
 uv run --no-project --python 3.14 --with cyclopts python scripts/site_references.py \
-  lint/references website/docs
+  "${topics}" website/docs
 uv run --no-project --python 3.14 --with cyclopts python scripts/site_language_tabs.py \
   website/docs/rules website/docs/standards
 uv run --no-project --python 3.14 --with cyclopts python scripts/site_nav.py \

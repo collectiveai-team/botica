@@ -8,7 +8,9 @@ come out (CES-65).
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import pytest
@@ -24,32 +26,59 @@ _SPEC.loader.exec_module(sr)
 
 SOURCE = "import os\n\ndef get_logger():\n    pass\n\nTAIL = 1\n"
 SHA = "3f2a9c1d5e7b4a6c8d0e1f2a3b4c5d6e7f8a9b0c"
-TOPIC = """title = "Structured logging"
-
-[[references]]
-path = "src/app.py"
-lines = "3-4"
-anchor = "def get_logger"
-note = "the setup"
-"""
 README = "Read the setup.\n\n## What to read\n\nThe function.\n"
 
 
+@dataclass(frozen=True)
+class Ref:
+    """A reference as `botica refs export` prints it: `text` holds the lines of a file."""
+
+    note: str = "n"
+    path: str | None = None
+    url: str | None = None
+    lines: str | None = None
+    anchor: str | None = None
+    repo: str | None = None
+    rev: str | None = None
+    license: str | None = None
+    text: str | None = None
+
+
+FILE = Ref(
+    path="src/app.py",
+    lines="3-4",
+    anchor="def get_logger",
+    note="the setup",
+    text="def get_logger():\n    pass\n",
+)
+
+
 class Site:
-    """A checkout with `references/` and `src/app.py`, and the `docs/` of the site."""
+    """The export of the topics and the `docs/` of the site."""
 
     def __init__(self, root: Path) -> None:
         self.root = root
-        self.references = root / "references"
+        self.export = root / "topics.json"
         self.docs = root / "docs"
-        (root / "src").mkdir()
-        (root / "src" / "app.py").write_text(SOURCE, encoding="utf-8")
+        self.topics: list[dict[str, object]] = []
 
-    def topic(self, topic_id: str = "structured-logging", toml: str = TOPIC) -> None:
-        folder = self.references / topic_id
-        folder.mkdir(parents=True, exist_ok=True)
-        (folder / "topic.toml").write_text(toml, encoding="utf-8")
-        (folder / "README.md").write_text(README, encoding="utf-8")
+    def topic(
+        self,
+        topic_id: str = "structured-logging",
+        references: list[Ref] | None = None,
+        title: str = "Structured logging",
+    ) -> None:
+        shown = [FILE] if references is None else references
+        self.topics = [topic for topic in self.topics if topic["id"] != topic_id]
+        self.topics.append(
+            {
+                "id": topic_id,
+                "title": title,
+                "origin": "project",
+                "readme": README,
+                "references": [asdict(item) for item in shown],
+            }
+        )
 
     def rule(self, family: str, slug: str, code: str, cites: str | None = None) -> Path:
         page = self.docs / "rules" / family / f"{code.lower()}-{slug}.md"
@@ -71,7 +100,8 @@ class Site:
         return page
 
     def build(self) -> None:
-        sr.build(self.references, self.docs)
+        self.export.write_text(json.dumps({"topics": self.topics}), encoding="utf-8")
+        sr.build(self.export, self.docs)
 
     def page(self, topic_id: str) -> str:
         return (self.docs / "references" / f"{topic_id}.md").read_text(encoding="utf-8")
@@ -97,9 +127,7 @@ def test_a_topic_gets_a_page_with_its_title_and_its_readme(site: Site):
 
 def test_a_page_reference_shows_its_address_and_its_note_without_code(site: Site):
     site.topic(
-        toml='title = "T"\n\n[[references]]\nurl = "https://example.com/docs"\n'
-        'note = "the documentation"\n\n[[references]]\npath = "src/app.py"\nlines = "3-4"\n'
-        'note = "the setup"\n'
+        references=[Ref(url="https://example.com/docs", note="the documentation"), FILE],
     )
 
     site.build()
@@ -119,12 +147,10 @@ def test_a_reference_shows_its_path_its_lines_its_note_and_the_text_of_those_lin
     assert (
         "\n### `src/app.py:3-4`\n\nthe setup\n\n```python\ndef get_logger():\n    pass\n```\n"
     ) in text
-    assert "import os" not in text
-    assert "TAIL" not in text
 
 
 def test_a_reference_without_lines_shows_the_whole_file(site: Site):
-    site.topic(toml='title = "T"\n\n[[references]]\npath = "src/app.py"\nnote = "all"\n')
+    site.topic(references=[Ref(path="src/app.py", note="all", text=SOURCE)])
 
     site.build()
 
@@ -134,11 +160,11 @@ def test_a_reference_without_lines_shows_the_whole_file(site: Site):
 
 
 def test_the_language_of_the_block_comes_from_the_extension_of_the_file(site: Site):
-    (site.root / "src" / "lib.rs").write_text("fn main() {}\n", encoding="utf-8")
-    (site.root / "src" / "notes.xyz").write_text("plain\n", encoding="utf-8")
     site.topic(
-        toml='title = "T"\n\n[[references]]\npath = "src/lib.rs"\nnote = "a"\n\n'
-        '[[references]]\npath = "src/notes.xyz"\nnote = "b"\n'
+        references=[
+            Ref(path="src/lib.rs", note="a", text="fn main() {}\n"),
+            Ref(path="src/notes.xyz", note="b", text="plain\n"),
+        ]
     )
 
     site.build()
@@ -159,9 +185,7 @@ def test_the_language_of_the_block_comes_from_the_extension_of_the_file(site: Si
 def test_the_fence_is_longer_than_the_longest_run_of_backticks_in_the_file(
     site: Site, guide: str, fence: str
 ):
-    (site.root / "docs").mkdir()
-    (site.root / "docs" / "guide.md").write_text(guide, encoding="utf-8")
-    site.topic(toml='title = "T"\n\n[[references]]\npath = "docs/guide.md"\nnote = "n"\n')
+    site.topic(references=[Ref(path="docs/guide.md", text=guide)])
 
     site.build()
 
@@ -169,51 +193,46 @@ def test_the_fence_is_longer_than_the_longest_run_of_backticks_in_the_file(
     assert f"\n{fence}markdown\n{guide}{fence}\n" in text
 
 
-def test_the_fence_depends_on_the_lines_that_are_shown_and_not_on_the_rest_of_the_file(site: Site):
-    (site.root / "docs").mkdir()
-    (site.root / "docs" / "guide.md").write_text("plain\n```\nx\n```\n", encoding="utf-8")
-    site.topic(
-        toml='title = "T"\n\n[[references]]\npath = "docs/guide.md"\nlines = "1"\nnote = "n"\n'
-    )
-
-    site.build()
-
-    text = site.page("structured-logging")
-    assert "\n```markdown\nplain\n```\n" in text
-    assert "````" not in text
-
-
-def test_an_external_reference_shows_its_repository_its_commit_and_its_license_without_code(
+def test_an_external_reference_shows_its_repository_its_commit_its_license_and_its_lines(
     site: Site,
 ):
     site.topic(
-        toml=f'title = "T"\n\n[[references]]\nrepo = "github.com/acme/app"\nrev = "{SHA}"\n'
-        'license = "MIT"\npath = "a.py"\nlines = "1-2"\nnote = "n"\n'
+        references=[
+            Ref(
+                repo="github.com/acme/app",
+                rev=SHA,
+                license="MIT",
+                path="a.py",
+                lines="1-2",
+                text="one\ntwo\n",
+            )
+        ]
     )
 
     site.build()
 
     text = site.page("structured-logging")
     link = f"https://github.com/acme/app/blob/{SHA}/a.py#L1-L2"
-    assert f"\n### `a.py:1-2`\n\nn\n\ngithub.com/acme/app at {SHA} (MIT)\n\n<{link}>\n" in text
-    assert "```" not in text
+    head = f"\n### `a.py:1-2`\n\nn\n\ngithub.com/acme/app at {SHA} (MIT)\n\n<{link}>\n"
+    assert f"{head}\n```python\none\ntwo\n```\n" in text
 
 
 @pytest.mark.parametrize(
     ("repo", "lines", "fragment"),
     [
-        ("github.com/acme/app", 'lines = "3"\n', "#L3>"),
-        ("github.com/acme/app", 'lines = "3-9"\n', "#L3-L9>"),
-        ("github.com/acme/app", "", "/a.py>"),
-        ("gitlab.example.com/acme/app", 'lines = "3"\n', None),
+        ("github.com/acme/app", "3", "#L3>"),
+        ("github.com/acme/app", "3-9", "#L3-L9>"),
+        ("github.com/acme/app", None, "/a.py>"),
+        ("gitlab.example.com/acme/app", "3", None),
     ],
 )
 def test_the_permalink_names_the_lines_and_is_written_for_github_only(
-    site: Site, repo: str, lines: str, fragment: str | None
+    site: Site, repo: str, lines: str | None, fragment: str | None
 ):
     site.topic(
-        toml=f'title = "T"\n\n[[references]]\nrepo = "{repo}"\nrev = "{SHA}"\n'
-        f'license = "MIT"\npath = "a.py"\n{lines}note = "n"\n'
+        references=[
+            Ref(repo=repo, rev=SHA, license="MIT", path="a.py", lines=lines, text="x\n"),
+        ]
     )
 
     site.build()
@@ -281,7 +300,7 @@ def test_a_topic_that_nothing_cites_has_no_list_of_citations(site: Site):
 
 def test_a_rule_lists_the_topics_it_cites_with_a_link_to_each_page(site: Site):
     site.topic("structured-logging")
-    site.topic("in-memory-adapters", TOPIC.replace("Structured logging", "In-memory adapters"))
+    site.topic("in-memory-adapters", title="In-memory adapters")
     rule = site.rule(
         "logging", "log-no-print", "BTLOG002", '["structured-logging", "in-memory-adapters"]'
     )
@@ -320,7 +339,7 @@ def test_a_rule_and_a_standard_that_cite_nothing_are_left_as_they_are(site: Site
 
 def test_the_index_lists_the_topics_by_id_with_a_link_and_the_title(site: Site):
     site.topic("structured-logging")
-    site.topic("in-memory-adapters", TOPIC.replace("Structured logging", "In-memory adapters"))
+    site.topic("in-memory-adapters", title="In-memory adapters")
 
     site.build()
 

@@ -8,8 +8,8 @@ use botica_catalog::{Origin, Reference, Topic, REFERENCES_DIR};
 use clap::{Args, Subcommand};
 
 use crate::project::ProjectArgs;
-use crate::refs_check;
 use crate::refs_collection::{self, label, Collection};
+use crate::{refs_check, refs_export};
 
 #[derive(Args)]
 pub struct RefsArgs {
@@ -27,6 +27,9 @@ enum RefsCommand {
     Show(ShowArgs),
     /// Fail when a reference no longer resolves or something cites a topic that does not exist.
     Check(CheckArgs),
+    /// Print every topic as JSON, with the text of each file that its references show, for the
+    /// pages of the site.
+    Export(ExportArgs),
 }
 
 #[derive(Args)]
@@ -54,6 +57,14 @@ struct ShowArgs {
 }
 
 #[derive(Args)]
+struct ExportArgs {
+    #[command(flatten)]
+    project: ProjectArgs,
+    #[command(flatten)]
+    cache: CacheArgs,
+}
+
+#[derive(Args)]
 struct CheckArgs {
     /// Also fetch and check the references of the built-in topics, which botica checks in its own
     /// repository.
@@ -72,6 +83,10 @@ pub fn run(args: &RefsArgs) -> Result<ExitCode> {
             &refs_collection::open(&args.project, args.cache.cache_dir.clone())?,
             &args.key,
         ),
+        RefsCommand::Export(args) => refs_export::run(&refs_collection::open(
+            &args.project,
+            args.cache.cache_dir.clone(),
+        )?),
         RefsCommand::Check(args) => Ok(refs_check::run(
             &refs_collection::open(&args.project, args.cache.cache_dir.clone())?,
             args.all,
