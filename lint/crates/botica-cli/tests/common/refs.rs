@@ -5,6 +5,9 @@ use std::process::Output;
 
 use super::{command, project_in, stderr, stdout, write};
 
+/// The configuration that lets a topic of the project replace the built-in `structured-logging`.
+pub const REPLACE_LOGGING: &str = "[references]\nreplace = [\"structured-logging\"]\n";
+
 pub const SOURCE: &str = "import os\n\ndef get_logger():\n    pass\n\nTAIL = 1\n";
 
 /// A reference to a page of the web, to append to `topic_toml`. The host never resolves: a command
@@ -29,9 +32,11 @@ pub fn add_topic(dir: &Path, id: &str, toml: &str) {
     );
 }
 
-/// A project with the file `src/app.py` and the topic `id`, which points at it.
+/// A project with the file `src/app.py` and the topic `id`, which points at it. The id of a built-in
+/// topic is replaced, as the configuration of the project says.
 pub fn project(name: &str, id: &str) -> PathBuf {
-    let dir = project_in("refs", name, None);
+    let config = (id == "structured-logging").then_some(REPLACE_LOGGING);
+    let dir = project_in("refs", name, config);
     write(&dir, "src/app.py", SOURCE);
     add_topic(&dir, id, &topic_toml(""));
     dir

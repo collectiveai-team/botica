@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+pub mod builtin;
 pub mod external;
 pub mod fresh_rule;
 pub mod git_remote;

@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use anyhow::{bail, Result};
-use botica_catalog::{Reference, Topic, REFERENCES_DIR};
+use botica_catalog::{Origin, Reference, Topic, REFERENCES_DIR};
 use clap::{Args, Subcommand};
 
 use crate::project::ProjectArgs;
@@ -55,6 +55,10 @@ struct ShowArgs {
 
 #[derive(Args)]
 struct CheckArgs {
+    /// Also fetch and check the references of the built-in topics, which botica checks in its own
+    /// repository.
+    #[arg(long)]
+    all: bool,
     #[command(flatten)]
     project: ProjectArgs,
     #[command(flatten)]
@@ -68,20 +72,16 @@ pub fn run(args: &RefsArgs) -> Result<ExitCode> {
             &refs_collection::open(&args.project, args.cache.cache_dir.clone())?,
             &args.key,
         ),
-        RefsCommand::Check(args) => Ok(refs_check::run(&refs_collection::open(
-            &args.project,
-            args.cache.cache_dir.clone(),
-        )?)),
+        RefsCommand::Check(args) => Ok(refs_check::run(
+            &refs_collection::open(&args.project, args.cache.cache_dir.clone())?,
+            args.all,
+        )),
     }
 }
 
 fn list(collection: &Collection) -> Result<ExitCode> {
     let topics = collection.loaded()?;
     let mut out = std::io::stdout().lock();
-    if topics.topics().is_empty() {
-        writeln!(out, "no topics in {REFERENCES_DIR}/")?;
-        return Ok(ExitCode::SUCCESS);
-    }
     let blocks: Vec<String> = topics
         .topics()
         .iter()
@@ -103,6 +103,11 @@ fn list_block(collection: &Collection, topic: &Topic) -> String {
         citers.join(", ")
     };
     let _ = writeln!(block, "  cited by: {cited}");
+    let from = match topic.origin {
+        Origin::BuiltIn => "built-in",
+        Origin::Project => "project",
+    };
+    let _ = writeln!(block, "  from: {from}");
     block
 }
 

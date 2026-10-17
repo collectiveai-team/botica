@@ -35,9 +35,9 @@ botica rules export --format agents-md --output AGENTS.md [--check]
                                # the active judgment rules, between <!-- botica:rules --> and <!-- /botica:rules -->
 botica rules export --format abide [--check]   # the rubric of abide, .abide/rubric.json, with the
                                # judgment rules of the block of AGENTS.md (--agents-md names another file)
-botica refs list               # the topics of references/, their references and the rules and standards that cite them
+botica refs list               # the topics (built-in and of references/), their references and who cites them
 botica refs show log-no-print  # the references of a topic, or of the topics that a rule or a standard cites
-botica refs check              # fails when a reference no longer resolves or a citation names no topic
+botica refs check [--all]      # fails when a reference no longer resolves or a citation names no topic
 botica rules test --judge abide [test-through-interface]
                                # abide judges the fixtures of each judgment rule; compared with expected.json
 botica rules conform lint/rules   # each rule over its fixtures, with and without each optimisation;
@@ -96,34 +96,60 @@ README with its directive, its reasons and how to silence it.
 
 ## References
 
-`references/<topic>/` at the root of the project holds code to read. A topic is a `topic.toml` and a
-`README.md` that says what to read in each reference and what to adapt. Botica reads the folder from
-disk when it runs.
+A topic points at code and documentation to read. It is a folder with a `topic.toml` and a
+`README.md` that says what to read in each reference and what to adapt. The topics that the built-in
+rules cite are in `lint/references/` and are compiled into the binary; a project adds its own in
+`references/` at its root, which botica reads from disk.
 
 ```toml
-# references/structured-logging/topic.toml
+# lint/references/structured-logging/topic.toml
 title = "Structured logging with structlog"
-docs = ["https://www.structlog.org/en/stable/getting-started.html"]
 
 [[references]]
-path = "scaffolding/templates/snippets/core/logger.py"   # from the root of the project
+repo = "github.com/collectiveai-team/botica"
+rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"   # the full SHA of a commit
+path = "scaffolding/templates/snippets/core/logger.py"
 lines = "72-75"                       # optional: a range or one line; without it, the whole file
 anchor = "def get_logger"             # optional: text that the lines hold
+license = "MIT"
 note = "the function that every module imports"
+
+[[references]]
+url = "https://www.structlog.org/en/stable/getting-started.html"
+note = "the getting-started page of the documentation of structlog"
 ```
+
+A reference has a `path` or a `url`. A `url` is a page of documentation, and `note` is its only other
+field. A `path` is a file: of the project when the reference has no `repo`, `rev` and `license`,
+and of another repository at a commit when it has the three. `rev` is a full commit SHA, and `repo`
+is `<host>/<path>` with no scheme.
 
 A rule cites topics with `references = ["structured-logging"]` in its `rule.toml`, and a standard
 with `references: ["structured-logging"]` in its front matter. The site lists the topics at the end
 of the page of each rule and standard, and has a page per topic.
 
-`botica refs check` exits with 1 when a file of a reference is gone, when its `lines` are past the
-end of the file, when its `anchor` is not in them, when a standard or a rule of a catalog of the
-project cites a topic that does not exist, or when a `topic.toml` does not load. The topics that
-the built-in rules cite are those of the checkout of botica, so a test of that checkout
-(`crates/botica-cli/tests/repo_references.rs`) checks them.
+`botica refs show` reads the file of an external reference with the `git` of the user: private
+repositories open with the credentials that git has, and a missing credential is an error. It runs
+`git fetch --depth 1 --filter=blob:none` for the commit, then `git ls-tree` and `git show`, and each
+command is killed after 60 seconds (`BOTICA_REFS_TIMEOUT` sets the seconds). The file is kept in a
+cache as `<cache>/<repo>/<rev>/<path>` and read from there on the next run, with no git and no
+network. The cache is `--cache-dir`, else `botica/refs` under `XDG_CACHE_HOME`, `LOCALAPPDATA`
+(Windows) or `~/.cache`. For a file of GitHub, `show` prints the license and the permalink of the
+lines.
 
-A reference to a file of another repository has `repo`, `rev` (a commit) and `license` as well.
-`refs show` and `refs check` report it as not supported yet.
+`botica refs check` exits with 1 when a file of a reference cannot be read, when its `lines` are past
+the end of the file, when its `anchor` is not in them, when a rule or a standard cites a topic that
+does not exist, or when a `topic.toml` does not load. It reads the files of the topics of the
+project only: the references of the built-in topics point at botica, and `check --all` fetches those
+too. The job `test` of `ci.yml` runs `check --all`. A reference to a page is not fetched.
+
+A topic of `references/` with the id of a built-in topic does not load, unless the configuration
+lists the id:
+
+```toml
+[references]
+replace = ["structured-logging"]
+```
 
 ## Which files
 

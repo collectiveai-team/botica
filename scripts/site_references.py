@@ -155,13 +155,27 @@ def _fence(text: str) -> str:
     return "`" * (max(longest, 2) + 1)
 
 
+def _permalink(reference: Reference) -> str:
+    """Return the address of the lines of a file of GitHub at its commit, or "" off GitHub."""
+    repo = reference.repo or ""
+    if not repo.startswith("github.com/"):
+        return ""
+    first, _, last = (reference.lines or "").partition("-")
+    anchor = ""
+    if first:
+        anchor = f"#L{first}-L{last}" if last else f"#L{first}"
+    return f"https://{repo}/blob/{reference.rev}/{reference.path}{anchor}"
+
+
 def _reference_text(root: Path, reference: Reference) -> str:
     if reference.url:
         return f"### <{reference.url}>\n\n{reference.note}\n"
     place = reference.path + (f":{reference.lines}" if reference.lines else "")
     text = f"### `{place}`\n\n{reference.note}\n"
     if reference.repo:
-        return f"{text}\n{reference.repo} at {reference.rev} ({reference.license})\n"
+        place = f"{reference.repo} at {reference.rev} ({reference.license})\n"
+        link = _permalink(reference)
+        return f"{text}\n{place}" + (f"\n<{link}>\n" if link else "")
     shown = _excerpt((root / reference.path).read_text(encoding="utf-8"), reference.lines)
     language = LANGUAGES.get(Path(reference.path).suffix, "")
     fence = _fence(shown)

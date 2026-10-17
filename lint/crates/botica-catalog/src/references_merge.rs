@@ -2,8 +2,9 @@ use crate::issue::{issue, CatalogError};
 use crate::load::SourceFile;
 use crate::references::{References, Topic, TOPIC_FILE};
 
-/// What `replace` is called in the messages: the key of the configuration.
-const REPLACE_KEY: &str = "references.replace";
+/// The path of the problems with `replace`: they are in the configuration, not in a file of
+/// `references/`.
+const REPLACE_KEY: &str = "[references] replace";
 
 impl References {
     /// The topics of a project together with the built-in ones, in the order of their ids. A topic

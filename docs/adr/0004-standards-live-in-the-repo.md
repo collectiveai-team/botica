@@ -12,8 +12,7 @@ standards of its own.
 1. **A standard is a file written by hand**, `standards/<set>/<number>-<slug>.md`, at the root of
    the repository. A set is the folder of the standards of one author, named like the prefix of
    their ids (`CES` for `CES-71`). The file carries `id` and `title` in its front matter and prose
-   after it. A standard that cites topics of `references/` (ADR 0007) adds `references`, a JSON list
-   of their ids.
+   after it. A standard that cites topics (ADR 0007) adds `references`, a JSON list of their ids.
 2. **A rule names the standard it implements** in the `standard` field of its `rule.toml`, as
    `<SET>-<number>` (`CES-71`, `ACME-3`). Botica only checks the format. That the file exists is
    checked outside botica.

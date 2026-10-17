@@ -194,8 +194,37 @@ def test_an_external_reference_shows_its_repository_its_commit_and_its_license_w
     site.build()
 
     text = site.page("structured-logging")
-    assert f"\n### `a.py:1-2`\n\nn\n\ngithub.com/acme/app at {SHA} (MIT)\n" in text
+    link = f"https://github.com/acme/app/blob/{SHA}/a.py#L1-L2"
+    assert f"\n### `a.py:1-2`\n\nn\n\ngithub.com/acme/app at {SHA} (MIT)\n\n<{link}>\n" in text
     assert "```" not in text
+
+
+@pytest.mark.parametrize(
+    ("repo", "lines", "fragment"),
+    [
+        ("github.com/acme/app", 'lines = "3"\n', "#L3>"),
+        ("github.com/acme/app", 'lines = "3-9"\n', "#L3-L9>"),
+        ("github.com/acme/app", "", "/a.py>"),
+        ("gitlab.example.com/acme/app", 'lines = "3"\n', None),
+    ],
+)
+def test_the_permalink_names_the_lines_and_is_written_for_github_only(
+    site: Site, repo: str, lines: str, fragment: str | None
+):
+    site.topic(
+        toml=f'title = "T"\n\n[[references]]\nrepo = "{repo}"\nrev = "{SHA}"\n'
+        f'license = "MIT"\npath = "a.py"\n{lines}note = "n"\n'
+    )
+
+    site.build()
+
+    text = site.page("structured-logging")
+    if fragment is None:
+        assert "/blob/" not in text
+    else:
+        assert f"<https://{repo}/blob/{SHA}/a.py" in text
+        assert fragment in text
+        assert "#L3-L3" not in text
 
 
 def test_a_topic_lists_the_rules_and_the_standards_that_cite_it_with_a_link_to_each(site: Site):

@@ -26,8 +26,8 @@ The reason, in a few sentences.
 Code that follows the standard and code that breaks it.
 ```
 
-The front matter can also carry `references`, a JSON list of the ids of the topics of
-`references/` that show code for the standard: `references: ["structured-logging"]`. The page of the
+The front matter can also carry `references`, a JSON list of the ids of the topics that show code
+or documentation for the standard (ADR 0007): `references: ["structured-logging"]`. The page of the
 standard lists those topics at the end.
 
 The rules of a standard are the rules whose `standard` field names it, and the page of the standard

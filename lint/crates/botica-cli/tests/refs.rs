@@ -43,12 +43,13 @@ fn list_names_the_rules_of_the_catalogs_of_the_project_that_cite_a_topic() {
 }
 
 #[test]
-fn list_of_a_project_without_topics_says_so() {
+fn list_of_a_project_without_topics_has_the_built_in_ones() {
     let dir = project_in("refs", "list-empty", None);
 
     let text = ok(&refs(&dir, &["list"]));
 
-    assert!(text.contains("no topics"), "{text}");
+    assert!(text.starts_with("in-memory-adapters: "), "{text}");
+    assert!(text.contains("\nstructured-logging: "), "{text}");
 }
 
 #[test]
@@ -215,12 +216,13 @@ fn show_something_that_is_not_a_topic_a_rule_or_a_standard_fails() {
 }
 
 #[test]
-fn show_a_rule_whose_topic_is_not_in_this_project_names_the_topic() {
+fn show_a_standard_whose_topic_is_not_in_this_project_names_the_topic() {
     let dir = project("show-missing-topic", "demo");
+    standard(&dir, "74", "[\"ghost\"]");
 
-    let text = failed(&refs(&dir, &["show", "log-get-logger"]), 2);
+    let text = failed(&refs(&dir, &["show", "CES-74"]), 2);
 
-    assert!(text.contains("structured-logging"), "{text}");
+    assert!(text.contains("ghost"), "{text}");
     assert!(text.contains("references/"), "{text}");
 }
 

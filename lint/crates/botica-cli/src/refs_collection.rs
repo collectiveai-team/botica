@@ -25,9 +25,11 @@ pub fn open(args: &ProjectArgs, cache_dir: Option<PathBuf>) -> Result<Collection
     let root = project.loaded.root.clone();
     let files = read_references(&root.join(REFERENCES_DIR))?;
     let (standards, standard_problems) = refs_standards::read(&root);
+    let builtin = References::embedded()?;
+    let replace = &project.loaded.config.references.replace;
     Ok(Collection {
+        topics: References::over(&builtin, &files, replace),
         project,
-        topics: References::from_files(&files),
         standards,
         standard_problems,
         cache_dir,

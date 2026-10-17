@@ -69,10 +69,11 @@ jobs:
       - name: Test
         run: cargo test --workspace --locked --no-fail-fast
 
-      # The topics of references/ point at lines of files of this repository.
+      # The built-in topics of lint/references/ point at lines of files of this repository at a
+      # commit: --all fetches them with git over the network.
       - name: Check the references
         working-directory: .
-        run: cargo run --quiet --locked --manifest-path lint/Cargo.toml -p botica-cli -- refs check
+        run: cargo run --quiet --locked --manifest-path lint/Cargo.toml -p botica-cli -- refs check --all
 
       - name: Test the Go SDK
         working-directory: lint/sdk/go
