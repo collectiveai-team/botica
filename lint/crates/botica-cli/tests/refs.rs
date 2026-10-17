@@ -9,9 +9,16 @@ use common::{command, project_in, stderr, stdout, write};
 
 const SOURCE: &str = "import os\n\ndef get_logger():\n    pass\n\nTAIL = 1\n";
 
+const SHA: &str = "3f2a9c1d5e7b4a6c8d0e1f2a3b4c5d6e7f8a9b0c";
+
+/// A reference to a page of the web, to append to `topic_toml`. The host never resolves: a command
+/// that fetched it would fail.
+const PAGE: &str = "\n[[references]]\nurl = \"https://example.invalid/docs\"\n\
+                    note = \"the documentation of the library\"\n";
+
 fn topic_toml(extra: &str) -> String {
     format!(
-        "title = \"Demo topic\"\ndocs = [\"https://example.com/docs\"]\n\n\
+        "title = \"Demo topic\"\n\n\
          [[references]]\npath = \"src/app.py\"\nlines = \"3-4\"\nanchor = \"def get_logger\"\n\
          note = \"the setup\"\n{extra}"
     )
@@ -143,14 +150,91 @@ fn list_of_a_project_without_topics_says_so() {
 }
 
 #[test]
-fn show_prints_the_readme_the_docs_and_the_lines_of_each_reference() {
+fn list_prints_the_address_of_a_page_reference_with_its_note() {
+    let dir = project_in("refs", "list-page", None);
+    add_topic(&dir, "demo", &topic_toml(PAGE));
+    write(&dir, "src/app.py", SOURCE);
+
+    let text = ok(&refs(&dir, &["list"]));
+
+    assert!(
+        text.contains("  https://example.invalid/docs  the documentation of the library\n"),
+        "{text}"
+    );
+}
+
+#[test]
+fn show_prints_a_page_reference_as_its_address_and_its_note_without_a_code_block() {
+    let dir = project_in("refs", "show-page", None);
+    add_topic(
+        &dir,
+        "demo",
+        "title = \"Demo topic\"\n\n[[references]]\nurl = \"https://example.invalid/docs\"\n\
+         note = \"the documentation of the library\"\n",
+    );
+
+    let text = ok(&refs(&dir, &["show", "demo"]));
+
+    assert!(
+        text.contains("## https://example.invalid/docs\n\nthe documentation of the library\n"),
+        "{text}"
+    );
+    assert!(
+        !text.contains("```"),
+        "a page has no lines to show:\n{text}"
+    );
+    assert!(!text.contains("docs:"), "{text}");
+}
+
+#[test]
+fn show_prints_the_pages_and_the_files_of_a_topic_in_the_order_of_its_file() {
+    let dir = project_in("refs", "show-mixed", None);
+    write(&dir, "src/app.py", SOURCE);
+    add_topic(&dir, "demo", &topic_toml(PAGE));
+
+    let text = ok(&refs(&dir, &["show", "demo"]));
+
+    let file = text.find("## src/app.py:3-4").expect("the file reference");
+    let page = text
+        .find("## https://example.invalid/docs")
+        .expect("the page reference");
+    assert!(file < page, "{text}");
+}
+
+#[test]
+fn check_counts_a_page_reference_and_does_not_fetch_it() {
+    let dir = project_in("refs", "check-page", None);
+    write(&dir, "src/app.py", SOURCE);
+    add_topic(&dir, "demo", &topic_toml(PAGE));
+
+    let text = ok(&refs(&dir, &["check"]));
+
+    assert_eq!(text, "1 topic and 2 references resolve\n");
+}
+
+#[test]
+fn check_fails_on_the_docs_field_of_a_topic_that_no_longer_exists() {
+    let dir = project("check-docs", "demo");
+    add_topic(
+        &dir,
+        "old",
+        "title = \"Old\"\ndocs = [\"https://example.com\"]\n",
+    );
+
+    let text = failed(&refs(&dir, &["check"]), 1);
+
+    assert!(text.contains("references/old/topic.toml"), "{text}");
+    assert!(text.contains("docs"), "{text}");
+}
+
+#[test]
+fn show_prints_the_readme_and_the_lines_of_each_reference() {
     let dir = project("show-topic", "demo");
 
     let text = ok(&refs(&dir, &["show", "demo"]));
 
     assert!(text.contains("Demo topic"), "{text}");
     assert!(text.contains("Read `get_logger`."), "{text}");
-    assert!(text.contains("https://example.com/docs"), "{text}");
     assert!(text.contains("src/app.py:3-4"), "{text}");
     assert!(text.contains("the setup"), "{text}");
     assert!(text.contains("def get_logger():\n    pass\n"), "{text}");
@@ -244,8 +328,10 @@ fn show_an_external_reference_says_that_they_are_not_supported_yet() {
     add_topic(
         &dir,
         "ext",
-        "title = \"E\"\n\n[[references]]\nrepo = \"github.com/acme/app\"\nrev = \"3f2a9c1\"\n\
-         license = \"MIT\"\npath = \"a.py\"\nnote = \"n\"\n",
+        &format!(
+            "title = \"E\"\n\n[[references]]\nrepo = \"github.com/acme/app\"\nrev = \"{SHA}\"\n\
+             license = \"MIT\"\npath = \"a.py\"\nnote = \"n\"\n"
+        ),
     );
 
     let text = failed(&refs(&dir, &["show", "ext"]), 2);
@@ -254,7 +340,10 @@ fn show_an_external_reference_says_that_they_are_not_supported_yet() {
         text.contains("external references are not supported yet"),
         "{text}"
     );
-    assert!(text.contains("github.com/acme/app@3f2a9c1 a.py"), "{text}");
+    assert!(
+        text.contains(&format!("github.com/acme/app@{SHA} a.py")),
+        "{text}"
+    );
 }
 
 #[test]
@@ -328,8 +417,10 @@ fn check_fails_on_an_external_reference_because_it_cannot_resolve_it_yet() {
     add_topic(
         &dir,
         "ext",
-        "title = \"E\"\n\n[[references]]\nrepo = \"github.com/acme/app\"\nrev = \"3f2a9c1\"\n\
-         license = \"MIT\"\npath = \"a.py\"\nnote = \"n\"\n",
+        &format!(
+            "title = \"E\"\n\n[[references]]\nrepo = \"github.com/acme/app\"\nrev = \"{SHA}\"\n\
+             license = \"MIT\"\npath = \"a.py\"\nnote = \"n\"\n"
+        ),
     );
 
     let text = failed(&refs(&dir, &["check"]), 1);

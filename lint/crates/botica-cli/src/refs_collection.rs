@@ -65,35 +65,43 @@ impl Collection {
     }
 }
 
-/// The file of a reference under the root of the project, when its path stays inside the project.
-pub fn file_of(root: &Path, reference: &Reference) -> Result<PathBuf, String> {
-    let path = Path::new(&reference.path);
-    let inside = !path.is_absolute()
-        && path
+/// The file of a path under the root of the project, when the path stays inside the project.
+pub fn file_of(root: &Path, path: &str) -> Result<PathBuf, String> {
+    let relative = Path::new(path);
+    let inside = !relative.is_absolute()
+        && relative
             .components()
             .all(|part| matches!(part, Component::Normal(_) | Component::CurDir));
     if inside {
-        Ok(root.join(path))
+        Ok(root.join(relative))
     } else {
         Err(format!(
-            "`{}` must be a path inside the project, relative to its root",
-            reference.path
+            "`{path}` must be a path inside the project, relative to its root"
         ))
     }
 }
 
-/// The text of the file that an internal reference points at.
-pub fn read_text(root: &Path, reference: &Reference) -> Result<String, String> {
-    let file = file_of(root, reference)?;
-    fs::read_to_string(&file).map_err(|error| format!("cannot read `{}`: {error}", reference.path))
+/// The text of the file at `path` of the project.
+pub fn read_text(root: &Path, path: &str) -> Result<String, String> {
+    let file = file_of(root, path)?;
+    fs::read_to_string(&file).map_err(|error| format!("cannot read `{path}`: {error}"))
 }
 
-/// How a reference is named: its path and its lines, with the repository and the commit before
-/// them when it is external.
+/// What a reference points at: its path, or its address when it is a page.
+pub fn target(reference: &Reference) -> &str {
+    reference
+        .url
+        .as_deref()
+        .or(reference.path.as_deref())
+        .unwrap_or_default()
+}
+
+/// How a reference is named: its address when it is a page; else its path and its lines, with the
+/// repository and the commit before them when it is external.
 pub fn label(reference: &Reference) -> String {
     let place = match &reference.lines {
-        Some(lines) => format!("{}:{lines}", reference.path),
-        None => reference.path.clone(),
+        Some(lines) => format!("{}:{lines}", target(reference)),
+        None => target(reference).to_owned(),
     };
     match (&reference.repo, &reference.rev) {
         (Some(repo), Some(rev)) => format!("{repo}@{rev} {place}"),

@@ -2,7 +2,7 @@ use std::process::ExitCode;
 
 use botica_catalog::{References, Topic, REFERENCES_DIR, TOPIC_FILE};
 
-use crate::refs_collection::{read_text, Collection};
+use crate::refs_collection::{read_text, target, Collection};
 use crate::refs_standards::Problem;
 
 /// Checks what `references/` holds and what the standards and the rules of the project cite. The
@@ -49,10 +49,14 @@ fn topic_problems(collection: &Collection, topics: &References) -> Vec<Problem> 
     let mut problems = Vec::new();
     for topic in topics.topics() {
         for (position, reference) in topic.references.iter().enumerate() {
-            let outcome = if reference.is_external() {
-                Err("external references are not supported yet".to_owned())
-            } else {
-                read_text(collection.root(), reference).and_then(|text| reference.check(&text))
+            let outcome = match &reference.path {
+                None => Ok(()),
+                Some(_) if reference.is_external() => {
+                    Err("external references are not supported yet".to_owned())
+                }
+                Some(path) => {
+                    read_text(collection.root(), path).and_then(|text| reference.check(&text))
+                }
             };
             if let Err(message) = outcome {
                 problems.push(topic_problem(topic, position, &message));
@@ -67,7 +71,7 @@ fn topic_problem(topic: &Topic, position: usize, message: &str) -> Problem {
         path: format!("{REFERENCES_DIR}/{}/{TOPIC_FILE}", topic.id),
         message: format!(
             "references[{position}] ({}): {message}",
-            topic.references[position].path
+            target(&topic.references[position])
         ),
     }
 }

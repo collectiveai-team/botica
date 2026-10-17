@@ -3,7 +3,7 @@ use std::io::Write;
 use std::process::ExitCode;
 
 use anyhow::{bail, Result};
-use botica_catalog::{Topic, REFERENCES_DIR};
+use botica_catalog::{Reference, Topic, REFERENCES_DIR};
 use clap::{Args, Subcommand};
 
 use crate::project::ProjectArgs;
@@ -125,29 +125,25 @@ fn topic_text(collection: &Collection, topic: &Topic) -> Result<String> {
         topic.title,
         topic.readme.trim_end()
     );
-    if !topic.docs.is_empty() {
-        text.push_str("docs:\n");
-        for url in &topic.docs {
-            let _ = writeln!(text, "- {url}");
-        }
-        text.push('\n');
-    }
     for reference in &topic.references {
-        if reference.is_external() {
-            bail!(
-                "external references are not supported yet: the topic `{}` points at {}",
-                topic.id,
-                label(reference)
-            );
-        }
-        let file = read_text(collection.root(), reference).map_err(anyhow::Error::msg)?;
-        let _ = write!(
-            text,
-            "## {}\n\n{}\n\n```\n{}```\n\n",
-            label(reference),
-            reference.note,
-            reference.excerpt(&file)
-        );
+        text.push_str(&reference_text(collection, topic, reference)?);
     }
     Ok(text)
+}
+
+/// A page is its address and its note; a file is also the lines it shows.
+fn reference_text(collection: &Collection, topic: &Topic, reference: &Reference) -> Result<String> {
+    let head = format!("## {}\n\n{}\n\n", label(reference), reference.note);
+    let Some(path) = &reference.path else {
+        return Ok(head);
+    };
+    if reference.is_external() {
+        bail!(
+            "external references are not supported yet: the topic `{}` points at {}",
+            topic.id,
+            label(reference)
+        );
+    }
+    let file = read_text(collection.root(), path).map_err(anyhow::Error::msg)?;
+    Ok(format!("{head}```\n{}```\n\n", reference.excerpt(&file)))
 }

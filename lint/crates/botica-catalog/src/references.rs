@@ -11,8 +11,8 @@ pub const REFERENCES_DIR: &str = "references";
 pub const TOPIC_FILE: &str = "topic.toml";
 const README_FILE: &str = "README.md";
 
-/// A piece of code that a topic points at: a file of the repository itself, or a file of another
-/// repository at a commit.
+/// What a topic points at: a file of the repository itself, a file of another repository at a
+/// commit, or a page of the web (`url`).
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Reference {
@@ -21,7 +21,10 @@ pub struct Reference {
     /// The commit of an external reference, so that its lines never change.
     pub rev: Option<String>,
     pub license: Option<String>,
-    pub path: String,
+    /// The file that the reference shows; absent in a page reference.
+    pub path: Option<String>,
+    /// The address of the page that a page reference shows; absent in a file reference.
+    pub url: Option<String>,
     /// `"18-30"` or `"18"`: the lines of the file that the reference shows. Absent, the whole file.
     pub lines: Option<String>,
     /// Text that the lines hold, found again when the reference is updated.
@@ -34,8 +37,6 @@ pub struct Reference {
 struct TopicFile {
     title: String,
     #[serde(default)]
-    docs: Vec<String>,
-    #[serde(default)]
     references: Vec<Reference>,
 }
 
@@ -44,8 +45,6 @@ pub struct Topic {
     /// The name of its folder.
     pub id: String,
     pub title: String,
-    /// The addresses of the documentation of the libraries the topic uses.
-    pub docs: Vec<String>,
     pub references: Vec<Reference>,
     pub readme: String,
 }
@@ -58,6 +57,10 @@ pub struct References {
 impl Reference {
     pub fn is_external(&self) -> bool {
         self.repo.is_some()
+    }
+
+    pub fn is_page(&self) -> bool {
+        self.url.is_some()
     }
 
     /// The first and the last line of `lines`, counted from 1. `from_files` rejects a reference
@@ -187,7 +190,6 @@ fn load_topic(id: &str, entry: &TopicEntry<'_>, issues: &mut Vec<CatalogIssue>) 
     Some(Topic {
         id: id.to_owned(),
         title: parsed.title,
-        docs: parsed.docs,
         references: parsed.references,
         readme: readme.text.clone(),
     })
@@ -195,8 +197,21 @@ fn load_topic(id: &str, entry: &TopicEntry<'_>, issues: &mut Vec<CatalogIssue>) 
 
 fn check_reference(reference: &Reference) -> Vec<String> {
     let mut problems = Vec::new();
-    if reference.path.trim().is_empty() {
+    match (&reference.path, &reference.url) {
+        (None, None) => problems.push("needs a `path` or a `url`".to_owned()),
+        (Some(_), Some(_)) => problems.push("`path` and `url` exclude each other".to_owned()),
+        _ => {}
+    }
+    if reference
+        .path
+        .as_deref()
+        .is_some_and(|path| path.trim().is_empty())
+    {
         problems.push("`path` is empty".to_owned());
+    }
+    if let Some(url) = &reference.url {
+        problems.extend(check_page(reference, url));
+        return problems;
     }
     if let Some(lines) = &reference.lines {
         if parse_lines(lines).is_none() {
@@ -217,5 +232,76 @@ fn check_reference(reference: &Reference) -> Vec<String> {
         (None, Some(_)) => problems.push("`license` needs a `repo`".to_owned()),
         _ => {}
     }
+    if reference
+        .repo
+        .as_deref()
+        .is_some_and(|repo| !is_repo_address(repo))
+    {
+        problems.push(
+            "`repo` must be `<host>/<path>`, with no scheme and no user (`github.com/<owner>/<repo>`)"
+                .to_owned(),
+        );
+    }
+    if reference
+        .rev
+        .as_deref()
+        .is_some_and(|rev| !is_commit_sha(rev))
+    {
+        problems.push(
+            "`rev` must be a full commit SHA: 40 lowercase hex digits (64 in a SHA-256 \
+             repository), not a branch, a tag or an abbreviation"
+                .to_owned(),
+        );
+    }
     problems
+}
+
+fn check_page(reference: &Reference, url: &str) -> Vec<String> {
+    let mut problems = Vec::new();
+    if !is_http_address(url) {
+        problems.push("`url` must be an `https://` or `http://` address".to_owned());
+    }
+    let present = [
+        ("lines", reference.lines.is_some()),
+        ("anchor", reference.anchor.is_some()),
+        ("repo", reference.repo.is_some()),
+        ("rev", reference.rev.is_some()),
+        ("license", reference.license.is_some()),
+    ];
+    for (field, _) in present.iter().filter(|(_, present)| *present) {
+        problems.push(format!("`{field}` does not apply to a `url` reference"));
+    }
+    problems
+}
+
+fn is_http_address(url: &str) -> bool {
+    url.strip_prefix("https://")
+        .or_else(|| url.strip_prefix("http://"))
+        .is_some_and(|rest| !rest.is_empty() && !rest.contains(char::is_whitespace))
+}
+
+fn is_commit_sha(rev: &str) -> bool {
+    matches!(rev.len(), 40 | 64) && rev.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
+}
+
+/// `<host>/<path>`: a host and at least one segment, with no scheme, no user and no port.
+fn is_repo_address(repo: &str) -> bool {
+    let mut parts = repo.split('/');
+    let host = parts.next().unwrap_or_default();
+    let segments: Vec<&str> = parts.collect();
+    let host_ok = !host.is_empty()
+        && !host.starts_with(['-', '.'])
+        && host
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-'));
+    host_ok && !segments.is_empty() && segments.iter().all(|part| is_path_segment(part))
+}
+
+fn is_path_segment(part: &str) -> bool {
+    !part.is_empty()
+        && !matches!(part, "." | "..")
+        && !part.starts_with('-')
+        && part
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
 }

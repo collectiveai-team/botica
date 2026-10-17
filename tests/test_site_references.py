@@ -23,8 +23,8 @@ sys.modules["site_references"] = sr
 _SPEC.loader.exec_module(sr)
 
 SOURCE = "import os\n\ndef get_logger():\n    pass\n\nTAIL = 1\n"
+SHA = "3f2a9c1d5e7b4a6c8d0e1f2a3b4c5d6e7f8a9b0c"
 TOPIC = """title = "Structured logging"
-docs = ["https://example.com/docs"]
 
 [[references]]
 path = "src/app.py"
@@ -82,7 +82,7 @@ def site(tmp_path: Path) -> Site:
     return Site(tmp_path)
 
 
-def test_a_topic_gets_a_page_with_its_title_its_readme_and_its_docs(site: Site):
+def test_a_topic_gets_a_page_with_its_title_and_its_readme(site: Site):
     site.topic()
 
     site.build()
@@ -93,7 +93,21 @@ def test_a_topic_gets_a_page_with_its_title_its_readme_and_its_docs(site: Site):
     )
     assert "\n# Structured logging\n" in text
     assert "Read the setup.\n\n## What to read\n\nThe function.\n" in text
-    assert "The function.\n\n## Documentation\n\n- <https://example.com/docs>\n" in text
+
+
+def test_a_page_reference_shows_its_address_and_its_note_without_code(site: Site):
+    site.topic(
+        toml='title = "T"\n\n[[references]]\nurl = "https://example.com/docs"\n'
+        'note = "the documentation"\n\n[[references]]\npath = "src/app.py"\nlines = "3-4"\n'
+        'note = "the setup"\n'
+    )
+
+    site.build()
+
+    text = site.page("structured-logging")
+    page = "### <https://example.com/docs>\n\nthe documentation\n\n### `src"
+    assert f"\n## References\n\n{page}" in text
+    assert text.count("```") == 2, "only the file has a block of code"
 
 
 def test_a_reference_shows_its_path_its_lines_its_note_and_the_text_of_those_lines(site: Site):
@@ -138,14 +152,14 @@ def test_an_external_reference_shows_its_repository_its_commit_and_its_license_w
     site: Site,
 ):
     site.topic(
-        toml='title = "T"\n\n[[references]]\nrepo = "github.com/acme/app"\nrev = "3f2a9c1"\n'
+        toml=f'title = "T"\n\n[[references]]\nrepo = "github.com/acme/app"\nrev = "{SHA}"\n'
         'license = "MIT"\npath = "a.py"\nlines = "1-2"\nnote = "n"\n'
     )
 
     site.build()
 
     text = site.page("structured-logging")
-    assert "\n### `a.py:1-2`\n\nn\n\ngithub.com/acme/app at 3f2a9c1 (MIT)\n" in text
+    assert f"\n### `a.py:1-2`\n\nn\n\ngithub.com/acme/app at {SHA} (MIT)\n" in text
     assert "```" not in text
 
 

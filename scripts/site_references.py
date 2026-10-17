@@ -1,9 +1,9 @@
 """Write the pages of the topics of `references/` and list each topic on the pages that cite it.
 
 `scripts/build_site.sh` runs it after `scripts/site_standards.py`. Each folder of `references/`
-becomes the page `references/<topic>.md` of the site, with the README of the topic, its
-documentation, each reference with the lines of the file it points at, and the rules and standards
-that cite it. The page of a rule or a standard that cites topics, by the `references` field of its
+becomes the page `references/<topic>.md` of the site, with the README of the topic, each reference
+(the address of a page, or the lines of the file it points at), and the rules and standards that
+cite it. The page of a rule or a standard that cites topics, by the `references` field of its
 front matter, gets the list of them at the end. The files of `references/` are never touched.
 """
 
@@ -36,10 +36,11 @@ LANGUAGES = {
 
 @dataclass(frozen=True)
 class Reference:
-    """A piece of code that a topic points at, as `topic.toml` writes it."""
+    """A file or a page that a topic points at, as `topic.toml` writes it: `url` or `path`."""
 
-    path: str
     note: str
+    path: str = ""
+    url: str = ""
     lines: str | None = None
     anchor: str | None = None
     repo: str | None = None
@@ -52,7 +53,6 @@ class Topic:
     id: str
     title: str
     readme: str
-    docs: list[str] = field(default_factory=list)
     references: list[Reference] = field(default_factory=list)
 
 
@@ -95,7 +95,6 @@ def _topic(folder: Path) -> Topic:
         id=folder.name,
         title=parsed["title"],
         readme=(folder / "README.md").read_text(encoding="utf-8"),
-        docs=parsed.get("docs", []),
         references=[Reference(**reference) for reference in parsed.get("references", [])],
     )
 
@@ -150,6 +149,8 @@ def _excerpt(text: str, lines: str | None) -> str:
 
 
 def _reference_text(root: Path, reference: Reference) -> str:
+    if reference.url:
+        return f"### <{reference.url}>\n\n{reference.note}\n"
     place = reference.path + (f":{reference.lines}" if reference.lines else "")
     text = f"### `{place}`\n\n{reference.note}\n"
     if reference.repo:
@@ -164,8 +165,6 @@ def _topic_page(root: Path, topic: Topic, cited_by: list[str]) -> str:
         f"---\ntitle: {json.dumps(topic.title)}\nsubtitle: {json.dumps(topic.id)}\n---\n\n"
         f"# {topic.title}\n\n{topic.readme.rstrip()}\n"
     )
-    if topic.docs:
-        text += "\n## Documentation\n\n" + "".join(f"- <{url}>\n" for url in topic.docs)
     if topic.references:
         text += "\n## References\n\n" + "\n".join(
             _reference_text(root, reference) for reference in topic.references
