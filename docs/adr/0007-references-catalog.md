@@ -131,7 +131,12 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
     repository, its commit, its license and, on GitHub, its permalink: a reader does not leave the
     page to understand a reference. The build needs `git` and the network for external files, and
     stops when a reference cannot be read. The page of a rule or a standard lists its topics at the
-    end. The navigation and `llms.txt` have a section References.
+    end. The navigation and `llms.txt` have a section References, which opens in the sidebar only
+    while a reader is in it, like Rules and Standards. The index of the topics is a table with what
+    each topic points at and who cites it. The index of the standards and the index of the rules
+    list every one, the rules with their tags and their standard. A field above each table
+    (`scripts/site_filter.py`, `docs/javascripts/filter.js`) hides the rows that lack a word typed
+    in it, or in the heading of their section, such as the family of a rule.
 16. **The first topics are `structured-logging` and `in-memory-adapters`,** in `lint/references/`.
     They point at the snippets of `scaffolding/templates/snippets/` at the commit `9c225ad`.
     `log-get-logger` and `log-no-print` cite the first, and so does CES-74. CES-64 cites

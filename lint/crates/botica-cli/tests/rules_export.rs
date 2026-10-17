@@ -217,17 +217,17 @@ fn the_index_groups_the_rules_by_family_in_the_order_of_their_codes() {
                    \n\
                    Rules for FastAPI services.\n\
                    \n\
-                   | Code | Rule | Status | Added in | Default |\n\
-                   |---|---|---|---|---|\n\
-                   | `BTFAST001` | [`api-schemas-extra-forbid`](fastapi/btfast001-api-schemas-extra-forbid.md)<br>Request and response schemas reject unknown fields | stable | 0.8.0 | on |\n";
+                   | Code | Rule | Standard | Status | Added in | Default |\n\
+                   |---|---|---|---|---|---|\n\
+                   | `BTFAST001` | [`api-schemas-extra-forbid`](fastapi/btfast001-api-schemas-extra-forbid.md)<br>Request and response schemas reject unknown fields<br><small>typing</small> | CES-4 | stable | 0.8.0 | on |\n";
     assert!(index.contains(section), "{index}");
     let own = "## botica\n\
                \n\
                What a run reports about itself: unreadable paths and suppression comments.\n\
                \n\
-               | Code | Rule | Status | Added in | Default |\n\
-               |---|---|---|---|---|\n\
-               | `BT001` | [`io-error`](botica/bt001-io-error.md)<br>A path given on the command line cannot be read | stable | 0.1.0 | on |\n";
+               | Code | Rule | Standard | Status | Added in | Default |\n\
+               |---|---|---|---|---|---|\n\
+               | `BT001` | [`io-error`](botica/bt001-io-error.md)<br>A path given on the command line cannot be read |  | stable | 0.1.0 | on |\n";
     assert!(index.contains(own), "{index}");
 }
 

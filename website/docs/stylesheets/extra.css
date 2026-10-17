@@ -61,3 +61,31 @@
 .botica-hero .botica-tagline {
   font-size: 1.05rem;
 }
+
+/* The field that filters the tables of an index page (docs/javascripts/filter.js). */
+.botica-filter {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 32rem;
+  margin: 1rem 0 0.25rem;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+  border: 1px solid var(--md-default-fg-color--lighter);
+  border-radius: 0.2rem;
+}
+
+.botica-filter:focus {
+  outline: 2px solid var(--md-accent-fg-color);
+}
+
+.botica-filter-count {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.md-typeset [hidden] {
+  display: none !important;
+}

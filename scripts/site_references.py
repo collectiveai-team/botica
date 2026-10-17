@@ -208,12 +208,30 @@ def _topic_page(topic: Topic, cited_by: list[str]) -> str:
     return text
 
 
-def _index_page(topics: list[Topic]) -> str:
-    items = "".join(f"- [{topic.id}]({topic.id}.md): {topic.title}\n" for topic in topics)
+def _points_at(reference: Reference) -> str:
+    """Return what a reference points at: the address of a page, or a file with its lines."""
+    if reference.url:
+        return reference.url
+    place = reference.path + (f":{reference.lines}" if reference.lines else "")
+    return f"`{place}`" + (f" ({reference.repo})" if reference.repo else "")
+
+
+def _index_page(topics: list[Topic], citations: list[Citation], index: Path) -> str:
+    rows = ""
+    for topic in topics:
+        points = "<br>".join(_points_at(reference) for reference in topic.references)
+        cited = ", ".join(
+            citation.link.replace("{page}", _link(citation.page, index))
+            for citation in citations
+            if topic.id in citation.topics
+        )
+        title = topic.title.replace("|", "\\|")
+        rows += f"| [{topic.id}]({topic.id}.md)<br>{title} | {points} | {cited} |\n"
     return (
         "---\ntitle: References\n---\n\n# References\n\n"
         "A topic collects the code and the documentation that rules and standards point at. "
-        "`botica refs show <topic, rule or standard>` prints it.\n\n" + items
+        "`botica refs show <topic, rule or standard>` prints it.\n\n"
+        "| Topic | Points at | Cited by |\n|---|---|---|\n" + rows
     )
 
 
@@ -244,7 +262,8 @@ def build(export: Path, docs: Path) -> None:
             if topic.id in citation.topics
         ]
         page.write_text(_topic_page(topic, cited_by), encoding="utf-8")
-    (folder / "index.md").write_text(_index_page(topics), encoding="utf-8")
+    index = folder / "index.md"
+    index.write_text(_index_page(topics, citations, index), encoding="utf-8")
     titles = {topic.id: topic.title for topic in topics}
     for citation in citations:
         items = "".join(

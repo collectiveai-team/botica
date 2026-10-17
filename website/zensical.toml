@@ -4,6 +4,7 @@ site_description = "The rules of botica, one page each."
 site_url = "https://collectiveai-team.github.io/botica/"
 repo_url = "https://github.com/collectiveai-team/botica"
 extra_css = ["stylesheets/extra.css"]
+extra_javascript = ["javascripts/filter.js"]
 
 # Where "edit this page" opens: a page of `docs_dir` at `edit_uri`, a rule page at `catalog_uri`,
 # because it is written in the README of its rule, which the export names in `readme`, relative to

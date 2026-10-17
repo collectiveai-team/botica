@@ -57,9 +57,9 @@ fn the_index_has_a_section_for_each_catalog_of_the_project_after_those_of_the_bu
                    \n\
                    Rules of the catalog `acme` of the project.\n\
                    \n\
-                   | Code | Rule | Status | Added in | Default |\n\
-                   |---|---|---|---|---|\n\
-                   | `ACMESTRUC001` | [`acme/no-blobs`](acme/acmestruc001-no-blobs.md)<br>s | stable | unreleased | on |\n";
+                   | Code | Rule | Standard | Status | Added in | Default |\n\
+                   |---|---|---|---|---|---|\n\
+                   | `ACMESTRUC001` | [`acme/no-blobs`](acme/acmestruc001-no-blobs.md)<br>s |  | stable | unreleased | on |\n";
     assert!(index.contains(section), "{index}");
     assert!(
         index.contains("## structure\n"),

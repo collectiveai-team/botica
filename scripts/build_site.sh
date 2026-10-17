@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Build the standards site into website/site: export the rule pages from the catalog of this
 # checkout, copy the standards of standards/ and add to each its subtitle and the list of the rules
-# that implement it (scripts/site_standards.py), write a page per topic of `botica refs export`, with the lines that its references show, and
-# list the topics on the pages of the rules and the standards that cite them
-# (scripts/site_references.py),
-# put the code blocks of the pages of the rules and the standards in tabs by
+# that implement it (scripts/site_standards.py) and a table of all the standards, write a page per
+# topic of `botica refs export`, with the lines that its references show, and list the topics on
+# the pages of the rules and the standards that cite them (scripts/site_references.py), add to the
+# index of each of the three the field that filters its table (scripts/site_filter.py), put the
+# code blocks of the pages of the rules and the standards in tabs by
 # language (scripts/site_language_tabs.py), write the configuration with the navigation of those
 # pages (scripts/site_nav.py), then run Zensical (the version is pinned in website/requirements.txt)
 # in strict mode, so a broken link fails the build, and write website/site/llms.txt with the address
@@ -26,6 +27,8 @@ cargo run --quiet --locked --manifest-path lint/Cargo.toml -p botica-cli -- \
   refs export > "${topics}"
 uv run --no-project --python 3.14 --with cyclopts python scripts/site_references.py \
   "${topics}" website/docs
+uv run --no-project --python 3.14 --with cyclopts python scripts/site_filter.py \
+  website/docs/rules/index.md website/docs/standards/index.md website/docs/references/index.md
 uv run --no-project --python 3.14 --with cyclopts python scripts/site_language_tabs.py \
   website/docs/rules website/docs/standards
 uv run --no-project --python 3.14 --with cyclopts python scripts/site_nav.py \

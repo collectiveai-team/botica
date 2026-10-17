@@ -135,6 +135,7 @@ ban-relative-imports = "all"
 "lint/**" = ["INP001"]
 
 [tool.pyrefly]
+search-path = [".", "tests"]  # the tests import the support module of the site tests
 project-excludes = [
   "**/node_modules",
   "**/__pycache__",
