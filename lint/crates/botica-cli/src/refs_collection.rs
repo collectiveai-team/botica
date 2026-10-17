@@ -5,6 +5,7 @@ use anyhow::{bail, Result};
 use botica_catalog::{read_references, CatalogError, Reference, References, REFERENCES_DIR};
 
 use crate::project::{self, Project, ProjectArgs};
+use crate::refs_remote;
 use crate::refs_standards::{self, Problem, Standard};
 
 /// What `botica refs` reads: the project with the rules of every catalog, the topics of its
@@ -15,9 +16,11 @@ pub struct Collection {
     pub standards: Vec<Standard>,
     /// The pages of `standards/` whose front matter cannot be read.
     pub standard_problems: Vec<Problem>,
+    /// Where the files of external references are kept; the cache of the user when absent.
+    cache_dir: Option<PathBuf>,
 }
 
-pub fn open(args: &ProjectArgs) -> Result<Collection> {
+pub fn open(args: &ProjectArgs, cache_dir: Option<PathBuf>) -> Result<Collection> {
     let project = project::load(args)?;
     let root = project.loaded.root.clone();
     let files = read_references(&root.join(REFERENCES_DIR))?;
@@ -27,10 +30,22 @@ pub fn open(args: &ProjectArgs) -> Result<Collection> {
         topics: References::from_files(&files),
         standards,
         standard_problems,
+        cache_dir,
     })
 }
 
 impl Collection {
+    /// The text of the file at `path` that `reference` points at: of the project, or of its
+    /// repository at its commit.
+    pub fn file_text(&self, reference: &Reference, path: &str) -> Result<String, String> {
+        match (&reference.repo, &reference.rev) {
+            (Some(repo), Some(rev)) => {
+                refs_remote::open(self.cache_dir.as_deref())?.text(repo, rev, path)
+            }
+            _ => read_text(self.root(), path),
+        }
+    }
+
     pub fn root(&self) -> &Path {
         &self.project.loaded.root
     }
@@ -65,20 +80,25 @@ impl Collection {
     }
 }
 
-/// The file of a path under the root of the project, when the path stays inside the project.
-pub fn file_of(root: &Path, path: &str) -> Result<PathBuf, String> {
+/// `path` as a path that stays inside `within` (a folder, named for the message): no root, no `..`.
+pub fn relative<'a>(path: &'a str, within: &str) -> Result<&'a Path, String> {
     let relative = Path::new(path);
     let inside = !relative.is_absolute()
         && relative
             .components()
             .all(|part| matches!(part, Component::Normal(_) | Component::CurDir));
     if inside {
-        Ok(root.join(relative))
+        Ok(relative)
     } else {
         Err(format!(
-            "`{path}` must be a path inside the project, relative to its root"
+            "`{path}` must be a path inside {within}, relative to its root"
         ))
     }
+}
+
+/// The file of a path under the root of the project, when the path stays inside the project.
+pub fn file_of(root: &Path, path: &str) -> Result<PathBuf, String> {
+    Ok(root.join(relative(path, "the project")?))
 }
 
 /// The text of the file at `path` of the project.

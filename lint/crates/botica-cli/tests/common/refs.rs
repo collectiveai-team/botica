@@ -7,8 +7,6 @@ use super::{command, project_in, stderr, stdout, write};
 
 pub const SOURCE: &str = "import os\n\ndef get_logger():\n    pass\n\nTAIL = 1\n";
 
-pub const SHA: &str = "3f2a9c1d5e7b4a6c8d0e1f2a3b4c5d6e7f8a9b0c";
-
 /// A reference to a page of the web, to append to `topic_toml`. The host never resolves: a command
 /// that fetched it would fail.
 pub const PAGE: &str = "\n[[references]]\nurl = \"https://example.invalid/docs\"\n\

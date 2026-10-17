@@ -3,7 +3,7 @@
 mod common;
 
 use common::refs::{
-    acme_rule, add_topic, failed, ok, project, refs, standard, topic_toml, PAGE, SHA, SOURCE,
+    acme_rule, add_topic, failed, ok, project, refs, standard, topic_toml, PAGE, SOURCE,
 };
 use common::{project_in, write};
 
@@ -225,30 +225,6 @@ fn show_a_rule_whose_topic_is_not_in_this_project_names_the_topic() {
 }
 
 #[test]
-fn show_an_external_reference_says_that_they_are_not_supported_yet() {
-    let dir = project_in("refs", "show-external", None);
-    add_topic(
-        &dir,
-        "ext",
-        &format!(
-            "title = \"E\"\n\n[[references]]\nrepo = \"github.com/acme/app\"\nrev = \"{SHA}\"\n\
-             license = \"MIT\"\npath = \"a.py\"\nnote = \"n\"\n"
-        ),
-    );
-
-    let text = failed(&refs(&dir, &["show", "ext"]), 2);
-
-    assert!(
-        text.contains("external references are not supported yet"),
-        "{text}"
-    );
-    assert!(
-        text.contains(&format!("github.com/acme/app@{SHA} a.py")),
-        "{text}"
-    );
-}
-
-#[test]
 fn check_passes_when_every_reference_resolves_and_every_citation_has_a_topic() {
     let dir = project("check-ok", "demo");
     standard(&dir, "74", "[\"demo\"]");
@@ -311,26 +287,6 @@ fn check_fails_when_the_path_leaves_the_project() {
 
     assert!(text.contains("../app.py"), "{text}");
     assert!(text.contains("inside the project"), "{text}");
-}
-
-#[test]
-fn check_fails_on_an_external_reference_because_it_cannot_resolve_it_yet() {
-    let dir = project_in("refs", "check-external", None);
-    add_topic(
-        &dir,
-        "ext",
-        &format!(
-            "title = \"E\"\n\n[[references]]\nrepo = \"github.com/acme/app\"\nrev = \"{SHA}\"\n\
-             license = \"MIT\"\npath = \"a.py\"\nnote = \"n\"\n"
-        ),
-    );
-
-    let text = failed(&refs(&dir, &["check"]), 1);
-
-    assert!(
-        text.contains("external references are not supported yet"),
-        "{text}"
-    );
 }
 
 #[test]

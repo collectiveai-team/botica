@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 
+pub mod external;
 pub mod fresh_rule;
+pub mod git_remote;
 pub mod lsp;
 pub mod new_rule;
 pub mod node;
