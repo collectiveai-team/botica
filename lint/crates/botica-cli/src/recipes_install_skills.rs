@@ -8,6 +8,7 @@ use std::process::Command;
 use botica_catalog::ResolvedSkill;
 
 use crate::recipes_check_steps::{installed, SKILLS_DIR};
+use crate::recipes_install_run::failure;
 use crate::recipes_install_steps::Outcome;
 
 /// The agent that `skills add` installs for, as `scaffolding` does by default.
@@ -27,76 +28,14 @@ fn calls<'a>(missing: &[&'a ResolvedSkill]) -> Vec<(&'a str, Vec<&'a str>)> {
 
 /// Runs `npx skills add` in the root of the project: why it failed, when it did.
 fn add(root: &Path, source: &str, names: &[&str]) -> Option<String> {
-    let output = Command::new("npx")
+    let mut command = Command::new("npx");
+    command
         .args([
             "skills", "add", source, "--agent", AGENT, "--yes", "--skill",
         ])
         .args(names)
-        .current_dir(root)
-        .output();
-    let output = match output {
-        Ok(output) => output,
-        Err(error) => return Some(format!("cannot run `npx`: {error}")),
-    };
-    if output.status.success() {
-        return None;
-    }
-    let how = match output.status.code() {
-        Some(code) => format!("exited with code {code}"),
-        None => "was stopped by a signal".to_owned(),
-    };
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    let last = stderr
-        .lines()
-        .rev()
-        .map(str::trim)
-        .find(|line| !line.is_empty())
-        .map(str::to_owned)
-        .or_else(|| stdout_reason(&String::from_utf8_lossy(&output.stdout)));
-    Some(match last {
-        Some(line) => format!("`npx skills add {source}` {how}: {line}"),
-        None => format!("`npx skills add {source}` {how}"),
-    })
-}
-
-/// The text of `text` without ANSI escape sequences (`ESC [ … <letter>`).
-fn without_escapes(text: &str) -> String {
-    let mut clean = String::with_capacity(text.len());
-    let mut chars = text.chars();
-    while let Some(c) = chars.next() {
-        if c != '\x1b' {
-            clean.push(c);
-        } else if chars.as_str().starts_with('[') {
-            chars.next();
-            for end in chars.by_ref() {
-                if ('@'..='~').contains(&end) {
-                    break;
-                }
-            }
-        }
-    }
-    clean
-}
-
-/// Why the CLI of skills failed, from its stdout, where it writes its errors and leaves stderr
-/// empty. Each error starts with `■`: the reason is the first one that is not `Canceled`, followed
-/// by the last `fatal:` or `error:` line of git below it.
-fn stdout_reason(stdout: &str) -> Option<String> {
-    let clean = without_escapes(stdout);
-    let headline = clean
-        .lines()
-        .filter_map(|line| line.split_once('■'))
-        .map(|(_, text)| text.trim())
-        .find(|text| !text.is_empty() && *text != "Canceled");
-    let detail = clean
-        .lines()
-        .map(|line| line.trim_start_matches(['│', ' ']).trim_end())
-        .rfind(|line| line.starts_with("fatal:") || line.starts_with("error:"));
-    match (headline, detail) {
-        (Some(headline), Some(detail)) => Some(format!("{headline}: {detail}")),
-        (Some(text), None) | (None, Some(text)) => Some(text.to_owned()),
-        (None, None) => None,
-    }
+        .current_dir(root);
+    failure(&mut command, &format!("`npx skills add {source}`"))
 }
 
 /// Installs the skills that are missing and says, for each skill in order, whether it was there,

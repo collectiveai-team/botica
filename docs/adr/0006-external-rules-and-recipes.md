@@ -83,6 +83,10 @@ scaffolder writes the configuration of a repository from its own components, apa
    path = "CLAUDE.md"
    target = "AGENTS.md"
 
+   [[tools]]                   # adds packages with a package manager
+   manager = "uv"
+   packages = ["ruff", "pytest"]
+
    [[gitignore]]               # adds lines to .gitignore, and removes lines of the whitelist
    lines = [".env", ".tmp/"]
    unignore = ["skills-lock.json"]
@@ -104,8 +108,9 @@ scaffolder writes the configuration of a repository from its own components, apa
    has `source` (a repository, with a `#tag` to pin it) and `names`. `[[files]]` has `path` and
    `template`. `[[sections]]` has `path`, `marker` and `template`. A `template` is a file under the
    folder of the recipe (`files/`, `sections/`). `[[links]]` has `path` and `target`, the text
-   of the link, relative to the folder of the link. `[[gitignore]]` has `lines` and `unignore`, and
-   needs one of them. A line is one line of text, and a recipe lists it once across its steps.
+   of the link, relative to the folder of the link. `[[tools]]` has `manager` (`uv`), `packages` and
+   optionally `group` (`dev` when absent). `[[gitignore]]` has `lines` and `unignore`, and needs one
+   of them. A line is one line of text, and a recipe lists it once across its steps.
    `unignore` accepts only `skills-lock.json`, and `lines` does not accept it (ADR 0001, CES-107).
    A list names an entry once, and a recipe names a skill, a file path, or a marker of a path once.
    A recipe that extends others contributes after
@@ -136,10 +141,11 @@ scaffolder writes the configuration of a repository from its own components, apa
    - a section's marker is in its file;
    - a link's path is a symbolic link whose text is its target;
    - `.gitignore` has each line of `lines` and has no line of `unignore`;
+   - `pyproject.toml` declares each package of a tool;
    - a skill is in `skills-lock.json` and in `.agents/skills/`.
 
    The lines come in the order rules, judgment rules, exports, files, sections, links,
-   `gitignore`, `unignore`, skills. A path is from the root of the project, wherever the command
+   `gitignore`, `unignore`, tools, skills. A path is from the root of the project, wherever the command
    runs. A marker is searched for as text anywhere in the file, as the scaffolder does. A skill is
    in the lock when its name is a key of `skills`, and in `.agents/skills/` when
    `.agents/skills/<name>/SKILL.md` is a file. `.gitignore` has a line when one of its lines equals it once the white space at its end
@@ -167,6 +173,12 @@ scaffolder writes the configuration of a repository from its own components, apa
      the rest of the file keeps its bytes (`edited`, which the summary counts apart); the file
      without that line, or without the file, is `ok`. `install` does not tell that a pattern such
      as `*.json` ignores the manifest.
+   - A `[[tools]]` step runs `uv add --dev <package>...` (`--group <group>` for another group) in
+     the root of the project, once for each group, for the packages that `pyproject.toml` does not
+     declare. A package that is declared afterwards is `added` and one that is not is `failed`.
+     When a call for several packages fails, `install` makes it again for each package, because
+     `uv add` adds none when one does not exist. A project without `pyproject.toml` leaves each
+     package `pending`.
    - The `[[skills]]` steps run last. `install` runs `npx skills add <source> --agent opencode --yes
      --skill <name>...` once for each source, for the names that are not in `.agents/skills/`. A
      name that is there is `ok`; one that is there afterwards is `added`; one that is absent
@@ -197,8 +209,8 @@ scaffolder writes the configuration of a repository from its own components, apa
 - The steps of `base-python`. `base` has the skills of `scaffolding`, its `prek.toml` and its
   standards index; a test in `tests/test_recipe_base.py` keeps them equal to the ones of
   `scaffolding` until it is removed.
-- The step `[[tools]]` (how a tool is added, such as `uv add --dev ruff`, and the fragment of
-  configuration it carries). `base-python` will add ruff, pyrefly and pytest with `[[tools]]`.
+- The steps of `base-python`: its tools, the `pyproject.toml` template and the sections with the
+  configuration of each tool.
 - The recipes of the agents and of the visibility of the repository.
 - The components of `scaffolding` as steps: `agent-config`, `prek`, `pyproject`, `ci`,
   `agents`, `standards`, `skills` and `varlock`.

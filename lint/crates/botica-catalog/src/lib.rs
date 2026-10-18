@@ -37,7 +37,10 @@ pub use readme::Section;
 pub use recipes::{Recipe, Recipes, EXPORTS, RECIPES_DIR};
 pub use recipes_resolve::{RecipeItem, ResolvedRecipe};
 pub use recipes_steps::{
-    FileStep, GitignoreStep, LinkStep, SectionStep, SkillStep, UNIGNORE_WHITELIST,
+    normalized_package, FileStep, GitignoreStep, LinkStep, SectionStep, SkillStep, ToolStep,
+    DEFAULT_TOOL_GROUP, TOOL_MANAGERS, UNIGNORE_WHITELIST,
 };
-pub use recipes_steps_resolve::{ResolvedFile, ResolvedLink, ResolvedSection, ResolvedSkill};
+pub use recipes_steps_resolve::{
+    ResolvedFile, ResolvedLink, ResolvedSection, ResolvedSkill, ResolvedTool,
+};
 pub use references::{Origin, Reference, References, Topic, REFERENCES_DIR, TOPIC_FILE};

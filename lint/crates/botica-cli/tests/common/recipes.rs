@@ -36,18 +36,46 @@ pub const NPX_INSTALLS: &str = "echo \"$*\" >> \"$PWD/.npx-calls\"\nseen=0\nfor 
     if [ \"$seen\" = 1 ]; then\n    mkdir -p \".agents/skills/$a\"\n    \
     echo skill > \".agents/skills/$a/SKILL.md\"\n  fi\n  if [ \"$a\" = \"--skill\" ]; then seen=1; fi\ndone";
 
-/// `botica recipe <args>` with a `npx` that runs `script` first on the `PATH`.
+/// `botica recipe <args>` with the programs `bins` (a name and its script) first on the `PATH`.
 #[cfg(unix)]
-pub fn with_npx(dir: &Path, script: &str, args: &[&str]) -> Output {
+pub fn with_bins(dir: &Path, bins: &[(&str, &str)], args: &[&str]) -> Output {
     use std::os::unix::fs::PermissionsExt;
 
     let name = dir.file_name().expect("a name").to_string_lossy();
     let bin = dir.with_file_name(format!("{name}-bin"));
     std::fs::create_dir_all(&bin).expect("create the folder");
-    let fake = bin.join("npx");
-    std::fs::write(&fake, format!("#!/bin/sh\n{script}\n")).expect("write the script");
-    std::fs::set_permissions(&fake, std::fs::Permissions::from_mode(0o755)).expect("chmod");
+    for (program, script) in bins {
+        let fake = bin.join(program);
+        std::fs::write(&fake, format!("#!/bin/sh\n{script}\n")).expect("write the script");
+        std::fs::set_permissions(&fake, std::fs::Permissions::from_mode(0o755)).expect("chmod");
+    }
     run_with_path(dir, &format!("{}:/usr/bin:/bin", bin.display()), args)
+}
+
+/// `botica recipe <args>` with a `npx` that runs `script` first on the `PATH`.
+#[cfg(unix)]
+pub fn with_npx(dir: &Path, script: &str, args: &[&str]) -> Output {
+    with_bins(dir, &[("npx", script)], args)
+}
+
+/// A `uv` that records its arguments in `.uv-calls` and declares each package that follows `add`
+/// in the group `dev` of `pyproject.toml`, as `uv add --dev` does.
+pub const UV_ADDS: &str = "echo \"$*\" >> \"$PWD/.uv-calls\"\nshift\nwhile [ $# -gt 0 ]; do\n  \
+    case \"$1\" in\n    --dev) ;;\n    --group) shift ;;\n    *) echo \"$1\" >> .uv-declared ;;\n  \
+    esac\n  shift\ndone\n{ printf '[dependency-groups]\\ndev = ['; \
+    sed 's/.*/\"&\"/' .uv-declared | paste -sd, -; printf ']\\n'; } > pyproject.toml";
+
+/// `botica recipe <args>` with a `uv` that runs `script` first on the `PATH`.
+#[cfg(unix)]
+pub fn with_uv(dir: &Path, script: &str, args: &[&str]) -> Output {
+    with_bins(dir, &[("uv", script)], args)
+}
+
+/// The lines that the fake `uv` recorded, one for each call.
+pub fn uv_calls(dir: &Path) -> Vec<String> {
+    std::fs::read_to_string(dir.join(".uv-calls"))
+        .map(|text| text.lines().map(str::to_owned).collect())
+        .unwrap_or_default()
 }
 
 /// `botica recipe <args>` where no `npx` is on the `PATH`.

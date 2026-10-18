@@ -8,6 +8,7 @@ use botica_catalog::Kind;
 use crate::project::ProjectArgs;
 use crate::recipes_check_steps as steps;
 use crate::recipes_collection::Collection;
+use crate::recipes_pyproject::Pyproject;
 use crate::rules_export;
 
 /// The lines of the report and how many of them differ.
@@ -29,8 +30,8 @@ impl Report {
     }
 }
 
-/// One line for each rule, export, file, section, link, line of `.gitignore` and skill of the recipe,
-/// in that order, then a
+/// One line for each rule, export, file, section, link, line of `.gitignore`, tool and skill of the
+/// recipe, in that order, then a
 /// summary. The command fails when a rule is not active, an export is not current, or a step is
 /// not in the project. The paths of the steps are from the root of the project.
 pub fn run(collection: &Collection, name: &str, project: &ProjectArgs) -> Result<ExitCode> {
@@ -79,6 +80,12 @@ pub fn run(collection: &Collection, name: &str, project: &ProjectArgs) -> Result
     }
     for item in &resolved.unignore {
         report.add("unignore", &item.id, steps::unignored(root, &item.id));
+    }
+    if !resolved.tools.is_empty() {
+        let pyproject = Pyproject::read(root);
+        for item in &resolved.tools {
+            report.add("tool", &item.package, pyproject.problem(&item.package));
+        }
     }
     if !resolved.skills.is_empty() {
         let lock = steps::Lock::read(root);

@@ -42,6 +42,24 @@ pub struct LinkStep {
     pub target: String,
 }
 
+/// The package managers that a `tools` step can name.
+pub const TOOL_MANAGERS: [&str; 1] = ["uv"];
+
+/// The group that a `tools` step adds to when it names none.
+pub const DEFAULT_TOOL_GROUP: &str = "dev";
+
+/// `[[tools]]`: packages that `botica recipe install` adds to the project with a package manager
+/// when `pyproject.toml` does not declare them.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ToolStep {
+    /// One of `TOOL_MANAGERS`.
+    pub manager: String,
+    /// The group of dependencies the packages go to; `DEFAULT_TOOL_GROUP` when absent.
+    pub group: Option<String>,
+    pub packages: Vec<String>,
+}
+
 /// The one line that `unignore` can name: the manifest of skills (ADR 0001, CES-107).
 pub const UNIGNORE_WHITELIST: [&str; 1] = ["skills-lock.json"];
 
@@ -64,12 +82,69 @@ pub(crate) fn step_problems(
     sections: &[SectionStep],
     links: &[LinkStep],
     gitignore: &[GitignoreStep],
+    tools: &[ToolStep],
 ) -> Vec<String> {
     let mut problems = skill_problems(skills);
     problems.extend(file_problems(files));
     problems.extend(section_problems(sections));
     problems.extend(link_problems(links));
     problems.extend(gitignore_problems(gitignore));
+    problems.extend(tool_problems(tools));
+    problems
+}
+
+/// Whether `name` starts with a letter or a digit and has only letters, digits, `.`, `_` and `-`.
+fn is_name(name: &str) -> bool {
+    name.chars()
+        .next()
+        .is_some_and(|c| c.is_ascii_alphanumeric())
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
+}
+
+/// A package name as the managers compare it: lower case, with each run of `.`, `_` and `-` as `-`.
+pub fn normalized_package(name: &str) -> String {
+    let mut normalized = String::with_capacity(name.len());
+    for c in name.chars() {
+        if matches!(c, '.' | '_' | '-') {
+            if !normalized.ends_with('-') {
+                normalized.push('-');
+            }
+        } else {
+            normalized.push(c.to_ascii_lowercase());
+        }
+    }
+    normalized
+}
+
+fn tool_problems(steps: &[ToolStep]) -> Vec<String> {
+    let mut problems = Vec::new();
+    let mut seen = BTreeSet::new();
+    for step in steps {
+        if !TOOL_MANAGERS.contains(&step.manager.as_str()) {
+            problems.push(format!(
+                "the `tools` manager `{}` is not one of: {}",
+                step.manager,
+                TOOL_MANAGERS.join(", ")
+            ));
+        }
+        if let Some(group) = step.group.as_deref().filter(|group| !is_name(group)) {
+            problems.push(format!("the `tools` group `{group}` is not a name"));
+        }
+        if step.packages.is_empty() {
+            problems.push("a `tools` step has no packages".to_owned());
+        }
+        for package in &step.packages {
+            if !is_name(package) {
+                problems.push(format!(
+                    "the `tools` package `{package}` is not a package name"
+                ));
+            } else if !seen.insert(normalized_package(package)) {
+                problems.push(format!("`tools` lists `{package}` twice"));
+            }
+        }
+    }
     problems
 }
 

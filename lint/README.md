@@ -227,6 +227,10 @@ template = "sections/standards-index.md"
 path = "CLAUDE.md"
 target = "AGENTS.md"
 
+[[tools]]                   # packages to add to pyproject.toml with `uv add --dev`
+manager = "uv"
+packages = ["ruff", "pytest"]
+
 [[gitignore]]               # lines to add to .gitignore, and lines of the whitelist to remove
 lines = [".env", ".tmp/"]
 unignore = ["skills-lock.json"]
@@ -243,11 +247,16 @@ file path once and a marker of a path once. The steps of the recipes it extends 
 that two recipes list the same stays where it first is, and a skill that two recipes take from
 different sources is taken over by the later recipe, with a warning on stderr. `list` and `show`
 print the steps, `check` compares them with the project, and `install` adds the files, the sections,
-the links, the lines of `.gitignore` and the skills.
+the links, the lines of `.gitignore`, the tools and the skills.
 
 A `[[links]]` step has the `path` of the link and its `target`, which is the text of the link:
 relative to the folder of the link, so `../.agents/skills` for `.claude/skills`. A target is not
 empty, does not start with `/` and has no empty part or `\`. A recipe names a link path once.
+
+A `[[tools]]` step has a `manager` (`uv`), the packages to add, and optionally a `group`, `dev`
+when it is absent. A package is a name that starts with a letter or a digit and has letters,
+digits, `.`, `_` and `-`; a recipe names it once, and `My_Pkg` and `my-pkg` are the same name. A
+group has the same form.
 
 A `[[gitignore]]` step has `lines` and `unignore`, and needs one of them. A line is one line of text
 that is not empty, and a recipe lists it once, across its steps. `unignore` names lines to remove
@@ -266,15 +275,15 @@ replace = ["base-python"]
 
 `botica recipe list` prints each recipe with what it extends and how many rules, judgment rules and
 exports its file lists, and where it comes from; a recipe with steps has a line with the number of
-steps of each kind that it has: skills, files, sections, links and gitignore (the lines and the
-unignored lines). `botica recipe show <name>` prints the recipe with the lists of what it extends first, each
+steps of each kind that it has: skills, files, sections, links, gitignore (the lines and the
+unignored lines) and tools. `botica recipe show <name>` prints the recipe with the lists of what it extends first, each
 rule with its code, its summary and the recipe that lists it, and then the sections Skills, Files,
-Sections, Links, Gitignore and Unignore for the steps it has.
+Sections, Links, Gitignore, Unignore and Tools for the steps it has.
 
 `botica recipe check <name>` takes the options of `botica lint` that select rules (`--select`,
 `--ignore`, `--config`). It prints one line for each rule, export, file, section, link, line
-of `.gitignore`, unignored line and skill of the recipe, in that order, rules first, then judgment
-rules, exports, files, sections, links, `gitignore`, `unignore` and skills:
+of `.gitignore`, unignored line, tool and skill of the recipe, in that order, rules first, then
+judgment rules, exports, files, sections, links, `gitignore`, `unignore`, tools and skills:
 
 ```text
 rule file-size-guard: ok
@@ -285,8 +294,9 @@ section AGENTS.md `## Engineering Standards`: differs: marker not in the file
 link CLAUDE.md: differs: does not exist
 gitignore .tmp/: differs: not in .gitignore
 unignore skills-lock.json: differs: .gitignore still has the line
+tool ruff: differs: not in pyproject.toml
 skill tdd: differs: not in `skills-lock.json` and not in `.agents/skills/`
-base: 9 checked, 8 differ
+base: 10 checked, 9 differ
 ```
 
 A rule differs when it is not in the catalog, is not active (the reason is the one that `botica
@@ -295,7 +305,9 @@ rules --all` gives), is a judgment rule listed under `rules` or is not one liste
 `AGENTS.md` for `agents-md` and `.abide/rubric.json` for `abide`. A file differs when its path is
 not a file of the project. A section differs when its path is not a file, cannot be read, or its
 text does not contain the marker. A link differs when its path does not exist, is not a symbolic
-link, or is a link whose text is not the target. A line of `gitignore` differs when `.gitignore` does not exist, is
+link, or is a link whose text is not the target. A tool differs when `pyproject.toml` does not exist or does not declare the package. It declares it
+in `project.dependencies`, `project.optional-dependencies`, `dependency-groups` or
+`tool.uv.dev-dependencies`, under any group, and the names are compared as `uv` does. A line of `gitignore` differs when `.gitignore` does not exist, is
 not a file, cannot be read, or has no line equal to it once the white space at its end is dropped. An
 `unignore` line differs when `.gitignore` is not a file, cannot be read, or has a line equal to it
 between white space; without a `.gitignore` it is `ok`. A skill differs when its name is not a key of `skills`
@@ -304,7 +316,7 @@ sections are from the root of the project, wherever the command runs. The comman
 something differs and with 2 when the recipe does not exist or the recipes do not load.
 
 `botica recipe install <name>...` adds the files, then the sections, then the links, then the lines
-of `.gitignore`, then the skills of one or more recipes, from the root of the project, and prints
+of `.gitignore`, then the tools, then the skills of one or more recipes, from the root of the project, and prints
 one line for each:
 
 ```text
@@ -314,9 +326,10 @@ section AGENTS.md `## Engineering Standards`: added: appended to the file
 link CLAUDE.md: added
 gitignore .tmp/: added
 unignore skills-lock.json: edited: removed the line from .gitignore
+tool ruff: added
 skill tdd: added
 skill grilling: ok
-base: 5 added, 1 ok, 1 pending, 1 edited
+base: 6 added, 1 ok, 1 pending, 1 edited
 ```
 
 A file is written from its template when its path does not exist (`added`). A path that exists is
@@ -338,6 +351,15 @@ line that is there is `ok`, and a `.gitignore` that is not a file or cannot be r
 space, and the rest of the file keeps its bytes (`edited`, counted apart in the summary when there
 is one); without that line it is `ok`. `install` does not tell that a pattern such as `*.json`
 ignores the manifest.
+
+A package that `pyproject.toml` declares is `ok`. For the ones that it does not, `install` runs
+`uv add --dev <package>...` (`--group <group>` for another group) in the root of the project, once
+for each group, so `uv` has to be on the `PATH`. A package that is declared afterwards is `added`.
+A project without `pyproject.toml` leaves each package `pending`, and `install` does not create
+one. A call that fails for several packages is made again for each package, because `uv add` adds
+none when one of them does not exist; the package that is still not declared is `failed`, with the
+reason, as for the skills. The reason is the last line of stderr that starts with `cause:`, or its
+last line, leaving out the lines that start with `hint:`.
 
 A skill is `ok` when `.agents/skills/<name>/SKILL.md` is a file. For the skills that are not,
 `install` runs `npx skills add <source> --agent opencode --yes --skill <name>...` in the root of the

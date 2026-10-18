@@ -6,6 +6,7 @@ use crate::issue::{issue, CatalogError, CatalogIssue};
 use crate::load::SourceFile;
 use crate::recipes_steps::{
     step_problems, template_problems, FileStep, GitignoreStep, LinkStep, SectionStep, SkillStep,
+    ToolStep,
 };
 use crate::references::Origin;
 use crate::validate::is_kebab_case;
@@ -41,6 +42,8 @@ struct RecipeFile {
     links: Vec<LinkStep>,
     #[serde(default)]
     gitignore: Vec<GitignoreStep>,
+    #[serde(default)]
+    tools: Vec<ToolStep>,
 }
 
 /// A file `<id>.toml` of the catalog: the rules, the exports and the steps that prepare a
@@ -63,6 +66,7 @@ pub struct Recipe {
     pub sections: Vec<SectionStep>,
     pub links: Vec<LinkStep>,
     pub gitignore: Vec<GitignoreStep>,
+    pub tools: Vec<ToolStep>,
 }
 
 /// A file under `files/` or `sections/` of the recipes folder, whose path is from that folder.
@@ -197,6 +201,7 @@ fn load_recipe(
         &parsed.sections,
         &parsed.links,
         &parsed.gitignore,
+        &parsed.tools,
     ));
     issues.extend(problems.into_iter().map(|message| issue(path, message)));
     Some(Recipe {
@@ -212,6 +217,7 @@ fn load_recipe(
         sections: parsed.sections,
         links: parsed.links,
         gitignore: parsed.gitignore,
+        tools: parsed.tools,
     })
 }
 

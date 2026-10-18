@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::recipes::Recipe;
 use crate::recipes_resolve::RecipeItem;
-use crate::recipes_steps::GitignoreStep;
+use crate::recipes_steps::{GitignoreStep, DEFAULT_TOOL_GROUP};
 
 /// A skill to install and the recipe whose file lists it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,6 +34,15 @@ pub struct ResolvedSection {
 pub struct ResolvedLink {
     pub path: String,
     pub target: String,
+    pub from: String,
+}
+
+/// A package to add, with the manager and the group, and the recipe whose file lists it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedTool {
+    pub manager: String,
+    pub group: String,
+    pub package: String,
     pub from: String,
 }
 
@@ -154,4 +163,29 @@ pub(crate) fn resolve_links(chain: &[&Recipe]) -> Vec<ResolvedLink> {
         }
     }
     links
+}
+
+/// The packages of the `tools` steps of the recipes in `chain`, one entry for each manager, group
+/// and package, where it is first.
+pub(crate) fn resolve_tools(chain: &[&Recipe]) -> Vec<ResolvedTool> {
+    let mut tools: Vec<ResolvedTool> = Vec::new();
+    for recipe in chain {
+        for step in &recipe.tools {
+            let group = step.group.as_deref().unwrap_or(DEFAULT_TOOL_GROUP);
+            for package in &step.packages {
+                let listed = tools.iter().any(|t| {
+                    t.manager == step.manager && t.group == group && t.package == *package
+                });
+                if !listed {
+                    tools.push(ResolvedTool {
+                        manager: step.manager.clone(),
+                        group: group.to_owned(),
+                        package: package.clone(),
+                        from: recipe.id.clone(),
+                    });
+                }
+            }
+        }
+    }
+    tools
 }

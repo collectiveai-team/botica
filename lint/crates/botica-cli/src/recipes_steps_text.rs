@@ -16,6 +16,10 @@ pub fn count_line(recipe: &Recipe) -> Option<String> {
         ("sections", recipe.sections.len()),
         ("links", recipe.links.len()),
         ("gitignore", gitignore),
+        (
+            "tools",
+            recipe.tools.iter().map(|step| step.packages.len()).sum(),
+        ),
     ];
     let shown: Vec<String> = counts
         .iter()
@@ -83,6 +87,17 @@ pub fn steps_text(resolved: &ResolvedRecipe) -> String {
             }
             text.push('\n');
         }
+    }
+    if !resolved.tools.is_empty() {
+        text.push_str("## Tools\n\n");
+        for tool in &resolved.tools {
+            let _ = writeln!(
+                text,
+                "- {} ({}, group {}, from {})",
+                tool.package, tool.manager, tool.group, tool.from
+            );
+        }
+        text.push('\n');
     }
     text
 }
