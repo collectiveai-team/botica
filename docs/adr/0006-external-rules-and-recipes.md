@@ -124,6 +124,11 @@ scaffolder writes the configuration of a repository from its own components, apa
    - a section's marker is in its file;
    - a skill is in `skills-lock.json` and in `.agents/skills/`.
 
+   The lines come in the order rules, judgment rules, exports, files, sections, skills. A path is
+   from the root of the project, wherever the command runs. A marker is searched for as text
+   anywhere in the file, as the scaffolder does. A skill is in the lock when its name is a key of
+   `skills`, and in `.agents/skills/` when `.agents/skills/<name>/SKILL.md` is a file.
+
    `install` adds what is missing and never edits, merges or overwrites a file that exists (CES-30):
    - A `[[files]]` step writes the file from its template when the path does not exist.
    - A `[[sections]]` step writes the file with the section when the path does not exist, and does
@@ -147,8 +152,6 @@ scaffolder writes the configuration of a repository from its own components, apa
 - The steps of `base-python`. `base` has the skills of `scaffolding`, its `prek.toml` and its
   standards index; a test in `tests/test_recipe_base.py` keeps them equal to the ones of
   `scaffolding` until it is removed.
-- `botica recipe check` for the steps. `list` and `show` print them; `check` reads rules and
-  exports only.
 - The steps `[[gitignore]]` (lines to add to `.gitignore`), `[[links]]` (a symbolic link, such as
   `CLAUDE.md` to `AGENTS.md`) and `[[tools]]` (how a tool is added, such as `uv add --dev ruff`, and
   the fragment of configuration it carries). `base-python` will add ruff, pyrefly and pytest with

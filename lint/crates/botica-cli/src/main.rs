@@ -6,6 +6,7 @@ mod extension_pool;
 mod lint_cmd;
 mod project;
 mod recipes_check;
+mod recipes_check_steps;
 mod recipes_cmd;
 mod recipes_collection;
 mod recipes_steps_text;

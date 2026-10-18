@@ -45,7 +45,7 @@ botica refs update <topic> [--write]
                                # follows the anchor of each external reference to the head of its repository
 botica recipe list             # the recipes of the binary and of recipes/, with what each extends and lists
 botica recipe show base-python # a recipe with the rules and the exports of the recipes it extends
-botica recipe check base-python # how the project differs from the recipe: rules not active, exports not current
+botica recipe check base-python # how the project differs from the recipe: rules, exports, files, sections, skills
 botica rules test --judge abide [test-through-interface]
                                # abide judges the fixtures of each judgment rule; compared with expected.json
 botica rules conform lint/rules   # each rule over its fixtures, with and without each optimisation;
@@ -232,8 +232,8 @@ finds only the templates of its own `recipes/`.
 A `path` is relative to the root of the project, without `.` or `..`. A recipe names a skill once, a
 file path once and a marker of a path once. The steps of the recipes it extends come first, a step
 that two recipes list the same stays where it first is, and a skill that two recipes take from
-different sources is taken over by the later recipe, with a warning on stderr. `botica recipe install` and the templates are not built yet: `list`
-and `show` print the steps, and no command runs them.
+different sources is taken over by the later recipe, with a warning on stderr. `botica recipe install` is not built yet: `list` and `show` print the
+steps, `check` compares them with the project, and no command runs them.
 
 The recipes `base` and `base-python` are in `lint/recipes/` and are compiled into the binary. A
 project adds its own in `recipes/` at its root, and a recipe of the project may extend a built-in
@@ -252,20 +252,27 @@ extends first, each rule with its code, its summary and the recipe that lists it
 sections Skills, Files and Sections for the steps it has.
 
 `botica recipe check <name>` takes the options of `botica lint` that select rules (`--select`,
-`--ignore`, `--config`). It prints one line for each rule and export of the recipe, rules first,
-then judgment rules, then exports:
+`--ignore`, `--config`). It prints one line for each rule, export, file, section and skill of the
+recipe, in that order, rules first, then judgment rules, exports, files, sections and skills:
 
 ```text
 rule file-size-guard: ok
 rule no-notebooks: differs: not selected
 export agents-md: differs: cannot read `AGENTS.md`
-base-python: 15 checked, 2 differ
+file prek.toml: differs: does not exist
+section AGENTS.md `## Engineering Standards`: differs: marker not in the file
+skill tdd: differs: not in `skills-lock.json` and not in `.agents/skills/`
+base: 6 checked, 5 differ
 ```
 
 A rule differs when it is not in the catalog, is not active (the reason is the one that `botica
 rules --all` gives), is a judgment rule listed under `rules` or is not one listed under
 `judgment`. An export differs when `botica rules export --check` fails for it with its default file:
-`AGENTS.md` for `agents-md` and `.abide/rubric.json` for `abide`. The command exits with 1 when
+`AGENTS.md` for `agents-md` and `.abide/rubric.json` for `abide`. A file differs when its path is
+not a file of the project. A section differs when its path is not a file, cannot be read, or its
+text does not contain the marker. A skill differs when its name is not a key of `skills`
+in `skills-lock.json` or `.agents/skills/<name>/SKILL.md` is not a file. The paths of files and
+sections are from the root of the project, wherever the command runs. The command exits with 1 when
 something differs and with 2 when the recipe does not exist or the recipes do not load.
 
 ## Which files

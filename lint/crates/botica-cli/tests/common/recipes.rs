@@ -30,6 +30,21 @@ pub fn add_recipe(dir: &Path, id: &str, toml: &str) {
     }
 }
 
+/// Writes `skills-lock.json` with an entry for each name, in the shape the CLI of skills writes.
+pub fn lock_skills(dir: &Path, names: &[&str]) {
+    let entries: Vec<String> = names
+        .iter()
+        .map(|name| format!("\"{name}\": {{\"source\": \"acme/skills\"}}"))
+        .collect();
+    let text = format!("{{\"version\": 1, \"skills\": {{{}}}}}", entries.join(", "));
+    write(dir, "skills-lock.json", &text);
+}
+
+/// Writes `.agents/skills/<name>/SKILL.md`, as an installed skill has it.
+pub fn install_skill(dir: &Path, name: &str) {
+    write(dir, &format!(".agents/skills/{name}/SKILL.md"), "skill\n");
+}
+
 pub fn recipe(dir: &Path, args: &[&str]) -> Output {
     let mut all = vec!["recipe"];
     all.extend_from_slice(args);

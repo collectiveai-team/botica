@@ -26,25 +26,42 @@ fn export_abide(dir: &Path) {
     );
 }
 
+/// A recipe of the project with the rules of `base` and none of its steps.
+fn base_rules(dir: &Path) {
+    add_recipe(
+        dir,
+        "base-rules",
+        "rules = [\"file-size-guard\", \"no-notebooks\", \"no-artifacts-in-package\"]\n",
+    );
+}
+
 #[test]
 fn a_project_that_runs_every_rule_of_the_recipe_has_no_difference() {
     let dir = project("check-ok", None);
+    base_rules(&dir);
 
-    let text = ok(&recipe(&dir, &["check", "base", "--select", SELECT_BASE]));
+    let text = ok(&recipe(
+        &dir,
+        &["check", "base-rules", "--select", SELECT_BASE],
+    ));
 
     assert_eq!(
         text,
         "rule file-size-guard: ok\nrule no-notebooks: ok\nrule no-artifacts-in-package: ok\n\
-         base: 3 checked, 0 differ\n"
+         base-rules: 3 checked, 0 differ\n"
     );
 }
 
 #[test]
 fn a_rule_that_the_selection_leaves_out_differs_and_the_command_fails() {
     let dir = project("check-not-selected", None);
+    base_rules(&dir);
 
     let text = failed(
-        &recipe(&dir, &["check", "base", "--select", "file-size-guard"]),
+        &recipe(
+            &dir,
+            &["check", "base-rules", "--select", "file-size-guard"],
+        ),
         1,
     );
 
@@ -57,7 +74,10 @@ fn a_rule_that_the_selection_leaves_out_differs_and_the_command_fails() {
         text.contains("rule no-artifacts-in-package: differs: not selected\n"),
         "{text}"
     );
-    assert!(text.ends_with("base: 3 checked, 2 differ\n"), "{text}");
+    assert!(
+        text.ends_with("base-rules: 3 checked, 2 differ\n"),
+        "{text}"
+    );
 }
 
 #[test]
@@ -66,9 +86,10 @@ fn a_rule_that_the_configuration_switches_off_says_why() {
         "check-ignored",
         Some("[rules.no-notebooks]\nenabled = false\n"),
     );
+    base_rules(&dir);
 
     let text = failed(
-        &recipe(&dir, &["check", "base", "--select", SELECT_BASE]),
+        &recipe(&dir, &["check", "base-rules", "--select", SELECT_BASE]),
         1,
     );
 
@@ -76,7 +97,10 @@ fn a_rule_that_the_configuration_switches_off_says_why() {
         text.contains("rule no-notebooks: differs: `enabled = false` in the configuration\n"),
         "{text}"
     );
-    assert!(text.ends_with("base: 3 checked, 1 differs\n"), "{text}");
+    assert!(
+        text.ends_with("base-rules: 3 checked, 1 differs\n"),
+        "{text}"
+    );
 }
 
 #[test]
@@ -107,18 +131,25 @@ fn a_rule_that_is_ignored_on_the_command_line_says_which_selector_did() {
 #[test]
 fn a_recipe_is_checked_with_the_rules_of_what_it_extends() {
     let dir = project("check-extends", None);
-    let all = "file-size-guard,no-notebooks,no-artifacts-in-package,no-utils,no-tests-in-package,\
-               no-dict-alias,no-dict-call-return,no-dict-literal-return,no-dict-return-annotation,\
-               api-schemas-extra-forbid,log-get-logger,log-no-print,settings-module,\
-               cli-typed-framework,arch-database-package";
-
-    let text = ok(&recipe(&dir, &["check", "base-python", "--select", all]));
-
-    assert!(
-        text.ends_with("base-python: 15 checked, 0 differ\n"),
-        "{text}"
+    add_recipe(
+        &dir,
+        "parent",
+        "rules = [\"file-size-guard\", \"no-notebooks\"]\n",
     );
-    assert!(text.starts_with("rule file-size-guard: ok\n"), "{text}");
+    add_recipe(
+        &dir,
+        "child",
+        "extends = [\"parent\"]\nrules = [\"no-utils\"]\n",
+    );
+    let all = "file-size-guard,no-notebooks,no-utils";
+
+    let text = ok(&recipe(&dir, &["check", "child", "--select", all]));
+
+    assert_eq!(
+        text,
+        "rule file-size-guard: ok\nrule no-notebooks: ok\nrule no-utils: ok\n\
+         child: 3 checked, 0 differ\n"
+    );
 }
 
 #[test]
