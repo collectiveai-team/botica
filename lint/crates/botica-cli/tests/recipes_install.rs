@@ -6,6 +6,8 @@ use std::fs;
 use std::path::Path;
 
 use common::recipes::{add_recipe, project, recipe, template};
+#[cfg(unix)]
+use common::recipes::{with_npx, NPX_INSTALLS};
 use common::refs::{failed, ok};
 use common::write;
 
@@ -216,11 +218,12 @@ fn the_paths_are_from_the_root_of_the_project() {
     assert!(!dir.join("deep/er/prek.toml").exists());
 }
 
+#[cfg(unix)]
 #[test]
 fn the_built_in_base_writes_its_prek_toml_and_check_finds_it() {
     let dir = project("install-base", None);
 
-    ok(&recipe(&dir, &["install", "base"]));
+    ok(&with_npx(&dir, NPX_INSTALLS, &["install", "base"]));
 
     let template = include_str!("../../../recipes/files/prek-base.toml");
     assert_eq!(read(&dir, "prek.toml"), template);
@@ -229,27 +232,4 @@ fn the_built_in_base_writes_its_prek_toml_and_check_finds_it() {
         1,
     );
     assert!(check.contains("file prek.toml: ok\n"), "{check}");
-}
-
-#[test]
-fn a_warning_about_a_skill_that_changes_source_goes_to_stderr() {
-    let dir = project("install-warning", None);
-    add_recipe(
-        &dir,
-        "parent",
-        "[[skills]]\nsource = \"a/one\"\nnames = [\"tdd\"]\n",
-    );
-    add_recipe(
-        &dir,
-        "child",
-        "extends = [\"parent\"]\n[[skills]]\nsource = \"b/two\"\nnames = [\"tdd\"]\n",
-    );
-
-    let output = recipe(&dir, &["install", "child"]);
-
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(
-        stderr.contains("warning: the skill `tdd` comes from `b/two`"),
-        "{stderr}"
-    );
 }

@@ -141,9 +141,14 @@ scaffolder writes the configuration of a repository from its own components, apa
      is `pending`.
    - A step that two of the named recipes share is done once, and a name that is not a recipe fails
      the command before anything is written.
-   - A `[[skills]]` step runs `npx skills add <source> --skill <name>...` for the names that are not
-     in `.agents/skills/`, and fails when a name is still absent afterwards. `skills-lock.json` is
-     written by the CLI of skills and by nothing else (CES-107).
+   - The `[[skills]]` steps run last. `install` runs `npx skills add <source> --agent opencode --yes
+     --skill <name>...` once for each source, for the names that are not in `.agents/skills/`. A
+     name that is there is `ok`; one that is there afterwards is `added`; one that is absent
+     afterwards, or whose call failed or could not run, is `failed` and the command exits with 1.
+     The other sources still run, and the files and sections are already written.
+     `skills-lock.json` is written by the CLI of skills and by nothing else (CES-107).
+   - A skill that two named recipes take from different sources is taken over by the later name,
+     with a warning, as for one recipe.
 
    `install` and `check` replace the commands of `scaffolding`. Each component of `scaffolding`
    becomes a step of a recipe, and the `unignore` op of ADR 0001 becomes a step of its own.
@@ -155,7 +160,6 @@ scaffolder writes the configuration of a repository from its own components, apa
 
 ## Not built yet
 
-- The `[[skills]]` step of `botica recipe install`: `install` adds files and sections only.
 - The steps of `base-python`. `base` has the skills of `scaffolding`, its `prek.toml` and its
   standards index; a test in `tests/test_recipe_base.py` keeps them equal to the ones of
   `scaffolding` until it is removed.
@@ -184,7 +188,10 @@ scaffolder writes the configuration of a repository from its own components, apa
   wrote first. Until it is decided, a `[[files]]` step lists a file that exists as pending.
 - Whether the skills of `collectiveai-team/botica` are pinned to the tag of the version of the
   binary. Without a tag they follow the default branch.
-- The exit code of `install` when a step is pending. It exits with 0 today.
+- The exit code of `install` when a step is pending. It exits with 0 today, and with 1 only when a
+  skill failed.
+- The agent that `npx skills add` installs for. `install` passes `--agent opencode`, the default of
+  `scaffolding`, until the recipes of the agents exist.
 - When `scaffolding` is removed.
 - The bounded edit that `scaffolding` performs today (the `unignore` op of ADR 0001) and how
   `[[gitignore]]` keeps it.

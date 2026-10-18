@@ -234,8 +234,8 @@ A `path` is relative to the root of the project, without `.` or `..`. A recipe n
 file path once and a marker of a path once. The steps of the recipes it extends come first, a step
 that two recipes list the same stays where it first is, and a skill that two recipes take from
 different sources is taken over by the later recipe, with a warning on stderr. `list` and `show`
-print the steps, `check` compares them with the project, and `install` adds the files and the
-sections; it does not install the skills yet.
+print the steps, `check` compares them with the project, and `install` adds the files, the sections
+and the skills.
 
 The recipes `base` and `base-python` are in `lint/recipes/` and are compiled into the binary. A
 project adds its own in `recipes/` at its root, and a recipe of the project may extend a built-in
@@ -277,14 +277,16 @@ in `skills-lock.json` or `.agents/skills/<name>/SKILL.md` is not a file. The pat
 sections are from the root of the project, wherever the command runs. The command exits with 1 when
 something differs and with 2 when the recipe does not exist or the recipes do not load.
 
-`botica recipe install <name>...` adds the files and then the sections of one or more recipes, from
-the root of the project, and prints one line for each:
+`botica recipe install <name>...` adds the files, then the sections, then the skills of one or more
+recipes, from the root of the project, and prints one line for each:
 
 ```text
 file prek.toml: added
-section AGENTS.md `## Engineering Standards`: added: appended to the file
 file other.toml: pending: exists and differs from the template `files/other.toml` of `base`
-base: 2 added, 0 ok, 1 pending
+section AGENTS.md `## Engineering Standards`: added: appended to the file
+skill tdd: added
+skill grilling: ok
+base: 3 added, 1 ok, 1 pending
 ```
 
 A file is written from its template when its path does not exist (`added`). A path that exists is
@@ -292,8 +294,22 @@ A file is written from its template when its path does not exist (`added`). A pa
 section is written to a new file, appended after a blank line to a file that has no marker (`added`),
 and left alone when the file has the marker (`ok`); a path that is not a file or cannot be read is
 `pending`. Running the command again changes nothing. A step that two of the named recipes share is
-done once, and a name that is not a recipe fails the command with 2 before anything is written. The
-command exits with 0 when a step is pending. It does not install skills yet.
+done once, and a name that is not a recipe fails the command with 2 before anything is written.
+
+A skill is `ok` when `.agents/skills/<name>/SKILL.md` is a file. For the skills that are not,
+`install` runs `npx skills add <source> --agent opencode --yes --skill <name>...` in the root of the
+project, once for each source, so `npx` has to be on the `PATH`. A skill that is there afterwards is
+`added`. A skill that is not, because the call failed, could not run, or did not install it, is
+`failed`, with the reason, and the summary ends with the number of failures:
+
+```text
+skill tdd: failed: `npx skills add mattpocock/skills#v1.2.3` exited with code 1: not found
+base: 0 added, 0 ok, 0 pending, 1 failed
+```
+
+The other sources still run, and the files and the sections are already written. `skills-lock.json`
+is written by the CLI of skills. The command exits with 1 when a skill failed, with 0 when a step
+is pending, and with 2 for an error that stops it.
 
 ## Which files
 

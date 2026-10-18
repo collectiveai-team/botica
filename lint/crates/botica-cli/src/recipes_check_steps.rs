@@ -5,7 +5,7 @@ use std::fs;
 use std::path::Path;
 
 const LOCK: &str = "skills-lock.json";
-const SKILLS_DIR: &str = ".agents/skills";
+pub const SKILLS_DIR: &str = ".agents/skills";
 
 /// Why the file `path`, from the root of the project, is not there: `None` when it is a file.
 pub fn file(root: &Path, path: &str) -> Option<String> {
@@ -64,8 +64,13 @@ pub fn skill(root: &Path, lock: &Lock, name: &str) -> Option<String> {
         }
         Lock::Names(_) => {}
     }
-    if !root.join(SKILLS_DIR).join(name).join("SKILL.md").is_file() {
+    if !installed(root, name) {
         problems.push(format!("not in `{SKILLS_DIR}/`"));
     }
     (!problems.is_empty()).then(|| problems.join(" and "))
+}
+
+/// Whether `.agents/skills/<name>/SKILL.md` is a file.
+pub fn installed(root: &Path, name: &str) -> bool {
+    root.join(SKILLS_DIR).join(name).join("SKILL.md").is_file()
 }

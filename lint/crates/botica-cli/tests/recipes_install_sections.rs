@@ -6,6 +6,8 @@ use std::fs;
 use std::path::Path;
 
 use common::recipes::{add_recipe, project, recipe, template};
+#[cfg(unix)]
+use common::recipes::{with_npx, NPX_INSTALLS};
 use common::refs::ok;
 use common::{write, write_bytes};
 
@@ -204,12 +206,13 @@ fn a_section_that_two_recipes_share_is_added_once() {
     );
 }
 
+#[cfg(unix)]
 #[test]
 fn the_built_in_base_adds_the_standards_index_and_check_finds_it() {
     let dir = project("install-base-section", None);
     write(&dir, "AGENTS.md", "# Agent Notes\n");
 
-    ok(&recipe(&dir, &["install", "base"]));
+    ok(&with_npx(&dir, NPX_INSTALLS, &["install", "base"]));
 
     let agents = read(&dir, "AGENTS.md");
     let index = include_str!("../../../recipes/sections/standards-index.md");

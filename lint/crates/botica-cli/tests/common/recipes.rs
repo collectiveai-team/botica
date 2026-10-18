@@ -30,6 +30,50 @@ pub fn add_recipe(dir: &Path, id: &str, toml: &str) {
     }
 }
 
+/// A `npx` that records its arguments in `.npx-calls` of the working directory and installs each
+/// skill that follows `--skill`, as the CLI of skills does.
+pub const NPX_INSTALLS: &str = "echo \"$*\" >> \"$PWD/.npx-calls\"\nseen=0\nfor a in \"$@\"; do\n  \
+    if [ \"$seen\" = 1 ]; then\n    mkdir -p \".agents/skills/$a\"\n    \
+    echo skill > \".agents/skills/$a/SKILL.md\"\n  fi\n  if [ \"$a\" = \"--skill\" ]; then seen=1; fi\ndone";
+
+/// `botica recipe <args>` with a `npx` that runs `script` first on the `PATH`.
+#[cfg(unix)]
+pub fn with_npx(dir: &Path, script: &str, args: &[&str]) -> Output {
+    use std::os::unix::fs::PermissionsExt;
+
+    let name = dir.file_name().expect("a name").to_string_lossy();
+    let bin = dir.with_file_name(format!("{name}-bin"));
+    std::fs::create_dir_all(&bin).expect("create the folder");
+    let fake = bin.join("npx");
+    std::fs::write(&fake, format!("#!/bin/sh\n{script}\n")).expect("write the script");
+    std::fs::set_permissions(&fake, std::fs::Permissions::from_mode(0o755)).expect("chmod");
+    run_with_path(dir, &format!("{}:/usr/bin:/bin", bin.display()), args)
+}
+
+/// `botica recipe <args>` where no `npx` is on the `PATH`.
+pub fn without_npx(dir: &Path, args: &[&str]) -> Output {
+    let empty = dir.join("no-bin");
+    std::fs::create_dir_all(&empty).expect("create the folder");
+    run_with_path(dir, &empty.display().to_string(), args)
+}
+
+fn run_with_path(dir: &Path, path: &str, args: &[&str]) -> Output {
+    std::process::Command::new(env!("CARGO_BIN_EXE_botica"))
+        .arg("recipe")
+        .args(args)
+        .env("PATH", path)
+        .current_dir(dir)
+        .output()
+        .expect("run botica")
+}
+
+/// The lines that the fake `npx` recorded, one for each call.
+pub fn npx_calls(dir: &Path) -> Vec<String> {
+    std::fs::read_to_string(dir.join(".npx-calls"))
+        .map(|text| text.lines().map(str::to_owned).collect())
+        .unwrap_or_default()
+}
+
 /// Sets the text of a template of the recipes of the project, such as `files/prek.toml`.
 pub fn template(dir: &Path, path: &str, text: &str) {
     write(dir, &format!("recipes/{path}"), text);

@@ -12,6 +12,7 @@ pub enum Outcome {
     Added(Option<&'static str>),
     Present,
     Pending(String),
+    Failed(String),
 }
 
 impl Outcome {
@@ -22,6 +23,7 @@ impl Outcome {
             Self::Added(Some(detail)) => format!("added: {detail}"),
             Self::Present => "ok".to_owned(),
             Self::Pending(reason) => format!("pending: {reason}"),
+            Self::Failed(reason) => format!("failed: {reason}"),
         }
     }
 }

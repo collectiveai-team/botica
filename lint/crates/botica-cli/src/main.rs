@@ -10,6 +10,7 @@ mod recipes_check_steps;
 mod recipes_cmd;
 mod recipes_collection;
 mod recipes_install;
+mod recipes_install_skills;
 mod recipes_install_steps;
 mod recipes_steps_text;
 mod refs_check;
