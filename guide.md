@@ -142,7 +142,7 @@ own config; the CLI does not touch it.
 Opt-in (Tier 2). `scaffolding install ci --ci-parts tests,security,docker,publish`
 selects parts. House style derived from `aymurai-asr`: every `uses:` pinned to a
 tag (never a branch) — note `astral-sh/setup-uv` must be pinned to an exact
-version like `@v8.3.2`, since it stopped publishing major tags at v8.0.0 — plus a
+version like `@v10.2.0`, since it stopped publishing major tags at v8.0.0 — plus a
 `concurrency` group and least-privilege `permissions`. Templates:
 
 - [zizmor.yml](https://raw.githubusercontent.com/collectiveai-team/botica/main/scaffolding/templates/github/workflows/zizmor.yml) — workflow static analysis (any repo).
