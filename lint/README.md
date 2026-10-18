@@ -303,9 +303,13 @@ project, once for each source, so `npx` has to be on the `PATH`. A skill that is
 `failed`, with the reason, and the summary ends with the number of failures:
 
 ```text
-skill tdd: failed: `npx skills add mattpocock/skills#v1.2.3` exited with code 1: not found
+skill tdd: failed: `npx skills add mattpocock/skills#v1.2.3` exited with code 1: Failed to clone repository: fatal: Remote branch v1.2.3 not found in upstream origin
 base: 0 added, 0 ok, 0 pending, 1 failed
 ```
+
+The reason is the last line of the stderr of `npx`. The CLI of skills writes its errors to stdout
+and leaves stderr empty, so when stderr is empty the reason is the first error of stdout (a line
+with `■`, other than `Canceled`) followed by the last `fatal:` or `error:` line below it.
 
 The other sources still run, and the files and the sections are already written. `skills-lock.json`
 is written by the CLI of skills. The command exits with 1 when a skill failed, with 0 when a step

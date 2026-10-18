@@ -145,6 +145,9 @@ scaffolder writes the configuration of a repository from its own components, apa
      --skill <name>...` once for each source, for the names that are not in `.agents/skills/`. A
      name that is there is `ok`; one that is there afterwards is `added`; one that is absent
      afterwards, or whose call failed or could not run, is `failed` and the command exits with 1.
+     The reason is the last line of the stderr of `npx`; the CLI of skills leaves stderr empty and
+     writes its errors to stdout, so then it is the first error of stdout (a line with `■`, other
+     than `Canceled`) followed by the last `fatal:` or `error:` line below it.
      The other sources still run, and the files and sections are already written.
      `skills-lock.json` is written by the CLI of skills and by nothing else (CES-107).
    - A skill that two named recipes take from different sources is taken over by the later name,
