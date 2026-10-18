@@ -1,0 +1,24 @@
+version: 2
+updates:
+  # Keep pinned GitHub Actions up to date, grouped into a single weekly PR.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    # Wait a few days after a release before opening update PRs, to dodge
+    # freshly published (and sometimes yanked or compromised) versions.
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Go modules (go.mod and go.sum). Set `directory` to the folder of the module
+  # if it is not the root of the repository.
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5

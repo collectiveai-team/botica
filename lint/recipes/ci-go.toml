@@ -1,0 +1,14 @@
+description = "GitHub Actions for a Go module: gofmt, build, vet and test, dependabot and osv-scanner"
+extends = ["ci"]
+
+[[files]]
+path = ".github/workflows/go.yml"
+template = "files/github-go/workflows/go.yml"
+
+[[files]]
+path = ".github/dependabot.yml"
+template = "files/github-go/dependabot.yml"
+
+[[files]]
+path = ".github/workflows/osv-scanner.yml"
+template = "files/github-go/workflows/osv-scanner.yml"

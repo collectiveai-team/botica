@@ -266,8 +266,8 @@ accept it (CES-107).
 
 The recipes `base`, `base-python`, `agent-opencode`, `agent-claude-code`, `agent-codex` and the
 ones of CI (`ci`, `ci-python`, `ci-automerge-public`, `ci-automerge-private`,
-`ci-dependency-review`, `ci-docker`, `ci-publish`, `ci-opencode`, `ci-node`, `repo-public` and
-`repo-private`) are in `lint/recipes/` and are compiled into the binary. `base` also adds the section `## Repo Workspace
+`ci-dependency-review`, `ci-docker`, `ci-publish`, `ci-opencode`, `ci-node`, `ci-go`,
+`repo-public` and `repo-private`) are in `lint/recipes/` and are compiled into the binary. `base` also adds the section `## Repo Workspace
 Defaults` to `AGENTS.md`, before the standards index; a new `AGENTS.md` has no `# Agent Notes`
 heading, which `scaffolding` writes. An agent is a recipe chosen by name, beside the others
 (`botica recipe install base base-python agent-claude-code`). `agent-opencode` writes
@@ -302,9 +302,12 @@ on `workflow_run` once the workflows that it lists (`Tests`, `osv-scanner`, `ziz
 `ci-node` extends `ci` for a Node project that uses pnpm: `dependabot.yml` (the actions in one pull
 request, and npm with the patch and minor updates grouped as development and production and each
 major alone) and `osv-scanner.yml` with `--lockfile=pnpm-lock.yaml`. The templates of a recipe for
-another ecosystem are in `lint/recipes/files/github-<ecosystem>/`. `ci-python` and `ci-node` add the
-same `.github/dependabot.yml` and `.github/workflows/osv-scanner.yml`, so a repository names one of
-them: the second `install` leaves the files that exist and reports them as pending.
+another ecosystem are in `lint/recipes/files/github-<ecosystem>/`. `ci-go` extends `ci` for a Go
+module: `go.yml` (`gofmt` with its diff, `go build`, `go vet` and `go test -race`, on `main` and on
+every pull request whatever its base), `dependabot.yml` (the actions and `gomod`) and
+`osv-scanner.yml` with `--lockfile=go.mod`. `ci-python`, `ci-node` and `ci-go` add the same
+`.github/dependabot.yml` and `.github/workflows/osv-scanner.yml`, so a repository names one of them:
+the second `install` leaves the files that exist and reports them as pending.
 `base-python` extends `base` with a `pyproject.toml` (a `[[files]]` template with `replace-me` as
 name and description, to fill in), the Python hooks of prek (three sections of `prek.toml`, one for
 each repository of hooks), the configuration of ruff, pyrefly and pytest (sections of
