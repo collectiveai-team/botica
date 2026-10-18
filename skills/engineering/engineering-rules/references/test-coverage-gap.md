@@ -14,27 +14,26 @@ tags: test, coverage, gap, ci
 
 ## Directive
 
-Treat an uncovered branch as a **question, not a number**. Every coverage gap is one of: a
-missing test, dead code, or an untestable seam that wants refactoring. Investigate which — don't
-paper over it with a `# pragma: no cover` to make a percentage go up.
+An uncovered branch is a question and not a number. Every coverage gap is one of three things: a
+missing test, dead code, or a seam that cannot be tested and wants refactoring. The gap is
+investigated to find which one, and `# pragma: no cover` is not added to raise a percentage.
 
 ## Why
 
-- A coverage *percentage* is easy to game (assert nothing, exclude files) and says little. The
-  *gaps* are the signal: the specific line nothing exercises is exactly where a bug will hide.
-- Chasing a number leads to low-value tests written to touch lines. Chasing gaps leads to either
-  a real test or the deletion of code that shouldn't exist.
+- A coverage percentage is easy to game (assert nothing, exclude files) and says little. The gaps
+  are the signal: the specific line that nothing exercises is where a bug hides.
+- Chasing a number leads to low-value tests written to touch lines. Chasing gaps leads to a real
+  test or to the deletion of code that should not exist.
 
 ## How to read a gap
 
-| The uncovered code is… | Do |
+| The uncovered code is | Do |
 |---|---|
-| a real branch nothing tests | write the test (ideally through the interface, CES-65) |
-| unreachable / dead | delete it |
-| hard to reach without internals | refactor the seam so it's drivable from the outside |
+| a real branch that nothing tests | write the test, ideally through the interface (CES-65) |
+| unreachable or dead | delete it |
+| hard to reach without internals | refactor the seam so it can be driven from the outside |
 
-## Judgment
+## No coverage gate
 
-There is no hard coverage gate. Don't add one to "win"; don't suppress a gap to hide it. When a
-gap appears, decide which of the three cases it is and act on that — coverage is a lens on design,
-not a target.
+A hard coverage threshold is not added to win, and a gap is not suppressed to hide it. When a gap
+appears, decide which of the three cases it is and act on that. Coverage is a lens on design.

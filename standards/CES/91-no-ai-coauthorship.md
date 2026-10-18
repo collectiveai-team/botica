@@ -3,28 +3,37 @@ id: CES-91
 title: No AI co-authorship in commits
 ---
 
-**Enforced by:** prek commit-msg hook + CI (`commit-policy.yml`)
-
 ## Directive
 
-Commit messages must not carry AI co-authorship or AI-generated-attribution trailers (`Co-authored-by: Claude <...>`, `Generated with Claude Code`, `Generated-by: ChatGPT`, `AI-generated-by: Cursor`, `Assisted-by: OpenAI Codex`, and the equivalents for Copilot, Cursor, Windsurf, Aider, Gemini, Devin, OpenCode). Commit authorship reflects the human who reviewed, accepted, and submitted the change.
+Commit messages carry no AI co-authorship or AI-generated-attribution trailers
+(`Co-authored-by: Claude <...>`, `Generated with Claude Code`, `Generated-by: ChatGPT`,
+`AI-generated-by: Cursor`, `Assisted-by: OpenAI Codex`, and the equivalents for Copilot, Cursor,
+Windsurf, Aider, Gemini, Devin and OpenCode). Commit authorship names the human who reviewed,
+accepted and submitted the change.
 
-This does **not** prohibit using approved AI tools — it only prohibits adding AI systems as co-authors or attribution agents in Git commit metadata.
+Approved AI tools may be used. The standard forbids adding an AI system as a co-author or an
+attribution agent in the metadata of a Git commit.
 
 ## Why
 
-- Misleading/inconsistent authorship metadata complicates audits, `git blame`, and changelog tooling.
-- Responsibility for a merged change belongs to the accountable human, not a non-human system.
-- This is a metadata policy, not code-provenance detection — it does not (and cannot) infer whether AI wrote the code, only whether the commit message says so.
+- Misleading or inconsistent authorship metadata complicates audits, `git blame` and changelog
+  tooling.
+- Responsibility for a merged change belongs to the accountable human.
+- The standard is about metadata. It checks whether the commit message says that an AI wrote the
+  code, and cannot tell whether one did.
 
-## Two enforcement layers
+## Two layers
 
-1. **Local (`no-ai-coauthorship` prek hook, `commit-msg` stage)** — immediate developer feedback; can be bypassed with `git commit --no-verify`.
-2. **CI (`commit-policy.yml`)** — the source of truth. Walks every commit in the pull request or push range (`git log --format=%B <base>..<head>`) and fails if any subject/body line matches the trailer pattern.
+1. The `no-ai-coauthorship` prek hook, at the `commit-msg` stage, gives immediate feedback and
+   `git commit --no-verify` bypasses it.
+2. The CI workflow `commit-policy.yml` is the source of truth. It walks every commit in the range
+   of the pull request or push (`git log --format=%B <base>..<head>`) and fails when a line of a
+   subject or body matches the trailer pattern.
 
-Both share one fixed, non-interpolated Python regex — no shell injection surface, and the same pattern is never duplicated with drift between the two layers.
+Both use one fixed Python regex that is never interpolated into a shell command, and the pattern
+is written once so the two layers cannot drift.
 
-## Disallowed vs. allowed
+## Disallowed and allowed
 
 ```text
 # Disallowed
@@ -40,13 +49,16 @@ feat: add invoice duplicate detection rule
 Implemented the blocking logic for same carrier and close ship date.
 ```
 
-## Recommended tool settings
+## Settings of the tools
 
-Disable automatic AI co-author attribution at the source so the hook rarely fires:
+Turning off the automatic attribution at its source means the hook rarely fires:
 
-- VS Code / GitHub Copilot: `"git.addAICoAuthor": "off"`.
-- Claude Code: set `attribution.commit`/`attribution.pr` to `""` and `attribution.sessionUrl` to `false`.
+- VS Code with GitHub Copilot: `"git.addAICoAuthor": "off"`.
+- Claude Code: set `attribution.commit` and `attribution.pr` to `""` and `attribution.sessionUrl`
+  to `false`.
 
 ## Suppression
 
-There is no per-commit opt-out beyond fixing the message — this is a hard policy gate, matching CES-75's Conventional Commits enforcement shape. If a genuinely non-AI commit trips the pattern (a human named "Claude" co-authoring, for example), rephrase the trailer to avoid the matched tool name.
+A commit that trips the pattern is fixed by rewriting the message, as in CES-75. When a commit by a
+person trips it (a human named "Claude" who co-authored, for example), the trailer is rephrased to
+avoid the name of the tool.

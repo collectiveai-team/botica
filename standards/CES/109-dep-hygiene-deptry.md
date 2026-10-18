@@ -1,45 +1,41 @@
 ---
 id: CES-109
-title: Dependency hygiene (deptry)
+title: Dependency hygiene
 ---
-
-**Enforced by:** prek hook
 
 ## Directive
 
-`pyproject.toml`'s declared dependencies must match the actual import graph, enforced via
-[`deptry`](https://github.com/fpgmaas/deptry): no declared-but-unused deps (`DEP002`), no
-imported-but-undeclared deps (`DEP001`), no dev deps imported in prod code or vice versa
-(`DEP004`).
+The dependencies that `pyproject.toml` declares match the import graph, checked by
+[`deptry`](https://github.com/fpgmaas/deptry): no declared dependency that is unused (`DEP002`), no
+imported dependency that is undeclared (`DEP001`), and no dev dependency imported in production
+code or the reverse (`DEP004`).
 
 ## Why
 
-`pip-audit`/`osv-scanner` check the resolved dependency set for CVEs but never check whether the
-*declared* set matches what's actually *imported*. An agent that tries an approach mid-session and
-reverts frequently leaves dependencies declared-but-unused, or imports something that rode in
-transitively without ever being declared. This is a distinct hygiene signal ruff doesn't provide.
+`pip-audit` and `osv-scanner` check the resolved dependency set for CVEs. Neither checks whether the
+declared set matches what is imported. An agent that tries an approach mid-session and reverts
+often leaves dependencies declared and unused, or imports something that came in transitively and
+was never declared. Ruff gives no signal about this.
 
 ## Scope and false positives
 
-Dynamic imports, plugin entry points, and `TYPE_CHECKING`-only imports are the known noise
-sources — configure `[tool.deptry]` on first rollout rather than disabling the hook. This tool's
-own `pyproject.toml` demonstrates the pattern:
+Dynamic imports, plugin entry points and imports under `TYPE_CHECKING` are the known sources of
+noise. They are configured in `[tool.deptry]` on the first rollout and the hook stays on:
 
 ```toml
 [tool.deptry]
-extend_exclude = ["scaffolding/templates", "skills"]
+extend_exclude = ["vendor"]
 ```
 
-`scaffolding/templates` and `skills` are bundled/vendored payload shipped verbatim into target
-repos (the same rationale as this repo's ruff `extend-exclude` and pyrefly `project-excludes`).
+`vendor` stands for a folder of vendored code that has dependencies of its own.
 
 ## Migration (existing repos)
 
-Run `uvx deptry .` once. Either fix the findings or seed a `[tool.deptry]` `extend_exclude` /
-`per_rule_ignores` for the pre-existing/intentional cases — same "flag, don't silently exempt"
-posture as `file-size-guard` (CES-71).
+Run `uvx deptry .` once. Either fix the findings or add an `extend_exclude` or `per_rule_ignores`
+entry to `[tool.deptry]` for the pre-existing or intentional cases. The posture is the one of
+`file-size-guard` (CES-71): flag, and do not exempt silently.
 
 ## Suppression
 
-Per-package: `--per-rule-ignores DEP001=somepkg`. Per-path: `extend_exclude` in
-`[tool.deptry]`. Never disable the hook globally to silence a single path.
+Per package: `--per-rule-ignores DEP001=somepkg`. Per path: `extend_exclude` in `[tool.deptry]`. The
+hook is not disabled globally to silence one path.

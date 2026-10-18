@@ -1,45 +1,39 @@
 ---
 id: CES-114
-title: Dockerfile lint (hadolint)
+title: Dockerfile lint
 ---
-
-**Enforced by:** prek hook (`hadolint-docker`, file-pattern-scoped)
 
 ## Directive
 
-Any `Dockerfile`/`Dockerfile.*` in a repo with the `docker` CI component enabled must pass
-[`hadolint`](https://github.com/hadolint/hadolint) (unpinned base images, missing
-`--no-install-recommends`, `ADD` vs `COPY` misuse, running as root, etc).
+A `Dockerfile` at the root of a repo passes [`hadolint`](https://github.com/hadolint/hadolint). It
+reports unpinned base images, a missing `--no-install-recommends`, `ADD` where `COPY` belongs,
+running as root, and similar problems.
 
 ## Why
 
-Scaffolding already ships a `docker.yml` CI workflow template (opt-in) but previously zero
-Dockerfile-source linting. `trivy`/`grype`-style scanners operate on the *built image*;
-`hadolint` is the lightweight, deterministic check on the Dockerfile *text itself*, and is
-prek-native (fast, no build step).
+Scanners such as `trivy` and `grype` work on the built image. `hadolint` checks the text of the
+Dockerfile itself: it is deterministic, it runs as a prek hook, and it needs no build.
 
 ## Scope
 
-`files = "^Dockerfile"` — the hook only ever runs when a Dockerfile exists at the repo root, same
-placement-scoping posture as `repo-shape` (CES-32). It is inert (never invoked) in a repo without
-one, so it ships unconditionally in `prek-generic.toml` rather than needing component-level
-gating.
+The hook is scoped with `files = "^Dockerfile"`. It runs only when a Dockerfile exists at the root
+of the repo and does nothing in a repo without one, which is the placement-scoping of `repo-shape`
+(CES-32).
 
-## License note
+## License
 
-`hadolint` is GPL-3.0, invoked purely as an external CLI/subprocess via prek — the same boundary
-already used for every other third-party tool in this stack (ruff, betterleaks) — so
-this creates no copyleft obligation on a repo's own (typically MIT) source.
+`hadolint` is GPL-3.0 and runs as an external command through prek, the boundary that every other
+third-party tool of this stack has (ruff, betterleaks), so it puts no copyleft obligation on the
+source of the repo.
 
 ## Migration (existing repos)
 
-New repos with `docker` enabled get it by default. Existing repos with a Dockerfile: run once, fix
-or explicitly ignore (`# hadolint ignore=DLxxxx`) findings — the same "flag, don't silently
-exempt" posture as `file-size-guard` (CES-71). Some default hadolint rules (e.g. requiring a
-specific `HEALTHCHECK`) are opinionated enough that a house ignore-list may be needed on first
-rollout.
+Run the hook once on an existing Dockerfile. Fix the findings, or ignore them explicitly with
+`# hadolint ignore=DLxxxx`. The posture is the one of `file-size-guard` (CES-71): flag, and do not
+exempt silently. Some default rules, such as the one that requires a specific `HEALTHCHECK`, are
+opinionated enough that the first rollout may need an ignore list.
 
 ## Suppression
 
-Inline `# hadolint ignore=DLxxxx` on the offending line, or a project-level `.hadolint.yaml`
-ignore list — never disable the hook globally to silence one rule.
+Inline, with `# hadolint ignore=DLxxxx` on the line, or in a `.hadolint.yaml` ignore list for the
+project. The hook is not disabled globally to silence one rule.

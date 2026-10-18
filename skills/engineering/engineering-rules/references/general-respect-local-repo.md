@@ -14,29 +14,27 @@ judgment &nbsp;·&nbsp; **Tracker:** [#30](https://github.com/collectiveai-team/
 
 ## Directive
 
-A repo's existing, deliberate choices win over house defaults. Don't overwrite an existing
-version pin, lint config, dependency, or layout just because the standard default differs. When a
-house standard conflicts with a considered local decision, treat it as an **explicit, discussed
-migration** — not a silent rewrite.
+A repo's existing, deliberate choices win over the defaults of a standard. An existing version
+pin, lint config, dependency or layout is not overwritten because the default differs. When a
+standard conflicts with a considered local decision, the change is an explicit, discussed
+migration and not a silent rewrite.
 
 ## Why
 
-- The scaffolder is **clean-adds-only** for exactly this reason: it adds what's missing and
-  defers to anything already present (existing files are never edited or overwritten). The same
-  restraint applies to humans and agents working in the repo.
-- A repo's config often encodes hard-won, intentional decisions. Clobbering them to match a
+- A tool that bootstraps a repo adds what is missing and defers to what is already there. The same
+  restraint applies to people and agents working in the repo.
+- A repo's config often encodes hard-won, intentional decisions. Overwriting them to match a
   default destroys context and breaks builds.
 
 ## In practice
 
-- An existing `requires-python` pin wins over the CES-77 default (which is why CES-77 ships as a
-  comment).
-- An existing `prek.toml` / `pyproject.toml` is deferred, not replaced —
-  merge new rules in by hand, deliberately.
-- Adopt a house standard on the next natural touch, or as a named migration pull request — never as a
-  drive-by overwrite.
+- An existing `requires-python` pin wins over the default of CES-77.
+- An existing `prek.toml` or `pyproject.toml` is not replaced: new rules are merged in by hand,
+  deliberately.
+- A standard is adopted on the next natural touch, or as a named migration pull request, and never
+  as a drive-by overwrite.
 
-## Judgment
+## When in doubt
 
-This is the meta-rule behind the whole standards rollout: standards are defaults, not edicts.
-When in doubt, add alongside and leave the existing choice intact until a migration is agreed.
+Standards are defaults. Add alongside and leave the existing choice intact until a migration is
+agreed.

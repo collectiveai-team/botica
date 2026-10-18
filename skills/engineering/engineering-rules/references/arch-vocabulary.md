@@ -14,19 +14,19 @@ tags: architecture, vocabulary, language, matt-pocock
 
 ## Directive
 
-Name units with the house architectural vocabulary, consistently. Layers and packages are
-`entrypoints`, `api`, `database`, `impl`, `core` (CES-5/17/18); ports are interfaces, their
-implementations are adapters. Don't invent ad-hoc synonyms (`manager`, `handler`, `helper`,
-`service_of_services`, `processor`) for concepts that already have a name.
+Name units with this architectural vocabulary, consistently. Layers and packages are `entrypoints`,
+`api`, `database`, `impl` and `core` (CES-5, CES-17, CES-18). Ports are interfaces and their
+implementations are adapters. A concept that already has a name does not get a synonym such as
+`manager`, `handler`, `helper`, `service_of_services` or `processor`.
 
 ## Why
 
-- A shared vocabulary makes the structure **greppable and predictable**: `core` always means the
-  same thing, so a reader (or an agent) can navigate an unfamiliar repo by name alone.
-- Synonym drift is how two modules end up doing the same job under different names. Agreeing on
-  the words is the cheapest way to keep the design legible.
+- A shared vocabulary makes the structure greppable and predictable: `core` always means the same
+  thing, so a reader or an agent can navigate an unfamiliar repo by name alone.
+- Synonym drift is how two modules end up doing the same job under different names. Agreeing on the
+  words is the cheapest way to keep the design legible.
 
-## Do / Don't
+## Do and don't
 
 | Concept | Use | Avoid |
 |---|---|---|
@@ -35,8 +35,7 @@ implementations are adapters. Don't invent ad-hoc synonyms (`manager`, `handler`
 | reusable domain core | `core` | `common`, `shared`, `utils` |
 | port implementation | adapter | `manager`, `handler` |
 
-## Judgment
+## Naming a new unit
 
-This is a judgment-tier standard: no linter enforces it. When you name a new unit, reach for the
-established term first; introduce a new word only when the concept is genuinely new, and then add
-it to the vocabulary.
+Reach for the established term first. Introduce a new word when the concept is new, and add it to
+the vocabulary.

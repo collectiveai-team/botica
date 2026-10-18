@@ -1,57 +1,48 @@
 ---
 id: CES-113
-title: Dependency-review-action
+title: Dependency review on pull requests
 ---
-
-**Enforced by:** CI workflow (`dependency-review.yml`)
 
 ## Directive
 
 Every pull request that changes the dependency graph gets an automatic summary, visible in the
-pull request, of what was added/removed/changed, via
-[`actions/dependency-review-action`](https://github.com/actions/dependency-review-action).
+pull request, of what was added, removed or changed. The summary comes from
+[`actions/dependency-review-action`](https://github.com/actions/dependency-review-action) and runs
+as the workflow `dependency-review.yml`.
 
 ## Why
 
-`pip-audit`/`osv-scanner` scan the *final resolved* dependency set for known CVEs — neither
-highlights *what changed in this pull request* versus the base branch, so a reviewer has to notice a new
-dependency by reading `uv.lock`'s diff line by line. `dependency-review-action` is a direct,
-GitHub-native fix for the "dependency creep" failure mode: an agent reaching for a new library to
-make one HTTP call where the stdlib or an existing transitive dep would do.
+`pip-audit` and `osv-scanner` scan the resolved dependency set for known CVEs. Neither shows what
+changed in a pull request against the base branch, so a reviewer finds a new dependency by reading
+the diff of `uv.lock` line by line. `dependency-review-action` shows it in the pull request. It
+addresses dependency creep: an agent that adds a library for one HTTP call where the standard
+library or an existing dependency would do.
 
-## Enforcement posture
+## Posture
 
-Ships **summary-only**: `comment-summary-in-pr: always`, no `fail-on-severity` or
-`deny-licenses`, **plus `continue-on-error: true`**. It cannot block a merge in this
-configuration — promote to a hard gate only after a burn-in period, as a separate, explicit
-decision.
+The workflow is summary-only. It sets `comment-summary-in-pr: always`, sets neither
+`fail-on-severity` nor `deny-licenses`, and sets `continue-on-error: true`, so it cannot block a
+merge. Making it a gate is a separate decision, taken after a trial period.
 
-## Tier-gated: public repos only by default
+## Public repositories
 
-`dependency-review-action` is free for **public** repos but requires **GitHub Advanced Security /
-Code Security (a paid tier)** on private/internal repos — confirmed directly from GitHub's own
-docs: *"available for all public repositories, as well as private repositories that have GitHub
-Code Security or GitHub Advanced Security enabled."* This tool is tier-agnostic (works on free
-public **and** free private repos without assuming a paid upgrade), so the `ci` component only
-ships `dependency-review.yml` when `facts.visibility` is `public` — private/internal repos get a
-`[skip]` notice instead, the same posture `docker.yml` already uses for GHCR billing. Add it by
-hand if your org's plan includes Advanced Security/Code Security.
+The documentation of GitHub says that dependency review is "available for all public repositories,
+as well as private repositories that have GitHub Code Security or GitHub Advanced Security
+enabled". A private or internal repository adds the workflow by hand when its plan includes one of
+the two.
 
-## Requirements (public repos)
+## Requirements
 
-GitHub-hosted, public, and the repo (or org) needs "Dependency graph" enabled (Settings >
-Security > Advanced Security > Dependency Graph — free, but a **web-UI-only toggle**: there is no
-REST or GraphQL field for it, confirmed via the current `PATCH /repos/{owner}/{repo}` schema and
-a GraphQL `Repository` type introspection — `gh` CLI can't set it either, since it only wraps
-those APIs). Unlike most GitHub security features, the action does **not** no-op quietly when
-Dependency graph is unavailable (e.g. an org that has it switched off even on a public repo) — it
-hard-fails the step with "Dependency review is not supported on this repository." That is exactly
-why `continue-on-error: true` is part of the shipped default, not optional polish: without it, an
-infra gap (not a real dependency finding) would silently violate this standard's own "can't block
-merges" promise. Verified directly against a real repo where the org has the feature disabled.
+- The repo runs on GitHub-hosted runners and has the dependency graph enabled (Settings, Security,
+  Advanced Security, Dependency Graph). The setting is free and is only available in the web UI:
+  neither the REST API nor GraphQL exposes it, so `gh` cannot set it.
+- When the dependency graph is not available, for example in an organization that turned it off
+  for a public repo, the action does not skip quietly. It fails the step with "Dependency review
+  is not supported on this repository." That is why the workflow sets `continue-on-error: true`:
+  without it, a gap in the infrastructure would block merges, against the posture above.
 
 ## Suppression
 
-There is nothing to suppress in the summary-only default — it only comments, never fails a check.
-Once (and if) a repo promotes this to a hard gate, per-advisory allow-listing is the
-`allow-ghsas`/`allow-licenses` inputs on the action itself, not a house-side mechanism.
+The summary-only workflow only comments and fails no check, so there is nothing to suppress. Once a
+repo makes it a gate, the `allow-ghsas` and `allow-licenses` inputs of the action allow a single
+advisory or license.

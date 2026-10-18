@@ -1,49 +1,45 @@
 ---
 id: CES-119
-title: Dependency vulnerability scanning (osv-scanner)
+title: Dependency vulnerability scanning
 ---
-
-**Enforced by:** CI workflow (`osv-scanner.yml`)
 
 ## Directive
 
-Every push to `main` and every pull request is scanned for known dependency vulnerabilities via
-[`osv-scanner scan source`](https://github.com/google/osv-scanner) against `uv.lock` (and, once a
-non-Python template exists, whatever lockfile that ecosystem produces — same tool, same workflow).
-This **replaces** the previous `pip-audit.yml`, it does not supplement it.
+Every push to `main` and every pull request is scanned for known vulnerabilities in dependencies
+with [`osv-scanner scan source`](https://github.com/google/osv-scanner), against the lockfile of the
+project: `uv.lock` for Python. A project of another ecosystem uses the same tool and the same
+workflow with its own lockfile. The workflow is `osv-scanner.yml`.
 
 ## Why
 
-`pip-audit` only understands Python. `osv-scanner` (Google, Apache-2.0) is built on the same
-underlying OSV.dev vulnerability database but natively parses lockfiles across ~20 ecosystems —
-including `uv.lock` directly, no `uv export` step required — alongside `poetry.lock`,
-`Pipfile.lock`, `package-lock.json`, `Cargo.lock`, `go.mod`, and more. It scales to the rest of a
-scaffolded repo's roadmap (a Next.js frontend, a Go service) without adding a second scanner.
+`pip-audit` understands Python only. `osv-scanner` (Google, Apache-2.0) uses the same OSV.dev
+vulnerability database and parses the lockfiles of about 20 ecosystems directly, `uv.lock` among
+them with no `uv export` step, and also `poetry.lock`, `Pipfile.lock`, `package-lock.json`,
+`Cargo.lock` and `go.mod`. A repo that also has a Next.js frontend or a Go service needs no second
+scanner.
 
 ## Configuration
 
-Runs via the reusable workflow (`google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.5.0`)
-with `scan-args: --lockfile=uv.lock` — `uv.lock` is natively recognized by filename, no
-parser-forcing prefix needed.
+The workflow calls the reusable workflow
+`google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.5.0` with
+`scan-args: --lockfile=uv.lock`. `uv.lock` is recognized by its file name, so the argument needs no
+prefix that forces a parser.
 
-Two things the caller must get right, both of which fail at startup with zero jobs rather than
-as a scan error:
+Two settings of the caller fail at startup, with no jobs, and not as a scan error:
 
-- **Pin an exact tag.** The action publishes no floating `v2` tag or branch, so `@v2` is an
-  unresolvable ref.
-- **Grant the calling job `security-events: write`** (plus `actions: read`, `contents: read`).
-  A called workflow cannot hold more permissions than its caller, and the reusable job needs
-  them to upload SARIF.
+- The reference is an exact tag. The action publishes no floating `v2` tag or branch, so `@v2`
+  cannot be resolved.
+- The calling job has `security-events: write`, `actions: read` and `contents: read`. A called
+  workflow cannot hold more permissions than its caller, and the reusable job needs them to upload
+  SARIF.
 
 ## Migration (existing repos)
 
-Delete the old `pip-audit.yml` when adopting this — do not run both; they cover the same finding
-class from the same underlying database, and running both is redundant noise, not defense in
-depth. New repos get `osv-scanner.yml` directly; existing repos with `pip-audit.yml` should
-replace it in the same change.
+A repo that has `pip-audit.yml` deletes it when it adopts `osv-scanner.yml`. Both report the same
+class of finding from the same database, and running both only adds noise.
 
 ## Suppression
 
-Per-vulnerability ignores go in an `osv-scanner.toml` config file at the repo root (see
-[osv-scanner's configuration docs](https://google.github.io/osv-scanner/configuration/)) — never
-silence the whole workflow to unblock one known, accepted advisory.
+An ignore for one vulnerability goes in an `osv-scanner.toml` file at the root of the repo (see the
+[configuration of osv-scanner](https://google.github.io/osv-scanner/configuration/)). The whole
+workflow is not silenced to unblock one accepted advisory.

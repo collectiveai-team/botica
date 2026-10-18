@@ -3,21 +3,19 @@ id: CES-17
 title: API boundary layout
 ---
 
-**Enforced by:** AGENTS directive + placement-scoped botica rules that depend on this layout (e.g. CES-4); a **commented** import-linter forbidden-contract skeleton in `pyproject.toml`
-
 ## Directive
 
-All inbound HTTP lives in one `api` package with a fixed, versioned shape. Request/response
-schemas live under `api/<version>/schemas/{requests,responses}/`; routers/endpoints under
-`api/<version>/routers/`. The `api` package is the **only** inbound boundary — `core` and
-`database` never import it.
+All inbound HTTP lives in one `api` package with a fixed, versioned shape. Request and response
+schemas live under `api/<version>/schemas/{requests,responses}/`, and routers and endpoints under
+`api/<version>/routers/`. The `api` package is the only inbound boundary: `core` and `database`
+never import it.
 
 ## Why
 
-- A predictable layout lets tooling reason about code by **placement** instead of guesswork:
-  CES-4 (`api-schemas-extra-forbid`) fires only on models under `api/**/schemas/...`, so it can
-  stay silent for internal models without trying to infer intent.
-- Versioned subpackages (`v1`, `v2`) make breaking API changes additive — a new version is a new
+- A predictable layout lets tooling reason about code by placement instead of guesswork: CES-4
+  (`api-schemas-extra-forbid`) fires only on models under `api/**/schemas/...`, so it stays silent
+  for internal models without inferring intent.
+- Versioned subpackages (`v1`, `v2`) make breaking API changes additive: a new version is a new
   directory, not an edit that ripples through shared modules.
 
 ## Layout
@@ -37,14 +35,12 @@ myapp/
   database/    # never imports api
 ```
 
-## Enforcement status
+## Enforcement
 
-The layout is documented here and assumed by the placement-scoped botica rules. The
-**direction** (nothing outside `api` may import `api`) ships as a commented
-`[tool.importlinter]` forbidden-contract skeleton in `pyproject.toml` — uncomment it once the
-package has these layers. Active import-linter enforcement is otherwise out of scope.
+The rules of botica that depend on the layout read it from the path of each file. The direction,
+that nothing outside `api` imports `api`, is an import-linter contract (CES-5).
 
 ## Related
 
-- **CES-4** (`api-schemas-extra-forbid`) — the schema rule scoped to this layout.
-- **CES-5** (`import-linter`) — the layer direction that protects this boundary.
+- CES-4 (`api-schemas-extra-forbid`): the schema rule scoped to this layout.
+- CES-5 (`import-linter`): the layer direction that protects this boundary.

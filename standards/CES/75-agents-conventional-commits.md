@@ -3,8 +3,6 @@ id: CES-75
 title: Conventional Commits
 ---
 
-**Enforced by:** prek commit-msg hook + CI check of the title of the pull request
-
 ## Directive
 
 Every commit subject follows [Conventional Commits](https://www.conventionalcommits.org):
@@ -13,8 +11,8 @@ Every commit subject follows [Conventional Commits](https://www.conventionalcomm
 <type>(<optional scope>)<optional !>: <description>
 ```
 
-A local `commit-msg` prek hook validates the message at commit time; a CI workflow validates the
-**title** of a pull request. Both embed `CES-75`.
+A local `commit-msg` prek hook validates the message at commit time, and a CI workflow validates
+the title of a pull request. Both embed `CES-75`.
 
 ## Allowed types
 
@@ -23,36 +21,35 @@ A local `commit-msg` prek hook validates the message at commit time; a CI workfl
 | `feat` | a new feature |
 | `fix` | a bug fix |
 | `docs` | documentation only |
-| `style` | formatting, no code-meaning change |
-| `refactor` | code change that neither fixes a bug nor adds a feature |
+| `style` | formatting, no change in what the code means |
+| `refactor` | a code change that neither fixes a bug nor adds a feature |
 | `perf` | a performance improvement |
 | `test` | adding or fixing tests |
-| `build` | build system or dependencies |
+| `build` | the build system or dependencies |
 | `ci` | CI configuration |
-| `chore` | maintenance, no src/test change |
+| `chore` | maintenance, no change to source or tests |
 | `revert` | reverts a previous commit |
 
-- **Scope** (optional) is lowercase in parentheses: `feat(api): …`.
-- **Breaking change**: append `!` before the colon (`feat!: …`) and/or a `BREAKING CHANGE:`
-  footer.
-- `Merge …`, `Revert …`, and `fixup! …` subjects are exempt from the hook.
+- The scope is optional, lowercase, in parentheses: `feat(api): …`.
+- A breaking change appends `!` before the colon (`feat!: …`), a `BREAKING CHANGE:` footer, or both.
+- `Merge …`, `Revert …` and `fixup! …` subjects are exempt from the hook.
 
 ## Why
 
-- A machine-readable history makes changelogs, release automation (semver bumps), and `git log`
-  triage deterministic instead of guesswork.
-- The type/scope prefix forces a one-line statement of *what kind of change* this is, which
+- A machine-readable history makes changelogs, release automation (semver bumps) and `git log`
+  triage deterministic.
+- The type and scope prefix forces a one-line statement of what kind of change a commit is, which
   keeps commits small and single-purpose.
 
 ## Examples
 
 ```text
-feat(standards): ship the logging family (#81)
-fix(engine): defer existing AGENTS.md instead of overwriting
-docs: clarify the CES slug-vs-code convention
+feat(api): add the check for duplicate invoices
+fix(parser): keep the trailing newline of a block
+docs: explain the slug and the code of a standard
 ```
 
 ## Suppression
 
-The hook keys on the subject line only and exempts merge/revert/fixup commits. There is no
-per-commit opt-out beyond those — fix the subject instead.
+The hook reads the subject line only and exempts merge, revert and fixup commits. Any other
+subject is fixed and not exempted.

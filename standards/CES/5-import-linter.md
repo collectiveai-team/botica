@@ -3,36 +3,29 @@ id: CES-5
 title: Layered import direction
 ---
 
-**Enforced by:** AGENTS directive now; a **commented** `[tool.importlinter]` skeleton in `pyproject.toml` (uncomment once the package has layers)
-
 ## Directive
 
-Imports flow in one direction through the house layers:
+Imports flow in one direction through these layers:
 
 ```
 entrypoints  →  api  →  database / impl  →  core
 ```
 
-A higher layer may import lower ones; a lower layer must **never** import a higher one (`core`
-imports nothing app-specific; `database`/`impl` never import `api`; `api` never imports
-`entrypoints`). This keeps the dependency graph acyclic and the core reusable.
+A higher layer may import lower ones. A lower layer never imports a higher one: `core` imports
+nothing app-specific, `database` and `impl` never import `api`, and `api` never imports
+`entrypoints`. The dependency graph stays acyclic and `core` stays reusable.
 
 ## Why
 
-- Layer direction is what stops a codebase from congealing into a ball of mud: when `core` can't
-  import `api`, the abstractions can't leak upward and the lower layers stay testable in
-  isolation.
-- Encoding it as an import-linter contract makes the rule *executable* — a violating import
-  fails CI instead of waiting for a reviewer to notice.
+- When `core` cannot import `api`, abstractions cannot leak upward and the lower layers stay
+  testable in isolation.
+- An import-linter contract makes the direction executable: a violating import fails CI before a
+  reviewer has to notice it.
 
-## Enforcement status
+## Contract
 
-This slice ships the **directive + a commented contract skeleton** in `pyproject.toml`. Active
-enforcement is opt-in: uncomment `[tool.importlinter]`, replace `replace-me` with your package,
-add `import-linter` to the dev group, and run `uvx --from import-linter lint-imports`. Keeping it
-commented avoids failing a repo that doesn't yet have the layers carved out.
-
-## The skeleton
+To enforce the direction, add `import-linter` to the dev group, put this contract in
+`pyproject.toml` with the name of your package, and run `uvx --from import-linter lint-imports`:
 
 ```toml
 [tool.importlinter]
@@ -49,9 +42,9 @@ layers = [
 ]
 ```
 
-(Sibling modules on one layer are separated with `|` — they must be independent of each other.)
+Sibling modules on one layer are separated with `|` and must be independent of each other.
 
 ## Related
 
-- **CES-17** (`api-boundary-layout`) — the placement layout the api layer assumes.
-- **CES-18** (`arch-database-package`) — the `database` package this direction references.
+- CES-17 (`api-boundary-layout`): the layout that the `api` layer assumes.
+- CES-18 (`arch-database-package`): the `database` package that this direction refers to.
