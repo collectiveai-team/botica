@@ -71,6 +71,19 @@ impl Remote {
         Ok(text)
     }
 
+    /// The commit that `HEAD` of `repo` names: the head of its default branch.
+    pub fn head(&self, repo: &str) -> Result<String, String> {
+        let url = format!("https://{repo}.git");
+        let listing = self
+            .git(&["ls-remote", "--", &url, "HEAD"])
+            .map_err(|reason| format!("cannot read the head of {repo}: {reason}"))?;
+        String::from_utf8_lossy(&listing)
+            .split_whitespace()
+            .next()
+            .map(str::to_owned)
+            .ok_or_else(|| format!("cannot read the head of {repo}: it has no HEAD"))
+    }
+
     fn fetch(&self, repo: &str, rev: &str, path: &str) -> Result<String, String> {
         let scratch = Scratch::in_cache(&self.cache)?;
         let git_dir = scratch.0.to_string_lossy().into_owned();

@@ -9,6 +9,7 @@ use anyhow::{bail, Context, Result};
 use botica_catalog::{is_kebab_case, Origin, Reference, REFERENCES_DIR, TOPIC_FILE};
 
 use crate::refs_collection::{label, Collection};
+use crate::refs_edit::quoted;
 
 pub struct Pin<'a> {
     pub permalink: &'a str,
@@ -107,10 +108,6 @@ fn first_line_with_text(excerpt: &str) -> Option<String> {
         .map(str::trim)
         .find(|line| !line.is_empty())
         .map(str::to_owned)
-}
-
-fn quoted(text: &str) -> String {
-    toml::Value::String(text.to_owned()).to_string()
 }
 
 fn block(reference: &Reference) -> String {

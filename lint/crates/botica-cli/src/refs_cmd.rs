@@ -10,6 +10,7 @@ use clap::{Args, Subcommand};
 use crate::project::ProjectArgs;
 use crate::refs_collection::{self, label, Collection};
 use crate::refs_pin::{self, Pin};
+use crate::refs_update::{self, Update};
 use crate::{refs_check, refs_export};
 
 #[derive(Args)]
@@ -34,6 +35,9 @@ enum RefsCommand {
     /// Add the file of a permalink of GitHub to a topic of the project as a reference, with the
     /// lines of the permalink and the first of them as its anchor.
     Pin(PinArgs),
+    /// Find the anchor of each external reference of a topic at the head of its repository and
+    /// print the commit and the lines it proposes.
+    Update(UpdateArgs),
 }
 
 #[derive(Args)]
@@ -92,6 +96,19 @@ struct PinArgs {
 }
 
 #[derive(Args)]
+struct UpdateArgs {
+    /// The topic whose references are followed to the head of their repositories.
+    topic: String,
+    /// Write the proposed `rev` and `lines` to the `topic.toml` of the project.
+    #[arg(long)]
+    write: bool,
+    #[command(flatten)]
+    project: ProjectArgs,
+    #[command(flatten)]
+    cache: CacheArgs,
+}
+
+#[derive(Args)]
 struct CheckArgs {
     /// Also fetch and check the references of the built-in topics, which botica checks in its own
     /// repository.
@@ -122,6 +139,13 @@ pub fn run(args: &RefsArgs) -> Result<ExitCode> {
                 license: &args.license,
                 note: &args.note,
                 title: args.title.as_deref(),
+            },
+        ),
+        RefsCommand::Update(args) => refs_update::run(
+            &refs_collection::open(&args.project, args.cache.cache_dir.clone())?,
+            &Update {
+                topic: &args.topic,
+                write: args.write,
             },
         ),
         RefsCommand::Check(args) => Ok(refs_check::run(

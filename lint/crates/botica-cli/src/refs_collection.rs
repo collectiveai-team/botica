@@ -48,6 +48,11 @@ impl Collection {
         }
     }
 
+    /// The commit that the head of `repo` names.
+    pub fn head(&self, repo: &str) -> Result<String, String> {
+        refs_remote::open(self.cache_dir.as_deref())?.head(repo)
+    }
+
     pub fn root(&self) -> &Path {
         &self.project.loaded.root
     }

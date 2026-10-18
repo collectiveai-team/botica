@@ -41,6 +41,8 @@ botica refs check [--all]      # fails when a reference no longer resolves or a 
 botica refs export             # every topic as JSON, with the text of each file reference (the site reads it)
 botica refs pin <permalink> --topic <topic> --license MIT --note "…"
                                # adds the file of a permalink of GitHub to a topic of references/
+botica refs update <topic> [--write]
+                               # follows the anchor of each external reference to the head of its repository
 botica rules test --judge abide [test-through-interface]
                                # abide judges the fixtures of each judgment rule; compared with expected.json
 botica rules conform lint/rules   # each rule over its fixtures, with and without each optimisation;
@@ -159,6 +161,20 @@ file. Without lines the reference points at the whole file and pin prints the ad
 gives. `--title` creates the topic when it does not exist, with a `README.md` that holds the title.
 Pin fails and writes nothing when the address is not a permalink of GitHub, the commit is not a full
 SHA, the lines are past the end of the file or the topic is a built-in one.
+
+`botica refs update <topic>` asks each repository for its `HEAD` (`git ls-remote`) and, for each
+reference to a file of another repository, prints the commit and the lines that it proposes:
+`references[0] <label>: rev -> <commit>, lines 2-3 -> 4-5`. It looks for the `anchor` in the file at
+the head and keeps the block as long as it was, with the anchor on the same line of the block. A
+reference with no `lines` takes the new commit only. The line ends with `, the text changed` when
+the lines at the head do not show the text they showed. A reference is a problem, and the command
+exits with 1, when it has `lines` and no `anchor`, when the anchor is not in the file at the head
+or is in more than one place, or when the block would start before the file or end past it. Without
+`--write` nothing is written. With `--write` the `rev` and the `lines` of each reference that
+resolves are replaced in `references/<topic>/topic.toml` and the rest of the file stays as it was;
+a file that does not write `[[references]]` as tables is not rewritten, and the command fails. A
+built-in topic is proposed but not written: its `rev` is edited in `lint/references/`. References
+to a file of the project and to a page are left out.
 
 A topic of `references/` with the id of a built-in topic does not load, unless the configuration
 lists the id:

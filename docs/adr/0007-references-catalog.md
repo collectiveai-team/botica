@@ -57,7 +57,7 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
    | `botica refs show <topic, rule or standard>` | prints each reference with its context and its permalink |
    | `botica refs pin <permalink> --topic <topic>` | adds a permalink of GitHub (`…/blob/<sha>/<path>#L10-L40`) to a topic of the project as a reference, with its anchor |
    | `botica refs check` | fails when a reference no longer resolves |
-   | `botica refs update <topic>` | finds the anchor on the current branch and proposes the new commit and lines |
+   | `botica refs update <topic>` | finds the anchor at the head of the repository and proposes the new commit and lines; `--write` applies them |
 
 7. **The site publishes an `llms.txt`** in the format of https://llmstxt.org/, at the root of the
    site. `scripts/site_llms.py` writes it when `scripts/build_site.sh` builds the site, from the
@@ -148,10 +148,18 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
     is not edited, because the binary carries it. The command prints the repository, the commit,
     the file and the lines it pinned, and writes nothing when the commit, the file or the lines do
     not resolve.
+18. **`botica refs update` follows the anchor to the head of the repository.** The head is the
+    `HEAD` that `git ls-remote` returns for the address of the reference. The block keeps its length
+    and its anchor stays on the same line of it; an anchor that is not in the file, is in several
+    places or is missing from a reference that has `lines` is a problem and the command exits with
+    1. A reference with no `lines` takes the new commit. Without `--write` the command prints and
+    writes nothing; with it, the `rev` and the `lines` of the references that resolve are replaced
+    in the text of the `topic.toml`, and the file is not touched when the references are not
+    written as `[[references]]` tables.
 
 ## Not built yet
 
-- `botica refs update`. The `rev` of a built-in topic is edited by hand.
+- Writing the `rev` of a built-in topic: it is edited by hand in `lint/references/`.
 - The removal of `.agents/snippets/` and `scaffolding/templates/snippets/`. The two topics point at
   the snippets at a commit, which stays readable after the removal.
 - The instruction of the skill to run `botica refs show <rule>` before writing code.
@@ -189,6 +197,11 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
   project keeps its own copy.
 - **A bare repository per repository as the cache.** Rejected: it grows with each commit, and with
   `--filter=blob:none` a file that was never asked for needs the network.
+- **`update` moves the block to the nearest of several matches of the anchor.** Rejected: a wrong
+  guess writes a block that shows other code. The command names the places and the author makes the
+  anchor longer.
+- **`update` rewrites the file with a TOML editor.** Rejected: the dependency would be added for two
+  fields; the command edits the lines of the table and checks the result by parsing it.
 - **`--offline`, or skipping the references that cannot be fetched.** Rejected: a deleted commit or a
   moved repository would pass.
 - **The replacement mechanism of the rules for topics** (a topic with its own id that declares
