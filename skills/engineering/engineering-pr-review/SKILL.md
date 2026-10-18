@@ -23,7 +23,7 @@ specific rules the diff touches. Every rule id cited below resolves through it.
 
 1. Read the `engineering-rules` index and the `pr-*` gate rules.
 2. Inspect the diff against the target branch and the files receiving the largest additions.
-3. Identify the repo's toolchain, tests, CI, package layout; read `CONTEXT.md`/ADRs if present.
+3. Identify the repo's toolchain, tests, CI, package layout; read `GLOSSARY.md`/ADRs if present (fall back to `CONTEXT.md` in repos not yet migrated).
 
 ## PR gate
 
@@ -81,3 +81,5 @@ Engineering PR gate:
 
 If any item fails, fix it before creating the PR unless the user explicitly accepts the risk
 (`pr-complexity-check`, `pr-description`).
+
+Credits and sources: [`references/CREDITS.md`](references/CREDITS.md).

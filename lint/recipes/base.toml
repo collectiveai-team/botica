@@ -2,7 +2,7 @@ description = "Any repository: the rules about any file, the skills, .gitignore,
 rules = ["file-size-guard", "no-notebooks", "no-artifacts-in-package"]
 
 [[skills]]
-source = "mattpocock/skills#v1.2.3"
+source = "mattpocock/skills#v1.3.1"
 names = [
   "grill-with-docs",
   "triage",
@@ -11,6 +11,8 @@ names = [
   "to-spec",
   "to-tickets",
   "implement",
+  "implement-spec",
+  "retro",
   "wayfinder",
   "prototype",
   "diagnosing-bugs",
@@ -19,13 +21,13 @@ names = [
   "domain-modeling",
   "codebase-design",
   "code-review",
-  "resolving-merge-conflicts",
   "wizard",
   "grill-me",
   "teach",
   "writing-for-agents",
   "grilling",
   "wait-what",
+  "to-questionnaire",
 ]
 
 [[skills]]
@@ -38,6 +40,7 @@ names = [
   "engineering-rules",
   "engineering-pr-review",
   "engineering-refactor",
+  "pr",
 ]
 
 [[gitignore]]

@@ -27,7 +27,8 @@ __pycache__/
 .journals/
 *.png
 *.svg
-!assets/logo.png
+!assets/botica-light.svg
+!assets/botica-dark.svg
 !website/docs/assets/*.svg
 
 # rust (botica lint)

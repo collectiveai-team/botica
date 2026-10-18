@@ -15,7 +15,7 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
         text.contains(
             "\nbase: Any repository: the rules about any file, the skills, .gitignore, the prek hooks \
              and the sections of AGENTS.md\n  rules: 3, judgment: 0, exports: 0\n  \
-             skills: 29, files: 1, sections: 2, gitignore: 8\n  from: built-in\n"
+             skills: 32, files: 1, sections: 2, gitignore: 8\n  from: built-in\n"
         ),
         "{text}"
     );

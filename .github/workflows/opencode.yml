@@ -38,7 +38,7 @@ jobs:
     if: |
       contains(github.event.comment.body, '/oc') ||
       contains(github.event.comment.body, '/opencode')
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     # Use the runner's built-in GITHUB_TOKEN (use_github_token below) instead of
     # the OpenCode App installation token, so these scopes authorize the bot to
     # comment / commit / open PRs. The commenter still needs repo write access.

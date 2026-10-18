@@ -19,7 +19,7 @@
 - `standards/` — the text of each standard, `standards/<set>/<number>-<slug>.md`, written by hand
   and apart from the rules; `scripts/build_site.sh` copies it into the site (ADR 0004).
 - `skills/` — actual installed skills (`ask-user`, `journalist`, `handoff`,
-  `test-smell-review`, `engineering-rules`, `engineering-pr-review`,
+  `test-smell-review`, `engineering-rules`, `engineering-pr-review`, `pr`,
   `engineering-refactor`). Each
   carries Claude-style `SKILL.md` frontmatter **and** an `agents/openai.yaml`;
   Codex reads only the latter, so `disable-model-invocation: true` must be paired
@@ -193,7 +193,7 @@ commit message.
 
 ## Domain docs
 
-Single-context — `CONTEXT.md` + `docs/adr/` at the repo root (created lazily).
+Single-context — `GLOSSARY.md` + `docs/adr/` at the repo root (created lazily).
 See `docs/agents/domain.md`.
 
 ## Repo Workspace Defaults

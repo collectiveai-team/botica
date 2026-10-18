@@ -24,3 +24,5 @@ Redact any sensitive information, such as API keys, passwords, or personally ide
 When `$ARGUMENTS` is non-empty, treat it as the next session's focus and tailor the document accordingly.
 
 After writing the file, respond with a short restart prompt that references the handoff path, states the immediate objective, and tells the next agent to inspect the referenced artifacts and current git state before editing. Do not reproduce the full handoff in chat.
+
+Credits and sources: [`references/CREDITS.md`](references/CREDITS.md).

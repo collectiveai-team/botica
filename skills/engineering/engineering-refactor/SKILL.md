@@ -30,7 +30,7 @@ applies to this repo at all.
 ### 1. Establish the baseline
 
 Read the `engineering-rules` index, then inspect the repo's local contracts: `pyproject.toml`,
-lockfiles, Makefiles, CI workflows, existing tests, package layout, `README`, `CONTEXT.md`,
+lockfiles, Makefiles, CI workflows, existing tests, package layout, `README`, `GLOSSARY.md` (or legacy `CONTEXT.md`),
 and ADRs if present. Determine, citing evidence:
 
 - Package manager + build backend (`py-package-manager`, `py-build-backend`).
@@ -79,3 +79,5 @@ are docker-only — run linters/pytest directly (`infra-makefile-docker`).
 When finished, report: what changed, which rules drove each change (cite rule ids), which
 tests/checks ran and their results, and any remaining architecture risks (large files,
 shallow modules, missing tests) left behind.
+
+Credits and sources: [`references/CREDITS.md`](references/CREDITS.md).
