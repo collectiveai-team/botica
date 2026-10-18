@@ -33,7 +33,7 @@ fn the_missing_skills_of_a_source_are_installed_with_one_call() {
     );
     assert_eq!(
         npx_calls(&dir),
-        ["skills add acme/skills --agent opencode --yes --skill tdd grilling"]
+        ["skills add acme/skills --agent opencode --yes --json --skill tdd grilling"]
     );
     assert!(dir.join(".agents/skills/tdd/SKILL.md").is_file());
 }
@@ -67,7 +67,7 @@ fn only_the_names_that_are_missing_are_asked_for() {
     );
     assert_eq!(
         npx_calls(&dir),
-        ["skills add acme/skills --agent opencode --yes --skill grilling"]
+        ["skills add acme/skills --agent opencode --yes --json --skill grilling"]
     );
 }
 
@@ -102,8 +102,8 @@ fn there_is_one_call_for_each_source_in_the_order_they_first_appear() {
     assert_eq!(
         npx_calls(&dir),
         [
-            "skills add a/one --agent opencode --yes --skill x z",
-            "skills add b/two --agent opencode --yes --skill y"
+            "skills add a/one --agent opencode --yes --json --skill x z",
+            "skills add b/two --agent opencode --yes --json --skill y"
         ]
     );
 }
@@ -278,7 +278,7 @@ fn a_skill_that_the_later_recipe_takes_from_another_source_is_installed_from_it_
     );
     assert_eq!(
         npx_calls(&dir),
-        ["skills add y/two --agent opencode --yes --skill tdd"]
+        ["skills add y/two --agent opencode --yes --json --skill tdd"]
     );
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(

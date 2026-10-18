@@ -369,7 +369,7 @@ reason, as for the skills. The reason is the last line of stderr that starts wit
 last line, leaving out the lines that start with `hint:`.
 
 A skill is `ok` when `.agents/skills/<name>/SKILL.md` is a file. For the skills that are not,
-`install` runs `npx skills add <source> --agent opencode --yes --skill <name>...` in the root of the
+`install` runs `npx skills add <source> --agent opencode --yes --json --skill <name>...` in the root of the
 project, once for each source, so `npx` has to be on the `PATH`. A skill that is there afterwards is
 `added`. A skill that is not, because the call failed, could not run, or did not install it, is
 `failed`, with the reason, and the summary ends with the number of failures:
@@ -379,9 +379,12 @@ skill tdd: failed: `npx skills add mattpocock/skills#v1.2.3` exited with code 1:
 base: 0 added, 0 ok, 0 pending, 1 failed
 ```
 
-The reason is the last line of the stderr of `npx`. The CLI of skills writes its errors to stdout
-and leaves stderr empty, so when stderr is empty the reason is the first error of stdout (a line
-with `■`, other than `Canceled`) followed by the last `fatal:` or `error:` line below it.
+`--json` makes `npx` write a JSON array to stdout. A skill that the array lists as `skipped` is
+`failed` with the reason of the entry (`` `npx skills add mattpocock/skills` skipped it: No matching
+skill found in source ``). When the call fails, the reason is the first line of the `error` of the
+first `failed` entry followed by the last `fatal:` or `error:` line below it. Without such an entry,
+the reason is the last line of stderr that starts with `cause:`, or its last line, without ANSI
+sequences and without the lines that start with `hint:`.
 
 The other sources still run, and the files and the sections are already written. `skills-lock.json`
 is written by the CLI of skills. The command exits with 1 when a step is pending or a skill

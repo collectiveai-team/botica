@@ -8,7 +8,8 @@ use std::process::Command;
 use botica_catalog::ResolvedSkill;
 
 use crate::recipes_check_steps::{installed, SKILLS_DIR};
-use crate::recipes_install_run::failure;
+use crate::recipes_install_json::skipped;
+use crate::recipes_install_run::run;
 use crate::recipes_install_steps::Outcome;
 
 /// The agent that `skills add` installs for, as `scaffolding` does by default.
@@ -26,16 +27,26 @@ fn calls<'a>(missing: &[&'a ResolvedSkill]) -> Vec<(&'a str, Vec<&'a str>)> {
     calls
 }
 
-/// Runs `npx skills add` in the root of the project: why it failed, when it did.
-fn add(root: &Path, source: &str, names: &[&str]) -> Option<String> {
+/// What the call for a source did: why it failed, when it did, and the skills it skipped.
+struct Call {
+    failure: Option<String>,
+    skipped: BTreeMap<String, String>,
+}
+
+/// Runs `npx skills add` in the root of the project.
+fn add(root: &Path, source: &str, names: &[&str]) -> Call {
     let mut command = Command::new("npx");
     command
         .args([
-            "skills", "add", source, "--agent", AGENT, "--yes", "--skill",
+            "skills", "add", source, "--agent", AGENT, "--yes", "--json", "--skill",
         ])
         .args(names)
         .current_dir(root);
-    failure(&mut command, &format!("`npx skills add {source}`"))
+    let ran = run(&mut command, &format!("`npx skills add {source}`"));
+    Call {
+        failure: ran.failure,
+        skipped: skipped(&ran.stdout),
+    }
 }
 
 /// Installs the skills that are missing and says, for each skill in order, whether it was there,
@@ -51,11 +62,9 @@ pub fn install(root: &Path, skills: &[ResolvedSkill]) -> Vec<Outcome> {
         .filter(|(_, there)| !**there)
         .map(|(skill, _)| skill)
         .collect();
-    let mut failures: BTreeMap<&str, String> = BTreeMap::new();
+    let mut made: BTreeMap<&str, Call> = BTreeMap::new();
     for (source, names) in calls(&missing) {
-        if let Some(reason) = add(root, source, &names) {
-            failures.insert(source, reason);
-        }
+        made.insert(source, add(root, source, &names));
     }
     skills
         .iter()
@@ -66,18 +75,19 @@ pub fn install(root: &Path, skills: &[ResolvedSkill]) -> Vec<Outcome> {
             } else if installed(root, &skill.name) {
                 Outcome::Added(None)
             } else {
-                Outcome::Failed(
-                    failures
-                        .get(skill.source.as_str())
-                        .cloned()
-                        .unwrap_or_else(|| {
-                            format!(
-                                "not in `{SKILLS_DIR}/` after `npx skills add {}`",
-                                skill.source
-                            )
-                        }),
-                )
+                Outcome::Failed(why_missing(skill, made.get(skill.source.as_str())))
             }
         })
         .collect()
+}
+
+/// Why a skill is not in `.agents/skills/` after the call for its source: the call skipped it, the
+/// call failed, or it did not install it.
+fn why_missing(skill: &ResolvedSkill, call: Option<&Call>) -> String {
+    let source = &skill.source;
+    if let Some(reason) = call.and_then(|call| call.skipped.get(&skill.name)) {
+        return format!("`npx skills add {source}` skipped it: {reason}");
+    }
+    call.and_then(|call| call.failure.clone())
+        .unwrap_or_else(|| format!("not in `{SKILLS_DIR}/` after `npx skills add {source}`"))
 }

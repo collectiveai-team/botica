@@ -2,41 +2,66 @@
 
 use std::process::Command;
 
+use crate::recipes_install_json::failed_reason;
+
+/// What a command did: why it failed, when it did, and what it wrote to stdout.
+pub struct Ran {
+    pub failure: Option<String>,
+    pub stdout: String,
+}
+
 /// Runs `command` and says why it failed, when it did: `label` followed by how it ended and the
-/// last `cause:` line of its stderr, or its last line when there is none, leaving out the `hint:`
-/// lines, or the reason in its stdout when stderr has nothing else.
-pub fn failure(command: &mut Command, label: &str) -> Option<String> {
+/// reason that the JSON of its stdout gives, or else the last `cause:` line of its stderr, or its
+/// last line when there is none, leaving out the `hint:` lines.
+pub fn run(command: &mut Command, label: &str) -> Ran {
     let output = match command.output() {
         Ok(output) => output,
         Err(error) => {
             let program = command.get_program().to_string_lossy().into_owned();
-            return Some(format!("cannot run `{program}`: {error}"));
+            return Ran {
+                failure: Some(format!("cannot run `{program}`: {error}")),
+                stdout: String::new(),
+            };
         }
     };
+    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
     if output.status.success() {
-        return None;
+        return Ran {
+            failure: None,
+            stdout,
+        };
     }
     let how = match output.status.code() {
         Some(code) => format!("exited with code {code}"),
         None => "was stopped by a signal".to_owned(),
     };
-    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stderr = without_escapes(&String::from_utf8_lossy(&output.stderr));
     let lines: Vec<&str> = stderr
         .lines()
         .map(str::trim)
         .filter(|line| !line.is_empty() && !line.starts_with("hint:"))
         .collect();
-    let last = lines
-        .iter()
-        .rev()
-        .find(|line| line.starts_with("cause:"))
-        .or(lines.last())
-        .map(|line| (*line).to_owned())
-        .or_else(|| stdout_reason(&String::from_utf8_lossy(&output.stdout)));
-    Some(match last {
+    let last = failed_reason(&stdout).or_else(|| {
+        lines
+            .iter()
+            .rev()
+            .find(|line| line.starts_with("cause:"))
+            .or(lines.last())
+            .map(|line| (*line).to_owned())
+    });
+    let failure = match last {
         Some(line) => format!("{label} {how}: {line}"),
         None => format!("{label} {how}"),
-    })
+    };
+    Ran {
+        failure: Some(failure),
+        stdout,
+    }
+}
+
+/// Runs `command` and says why it failed, when it did.
+pub fn failure(command: &mut Command, label: &str) -> Option<String> {
+    run(command, label).failure
 }
 
 /// The text of `text` without ANSI escape sequences (`ESC [ … <letter>`).
@@ -56,25 +81,4 @@ fn without_escapes(text: &str) -> String {
         }
     }
     clean
-}
-
-/// Why the CLI of skills failed, from its stdout, where it writes its errors and leaves stderr
-/// empty. Each error starts with `■`: the reason is the first one that is not `Canceled`, followed
-/// by the last `fatal:` or `error:` line of git below it.
-fn stdout_reason(stdout: &str) -> Option<String> {
-    let clean = without_escapes(stdout);
-    let headline = clean
-        .lines()
-        .filter_map(|line| line.split_once('■'))
-        .map(|(_, text)| text.trim())
-        .find(|text| !text.is_empty() && *text != "Canceled");
-    let detail = clean
-        .lines()
-        .map(|line| line.trim_start_matches(['│', ' ']).trim_end())
-        .rfind(|line| line.starts_with("fatal:") || line.starts_with("error:"));
-    match (headline, detail) {
-        (Some(headline), Some(detail)) => Some(format!("{headline}: {detail}")),
-        (Some(text), None) | (None, Some(text)) => Some(text.to_owned()),
-        (None, None) => None,
-    }
 }

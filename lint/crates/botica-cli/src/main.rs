@@ -12,6 +12,7 @@ mod recipes_collection;
 mod recipes_gitignore;
 mod recipes_install;
 mod recipes_install_gitignore;
+mod recipes_install_json;
 mod recipes_install_run;
 mod recipes_install_skills;
 mod recipes_install_steps;

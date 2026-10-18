@@ -188,12 +188,13 @@ scaffolder writes the configuration of a repository from its own components, apa
      `uv add` adds none when one does not exist. A project without `pyproject.toml` leaves each
      package `pending`.
    - The `[[skills]]` steps run last. `install` runs `npx skills add <source> --agent opencode --yes
-     --skill <name>...` once for each source, for the names that are not in `.agents/skills/`. A
+     --json --skill <name>...` once for each source, for the names that are not in `.agents/skills/`. A
      name that is there is `ok`; one that is there afterwards is `added`; one that is absent
      afterwards, or whose call failed or could not run, is `failed` and the command exits with 1.
-     The reason is the last line of the stderr of `npx`; the CLI of skills leaves stderr empty and
-     writes its errors to stdout, so then it is the first error of stdout (a line with `■`, other
-     than `Canceled`) followed by the last `fatal:` or `error:` line below it.
+     `--json` makes `npx` write a JSON array to stdout: a skill that it lists as `skipped` is
+     `failed` with the reason of the entry, and the reason of a failed call is the first line of the
+     `error` of the first `failed` entry followed by the last `fatal:` or `error:` line below it,
+     or else the last `cause:` line of stderr, or its last line, without the `hint:` lines.
      The other sources still run, and the files and sections are already written.
      `skills-lock.json` is written by the CLI of skills and by nothing else (CES-107). The skills of
      `collectiveai-team/botica` have no tag and follow its default branch; the lock fixes their
