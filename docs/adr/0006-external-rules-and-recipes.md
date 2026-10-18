@@ -1,4 +1,4 @@
-# External rules and profiles: the catalog describes the tools that enforce a standard, and botica installs them
+# External rules and recipes: the catalog describes the tools that enforce a standard, and botica installs them
 
 **Status:** proposed
 
@@ -52,42 +52,44 @@ scaffolder writes the configuration of a repository from its own components, apa
    table holds the keys it names, an array holds one item for each item of the fragment, and any
    other value is equal. `--scope` leaves the rules with no scope (judgment and external ones) as
    the selection made them.
-3. **A profile is a file of the catalog,** `profiles/<name>.toml`. It lists rules of every kind and
+3. **A recipe is a file of the catalog,** `recipes/<name>.toml`. It lists rules of every kind and
    the exports to run, and it composes with `extends`:
 
    ```toml
-   # profiles/python.toml
+   # recipes/python.toml
    extends = ["generic"]
    rules = ["file-size-guard", "log-no-print", "cognitive-complexity", "dep-hygiene"]
    judgment = ["test-through-interface", "arch-vocabulary"]
    exports = ["agents-md", "abide"]
    ```
 
-4. **`botica profile install <name>` writes what a repository lacks,** and `botica profile check`
-   reports how the repository differs from the profile. Install writes the configuration of botica,
+4. **`botica recipe install <name>` writes what a repository lacks,** and `botica recipe check`
+   reports how the repository differs from the recipe. Install writes the configuration of botica,
    the hooks of prek, the fragments of the external rules and the files of the exports. It adds a file
    that does not exist and never edits, merges or overwrites one that does; what it cannot add, it
    lists for a person or an agent to merge (CES-30). Both replace the commands of `scaffolding`,
-   whose components and templates become profiles and fragments of the catalog.
+   whose components and templates become recipes and fragments of the catalog.
 
 ## Not decided
 
-- Whether a fragment holds the whole configuration that `botica profile install` writes or the
+- Whether a fragment holds the whole configuration that `botica recipe install` writes or the
   least that `external-config` checks. The fragment of `cognitive-complexity` is a hook of prek
   with the id `complexipy`.
-- The order in which the components of `scaffolding` move to profiles, and when the package is
+- The order in which the components of `scaffolding` move to recipes, and when the package is
   removed.
 - The bounded edits that `scaffolding` performs today (the `unignore` op of ADR 0001) and how
-  `profile install` keeps them.
+  `recipe install` keeps them.
 - Where the drop-in code of a standard lives (`.agents/snippets/` today).
 
 ## Considered options
 
 - **Keep the knowledge of a tool in the text of its standard.** Rejected: a standard may have several
   tools, a tool may serve several standards, and botica could not check the configuration.
-- **Profiles outside the catalog, as templates of the scaffolder.** Rejected: there would be two
+- **Recipes outside the catalog, as templates of the scaffolder.** Rejected: there would be two
   sources for what a repository needs.
 - **Botica runs the external tools.** Rejected in ADR 0003: prek runs each tool as its own hook.
+- **The name `profile`.** The first draft used it for the file of the catalog that lists rules and
+  exports; the name is `recipe`.
 
 ## Consequences
 
@@ -96,5 +98,5 @@ scaffolder writes the configuration of a repository from its own components, apa
 - The standards marked `[prek]`, `[ci]` or `[dependency]` in `AGENTS.md` become external rules, one
   pull request per standard.
 - The site shows the tool and its documentation on the page of an external rule.
-- `scaffolding install` and `scaffolding check` are replaced by `botica profile install` and
-  `botica profile check`.
+- `scaffolding install` and `scaffolding check` are replaced by `botica recipe install` and
+  `botica recipe check`.

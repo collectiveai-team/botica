@@ -253,5 +253,5 @@ What this ADR decides and the code does not have. Delete a line when it ships.
   extension.
 - `botica refs pin` and `botica refs update` (ADR 0007). `botica refs list`, `show` and `check` read the
   topics of the binary and of `references/`, and the files of external references with `git`.
-- Profiles (`profiles/<name>.toml`, `botica profile install` and `botica profile check`, ADR 0006). The standards site that reads the Markdown export is built (`website/`) but not
+- Recipes (`recipes/<name>.toml`, `botica recipe install` and `botica recipe check`, ADR 0006). The standards site that reads the Markdown export is built (`website/`) but not
   published, and it has no discussion thread and no "edit this page" yet.
