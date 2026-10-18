@@ -1,15 +1,16 @@
 ## Engineering Standards
 
-> **Retrieval-led, not training-led.** Prefer this repo's standards and snippets over
-> training-default patterns. Before writing code that touches a rule below, open the matching
-> `.agents/snippets/` drop-in and follow the house pattern rather than your default one.
+> **Retrieval-led, not training-led.** Prefer this repo's standards and references over
+> training-default patterns. Before writing code that touches a rule below, run
+> `uvx botica refs show <rule or CES-number>` and follow the house pattern rather than your default
+> one.
 
 Each rule is a **CES — Collective Engineering Standard** (`CES-<number>` is the citable code;
 the kebab-case slug is the machine id used by tooling and `# botica: ignore[<slug>]`
 suppressions). `[prek]` rules are enforced automatically by `prek`; `[ci]` rules
 are enforced by a GitHub Actions workflow (no local hook); `[dependency]` rules ship as a
 dev-dependency that activates automatically, no separate check; `[judgment]` rules are
-reviewer/agent judgment; `[snippet]` ships canonical drop-in code. Full convention:
+reviewer/agent judgment; `[reference]` points at canonical code that `botica refs show` prints. Full convention:
 `docs/engineering-standards.md`.
 
 The rules that `botica lint` measures are not listed here and have no detail file: the catalog
@@ -21,9 +22,9 @@ describes one, and the hook reports each finding with its slug and its message.
 - **CES-107 · track the skills manifest** `[script]` — commit `skills-lock.json`; `.agents/skills/`
   is derived from it and stays gitignored. Install restores from the manifest. It pins no version
   and verifies no hash, so call it a manifest, not a lock. Slug: `skills-manifest`.
-- **CES-74 · the house logger** `[snippet]` — `.agents/snippets/core/logger.py` is the canonical structlog
-  setup (JSON in prod, colored console in dev, level from `LOG_LEVEL`). Drop it in at
-  `<pkg>/core/logger.py`. Slug: `core-logger`.
+- **CES-74 · the house logger** `[reference]` — `uvx botica refs show structured-logging` prints the
+  canonical structlog setup (JSON in prod, colored console in dev, level from `LOG_LEVEL`). Copy it
+  to `<pkg>/core/logger.py`. Slug: `core-logger`.
 - **CES-75 · Conventional Commits** `[prek]` — commit subjects follow `type(scope): description`;
   a commit-msg hook checks every commit and a CI workflow checks the PR title. Slug:
   `agents-conventional-commits`.

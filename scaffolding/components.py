@@ -50,14 +50,6 @@ GITIGNORE_ENTRIES = [
 AGENTS_MARKER = "## Repo Workspace Defaults"
 # Marker-gated section the `standards` component owns in AGENTS.md (sibling to AGENTS_MARKER).
 STANDARDS_MARKER = "## Engineering Standards"
-# Canonical drop-in / comparison code shipped under snippets/ (may be nested, e.g. core/logger.py).
-STANDARDS_SNIPPETS = [
-    "no-dict-boundary.py",
-    "core/logger.py",
-    "api-schemas.py",
-    "settings.py",
-    "tests/in_memory_repository.py",
-]
 # MATTPOCOCK_REF / MATTPOCOCK_SKILLS / LOCAL_SKILLS now live in scaffolding/skills.py,
 # next to the manifest logic that consumes them (CES-107).
 DEFAULT_CI_PARTS = ["tests", "security", "docker"]
@@ -405,18 +397,7 @@ def _standards_index_op(ctx: Context) -> Op:
 
 
 def plan_standards(ctx: Context) -> list[Op]:
-    ops = [_standards_index_op(ctx)]
-    ops += [
-        write_if_absent(
-            "standards",
-            ctx.root / ".agents" / "snippets" / snippet,
-            template_text(f"snippets/{snippet}"),
-            f".agents/snippets/{snippet}",
-            ctx.guide_url,
-        )
-        for snippet in STANDARDS_SNIPPETS
-    ]
-    return ops
+    return [_standards_index_op(ctx)]
 
 
 def _decided(answer: bool | None, default: bool) -> bool:
@@ -542,7 +523,7 @@ REGISTRY: list[Component] = [
     Component("agents", "AGENTS.md workspace-defaults section", 1, True, _always, plan_agents),
     Component(
         "standards",
-        "Engineering Standards index + snippets",
+        "Engineering Standards index",
         1,
         True,
         _python,

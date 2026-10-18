@@ -157,11 +157,17 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
     in the text of the `topic.toml`, and the file is not touched when the references are not
     written as `[[references]]` tables.
 
+19. **Each snippet is a topic and the snippets are removed.** The three snippets with no topic
+    become `api-schemas` (CES-4), `settings-module` (CES-76) and `typed-boundaries` (CES-79), each
+    with the references to the lines of its snippet at `9c225ad`. The rules and the standards that
+    the snippets served cite them, and the messages of the four rules that named a file of
+    `.agents/snippets/` name `botica refs show <topic>`. The standards CES-4, CES-76 and CES-79
+    carry `references` in their front matter. In the index of `AGENTS.md` the tag `[snippet]` is
+    `[reference]`.
+
 ## Not built yet
 
 - Writing the `rev` of a built-in topic: it is edited by hand in `lint/references/`.
-- The removal of `.agents/snippets/` and `scaffolding/templates/snippets/`. The two topics point at
-  the snippets at a commit, which stays readable after the removal.
 - The instruction of the skill to run `botica refs show <rule>` before writing code.
 
 ## Not decided
@@ -225,8 +231,11 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
 - The catalog carries `lint/references/`, loads `references/` of the project, and `botica refs
   check --all` runs in CI.
 - `botica refs show <rule>` works in any project with `git`, and reads the network once per file.
-- `.agents/snippets/` and `scaffolding/templates/snippets/` are removed once each snippet is a
-  reference.
+- `.agents/snippets/` and `scaffolding/templates/snippets/` are gone: the `standards` component
+  of the scaffolder appends the index to `AGENTS.md` and writes no snippet. The five topics point at
+  the snippets at the commit `9c225ad`, which is on `feat/botica-lint` and not on `main`; the
+  references resolve as long as that commit stays in the history, so the branch is merged without
+  squashing.
 - The skill tells an agent to run `botica refs show <rule>` before it writes code that the rule
   covers.
 - The page of a standard or a rule on the site lists its topics and links them.

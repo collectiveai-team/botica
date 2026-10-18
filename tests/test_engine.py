@@ -134,14 +134,15 @@ def _standards_dispositions(  # botica: ignore[no-dict-return-annotation]
     return {op.target: op.disposition for op in plan.ops if op.component == "standards"}
 
 
-def test_standards_clean_repo_adds_index_and_snippets_and_no_detail_files(repo: Path):
+def test_standards_clean_repo_adds_the_index_and_no_snippets_or_detail_files(repo: Path):
     (repo / "app.py").write_text("x = 1\n")
     plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
     disp = _standards_dispositions(plan)
     adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    assert "AGENTS.md" in adds
-    assert ".agents/snippets/no-dict-boundary.py" in adds
-    assert not [target for target in disp if target.startswith(".agents/rules/")]
+    assert adds == {"AGENTS.md"}
+    assert not [
+        target for target in disp if target.startswith((".agents/rules/", ".agents/snippets/"))
+    ]
     # the `agents` dependency is pulled in so AGENTS.md has a base to append to.
     assert any("required by standards" in n for n in plan.notices)
 
@@ -157,51 +158,20 @@ def test_standards_defers_and_skips_when_present(repo: Path):
     settings = Settings(skip_skills=True, skip_varlock=True)
     plan = build_plan(repo, _facts(repo), settings, requested=["standards"])
     apply(plan, repo)
-    assert (repo / ".agents/snippets/no-dict-boundary.py").exists()
+    assert not (repo / ".agents/snippets").exists()
     body = (repo / "AGENTS.md").read_text()
     assert STANDARDS_MARKER in body
     assert AGENTS_MARKER in body
 
     plan2 = build_plan(repo, _facts(repo), settings, requested=["standards"])
     disp = _standards_dispositions(plan2)
-    assert disp[".agents/snippets/no-dict-boundary.py"] is Disposition.DEFER
-    assert disp["AGENTS.md"] is Disposition.SKIP
+    assert disp == {"AGENTS.md": Disposition.SKIP}
 
     # Re-apply must not duplicate the section or overwrite the workspace-defaults section.
     apply(plan2, repo)
     body2 = (repo / "AGENTS.md").read_text()
     assert body2.count(STANDARDS_MARKER) == 1
     assert AGENTS_MARKER in body2
-
-
-def test_standards_core_logger_adds_the_snippet(repo: Path):
-    (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
-    disp = _standards_dispositions(plan)
-    adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    assert ".agents/snippets/core/logger.py" in adds
-
-
-def test_core_logger_snippet_is_a_structlog_drop_in():
-    snippet = template_text("snippets/core/logger.py")
-    assert "structlog" in snippet
-    assert "def get_logger" in snippet
-
-
-def test_standards_api_schemas_rule_adds_its_snippet(repo: Path):
-    (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
-    disp = _standards_dispositions(plan)
-    adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    assert ".agents/snippets/api-schemas.py" in adds
-
-
-def test_standards_settings_module_rule_adds_its_snippet(repo: Path):
-    (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
-    disp = _standards_dispositions(plan)
-    adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    assert ".agents/snippets/settings.py" in adds
 
 
 def test_prek_plan_ships_repo_hygiene_through_the_botica_hook(repo: Path):
@@ -376,14 +346,6 @@ def test_pyproject_template_version_pin_and_importlinter_skeleton():
     assert "# [tool.importlinter]" in body
     assert "Layered architecture (CES-5)" in body
     assert "CES-17" in body
-
-
-def test_standards_judgment_tier_snippet(repo: Path):
-    (repo / "app.py").write_text("x = 1\n")
-    plan = build_plan(repo, _facts(repo), Settings(), requested=["standards"])
-    disp = _standards_dispositions(plan)
-    adds = {t for t, d in disp.items() if d is Disposition.ADD}
-    assert ".agents/snippets/tests/in_memory_repository.py" in adds
 
 
 def test_judgment_tier_index_entries_marked_judgment():

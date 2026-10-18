@@ -109,7 +109,7 @@ or referencing a rule in this repo, follow this convention:
   Grouped rationale + the escape-hatch mechanism live once, in the file of the standard —
   scattering policy across sibling messages is context-poisoning.
 - Canonical map + per-standard detail live in the `## Engineering Standards` index and
-  `standards/<set>/<number>-<slug>.md`; canonical code lives in `.agents/snippets/`.
+  `standards/<set>/<number>-<slug>.md`; canonical code lives in the topics of `lint/references/` (`botica refs show <topic>`).
 
 ## Engineering Standards
 
@@ -121,7 +121,7 @@ or referencing a rule in this repo, follow this convention:
 This is the **dogfooded subset** for this repo — a Python Cyclopts CLI (no API, DB, or web
 layer) next to the `lint/` Rust workspace, which these Python-oriented standards do not cover.
 `[prek]` rules are enforced by `prek`; `[judgment]` rules are agent/reviewer judgment;
-`[snippet]` ships canonical code under `.agents/snippets/` (in target repos).
+`[reference]` points at canonical code that `botica refs show` prints.
 
 The rules that `botica lint` measures are not listed here and have no detail file: the catalog
 of botica is their only documentation. `uvx botica rules` lists them, `uvx botica explain <slug>`
@@ -131,7 +131,7 @@ describes one, and the hook reports each finding with its slug and its message.
 
 - **CES-107 · track the skills manifest** `[script]` — commit `skills-lock.json`; `.agents/skills/`
   is derived and gitignored; install restores from it. → `@standards/CES/107-skills-manifest.md`
-- **CES-74 · the house logger** `[snippet]` — structlog `core/logger.py` drop-in. →
+- **CES-74 · the house logger** `[reference]` — structlog `core/logger.py`, from the topic `structured-logging`. →
   `@standards/CES/74-core-logger.md`
 - **CES-75 · Conventional Commits** `[prek]` — commit subjects + PR titles follow
   `type(scope): description` (enforced here via the commit-msg hook + CI). →

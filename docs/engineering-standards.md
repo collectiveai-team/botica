@@ -68,8 +68,8 @@ fix + code", that belongs in the file of the standard, not the message.
 - **On-demand detail:** `standards/<set>/<number>-<slug>.md` — full rationale, examples,
   migration. A rule that `botica lint` measures has its own documentation, the README of its
   catalog folder, and its `standard` field names the standard it implements.
-- **Canonical code:** `.agents/snippets/` — drop-ins for new repos, comparison templates for existing
-  ones.
+- **Canonical code:** the topics of `references/` (`lint/references/` for botica's own), read with
+  `botica refs show <topic, rule or standard>`. A topic points at the code at a commit.
 
 (Rationale for index-in-AGENTS.md over packaged skills: passive always-on context outperforms
 on-demand retrieval for horizontal standards — see PRD #78.)

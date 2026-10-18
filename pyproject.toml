@@ -42,8 +42,8 @@ include = ["scaffolding", "README.md", "guide.md"]
 
 [tool.ruff]
 line-length = 100
-# Vendored skill scripts and bundled template payload (snippets/ drop-ins shipped
-# verbatim into target repos) are independent artifacts; lint only the tool's code.
+# Vendored skill scripts and bundled template payload (files shipped verbatim into target
+# repos) are independent artifacts; lint only the tool's code.
 # The botica lint rule fixtures are deliberately bad code (and carry `# noqa: BT…` codes ruff
 # would otherwise strip), so ruff leaves them alone.
 extend-exclude = [
@@ -144,8 +144,8 @@ project-excludes = [
   "**/.tmp/**/*",    # local scratch (spike corpora, benchmarks); gitignored
   "skills/**/*",
   "lint/**/*",       # Rust workspace; its Python SDK and bench scripts have their own deps
-  # Bundled template payload: snippets/ drop-ins are shipped verbatim into target
-  # repos and reference their deps (structlog, pydantic, …), not this tool's env.
+  # Bundled template payload: the files are shipped verbatim into target repos and are not
+  # this tool's code.
   "scaffolding/templates/**/*",
 ]
 use-ignore-files = false
