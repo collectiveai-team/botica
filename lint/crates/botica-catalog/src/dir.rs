@@ -3,6 +3,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use crate::load::{SourceFile, CATALOG_FILE, HISTORY_FILE};
+use crate::recipes::TEMPLATE_DIRS;
 use crate::references::TOPIC_FILE;
 use crate::sources::is_script;
 
@@ -87,7 +88,8 @@ pub fn read_references(dir: &Path) -> io::Result<Vec<SourceFile>> {
 }
 
 /// The files of the recipes under `dir`, the `recipes/` of a repository: each `<recipe>.toml`
-/// that is directly in it, with paths from `dir`. A `dir` that does not exist holds none.
+/// that is directly in it and every file under its `files/` and `sections/`, with paths from
+/// `dir`. A `dir` that does not exist holds none.
 pub fn read_recipes(dir: &Path) -> io::Result<Vec<SourceFile>> {
     let mut files = Vec::new();
     if !dir.is_dir() {
@@ -98,7 +100,25 @@ pub fn read_recipes(dir: &Path) -> io::Result<Vec<SourceFile>> {
             push(&mut files, dir, &file)?;
         }
     }
+    for folder in TEMPLATE_DIRS {
+        push_tree(&mut files, dir, &dir.join(folder))?;
+    }
     Ok(files)
+}
+
+/// Every file under `folder`, at any depth, in the order of their paths.
+fn push_tree(files: &mut Vec<SourceFile>, root: &Path, folder: &Path) -> io::Result<()> {
+    if !folder.is_dir() {
+        return Ok(());
+    }
+    for entry in sorted(folder)? {
+        if entry.is_dir() {
+            push_tree(files, root, &entry)?;
+        } else if entry.is_file() {
+            push(files, root, &entry)?;
+        }
+    }
+    Ok(())
 }
 
 /// The files of the catalogs of a project under `dir`, its `.botica/rules`, with paths from `dir`:

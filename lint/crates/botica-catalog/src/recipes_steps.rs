@@ -122,3 +122,34 @@ fn empty_problem(kind: &str, path: &str, field: &str, value: &str) -> Option<Str
         .is_empty()
         .then(|| format!("the `{kind}` step for `{path}` has an empty `{field}`"))
 }
+
+/// What is wrong with the templates that the steps of one recipe name: each one is under the
+/// folder of its kind of step, and `exists` says whether the folder of the recipes has it.
+pub(crate) fn template_problems(
+    files: &[FileStep],
+    sections: &[SectionStep],
+    exists: &dyn Fn(&str) -> bool,
+) -> Vec<String> {
+    let files = files
+        .iter()
+        .map(|step| ("files", step.path.as_str(), step.template.as_str()));
+    let sections = sections
+        .iter()
+        .map(|step| ("sections", step.path.as_str(), step.template.as_str()));
+    files
+        .chain(sections)
+        .filter(|(_, _, template)| !template.trim().is_empty())
+        .filter_map(|(kind, path, template)| {
+            let reason = if !template.starts_with(&format!("{kind}/")) {
+                format!("is not under `{kind}/`")
+            } else if !exists(template) {
+                "does not exist".to_owned()
+            } else {
+                return None;
+            };
+            Some(format!(
+                "the `{kind}` step for `{path}` names the template `{template}`, which {reason}"
+            ))
+        })
+        .collect()
+}

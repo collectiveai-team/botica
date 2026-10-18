@@ -4,13 +4,15 @@ use serde::Deserialize;
 
 use crate::issue::{issue, CatalogError, CatalogIssue};
 use crate::load::SourceFile;
-use crate::recipes_steps::{step_problems, FileStep, SectionStep, SkillStep};
+use crate::recipes_steps::{step_problems, template_problems, FileStep, SectionStep, SkillStep};
 use crate::references::Origin;
 use crate::validate::is_kebab_case;
 
 /// The folder of the repository that holds the recipes of a project, beside `references/`.
 pub const RECIPES_DIR: &str = "recipes";
 const RECIPE_EXTENSION: &str = ".toml";
+/// The folders of the recipes folder that hold templates.
+pub(crate) const TEMPLATE_DIRS: [&str; 2] = ["files", "sections"];
 
 /// The exports that a recipe can ask for: `botica rules export --format <name>`.
 pub const EXPORTS: [&str; 2] = ["agents-md", "abide"];
@@ -55,9 +57,18 @@ pub struct Recipe {
     pub sections: Vec<SectionStep>,
 }
 
+/// A file under `files/` or `sections/` of the recipes folder, whose path is from that folder.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Template {
+    pub(crate) path: String,
+    pub(crate) origin: Origin,
+    pub(crate) text: String,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct Recipes {
     pub(crate) recipes: Vec<Recipe>,
+    pub(crate) templates: Vec<Template>,
 }
 
 impl Recipes {
@@ -80,15 +91,33 @@ impl Recipes {
 
     fn load(files: &[SourceFile], origin: Origin) -> Result<Self, CatalogError> {
         let mut issues = Vec::new();
-        let mut recipes: Vec<Recipe> = files
-            .iter()
-            .filter_map(|file| load_recipe(file, origin, &mut issues))
-            .collect();
+        let mut recipes = Vec::new();
+        let mut templates = Vec::new();
+        for file in files {
+            if is_template_path(&file.path) {
+                templates.push(Template {
+                    path: file.path.clone(),
+                    origin,
+                    text: file.text.clone(),
+                });
+            } else if let Some(recipe) = load_recipe(file, origin, &mut issues) {
+                recipes.push(recipe);
+            }
+        }
+        for recipe in &recipes {
+            let exists = |path: &str| templates.iter().any(|template| template.path == path);
+            let problems = template_problems(&recipe.files, &recipe.sections, &exists);
+            issues.extend(
+                problems
+                    .into_iter()
+                    .map(|message| issue(recipe_path(&recipe.id), message)),
+            );
+        }
         if !issues.is_empty() {
             return Err(CatalogError { issues });
         }
         recipes.sort_by(|a, b| a.id.cmp(&b.id));
-        Ok(Self { recipes })
+        Ok(Self { recipes, templates })
     }
 
     pub fn recipes(&self) -> &[Recipe] {
@@ -98,6 +127,25 @@ impl Recipes {
     pub fn recipe(&self, id: &str) -> Option<&Recipe> {
         self.recipes.iter().find(|recipe| recipe.id == id)
     }
+
+    /// The text of a template, by its path from the recipes folder, for the recipe `id`: the
+    /// templates of a recipe are the ones that came with it, built in or of the project.
+    pub fn template(&self, id: &str, path: &str) -> Option<&str> {
+        let origin = self.recipe(id)?.origin;
+        self.templates
+            .iter()
+            .find(|template| template.origin == origin && template.path == path)
+            .map(|template| template.text.as_str())
+    }
+}
+
+fn is_template_path(path: &str) -> bool {
+    path.split_once('/').is_some_and(|(folder, rest)| {
+        TEMPLATE_DIRS.contains(&folder)
+            && rest
+                .split('/')
+                .all(|part| !part.is_empty() && part != "." && part != "..")
+    })
 }
 
 pub(crate) fn recipe_path(id: &str) -> String {
@@ -113,7 +161,10 @@ fn load_recipe(
     let id = match path.strip_suffix(RECIPE_EXTENSION) {
         Some(id) if !id.contains('/') => id,
         _ => {
-            issues.push(issue(path, "unexpected file: expected <recipe>.toml"));
+            issues.push(issue(
+                path,
+                "unexpected file: expected <recipe>.toml, or a template under files/ or sections/",
+            ));
             return None;
         }
     };

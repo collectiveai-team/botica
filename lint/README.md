@@ -223,6 +223,12 @@ marker = "## Engineering Standards"
 template = "sections/standards-index.md"
 ```
 
+A `template` is a file of the folder of the recipes: under `files/` for a `[[files]]` step and under
+`sections/` for a `[[sections]]` step, at any depth, and a recipe does not load when the template of
+one of its steps is missing. The recipes of a folder share its templates, and the templates of the
+built-in recipes are in `lint/recipes/files/` and `lint/recipes/sections/`. A recipe of a project
+finds only the templates of its own `recipes/`.
+
 A `path` is relative to the root of the project, without `.` or `..`. A recipe names a skill once, a
 file path once and a marker of a path once. The steps of the recipes it extends come first, a step
 that two recipes list the same stays where it first is, and a skill that two recipes take from

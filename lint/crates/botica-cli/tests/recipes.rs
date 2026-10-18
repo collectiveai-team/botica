@@ -13,8 +13,9 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
 
     assert!(
         text.starts_with(
-            "base: The rules that look at any file of a repository\n  \
-             rules: 3, judgment: 0, exports: 0\n  from: built-in\n"
+            "base: Any repository: the rules about any file, the skills, the prek hooks and the \
+             standards index\n  rules: 3, judgment: 0, exports: 0\n  \
+             skills: 29, files: 1, sections: 1\n  from: built-in\n"
         ),
         "{text}"
     );
@@ -124,7 +125,18 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
     assert!(lines[3].contains(", from base-python): "), "{}", lines[3]);
     assert!(text.contains("\n## Judgment rules\n\n(none)\n"), "{text}");
     assert!(text.contains("\n## Exports\n\n(none)\n"), "{text}");
-    assert!(text.ends_with("## Exports\n\n(none)\n"), "{text}");
+    assert!(
+        text.contains("\n## Exports\n\n(none)\n\n## Skills\n\n- grill-with-docs ("),
+        "{text}"
+    );
+    assert!(
+        text.ends_with(
+            "\n## Files\n\n- prek.toml (template files/prek-base.toml, from base)\n\n\
+             ## Sections\n\n- AGENTS.md, `## Engineering Standards` \
+             (template sections/standards-index.md, from base)\n"
+        ),
+        "{text}"
+    );
 }
 
 #[test]

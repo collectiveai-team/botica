@@ -56,7 +56,13 @@ impl Recipes {
             .chain(project.recipes)
             .collect();
         recipes.sort_by(|a, b| a.id.cmp(&b.id));
-        let all = Self { recipes };
+        let templates = builtin
+            .templates
+            .iter()
+            .cloned()
+            .chain(project.templates)
+            .collect();
+        let all = Self { recipes, templates };
         let issues = all.extends_problems();
         if issues.is_empty() {
             Ok(all)

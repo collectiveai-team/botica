@@ -85,3 +85,44 @@ fn base_python_resolves_to_the_rules_of_base_first() {
     );
     assert_eq!(resolved.rules.len(), 15);
 }
+
+#[test]
+fn base_installs_the_skills_and_adds_prek_and_the_standards_index_from_its_templates() {
+    let recipes = embedded();
+    let base = recipes.recipe("base").expect("base");
+
+    let sources: Vec<&str> = base.skills.iter().map(|s| s.source.as_str()).collect();
+    assert!(sources[0].starts_with("mattpocock/skills#v"), "{sources:?}");
+    assert_eq!(sources[1], "collectiveai-team/botica");
+    assert_eq!(sources.len(), 2);
+    assert!(base.skills.iter().all(|step| !step.names.is_empty()));
+    assert_eq!(base.files.len(), 1);
+    assert_eq!(base.files[0].path, "prek.toml");
+    assert_eq!(base.files[0].template, "files/prek-base.toml");
+    assert_eq!(base.sections.len(), 1);
+    assert_eq!(base.sections[0].path, "AGENTS.md");
+    assert_eq!(base.sections[0].marker, "## Engineering Standards");
+    assert_eq!(base.sections[0].template, "sections/standards-index.md");
+
+    let prek = recipes
+        .template("base", "files/prek-base.toml")
+        .expect("the template is embedded");
+    assert!(prek.starts_with("# MARK: uv-lock\n"), "{prek}");
+    let index = recipes
+        .template("base", "sections/standards-index.md")
+        .expect("the template is embedded");
+    assert!(index.starts_with("## Engineering Standards\n"), "{index}");
+}
+
+#[test]
+fn base_python_has_the_steps_of_base_and_no_step_of_its_own_yet() {
+    let recipes = embedded();
+
+    let python = recipes.recipe("base-python").expect("base-python");
+    assert!(python.skills.is_empty() && python.files.is_empty() && python.sections.is_empty());
+    let resolved = recipes.resolve("base-python").expect("resolves");
+    assert!(resolved.skills.iter().all(|skill| skill.from == "base"));
+    assert_eq!(resolved.files.len(), 1);
+    assert_eq!(resolved.sections.len(), 1);
+    assert!(resolved.warnings.is_empty());
+}

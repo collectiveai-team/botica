@@ -43,3 +43,38 @@ fn a_folder_that_does_not_exist_holds_no_recipe() {
 
     assert!(files.is_empty());
 }
+
+#[test]
+fn reads_the_templates_under_files_and_sections_at_any_depth() {
+    let dir = folder("templates");
+    write(
+        &dir,
+        "base.toml",
+        "[[files]]\npath = \"ci.yml\"\ntemplate = \"files/github/ci.yml\"\n\n\
+         [[sections]]\npath = \"AGENTS.md\"\nmarker = \"## M\"\ntemplate = \"sections/m.md\"\n",
+    );
+    write(&dir, "files/github/ci.yml", "on: push\n");
+    write(&dir, "files/prek.toml", "hooks\n");
+    write(&dir, "sections/m.md", "## M\n");
+    write(&dir, "other/x.md", "not a template");
+    write(&dir, "files-extra/x.md", "not a template");
+
+    let files = read_recipes(&dir).expect("reads");
+
+    let paths: Vec<&str> = files.iter().map(|file| file.path.as_str()).collect();
+    assert_eq!(
+        paths,
+        [
+            "base.toml",
+            "files/github/ci.yml",
+            "files/prek.toml",
+            "sections/m.md"
+        ]
+    );
+    let recipes = Recipes::from_files(&files).expect("loads");
+    assert_eq!(
+        recipes.template("base", "files/github/ci.yml"),
+        Some("on: push\n")
+    );
+    assert_eq!(recipes.template("base", "sections/m.md"), Some("## M\n"));
+}

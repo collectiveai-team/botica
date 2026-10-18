@@ -15,8 +15,19 @@ pub fn project(name: &str, config: Option<&str>) -> PathBuf {
     project_in("recipes", name, config)
 }
 
+/// Writes `recipes/<id>.toml`, and a file for each template that it names.
 pub fn add_recipe(dir: &Path, id: &str, toml: &str) {
     write(dir, &format!("recipes/{id}.toml"), toml);
+    for line in toml.lines() {
+        let named = line
+            .strip_prefix("template = \"")
+            .map(|rest| rest.trim_end_matches('"'));
+        if let Some(path) =
+            named.filter(|path| path.starts_with("files/") || path.starts_with("sections/"))
+        {
+            write(dir, &format!("recipes/{path}"), "template\n");
+        }
+    }
 }
 
 pub fn recipe(dir: &Path, args: &[&str]) -> Output {

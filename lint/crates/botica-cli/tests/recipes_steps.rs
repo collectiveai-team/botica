@@ -101,7 +101,7 @@ fn show_leaves_out_the_steps_a_recipe_does_not_have() {
     add_recipe(
         &dir,
         "only-files",
-        "[[files]]\npath = \"a\"\ntemplate = \"t\"\n",
+        "[[files]]\npath = \"a\"\ntemplate = \"files/t\"\n",
     );
 
     let plain = ok(&recipe(&dir, &["show", "plain"]));
@@ -148,7 +148,7 @@ fn a_step_with_a_problem_stops_the_recipes_from_loading() {
     add_recipe(
         &dir,
         "broken",
-        "[[files]]\npath = \"/etc/x\"\ntemplate = \"t\"\n",
+        "[[files]]\npath = \"/etc/x\"\ntemplate = \"files/t\"\n",
     );
 
     let text = failed(&recipe(&dir, &["list"]), 2);
@@ -168,12 +168,12 @@ fn list_counts_a_recipe_that_has_only_one_kind_of_step() {
     add_recipe(
         &dir,
         "only-file",
-        "[[files]]\npath = \"a\"\ntemplate = \"t\"\n",
+        "[[files]]\npath = \"a\"\ntemplate = \"files/t\"\n",
     );
     add_recipe(
         &dir,
         "only-section",
-        "[[sections]]\npath = \"a\"\nmarker = \"m\"\ntemplate = \"t\"\n",
+        "[[sections]]\npath = \"a\"\nmarker = \"m\"\ntemplate = \"sections/t\"\n",
     );
 
     let text = ok(&recipe(&dir, &["list"]));
@@ -186,4 +186,22 @@ fn list_counts_a_recipe_that_has_only_one_kind_of_step() {
         let block = format!("{id}\n  rules: 0, judgment: 0, exports: 0\n  {counts}\n");
         assert!(text.contains(&block), "{id}: {text}");
     }
+}
+
+#[test]
+fn a_step_whose_template_is_not_in_the_recipes_folder_stops_the_recipes_from_loading() {
+    let dir = project("steps-no-template", None);
+    common::write(
+        &dir,
+        "recipes/lost.toml",
+        "[[files]]\npath = \"a\"\ntemplate = \"files/lost.toml\"\n",
+    );
+
+    let text = failed(&recipe(&dir, &["list"]), 2);
+
+    assert!(text.contains("lost.toml"), "{text}");
+    assert!(
+        text.contains("names the template `files/lost.toml`, which does not exist"),
+        "{text}"
+    );
 }

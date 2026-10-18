@@ -27,6 +27,17 @@ fn push(table: &mut String, rules_dir: &Path, path: &Path) {
     .expect("writing to a String cannot fail");
 }
 
+/// Every file under `dir`, at any depth, in the order of their paths.
+fn push_tree(table: &mut String, root: &Path, dir: &Path) {
+    for entry in sorted_entries(dir) {
+        if entry.is_dir() {
+            push_tree(table, root, &entry);
+        } else if entry.is_file() {
+            push(table, root, &entry);
+        }
+    }
+}
+
 fn main() {
     let manifest =
         PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("cargo sets CARGO_MANIFEST_DIR"));
@@ -92,6 +103,10 @@ fn main() {
         if file.is_file() && file.extension().is_some_and(|e| e == "toml") {
             push(&mut table, &recipes_dir, &file);
         }
+    }
+    // The templates of the steps of the recipes.
+    for folder in ["files", "sections"] {
+        push_tree(&mut table, &recipes_dir, &recipes_dir.join(folder));
     }
     table.push_str("];\n");
 

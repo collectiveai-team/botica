@@ -102,6 +102,11 @@ scaffolder writes the configuration of a repository from its own components, apa
    is taken over by the recipe that comes later, which keeps the place of the skill, and the
    resolution reports a warning for each such skill. Recipes that extend one another in a circle
    are an error.
+   A template is a file of the recipes folder and part of the recipe package. It has no id, no page
+   on the site and no command of its own. A `[[files]]` template is under `files/` and a
+   `[[sections]]` template under `sections/`, and a recipe loads only when the template of each of
+   its steps exists. Recipes of the same folder share templates. A standard that cites a template
+   as canonical code cites it with a reference (ADR 0007).
 4. **Recipes are built into the binary and read from `recipes/`.** `lint/recipes/` is compiled into
    the binary with its templates: `base` has the three rules that look at any file, and
    `base-python` extends it with the rules about Python code that `scaffolding` selects today. They
@@ -131,16 +136,24 @@ scaffolder writes the configuration of a repository from its own components, apa
    `install` and `check` replace the commands of `scaffolding`. Each component of `scaffolding`
    becomes a step of a recipe, and the `unignore` op of ADR 0001 becomes a step of its own.
 
+   A variant of a repository is a recipe chosen by name: `agent-opencode`, `agent-claude-code` and
+   `agent-codex` for the agent, one recipe for a public repository and another for a private one.
+   `install` takes one or more names (`botica recipe install base base-python agent-claude-code`),
+   and a step does not carry a condition.
+
 ## Not built yet
 
 - `botica recipe install`.
-- The templates: `lint/recipes/files/` and `lint/recipes/sections/`, their embedding in the binary
-  and the check that the `template` of a step names one. `base` and `base-python` have no steps yet.
+- The steps of `base-python`. `base` has the skills of `scaffolding`, its `prek.toml` and its
+  standards index; a test in `tests/test_recipe_base.py` keeps them equal to the ones of
+  `scaffolding` until it is removed.
 - `botica recipe check` for the steps. `list` and `show` print them; `check` reads rules and
   exports only.
-- The steps `[[gitignore]]` (lines to add to `.gitignore`) and `[[tools]]` (how a tool is added,
-  such as `uv add --dev ruff`, and the fragment of configuration it carries). `base-python` will
-  add ruff, pyrefly and pytest with `[[tools]]`.
+- The steps `[[gitignore]]` (lines to add to `.gitignore`), `[[links]]` (a symbolic link, such as
+  `CLAUDE.md` to `AGENTS.md`) and `[[tools]]` (how a tool is added, such as `uv add --dev ruff`, and
+  the fragment of configuration it carries). `base-python` will add ruff, pyrefly and pytest with
+  `[[tools]]`.
+- The recipes of the agents and of the visibility of the repository.
 - The components of `scaffolding` as steps: `gitignore`, `agent-config`, `prek`, `pyproject`, `ci`,
   `agents`, `standards`, `skills` and `varlock`.
 - In `botica recipe check`, the hooks of prek and the fragments of the external rules. `BT004`
@@ -153,12 +166,15 @@ scaffolder writes the configuration of a repository from its own components, apa
   with the id `complexipy`.
 - What happens when two steps name the same path, or when the path exists without the marker.
   `base` adds `prek.toml`, and the hooks of Python would go in the same file, which `install` does
-  not edit. The direction under discussion: `install` tries to merge the template into the file,
+  not edit. `scaffolding` appends the section of the `agents` and `standards` components to an
+  existing `AGENTS.md` when its marker is absent, and does nothing when it is there; whether a
+  `[[sections]]` step does the same is open. The direction under discussion for the rest: `install` tries to merge the template into the file,
   and when the merge conflicts it leaves the file as it is and reports the conflict for a person or
   an agent to resolve. That changes the rule that `install` never edits an existing file (CES-30,
   ADR 0001), and a merge needs a common ancestor that `install` does not have for a file that the
   repository wrote first. Until it is decided, a file that exists is listed as pending.
-- How a step depends on a fact of the repository, such as its visibility for the workflows of CI.
+- Whether the skills of `collectiveai-team/botica` are pinned to the tag of the version of the
+  binary. Without a tag they follow the default branch.
 - The exit code of `install` when a file is pending.
 - When `scaffolding` is removed.
 - The bounded edit that `scaffolding` performs today (the `unignore` op of ADR 0001) and how
@@ -182,6 +198,10 @@ scaffolder writes the configuration of a repository from its own components, apa
   lists to keep, and the rules are one more step of the package.
 - **`generic` and `python` stay beside `base` and `base-python`.** Rejected: the first names were
   those of the first cut, and two names for one recipe would stay in the documents.
+- **Templates as objects of the catalog, with an id, a page and a command.** Rejected: only a step
+  uses a template, and nothing else cites or versions it apart from the recipe.
+- **A condition on a step (`when`) for the agent or the visibility of the repository.** Rejected:
+  a recipe for each variant, chosen by name, needs no language of conditions.
 - **A recipe names only components of the binary.** Rejected: a project could not add a step of its
   own. The steps are declared in the `.toml` of the recipe, and a recipe of the project defines
   its own.

@@ -1,2 +1,50 @@
-description = "The rules that look at any file of a repository"
+description = "Any repository: the rules about any file, the skills, the prek hooks and the standards index"
 rules = ["file-size-guard", "no-notebooks", "no-artifacts-in-package"]
+
+[[skills]]
+source = "mattpocock/skills#v1.2.3"
+names = [
+  "grill-with-docs",
+  "triage",
+  "improve-codebase-architecture",
+  "setup-matt-pocock-skills",
+  "to-spec",
+  "to-tickets",
+  "implement",
+  "wayfinder",
+  "prototype",
+  "diagnosing-bugs",
+  "research",
+  "tdd",
+  "domain-modeling",
+  "codebase-design",
+  "code-review",
+  "resolving-merge-conflicts",
+  "wizard",
+  "grill-me",
+  "teach",
+  "writing-for-agents",
+  "grilling",
+  "wait-what",
+]
+
+[[skills]]
+source = "collectiveai-team/botica"
+names = [
+  "ask-user",
+  "journalist",
+  "handoff",
+  "test-smell-review",
+  "engineering-rules",
+  "engineering-pr-review",
+  "engineering-refactor",
+]
+
+[[files]]
+path = "prek.toml"
+template = "files/prek-base.toml"
+
+[[sections]]
+path = "AGENTS.md"
+marker = "## Engineering Standards"
+template = "sections/standards-index.md"
