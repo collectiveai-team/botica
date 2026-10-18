@@ -61,7 +61,6 @@ fn list_adds_the_recipes_of_the_project_in_the_order_of_their_ids() {
             "ci-docker",
             "ci-go",
             "ci-node",
-            "ci-opencode",
             "ci-publish",
             "ci-python",
             "mine",

@@ -281,8 +281,8 @@ with `ENOTDIR`.
 The recipes of CI have the workflows of `scaffolding` as `[[files]]` steps under `.github/`:
 `ci` has `conventional-commits.yml`, `commit-policy.yml`, `zizmor.yml` and the config
 `.github/zizmor.yml`; `ci-python` extends it with `tests.yml`, `dependabot.yml` and
-`osv-scanner.yml`; `ci-dependency-review`, `ci-docker`, `ci-publish` (`release.yml` and `pypi.yml`)
-and `ci-opencode` have one piece each. `repo-public` extends `ci`, `ci-dependency-review` and
+`osv-scanner.yml`; `ci-dependency-review` and `ci-docker` have one piece each, and `ci-publish` has
+`release.yml` and `pypi.yml`. `repo-public` extends `ci`, `ci-dependency-review` and
 `ci-docker`, and `repo-private` extends `ci`: the dependency review needs a paid plan on a private
 repository and `docker.yml` pushes to GHCR, which bills a private repository. A recipe has no
 condition, so `ci-docker` and `repo-public` add `docker.yml` also to a repository that has no
@@ -300,9 +300,7 @@ on `workflow_run` once the workflows that it lists (`Tests`, `osv-scanner`, `ziz
 `Conventional Commits` and `commit-policy`) pass, and counts a skipped job as passing. Both run on
 `pull_request_target` or `workflow_run` and check out nothing from the pull request; the `zizmor`
 finding `dangerous-triggers` is ignored in the line of the trigger. The sources are the workflows
-of `coro` and `collectiveai-web`. `ci-opencode` starts only for the comment of an `OWNER`, a `MEMBER`
-or a `COLLABORATOR`: with `use_github_token: true` the action skips the token exchange where it
-checks the permission of the commenter, and the job has write scopes and secrets.
+of `coro` and `collectiveai-web`.
 `ci-node` extends `ci` for a Node project that uses pnpm: `dependabot.yml` (the actions in one pull
 request, and npm with the patch and minor updates grouped as development and production and each
 major alone) and `osv-scanner.yml` with `--lockfile=pnpm-lock.yaml`. The templates of a recipe for

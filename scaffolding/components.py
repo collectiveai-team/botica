@@ -300,17 +300,12 @@ def _ci_publish_ops(ctx: Context) -> list[Op]:
     return [_ci_workflow_op(ctx, f"workflows/{wf}") for wf in ("release.yml", "pypi.yml")]
 
 
-def _ci_opencode_ops(ctx: Context) -> list[Op]:
-    return [_ci_workflow_op(ctx, "workflows/opencode.yml")]
-
-
 # Each entry ships only when its key is in the selected `ci_parts`.
 _CI_PART_PLANNERS: dict[str, Callable[[Context], list[Op]]] = {
     "security": _ci_security_ops,
     "tests": _ci_tests_ops,
     "docker": _ci_docker_ops,
     "publish": _ci_publish_ops,
-    "opencode": _ci_opencode_ops,
 }
 
 
@@ -320,7 +315,7 @@ def plan_ci(ctx: Context) -> list[Op]:
         Decision(
             2,
             "ci_parts",
-            "Which CI parts? (tests,security,docker,publish,opencode)",
+            "Which CI parts? (tests,security,docker,publish)",
             ",".join(DEFAULT_CI_PARTS),
         )
     )

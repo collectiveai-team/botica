@@ -11,7 +11,7 @@ fn the_binary_carries_its_recipes_with_a_description_and_the_origin_built_in() {
     let recipes = embedded();
 
     let ids: Vec<&str> = recipes.recipes().iter().map(|r| r.id.as_str()).collect();
-    assert_eq!(ids.len(), 17);
+    assert_eq!(ids.len(), 16);
     for recipe in recipes.recipes() {
         assert_eq!(recipe.origin, Origin::BuiltIn);
         assert!(
@@ -181,7 +181,6 @@ fn the_binary_carries_a_recipe_for_each_agent_and_each_piece_of_ci() {
             "ci-docker",
             "ci-go",
             "ci-node",
-            "ci-opencode",
             "ci-publish",
             "ci-python",
             "repo-private",
@@ -289,10 +288,6 @@ fn the_recipes_of_ci_have_the_workflows_of_scaffolding_one_piece_each() {
             ".github/workflows/release.yml",
             ".github/workflows/pypi.yml"
         ]
-    );
-    assert_eq!(
-        paths(&recipes, "ci-opencode"),
-        [".github/workflows/opencode.yml"]
     );
 }
 
