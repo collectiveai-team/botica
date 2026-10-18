@@ -17,6 +17,13 @@ name: opencode
 # Required repo/org secrets (Settings > Secrets and variables > Actions):
 #   NVIDIA_API_KEY  and/or  ZHIPU_API_KEY
 # The OpenCode GitHub app must also be installed: github.com/apps/opencode-agent
+#
+# Who can start it: the job runs only for a comment whose author_association is
+# OWNER, MEMBER or COLLABORATOR. The action checks the permission of the
+# commenter in the token exchange of the OpenCode App, and `use_github_token:
+# true` skips that exchange; an issue_comment run has the secrets and the write
+# scopes below whoever comments. The association is not the permission: a
+# member of the organization with read access passes.
 env:
   # Per-provider model ids (provider/model). Both kept here so switching the
   # active provider is just repointing `with: model:` below.
@@ -24,7 +31,7 @@ env:
   ZAI_MODEL: zai/glm-5.1
 
 on:
-  issue_comment:
+  issue_comment: # zizmor: ignore[dangerous-triggers]
     types: [created]
   pull_request_review_comment:
     types: [created]
@@ -36,12 +43,13 @@ concurrency:
 jobs:
   opencode:
     if: |
-      contains(github.event.comment.body, '/oc') ||
-      contains(github.event.comment.body, '/opencode')
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+      (contains(github.event.comment.body, '/oc') ||
+       contains(github.event.comment.body, '/opencode'))
     runs-on: ubuntu-latest
     # Use the runner's built-in GITHUB_TOKEN (use_github_token below) instead of
     # the OpenCode App installation token, so these scopes authorize the bot to
-    # comment / commit / open PRs. The commenter still needs repo write access.
+    # comment / commit / open PRs. The `if` above limits who can start the job.
     permissions:
       id-token: write
       contents: write

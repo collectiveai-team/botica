@@ -298,7 +298,9 @@ on `workflow_run` once the workflows that it lists (`Tests`, `osv-scanner`, `ziz
 `Conventional Commits` and `commit-policy`) pass. Both run on `pull_request_target` or
 `workflow_run` and never check out the code of the pull request; the `zizmor` finding
 `dangerous-triggers` is ignored in the line of the trigger. The sources are the workflows of
-`coro` and `collectiveai-web`.
+`coro` and `collectiveai-web`. `ci-opencode` starts only for the comment of an `OWNER`, a `MEMBER`
+or a `COLLABORATOR`: with `use_github_token: true` the action skips the token exchange where it
+checks the permission of the commenter, and the job has write scopes and secrets.
 `ci-node` extends `ci` for a Node project that uses pnpm: `dependabot.yml` (the actions in one pull
 request, and npm with the patch and minor updates grouped as development and production and each
 major alone) and `osv-scanner.yml` with `--lockfile=pnpm-lock.yaml`. The templates of a recipe for
