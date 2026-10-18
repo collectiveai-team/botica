@@ -55,8 +55,7 @@ detail of this bundle.
 ## Relationship to the CES catalog
 
 In a repo scaffolded by `collectiveai-team/botica`, the house standards that botica does not
-measure also ship as always-on context: an index in `AGENTS.md` plus detail files under
-`.agents/rules/<slug>.md`, each carrying a `CES-<issue#>` code (see
-`docs/engineering-standards.md`). Where both are present, `.agents/rules/` is authoritative for
-the standards it carries. This bundle exists to carry the rules into repos that have no
-`.agents/rules/` at all.
+measure also ship as always-on context: an index in `AGENTS.md`, each entry with a `CES-<number>`
+code. The text of each standard is `standards/<set>/<number>-<slug>.md` in the botica repository
+and on its site (see `docs/engineering-standards.md`). This bundle carries the rules into repos
+that have no such index.
