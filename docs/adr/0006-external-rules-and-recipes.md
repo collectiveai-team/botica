@@ -52,44 +52,91 @@ scaffolder writes the configuration of a repository from its own components, apa
    table holds the keys it names, an array holds one item for each item of the fragment, and any
    other value is equal. `--scope` leaves the rules with no scope (judgment and external ones) as
    the selection made them.
-3. **A recipe is a file of the catalog,** `recipes/<name>.toml`. It lists rules of every kind and
-   the exports to run, and it composes with `extends`:
+3. **A recipe is a package of steps,** `recipes/<name>.toml`. It prepares a repository: it lists the
+   rules and the exports of botica, and it declares the skills to install and the files and
+   sections to add. A recipe composes with `extends`:
 
    ```toml
-   # recipes/python.toml
+   # recipes/base.toml
+   description = "Any repository"
+   rules = ["file-size-guard", "no-notebooks", "no-artifacts-in-package"]
+   exports = ["agents-md"]
+
+   [[skills]]                  # npx skills add <source> --skill <name>...
+   source = "mattpocock/skills#v1.2.3"
+   names = ["tdd", "grilling"]
+
+   [[skills]]
+   source = "collectiveai-team/botica"
+   names = ["engineering-rules", "handoff"]
+
+   [[files]]                   # adds the file from a template when it does not exist
+   path = "prek.toml"
+   template = "files/prek-base.toml"
+
+   [[sections]]                # adds a section that starts with the marker to a file
+   path = "AGENTS.md"
+   marker = "## Engineering Standards"
+   template = "sections/standards-index.md"
+   ```
+
+   ```toml
+   # recipes/base-python.toml
    description = "A Python project"
-   extends = ["generic"]
-   rules = ["file-size-guard", "log-no-print", "cognitive-complexity", "dep-hygiene"]
+   extends = ["base"]
+   rules = ["log-no-print", "cognitive-complexity", "dep-hygiene"]
    judgment = ["test-through-interface", "arch-vocabulary"]
    exports = ["agents-md", "abide"]
    ```
 
    Every key is optional and the file may be empty. `description` is one line for
-   `botica recipe list`. `extends` names recipes whose lists come first, `rules` lists the rules
+   `botica recipe list`. `extends` names recipes whose steps come first. `rules` lists the rules
    that are not judgment rules, `judgment` lists the judgment rules, each by slug, code or alias,
-   and `exports` names `agents-md` or `abide`. A list names an entry once. A recipe that extends
+   and `exports` names `agents-md` or `abide`; the rules are a step like the others. `[[skills]]`
+   has `source` (a repository, with a `#tag` to pin it) and `names`. `[[files]]` has `path` and
+   `template`. `[[sections]]` has `path`, `marker` and `template`. A `template` is a file under the
+   folder of the recipe (`files/`, `sections/`). A list names an entry once. A recipe that extends
    others contributes after them, each recipe contributes once, and an entry that two recipes list
-   stays where it first is. Recipes that extend one another in a circle are an error.
+   stays where it first is. Each step keeps the recipe it comes from. Recipes that extend one
+   another in a circle are an error.
 4. **Recipes are built into the binary and read from `recipes/`.** `lint/recipes/` is compiled into
-   the binary: `generic` lists the three rules that look at any file, and `python` extends it with
-   twelve rules about Python code, the ones that `scaffolding` selects today. A project adds its
-   own recipes in `recipes/` at its root, and a recipe of the project may extend a built-in one. A
+   the binary with its templates: `base` has the three rules that look at any file, and
+   `base-python` extends it with the rules about Python code that `scaffolding` selects today. They
+   were `generic` and `python` in the first cut. A project adds its own recipes in `recipes/` at its
+   root, with its own steps and templates, and a recipe of the project may extend a built-in one. A
    recipe of the project with the id of a built-in one is an error unless the configuration names
    the id in `[recipes] replace`, as for the topics of ADR 0007.
 5. **`botica recipe list`, `show` and `check` read, and `botica recipe install <name>` writes what a
-   repository lacks.** `check` goes through what the recipe lists, in order: each rule must be in
-   the catalog and active in the project (a judgment rule under `judgment`, any other rule under
-   `rules`), and each export must be current, as `botica rules export --check` decides. It prints
-   one line for each and exits with 1 when one differs. Install is not built. It writes the
-   configuration of botica, the hooks of prek, the fragments of the external rules and the files
-   of the exports. It adds a file that does not exist and never edits, merges or overwrites one
-   that does; what it cannot add, it lists for a person or an agent to merge (CES-30). Install and
-   check replace the commands of `scaffolding`, whose components and templates become recipes and
-   fragments of the catalog.
+   repository lacks.** `show` prints the steps of the recipe. `check` goes through them, in order,
+   and prints one line for each; it exits with 1 when one differs:
+   - a rule is in the catalog and active in the project (a judgment rule under `judgment`, any
+     other rule under `rules`);
+   - an export is current, as `botica rules export --check` decides;
+   - a file exists;
+   - a section's marker is in its file;
+   - a skill is in `skills-lock.json` and in `.agents/skills/`.
+
+   `install` adds what is missing and never edits, merges or overwrites a file that exists (CES-30):
+   - A `[[files]]` step writes the file from its template when the path does not exist.
+   - A `[[sections]]` step writes the file with the section when the path does not exist, and does
+     nothing when the file has the marker.
+   - A file that exists without the marker is listed as pending, for a person or an agent to merge.
+   - A `[[skills]]` step runs `npx skills add <source> --skill <name>...` for the names that are not
+     in `.agents/skills/`, and fails when a name is still absent afterwards. `skills-lock.json` is
+     written by the CLI of skills and by nothing else (CES-107).
+
+   `install` and `check` replace the commands of `scaffolding`. Each component of `scaffolding`
+   becomes a step of a recipe, and the `unignore` op of ADR 0001 becomes a step of its own.
 
 ## Not built yet
 
-- `botica recipe install`.
+- The steps `[[skills]]`, `[[files]]` and `[[sections]]`, `botica recipe install`, and the rename of
+  `generic` and `python`. `list`, `show` and `check` read rules and exports only.
+- The steps `[[gitignore]]` (lines to add to `.gitignore`) and `[[tools]]` (how a tool is added,
+  such as `uv add --dev ruff`, and the fragment of configuration it carries). `base-python` will
+  add ruff, pyrefly and pytest with `[[tools]]`.
+- The components of `scaffolding` as steps: `gitignore`, `agent-config`, `prek`, `pyproject`, `ci`,
+  `agents`, `standards`, `skills` and `varlock`.
 - In `botica recipe check`, the hooks of prek and the fragments of the external rules. `BT004`
   checks the fragments when `botica lint` runs.
 
@@ -98,11 +145,18 @@ scaffolder writes the configuration of a repository from its own components, apa
 - Whether a fragment holds the whole configuration that `botica recipe install` writes or the
   least that `external-config` checks. The fragment of `cognitive-complexity` is a hook of prek
   with the id `complexipy`.
-- The order in which the components of `scaffolding` move to recipes, and when the package is
-  removed.
-- The bounded edits that `scaffolding` performs today (the `unignore` op of ADR 0001) and how
-  `recipe install` keeps them.
-- Where the drop-in code of a standard lives (`.agents/snippets/` today).
+- What happens when two steps name the same path, or when the path exists without the marker.
+  `base` adds `prek.toml`, and the hooks of Python would go in the same file, which `install` does
+  not edit. The direction under discussion: `install` tries to merge the template into the file,
+  and when the merge conflicts it leaves the file as it is and reports the conflict for a person or
+  an agent to resolve. That changes the rule that `install` never edits an existing file (CES-30,
+  ADR 0001), and a merge needs a common ancestor that `install` does not have for a file that the
+  repository wrote first. Until it is decided, a file that exists is listed as pending.
+- How a step depends on a fact of the repository, such as its visibility for the workflows of CI.
+- The exit code of `install` when a file is pending.
+- When `scaffolding` is removed.
+- The bounded edit that `scaffolding` performs today (the `unignore` op of ADR 0001) and how
+  `[[gitignore]]` keeps it.
 
 ## Considered options
 
@@ -118,6 +172,13 @@ scaffolder writes the configuration of a repository from its own components, apa
   check goes with install.
 - **Recipes only built into the binary.** A project that wants a list of its own would have to
   patch the catalog of botica.
+- **Two concepts, a recipe of rules and a package of steps.** Rejected: a repository would have two
+  lists to keep, and the rules are one more step of the package.
+- **`generic` and `python` stay beside `base` and `base-python`.** Rejected: the first names were
+  those of the first cut, and two names for one recipe would stay in the documents.
+- **A recipe names only components of the binary.** Rejected: a project could not add a step of its
+  own. The steps are declared in the `.toml` of the recipe, and a recipe of the project defines
+  its own.
 
 ## Consequences
 
@@ -128,5 +189,7 @@ scaffolder writes the configuration of a repository from its own components, apa
 - The site shows the tool and its documentation on the page of an external rule.
 - `scaffolding install` and `scaffolding check` are replaced by `botica recipe install` and
   `botica recipe check`.
-- The catalog carries `lint/recipes/`, loads `recipes/` of the project, and the configuration has
-  the table `[recipes]` with `replace`.
+- The catalog carries `lint/recipes/` and its templates, loads `recipes/` of the project, and the
+  configuration has the table `[recipes]` with `replace`.
+- A recipe installs skills (`npx skills add`), so `botica recipe install` needs `npx` on the
+  `PATH` for a recipe with a `[[skills]]` step.
