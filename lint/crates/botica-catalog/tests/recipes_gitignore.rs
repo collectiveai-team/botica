@@ -1,5 +1,5 @@
 //! The `gitignore` step of a recipe: lines to add to `.gitignore` and lines to stop ignoring
-//! (ADR 0006, ADR 0001).
+//! (ADR 0006).
 
 mod common;
 

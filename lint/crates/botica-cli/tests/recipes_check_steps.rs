@@ -92,7 +92,7 @@ fn a_section_whose_marker_is_not_in_its_file_differs() {
 }
 
 #[test]
-fn a_marker_is_found_anywhere_in_the_file_as_the_scaffolder_finds_it() {
+fn a_marker_is_found_anywhere_in_the_file() {
     let dir = project("steps-section-inside", None);
     add_recipe(&dir, "mine", SECTION);
     write(&dir, "AGENTS.md", "### Standards for this repo\n");

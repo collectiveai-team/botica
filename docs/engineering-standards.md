@@ -5,7 +5,7 @@ Single source of truth for how house engineering rules are coded, cited, and shi
 
 ## What a CES is
 
-A **CES — Collective Engineering Standard** is one house rule that the scaffolder ships into
+A **CES — Collective Engineering Standard** is one house rule that the recipes of botica ship into
 target repos (as a botica rule, a prek hook, a `pyproject` setting, or an AGENTS.md
 directive + detail file). Each standard is the file `standards/CES/<number>-<slug>.md`, which holds
 its text (ADR 0004).

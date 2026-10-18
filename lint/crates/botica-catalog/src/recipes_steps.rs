@@ -60,7 +60,7 @@ pub struct ToolStep {
     pub packages: Vec<String>,
 }
 
-/// The one line that `unignore` can name: the manifest of skills (ADR 0001, CES-107).
+/// The one line that `unignore` can name: the manifest of skills (ADR 0006, CES-107).
 pub const UNIGNORE_WHITELIST: [&str; 1] = ["skills-lock.json"];
 
 /// `[[gitignore]]`: lines that `botica recipe install` adds to `.gitignore` when they are missing

@@ -1,52 +1,46 @@
-# Scaffolding
+# Botica
 
-The bootstrap CLI that installs house standards, agent config, and agent skills into a target
-repo. It is deterministic and clean-adds-only: it decides what a repo needs, then adds what is
-missing without editing what is already there.
+The house engineering standards, the `botica` linter that measures them, and the recipes that
+install them, the agent config and the agent skills into a repository.
 
 ## Language
 
-### Install engine
+### Recipes
 
-**Component**:
-A selectable unit of scaffolding (`gitignore`, `skills`, `standards`, …) that inspects a repo and
-returns ops without performing them.
-_Avoid_: module, plugin, step
+**Recipe**:
+A named package of steps, with no condition, that `botica recipe install` applies and
+`botica recipe check` compares with a repository. Built-in recipes live in `lint/recipes/`; a
+project adds its own in `recipes/`. A variant (an agent, a public or a private repository) is a
+recipe chosen by name. See `docs/adr/0006-external-rules-and-recipes.md`.
+_Avoid_: profile, component, preset
 
-**Op**:
-One planned operation the engine will execute. Planning and execution are strictly separated —
-a component never touches the filesystem.
-_Avoid_: action, task, command
+**Step**:
+One entry of a recipe: `[[files]]`, `[[sections]]`, `[[links]]`, `[[tools]]`, `[[gitignore]]`,
+`[[skills]]`, or the rules it selects. A recipe names no command: `[[tools]]` runs `uv add`,
+`[[skills]]` runs `npx skills add`, and the other steps write files.
+_Avoid_: op, action, task
 
-**Clean-add**:
-Writing something that is absent. The engine's default and, aside from the unignore op, its only
-mutation. An existing target is deferred, never overwritten.
-_Avoid_: create, upsert
+**Template**:
+A file under the folder of the recipes (`files/`, `sections/`) that a `[[files]]` or
+`[[sections]]` step writes. It has no id and no page of its own.
+_Avoid_: snippet, asset
 
-**Defer**:
-Leaving an existing target untouched and handing the merge to the agentic guide.
-_Avoid_: skip, conflict
+**Pending**:
+The outcome of a step whose target exists and differs: `install` leaves it as it is and reports
+it, and exits with 1.
+_Avoid_: conflict, skip, defer
 
-**Unignore op**:
-The engine's single destructive capability: removing one literal, whitelisted line from
-`.gitignore`. Bounded by a literal whitelist rather than a pattern language, so "clean-adds plus
-a known set of line removals" stays checkable. See `docs/adr/0001-scoped-unignore-op.md`.
-
-**Decision**:
-A choice the engine refuses to make silently, surfaced to the user with a default. Unanswered
-decisions take their default.
-_Avoid_: option, setting, flag
-
-**Post-condition**:
-An assertion attached to a run op declaring what must be true **on disk** afterwards. Asserted
-against the derived tree, never against a file the tool being verified just wrote. Its absence is
-why an upstream rename removed a skill from every fresh install without anyone noticing.
+**Unignore**:
+The one step that deletes text from a file the repository has: it removes a literal line of
+`UNIGNORE_WHITELIST` (`skills-lock.json`) from `.gitignore`, and `install` reports it as
+`edited`. The whitelist is a literal list, so every deletion that `install` can make is readable
+in the catalog.
 
 ### Skills
 
 **Skills manifest**:
 `skills-lock.json` — the tracked declaration of which skills a repo uses and where they come
-from. **Owned by the third-party `skills` CLI**: scaffolding reads it and never writes it. It
+from. **Owned by the third-party `skills` CLI**: botica reads it and never writes it. It
 records a `ref` only when the source was pinned, and its `computedHash` is never verified on
 restore, so it reproduces which skills from where at what ref — not bytes.
 _Avoid_: lockfile, skills lock, skill list
@@ -57,9 +51,8 @@ the source of truth.
 _Avoid_: installed skills, skills directory
 
 **House baseline**:
-The skill set the scaffolder **seeds a repo with** when it has no manifest. A starting point, not
-a set the repo is held to: once a manifest exists it is authoritative, and the baseline is not
-reapplied.
+The skill set that the `[[skills]]` steps of the recipe `base` install. A starting point, not a
+set the repo is held to: the manifest records what the repo uses.
 _Avoid_: default skills, curated catalog, required skills
 
 **Authored skill**:
@@ -80,8 +73,8 @@ _Avoid_: rule, convention, lint rule
 
 **Botica**:
 The Rust package published on PyPI as `botica` (wheels with the binary and the Python module `botica.sdk`), built from `lint/`. `lint` is
-its first subcommand and scaffolding will migrate into it, so no pipeline of its own is specific to
-`lint`. See `docs/adr/0003-botica-lint-architecture.md`.
+its first subcommand, and `botica recipe` replaced the removed `scaffolding` package, so no
+pipeline of its own is specific to `lint`. See `docs/adr/0003-botica-lint-architecture.md`.
 _Avoid_: botica lint (for the package)
 
 **Rule**:

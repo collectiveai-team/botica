@@ -3,7 +3,7 @@ name: skills-drift
 # Guard the curated upstream skill catalog: the pinned [[skills]] step of lint/recipes/base.toml.
 #
 # `npx skills add` skips unknown skill names without failing, so an upstream
-# rename lands as a silently missing skill in every scaffolded repo — which is
+# rename lands as a silently missing skill in every repo that installs the recipe base — which is
 # exactly how writing-great-skills -> writing-for-agents went unnoticed.
 #
 # On push/PR: assert the pinned tag still publishes every curated skill.

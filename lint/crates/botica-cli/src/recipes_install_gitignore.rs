@@ -1,5 +1,5 @@
 //! What `botica recipe install` does for the `gitignore` step: it adds the lines that `.gitignore`
-//! lacks and removes the lines of the whitelist (ADR 0001), and edits nothing else.
+//! lacks and removes the lines of the whitelist (ADR 0006), and edits nothing else.
 
 use std::fs::{self, OpenOptions};
 use std::io::Write as _;

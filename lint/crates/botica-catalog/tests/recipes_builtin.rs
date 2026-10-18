@@ -271,7 +271,7 @@ fn paths(recipes: &Recipes, id: &str) -> Vec<String> {
 }
 
 #[test]
-fn the_recipes_of_ci_have_the_workflows_of_scaffolding_one_piece_each() {
+fn the_recipes_of_ci_have_the_workflows_one_piece_each() {
     let recipes = embedded();
 
     assert_eq!(

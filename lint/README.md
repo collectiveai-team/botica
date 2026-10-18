@@ -261,15 +261,15 @@ group has the same form.
 
 A `[[gitignore]]` step has `lines` and `unignore`, and needs one of them. A line is one line of text
 that is not empty, and a recipe lists it once, across its steps. `unignore` names lines to remove
-from `.gitignore`, and the only line it accepts is `skills-lock.json` (ADR 0001); `lines` does not
+from `.gitignore`, and the only line it accepts is `skills-lock.json` (ADR 0006); `lines` does not
 accept it (CES-107).
 
 The recipes `base`, `base-python`, `agent-opencode`, `agent-claude-code`, `agent-codex` and the
 ones of CI (`ci`, `ci-python`, `ci-automerge-public`, `ci-automerge-private`,
 `ci-dependency-review`, `ci-docker`, `ci-publish`, `ci-node`, `ci-go`, `repo-public` and
 `repo-private`) and `secrets-varlock` are in `lint/recipes/` and are compiled into the binary. `base` also adds the section `## Repo Workspace
-Defaults` to `AGENTS.md`, before the standards index; a new `AGENTS.md` has no `# Agent Notes`
-heading, which `scaffolding` writes. An agent is a recipe chosen by name, beside the others
+Defaults` to `AGENTS.md`, before the standards index; a new `AGENTS.md` starts with that section.
+An agent is a recipe chosen by name, beside the others
 (`botica recipe install base base-python agent-claude-code`). `agent-opencode` writes
 `opencode.jsonc` and installs the skills for `opencode`; `agent-codex` has no step and installs
 them for `codex`; `agent-claude-code` writes `.claude/settings.json` and links `CLAUDE.md` to
@@ -285,7 +285,7 @@ asks to review the draft with the user. `varlock init` keeps an `.env.schema` th
 drafts nothing, so the recipe has no template of it. `base` ignores `.env` and keeps
 `.env.schema` in git.
 
-The recipes of CI have the workflows of `scaffolding` as `[[files]]` steps under `.github/`:
+The recipes of CI have the workflows as `[[files]]` steps under `.github/`:
 `ci` has `conventional-commits.yml`, `commit-policy.yml`, `zizmor.yml` and the config
 `.github/zizmor.yml`; `ci-python` extends it with `tests.yml`, `dependabot.yml` and
 `osv-scanner.yml`; `ci-dependency-review` and `ci-docker` have one piece each, and `ci-publish` has
@@ -622,7 +622,8 @@ y = 1  # noqa: BTSTRUC002 -- reason
 
 A finding about a whole file (size, name, layout) has no line: use `ignore-file`, the rule's
 `ignores`/`extend-ignores`, or `extend-exclude`. With ruff, put `lint.external = ["BT"]` in its
-configuration so it does not report `RUF102` for `BT` codes (the scaffolding template does).
+configuration so it does not report `RUF102` for `BT` codes (the section `# MARK: Ruff` of
+`base-python` has it).
 
 While a repository migrates from ast-grep, `compat-ast-grep-ignore = true` makes botica honour
 `# ast-grep-ignore: <rule>` too, on the line of a finding and on the line before it. It is off by
@@ -638,12 +639,12 @@ rev = "v0.11.0"
 
 [[repos.hooks]]
 id = "botica"
-args = ["--select", "<the rules of prek-generic.toml>"]
+args = ["--select", "<the rules of prek-base.toml>"]
 ```
 
 The mirror's hook is `verbose`: prek hides the output of a passing hook, and a size warning does
 not fail it ([`distribution/botica-pre-commit`](distribution/botica-pre-commit/README.md)). The
-scaffolder ships this hook, with the rules it selects, in `scaffolding/templates/prek-generic.toml`.
+recipe `base` installs this hook, with the rules it selects, from `lint/recipes/files/prek-base.toml`.
 
 ## Result cache
 

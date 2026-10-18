@@ -2,9 +2,9 @@
 requires = ["maturin>=1.7,<2"]
 build-backend = "maturin"
 
-# Binary-only wheels of `botica lint`, built from the Rust workspace in this directory. This is
-# not the `scaffolding` package (its pyproject.toml is at the root of the repo, and that package
-# keeps its name). The version comes from `[workspace.package]` in Cargo.toml.
+# Binary-only wheels of `botica lint`, built from the Rust workspace in this directory. The
+# pyproject.toml at the root of the repo holds the maintainer scripts. The version comes from
+# `[workspace.package]` in Cargo.toml.
 [project]
 name = "botica"
 description = "Deterministic linter for the house engineering standards"

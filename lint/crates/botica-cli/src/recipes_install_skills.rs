@@ -12,7 +12,7 @@ use crate::recipes_install_json::skipped;
 use crate::recipes_install_run::run;
 use crate::recipes_install_steps::Outcome;
 
-/// The agent that `skills add` installs for when no recipe names one, as `scaffolding` does.
+/// The agent that `skills add` installs for when no recipe names one.
 const DEFAULT_AGENT: &str = "opencode";
 
 /// The names to ask each source for, with the sources in the order they first appear.

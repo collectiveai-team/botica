@@ -178,6 +178,7 @@ glibc and musl, macOS x64 and arm64, Windows x64) and repackaged as PyPI wheels
 publishing. Botica starts at 0.7.0 because `v0.1.0` to `v0.6.0` are releases of `scaffolding`. A
 mirror repo, `botica-pre-commit`, gives prek a pinnable hook whose tag pins the matching wheel.
 The `scaffolding` Python package keeps its name until it is migrated, which is out of scope here.
+It was removed on 2026-10-18, when the recipes of ADR 0006 replaced it.
 
 ## Considered options
 

@@ -54,7 +54,7 @@ detail of this bundle.
 
 ## Relationship to the CES catalog
 
-In a repo scaffolded by `collectiveai-team/botica`, the house standards that botica does not
+In a repo set up with the recipes of `collectiveai-team/botica`, the house standards that botica does not
 measure also ship as always-on context: an index in `AGENTS.md`, each entry with a `CES-<number>`
 code. The text of each standard is `standards/<set>/<number>-<slug>.md` in the botica repository
 and on its site (see `docs/engineering-standards.md`). This bundle carries the rules into repos

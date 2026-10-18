@@ -112,7 +112,14 @@ scaffolder writes the configuration of a repository from its own components, apa
    of the link, relative to the folder of the link. `[[tools]]` has `manager` (`uv`), `packages` and
    optionally `group` (`dev` when absent). `[[gitignore]]` has `lines` and `unignore`, and needs one
    of them. A line is one line of text, and a recipe lists it once across its steps.
-   `unignore` accepts only `skills-lock.json`, and `lines` does not accept it (ADR 0001, CES-107).
+   `unignore` accepts only `skills-lock.json`, and `lines` does not accept it (CES-107).
+   `unignore` is the one step that deletes text from a file that the repository has: CES-107
+   tracks `skills-lock.json`, and a repository that already ignores it would keep the manifest
+   out of git. The whitelist is a literal list in the catalog (`UNIGNORE_WHITELIST`), and a new
+   entry is a one-line change; a pattern or a caller-supplied string is rejected. `install` removes
+   a line equal to the entry between blanks and leaves the other bytes as they are (CRLF, a last
+   line without a newline), and reports it as `edited`, apart from `added`. A pattern such as
+   `*.json` that ignores the manifest is outside what `install` reads, and stays.
    A list names an entry once, and a recipe names a skill, a file path, or a marker of a path once.
    A recipe that extends others contributes after
    them, each recipe contributes once, and an entry that two recipes list stays where it first is.
@@ -127,12 +134,12 @@ scaffolder writes the configuration of a repository from its own components, apa
    as canonical code cites it with a reference (ADR 0007).
 4. **Recipes are built into the binary and read from `recipes/`.** `lint/recipes/` is compiled into
    the binary with its templates: `base` has the three rules that look at any file, the skills,
-   `.gitignore`, `prek.toml` and the standards index of `scaffolding`, and `base-python` extends it
-   with the rules about Python code that `scaffolding` selects today, a `pyproject.toml` template,
+   `.gitignore`, `prek.toml` and the standards index that `scaffolding` installed, and `base-python`
+   extends it with the rules about Python code that `scaffolding` selected, a `pyproject.toml` template,
    the Python hooks of prek (sections of `prek.toml`, one for each repository of hooks), the
    configuration of ruff, pyrefly and pytest (sections of `pyproject.toml`) and the dev packages (a
-   `[[tools]]` step). Tests in `tests/test_recipe_base.py` keep both equal to what `scaffolding`
-   writes until it is removed. A second step on a file that a template wrote is a `[[sections]]`
+   `[[tools]]` step). Tests in `tests/test_recipe_base.py` kept both equal to what `scaffolding`
+   wrote until it was removed on 2026-10-18. A second step on a file that a template wrote is a `[[sections]]`
    step with a marker, not another `[[files]]` step. They were `generic` and `python` in the first
    cut. A project adds its own recipes in `recipes/` at its
    root, with its own steps and templates, and a recipe of the project may extend a built-in one. A
@@ -160,7 +167,7 @@ scaffolder writes the configuration of a repository from its own components, apa
 
    The lines come in the order rules, judgment rules, fragments, exports, files, sections, links,
    `gitignore`, `unignore`, tools, skills. A path is from the root of the project, wherever the command
-   runs. A marker is searched for as text anywhere in the file, as the scaffolder does. A skill is
+   runs. A marker is searched for as text anywhere in the file, as the scaffolder did. A skill is
    in the lock when its name is a key of `skills`, and in `.agents/skills/` when
    `.agents/skills/<name>/SKILL.md` is a file. `.gitignore` has a line when one of its lines equals it once the white space at its end
    is dropped, and has an `unignore` line when one of its lines equals it between white space.
@@ -215,7 +222,7 @@ scaffolder writes the configuration of a repository from its own components, apa
      2 for an error that stops it.
 
    `install` and `check` replace the commands of `scaffolding`. Each component of `scaffolding`
-   becomes a step of a recipe. The `unignore` op of ADR 0001 is the `unignore` list of
+   becomes a step of a recipe. The `unignore` op of `scaffolding` is the `unignore` list of
    `[[gitignore]]`, bounded by the same whitelist, and `install` reports it as `edited`.
 
    A variant of a repository is a recipe chosen by name: `agent-opencode`, `agent-claude-code` and
@@ -244,7 +251,6 @@ scaffolder writes the configuration of a repository from its own components, apa
 - Whether a fragment holds the whole configuration that `botica recipe install` writes or the
   least that `external-config` checks. The fragment of `cognitive-complexity` is a hook of prek
   with the id `complexipy`.
-- When `scaffolding` is removed.
 
 ## Considered options
 
@@ -282,8 +288,8 @@ scaffolder writes the configuration of a repository from its own components, apa
 - The standards marked `[prek]`, `[ci]` or `[dependency]` in `AGENTS.md` become external rules, one
   pull request per standard.
 - The site shows the tool and its documentation on the page of an external rule.
-- `scaffolding install` and `scaffolding check` are replaced by `botica recipe install` and
-  `botica recipe check`.
+- `botica recipe install` and `botica recipe check` replaced `scaffolding install` and
+  `scaffolding check`, and `scaffolding` was removed on 2026-10-18.
 - The catalog carries `lint/recipes/` and its templates, loads `recipes/` of the project, and the
   configuration has the table `[recipes]` with `replace`.
 - A recipe installs skills (`npx skills add`), so `botica recipe install` needs `npx` on the

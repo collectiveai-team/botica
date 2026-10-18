@@ -2,32 +2,22 @@
 
 ## Repo Layout
 
-- `scaffolding/` — the bootstrap CLI (Python package, run via
-  `uvx --from git+…/scaffolding scaffolding …`). `cli.py` (Cyclopts commands),
-  `engine.py`/`plan.py` (build + apply, clean-adds only), `components.py`
-  (component registry), `templates/` (bundled package data). The CLI is the
-  single deterministic engine; keep it **clean-adds-only** — it must never edit,
-  merge, or overwrite existing target files (existing targets are deferred).
-  The one bounded exception is the `unignore` op, which may delete a literal line
-  listed in `UNIGNORE_WHITELIST` (`scaffolding/skills.py`) from `.gitignore`. It is
-  reported under `edits`, not `clean_adds`. Do not widen it, and do not remove it
-  as an invariant violation — see `docs/adr/0001-scoped-unignore-op.md`.
 - `lint/` — the `botica` Rust workspace (`botica lint`, more subcommands later), published to
   PyPI as `botica` (wheels with the binary and the Python module `botica.sdk`) and used by prek through the `botica-pre-commit` mirror.
   It has its own README (`lint/README.md`), release runbook (`docs/botica-release.md`) and design
   (`docs/adr/0003-botica-lint-architecture.md`). Ruff, pyrefly and deptry skip it; `ci.yml` runs
   its fmt, clippy and tests. No pipeline in `.github/workflows/` is specific to `lint`.
+- `lint/recipes/` — the recipes of `botica recipe install` and `botica recipe check`, with their
+  templates (ADR 0006). `install` writes a file that is missing and leaves an existing one as it
+  is (`pending`). The one step that deletes text is `unignore`, which removes a literal line of
+  `UNIGNORE_WHITELIST` (`skills-lock.json`) from `.gitignore` and reports it as `edited`. Keep the
+  whitelist literal and do not remove the step as a violation (ADR 0006).
 - `website/` — the standards site, built with Zensical (`zensical.toml`; the version is pinned in
   `requirements.txt`). `website/docs/rules/` is exported from the catalog by `scripts/build_site.sh`
   (`botica rules export`) and is gitignored; only `website/docs/index.md` is written by hand.
   `.github/workflows/site.yml` builds it on a pull request and publishes it from `main`.
 - `standards/` — the text of each standard, `standards/<set>/<number>-<slug>.md`, written by hand
   and apart from the rules; `scripts/build_site.sh` copies it into the site (ADR 0004).
-- `install.sh` — thin bootstrap shim (ensure `uv`, then `uvx … scaffolding
-  install`). Keep it minimal and keep its raw URL pointing at
-  `collectiveai-team/botica` on `main`.
-- `guide.md` — the agentic-install guide (judgment layer that drives the CLI and
-  handles merges). Keep template raw URLs pointing at `collectiveai-team/botica`.
 - `skills/` — actual installed skills (`ask-user`, `journalist`, `handoff`,
   `test-smell-review`, `engineering-rules`, `engineering-pr-review`,
   `engineering-refactor`). Each
@@ -35,20 +25,17 @@
   Codex reads only the latter, so `disable-model-invocation: true` must be paired
   with `policy.allow_implicit_invocation: false` (and omitted for model-invoked
   skills, which Codex otherwise filters out entirely).
-- `scripts/` — maintainer-only checks, not shipped. `check_skill_drift.py` guards
+- `scripts/` — maintainer-only checks, not shipped; the root `pyproject.toml` holds their
+  dependencies and has no package. `check_skill_drift.py` guards
   the curated upstream catalog; the `skills-drift` workflow runs it. `check_skills.sh`
   runs the skill validator over `skills/`; the `skill-validator` hook of prek runs it.
   `check_rule_change.py` flags a change that adds a botica rule and touches more than that rule
   needs; the `rule-contract` job of `ci.yml` runs it. `build_site.sh` builds the standards site.
 
-Agent targets are multi-valued (`--agent`, repeatable: `opencode`/`claude-code`/
-`codex`). The `agent-config` component writes per-agent config — `opencode.jsonc`
-(opencode), `.claude/settings.json` + `CLAUDE.md`→`AGENTS.md` + `.claude/skills`→
-`.agents/skills` symlinks (claude-code), and a codex secret-protection notice.
-`AGENTS.md` is the shared brain; skills install once into `.agents/skills`.
-
-After changing the CLI, validate with `uv run ruff check scaffolding` and
-`uv run scaffolding --help`.
+An agent is a recipe chosen by name: `agent-opencode` writes `opencode.jsonc`,
+`agent-claude-code` writes `.claude/settings.json` and links `CLAUDE.md`→`AGENTS.md` and
+`.claude/skills`→`../.agents/skills`, and `agent-codex` has no file. `AGENTS.md` is the shared
+brain; skills install once into `.agents/skills`.
 
 ## Skill Development
 
@@ -76,16 +63,14 @@ that warning; it is a decision about the ruleset.
 
 `tessl review` is not used: it asks for an interactive login.
 
-The upstream skill catalog (`MATTPOCOCK_SKILLS` in `scaffolding/skills.py`) is
-the single source of truth — `README.md` and `guide.md` only copy it, and
-`tests/test_skill_catalog.py` fails when a copy drifts. Bump `MATTPOCOCK_REF`
-there to take a new upstream release; never edit the install command in the docs
-by hand.
+The upstream skill catalog is the `[[skills]]` step of `lint/recipes/base.toml` whose source
+pins `mattpocock/skills#vX.Y.Z`. Bump the tag there to take a new upstream release, after
+`uv run python scripts/check_skill_drift.py --check-upstream` reports no missing skill.
 
 
 ## Engineering Standards coding (CES)
 
-House standards shipped by the scaffolder are catalogued as **CES — Collective
+House standards shipped by botica are catalogued as **CES — Collective
 Engineering Standard**. Canonical spec: **`docs/engineering-standards.md`** (single
 source of truth). The rules below are the always-on summary; when adding, editing,
 or referencing a rule in this repo, follow this convention:
@@ -119,8 +104,8 @@ or referencing a rule in this repo, follow this convention:
 > topic, run `uvx botica refs show <rule or CES-number>` before you write the code. Full convention +
 > SSOT: `docs/engineering-standards.md`.
 
-This is the **dogfooded subset** for this repo — a Python Cyclopts CLI (no API, DB, or web
-layer) next to the `lint/` Rust workspace, which these Python-oriented standards do not cover.
+This is the **dogfooded subset** for this repo — Python maintainer scripts with Cyclopts (no
+API, DB, or web layer) next to the `lint/` Rust workspace, which these Python-oriented standards do not cover.
 `[prek]` rules are enforced by `prek`; `[judgment]` rules are agent/reviewer judgment;
 `[reference]` points at canonical code that `botica refs show` prints.
 
@@ -139,36 +124,36 @@ describes one, and the hook reports each finding with its slug and its message.
   `@standards/CES/75-agents-conventional-commits.md`
 - **CES-77 · version pin** `[judgment]` — `requires-python` stays a deliberate local choice;
   house default is 3.14. → `@standards/CES/77-py-version-pin.md`
-- **CES-5 · layered import direction** `[judgment]` — imports flow one way through the layers
-  (`cli → engine → components/plan → templates_registry`), never upward. →
+- **CES-5 · layered import direction** `[judgment]` — imports flow one way through the layers,
+  never upward. →
   `@standards/CES/5-import-linter.md`
 - **CES-16 · architectural vocabulary** `[judgment]` — name units with house terms, not ad-hoc
   synonyms. → `@standards/CES/16-arch-vocabulary.md`
 - **CES-8 · separate orchestration from logic** `[judgment]` — keep control flow thin; push logic
   and I/O into named units. → `@standards/CES/8-spaghetti-mixed-orchestration.md`
 - **CES-30 · respect the local repo** `[judgment]` — existing deliberate choices win over house
-  defaults (the engine is clean-adds-only for this reason). →
+  defaults (`botica recipe install` leaves an existing file as it is for this reason). →
   `@standards/CES/30-general-respect-local-repo.md`
 - **CES-58 · one modern lint stack** `[judgment]` — ruff + pyrefly + botica via prek; no
   black/isort/flake8/pylint. → `@standards/CES/58-py-legacy-lint-stack.md`
 - **CES-64 · test against in-memory adapters** `[judgment]` — fakes over mocks. →
   `@standards/CES/64-test-in-memory-adapters.md`
 - **CES-65 · test through the interface** `[judgment]` — assert behaviour via the public seam
-  (the `plan()`/`build_plan()` API), not internals. → `@standards/CES/65-test-through-interface.md`
+  (the command line of botica, the functions of a script), not internals. → `@standards/CES/65-test-through-interface.md`
 - **CES-66 · coverage gaps are a signal** `[judgment]` — an untested branch is a missing test or
   dead code, not a number to game. → `@standards/CES/66-test-coverage-gap.md`
 - **CES-91 · no AI co-authorship in commits** `[prek]` `[ci]` — no `Co-authored-by:`/`Generated
   with`/etc AI-attribution trailers; commit-msg hook + `commit-policy.yml` CI. →
   `@standards/CES/91-no-ai-coauthorship.md`
 - **CES-109 · dependency hygiene** `[prek]` — declared deps must match the import graph
-  (`deptry`); `scaffolding/templates`/`skills` excluded (bundled payload). →
+  (`deptry`); `lint`/`skills` excluded (the Rust workspace, vendored payload). →
   `@standards/CES/109-dep-hygiene-deptry.md`
 - **CES-111 · randomize test order** `[dependency]` — `pytest-randomly` runs every suite in a
   random, reproducibly-seeded order. → `@standards/CES/111-test-order-randomization-pytest-randomly.md`
 - **CES-113 · dependency review on PRs** `[ci]` — `dependency-review-action`, summary-only, not a
   merge gate. → `@standards/CES/113-dependency-review-action.md`
-- **CES-118 · no copy-paste duplication** `[prek]` — `jscpd`; `guide.md` exempted (deliberately
-  mirrors `README.md`). → `@standards/CES/118-code-duplication-jscpd.md`
+- **CES-118 · no copy-paste duplication** `[prek]` — `jscpd`; the templates of the recipes and
+  `standards/` exempted (see `prek.toml`). → `@standards/CES/118-code-duplication-jscpd.md`
 - **CES-119 · dependency vulnerability scanning** `[ci]` — `osv-scanner` on `uv.lock`; replaces
   the old `pip-audit.yml`. → `@standards/CES/119-osv-scanner-replace-pip-audit.md`
 

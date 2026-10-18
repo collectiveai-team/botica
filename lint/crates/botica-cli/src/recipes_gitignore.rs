@@ -30,7 +30,7 @@ impl Gitignore {
     }
 }
 
-/// Whether the text has `line` as a line, ignoring white space at its end as the scaffolder does.
+/// Whether the text has `line` as a line, ignoring white space at its end.
 pub fn has_line(text: &str, line: &str) -> bool {
     text.lines().any(|candidate| candidate.trim_end() == line)
 }

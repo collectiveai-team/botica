@@ -26,8 +26,8 @@ quote-style = "double"
 
 [tool.ruff.lint]
 # Excerpt of the house selection (correctness + security + modernization + docstrings).
-# The full canonical list is the scaffolder's pyproject template — copy it from there rather
-# than retyping this one; it also carries the D2xx/D4xx docstring rules and PLE/PLW/TC/PGH.
+# The full canonical list is the `# MARK: Ruff` section of the recipe `base-python` — copy it
+# from there rather than retyping this one; it also carries the D2xx/D4xx docstring rules and PLE/PLW/TC/PGH.
 select = ["E", "F", "I", "C4", "C90", "B", "S", "G", "SIM", "RET", "PTH", "LOG", "TID", "UP", "RUF", "PERF"]
 task-tags = ["TODO", "FIXME", "XXX", "MARK"]
 
@@ -84,7 +84,7 @@ pass_filenames = false
 priority = 2
 
 # MARK: botica
-# The selection of rules is the one of the scaffolder's `prek-generic.toml`: copy it from there.
+# The selection of rules is the one of the `prek.toml` of the recipe `base`: copy it from there.
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
 rev = "v0.11.0"

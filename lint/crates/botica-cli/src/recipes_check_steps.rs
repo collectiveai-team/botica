@@ -22,7 +22,7 @@ pub fn file(root: &Path, path: &str) -> Option<String> {
 }
 
 /// Why the file of a section does not have its marker. The marker is searched for anywhere in the
-/// text, as the scaffolder does.
+/// text.
 pub fn section(root: &Path, path: &str, marker: &str) -> Option<String> {
     if let Some(problem) = file(root, path) {
         return Some(problem);
