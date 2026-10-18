@@ -32,6 +32,16 @@ pub struct SectionStep {
     pub template: String,
 }
 
+/// `[[links]]`: a symbolic link that `botica recipe install` adds when its path does not exist.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LinkStep {
+    /// From the root of the project.
+    pub path: String,
+    /// What the link points to, as the text of the link: relative to the folder of the link.
+    pub target: String,
+}
+
 /// The one line that `unignore` can name: the manifest of skills (ADR 0001, CES-107).
 pub const UNIGNORE_WHITELIST: [&str; 1] = ["skills-lock.json"];
 
@@ -52,12 +62,37 @@ pub(crate) fn step_problems(
     skills: &[SkillStep],
     files: &[FileStep],
     sections: &[SectionStep],
+    links: &[LinkStep],
     gitignore: &[GitignoreStep],
 ) -> Vec<String> {
     let mut problems = skill_problems(skills);
     problems.extend(file_problems(files));
     problems.extend(section_problems(sections));
+    problems.extend(link_problems(links));
     problems.extend(gitignore_problems(gitignore));
+    problems
+}
+
+fn link_problems(links: &[LinkStep]) -> Vec<String> {
+    let mut problems = Vec::new();
+    let mut seen = BTreeSet::new();
+    for step in links {
+        let path = step.path.as_str();
+        problems.extend(path_problem("links", path));
+        let target = step.target.as_str();
+        let relative = !target.trim().is_empty()
+            && !target.contains('\\')
+            && target.split('/').all(|part| !part.is_empty());
+        if !relative {
+            problems.push(format!(
+                "the `links` step for `{path}` has a target that is not a relative path: \
+                 it is empty, starts with `/`, or has an empty part or a `\\`"
+            ));
+        }
+        if !seen.insert(path) {
+            problems.push(format!("`links` lists `{path}` twice"));
+        }
+    }
     problems
 }
 

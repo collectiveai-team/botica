@@ -223,6 +223,10 @@ path = "AGENTS.md"
 marker = "## Engineering Standards"
 template = "sections/standards-index.md"
 
+[[links]]                   # a symbolic link to add
+path = "CLAUDE.md"
+target = "AGENTS.md"
+
 [[gitignore]]               # lines to add to .gitignore, and lines of the whitelist to remove
 lines = [".env", ".tmp/"]
 unignore = ["skills-lock.json"]
@@ -239,7 +243,11 @@ file path once and a marker of a path once. The steps of the recipes it extends 
 that two recipes list the same stays where it first is, and a skill that two recipes take from
 different sources is taken over by the later recipe, with a warning on stderr. `list` and `show`
 print the steps, `check` compares them with the project, and `install` adds the files, the sections,
-the lines of `.gitignore` and the skills.
+the links, the lines of `.gitignore` and the skills.
+
+A `[[links]]` step has the `path` of the link and its `target`, which is the text of the link:
+relative to the folder of the link, so `../.agents/skills` for `.claude/skills`. A target is not
+empty, does not start with `/` and has no empty part or `\`. A recipe names a link path once.
 
 A `[[gitignore]]` step has `lines` and `unignore`, and needs one of them. A line is one line of text
 that is not empty, and a recipe lists it once, across its steps. `unignore` names lines to remove
@@ -258,15 +266,15 @@ replace = ["base-python"]
 
 `botica recipe list` prints each recipe with what it extends and how many rules, judgment rules and
 exports its file lists, and where it comes from; a recipe with steps has a line with the number of
-steps of each kind that it has: skills, files, sections and gitignore (the lines and the unignored
-lines). `botica recipe show <name>` prints the recipe with the lists of what it extends first, each
+steps of each kind that it has: skills, files, sections, links and gitignore (the lines and the
+unignored lines). `botica recipe show <name>` prints the recipe with the lists of what it extends first, each
 rule with its code, its summary and the recipe that lists it, and then the sections Skills, Files,
-Sections, Gitignore and Unignore for the steps it has.
+Sections, Links, Gitignore and Unignore for the steps it has.
 
 `botica recipe check <name>` takes the options of `botica lint` that select rules (`--select`,
-`--ignore`, `--config`). It prints one line for each rule, export, file, section, line of
-`.gitignore`, unignored line and skill of the recipe, in that order, rules first, then judgment
-rules, exports, files, sections, `gitignore`, `unignore` and skills:
+`--ignore`, `--config`). It prints one line for each rule, export, file, section, link, line
+of `.gitignore`, unignored line and skill of the recipe, in that order, rules first, then judgment
+rules, exports, files, sections, links, `gitignore`, `unignore` and skills:
 
 ```text
 rule file-size-guard: ok
@@ -274,10 +282,11 @@ rule no-notebooks: differs: not selected
 export agents-md: differs: cannot read `AGENTS.md`
 file prek.toml: differs: does not exist
 section AGENTS.md `## Engineering Standards`: differs: marker not in the file
+link CLAUDE.md: differs: does not exist
 gitignore .tmp/: differs: not in .gitignore
 unignore skills-lock.json: differs: .gitignore still has the line
 skill tdd: differs: not in `skills-lock.json` and not in `.agents/skills/`
-base: 8 checked, 7 differ
+base: 9 checked, 8 differ
 ```
 
 A rule differs when it is not in the catalog, is not active (the reason is the one that `botica
@@ -285,7 +294,8 @@ rules --all` gives), is a judgment rule listed under `rules` or is not one liste
 `judgment`. An export differs when `botica rules export --check` fails for it with its default file:
 `AGENTS.md` for `agents-md` and `.abide/rubric.json` for `abide`. A file differs when its path is
 not a file of the project. A section differs when its path is not a file, cannot be read, or its
-text does not contain the marker. A line of `gitignore` differs when `.gitignore` does not exist, is
+text does not contain the marker. A link differs when its path does not exist, is not a symbolic
+link, or is a link whose text is not the target. A line of `gitignore` differs when `.gitignore` does not exist, is
 not a file, cannot be read, or has no line equal to it once the white space at its end is dropped. An
 `unignore` line differs when `.gitignore` is not a file, cannot be read, or has a line equal to it
 between white space; without a `.gitignore` it is `ok`. A skill differs when its name is not a key of `skills`
@@ -293,18 +303,20 @@ in `skills-lock.json` or `.agents/skills/<name>/SKILL.md` is not a file. The pat
 sections are from the root of the project, wherever the command runs. The command exits with 1 when
 something differs and with 2 when the recipe does not exist or the recipes do not load.
 
-`botica recipe install <name>...` adds the files, then the sections, then the lines of `.gitignore`,
-then the skills of one or more recipes, from the root of the project, and prints one line for each:
+`botica recipe install <name>...` adds the files, then the sections, then the links, then the lines
+of `.gitignore`, then the skills of one or more recipes, from the root of the project, and prints
+one line for each:
 
 ```text
 file prek.toml: added
 file other.toml: pending: exists and differs from the template `files/other.toml` of `base`
 section AGENTS.md `## Engineering Standards`: added: appended to the file
+link CLAUDE.md: added
 gitignore .tmp/: added
 unignore skills-lock.json: edited: removed the line from .gitignore
 skill tdd: added
 skill grilling: ok
-base: 4 added, 1 ok, 1 pending, 1 edited
+base: 5 added, 1 ok, 1 pending, 1 edited
 ```
 
 A file is written from its template when its path does not exist (`added`). A path that exists is
@@ -313,6 +325,11 @@ section is written to a new file, appended after a blank line to a file that has
 and left alone when the file has the marker (`ok`); a path that is not a file or cannot be read is
 `pending`. Running the command again changes nothing. A step that two of the named recipes share is
 done once, and a name that is not a recipe fails the command with 2 before anything is written.
+
+A link is created, with the folders of its path, when its path does not exist (`added`), also when
+its target does not exist. A path that holds a link with the text of the target is `ok`, and a path
+that holds anything else is `pending`; `install` does not replace it. A folder that cannot hold the
+link stops the command with 2.
 
 The lines of `gitignore` are written to a `.gitignore` that does not exist, and the ones that a
 `.gitignore` lacks are appended to it, after a line break when its last line has none (`added`). A

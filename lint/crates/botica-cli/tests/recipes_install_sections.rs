@@ -224,3 +224,22 @@ fn the_built_in_base_adds_the_standards_index_and_check_finds_it() {
         "{check}"
     );
 }
+
+#[test]
+fn a_section_that_two_recipes_that_do_not_extend_each_other_list_is_done_once() {
+    let dir = setup("install-unrelated-section");
+    add_recipe(
+        &dir,
+        "other",
+        "[[sections]]\npath = \"AGENTS.md\"\nmarker = \"## Standards\"\n\
+         template = \"sections/standards.md\"\n",
+    );
+
+    let text = ok(&recipe(&dir, &["install", "mine", "other"]));
+
+    assert_eq!(
+        text,
+        "section AGENTS.md `## Standards`: added: created the file\n\
+         mine, other: 1 added, 0 ok, 0 pending\n"
+    );
+}

@@ -3,8 +3,8 @@ use std::collections::BTreeSet;
 use crate::issue::{issue, CatalogIssue};
 use crate::recipes::{recipe_path, Recipe, Recipes};
 use crate::recipes_steps_resolve::{
-    resolve_files, resolve_gitignore, resolve_sections, resolve_skills, ResolvedFile,
-    ResolvedSection, ResolvedSkill,
+    resolve_files, resolve_gitignore, resolve_links, resolve_sections, resolve_skills,
+    ResolvedFile, ResolvedLink, ResolvedSection, ResolvedSkill,
 };
 
 /// An entry of a resolved recipe and the recipe whose file lists it.
@@ -26,6 +26,7 @@ pub struct ResolvedRecipe {
     pub skills: Vec<ResolvedSkill>,
     pub files: Vec<ResolvedFile>,
     pub sections: Vec<ResolvedSection>,
+    pub links: Vec<ResolvedLink>,
     /// The lines to add to `.gitignore`.
     pub gitignore: Vec<RecipeItem>,
     /// The lines to remove from `.gitignore`.
@@ -71,6 +72,7 @@ impl Recipes {
             warnings,
             files: resolve_files(&recipes),
             sections: resolve_sections(&recipes),
+            links: resolve_links(&recipes),
             gitignore: resolve_gitignore(&recipes, |step| &step.lines),
             unignore: resolve_gitignore(&recipes, |step| &step.unignore),
             chain,

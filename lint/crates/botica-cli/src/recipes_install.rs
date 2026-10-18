@@ -3,7 +3,9 @@
 use std::process::ExitCode;
 
 use anyhow::{anyhow, Result};
-use botica_catalog::{RecipeItem, Recipes, ResolvedFile, ResolvedSection, ResolvedSkill};
+use botica_catalog::{
+    RecipeItem, Recipes, ResolvedFile, ResolvedLink, ResolvedSection, ResolvedSkill,
+};
 
 use crate::recipes_collection::Collection;
 use crate::recipes_install_gitignore as gitignore;
@@ -56,6 +58,7 @@ impl Tally {
 struct Steps {
     files: Vec<ResolvedFile>,
     sections: Vec<ResolvedSection>,
+    links: Vec<ResolvedLink>,
     gitignore: Vec<RecipeItem>,
     unignore: Vec<RecipeItem>,
     skills: Vec<ResolvedSkill>,
@@ -72,21 +75,36 @@ fn extend_once(items: &mut Vec<RecipeItem>, more: Vec<RecipeItem>) {
 }
 
 /// Resolves every name, so that a name that is not a recipe fails before anything is written. A
-/// step that two of them share stays once; a skill that a later name takes from another source is
-/// taken over by it, with a warning, as the resolution of one recipe does.
+/// step that two of them list the same stays once, whatever recipe lists it; a skill that a later
+/// name takes from another source is taken over by it, with a warning, as the resolution of one
+/// recipe does.
 fn gather(recipes: &Recipes, names: &[String]) -> Result<Steps> {
     let mut gathered = Steps::default();
     for name in names {
         let resolved = recipes.resolve(name).map_err(anyhow::Error::msg)?;
         gathered.warnings.extend(resolved.warnings);
         for file in resolved.files {
-            if !gathered.files.contains(&file) {
+            let listed =
+                |known: &ResolvedFile| known.path == file.path && known.template == file.template;
+            if !gathered.files.iter().any(listed) {
                 gathered.files.push(file);
             }
         }
         for section in resolved.sections {
-            if !gathered.sections.contains(&section) {
+            let listed = |known: &ResolvedSection| {
+                known.path == section.path
+                    && known.marker == section.marker
+                    && known.template == section.template
+            };
+            if !gathered.sections.iter().any(listed) {
                 gathered.sections.push(section);
+            }
+        }
+        for link in resolved.links {
+            let listed =
+                |known: &ResolvedLink| known.path == link.path && known.target == link.target;
+            if !gathered.links.iter().any(listed) {
+                gathered.links.push(link);
             }
         }
         extend_once(&mut gathered.gitignore, resolved.gitignore);
@@ -112,7 +130,7 @@ fn gather(recipes: &Recipes, names: &[String]) -> Result<Steps> {
     Ok(gathered)
 }
 
-/// Adds the files, then the sections, then the lines of `.gitignore`, then the skills, of the recipes in `names`, from the root of
+/// Adds the files, then the sections, then the links, then the lines of `.gitignore`, then the skills, of the recipes in `names`, from the root of
 /// the project. The command exits with 1 when a step is pending or a skill is not installed at the
 /// end.
 pub fn run(collection: &Collection, names: &[String]) -> Result<ExitCode> {
@@ -142,6 +160,10 @@ pub fn run(collection: &Collection, names: &[String]) -> Result<ExitCode> {
         let outcome = steps::add_section(root, &item.path, &item.marker, template)?;
         let id = format!("{} `{}`", item.path, item.marker);
         tally.report("section", &id, &outcome);
+    }
+    for item in &gathered.links {
+        let outcome = steps::add_link(root, &item.path, &item.target)?;
+        tally.report("link", &item.path, &outcome);
     }
     let lines: Vec<&str> = gathered
         .gitignore

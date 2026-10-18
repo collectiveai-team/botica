@@ -36,6 +36,8 @@ pub use question::{BooleanCriteria, Choices, Question};
 pub use readme::Section;
 pub use recipes::{Recipe, Recipes, EXPORTS, RECIPES_DIR};
 pub use recipes_resolve::{RecipeItem, ResolvedRecipe};
-pub use recipes_steps::{FileStep, GitignoreStep, SectionStep, SkillStep, UNIGNORE_WHITELIST};
-pub use recipes_steps_resolve::{ResolvedFile, ResolvedSection, ResolvedSkill};
+pub use recipes_steps::{
+    FileStep, GitignoreStep, LinkStep, SectionStep, SkillStep, UNIGNORE_WHITELIST,
+};
+pub use recipes_steps_resolve::{ResolvedFile, ResolvedLink, ResolvedSection, ResolvedSkill};
 pub use references::{Origin, Reference, References, Topic, REFERENCES_DIR, TOPIC_FILE};

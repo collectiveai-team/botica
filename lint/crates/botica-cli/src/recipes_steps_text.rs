@@ -14,6 +14,7 @@ pub fn count_line(recipe: &Recipe) -> Option<String> {
         ("skills", skills),
         ("files", recipe.files.len()),
         ("sections", recipe.sections.len()),
+        ("links", recipe.links.len()),
         ("gitignore", gitignore),
     ];
     let shown: Vec<String> = counts
@@ -56,6 +57,17 @@ pub fn steps_text(resolved: &ResolvedRecipe) -> String {
                 text,
                 "- {}, `{}` (template {}, from {})",
                 section.path, section.marker, section.template, section.from
+            );
+        }
+        text.push('\n');
+    }
+    if !resolved.links.is_empty() {
+        text.push_str("## Links\n\n");
+        for link in &resolved.links {
+            let _ = writeln!(
+                text,
+                "- {} -> {} (from {})",
+                link.path, link.target, link.from
             );
         }
         text.push('\n');

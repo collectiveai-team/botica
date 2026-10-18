@@ -96,3 +96,36 @@ pub fn unignored(root: &Path, line: &str) -> Option<String> {
         }
     }
 }
+
+/// What is at the path of a link.
+pub enum LinkState {
+    /// A link whose text is the target.
+    Right,
+    Missing,
+    /// Something else: a file, a folder, or a link to another target.
+    Other(String),
+}
+
+pub fn link_state(root: &Path, path: &str, target: &str) -> LinkState {
+    let full = root.join(path);
+    match fs::read_link(&full) {
+        Ok(found) if found == Path::new(target) => LinkState::Right,
+        Ok(found) => LinkState::Other(format!(
+            "is a link to `{}`, not to `{target}`",
+            found.display()
+        )),
+        Err(_) if fs::symlink_metadata(&full).is_ok() => {
+            LinkState::Other("is not a link".to_owned())
+        }
+        Err(_) => LinkState::Missing,
+    }
+}
+
+/// Why the link `path` is not there: it does not exist, or it is not a link to `target`.
+pub fn link(root: &Path, path: &str, target: &str) -> Option<String> {
+    match link_state(root, path, target) {
+        LinkState::Right => None,
+        LinkState::Missing => Some("does not exist".to_owned()),
+        LinkState::Other(problem) => Some(problem),
+    }
+}

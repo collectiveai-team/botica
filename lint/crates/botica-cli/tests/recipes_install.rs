@@ -194,6 +194,40 @@ fn several_recipes_are_installed_in_order_and_a_shared_step_once() {
 }
 
 #[test]
+fn a_file_that_two_recipes_that_do_not_extend_each_other_list_is_done_once() {
+    let dir = project("install-unrelated-file", None);
+    add_recipe(&dir, "one", FILE);
+    add_recipe(&dir, "two", FILE);
+    template(&dir, "files/prek.toml", "repos = []\n");
+
+    let text = ok(&recipe(&dir, &["install", "one", "two"]));
+
+    assert_eq!(
+        text,
+        "file prek.toml: added\none, two: 1 added, 0 ok, 0 pending\n"
+    );
+}
+
+#[test]
+fn two_files_that_share_a_template_are_both_added() {
+    let dir = project("install-shared-template", None);
+    add_recipe(
+        &dir,
+        "one",
+        "[[files]]\npath = \"a.toml\"\ntemplate = \"files/t.toml\"\n\n\
+         [[files]]\npath = \"b.toml\"\ntemplate = \"files/t.toml\"\n",
+    );
+    template(&dir, "files/t.toml", "t = 1\n");
+
+    let text = ok(&recipe(&dir, &["install", "one"]));
+
+    assert_eq!(
+        text,
+        "file a.toml: added\nfile b.toml: added\none: 2 added, 0 ok, 0 pending\n"
+    );
+}
+
+#[test]
 fn a_recipe_that_does_not_exist_is_an_error_and_nothing_is_written() {
     let dir = project("install-unknown", None);
     add_recipe(&dir, "mine", FILE);

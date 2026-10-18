@@ -29,8 +29,8 @@ impl Report {
     }
 }
 
-/// One line for each rule, export, file, section, line of `.gitignore` and skill of the recipe, in
-/// that order, then a
+/// One line for each rule, export, file, section, link, line of `.gitignore` and skill of the recipe,
+/// in that order, then a
 /// summary. The command fails when a rule is not active, an export is not current, or a step is
 /// not in the project. The paths of the steps are from the root of the project.
 pub fn run(collection: &Collection, name: &str, project: &ProjectArgs) -> Result<ExitCode> {
@@ -65,6 +65,13 @@ pub fn run(collection: &Collection, name: &str, project: &ProjectArgs) -> Result
             "section",
             &id,
             steps::section(root, &item.path, &item.marker),
+        );
+    }
+    for item in &resolved.links {
+        report.add(
+            "link",
+            &item.path,
+            steps::link(root, &item.path, &item.target),
         );
     }
     for item in &resolved.gitignore {

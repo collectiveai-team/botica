@@ -79,6 +79,10 @@ scaffolder writes the configuration of a repository from its own components, apa
    marker = "## Engineering Standards"
    template = "sections/standards-index.md"
 
+   [[links]]                   # adds a symbolic link when its path does not exist
+   path = "CLAUDE.md"
+   target = "AGENTS.md"
+
    [[gitignore]]               # adds lines to .gitignore, and removes lines of the whitelist
    lines = [".env", ".tmp/"]
    unignore = ["skills-lock.json"]
@@ -99,7 +103,8 @@ scaffolder writes the configuration of a repository from its own components, apa
    and `exports` names `agents-md` or `abide`; the rules are a step like the others. `[[skills]]`
    has `source` (a repository, with a `#tag` to pin it) and `names`. `[[files]]` has `path` and
    `template`. `[[sections]]` has `path`, `marker` and `template`. A `template` is a file under the
-   folder of the recipe (`files/`, `sections/`). `[[gitignore]]` has `lines` and `unignore`, and
+   folder of the recipe (`files/`, `sections/`). `[[links]]` has `path` and `target`, the text
+   of the link, relative to the folder of the link. `[[gitignore]]` has `lines` and `unignore`, and
    needs one of them. A line is one line of text, and a recipe lists it once across its steps.
    `unignore` accepts only `skills-lock.json`, and `lines` does not accept it (ADR 0001, CES-107).
    A list names an entry once, and a recipe names a skill, a file path, or a marker of a path once.
@@ -129,14 +134,15 @@ scaffolder writes the configuration of a repository from its own components, apa
    - an export is current, as `botica rules export --check` decides;
    - a file exists;
    - a section's marker is in its file;
+   - a link's path is a symbolic link whose text is its target;
    - `.gitignore` has each line of `lines` and has no line of `unignore`;
    - a skill is in `skills-lock.json` and in `.agents/skills/`.
 
-   The lines come in the order rules, judgment rules, exports, files, sections, `gitignore`,
-   `unignore`, skills. A path is from the root of the project, wherever the command runs. A marker
-   is searched for as text anywhere in the file, as the scaffolder does. A skill is in the lock when
-   its name is a key of `skills`, and in `.agents/skills/` when `.agents/skills/<name>/SKILL.md` is
-   a file. `.gitignore` has a line when one of its lines equals it once the white space at its end
+   The lines come in the order rules, judgment rules, exports, files, sections, links,
+   `gitignore`, `unignore`, skills. A path is from the root of the project, wherever the command
+   runs. A marker is searched for as text anywhere in the file, as the scaffolder does. A skill is
+   in the lock when its name is a key of `skills`, and in `.agents/skills/` when
+   `.agents/skills/<name>/SKILL.md` is a file. `.gitignore` has a line when one of its lines equals it once the white space at its end
    is dropped, and has an `unignore` line when one of its lines equals it between white space.
 
    `install` adds what is missing and never merges or overwrites a file that exists (CES-30). The
@@ -151,6 +157,9 @@ scaffolder writes the configuration of a repository from its own components, apa
      is `pending`.
    - A step that two of the named recipes share is done once, and a name that is not a recipe fails
      the command before anything is written.
+   - A `[[links]]` step creates the link, with the folders of its path, when the path does not exist
+     (`added`). A path that holds a link with the text of the target is `ok`; anything else is
+     `pending` and `install` does not replace it.
    - A `[[gitignore]]` step writes `.gitignore` with its lines when it does not exist and appends
      the ones that `.gitignore` lacks, after a line break when the last line has none (`added`). A
      line that is there is `ok`; a `.gitignore` that is not a file or cannot be read leaves each
@@ -188,9 +197,8 @@ scaffolder writes the configuration of a repository from its own components, apa
 - The steps of `base-python`. `base` has the skills of `scaffolding`, its `prek.toml` and its
   standards index; a test in `tests/test_recipe_base.py` keeps them equal to the ones of
   `scaffolding` until it is removed.
-- The steps `[[links]]` (a symbolic link, such as `CLAUDE.md` to `AGENTS.md`) and `[[tools]]` (how a tool is added, such as `uv add --dev ruff`, and
-  the fragment of configuration it carries). `base-python` will add ruff, pyrefly and pytest with
-  `[[tools]]`.
+- The step `[[tools]]` (how a tool is added, such as `uv add --dev ruff`, and the fragment of
+  configuration it carries). `base-python` will add ruff, pyrefly and pytest with `[[tools]]`.
 - The recipes of the agents and of the visibility of the repository.
 - The components of `scaffolding` as steps: `agent-config`, `prek`, `pyproject`, `ci`,
   `agents`, `standards`, `skills` and `varlock`.

@@ -5,7 +5,7 @@ use serde::Deserialize;
 use crate::issue::{issue, CatalogError, CatalogIssue};
 use crate::load::SourceFile;
 use crate::recipes_steps::{
-    step_problems, template_problems, FileStep, GitignoreStep, SectionStep, SkillStep,
+    step_problems, template_problems, FileStep, GitignoreStep, LinkStep, SectionStep, SkillStep,
 };
 use crate::references::Origin;
 use crate::validate::is_kebab_case;
@@ -38,6 +38,8 @@ struct RecipeFile {
     #[serde(default)]
     sections: Vec<SectionStep>,
     #[serde(default)]
+    links: Vec<LinkStep>,
+    #[serde(default)]
     gitignore: Vec<GitignoreStep>,
 }
 
@@ -59,6 +61,7 @@ pub struct Recipe {
     pub skills: Vec<SkillStep>,
     pub files: Vec<FileStep>,
     pub sections: Vec<SectionStep>,
+    pub links: Vec<LinkStep>,
     pub gitignore: Vec<GitignoreStep>,
 }
 
@@ -192,6 +195,7 @@ fn load_recipe(
         &parsed.skills,
         &parsed.files,
         &parsed.sections,
+        &parsed.links,
         &parsed.gitignore,
     ));
     issues.extend(problems.into_iter().map(|message| issue(path, message)));
@@ -206,6 +210,7 @@ fn load_recipe(
         skills: parsed.skills,
         files: parsed.files,
         sections: parsed.sections,
+        links: parsed.links,
         gitignore: parsed.gitignore,
     })
 }

@@ -29,6 +29,14 @@ pub struct ResolvedSection {
     pub from: String,
 }
 
+/// A link to add and the recipe whose file lists it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedLink {
+    pub path: String,
+    pub target: String,
+    pub from: String,
+}
+
 /// The skills of the recipes in `chain`, one for each name, with a warning for each skill that a
 /// recipe takes from another source than the recipe before it. A name that two recipes take from
 /// the same source stays where it is first; from different sources the later recipe takes it
@@ -125,4 +133,25 @@ pub(crate) fn resolve_gitignore(
         }
     }
     items
+}
+
+/// The links of the recipes in `chain`; a link that two recipes list the same stays where it is
+/// first.
+pub(crate) fn resolve_links(chain: &[&Recipe]) -> Vec<ResolvedLink> {
+    let mut links: Vec<ResolvedLink> = Vec::new();
+    for recipe in chain {
+        for step in &recipe.links {
+            let listed = links
+                .iter()
+                .any(|l| l.path == step.path && l.target == step.target);
+            if !listed {
+                links.push(ResolvedLink {
+                    path: step.path.clone(),
+                    target: step.target.clone(),
+                    from: recipe.id.clone(),
+                });
+            }
+        }
+    }
+    links
 }

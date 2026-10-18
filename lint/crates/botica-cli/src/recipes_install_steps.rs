@@ -1,4 +1,4 @@
-//! What `botica recipe install` does for a file and for a section: it adds what is missing and
+//! What `botica recipe install` does for a file, a section and a link: it adds what is missing and
 //! never edits a file that exists, except to append a section.
 
 use std::fs::{self, OpenOptions};
@@ -6,6 +6,8 @@ use std::io::Write as _;
 use std::path::Path;
 
 use anyhow::{Context, Result};
+
+use crate::recipes_check_steps::{link_state, LinkState};
 
 /// What happened to a step.
 pub enum Outcome {
@@ -97,4 +99,42 @@ pub fn add_section(root: &Path, path: &str, marker: &str, template: &str) -> Res
     write!(file, "{separator}{template}")
         .with_context(|| format!("cannot write `{}`", full.display()))?;
     Ok(Outcome::Added(Some("appended to the file")))
+}
+
+/// Creates the symbolic link `link` with the text `target`.
+#[cfg(unix)]
+fn symlink(target: &str, link: &Path) -> std::io::Result<()> {
+    std::os::unix::fs::symlink(target, link)
+}
+
+/// Creates the symbolic link `link` with the text `target`, to a folder when the target is one.
+#[cfg(windows)]
+fn symlink(target: &str, link: &Path) -> std::io::Result<()> {
+    let folder = link
+        .parent()
+        .is_some_and(|parent| parent.join(target).is_dir());
+    if folder {
+        std::os::windows::fs::symlink_dir(target, link)
+    } else {
+        std::os::windows::fs::symlink_file(target, link)
+    }
+}
+
+/// Creates the link when its path does not exist. A path that holds a link to the target is `ok`,
+/// and anything else is pending.
+pub fn add_link(root: &Path, path: &str, target: &str) -> Result<Outcome> {
+    match link_state(root, path, target) {
+        LinkState::Right => Ok(Outcome::Present),
+        LinkState::Other(problem) => Ok(Outcome::Pending(format!("exists and {problem}"))),
+        LinkState::Missing => {
+            let full = root.join(path);
+            if let Some(parent) = full.parent() {
+                fs::create_dir_all(parent)
+                    .with_context(|| format!("cannot create `{}`", parent.display()))?;
+            }
+            symlink(target, &full)
+                .with_context(|| format!("cannot create the link `{}`", full.display()))?;
+            Ok(Outcome::Added(None))
+        }
+    }
 }
