@@ -312,8 +312,8 @@ and leaves stderr empty, so when stderr is empty the reason is the first error o
 with `■`, other than `Canceled`) followed by the last `fatal:` or `error:` line below it.
 
 The other sources still run, and the files and the sections are already written. `skills-lock.json`
-is written by the CLI of skills. The command exits with 1 when a skill failed, with 0 when a step
-is pending, and with 2 for an error that stops it.
+is written by the CLI of skills. The command exits with 1 when a step is pending or a skill
+failed, and with 2 for an error that stops it.
 
 ## Which files
 

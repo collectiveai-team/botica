@@ -94,7 +94,8 @@ fn gather(recipes: &Recipes, names: &[String]) -> Result<Steps> {
 }
 
 /// Adds the files, then the sections, then the skills, of the recipes in `names`, from the root of
-/// the project. The command fails when a skill is not installed at the end.
+/// the project. The command exits with 1 when a step is pending or a skill is not installed at the
+/// end.
 pub fn run(collection: &Collection, names: &[String]) -> Result<ExitCode> {
     let recipes = collection.loaded()?;
     let gathered = gather(recipes, names)?;
@@ -131,7 +132,7 @@ pub fn run(collection: &Collection, names: &[String]) -> Result<ExitCode> {
         tally.report("skill", &item.name, &outcome);
     }
     println!("{}", tally.summary(names));
-    Ok(if tally.failed == 0 {
+    Ok(if tally.failed == 0 && tally.pending == 0 {
         ExitCode::SUCCESS
     } else {
         ExitCode::from(1)

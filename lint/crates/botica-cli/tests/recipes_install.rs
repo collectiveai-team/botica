@@ -54,7 +54,7 @@ fn a_file_that_exists_with_other_text_is_pending_and_stays_as_it_is() {
     template(&dir, "files/prek.toml", "repos = []\n");
     write(&dir, "prek.toml", "mine = true\n");
 
-    let text = ok(&recipe(&dir, &["install", "mine"]));
+    let text = failed(&recipe(&dir, &["install", "mine"]), 1);
 
     assert_eq!(
         text,
@@ -62,6 +62,25 @@ fn a_file_that_exists_with_other_text_is_pending_and_stays_as_it_is() {
          mine: 0 added, 0 ok, 1 pending\n"
     );
     assert_eq!(read(&dir, "prek.toml"), "mine = true\n");
+}
+
+#[test]
+fn a_pending_step_does_not_stop_the_others_and_the_command_exits_with_1() {
+    let dir = project("install-pending-exit", None);
+    add_recipe(
+        &dir,
+        "mine",
+        &format!("{FILE}[[files]]\npath = \"other.toml\"\ntemplate = \"files/other.toml\"\n"),
+    );
+    template(&dir, "files/prek.toml", "repos = []\n");
+    template(&dir, "files/other.toml", "o = 1\n");
+    write(&dir, "prek.toml", "mine = true\n");
+
+    let text = failed(&recipe(&dir, &["install", "mine"]), 1);
+
+    assert!(text.contains("file other.toml: added\n"), "{text}");
+    assert!(text.ends_with("mine: 1 added, 0 ok, 1 pending\n"), "{text}");
+    assert_eq!(read(&dir, "other.toml"), "o = 1\n");
 }
 
 #[test]
@@ -83,7 +102,7 @@ fn a_file_that_differs_from_the_template_only_in_white_space_is_pending() {
     template(&dir, "files/prek.toml", "repos = []\n");
     write(&dir, "prek.toml", "repos = []\n\n");
 
-    let text = ok(&recipe(&dir, &["install", "mine"]));
+    let text = failed(&recipe(&dir, &["install", "mine"]), 1);
 
     assert!(text.contains("file prek.toml: pending: "), "{text}");
 }
@@ -95,7 +114,7 @@ fn a_link_to_nothing_is_pending_and_nothing_is_written_through_it() {
     add_recipe(&dir, "mine", FILE);
     std::os::unix::fs::symlink("missing.toml", dir.join("prek.toml")).expect("link");
 
-    let text = ok(&recipe(&dir, &["install", "mine"]));
+    let text = failed(&recipe(&dir, &["install", "mine"]), 1);
 
     assert!(text.contains("file prek.toml: pending: "), "{text}");
     assert!(!dir.join("missing.toml").exists());
@@ -107,7 +126,7 @@ fn a_path_that_is_a_directory_is_pending() {
     add_recipe(&dir, "mine", FILE);
     write(&dir, "prek.toml/inside", "x");
 
-    let text = ok(&recipe(&dir, &["install", "mine"]));
+    let text = failed(&recipe(&dir, &["install", "mine"]), 1);
 
     assert!(
         text.contains("file prek.toml: pending: exists and differs"),
@@ -197,7 +216,7 @@ fn a_second_step_with_the_same_path_and_other_text_is_pending() {
     template(&dir, "files/prek.toml", "first\n");
     template(&dir, "files/second.toml", "second\n");
 
-    let text = ok(&recipe(&dir, &["install", "mine"]));
+    let text = failed(&recipe(&dir, &["install", "mine"]), 1);
 
     assert!(
         text.starts_with("file prek.toml: added\nfile prek.toml: pending: "),

@@ -149,9 +149,13 @@ scaffolder writes the configuration of a repository from its own components, apa
      writes its errors to stdout, so then it is the first error of stdout (a line with `■`, other
      than `Canceled`) followed by the last `fatal:` or `error:` line below it.
      The other sources still run, and the files and sections are already written.
-     `skills-lock.json` is written by the CLI of skills and by nothing else (CES-107).
+     `skills-lock.json` is written by the CLI of skills and by nothing else (CES-107). The skills of
+     `collectiveai-team/botica` have no tag and follow its default branch; the lock fixes their
+     content with `computedHash`.
    - A skill that two named recipes take from different sources is taken over by the later name,
      with a warning, as for one recipe.
+   - The command exits with 1 when a step is pending or a skill failed, with 0 otherwise, and with
+     2 for an error that stops it.
 
    `install` and `check` replace the commands of `scaffolding`. Each component of `scaffolding`
    becomes a step of a recipe, and the `unignore` op of ADR 0001 becomes a step of its own.
@@ -189,10 +193,6 @@ scaffolder writes the configuration of a repository from its own components, apa
   resolve. That changes the rule that `install` never merges a file that exists (CES-30, ADR 0001),
   and a merge needs a common ancestor that `install` does not have for a file that the repository
   wrote first. Until it is decided, a `[[files]]` step lists a file that exists as pending.
-- Whether the skills of `collectiveai-team/botica` are pinned to the tag of the version of the
-  binary. Without a tag they follow the default branch.
-- The exit code of `install` when a step is pending. It exits with 0 today, and with 1 only when a
-  skill failed.
 - The agent that `npx skills add` installs for. `install` passes `--agent opencode`, the default of
   `scaffolding`, until the recipes of the agents exist.
 - When `scaffolding` is removed.

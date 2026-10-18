@@ -8,7 +8,7 @@ use std::path::Path;
 use common::recipes::{add_recipe, project, recipe, template};
 #[cfg(unix)]
 use common::recipes::{with_npx, NPX_INSTALLS};
-use common::refs::ok;
+use common::refs::{failed, ok};
 use common::{write, write_bytes};
 
 const SECTION: &str = "[[sections]]\npath = \"AGENTS.md\"\nmarker = \"## Standards\"\n\
@@ -96,7 +96,7 @@ fn a_path_that_is_a_directory_is_pending() {
     let dir = setup("install-section-dir");
     write(&dir, "AGENTS.md/inside", "x");
 
-    let text = ok(&recipe(&dir, &["install", "mine"]));
+    let text = failed(&recipe(&dir, &["install", "mine"]), 1);
 
     assert!(
         text.contains("section AGENTS.md `## Standards`: pending: is not a file\n"),
@@ -110,7 +110,7 @@ fn a_file_that_cannot_be_read_is_pending_and_stays_as_it_is() {
     let dir = setup("install-section-unreadable");
     write_bytes(&dir, "AGENTS.md", &[0xff, 0xfe, 0x00]);
 
-    let text = ok(&recipe(&dir, &["install", "mine"]));
+    let text = failed(&recipe(&dir, &["install", "mine"]), 1);
 
     assert!(
         text.contains("section AGENTS.md `## Standards`: pending: cannot read the file"),
