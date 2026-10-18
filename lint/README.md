@@ -263,7 +263,12 @@ that is not empty, and a recipe lists it once, across its steps. `unignore` name
 from `.gitignore`, and the only line it accepts is `skills-lock.json` (ADR 0001); `lines` does not
 accept it (CES-107).
 
-The recipes `base` and `base-python` are in `lint/recipes/` and are compiled into the binary. A
+The recipes `base` and `base-python` are in `lint/recipes/` and are compiled into the binary.
+`base-python` extends `base` with a `pyproject.toml` (a `[[files]]` template with `replace-me` as
+name and description, to fill in), the Python hooks of prek (three sections of `prek.toml`, one for
+each repository of hooks), the configuration of ruff, pyrefly and pytest (sections of
+`pyproject.toml`) and the dev packages (a `[[tools]]` step). The template of `pyproject.toml` has
+`readme = "README.md"`, so `uv add` fails to build a project that has no `README.md`. A
 project adds its own in `recipes/` at its root, and a recipe of the project may extend a built-in
 one. A recipe of the project with the id of a built-in one does not load, unless the configuration
 lists the id:
@@ -336,7 +341,9 @@ A file is written from its template when its path does not exist (`added`). A pa
 `ok` when it has the text of the template and `pending` otherwise; `install` does not change it. A
 section is written to a new file, appended after a blank line to a file that has no marker (`added`),
 and left alone when the file has the marker (`ok`); a path that is not a file or cannot be read is
-`pending`. Running the command again changes nothing. A step that two of the named recipes share is
+`pending`. A path that ends in `.toml` gets the section only when the file is valid TOML before and
+after: a file that is not, or a section that would define a table twice, leaves the step `pending`
+and the file as it is. Running the command again changes nothing. A step that two of the named recipes share is
 done once, and a name that is not a recipe fails the command with 2 before anything is written.
 
 A link is created, with the folders of its path, when its path does not exist (`added`), also when

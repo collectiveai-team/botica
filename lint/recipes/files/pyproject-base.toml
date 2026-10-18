@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+# Version derived from git tags (vX.Y.Z) by hatch-vcs.
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[project]
+name = "replace-me"
+dynamic = ["version"]
+description = "Replace me"
+readme = "README.md"
+# CES-77 (version pin): requires-python is intentionally left as a non-enforced comment so an
+# existing repo's pin wins (pairs with general-respect-local-repo, CES-30). The house baseline
+# default is 3.14 — uncomment and adjust only when you deliberately set a floor:
+# requires-python = ">=3.14"
+
+# MARK: Dependencies
+dependencies = []

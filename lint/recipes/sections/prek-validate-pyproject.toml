@@ -1,0 +1,7 @@
+# MARK: validate-pyproject
+[[repos]]
+repo = "https://github.com/abravalheri/validate-pyproject"
+rev = "v0.25"
+hooks = [
+  { id = "validate-pyproject", files = "^pyproject\\.toml$", priority = 0 }
+]

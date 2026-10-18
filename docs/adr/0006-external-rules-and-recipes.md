@@ -125,9 +125,15 @@ scaffolder writes the configuration of a repository from its own components, apa
    its steps exists. Recipes of the same folder share templates. A standard that cites a template
    as canonical code cites it with a reference (ADR 0007).
 4. **Recipes are built into the binary and read from `recipes/`.** `lint/recipes/` is compiled into
-   the binary with its templates: `base` has the three rules that look at any file, and
-   `base-python` extends it with the rules about Python code that `scaffolding` selects today. They
-   were `generic` and `python` in the first cut. A project adds its own recipes in `recipes/` at its
+   the binary with its templates: `base` has the three rules that look at any file, the skills,
+   `.gitignore`, `prek.toml` and the standards index of `scaffolding`, and `base-python` extends it
+   with the rules about Python code that `scaffolding` selects today, a `pyproject.toml` template,
+   the Python hooks of prek (sections of `prek.toml`, one for each repository of hooks), the
+   configuration of ruff, pyrefly and pytest (sections of `pyproject.toml`) and the dev packages (a
+   `[[tools]]` step). Tests in `tests/test_recipe_base.py` keep both equal to what `scaffolding`
+   writes until it is removed. A second step on a file that a template wrote is a `[[sections]]`
+   step with a marker, not another `[[files]]` step. They were `generic` and `python` in the first
+   cut. A project adds its own recipes in `recipes/` at its
    root, with its own steps and templates, and a recipe of the project may extend a built-in one. A
    recipe of the project with the id of a built-in one is an error unless the configuration names
    the id in `[recipes] replace`, as for the topics of ADR 0007.
@@ -163,6 +169,8 @@ scaffolder writes the configuration of a repository from its own components, apa
      is `pending`.
    - A step that two of the named recipes share is done once, and a name that is not a recipe fails
      the command before anything is written.
+   - A `[[sections]]` step to a path that ends in `.toml` appends only when the file is valid TOML
+     before and after; otherwise it is `pending`, and the file is not touched.
    - A `[[links]]` step creates the link, with the folders of its path, when the path does not exist
      (`added`). A path that holds a link with the text of the target is `ok`; anything else is
      `pending` and `install` does not replace it.
@@ -206,11 +214,6 @@ scaffolder writes the configuration of a repository from its own components, apa
 
 ## Not built yet
 
-- The steps of `base-python`. `base` has the skills of `scaffolding`, its `prek.toml` and its
-  standards index; a test in `tests/test_recipe_base.py` keeps them equal to the ones of
-  `scaffolding` until it is removed.
-- The steps of `base-python`: its tools, the `pyproject.toml` template and the sections with the
-  configuration of each tool.
 - The recipes of the agents and of the visibility of the repository.
 - The components of `scaffolding` as steps: `agent-config`, `prek`, `pyproject`, `ci`,
   `agents`, `standards`, `skills` and `varlock`.
@@ -222,14 +225,6 @@ scaffolder writes the configuration of a repository from its own components, apa
 - Whether a fragment holds the whole configuration that `botica recipe install` writes or the
   least that `external-config` checks. The fragment of `cognitive-complexity` is a hook of prek
   with the id `complexipy`.
-- What happens when two steps name the same path. `base` adds `prek.toml`, and the hooks of Python
-  would go in the same file, which `install` does not edit: the second step finds the file with
-  the text of the first template and reports it as pending. The direction under discussion for a
-  `[[files]]` step: `install` tries to merge the template into the file, and when the merge
-  conflicts it leaves the file as it is and reports the conflict for a person or an agent to
-  resolve. That changes the rule that `install` never merges a file that exists (CES-30, ADR 0001),
-  and a merge needs a common ancestor that `install` does not have for a file that the repository
-  wrote first. Until it is decided, a `[[files]]` step lists a file that exists as pending.
 - The agent that `npx skills add` installs for. `install` passes `--agent opencode`, the default of
   `scaffolding`, until the recipes of the agents exist.
 - When `scaffolding` is removed.

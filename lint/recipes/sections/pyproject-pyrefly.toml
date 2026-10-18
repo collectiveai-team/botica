@@ -1,0 +1,11 @@
+# MARK: Pyrefly
+[tool.pyrefly]
+project-excludes = [
+  "**/node_modules",
+  "**/__pycache__",
+  "**/venv/**/*",
+  "**/.venv/**/*",
+  "**/.uv_cache/**/*",
+]
+use-ignore-files = false
+disable-project-excludes-heuristics = true

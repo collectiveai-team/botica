@@ -1,0 +1,26 @@
+# MARK: import-linter (CES-5 layer direction, CES-17 api-boundary layout)
+# Commented skeleton — uncomment once the package actually has layers. Enforces the house import
+# direction: entrypoints -> api -> database/impl -> core (a higher layer may import lower ones,
+# never the reverse). Add `import-linter` to the dev group and run `uvx --from import-linter
+# lint-imports`. Replace `myapp` below with your import package name.
+#
+# [tool.importlinter]
+# root_package = "myapp"
+#
+# [[tool.importlinter.contracts]]
+# name = "Layered architecture (CES-5)"
+# type = "layers"
+# layers = [
+#   "myapp.entrypoints",
+#   "myapp.api",
+#   "myapp.database | myapp.impl",
+#   "myapp.core",
+# ]
+#
+# # CES-17 api-boundary layout: the api package is the only inbound HTTP boundary; nothing
+# # outside api may import api.schemas/routers internals.
+# [[tool.importlinter.contracts]]
+# name = "API is the only inbound boundary (CES-17)"
+# type = "forbidden"
+# source_modules = ["myapp.core", "myapp.database"]
+# forbidden_modules = ["myapp.api"]

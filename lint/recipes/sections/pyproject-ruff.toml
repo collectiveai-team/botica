@@ -1,0 +1,77 @@
+# MARK: Ruff
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint]
+select = [
+  "E",
+  "F",
+  "I",
+  "C4",
+  "C90",
+  "ICN",
+  "INP",
+  "PIE",
+  "PT",
+  "TC",
+  "PGH",
+  "NPY",
+  "PLE",
+  "PLW",
+  "FA",
+  "B",
+  "S",
+  "G",
+  "SIM",
+  "RET",
+  "DTZ",
+  "PTH",
+  "LOG",
+  "TID",
+  "UP",
+  "RUF",
+  "ERA001",
+  "D200",
+  "D205",
+  "D212",
+  "D300",
+  "D301",
+  "D400",
+  "D401",
+  "D403",
+  "D405",
+  "D406",
+  "D407",
+  "D408",
+  "D409",
+  "D410",
+  "D411",
+  "D412",
+  "D413",
+  "D414",
+  "D415",
+  "D417",
+  "D418",
+  "D419",
+  "PERF",
+]
+task-tags = ["TODO", "FIXME", "XXX", "MARK"]
+# `botica lint` suppressions in `# noqa: BTxxx` comments; without this ruff reports RUF102.
+external = ["BT"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+# Ban relative imports (e.g. `from .module import ...`) in favor of absolute
+# package imports, so modules are unambiguous and easy to move.
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "INP001"]

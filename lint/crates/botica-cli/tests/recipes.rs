@@ -21,7 +21,10 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
     );
     assert!(text.contains("\nbase-python: A Python project"), "{text}");
     assert!(
-        text.contains("  extends: base\n  rules: 12, judgment: 0, exports: 0\n  from: built-in\n"),
+        text.contains(
+            "  extends: base\n  rules: 12, judgment: 0, exports: 0\n  \
+             files: 1, sections: 7, tools: 6\n  from: built-in\n"
+        ),
         "{text}"
     );
 }
@@ -130,14 +133,29 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
         "{text}"
     );
     assert!(
-        text.ends_with(
-            "\n## Files\n\n- prek.toml (template files/prek-base.toml, from base)\n\n\
+        text.contains(
+            "\n## Files\n\n- prek.toml (template files/prek-base.toml, from base)\n\
+             - pyproject.toml (template files/pyproject-base.toml, from base-python)\n\n\
              ## Sections\n\n- AGENTS.md, `## Engineering Standards` \
-             (template sections/standards-index.md, from base)\n\n\
-             ## Gitignore\n\n- .env (from base)\n- !.env.schema (from base)\n\
-             - .tmp/ (from base)\n- .scratch/ (from base)\n- .worktrees/ (from base)\n\
-             - .journals/ (from base)\n- .agents/skills/ (from base)\n\n\
-             ## Unignore\n\n- skills-lock.json (from base)\n"
+             (template sections/standards-index.md, from base)\n\
+             - prek.toml, `# MARK: validate-pyproject` \
+             (template sections/prek-validate-pyproject.toml, from base-python)\n"
+        ),
+        "{text}"
+    );
+    assert!(
+        text.contains("\n## Gitignore\n\n- .env (from base)\n- !.env.schema (from base)\n"),
+        "{text}"
+    );
+    assert!(
+        text.ends_with(
+            "\n## Unignore\n\n- skills-lock.json (from base)\n\n## Tools\n\n\
+             - ruff (uv, group dev, from base-python)\n\
+             - pyrefly (uv, group dev, from base-python)\n\
+             - pytest (uv, group dev, from base-python)\n\
+             - pytest-asyncio (uv, group dev, from base-python)\n\
+             - pytest-timeout (uv, group dev, from base-python)\n\
+             - pytest-randomly (uv, group dev, from base-python)\n"
         ),
         "{text}"
     );

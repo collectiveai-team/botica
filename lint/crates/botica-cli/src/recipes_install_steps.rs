@@ -69,8 +69,13 @@ pub fn add_file(root: &Path, path: &str, template: &Template) -> Result<Outcome>
     })
 }
 
+fn is_toml(text: &str) -> bool {
+    toml::from_str::<toml::Table>(text).is_ok()
+}
+
 /// Writes the file with the section when the path does not exist, and appends the section after a
-/// blank line to a file without the marker.
+/// blank line to a file without the marker. A TOML file gets the section only when it is valid
+/// TOML before and after.
 pub fn add_section(root: &Path, path: &str, marker: &str, template: &str) -> Result<Outcome> {
     let full = root.join(path);
     if !exists(&full) {
@@ -92,6 +97,16 @@ pub fn add_section(root: &Path, path: &str, marker: &str, template: &str) -> Res
         text if text.ends_with('\n') => "\n",
         _ => "\n\n",
     };
+    if path.ends_with(".toml") {
+        if !is_toml(&text) {
+            return Ok(Outcome::Pending("is not valid TOML".to_owned()));
+        }
+        if !is_toml(&format!("{text}{separator}{template}")) {
+            return Ok(Outcome::Pending(
+                "appending the section would make the file invalid TOML".to_owned(),
+            ));
+        }
+    }
     let mut file = OpenOptions::new()
         .append(true)
         .open(&full)

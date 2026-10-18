@@ -1,7 +1,9 @@
 """`lint/recipes/base.toml` carries what `scaffolding` installs, until `scaffolding` is removed."""
 
+import re
 import tomllib
 from pathlib import Path
+from typing import Any
 
 from scaffolding import components, skills
 
@@ -49,3 +51,40 @@ def test_base_ignores_the_entries_that_scaffolding_ignores() -> None:
 
 def test_base_unignores_what_scaffolding_may_unignore() -> None:
     assert _gitignore("unignore") == sorted(skills.UNIGNORE_WHITELIST)
+
+
+def _steps(kind: str) -> list[Any]:
+    recipe = tomllib.loads((RECIPES / "base-python.toml").read_text(encoding="utf-8"))
+    return recipe[kind]
+
+
+def _section_texts(path: str) -> list[str]:
+    return [
+        (RECIPES / step["template"]).read_text(encoding="utf-8")
+        for step in _steps("sections")
+        if step["path"] == path
+    ]
+
+
+def test_base_python_adds_the_python_hooks_of_scaffolding_to_prek() -> None:
+    sections = _section_texts("prek.toml")
+
+    assert "\n".join(sections) == (TEMPLATES / "prek-python.toml").read_text(encoding="utf-8")
+
+
+def test_base_python_has_the_pyproject_of_scaffolding_but_for_the_dependency_groups() -> None:
+    file_template = (RECIPES / _steps("files")[0]["template"]).read_text(encoding="utf-8")
+    recipe = tomllib.loads("\n".join([file_template, *_section_texts("pyproject.toml")]))
+    scaffolded = tomllib.loads((TEMPLATES / "pyproject-template.toml").read_text(encoding="utf-8"))
+    scaffolded.pop("dependency-groups")
+
+    assert recipe == scaffolded
+
+
+def test_base_python_adds_the_dev_packages_that_scaffolding_declares() -> None:
+    scaffolded = tomllib.loads((TEMPLATES / "pyproject-template.toml").read_text(encoding="utf-8"))
+    dev = scaffolded["dependency-groups"]["dev"]
+    declared = {re.split(r"[<>=!~ ;\[]", name, maxsplit=1)[0] for name in dev}
+    tools = {package for tool in _steps("tools") for package in tool["packages"]}
+
+    assert declared <= tools

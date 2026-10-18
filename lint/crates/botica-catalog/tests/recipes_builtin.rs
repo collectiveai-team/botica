@@ -128,14 +128,36 @@ fn base_ignores_the_workspace_folders_and_lets_the_manifest_of_skills_out() {
 }
 
 #[test]
-fn base_python_has_the_steps_of_base_and_no_step_of_its_own_yet() {
+fn base_python_adds_pyproject_the_python_hooks_and_the_dev_tools_to_what_base_does() {
     let recipes = embedded();
 
     let python = recipes.recipe("base-python").expect("base-python");
-    assert!(python.skills.is_empty() && python.files.is_empty() && python.sections.is_empty());
+    assert!(python.skills.is_empty() && python.links.is_empty() && python.gitignore.is_empty());
+    assert_eq!(python.files.len(), 1);
+    assert_eq!(python.files[0].path, "pyproject.toml");
+    let sections: Vec<String> = python
+        .sections
+        .iter()
+        .map(|s| format!("{} {}", s.path, s.marker))
+        .collect();
+    assert_eq!(
+        sections,
+        [
+            "prek.toml # MARK: validate-pyproject",
+            "prek.toml # MARK: ruff-format",
+            "prek.toml # MARK: pyrefly",
+            "pyproject.toml # MARK: Ruff",
+            "pyproject.toml # MARK: Pyrefly",
+            "pyproject.toml # MARK: import-linter",
+            "pyproject.toml # MARK: Pytest",
+        ]
+    );
+    assert_eq!(python.tools.len(), 1);
+    assert_eq!(python.tools[0].manager, "uv");
+    assert!(python.tools[0].packages.contains(&"ruff".to_owned()));
     let resolved = recipes.resolve("base-python").expect("resolves");
     assert!(resolved.skills.iter().all(|skill| skill.from == "base"));
-    assert_eq!(resolved.files.len(), 1);
-    assert_eq!(resolved.sections.len(), 1);
+    assert_eq!(resolved.files.len(), 2);
+    assert_eq!(resolved.sections.len(), 8);
     assert!(resolved.warnings.is_empty());
 }

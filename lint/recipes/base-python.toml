@@ -1,4 +1,4 @@
-description = "A Python project: the rules of any repository and the ones about Python code"
+description = "A Python project: the rules of any repository and the ones about Python code, pyproject.toml, the Python hooks of prek and the dev tools"
 extends = ["base"]
 rules = [
   "no-utils",
@@ -13,4 +13,54 @@ rules = [
   "settings-module",
   "cli-typed-framework",
   "arch-database-package",
+]
+
+[[files]]
+path = "pyproject.toml"
+template = "files/pyproject-base.toml"
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: validate-pyproject"
+template = "sections/prek-validate-pyproject.toml"
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: ruff-format"
+template = "sections/prek-ruff.toml"
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: pyrefly"
+template = "sections/prek-pyrefly.toml"
+
+[[sections]]
+path = "pyproject.toml"
+marker = "# MARK: Ruff"
+template = "sections/pyproject-ruff.toml"
+
+[[sections]]
+path = "pyproject.toml"
+marker = "# MARK: Pyrefly"
+template = "sections/pyproject-pyrefly.toml"
+
+[[sections]]
+path = "pyproject.toml"
+marker = "# MARK: import-linter"
+template = "sections/pyproject-import-linter.toml"
+
+[[sections]]
+path = "pyproject.toml"
+marker = "# MARK: Pytest"
+template = "sections/pyproject-pytest.toml"
+
+[[tools]]
+manager = "uv"
+packages = [
+  "ruff",
+  "pyrefly",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-timeout",
+  "pytest-randomly",
 ]
