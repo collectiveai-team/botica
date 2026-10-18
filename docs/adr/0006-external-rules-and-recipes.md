@@ -95,10 +95,12 @@ scaffolder writes the configuration of a repository from its own components, apa
    and `exports` names `agents-md` or `abide`; the rules are a step like the others. `[[skills]]`
    has `source` (a repository, with a `#tag` to pin it) and `names`. `[[files]]` has `path` and
    `template`. `[[sections]]` has `path`, `marker` and `template`. A `template` is a file under the
-   folder of the recipe (`files/`, `sections/`). A list names an entry once. A recipe that extends
-   others contributes after them, each recipe contributes once, and an entry that two recipes list
-   stays where it first is. Each step keeps the recipe it comes from. Recipes that extend one
-   another in a circle are an error.
+   folder of the recipe (`files/`, `sections/`). A list names an entry once, and a recipe names a
+   skill, a file path, or a marker of a path once. A recipe that extends others contributes after
+   them, each recipe contributes once, and an entry that two recipes list stays where it first is.
+   Each step keeps the recipe it comes from. A skill that two recipes take from different sources
+   is an error when the recipe resolves. Recipes that extend one another in a circle are an
+   error.
 4. **Recipes are built into the binary and read from `recipes/`.** `lint/recipes/` is compiled into
    the binary with its templates: `base` has the three rules that look at any file, and
    `base-python` extends it with the rules about Python code that `scaffolding` selects today. They
@@ -130,8 +132,11 @@ scaffolder writes the configuration of a repository from its own components, apa
 
 ## Not built yet
 
-- The steps `[[skills]]`, `[[files]]` and `[[sections]]`, and `botica recipe install`. `list`, `show`
-  and `check` read rules and exports only.
+- `botica recipe install`.
+- The templates: `lint/recipes/files/` and `lint/recipes/sections/`, their embedding in the binary
+  and the check that the `template` of a step names one. `base` and `base-python` have no steps yet.
+- `botica recipe check` for the steps. `list` and `show` print them; `check` reads rules and
+  exports only.
 - The steps `[[gitignore]]` (lines to add to `.gitignore`) and `[[tools]]` (how a tool is added,
   such as `uv add --dev ruff`, and the fragment of configuration it carries). `base-python` will
   add ruff, pyrefly and pytest with `[[tools]]`.

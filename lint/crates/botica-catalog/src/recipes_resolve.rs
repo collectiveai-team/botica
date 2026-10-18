@@ -2,6 +2,9 @@ use std::collections::BTreeSet;
 
 use crate::issue::{issue, CatalogIssue};
 use crate::recipes::{recipe_path, Recipe, Recipes};
+use crate::recipes_steps_resolve::{
+    resolve_files, resolve_sections, resolve_skills, ResolvedFile, ResolvedSection, ResolvedSkill,
+};
 
 /// An entry of a resolved recipe and the recipe whose file lists it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -19,6 +22,9 @@ pub struct ResolvedRecipe {
     pub rules: Vec<RecipeItem>,
     pub judgment: Vec<RecipeItem>,
     pub exports: Vec<RecipeItem>,
+    pub skills: Vec<ResolvedSkill>,
+    pub files: Vec<ResolvedFile>,
+    pub sections: Vec<ResolvedSection>,
 }
 
 impl Recipes {
@@ -47,11 +53,15 @@ impl Recipes {
             }
             items
         };
+        let recipes: Vec<&Recipe> = chain.iter().filter_map(|id| self.recipe(id)).collect();
         Ok(ResolvedRecipe {
             id: id.to_owned(),
             rules: contribute(|recipe| &recipe.rules),
             judgment: contribute(|recipe| &recipe.judgment),
             exports: contribute(|recipe| &recipe.exports),
+            skills: resolve_skills(&recipes)?,
+            files: resolve_files(&recipes),
+            sections: resolve_sections(&recipes),
             chain,
         })
     }

@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 use crate::issue::{issue, CatalogError, CatalogIssue};
 use crate::load::SourceFile;
+use crate::recipes_steps::{step_problems, FileStep, SectionStep, SkillStep};
 use crate::references::Origin;
 use crate::validate::is_kebab_case;
 
@@ -26,10 +27,16 @@ struct RecipeFile {
     judgment: Vec<String>,
     #[serde(default)]
     exports: Vec<String>,
+    #[serde(default)]
+    skills: Vec<SkillStep>,
+    #[serde(default)]
+    files: Vec<FileStep>,
+    #[serde(default)]
+    sections: Vec<SectionStep>,
 }
 
-/// A file `<id>.toml` of the catalog: the rules and the exports that a repository of some kind
-/// has, and the recipes whose lists it adds to.
+/// A file `<id>.toml` of the catalog: the rules, the exports and the steps that prepare a
+/// repository of some kind, and the recipes whose lists it adds to.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Recipe {
     /// The name of its file, without the extension.
@@ -43,6 +50,9 @@ pub struct Recipe {
     pub judgment: Vec<String>,
     /// Names of `EXPORTS`.
     pub exports: Vec<String>,
+    pub skills: Vec<SkillStep>,
+    pub files: Vec<FileStep>,
+    pub sections: Vec<SectionStep>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -121,7 +131,12 @@ fn load_recipe(
             return None;
         }
     };
-    let problems = list_problems(&parsed);
+    let mut problems = list_problems(&parsed);
+    problems.extend(step_problems(
+        &parsed.skills,
+        &parsed.files,
+        &parsed.sections,
+    ));
     issues.extend(problems.into_iter().map(|message| issue(path, message)));
     Some(Recipe {
         id: id.to_owned(),
@@ -131,6 +146,9 @@ fn load_recipe(
         rules: parsed.rules,
         judgment: parsed.judgment,
         exports: parsed.exports,
+        skills: parsed.skills,
+        files: parsed.files,
+        sections: parsed.sections,
     })
 }
 

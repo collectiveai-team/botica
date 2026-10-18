@@ -8,6 +8,7 @@ mod project;
 mod recipes_check;
 mod recipes_cmd;
 mod recipes_collection;
+mod recipes_steps_text;
 mod refs_check;
 mod refs_cmd;
 mod refs_collection;

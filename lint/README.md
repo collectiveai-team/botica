@@ -206,6 +206,29 @@ rules and `judgment` lists the judgment rules, each by slug, code or alias. `exp
 `agents-md` or `abide`, the formats of `botica rules export`. A list names an entry once, and
 recipes that extend one another in a circle are an error.
 
+A recipe also declares steps that prepare the repository:
+
+```toml
+[[skills]]                  # skills to install with `npx skills add <source> --skill <name>`
+source = "mattpocock/skills#v1.2.3"
+names = ["tdd", "grilling"]
+
+[[files]]                   # a file to add from a template
+path = "prek.toml"
+template = "files/prek-base.toml"
+
+[[sections]]                # a section of a file, which starts with the marker
+path = "AGENTS.md"
+marker = "## Engineering Standards"
+template = "sections/standards-index.md"
+```
+
+A `path` is relative to the root of the project, without `.` or `..`. A recipe names a skill once, a
+file path once and a marker of a path once. The steps of the recipes it extends come first, a step
+that two recipes list the same stays where it first is, and a skill that two recipes take from
+different sources is an error. `botica recipe install` and the templates are not built yet: `list`
+and `show` print the steps, and no command runs them.
+
 The recipes `base` and `base-python` are in `lint/recipes/` and are compiled into the binary. A
 project adds its own in `recipes/` at its root, and a recipe of the project may extend a built-in
 one. A recipe of the project with the id of a built-in one does not load, unless the configuration
@@ -217,9 +240,10 @@ replace = ["base-python"]
 ```
 
 `botica recipe list` prints each recipe with what it extends and how many rules, judgment rules and
-exports its file lists, and where it comes from. `botica recipe show <name>` prints the recipe with
-the lists of what it extends first, each rule with its code, its summary and the recipe that lists
-it.
+exports its file lists, and where it comes from; a recipe with steps has a line with the number of
+skills, files and sections. `botica recipe show <name>` prints the recipe with the lists of what it
+extends first, each rule with its code, its summary and the recipe that lists it, and then the
+sections Skills, Files and Sections for the steps it has.
 
 `botica recipe check <name>` takes the options of `botica lint` that select rules (`--select`,
 `--ignore`, `--config`). It prints one line for each rule and export of the recipe, rules first,

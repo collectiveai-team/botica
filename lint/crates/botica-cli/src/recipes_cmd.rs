@@ -8,6 +8,7 @@ use clap::{Args, Subcommand};
 use crate::project::ProjectArgs;
 use crate::recipes_check;
 use crate::recipes_collection::{self, Collection};
+use crate::recipes_steps_text;
 
 #[derive(Args)]
 pub struct RecipesArgs {
@@ -78,6 +79,7 @@ fn list_block(recipe: &Recipe) -> String {
         recipe.judgment.len(),
         recipe.exports.len()
     );
+    block.extend(recipes_steps_text::count_line(recipe));
     let from = match recipe.origin {
         Origin::BuiltIn => "built-in",
         Origin::Project => "project",
@@ -121,6 +123,7 @@ fn show_text(
         }
         text.push('\n');
     }
+    text.push_str(&recipes_steps_text::steps_text(resolved));
     text.truncate(text.trim_end().len());
     text.push('\n');
     text
