@@ -13,9 +13,9 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
 
     assert!(
         text.starts_with(
-            "base: Any repository: the rules about any file, the skills, the prek hooks and the \
-             standards index\n  rules: 3, judgment: 0, exports: 0\n  \
-             skills: 29, files: 1, sections: 1\n  from: built-in\n"
+            "base: Any repository: the rules about any file, the skills, .gitignore, the prek hooks \
+             and the standards index\n  rules: 3, judgment: 0, exports: 0\n  \
+             skills: 29, files: 1, sections: 1, gitignore: 8\n  from: built-in\n"
         ),
         "{text}"
     );
@@ -133,7 +133,11 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
         text.ends_with(
             "\n## Files\n\n- prek.toml (template files/prek-base.toml, from base)\n\n\
              ## Sections\n\n- AGENTS.md, `## Engineering Standards` \
-             (template sections/standards-index.md, from base)\n"
+             (template sections/standards-index.md, from base)\n\n\
+             ## Gitignore\n\n- .env (from base)\n- !.env.schema (from base)\n\
+             - .tmp/ (from base)\n- .scratch/ (from base)\n- .worktrees/ (from base)\n\
+             - .journals/ (from base)\n- .agents/skills/ (from base)\n\n\
+             ## Unignore\n\n- skills-lock.json (from base)\n"
         ),
         "{text}"
     );

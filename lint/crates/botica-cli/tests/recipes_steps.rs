@@ -179,9 +179,9 @@ fn list_counts_a_recipe_that_has_only_one_kind_of_step() {
     let text = ok(&recipe(&dir, &["list"]));
 
     for (id, counts) in [
-        ("only-skill", "skills: 1, files: 0, sections: 0"),
-        ("only-file", "skills: 0, files: 1, sections: 0"),
-        ("only-section", "skills: 0, files: 0, sections: 1"),
+        ("only-skill", "skills: 1"),
+        ("only-file", "files: 1"),
+        ("only-section", "sections: 1"),
     ] {
         let block = format!("{id}\n  rules: 0, judgment: 0, exports: 0\n  {counts}\n");
         assert!(text.contains(&block), "{id}: {text}");

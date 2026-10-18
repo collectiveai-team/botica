@@ -4,7 +4,9 @@ use serde::Deserialize;
 
 use crate::issue::{issue, CatalogError, CatalogIssue};
 use crate::load::SourceFile;
-use crate::recipes_steps::{step_problems, template_problems, FileStep, SectionStep, SkillStep};
+use crate::recipes_steps::{
+    step_problems, template_problems, FileStep, GitignoreStep, SectionStep, SkillStep,
+};
 use crate::references::Origin;
 use crate::validate::is_kebab_case;
 
@@ -35,6 +37,8 @@ struct RecipeFile {
     files: Vec<FileStep>,
     #[serde(default)]
     sections: Vec<SectionStep>,
+    #[serde(default)]
+    gitignore: Vec<GitignoreStep>,
 }
 
 /// A file `<id>.toml` of the catalog: the rules, the exports and the steps that prepare a
@@ -55,6 +59,7 @@ pub struct Recipe {
     pub skills: Vec<SkillStep>,
     pub files: Vec<FileStep>,
     pub sections: Vec<SectionStep>,
+    pub gitignore: Vec<GitignoreStep>,
 }
 
 /// A file under `files/` or `sections/` of the recipes folder, whose path is from that folder.
@@ -187,6 +192,7 @@ fn load_recipe(
         &parsed.skills,
         &parsed.files,
         &parsed.sections,
+        &parsed.gitignore,
     ));
     issues.extend(problems.into_iter().map(|message| issue(path, message)));
     Some(Recipe {
@@ -200,6 +206,7 @@ fn load_recipe(
         skills: parsed.skills,
         files: parsed.files,
         sections: parsed.sections,
+        gitignore: parsed.gitignore,
     })
 }
 

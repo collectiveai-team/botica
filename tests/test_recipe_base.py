@@ -3,7 +3,7 @@
 import tomllib
 from pathlib import Path
 
-from scaffolding import skills
+from scaffolding import components, skills
 
 ROOT = Path(__file__).resolve().parent.parent
 RECIPES = ROOT / "lint" / "recipes"
@@ -35,3 +35,17 @@ def test_base_has_the_standards_index_template_of_scaffolding() -> None:
     assert (RECIPES / "sections" / "standards-index.md").read_text(encoding="utf-8") == (
         TEMPLATES / "standards-index.md"
     ).read_text(encoding="utf-8")
+
+
+def _gitignore(key: str) -> list[str]:
+    base = tomllib.loads((RECIPES / "base.toml").read_text(encoding="utf-8"))
+    assert len(base["gitignore"]) == 1
+    return base["gitignore"][0][key]
+
+
+def test_base_ignores_the_entries_that_scaffolding_ignores() -> None:
+    assert _gitignore("lines") == components.GITIGNORE_ENTRIES
+
+
+def test_base_unignores_what_scaffolding_may_unignore() -> None:
+    assert _gitignore("unignore") == sorted(skills.UNIGNORE_WHITELIST)

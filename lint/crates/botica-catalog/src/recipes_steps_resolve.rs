@@ -1,6 +1,8 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::recipes::Recipe;
+use crate::recipes_resolve::RecipeItem;
+use crate::recipes_steps::GitignoreStep;
 
 /// A skill to install and the recipe whose file lists it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -102,4 +104,25 @@ pub(crate) fn resolve_sections(chain: &[&Recipe]) -> Vec<ResolvedSection> {
         }
     }
     sections
+}
+
+/// The lines of the `gitignore` steps of the recipes in `chain` that `list` picks, each one once,
+/// where it is first.
+pub(crate) fn resolve_gitignore(
+    chain: &[&Recipe],
+    list: fn(&GitignoreStep) -> &Vec<String>,
+) -> Vec<RecipeItem> {
+    let mut seen = BTreeSet::new();
+    let mut items = Vec::new();
+    for recipe in chain {
+        for line in recipe.gitignore.iter().flat_map(list) {
+            if seen.insert(line.as_str()) {
+                items.push(RecipeItem {
+                    id: line.clone(),
+                    from: recipe.id.clone(),
+                });
+            }
+        }
+    }
+    items
 }

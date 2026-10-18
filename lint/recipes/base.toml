@@ -1,4 +1,4 @@
-description = "Any repository: the rules about any file, the skills, the prek hooks and the standards index"
+description = "Any repository: the rules about any file, the skills, .gitignore, the prek hooks and the standards index"
 rules = ["file-size-guard", "no-notebooks", "no-artifacts-in-package"]
 
 [[skills]]
@@ -39,6 +39,18 @@ names = [
   "engineering-pr-review",
   "engineering-refactor",
 ]
+
+[[gitignore]]
+lines = [
+  ".env",
+  "!.env.schema",
+  ".tmp/",
+  ".scratch/",
+  ".worktrees/",
+  ".journals/",
+  ".agents/skills/",
+]
+unignore = ["skills-lock.json"]
 
 [[files]]
 path = "prek.toml"

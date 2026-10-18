@@ -3,15 +3,17 @@
 use std::process::ExitCode;
 
 use anyhow::{anyhow, Result};
-use botica_catalog::{Recipes, ResolvedFile, ResolvedSection, ResolvedSkill};
+use botica_catalog::{RecipeItem, Recipes, ResolvedFile, ResolvedSection, ResolvedSkill};
 
 use crate::recipes_collection::Collection;
+use crate::recipes_install_gitignore as gitignore;
 use crate::recipes_install_skills as skills;
 use crate::recipes_install_steps::{self as steps, Outcome, Template};
 
 #[derive(Default)]
 struct Tally {
     added: usize,
+    edited: usize,
     ok: usize,
     pending: usize,
     failed: usize,
@@ -22,6 +24,7 @@ impl Tally {
     fn report(&mut self, kind: &str, id: &str, outcome: &Outcome) {
         match outcome {
             Outcome::Added(_) => self.added += 1,
+            Outcome::Edited(_) => self.edited += 1,
             Outcome::Present => self.ok += 1,
             Outcome::Pending(_) => self.pending += 1,
             Outcome::Failed(_) => self.failed += 1,
@@ -38,6 +41,9 @@ impl Tally {
             self.ok,
             self.pending
         );
+        if self.edited > 0 {
+            line.push_str(&format!(", {} edited", self.edited));
+        }
         if self.failed > 0 {
             line.push_str(&format!(", {} failed", self.failed));
         }
@@ -50,8 +56,19 @@ impl Tally {
 struct Steps {
     files: Vec<ResolvedFile>,
     sections: Vec<ResolvedSection>,
+    gitignore: Vec<RecipeItem>,
+    unignore: Vec<RecipeItem>,
     skills: Vec<ResolvedSkill>,
     warnings: Vec<String>,
+}
+
+/// Adds the items that `items` does not have yet, by their line.
+fn extend_once(items: &mut Vec<RecipeItem>, more: Vec<RecipeItem>) {
+    for item in more {
+        if !items.iter().any(|known| known.id == item.id) {
+            items.push(item);
+        }
+    }
 }
 
 /// Resolves every name, so that a name that is not a recipe fails before anything is written. A
@@ -72,6 +89,8 @@ fn gather(recipes: &Recipes, names: &[String]) -> Result<Steps> {
                 gathered.sections.push(section);
             }
         }
+        extend_once(&mut gathered.gitignore, resolved.gitignore);
+        extend_once(&mut gathered.unignore, resolved.unignore);
         for skill in resolved.skills {
             match gathered
                 .skills
@@ -93,7 +112,7 @@ fn gather(recipes: &Recipes, names: &[String]) -> Result<Steps> {
     Ok(gathered)
 }
 
-/// Adds the files, then the sections, then the skills, of the recipes in `names`, from the root of
+/// Adds the files, then the sections, then the lines of `.gitignore`, then the skills, of the recipes in `names`, from the root of
 /// the project. The command exits with 1 when a step is pending or a skill is not installed at the
 /// end.
 pub fn run(collection: &Collection, names: &[String]) -> Result<ExitCode> {
@@ -123,6 +142,22 @@ pub fn run(collection: &Collection, names: &[String]) -> Result<ExitCode> {
         let outcome = steps::add_section(root, &item.path, &item.marker, template)?;
         let id = format!("{} `{}`", item.path, item.marker);
         tally.report("section", &id, &outcome);
+    }
+    let lines: Vec<&str> = gathered
+        .gitignore
+        .iter()
+        .map(|item| item.id.as_str())
+        .collect();
+    for (item, outcome) in gathered
+        .gitignore
+        .iter()
+        .zip(gitignore::add_lines(root, &lines)?)
+    {
+        tally.report("gitignore", &item.id, &outcome);
+    }
+    for item in &gathered.unignore {
+        let outcome = gitignore::unignore(root, &item.id)?;
+        tally.report("unignore", &item.id, &outcome);
     }
     for (item, outcome) in gathered
         .skills

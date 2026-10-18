@@ -4,6 +4,8 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
+use crate::recipes_gitignore::{has_line, has_literal, Gitignore};
+
 const LOCK: &str = "skills-lock.json";
 pub const SKILLS_DIR: &str = ".agents/skills";
 
@@ -73,4 +75,24 @@ pub fn skill(root: &Path, lock: &Lock, name: &str) -> Option<String> {
 /// Whether `.agents/skills/<name>/SKILL.md` is a file.
 pub fn installed(root: &Path, name: &str) -> bool {
     root.join(SKILLS_DIR).join(name).join("SKILL.md").is_file()
+}
+
+/// Why `.gitignore` does not have `line`.
+pub fn gitignore_line(root: &Path, line: &str) -> Option<String> {
+    match Gitignore::read(root) {
+        Gitignore::Missing => Some("no .gitignore".to_owned()),
+        Gitignore::Unusable(reason) => Some(reason),
+        Gitignore::Text(text) => (!has_line(&text, line)).then(|| "not in .gitignore".to_owned()),
+    }
+}
+
+/// Why `.gitignore` still ignores `line`, as a line of its own, or cannot say.
+pub fn unignored(root: &Path, line: &str) -> Option<String> {
+    match Gitignore::read(root) {
+        Gitignore::Missing => None,
+        Gitignore::Unusable(reason) => Some(reason),
+        Gitignore::Text(text) => {
+            has_literal(&text, line).then(|| ".gitignore still has the line".to_owned())
+        }
+    }
 }

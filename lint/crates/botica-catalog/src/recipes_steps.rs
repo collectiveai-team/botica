@@ -32,15 +32,67 @@ pub struct SectionStep {
     pub template: String,
 }
 
+/// The one line that `unignore` can name: the manifest of skills (ADR 0001, CES-107).
+pub const UNIGNORE_WHITELIST: [&str; 1] = ["skills-lock.json"];
+
+/// `[[gitignore]]`: lines that `botica recipe install` adds to `.gitignore` when they are missing
+/// and lines of the whitelist that it removes.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GitignoreStep {
+    #[serde(default)]
+    pub lines: Vec<String>,
+    /// Literal lines to remove, only the ones of `UNIGNORE_WHITELIST`.
+    #[serde(default)]
+    pub unignore: Vec<String>,
+}
+
 /// What is wrong with the steps of one recipe, one message for each problem.
 pub(crate) fn step_problems(
     skills: &[SkillStep],
     files: &[FileStep],
     sections: &[SectionStep],
+    gitignore: &[GitignoreStep],
 ) -> Vec<String> {
     let mut problems = skill_problems(skills);
     problems.extend(file_problems(files));
     problems.extend(section_problems(sections));
+    problems.extend(gitignore_problems(gitignore));
+    problems
+}
+
+fn gitignore_problems(steps: &[GitignoreStep]) -> Vec<String> {
+    let mut problems = Vec::new();
+    let mut lines = BTreeSet::new();
+    let mut unignored = BTreeSet::new();
+    for step in steps {
+        if step.lines.is_empty() && step.unignore.is_empty() {
+            problems.push("a `gitignore` step has no `lines` and no `unignore`".to_owned());
+        }
+        for line in &step.lines {
+            if line.trim().is_empty() {
+                problems.push("`gitignore` has an empty line".to_owned());
+            } else if line.contains(['\n', '\r']) {
+                problems.push("a `gitignore` line has a line break".to_owned());
+            } else if UNIGNORE_WHITELIST.contains(&line.trim()) {
+                problems.push(format!("`gitignore` cannot ignore `{}`", line.trim()));
+            } else if !lines.insert(line.as_str()) {
+                problems.push(format!("`gitignore` lists `{line}` twice"));
+            }
+        }
+        for line in &step.unignore {
+            if !UNIGNORE_WHITELIST.contains(&line.as_str()) {
+                problems.push(format!(
+                    "`unignore` can only name {}, not `{line}`",
+                    UNIGNORE_WHITELIST
+                        .map(|name| format!("`{name}`"))
+                        .join(", ")
+                ));
+            } else if !unignored.insert(line.as_str()) {
+                problems.push(format!("`unignore` lists `{line}` twice"));
+            }
+        }
+    }
     problems
 }
 

@@ -222,6 +222,10 @@ template = "files/prek-base.toml"
 path = "AGENTS.md"
 marker = "## Engineering Standards"
 template = "sections/standards-index.md"
+
+[[gitignore]]               # lines to add to .gitignore, and lines of the whitelist to remove
+lines = [".env", ".tmp/"]
+unignore = ["skills-lock.json"]
 ```
 
 A `template` is a file of the folder of the recipes: under `files/` for a `[[files]]` step and under
@@ -234,8 +238,13 @@ A `path` is relative to the root of the project, without `.` or `..`. A recipe n
 file path once and a marker of a path once. The steps of the recipes it extends come first, a step
 that two recipes list the same stays where it first is, and a skill that two recipes take from
 different sources is taken over by the later recipe, with a warning on stderr. `list` and `show`
-print the steps, `check` compares them with the project, and `install` adds the files, the sections
-and the skills.
+print the steps, `check` compares them with the project, and `install` adds the files, the sections,
+the lines of `.gitignore` and the skills.
+
+A `[[gitignore]]` step has `lines` and `unignore`, and needs one of them. A line is one line of text
+that is not empty, and a recipe lists it once, across its steps. `unignore` names lines to remove
+from `.gitignore`, and the only line it accepts is `skills-lock.json` (ADR 0001); `lines` does not
+accept it (CES-107).
 
 The recipes `base` and `base-python` are in `lint/recipes/` and are compiled into the binary. A
 project adds its own in `recipes/` at its root, and a recipe of the project may extend a built-in
@@ -249,13 +258,15 @@ replace = ["base-python"]
 
 `botica recipe list` prints each recipe with what it extends and how many rules, judgment rules and
 exports its file lists, and where it comes from; a recipe with steps has a line with the number of
-skills, files and sections. `botica recipe show <name>` prints the recipe with the lists of what it
-extends first, each rule with its code, its summary and the recipe that lists it, and then the
-sections Skills, Files and Sections for the steps it has.
+steps of each kind that it has: skills, files, sections and gitignore (the lines and the unignored
+lines). `botica recipe show <name>` prints the recipe with the lists of what it extends first, each
+rule with its code, its summary and the recipe that lists it, and then the sections Skills, Files,
+Sections, Gitignore and Unignore for the steps it has.
 
 `botica recipe check <name>` takes the options of `botica lint` that select rules (`--select`,
-`--ignore`, `--config`). It prints one line for each rule, export, file, section and skill of the
-recipe, in that order, rules first, then judgment rules, exports, files, sections and skills:
+`--ignore`, `--config`). It prints one line for each rule, export, file, section, line of
+`.gitignore`, unignored line and skill of the recipe, in that order, rules first, then judgment
+rules, exports, files, sections, `gitignore`, `unignore` and skills:
 
 ```text
 rule file-size-guard: ok
@@ -263,8 +274,10 @@ rule no-notebooks: differs: not selected
 export agents-md: differs: cannot read `AGENTS.md`
 file prek.toml: differs: does not exist
 section AGENTS.md `## Engineering Standards`: differs: marker not in the file
+gitignore .tmp/: differs: not in .gitignore
+unignore skills-lock.json: differs: .gitignore still has the line
 skill tdd: differs: not in `skills-lock.json` and not in `.agents/skills/`
-base: 6 checked, 5 differ
+base: 8 checked, 7 differ
 ```
 
 A rule differs when it is not in the catalog, is not active (the reason is the one that `botica
@@ -272,21 +285,26 @@ rules --all` gives), is a judgment rule listed under `rules` or is not one liste
 `judgment`. An export differs when `botica rules export --check` fails for it with its default file:
 `AGENTS.md` for `agents-md` and `.abide/rubric.json` for `abide`. A file differs when its path is
 not a file of the project. A section differs when its path is not a file, cannot be read, or its
-text does not contain the marker. A skill differs when its name is not a key of `skills`
+text does not contain the marker. A line of `gitignore` differs when `.gitignore` does not exist, is
+not a file, cannot be read, or has no line equal to it once the white space at its end is dropped. An
+`unignore` line differs when `.gitignore` is not a file, cannot be read, or has a line equal to it
+between white space; without a `.gitignore` it is `ok`. A skill differs when its name is not a key of `skills`
 in `skills-lock.json` or `.agents/skills/<name>/SKILL.md` is not a file. The paths of files and
 sections are from the root of the project, wherever the command runs. The command exits with 1 when
 something differs and with 2 when the recipe does not exist or the recipes do not load.
 
-`botica recipe install <name>...` adds the files, then the sections, then the skills of one or more
-recipes, from the root of the project, and prints one line for each:
+`botica recipe install <name>...` adds the files, then the sections, then the lines of `.gitignore`,
+then the skills of one or more recipes, from the root of the project, and prints one line for each:
 
 ```text
 file prek.toml: added
 file other.toml: pending: exists and differs from the template `files/other.toml` of `base`
 section AGENTS.md `## Engineering Standards`: added: appended to the file
+gitignore .tmp/: added
+unignore skills-lock.json: edited: removed the line from .gitignore
 skill tdd: added
 skill grilling: ok
-base: 3 added, 1 ok, 1 pending
+base: 4 added, 1 ok, 1 pending, 1 edited
 ```
 
 A file is written from its template when its path does not exist (`added`). A path that exists is
@@ -295,6 +313,14 @@ section is written to a new file, appended after a blank line to a file that has
 and left alone when the file has the marker (`ok`); a path that is not a file or cannot be read is
 `pending`. Running the command again changes nothing. A step that two of the named recipes share is
 done once, and a name that is not a recipe fails the command with 2 before anything is written.
+
+The lines of `gitignore` are written to a `.gitignore` that does not exist, and the ones that a
+`.gitignore` lacks are appended to it, after a line break when its last line has none (`added`). A
+line that is there is `ok`, and a `.gitignore` that is not a file or cannot be read leaves each line
+`pending`. An `unignore` line is removed from `.gitignore` wherever it is a whole line between white
+space, and the rest of the file keeps its bytes (`edited`, counted apart in the summary when there
+is one); without that line it is `ok`. `install` does not tell that a pattern such as `*.json`
+ignores the manifest.
 
 A skill is `ok` when `.agents/skills/<name>/SKILL.md` is a file. For the skills that are not,
 `install` runs `npx skills add <source> --agent opencode --yes --skill <name>...` in the root of the

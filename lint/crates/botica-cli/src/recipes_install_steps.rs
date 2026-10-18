@@ -10,6 +10,8 @@ use anyhow::{Context, Result};
 /// What happened to a step.
 pub enum Outcome {
     Added(Option<&'static str>),
+    /// A line of a file that exists was removed.
+    Edited(&'static str),
     Present,
     Pending(String),
     Failed(String),
@@ -21,6 +23,7 @@ impl Outcome {
         match self {
             Self::Added(None) => "added".to_owned(),
             Self::Added(Some(detail)) => format!("added: {detail}"),
+            Self::Edited(detail) => format!("edited: {detail}"),
             Self::Present => "ok".to_owned(),
             Self::Pending(reason) => format!("pending: {reason}"),
             Self::Failed(reason) => format!("failed: {reason}"),

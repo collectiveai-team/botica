@@ -115,6 +115,19 @@ fn base_installs_the_skills_and_adds_prek_and_the_standards_index_from_its_templ
 }
 
 #[test]
+fn base_ignores_the_workspace_folders_and_lets_the_manifest_of_skills_out() {
+    let recipes = embedded();
+    let base = recipes.recipe("base").expect("base");
+
+    assert_eq!(base.gitignore.len(), 1);
+    assert!(base.gitignore[0]
+        .lines
+        .contains(&".agents/skills/".to_owned()));
+    assert!(base.gitignore[0].lines.contains(&".tmp/".to_owned()));
+    assert_eq!(base.gitignore[0].unignore, ["skills-lock.json"]);
+}
+
+#[test]
 fn base_python_has_the_steps_of_base_and_no_step_of_its_own_yet() {
     let recipes = embedded();
 
