@@ -2,10 +2,8 @@
 
 `botica` is built from the Rust workspace in `lint/` and shipped as wheels that carry the binary and the Python module `botica.sdk`. A tag
 `vX.Y.Z` runs `.github/workflows/botica-release.yml` (the file name is the one the PyPI trusted
-publisher is registered with). `v0.1.0` to `v0.6.0` exist from `scaffolding`, so botica starts at
-`0.7.0`. While `main` still publishes `scaffolding` releases, do not cut a `v*` tag there that
-botica has taken. A botica release does not stay "latest" there: `publish` marks the previous
-latest release again (see below).
+publisher is registered with). `v0.1.0` to `v0.6.0` are releases of the removed `scaffolding`
+package, so botica starts at `0.7.0`.
 
 A release does not need `main`: a tag runs the workflow as it is in the tagged commit, and
 `git push origin vX.Y.Z` uploads that commit and its history without creating a branch.
@@ -17,18 +15,15 @@ A release does not need `main`: a tag runs the workflow as it is in the tagged c
 3. `draft` creates a draft GitHub Release.
 4. `wheels` builds a wheel per platform and attaches it, with a `.sha256`, to the draft: Linux
    x64 and arm64 (glibc and musl), macOS arm64 and x64, Windows x64.
-5. `publish` makes the release public when every wheel is attached. Publishing a draft makes it
-   "latest" whatever `--latest=false` said when it was created, and `gh release edit --latest=false`
-   does nothing (GitHub picks the newest release again), so the job reads the release that was
-   latest before publishing and marks it latest again. By hand that is
-   `gh release edit vA.B.C --latest`.
+5. `publish` makes the release public when every wheel is attached, and the release becomes
+   "latest". By hand, `gh release edit vA.B.C --latest` marks another one.
 6. `pypi` uploads the wheels to PyPI. It is **off** until the repository variable
    `PUBLISH_TO_PYPI` is `true`.
 
 `0.7.0` was released on 2026-10-12 (run `38197175421`), `0.7.1` the same day (run `38214642175`),
 `0.8.0` on 2026-10-13 (run `38410864532`) and `0.9.0` on 2026-10-14 (run `38595149595`): every job
-passed, the seven wheels are on GitHub and on PyPI, and the `publish` step left `v0.6.0` as "latest"
-each time (it was first used on 0.7.1). The
+passed, the seven wheels are on GitHub and on PyPI, and the `publish` step of that time left
+`v0.6.0` as "latest" each time (it was first used on 0.7.1). The
 Linux jobs build in a container that owns `lint/dist`, so the checksums are written to `lint/sums`
 instead. The two calls to reusable workflows use GitHub's self-repository syntax
 (`uses: $/.github/workflows/ci.yml`, July 2026, github.com only, runner 2.336.0 or newer), which
@@ -115,7 +110,7 @@ The tag must come after the wheel is on PyPI, or prek cannot install the hook en
 
 ## After the first release
 
-- `scaffolding/templates/prek-generic.toml` and this repository's own `prek.toml` use the mirror
+- `lint/recipes/files/prek-base.toml` and this repository's own `prek.toml` use the mirror
   (`repo = "https://github.com/collectiveai-team/botica-pre-commit"`, `rev`, `args`). They are not
   moved by a release: after the mirror has its new tag, set `rev` in both by hand, and in the
   examples of `lint/README.md` and of the mirror's README (the templates may name the next version

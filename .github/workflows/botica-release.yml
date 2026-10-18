@@ -1,9 +1,8 @@
 name: Botica release
 
 # Tag-driven: `git tag vX.Y.Z && git push origin vX.Y.Z`, with X.Y.Z equal to the version in
-# lint/Cargo.toml ([workspace.package]) and Cargo.lock in sync. v0.1.0 to v0.6.0 are scaffolding's
-# releases: botica starts at 0.7.0. The release does not take "latest" while main still publishes
-# scaffolding releases (the publish job puts the old one back). The file name is the one the PyPI trusted publisher is registered with.
+# lint/Cargo.toml ([workspace.package]) and Cargo.lock in sync. v0.1.0 to v0.6.0 are releases of
+# the removed scaffolding package: botica starts at 0.7.0. The file name is the one the PyPI trusted publisher is registered with.
 # Gated on the CI suite and on the repository's own Tests suite. Builds wheels with the binary and `botica.sdk`
 # (maturin, bindings = "bin") per platform, attaches them with a .sha256 each to a GitHub Release,
 # and uploads them to PyPI (trusted publishing) when PUBLISH_TO_PYPI is "true".
@@ -135,16 +134,9 @@ jobs:
       GH_REPO: ${{ github.repository }}
       TAG: ${{ github.ref_name }}
     steps:
-      # Publishing a draft makes it "latest" whatever `--latest=false` said when it was created, and
-      # `--latest=false` on an edit does nothing: GitHub picks the newest release again. So the one
-      # that was latest is read first and marked latest again afterwards.
-      - name: Publish the draft and keep the latest release as it was
-        run: |
-          previous="$(gh release view --json tagName --jq .tagName 2>/dev/null || true)"
-          gh release edit "$TAG" --draft=false
-          if [ -n "$previous" ] && [ "$previous" != "$TAG" ]; then
-            gh release edit "$previous" --latest
-          fi
+      # Publishing the draft makes it "latest".
+      - name: Publish the draft
+        run: gh release edit "$TAG" --draft=false
 
   # Off until the repository variable PUBLISH_TO_PYPI is "true" (see docs/botica-release.md): PyPI
   # needs a project and a trusted publisher that are set up outside this repo, and a published
