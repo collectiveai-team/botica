@@ -9,6 +9,7 @@ mod refs_check;
 mod refs_cmd;
 mod refs_collection;
 mod refs_export;
+mod refs_pin;
 mod refs_remote;
 mod refs_standards;
 mod rubric;

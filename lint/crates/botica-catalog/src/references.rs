@@ -13,7 +13,7 @@ const README_FILE: &str = "README.md";
 
 /// What a topic points at: a file of the repository itself, a file of another repository at a
 /// commit, or a page of the web (`url`).
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Reference {
     /// The repository of an external reference; absent in an internal one.
@@ -73,6 +73,11 @@ impl Reference {
 
     pub fn is_page(&self) -> bool {
         self.url.is_some()
+    }
+
+    /// What the catalog refuses in the reference: the problems that loading a topic reports for it.
+    pub fn problems(&self) -> Vec<String> {
+        check_reference(self)
     }
 
     /// What a reference that points at a whole file or a whole page could name instead: a block of

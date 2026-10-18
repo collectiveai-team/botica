@@ -39,6 +39,8 @@ botica refs list               # the topics (built-in and of references/), their
 botica refs show log-no-print  # the references of a topic, or of the topics that a rule or a standard cites
 botica refs check [--all]      # fails when a reference no longer resolves or a citation names no topic
 botica refs export             # every topic as JSON, with the text of each file reference (the site reads it)
+botica refs pin <permalink> --topic <topic> --license MIT --note "…"
+                               # adds the file of a permalink of GitHub to a topic of references/
 botica rules test --judge abide [test-through-interface]
                                # abide judges the fixtures of each judgment rule; compared with expected.json
 botica rules conform lint/rules   # each rule over its fixtures, with and without each optimisation;
@@ -148,6 +150,15 @@ the end of the file, when its `anchor` is not in them, when a rule or a standard
 does not exist, or when a `topic.toml` does not load. It reads the files of the topics of the
 project only: the references of the built-in topics point at botica, and `check --all` fetches those
 too. The job `test` of `ci.yml` runs `check --all`. A reference to a page is not fetched.
+
+`botica refs pin <permalink> --topic <topic> --license <spdx> --note <text>` adds a reference to
+`references/<topic>/topic.toml`. The permalink is `https://github.com/<owner>/<repo>/blob/<commit>/<path>`
+with `#L10-L40` or `#L10` for the lines. Pin reads the file at the commit, checks the lines, writes
+the first line that has text, without its indentation, as the `anchor`, and appends the block to the
+file. Without lines the reference points at the whole file and pin prints the advice that `check`
+gives. `--title` creates the topic when it does not exist, with a `README.md` that holds the title.
+Pin fails and writes nothing when the address is not a permalink of GitHub, the commit is not a full
+SHA, the lines are past the end of the file or the topic is a built-in one.
 
 A topic of `references/` with the id of a built-in topic does not load, unless the configuration
 lists the id:

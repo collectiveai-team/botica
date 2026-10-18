@@ -55,7 +55,7 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
    |---|---|
    | `botica refs list` | lists the topics, with their references and who cites them |
    | `botica refs show <topic, rule or standard>` | prints each reference with its context and its permalink |
-   | `botica refs pin <permalink> --topic <topic>` | turns a permalink of GitHub (`…/blob/<sha>/<path>#L10-L40`) into a reference, with its anchor |
+   | `botica refs pin <permalink> --topic <topic>` | adds a permalink of GitHub (`…/blob/<sha>/<path>#L10-L40`) to a topic of the project as a reference, with its anchor |
    | `botica refs check` | fails when a reference no longer resolves |
    | `botica refs update <topic>` | finds the anchor on the current branch and proposes the new commit and lines |
 
@@ -141,10 +141,17 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
     They point at the snippets of `scaffolding/templates/snippets/` at the commit `9c225ad`.
     `log-get-logger` and `log-no-print` cite the first, and so does CES-74. CES-64 cites
     `in-memory-adapters`.
+17. **`botica refs pin` writes the reference.** It appends a `[[references]]` block to the
+    `topic.toml` of a topic of the project, from a permalink of GitHub with the commit in it. The
+    license and the note are options, since the address holds neither. The anchor is the first line
+    of the lines that has text, without its indentation. `--title` creates a topic. A built-in topic
+    is not edited, because the binary carries it. The command prints the repository, the commit,
+    the file and the lines it pinned, and writes nothing when the commit, the file or the lines do
+    not resolve.
 
 ## Not built yet
 
-- `botica refs pin` and `botica refs update`. The `rev` of a built-in topic is edited by hand.
+- `botica refs update`. The `rev` of a built-in topic is edited by hand.
 - The removal of `.agents/snippets/` and `scaffolding/templates/snippets/`. The two topics point at
   the snippets at a commit, which stays readable after the removal.
 - The instruction of the skill to run `botica refs show <rule>` before writing code.

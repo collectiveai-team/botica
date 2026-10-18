@@ -9,6 +9,7 @@ use clap::{Args, Subcommand};
 
 use crate::project::ProjectArgs;
 use crate::refs_collection::{self, label, Collection};
+use crate::refs_pin::{self, Pin};
 use crate::{refs_check, refs_export};
 
 #[derive(Args)]
@@ -30,6 +31,9 @@ enum RefsCommand {
     /// Print every topic as JSON, with the text of each file that its references show, for the
     /// pages of the site.
     Export(ExportArgs),
+    /// Add the file of a permalink of GitHub to a topic of the project as a reference, with the
+    /// lines of the permalink and the first of them as its anchor.
+    Pin(PinArgs),
 }
 
 #[derive(Args)]
@@ -65,6 +69,29 @@ struct ExportArgs {
 }
 
 #[derive(Args)]
+struct PinArgs {
+    /// `https://github.com/<owner>/<repo>/blob/<commit>/<path>#L10-L40`: press `y` on GitHub to
+    /// get the address of the commit.
+    permalink: String,
+    /// The topic of `references/` that takes the reference.
+    #[arg(long)]
+    topic: String,
+    /// The license of the file, as an SPDX id.
+    #[arg(long)]
+    license: String,
+    /// What the reference shows.
+    #[arg(long)]
+    note: String,
+    /// Create the topic, with this title, when it does not exist.
+    #[arg(long)]
+    title: Option<String>,
+    #[command(flatten)]
+    project: ProjectArgs,
+    #[command(flatten)]
+    cache: CacheArgs,
+}
+
+#[derive(Args)]
 struct CheckArgs {
     /// Also fetch and check the references of the built-in topics, which botica checks in its own
     /// repository.
@@ -87,6 +114,16 @@ pub fn run(args: &RefsArgs) -> Result<ExitCode> {
             &args.project,
             args.cache.cache_dir.clone(),
         )?),
+        RefsCommand::Pin(args) => refs_pin::run(
+            &refs_collection::open(&args.project, args.cache.cache_dir.clone())?,
+            &Pin {
+                permalink: &args.permalink,
+                topic: &args.topic,
+                license: &args.license,
+                note: &args.note,
+                title: args.title.as_deref(),
+            },
+        ),
         RefsCommand::Check(args) => Ok(refs_check::run(
             &refs_collection::open(&args.project, args.cache.cache_dir.clone())?,
             args.all,
