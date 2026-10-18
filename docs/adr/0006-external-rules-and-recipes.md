@@ -130,8 +130,8 @@ scaffolder writes the configuration of a repository from its own components, apa
 
 ## Not built yet
 
-- The steps `[[skills]]`, `[[files]]` and `[[sections]]`, `botica recipe install`, and the rename of
-  `generic` and `python`. `list`, `show` and `check` read rules and exports only.
+- The steps `[[skills]]`, `[[files]]` and `[[sections]]`, and `botica recipe install`. `list`, `show`
+  and `check` read rules and exports only.
 - The steps `[[gitignore]]` (lines to add to `.gitignore`) and `[[tools]]` (how a tool is added,
   such as `uv add --dev ruff`, and the fragment of configuration it carries). `base-python` will
   add ruff, pyrefly and pytest with `[[tools]]`.

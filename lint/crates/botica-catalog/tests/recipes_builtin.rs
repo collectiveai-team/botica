@@ -7,11 +7,11 @@ fn embedded() -> Recipes {
 }
 
 #[test]
-fn the_binary_carries_the_recipes_generic_and_python() {
+fn the_binary_carries_the_recipes_base_and_base_python() {
     let recipes = embedded();
 
     let ids: Vec<&str> = recipes.recipes().iter().map(|r| r.id.as_str()).collect();
-    assert_eq!(ids, ["generic", "python"]);
+    assert_eq!(ids, ["base", "base-python"]);
     for recipe in recipes.recipes() {
         assert_eq!(recipe.origin, Origin::BuiltIn);
         assert!(
@@ -21,8 +21,8 @@ fn the_binary_carries_the_recipes_generic_and_python() {
         );
     }
     assert_eq!(
-        recipes.recipe("python").expect("python").extends,
-        ["generic"]
+        recipes.recipe("base-python").expect("base-python").extends,
+        ["base"]
     );
 }
 
@@ -69,10 +69,10 @@ fn a_built_in_recipe_lists_judgment_rules_apart_from_the_others() {
 }
 
 #[test]
-fn python_resolves_to_the_rules_of_generic_first() {
-    let resolved = embedded().resolve("python").expect("resolves");
+fn base_python_resolves_to_the_rules_of_base_first() {
+    let resolved = embedded().resolve("base-python").expect("resolves");
 
-    assert_eq!(resolved.chain, ["generic", "python"]);
+    assert_eq!(resolved.chain, ["base", "base-python"]);
     let first: Vec<&str> = resolved
         .rules
         .iter()

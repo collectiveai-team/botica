@@ -1,5 +1,5 @@
 description = "A Python project: the rules of any repository and the ones about Python code"
-extends = ["generic"]
+extends = ["base"]
 rules = [
   "no-utils",
   "no-tests-in-package",

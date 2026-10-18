@@ -13,16 +13,14 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
 
     assert!(
         text.starts_with(
-            "generic: The rules that look at any file of a repository\n  \
+            "base: The rules that look at any file of a repository\n  \
              rules: 3, judgment: 0, exports: 0\n  from: built-in\n"
         ),
         "{text}"
     );
-    assert!(text.contains("\npython: A Python project"), "{text}");
+    assert!(text.contains("\nbase-python: A Python project"), "{text}");
     assert!(
-        text.contains(
-            "  extends: generic\n  rules: 12, judgment: 0, exports: 0\n  from: built-in\n"
-        ),
+        text.contains("  extends: base\n  rules: 12, judgment: 0, exports: 0\n  from: built-in\n"),
         "{text}"
     );
 }
@@ -33,7 +31,7 @@ fn list_adds_the_recipes_of_the_project_in_the_order_of_their_ids() {
     add_recipe(
         &dir,
         "mine",
-        "description = \"Ours\"\nextends = [\"generic\"]\nrules = [\"no-utils\"]\n\
+        "description = \"Ours\"\nextends = [\"base\"]\nrules = [\"no-utils\"]\n\
          judgment = [\"a\", \"b\"]\nexports = [\"abide\"]\n",
     );
 
@@ -44,9 +42,11 @@ fn list_adds_the_recipes_of_the_project_in_the_order_of_their_ids() {
         .filter(|line| !line.starts_with(' '))
         .map(|line| line.split(':').next().unwrap_or_default())
         .collect();
-    assert_eq!(ids, ["generic", "mine", "python"], "{text}");
+    assert_eq!(ids, ["base", "base-python", "mine"], "{text}");
     assert!(
-        text.contains("mine: Ours\n  extends: generic\n  rules: 1, judgment: 2, exports: 1\n  from: project\n"),
+        text.contains(
+            "mine: Ours\n  extends: base\n  rules: 1, judgment: 2, exports: 1\n  from: project\n"
+        ),
         "{text}"
     );
 }
@@ -67,17 +67,17 @@ fn a_recipe_without_a_description_is_listed_by_its_id() {
 #[test]
 fn a_recipe_of_the_project_with_a_built_in_id_fails_unless_the_configuration_replaces_it() {
     let dir = project("list-collision", None);
-    add_recipe(&dir, "generic", "rules = [\"file-size-guard\"]\n");
+    add_recipe(&dir, "base", "rules = [\"file-size-guard\"]\n");
 
     let text = failed(&recipe(&dir, &["list"]), 2);
-    assert!(text.contains("generic.toml"), "{text}");
+    assert!(text.contains("base.toml"), "{text}");
     assert!(text.contains("[recipes] replace"), "{text}");
 
-    let dir = project("list-replace", Some("[recipes]\nreplace = [\"generic\"]\n"));
-    add_recipe(&dir, "generic", "rules = [\"file-size-guard\"]\n");
+    let dir = project("list-replace", Some("[recipes]\nreplace = [\"base\"]\n"));
+    add_recipe(&dir, "base", "rules = [\"file-size-guard\"]\n");
     let text = ok(&recipe(&dir, &["list"]));
     assert!(
-        text.starts_with("generic\n  rules: 1, judgment: 0, exports: 0\n  from: project\n"),
+        text.starts_with("base\n  rules: 1, judgment: 0, exports: 0\n  from: project\n"),
         "{text}"
     );
 }
@@ -96,12 +96,15 @@ fn a_recipe_file_that_does_not_load_fails_and_names_it() {
 
 #[test]
 fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_and_origin() {
-    let dir = project("show-python", None);
+    let dir = project("show-base-python", None);
 
-    let text = ok(&recipe(&dir, &["show", "python"]));
+    let text = ok(&recipe(&dir, &["show", "base-python"]));
 
-    assert!(text.starts_with("# python: A Python project"), "{text}");
-    assert!(text.contains("\nExtends: generic\n"), "{text}");
+    assert!(
+        text.starts_with("# base-python: A Python project"),
+        "{text}"
+    );
+    assert!(text.contains("\nExtends: base\n"), "{text}");
     let rules = text.split("## Rules\n").nth(1).expect("a section of rules");
     let lines: Vec<&str> = rules
         .split("\n## ")
@@ -116,9 +119,9 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
         "{}",
         lines[0]
     );
-    assert!(lines[0].contains(", from generic): "), "{}", lines[0]);
+    assert!(lines[0].contains(", from base): "), "{}", lines[0]);
     assert!(lines[3].starts_with("- no-utils (BT"), "{}", lines[3]);
-    assert!(lines[3].contains(", from python): "), "{}", lines[3]);
+    assert!(lines[3].contains(", from base-python): "), "{}", lines[3]);
     assert!(text.contains("\n## Judgment rules\n\n(none)\n"), "{text}");
     assert!(text.contains("\n## Exports\n\n(none)\n"), "{text}");
     assert!(text.ends_with("## Exports\n\n(none)\n"), "{text}");
@@ -130,7 +133,7 @@ fn show_names_the_exports_and_the_rules_that_the_catalog_does_not_have() {
     add_recipe(
         &dir,
         "mine",
-        "extends = [\"generic\"]\nrules = [\"ghost\"]\njudgment = [\"phantom\"]\n\
+        "extends = [\"base\"]\nrules = [\"ghost\"]\njudgment = [\"phantom\"]\n\
          exports = [\"agents-md\"]\n",
     );
 

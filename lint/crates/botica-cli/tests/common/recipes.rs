@@ -5,11 +5,11 @@ use std::process::Output;
 
 use super::{command, project_in, write};
 
-/// The three rules that the built-in recipe `generic` lists.
-pub const GENERIC_RULES: [&str; 3] = ["file-size-guard", "no-notebooks", "no-artifacts-in-package"];
+/// The three rules that the built-in recipe `base` lists.
+pub const BASE_RULES: [&str; 3] = ["file-size-guard", "no-notebooks", "no-artifacts-in-package"];
 
 /// The selection that makes every rule of `generic` active, as the arguments of a command.
-pub const SELECT_GENERIC: &str = "file-size-guard,no-notebooks,no-artifacts-in-package";
+pub const SELECT_BASE: &str = "file-size-guard,no-notebooks,no-artifacts-in-package";
 
 pub fn project(name: &str, config: Option<&str>) -> PathBuf {
     project_in("recipes", name, config)

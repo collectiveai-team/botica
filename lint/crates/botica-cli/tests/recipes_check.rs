@@ -6,7 +6,7 @@ mod common;
 use std::path::Path;
 use std::process::Command;
 
-use common::recipes::{add_recipe, judgment_rule, project, recipe, SELECT_GENERIC};
+use common::recipes::{add_recipe, judgment_rule, project, recipe, SELECT_BASE};
 use common::refs::{failed, ok};
 use common::write;
 
@@ -30,15 +30,12 @@ fn export_abide(dir: &Path) {
 fn a_project_that_runs_every_rule_of_the_recipe_has_no_difference() {
     let dir = project("check-ok", None);
 
-    let text = ok(&recipe(
-        &dir,
-        &["check", "generic", "--select", SELECT_GENERIC],
-    ));
+    let text = ok(&recipe(&dir, &["check", "base", "--select", SELECT_BASE]));
 
     assert_eq!(
         text,
         "rule file-size-guard: ok\nrule no-notebooks: ok\nrule no-artifacts-in-package: ok\n\
-         generic: 3 checked, 0 differ\n"
+         base: 3 checked, 0 differ\n"
     );
 }
 
@@ -47,7 +44,7 @@ fn a_rule_that_the_selection_leaves_out_differs_and_the_command_fails() {
     let dir = project("check-not-selected", None);
 
     let text = failed(
-        &recipe(&dir, &["check", "generic", "--select", "file-size-guard"]),
+        &recipe(&dir, &["check", "base", "--select", "file-size-guard"]),
         1,
     );
 
@@ -60,7 +57,7 @@ fn a_rule_that_the_selection_leaves_out_differs_and_the_command_fails() {
         text.contains("rule no-artifacts-in-package: differs: not selected\n"),
         "{text}"
     );
-    assert!(text.ends_with("generic: 3 checked, 2 differ\n"), "{text}");
+    assert!(text.ends_with("base: 3 checked, 2 differ\n"), "{text}");
 }
 
 #[test]
@@ -71,7 +68,7 @@ fn a_rule_that_the_configuration_switches_off_says_why() {
     );
 
     let text = failed(
-        &recipe(&dir, &["check", "generic", "--select", SELECT_GENERIC]),
+        &recipe(&dir, &["check", "base", "--select", SELECT_BASE]),
         1,
     );
 
@@ -79,7 +76,7 @@ fn a_rule_that_the_configuration_switches_off_says_why() {
         text.contains("rule no-notebooks: differs: `enabled = false` in the configuration\n"),
         "{text}"
     );
-    assert!(text.ends_with("generic: 3 checked, 1 differs\n"), "{text}");
+    assert!(text.ends_with("base: 3 checked, 1 differs\n"), "{text}");
 }
 
 #[test]
@@ -91,9 +88,9 @@ fn a_rule_that_is_ignored_on_the_command_line_says_which_selector_did() {
             &dir,
             &[
                 "check",
-                "generic",
+                "base",
                 "--select",
-                SELECT_GENERIC,
+                SELECT_BASE,
                 "--ignore",
                 "no-notebooks",
             ],
@@ -115,9 +112,12 @@ fn a_recipe_is_checked_with_the_rules_of_what_it_extends() {
                api-schemas-extra-forbid,log-get-logger,log-no-print,settings-module,\
                cli-typed-framework,arch-database-package";
 
-    let text = ok(&recipe(&dir, &["check", "python", "--select", all]));
+    let text = ok(&recipe(&dir, &["check", "base-python", "--select", all]));
 
-    assert!(text.ends_with("python: 15 checked, 0 differ\n"), "{text}");
+    assert!(
+        text.ends_with("base-python: 15 checked, 0 differ\n"),
+        "{text}"
+    );
     assert!(text.starts_with("rule file-size-guard: ok\n"), "{text}");
 }
 
