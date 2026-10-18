@@ -8,7 +8,9 @@ title: Dependency vulnerability scanning
 Every push to `main` and every pull request is scanned for known vulnerabilities in dependencies
 with [`osv-scanner scan source`](https://github.com/google/osv-scanner), against the lockfile of the
 project: `uv.lock` for Python. A project of another ecosystem uses the same tool and the same
-workflow with its own lockfile. The workflow is `osv-scanner.yml`.
+workflow with its own lockfile. The workflow is `osv-scanner.yml`. A pull request fails on the
+vulnerabilities that it introduces. `main`, the weekly schedule and a manual run scan the whole
+lockfile.
 
 ## Why
 
@@ -18,20 +20,33 @@ them with no `uv export` step, and also `poetry.lock`, `Pipfile.lock`, `package-
 `Cargo.lock` and `go.mod`. A repo that also has a Next.js frontend or a Go service needs no second
 scanner.
 
+A scan of the whole lockfile on a pull request fails every open pull request on the day a
+vulnerability is disclosed against a dependency that is already on `main`, whatever the pull
+request changes. The scan of a pull request compares the base with the head, and the full scan
+runs where the vulnerability belongs: on `main`, once.
+
 ## Configuration
 
-The workflow calls the reusable workflow
-`google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.5.0` with
+The workflow has two jobs. Each calls a reusable workflow of `google/osv-scanner-action` with
 `scan-args: --lockfile=uv.lock`. `uv.lock` is recognized by its file name, so the argument needs no
 prefix that forces a parser.
+
+- `osv-scanner-reusable.yml@v2.6.0` runs on every event except `pull_request` (`main`, the
+  schedule and `workflow_dispatch`) and scans the whole lockfile.
+- `osv-scanner-reusable-pr.yml@v2.6.0` runs on `pull_request`, scans the base and the head, and
+  fails on the vulnerabilities that only the head has.
 
 Two settings of the caller fail at startup, with no jobs, and not as a scan error:
 
 - The reference is an exact tag. The action publishes no floating `v2` tag or branch, so `@v2`
   cannot be resolved.
-- The calling job has `security-events: write`, `actions: read` and `contents: read`. A called
+- Each calling job has `security-events: write`, `actions: read` and `contents: read`. A called
   workflow cannot hold more permissions than its caller, and the reusable job needs them to upload
   SARIF.
+
+A private repository without GitHub Code Security cannot upload SARIF. It adds `upload-sarif: false`
+to both jobs; `fail-on-vuln` is `true` by default, so the check still fails and the job log lists
+the findings.
 
 ## Migration (existing repos)
 

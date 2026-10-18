@@ -233,6 +233,7 @@ name = "botica-catalog"
 version = "0.11.0"
 dependencies = [
  "serde",
+ "serde_yaml",
  "toml",
 ]
 
