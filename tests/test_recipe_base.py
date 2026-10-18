@@ -103,3 +103,32 @@ def test_the_recipes_of_the_agents_have_the_templates_of_scaffolding() -> None:
     assert (RECIPES / "files" / "claude-settings.json").read_text(encoding="utf-8") == (
         TEMPLATES / "claude-settings-template.json"
     ).read_text(encoding="utf-8")
+
+
+def _github_templates() -> list[tuple[str, str]]:
+    return [
+        (path.relative_to(RECIPES / "files").as_posix(), path.read_text(encoding="utf-8"))
+        for path in sorted((RECIPES / "files" / "github").rglob("*.yml"))
+    ]
+
+
+def test_the_ci_templates_are_the_workflows_of_scaffolding() -> None:
+    scaffolded = [
+        (path.relative_to(TEMPLATES).as_posix(), path.read_text(encoding="utf-8"))
+        for path in sorted((TEMPLATES / "github").rglob("*.yml"))
+    ]
+
+    assert _github_templates() == scaffolded
+
+
+def test_every_ci_template_is_used_by_one_recipe_at_its_github_path() -> None:
+    steps = [
+        step
+        for recipe in sorted(RECIPES.glob("*.toml"))
+        for step in tomllib.loads(recipe.read_text(encoding="utf-8")).get("files", [])
+        if step["template"].startswith("files/github/")
+    ]
+    used = [(step["template"].removeprefix("files/"), step["path"]) for step in steps]
+
+    assert sorted(template for template, _ in used) == [name for name, _ in _github_templates()]
+    assert all(path == f".{template}" for template, path in used)

@@ -220,7 +220,6 @@ scaffolder writes the configuration of a repository from its own components, apa
 
 ## Not built yet
 
-- The recipes of the visibility of the repository, and the recipes of the pieces of CI.
 - The components of `scaffolding` as steps: `agent-config`, `prek`, `pyproject`, `ci`,
   `agents`, `standards`, `skills` and `varlock`.
 - In `botica recipe check`, the hooks of prek and the fragments of the external rules. `BT004`

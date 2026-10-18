@@ -1,0 +1,43 @@
+name: Conventional Commits
+
+# CES-75 (agents-conventional-commits): enforce the Conventional Commits format on the PR title,
+# mirroring the local commit-msg prek hook. The title is read from an env var (never interpolated
+# into the shell) to avoid script injection.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+concurrency:
+  group: conventional-commits-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: validate PR title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Conventional Commits format
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          python3 - <<'PY'
+          import os, re, sys
+
+          title = os.environ["PR_TITLE"]
+          pattern = (
+              r"^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)"
+              r"(\([a-z0-9._-]+\))?!?: .+"
+          )
+          if re.match(pattern, title):
+              print(f"PR title OK: {title!r}")
+              sys.exit(0)
+          print(
+              "::error::CES-75 (agents-conventional-commits): PR title must follow "
+              f"Conventional Commits (type(scope): description). Got: {title!r}"
+          )
+          sys.exit(1)
+          PY

@@ -1,0 +1,5 @@
+description = "GitHub Actions: the OpenCode agent (needs repository secrets and the OpenCode GitHub App)"
+
+[[files]]
+path = ".github/workflows/opencode.yml"
+template = "files/github/workflows/opencode.yml"

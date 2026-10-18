@@ -11,7 +11,7 @@ fn the_binary_carries_its_recipes_with_a_description_and_the_origin_built_in() {
     let recipes = embedded();
 
     let ids: Vec<&str> = recipes.recipes().iter().map(|r| r.id.as_str()).collect();
-    assert_eq!(ids.len(), 5);
+    assert_eq!(ids.len(), 13);
     for recipe in recipes.recipes() {
         assert_eq!(recipe.origin, Origin::BuiltIn);
         assert!(
@@ -163,7 +163,7 @@ fn base_python_adds_pyproject_the_python_hooks_and_the_dev_tools_to_what_base_do
 }
 
 #[test]
-fn there_is_a_recipe_for_each_agent() {
+fn the_binary_carries_a_recipe_for_each_agent_and_each_piece_of_ci() {
     let recipes = embedded();
     let ids: Vec<&str> = recipes.recipes().iter().map(|r| r.id.as_str()).collect();
     assert_eq!(
@@ -173,7 +173,15 @@ fn there_is_a_recipe_for_each_agent() {
             "agent-codex",
             "agent-opencode",
             "base",
-            "base-python"
+            "base-python",
+            "ci",
+            "ci-dependency-review",
+            "ci-docker",
+            "ci-opencode",
+            "ci-publish",
+            "ci-python",
+            "repo-private",
+            "repo-public"
         ]
     );
 
@@ -224,5 +232,97 @@ fn base_adds_the_workspace_defaults_to_agents_md_before_the_standards_index() {
             "AGENTS.md ## Repo Workspace Defaults",
             "AGENTS.md ## Engineering Standards"
         ]
+    );
+}
+
+fn paths(recipes: &Recipes, id: &str) -> Vec<String> {
+    recipes
+        .resolve(id)
+        .expect("resolves")
+        .files
+        .iter()
+        .filter(|file| file.path.starts_with(".github/"))
+        .map(|file| file.path.clone())
+        .collect()
+}
+
+#[test]
+fn the_recipes_of_ci_have_the_workflows_of_scaffolding_one_piece_each() {
+    let recipes = embedded();
+
+    assert_eq!(
+        paths(&recipes, "ci"),
+        [
+            ".github/workflows/conventional-commits.yml",
+            ".github/workflows/commit-policy.yml",
+            ".github/workflows/zizmor.yml",
+            ".github/zizmor.yml"
+        ]
+    );
+    assert_eq!(
+        recipes.recipe("ci-python").expect("ci-python").extends,
+        ["ci"]
+    );
+    assert_eq!(
+        paths(&recipes, "ci-python")[4..],
+        [
+            ".github/workflows/tests.yml",
+            ".github/dependabot.yml",
+            ".github/workflows/osv-scanner.yml"
+        ]
+    );
+    assert_eq!(
+        paths(&recipes, "ci-dependency-review"),
+        [".github/workflows/dependency-review.yml"]
+    );
+    assert_eq!(
+        paths(&recipes, "ci-docker"),
+        [".github/workflows/docker.yml"]
+    );
+    assert_eq!(
+        paths(&recipes, "ci-publish"),
+        [
+            ".github/workflows/release.yml",
+            ".github/workflows/pypi.yml"
+        ]
+    );
+    assert_eq!(
+        paths(&recipes, "ci-opencode"),
+        [".github/workflows/opencode.yml"]
+    );
+}
+
+#[test]
+fn a_public_repository_has_the_dependency_review_and_the_docker_workflows_and_a_private_one_does_not(
+) {
+    let recipes = embedded();
+
+    let public = paths(&recipes, "repo-public");
+    let private = paths(&recipes, "repo-private");
+
+    assert_eq!(private, paths(&recipes, "ci"));
+    assert_eq!(public.len(), 6);
+    assert!(public.starts_with(&private));
+    assert_eq!(
+        public[4..],
+        [
+            ".github/workflows/dependency-review.yml",
+            ".github/workflows/docker.yml"
+        ]
+    );
+    assert_eq!(
+        recipes
+            .recipe("repo-public")
+            .expect("repo-public")
+            .extends
+            .len(),
+        3
+    );
+    assert_eq!(
+        recipes
+            .recipe("repo-private")
+            .expect("repo-private")
+            .extends,
+        ["ci"]
     );
 }

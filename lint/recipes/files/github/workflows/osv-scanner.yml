@@ -1,0 +1,40 @@
+name: osv-scanner
+
+# CES-119 (osv-scanner-replace-pip-audit): audit dependencies for known vulnerabilities via
+# OSV.dev. Replaces pip-audit.yml — osv-scanner reads uv.lock natively (no export step) and,
+# unlike pip-audit, already understands npm/Go/Rust/Java/Ruby/.NET/etc lockfiles, so the same
+# workflow scales to non-Python `impl/*` templates without adding a second scanner later.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Re-audit weekly so newly disclosed CVEs surface without a code change.
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: osv-scanner-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  osv-scanner:
+    name: osv-scanner
+    # A called workflow cannot hold more permissions than its caller, and the
+    # reusable job requests `security-events: write` to upload SARIF. Granting
+    # less makes the run fail at startup with zero jobs, so these are restated
+    # here rather than inherited from the top-level `contents: read`.
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    # Pinned to an exact immutable tag: `google/osv-scanner-action` publishes no
+    # floating `v2` tag or branch, so `@v2` is an unresolvable ref (startup
+    # failure, not a scan failure).
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.5.0
+    with:
+      scan-args: |-
+        --lockfile=uv.lock

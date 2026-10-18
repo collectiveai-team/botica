@@ -146,6 +146,9 @@ priority = 2
 # engineering skills are scanned, which is what caught the two skills shipping byte-identical
 # bundles, and the compiled `AGENTS.md` of `engineering-rules` (a copy of its own
 # `references/*.md`) is no longer kept.
+# `lint/recipes/files/**` and `lint/recipes/sections/**` are the templates of the recipes of botica,
+# copies of those of the scaffolder and of this repo's own files; `tests/test_recipe_base.py` fails
+# when a copy drifts, so they are left out too.
 # The gate reads the **duplicated-lines** percentage, not the token one. jscpd prints both
 # per language and in the Total row, and they diverge widely — the run that failed this branch
 # reported 34.75% of lines against 67.83% of tokens, and the error text quoted 34.8%. Read the
@@ -161,7 +164,7 @@ priority = 2
 [[repos.hooks]]
 id = "jscpd"
 name = "jscpd (copy-paste duplication)"
-entry = "npx --yes jscpd@5 . --threshold 2.5 --ignore \"guide.md,scaffolding/templates/**,standards/**\""
+entry = "npx --yes jscpd@5 . --threshold 2.5 --ignore \"guide.md,scaffolding/templates/**,lint/recipes/files/**,lint/recipes/sections/**,standards/**\""
 language = "system"
 pass_filenames = false
 priority = 2

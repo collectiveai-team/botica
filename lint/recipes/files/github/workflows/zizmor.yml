@@ -1,0 +1,45 @@
+name: zizmor
+
+# Static analysis of GitHub Actions workflows and actions with zizmor.
+# CI-only check: it is intentionally not wired into prek.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: zizmor-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  zizmor:
+    name: zizmor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        # Pinned to an exact immutable tag, not a major tag: setup-uv stopped
+        # publishing @v8 / @v8.x from v8.0.0 on, as supply-chain hardening.
+        uses: astral-sh/setup-uv@v8.3.2
+        with:
+          version: "0.11.12"
+          enable-cache: true
+
+      # --strict-collection: without it, an input that fails schema validation is
+      # only WARNed about and then silently dropped from the audit, so a malformed
+      # workflow is never scanned and the run still reports success. It restores
+      # the pre-v1.7.0 default. Requires zizmor >= 1.7.0.
+      #
+      # GH_TOKEN puts zizmor in online mode so it can resolve referenced
+      # actions (e.g. for the unpinned-uses audit). contents: read is enough.
+      - name: Run zizmor
+        run: uvx zizmor --strict-collection .
+        env:
+          GH_TOKEN: ${{ github.token }}

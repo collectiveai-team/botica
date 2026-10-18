@@ -1,0 +1,17 @@
+description = "GitHub Actions: the checks of Conventional Commits and of the commit policy, and zizmor"
+
+[[files]]
+path = ".github/workflows/conventional-commits.yml"
+template = "files/github/workflows/conventional-commits.yml"
+
+[[files]]
+path = ".github/workflows/commit-policy.yml"
+template = "files/github/workflows/commit-policy.yml"
+
+[[files]]
+path = ".github/workflows/zizmor.yml"
+template = "files/github/workflows/zizmor.yml"
+
+[[files]]
+path = ".github/zizmor.yml"
+template = "files/github/zizmor.yml"
