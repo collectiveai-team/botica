@@ -112,6 +112,24 @@ fn the_skills_are_installed_for_opencode_when_claude_code_reads_them_through_the
 }
 
 #[test]
+fn secrets_varlock_installs_the_skill_of_varlock_for_the_agent_of_the_other_recipes() {
+    let dir = project("secrets-varlock", None);
+
+    let output = common::recipes::with_npx(
+        &dir,
+        common::recipes::NPX_INSTALLS,
+        &["install", "agent-codex", "secrets-varlock"],
+    );
+
+    assert!(output.status.success());
+    assert_eq!(
+        common::recipes::npx_calls(&dir),
+        ["skills add dmno-dev/varlock --agent codex --yes --json --skill varlock"]
+    );
+    assert!(dir.join(".agents/skills/varlock/SKILL.md").is_file());
+}
+
+#[test]
 fn the_recipes_of_opencode_and_codex_choose_their_agent() {
     for (name, agent) in [("agent-opencode", "opencode"), ("agent-codex", "codex")] {
         let dir = project(&format!("agent-skills-{agent}"), None);

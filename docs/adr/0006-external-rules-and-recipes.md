@@ -225,14 +225,15 @@ scaffolder writes the configuration of a repository from its own components, apa
    `install` takes one or more names (`botica recipe install base base-python agent-claude-code`),
    and a step does not carry a condition.
 
+   The components of `scaffolding` are recipes: `gitignore`, `agents`, `standards` and `skills` in
+   `base`, `prek` and `pyproject` in `base-python`, `agent-config` in `agent-opencode`,
+   `agent-claude-code` and `agent-codex`, `ci` in the recipes `ci-*`, `repo-public` and
+   `repo-private`, and `varlock` in `secrets-varlock`. `secrets-varlock` installs the skill
+   `varlock` of `dmno-dev/varlock`; a person or an agent runs `varlock init --agent`, which writes
+   the draft of `.env.schema` from `.env.example` or from the variables that the code reads.
+
 ## Not built yet
 
-- The component `varlock` of `scaffolding` as a recipe. It runs `varlock init` (or
-  `npx varlock init --agent`), and the steps of a recipe are files, sections, links, tools,
-  `.gitignore` lines and skills. The other components are recipes:
-  `gitignore`, `agents`, `standards` and `skills` in `base`, `prek` and `pyproject` in
-  `base-python`, `agent-config` in `agent-opencode`, `agent-claude-code` and `agent-codex`, and `ci`
-  in the recipes `ci-*`, `repo-public` and `repo-private`.
 - A recipe that lists an external rule. `botica recipe check` reports the fragment of each one
   (the hooks of prek are the fragments whose file is `prek.toml`), and `BT004` checks them when
   `botica lint` runs; no built-in recipe lists one yet, because `cognitive-complexity` is the only
@@ -270,6 +271,9 @@ scaffolder writes the configuration of a repository from its own components, apa
 - **A recipe names only components of the binary.** Rejected: a project could not add a step of its
   own. The steps are declared in the `.toml` of the recipe, and a recipe of the project defines
   its own.
+- **A template of `.env.schema` in `secrets-varlock`.** Rejected: with an `.env.schema` in place,
+  `varlock init --agent` (1.23.0) keeps it and drafts nothing from `.env.example` or from the code,
+  and `varlock load` fails on a schema with no variable.
 
 ## Consequences
 

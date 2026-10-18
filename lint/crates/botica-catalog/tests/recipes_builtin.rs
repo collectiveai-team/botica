@@ -11,7 +11,7 @@ fn the_binary_carries_its_recipes_with_a_description_and_the_origin_built_in() {
     let recipes = embedded();
 
     let ids: Vec<&str> = recipes.recipes().iter().map(|r| r.id.as_str()).collect();
-    assert_eq!(ids.len(), 16);
+    assert_eq!(ids.len(), 17);
     for recipe in recipes.recipes() {
         assert_eq!(recipe.origin, Origin::BuiltIn);
         assert!(
@@ -184,7 +184,8 @@ fn the_binary_carries_a_recipe_for_each_agent_and_each_piece_of_ci() {
             "ci-publish",
             "ci-python",
             "repo-private",
-            "repo-public"
+            "repo-public",
+            "secrets-varlock"
         ]
     );
 
@@ -216,6 +217,26 @@ fn the_binary_carries_a_recipe_for_each_agent_and_each_piece_of_ci() {
     let codex = recipes.recipe("agent-codex").expect("agent-codex");
     assert_eq!(codex.agents, ["codex"]);
     assert!(codex.files.is_empty() && codex.links.is_empty() && codex.sections.is_empty());
+}
+
+#[test]
+fn secrets_varlock_installs_only_the_skill_of_varlock() {
+    let recipes = embedded();
+
+    let varlock = recipes.recipe("secrets-varlock").expect("secrets-varlock");
+    let skills: Vec<String> = varlock
+        .skills
+        .iter()
+        .map(|s| format!("{} {:?}", s.source, s.names))
+        .collect();
+    assert_eq!(skills, ["dmno-dev/varlock [\"varlock\"]"]);
+    assert!(varlock.extends.is_empty() && varlock.agents.is_empty());
+    assert!(varlock.files.is_empty() && varlock.sections.is_empty() && varlock.links.is_empty());
+    assert!(varlock.gitignore.is_empty() && varlock.tools.is_empty() && varlock.rules.is_empty());
+    assert!(varlock
+        .description
+        .as_deref()
+        .is_some_and(|d| d.contains("varlock init --agent")));
 }
 
 #[test]

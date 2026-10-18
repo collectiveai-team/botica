@@ -266,8 +266,8 @@ accept it (CES-107).
 
 The recipes `base`, `base-python`, `agent-opencode`, `agent-claude-code`, `agent-codex` and the
 ones of CI (`ci`, `ci-python`, `ci-automerge-public`, `ci-automerge-private`,
-`ci-dependency-review`, `ci-docker`, `ci-publish`, `ci-opencode`, `ci-node`, `ci-go`,
-`repo-public` and `repo-private`) are in `lint/recipes/` and are compiled into the binary. `base` also adds the section `## Repo Workspace
+`ci-dependency-review`, `ci-docker`, `ci-publish`, `ci-node`, `ci-go`, `repo-public` and
+`repo-private`) and `secrets-varlock` are in `lint/recipes/` and are compiled into the binary. `base` also adds the section `## Repo Workspace
 Defaults` to `AGENTS.md`, before the standards index; a new `AGENTS.md` has no `# Agent Notes`
 heading, which `scaffolding` writes. An agent is a recipe chosen by name, beside the others
 (`botica recipe install base base-python agent-claude-code`). `agent-opencode` writes
@@ -277,6 +277,13 @@ them for `codex`; `agent-claude-code` writes `.claude/settings.json` and links `
 installed once in `.agents/skills`, and it names no agent: `npx skills add --agent claude-code`
 writes in `.claude/skills/<name>`, which the link makes a path inside `.agents/skills`, and fails
 with `ENOTDIR`.
+
+`secrets-varlock` installs the skill `varlock` of `dmno-dev/varlock` and has no other step. A
+person or an agent runs `varlock init --agent`, which writes a draft of `.env.schema` from
+`.env.example`, from the variables that the code reads, or with one example variable; the skill
+asks to review the draft with the user. `varlock init` keeps an `.env.schema` that exists and then
+drafts nothing, so the recipe has no template of it. `base` ignores `.env` and keeps
+`.env.schema` in git.
 
 The recipes of CI have the workflows of `scaffolding` as `[[files]]` steps under `.github/`:
 `ci` has `conventional-commits.yml`, `commit-policy.yml`, `zizmor.yml` and the config
