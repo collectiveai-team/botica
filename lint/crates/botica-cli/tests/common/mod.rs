@@ -8,6 +8,7 @@ pub mod lsp;
 pub mod new_rule;
 pub mod node;
 pub mod project_catalog;
+pub mod recipes;
 pub mod refs;
 
 use std::fs;

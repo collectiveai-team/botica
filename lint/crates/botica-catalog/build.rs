@@ -85,6 +85,16 @@ fn main() {
     }
     table.push_str("];\n");
 
+    let recipes_dir = manifest.join("../../recipes");
+    println!("cargo:rerun-if-changed={}", recipes_dir.display());
+    table.push_str("pub(crate) const EMBEDDED_RECIPES: &[(&str, &str)] = &[\n");
+    for file in sorted_entries(&recipes_dir) {
+        if file.is_file() && file.extension().is_some_and(|e| e == "toml") {
+            push(&mut table, &recipes_dir, &file);
+        }
+    }
+    table.push_str("];\n");
+
     let out = PathBuf::from(std::env::var("OUT_DIR").expect("cargo sets OUT_DIR"))
         .join("embedded_files.rs");
     fs::write(out, table).expect("the generated table can be written");

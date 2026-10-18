@@ -1,0 +1,2 @@
+description = "The rules that look at any file of a repository"
+rules = ["file-size-guard", "no-notebooks", "no-artifacts-in-package"]

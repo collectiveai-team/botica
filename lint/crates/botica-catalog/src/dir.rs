@@ -86,6 +86,21 @@ pub fn read_references(dir: &Path) -> io::Result<Vec<SourceFile>> {
     Ok(files)
 }
 
+/// The files of the recipes under `dir`, the `recipes/` of a repository: each `<recipe>.toml`
+/// that is directly in it, with paths from `dir`. A `dir` that does not exist holds none.
+pub fn read_recipes(dir: &Path) -> io::Result<Vec<SourceFile>> {
+    let mut files = Vec::new();
+    if !dir.is_dir() {
+        return Ok(files);
+    }
+    for file in sorted(dir)? {
+        if file.is_file() && file.extension().is_some_and(|ext| ext == "toml") {
+            push(&mut files, dir, &file)?;
+        }
+    }
+    Ok(files)
+}
+
 /// The files of the catalogs of a project under `dir`, its `.botica/rules`, with paths from `dir`:
 /// each folder gives its `catalog.toml` and what `read_files` reads of it. A `dir` that does not
 /// exist holds no catalog.

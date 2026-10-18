@@ -4,7 +4,7 @@ use botica_config::{inline_setting, CommandLine};
 use clap::{Args, ValueEnum};
 
 /// The options that decide which configuration applies and which rules it selects.
-#[derive(Args)]
+#[derive(Args, Clone)]
 pub struct ProjectArgs {
     /// A configuration file to use instead of looking for one (at most one), or a TOML
     /// `key = value` setting that goes over the file (as many as you like; for the same key the

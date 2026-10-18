@@ -43,6 +43,9 @@ botica refs pin <permalink> --topic <topic> --license MIT --note "…"
                                # adds the file of a permalink of GitHub to a topic of references/
 botica refs update <topic> [--write]
                                # follows the anchor of each external reference to the head of its repository
+botica recipe list             # the recipes of the binary and of recipes/, with what each extends and lists
+botica recipe show python      # a recipe with the rules and the exports of the recipes it extends
+botica recipe check python     # how the project differs from the recipe: rules not active, exports not current
 botica rules test --judge abide [test-through-interface]
                                # abide judges the fixtures of each judgment rule; compared with expected.json
 botica rules conform lint/rules   # each rule over its fixtures, with and without each optimisation;
@@ -183,6 +186,57 @@ lists the id:
 [references]
 replace = ["structured-logging"]
 ```
+
+## Recipes
+
+A recipe is a list of the rules and the exports that a repository of some kind has. It is a file
+`<name>.toml`, and every key is optional:
+
+```toml
+# recipes/python.toml
+description = "A Python project"
+extends = ["generic"]
+rules = ["no-utils", "log-no-print"]
+judgment = ["test-through-interface"]
+exports = ["agents-md", "abide"]
+```
+
+`extends` names the recipes whose lists come first. `rules` lists the rules that are not judgment
+rules and `judgment` lists the judgment rules, each by slug, code or alias. `exports` names
+`agents-md` or `abide`, the formats of `botica rules export`. A list names an entry once, and
+recipes that extend one another in a circle are an error.
+
+The recipes `generic` and `python` are in `lint/recipes/` and are compiled into the binary. A
+project adds its own in `recipes/` at its root, and a recipe of the project may extend a built-in
+one. A recipe of the project with the id of a built-in one does not load, unless the configuration
+lists the id:
+
+```toml
+[recipes]
+replace = ["python"]
+```
+
+`botica recipe list` prints each recipe with what it extends and how many rules, judgment rules and
+exports its file lists, and where it comes from. `botica recipe show <name>` prints the recipe with
+the lists of what it extends first, each rule with its code, its summary and the recipe that lists
+it.
+
+`botica recipe check <name>` takes the options of `botica lint` that select rules (`--select`,
+`--ignore`, `--config`). It prints one line for each rule and export of the recipe, rules first,
+then judgment rules, then exports:
+
+```text
+rule file-size-guard: ok
+rule no-notebooks: differs: not selected
+export agents-md: differs: cannot read `AGENTS.md`
+python: 15 checked, 2 differ
+```
+
+A rule differs when it is not in the catalog, is not active (the reason is the one that `botica
+rules --all` gives), is a judgment rule listed under `rules` or is not one listed under
+`judgment`. An export differs when `botica rules export --check` fails for it with its default file:
+`AGENTS.md` for `agents-md` and `.abide/rubric.json` for `abide`. The command exits with 1 when
+something differs and with 2 when the recipe does not exist or the recipes do not load.
 
 ## Which files
 

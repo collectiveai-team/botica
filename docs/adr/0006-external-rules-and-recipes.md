@@ -57,18 +57,41 @@ scaffolder writes the configuration of a repository from its own components, apa
 
    ```toml
    # recipes/python.toml
+   description = "A Python project"
    extends = ["generic"]
    rules = ["file-size-guard", "log-no-print", "cognitive-complexity", "dep-hygiene"]
    judgment = ["test-through-interface", "arch-vocabulary"]
    exports = ["agents-md", "abide"]
    ```
 
-4. **`botica recipe install <name>` writes what a repository lacks,** and `botica recipe check`
-   reports how the repository differs from the recipe. Install writes the configuration of botica,
-   the hooks of prek, the fragments of the external rules and the files of the exports. It adds a file
-   that does not exist and never edits, merges or overwrites one that does; what it cannot add, it
-   lists for a person or an agent to merge (CES-30). Both replace the commands of `scaffolding`,
-   whose components and templates become recipes and fragments of the catalog.
+   Every key is optional and the file may be empty. `description` is one line for
+   `botica recipe list`. `extends` names recipes whose lists come first, `rules` lists the rules
+   that are not judgment rules, `judgment` lists the judgment rules, each by slug, code or alias,
+   and `exports` names `agents-md` or `abide`. A list names an entry once. A recipe that extends
+   others contributes after them, each recipe contributes once, and an entry that two recipes list
+   stays where it first is. Recipes that extend one another in a circle are an error.
+4. **Recipes are built into the binary and read from `recipes/`.** `lint/recipes/` is compiled into
+   the binary: `generic` lists the three rules that look at any file, and `python` extends it with
+   twelve rules about Python code, the ones that `scaffolding` selects today. A project adds its
+   own recipes in `recipes/` at its root, and a recipe of the project may extend a built-in one. A
+   recipe of the project with the id of a built-in one is an error unless the configuration names
+   the id in `[recipes] replace`, as for the topics of ADR 0007.
+5. **`botica recipe list`, `show` and `check` read, and `botica recipe install <name>` writes what a
+   repository lacks.** `check` goes through what the recipe lists, in order: each rule must be in
+   the catalog and active in the project (a judgment rule under `judgment`, any other rule under
+   `rules`), and each export must be current, as `botica rules export --check` decides. It prints
+   one line for each and exits with 1 when one differs. Install is not built. It writes the
+   configuration of botica, the hooks of prek, the fragments of the external rules and the files
+   of the exports. It adds a file that does not exist and never edits, merges or overwrites one
+   that does; what it cannot add, it lists for a person or an agent to merge (CES-30). Install and
+   check replace the commands of `scaffolding`, whose components and templates become recipes and
+   fragments of the catalog.
+
+## Not built yet
+
+- `botica recipe install`.
+- In `botica recipe check`, the hooks of prek and the fragments of the external rules. `BT004`
+  checks the fragments when `botica lint` runs.
 
 ## Not decided
 
@@ -90,6 +113,11 @@ scaffolder writes the configuration of a repository from its own components, apa
 - **Botica runs the external tools.** Rejected in ADR 0003: prek runs each tool as its own hook.
 - **The name `profile`.** The first draft used it for the file of the catalog that lists rules and
   exports; the name is `recipe`.
+- **`check` compares the recipe with the selection of the project and not with its files.** The
+  hooks of prek and the fragments of the external rules are files that `install` writes, so their
+  check goes with install.
+- **Recipes only built into the binary.** A project that wants a list of its own would have to
+  patch the catalog of botica.
 
 ## Consequences
 
@@ -100,3 +128,5 @@ scaffolder writes the configuration of a repository from its own components, apa
 - The site shows the tool and its documentation on the page of an external rule.
 - `scaffolding install` and `scaffolding check` are replaced by `botica recipe install` and
   `botica recipe check`.
+- The catalog carries `lint/recipes/`, loads `recipes/` of the project, and the configuration has
+  the table `[recipes]` with `replace`.

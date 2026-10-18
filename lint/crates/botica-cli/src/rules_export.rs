@@ -95,6 +95,27 @@ pub fn run(args: &ExportArgs) -> Result<()> {
     write_pages(output, &pages)
 }
 
+/// `botica rules export --format <name> --check` for an export that a recipe asks for, with the
+/// files that the export has by default: `AGENTS.md` and `.abide/rubric.json`.
+pub(crate) fn check_export(name: &str, project: &ProjectArgs) -> Result<()> {
+    let (format, output) = match name {
+        "agents-md" => (
+            Format::AgentsMd,
+            Some(PathBuf::from(rubric::DEFAULT_AGENTS_MD)),
+        ),
+        "abide" => (Format::Abide, None),
+        other => bail!("unknown export `{other}`"),
+    };
+    run(&ExportArgs {
+        format,
+        output,
+        agents_md: PathBuf::from(rubric::DEFAULT_AGENTS_MD),
+        check: true,
+        base_url: agents_md::SITE.to_owned(),
+        project: project.clone(),
+    })
+}
+
 impl Format {
     fn name(self) -> String {
         self.to_possible_value()

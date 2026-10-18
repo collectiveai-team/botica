@@ -58,6 +58,16 @@ pub struct ReferencesConfig {
     pub replace: Vec<String>,
 }
 
+/// Settings of `botica recipe`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct RecipesConfig {
+    /// Ids of the built-in recipes that a recipe of `recipes/` replaces. A recipe of the project
+    /// with the id of a built-in one is an error unless the id is listed here.
+    #[serde(default)]
+    pub replace: Vec<String>,
+}
+
 /// Settings of `botica lint`: `botica.toml`, or the `[tool.botica]` table of `pyproject.toml`.
 #[derive(Debug, Clone, PartialEq, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
@@ -111,6 +121,8 @@ pub struct Config {
     pub overrides: Vec<Override>,
     #[serde(default)]
     pub references: ReferencesConfig,
+    #[serde(default)]
+    pub recipes: RecipesConfig,
 }
 
 fn default_select() -> Vec<String> {
@@ -140,6 +152,7 @@ impl Default for Config {
             rules: BTreeMap::new(),
             overrides: Vec::new(),
             references: ReferencesConfig::default(),
+            recipes: RecipesConfig::default(),
         }
     }
 }

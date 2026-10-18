@@ -1,5 +1,6 @@
 use crate::issue::CatalogError;
 use crate::load::{Catalog, SourceFile};
+use crate::recipes::Recipes;
 use crate::references::References;
 
 include!(concat!(env!("OUT_DIR"), "/embedded_files.rs"));
@@ -21,6 +22,20 @@ impl References {
     /// The topics that the binary carries: `lint/references/`.
     pub fn embedded() -> Result<Self, CatalogError> {
         let files: Vec<SourceFile> = EMBEDDED_REFERENCES
+            .iter()
+            .map(|(path, text)| SourceFile {
+                path: (*path).to_owned(),
+                text: (*text).to_owned(),
+            })
+            .collect();
+        Self::from_builtin_files(&files)
+    }
+}
+
+impl Recipes {
+    /// The recipes that the binary carries: `lint/recipes/`.
+    pub fn embedded() -> Result<Self, CatalogError> {
+        let files: Vec<SourceFile> = EMBEDDED_RECIPES
             .iter()
             .map(|(path, text)| SourceFile {
                 path: (*path).to_owned(),

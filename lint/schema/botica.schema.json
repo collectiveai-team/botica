@@ -88,6 +88,9 @@
       "type": "boolean",
       "default": false
     },
+    "recipes": {
+      "$ref": "#/$defs/RecipesConfig"
+    },
     "references": {
       "$ref": "#/$defs/ReferencesConfig"
     },
@@ -171,6 +174,21 @@
       "required": [
         "files"
       ]
+    },
+    "RecipesConfig": {
+      "description": "Settings of `botica recipe`.",
+      "type": "object",
+      "properties": {
+        "replace": {
+          "description": "Ids of the built-in recipes that a recipe of `recipes/` replaces. A recipe of the project\nwith the id of a built-in one is an error unless the id is listed here.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
     },
     "ReferencesConfig": {
       "description": "Settings of `botica refs`.",
