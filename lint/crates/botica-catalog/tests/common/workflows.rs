@@ -3,12 +3,28 @@
 use botica_catalog::Recipes;
 use serde_yaml::Value;
 
-pub fn workflow(recipe: &str, template: &str) -> Value {
+pub fn text(recipe: &str, template: &str) -> String {
     let recipes = Recipes::embedded().expect("the built-in recipes load");
-    let text = recipes
+    recipes
         .template(recipe, template)
-        .unwrap_or_else(|| panic!("{recipe} has no template {template}"));
-    serde_yaml::from_str(text).unwrap_or_else(|error| panic!("{template} is not YAML: {error}"))
+        .unwrap_or_else(|| panic!("{recipe} has no template {template}"))
+        .to_owned()
+}
+
+pub fn parse(text: &str) -> Value {
+    serde_yaml::from_str(text).unwrap_or_else(|error| panic!("not YAML: {error}"))
+}
+
+pub fn workflow(recipe: &str, template: &str) -> Value {
+    parse(&text(recipe, template))
+}
+
+/// The scan of `ci-python` with its lockfile replaced: what the scan of another ecosystem is.
+pub fn osv_scanner_for(lockfile: &str) -> Value {
+    parse(
+        &text("ci-python", "files/github/workflows/osv-scanner.yml")
+            .replace("--lockfile=uv.lock", &format!("--lockfile={lockfile}")),
+    )
 }
 
 /// The job of `workflow` whose `uses:` contains `uses`.
