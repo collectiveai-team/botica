@@ -1,8 +1,11 @@
 name: Publish to PyPI
 
-# Runs after a GitHub Release is published (release.yml). Kept separate so a
-# PyPI misconfiguration fails in isolation without affecting the Release.
-# Re-run manually via the Actions tab (workflow_dispatch) once Trusted
+# Last stage of the tag-driven release: release.yml starts this workflow with
+# workflow_dispatch (`ref` is the tag) after it creates the GitHub Release. The
+# `release: published` trigger covers a Release that a person or a token other
+# than GITHUB_TOKEN publishes; GITHUB_TOKEN events start no workflow. Kept
+# separate so a PyPI misconfiguration fails in isolation without affecting the
+# Release. Re-run manually via the Actions tab (workflow_dispatch) once Trusted
 # Publishing is configured.
 #
 # Setup required (one-time, on PyPI) — replace <PYPI_PROJECT_NAME> below:

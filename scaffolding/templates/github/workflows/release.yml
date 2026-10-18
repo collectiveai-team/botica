@@ -3,9 +3,10 @@ name: Release
 # Tag-driven (hatch-vcs): `git tag vX.Y.Z && git push origin vX.Y.Z`.
 # Gated on the Tests suite (reusable workflow) — the release only runs after
 # lint, type-check and pytest pass for the tagged commit.
-# Builds the sdist/wheel and creates a GitHub Release. PyPI publishing is a
-# separate workflow (pypi.yml) triggered when this Release is published, so a
-# PyPI misconfiguration never blocks the GitHub Release.
+# Builds the sdist/wheel and creates a GitHub Release, then starts pypi.yml
+# with workflow_dispatch. PyPI publishing is a separate workflow, so a PyPI
+# misconfiguration never blocks the GitHub Release and Trusted Publishing stays
+# pinned to pypi.yml as its own top-level workflow.
 
 on:
   push:
@@ -28,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write # start pypi.yml at the end of this job
     steps:
       - uses: actions/checkout@v7
         with:
@@ -59,3 +61,12 @@ jobs:
         with:
           generate_release_notes: true
           files: dist/*
+
+      # The Release above is created with GITHUB_TOKEN, and GitHub does not start
+      # a workflow from an event that GITHUB_TOKEN emits, so `release: published`
+      # never reaches pypi.yml. workflow_dispatch is the documented exception.
+      - name: Dispatch PyPI publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REF_NAME: ${{ github.ref_name }}
+        run: gh workflow run pypi.yml --repo "$GITHUB_REPOSITORY" -f ref="$REF_NAME"
