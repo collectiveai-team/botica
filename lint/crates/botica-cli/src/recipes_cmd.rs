@@ -23,9 +23,10 @@ enum RecipesCommand {
     List(ListArgs),
     /// Print a recipe with the rules and the exports of the recipes it extends.
     Show(NameArgs),
-    /// Report how the project differs from a recipe: the rules that are not active, the exports
-    /// that are not current, and the files, sections and skills that are missing.
-    Check(NameArgs),
+    /// Report how the project differs from one or more recipes: the rules that are not active,
+    /// the fragments of configuration of the external rules that are missing, the exports that
+    /// are not current, and the files, sections and skills that are missing.
+    Check(CheckArgs),
     /// Add the files and sections of one or more recipes to the project. A file that exists is
     /// left as it is and reported as pending.
     Install(InstallArgs),
@@ -34,6 +35,15 @@ enum RecipesCommand {
 #[derive(Args)]
 struct InstallArgs {
     /// The ids of the recipes, installed in the order given.
+    #[arg(required = true)]
+    names: Vec<String>,
+    #[command(flatten)]
+    project: ProjectArgs,
+}
+
+#[derive(Args)]
+struct CheckArgs {
+    /// The ids of the recipes, checked as one.
     #[arg(required = true)]
     names: Vec<String>,
     #[command(flatten)]
@@ -60,7 +70,7 @@ pub fn run(args: &RecipesArgs) -> Result<ExitCode> {
         RecipesCommand::Show(args) => show(&recipes_collection::open(&args.project)?, &args.name),
         RecipesCommand::Check(args) => recipes_check::run(
             &recipes_collection::open(&args.project)?,
-            &args.name,
+            &args.names,
             &args.project,
         ),
         RecipesCommand::Install(args) => {

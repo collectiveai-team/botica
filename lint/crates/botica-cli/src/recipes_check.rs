@@ -6,6 +6,7 @@ use anyhow::Result;
 use botica_catalog::Kind;
 
 use crate::project::ProjectArgs;
+use crate::recipes_check_fragments as fragments;
 use crate::recipes_check_steps as steps;
 use crate::recipes_collection::Collection;
 use crate::recipes_pyproject::Pyproject;
@@ -30,15 +31,18 @@ impl Report {
     }
 }
 
-/// One line for each rule, export, file, section, link, line of `.gitignore`, tool and skill of the
-/// recipe, in that order, then a
-/// summary. The command fails when a rule is not active, an export is not current, or a step is
-/// not in the project. The paths of the steps are from the root of the project.
-pub fn run(collection: &Collection, name: &str, project: &ProjectArgs) -> Result<ExitCode> {
+/// One line for each rule, judgment rule, fragment of an external rule, export, file, section,
+/// link, line of `.gitignore`, tool and skill of the recipes in `names`, in that order, then a
+/// summary. The command fails when a rule is not active, a fragment or an export is not current,
+/// or a step is not in the project. The paths of the steps are from the root of the project.
+pub fn run(collection: &Collection, names: &[String], project: &ProjectArgs) -> Result<ExitCode> {
     let resolved = collection
         .loaded()?
-        .resolve(name)
+        .resolve_many(names)
         .map_err(anyhow::Error::msg)?;
+    for warning in &resolved.warnings {
+        eprintln!("warning: {warning}");
+    }
     let root = collection.project.loaded.root.as_path();
     let mut report = Report::default();
     for item in &resolved.rules {
@@ -50,6 +54,11 @@ pub fn run(collection: &Collection, name: &str, project: &ProjectArgs) -> Result
             &item.id,
             rule_problem(collection, &item.id, true),
         );
+    }
+    for item in &resolved.rules {
+        for (id, problem) in fragments::of_rule(collection, &item.id, root) {
+            report.add("fragment", &id, problem);
+        }
     }
     for item in &resolved.exports {
         let problem = rules_export::check_export(&item.id, project)
@@ -98,7 +107,11 @@ pub fn run(collection: &Collection, name: &str, project: &ProjectArgs) -> Result
     }
     let differ = report.differ;
     let verb = if differ == 1 { "differs" } else { "differ" };
-    println!("{name}: {} checked, {differ} {verb}", report.lines.len());
+    println!(
+        "{}: {} checked, {differ} {verb}",
+        resolved.id,
+        report.lines.len()
+    );
     Ok(if differ == 0 {
         ExitCode::SUCCESS
     } else {

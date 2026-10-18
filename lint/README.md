@@ -45,7 +45,7 @@ botica refs update <topic> [--write]
                                # follows the anchor of each external reference to the head of its repository
 botica recipe list             # the recipes of the binary and of recipes/, with what each extends and lists
 botica recipe show base-python # a recipe with the rules and the exports of the recipes it extends
-botica recipe check base-python # how the project differs from the recipe: rules, exports, files, sections, skills
+botica recipe check base base-python # how the project differs from the recipes: rules, fragments, exports, files, sections, skills
 botica recipe install base base-python # adds the files and sections of the recipes that the repository lacks
 botica rules test --judge abide [test-through-interface]
                                # abide judges the fixtures of each judgment rule; compared with expected.json
@@ -332,14 +332,18 @@ rule with its code, its summary and the recipe that lists it, and then the secti
 Sections, Links, Gitignore, Unignore and Tools for the steps it has, and a section Agents first
 when the recipe lists agents.
 
-`botica recipe check <name>` takes the options of `botica lint` that select rules (`--select`,
-`--ignore`, `--config`). It prints one line for each rule, export, file, section, link, line
-of `.gitignore`, unignored line, tool and skill of the recipe, in that order, rules first, then
-judgment rules, exports, files, sections, links, `gitignore`, `unignore`, tools and skills:
+`botica recipe check <name>...` takes one or more names, as `install` does, and checks them as one
+recipe: each step once, the warnings of the resolution on stderr and the names in the last line. It
+takes the options of `botica lint` that select rules (`--select`, `--ignore`, `--config`). It prints
+one line for each rule, fragment, export, file, section, link, line of `.gitignore`, unignored line,
+tool and skill of the recipes, in that order, rules first, then judgment rules, fragments, exports,
+files, sections, links, `gitignore`, `unignore`, tools and skills:
 
 ```text
 rule file-size-guard: ok
 rule no-notebooks: differs: not selected
+rule cognitive-complexity: ok
+fragment prek.toml `cognitive-complexity`: differs: prek.toml lacks the configuration of complexipy that `cognitive-complexity` (CES-110) needs: `botica explain cognitive-complexity` shows it
 export agents-md: differs: cannot read `AGENTS.md`
 file prek.toml: differs: does not exist
 section AGENTS.md `## Engineering Standards`: differs: marker not in the file
@@ -348,12 +352,16 @@ gitignore .tmp/: differs: not in .gitignore
 unignore skills-lock.json: differs: .gitignore still has the line
 tool ruff: differs: not in pyproject.toml
 skill tdd: differs: not in `skills-lock.json` and not in `.agents/skills/`
-base: 10 checked, 9 differ
+base: 12 checked, 10 differ
 ```
 
 A rule differs when it is not in the catalog, is not active (the reason is the one that `botica
 rules --all` gives), is a judgment rule listed under `rules` or is not one listed under
-`judgment`. An export differs when `botica rules export --check` fails for it with its default file:
+`judgment`. A fragment is a line for each configuration that an external implementation of a rule
+under `rules` declares (the hook of prek of `cognitive-complexity`, for one); it differs when the
+file it names does not exist, is not TOML or lacks the fragment, as `external-config` decides, and
+a rule that is not active has its fragment checked too. A rule that is not in the catalog has none.
+An export differs when `botica rules export --check` fails for it with its default file:
 `AGENTS.md` for `agents-md` and `.abide/rubric.json` for `abide`. A file differs when its path is
 not a file of the project. A section differs when its path is not a file, cannot be read, or its
 text does not contain the marker. A link differs when its path does not exist, is not a symbolic

@@ -143,6 +143,9 @@ scaffolder writes the configuration of a repository from its own components, apa
    and prints one line for each; it exits with 1 when one differs:
    - a rule is in the catalog and active in the project (a judgment rule under `judgment`, any
      other rule under `rules`);
+   - the file that an external implementation of a rule under `rules` names holds its fragment,
+     as `external-config` decides, whether or not the rule is active (the hook of prek of
+     `cognitive-complexity`, for one);
    - an export is current, as `botica rules export --check` decides;
    - a file exists;
    - a section's marker is in its file;
@@ -151,7 +154,11 @@ scaffolder writes the configuration of a repository from its own components, apa
    - `pyproject.toml` declares each package of a tool;
    - a skill is in `skills-lock.json` and in `.agents/skills/`.
 
-   The lines come in the order rules, judgment rules, exports, files, sections, links,
+   `check` takes one or more names, as `install` does, and checks them as one recipe: the chain has
+   each recipe once, an entry that several list stays where it is first, and the warnings of the
+   resolution go to stderr. The last line names the recipes.
+
+   The lines come in the order rules, judgment rules, fragments, exports, files, sections, links,
    `gitignore`, `unignore`, tools, skills. A path is from the root of the project, wherever the command
    runs. A marker is searched for as text anywhere in the file, as the scaffolder does. A skill is
    in the lock when its name is a key of `skills`, and in `.agents/skills/` when
@@ -225,8 +232,10 @@ scaffolder writes the configuration of a repository from its own components, apa
   `gitignore`, `agents`, `standards` and `skills` in `base`, `prek` and `pyproject` in
   `base-python`, `agent-config` in `agent-opencode`, `agent-claude-code` and `agent-codex`, and `ci`
   in the recipes `ci-*`, `repo-public` and `repo-private`.
-- In `botica recipe check`, the hooks of prek and the fragments of the external rules. `BT004`
-  checks the fragments when `botica lint` runs.
+- A recipe that lists an external rule. `botica recipe check` reports the fragment of each one
+  (the hooks of prek are the fragments whose file is `prek.toml`), and `BT004` checks them when
+  `botica lint` runs; no built-in recipe lists one yet, because `cognitive-complexity` is the only
+  external rule and the standards of the other tools are not rules yet.
 
 ## Not decided
 

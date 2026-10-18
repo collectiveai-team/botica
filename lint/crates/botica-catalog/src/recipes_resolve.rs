@@ -42,13 +42,28 @@ impl Recipes {
     /// The recipe `id` with what it extends: each recipe contributes once, after the recipes it
     /// extends, and an entry that several recipes list stays where it is first.
     pub fn resolve(&self, id: &str) -> Result<ResolvedRecipe, String> {
-        if self.recipe(id).is_none() {
-            return Err(format!(
-                "no recipe `{id}` (`botica recipe list` lists them)"
-            ));
+        self.resolve_many(&[id])
+    }
+
+    /// The recipes `ids` as one: the chain has each recipe once, the ones a name extends before it,
+    /// the names in the order given, and an entry that several recipes list stays where it is
+    /// first. A skill that a later recipe takes from another source replaces the earlier one,
+    /// with a warning. A name that is not a recipe fails before anything is resolved.
+    pub fn resolve_many<S: AsRef<str>>(&self, ids: &[S]) -> Result<ResolvedRecipe, String> {
+        if ids.is_empty() {
+            return Err("name at least one recipe".to_owned());
+        }
+        for id in ids.iter().map(AsRef::as_ref) {
+            if self.recipe(id).is_none() {
+                return Err(format!(
+                    "no recipe `{id}` (`botica recipe list` lists them)"
+                ));
+            }
         }
         let mut chain = Vec::new();
-        self.visit(id, &mut Vec::new(), &mut chain)?;
+        for id in ids {
+            self.visit(id.as_ref(), &mut Vec::new(), &mut chain)?;
+        }
         let contribute = |list: fn(&Recipe) -> &Vec<String>| {
             let mut seen = BTreeSet::new();
             let mut items = Vec::new();
@@ -66,8 +81,9 @@ impl Recipes {
         };
         let recipes: Vec<&Recipe> = chain.iter().filter_map(|id| self.recipe(id)).collect();
         let (skills, warnings) = resolve_skills(&recipes);
+        let names: Vec<&str> = ids.iter().map(AsRef::as_ref).collect();
         Ok(ResolvedRecipe {
-            id: id.to_owned(),
+            id: names.join(", "),
             rules: contribute(|recipe| &recipe.rules),
             judgment: contribute(|recipe| &recipe.judgment),
             exports: contribute(|recipe| &recipe.exports),

@@ -3,9 +3,6 @@
 use std::process::ExitCode;
 
 use anyhow::{anyhow, Result};
-use botica_catalog::{
-    RecipeItem, Recipes, ResolvedFile, ResolvedLink, ResolvedSection, ResolvedSkill, ResolvedTool,
-};
 
 use crate::recipes_collection::Collection;
 use crate::recipes_install_gitignore as gitignore;
@@ -54,102 +51,12 @@ impl Tally {
     }
 }
 
-/// The steps of the recipes that were named, each one once.
-#[derive(Default)]
-struct Steps {
-    files: Vec<ResolvedFile>,
-    sections: Vec<ResolvedSection>,
-    links: Vec<ResolvedLink>,
-    agents: Vec<RecipeItem>,
-    gitignore: Vec<RecipeItem>,
-    unignore: Vec<RecipeItem>,
-    tools: Vec<ResolvedTool>,
-    skills: Vec<ResolvedSkill>,
-    warnings: Vec<String>,
-}
-
-/// Adds the items that `items` does not have yet, by their line.
-fn extend_once(items: &mut Vec<RecipeItem>, more: Vec<RecipeItem>) {
-    for item in more {
-        if !items.iter().any(|known| known.id == item.id) {
-            items.push(item);
-        }
-    }
-}
-
-/// Resolves every name, so that a name that is not a recipe fails before anything is written. A
-/// step that two of them list the same stays once, whatever recipe lists it; a skill that a later
-/// name takes from another source is taken over by it, with a warning, as the resolution of one
-/// recipe does.
-fn gather(recipes: &Recipes, names: &[String]) -> Result<Steps> {
-    let mut gathered = Steps::default();
-    for name in names {
-        let resolved = recipes.resolve(name).map_err(anyhow::Error::msg)?;
-        gathered.warnings.extend(resolved.warnings);
-        for file in resolved.files {
-            let listed =
-                |known: &ResolvedFile| known.path == file.path && known.template == file.template;
-            if !gathered.files.iter().any(listed) {
-                gathered.files.push(file);
-            }
-        }
-        for section in resolved.sections {
-            let listed = |known: &ResolvedSection| {
-                known.path == section.path
-                    && known.marker == section.marker
-                    && known.template == section.template
-            };
-            if !gathered.sections.iter().any(listed) {
-                gathered.sections.push(section);
-            }
-        }
-        for link in resolved.links {
-            let listed =
-                |known: &ResolvedLink| known.path == link.path && known.target == link.target;
-            if !gathered.links.iter().any(listed) {
-                gathered.links.push(link);
-            }
-        }
-        for tool in resolved.tools {
-            let listed = |known: &ResolvedTool| {
-                known.manager == tool.manager
-                    && known.group == tool.group
-                    && known.package == tool.package
-            };
-            if !gathered.tools.iter().any(listed) {
-                gathered.tools.push(tool);
-            }
-        }
-        extend_once(&mut gathered.agents, resolved.agents);
-        extend_once(&mut gathered.gitignore, resolved.gitignore);
-        extend_once(&mut gathered.unignore, resolved.unignore);
-        for skill in resolved.skills {
-            match gathered
-                .skills
-                .iter_mut()
-                .find(|known| known.name == skill.name)
-            {
-                None => gathered.skills.push(skill),
-                Some(known) if known.source == skill.source => {}
-                Some(known) => {
-                    gathered.warnings.push(format!(
-                        "the skill `{}` comes from `{}` ({}), which replaces `{}` ({})",
-                        skill.name, skill.source, skill.from, known.source, known.from
-                    ));
-                    *known = skill;
-                }
-            }
-        }
-    }
-    Ok(gathered)
-}
-
 /// Adds the files, then the sections, then the links, then the lines of `.gitignore`, then the tools, then the skills, of the recipes in `names`, from the root of
 /// the project. The command exits with 1 when a step is pending or a skill is not installed at the
 /// end.
 pub fn run(collection: &Collection, names: &[String]) -> Result<ExitCode> {
     let recipes = collection.loaded()?;
-    let gathered = gather(recipes, names)?;
+    let gathered = recipes.resolve_many(names).map_err(anyhow::Error::msg)?;
     for warning in &gathered.warnings {
         eprintln!("warning: {warning}");
     }
