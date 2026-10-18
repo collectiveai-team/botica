@@ -265,8 +265,9 @@ from `.gitignore`, and the only line it accepts is `skills-lock.json` (ADR 0001)
 accept it (CES-107).
 
 The recipes `base`, `base-python`, `agent-opencode`, `agent-claude-code`, `agent-codex` and the
-ones of CI (`ci`, `ci-python`, `ci-dependency-review`, `ci-docker`, `ci-publish`, `ci-opencode`,
-`repo-public` and `repo-private`) are in `lint/recipes/` and are compiled into the binary. `base` also adds the section `## Repo Workspace
+ones of CI (`ci`, `ci-python`, `ci-automerge-public`, `ci-automerge-private`,
+`ci-dependency-review`, `ci-docker`, `ci-publish`, `ci-opencode`, `repo-public` and
+`repo-private`) are in `lint/recipes/` and are compiled into the binary. `base` also adds the section `## Repo Workspace
 Defaults` to `AGENTS.md`, before the standards index; a new `AGENTS.md` has no `# Agent Notes`
 heading, which `scaffolding` writes. An agent is a recipe chosen by name, beside the others
 (`botica recipe install base base-python agent-claude-code`). `agent-opencode` writes
@@ -286,6 +287,18 @@ and `ci-opencode` have one piece each. `repo-public` extends `ci`, `ci-dependenc
 repository and `docker.yml` pushes to GHCR, which bills a private repository. A recipe has no
 condition, so `ci-docker` and `repo-public` add `docker.yml` also to a repository that has no
 `Dockerfile`: name them only when it has one, and `ci-python` only for a Python project.
+`ci-automerge-public` and `ci-automerge-private` extend `ci` and merge the Dependabot pull requests
+that are patch updates or fix an open security alert; neither merges a minor update, and neither is
+in `repo-public` or `repo-private`. `ci-automerge-public` has `dependabot-automerge.yml`, which
+labels the pull request `automerge` and runs `gh pr merge --auto`: the repository needs the label,
+the setting "Allow auto-merge" and a branch protection rule with required checks, or the merge is
+immediate. `ci-automerge-private` is for a repository with no branch protection (a private one on
+the Free plan): `dependabot-automerge-label.yml` labels, and `dependabot-automerge-run.yml` merges
+on `workflow_run` once the workflows that it lists (`Tests`, `osv-scanner`, `zizmor`,
+`Conventional Commits` and `commit-policy`) pass. Both run on `pull_request_target` or
+`workflow_run` and never check out the code of the pull request; the `zizmor` finding
+`dangerous-triggers` is ignored in the line of the trigger. The sources are the workflows of
+`coro` and `collectiveai-web`.
 `base-python` extends `base` with a `pyproject.toml` (a `[[files]]` template with `replace-me` as
 name and description, to fill in), the Python hooks of prek (three sections of `prek.toml`, one for
 each repository of hooks), the configuration of ruff, pyrefly and pytest (sections of

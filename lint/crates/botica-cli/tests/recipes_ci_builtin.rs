@@ -84,3 +84,41 @@ fn the_python_pieces_come_apart_from_the_common_ones() {
     assert!(dir.join(".github/workflows/tests.yml").is_file());
     assert!(dir.join(".github/workflows/pypi.yml").is_file());
 }
+
+#[test]
+fn the_public_automerge_adds_one_workflow_to_the_common_ones() {
+    let dir = project("ci-automerge-public", None);
+
+    let text = ok(&recipe(&dir, &["install", "ci-automerge-public"]));
+
+    assert!(
+        text.ends_with("ci-automerge-public: 5 added, 0 ok, 0 pending\n"),
+        "{text}"
+    );
+    assert!(dir
+        .join(".github/workflows/dependabot-automerge.yml")
+        .is_file());
+    let checked = ok(&recipe(&dir, &["check", "ci-automerge-public"]));
+    assert!(
+        checked.ends_with("ci-automerge-public: 5 checked, 0 differ\n"),
+        "{checked}"
+    );
+}
+
+#[test]
+fn the_private_automerge_adds_the_workflow_that_labels_and_the_one_that_merges() {
+    let dir = project("ci-automerge-private", None);
+
+    let text = ok(&recipe(&dir, &["install", "ci-automerge-private"]));
+
+    assert!(
+        text.ends_with("ci-automerge-private: 6 added, 0 ok, 0 pending\n"),
+        "{text}"
+    );
+    assert!(dir
+        .join(".github/workflows/dependabot-automerge-label.yml")
+        .is_file());
+    assert!(dir
+        .join(".github/workflows/dependabot-automerge-run.yml")
+        .is_file());
+}

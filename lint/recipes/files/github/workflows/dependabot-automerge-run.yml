@@ -1,0 +1,75 @@
+name: dependabot-automerge-run
+
+# Merges a PR labelled `automerge` (see dependabot-automerge-label.yml) once
+# every tracked workflow has gone green on its head commit.
+#
+# Why not `gh pr merge --auto`: GitHub's auto-merge needs a branch protection
+# rule (or ruleset) that names required status checks, and a private repository
+# on the GitHub Free plan cannot have branch protection (the `allow_auto_merge`
+# setting stays `false` with no error). Where nothing is required,
+# `gh pr merge --auto` merges at once instead of waiting (cli/cli#8514,
+# cli/cli#13880). This workflow is the wait-and-merge step: it runs on
+# `workflow_run`, which needs no polling and avoids the deadlock of one workflow
+# that waits for its own check run. Where branch protection is available, use
+# ci-automerge-public instead.
+#
+# Every name in `workflows:` must match the `name:` of a workflow, and the list
+# in the `gh pr checks` filter below must have the same names. A name that no
+# workflow of the repository has (Tests, in a repository that is not Python) is
+# ignored. Add the workflows that gate a normal PR and are not listed.
+on:
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows: [Tests, osv-scanner, zizmor, Conventional Commits, commit-policy]
+    types: [completed]
+
+concurrency:
+  group: dependabot-automerge-run-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  merge:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Find the open PR for this commit
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          number=$(gh api "repos/$REPO/commits/$SHA/pulls" \
+            --jq '[.[] | select(.state == "open")][0].number // empty')
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      - name: Merge once every tracked workflow is green
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          labels=$(gh pr view "$NUMBER" --repo "$REPO" --json labels -q '.labels[].name')
+          if ! grep -qx automerge <<<"$labels"; then
+            echo "not labelled automerge, nothing to do"
+            exit 0
+          fi
+
+          not_green=$(gh pr checks "$NUMBER" --repo "$REPO" --json workflow,bucket --jq '
+            [.[] | select(.workflow as $w
+              | ["Tests","osv-scanner","zizmor","Conventional Commits","commit-policy"] | index($w))]
+            | map(select(.bucket != "pass"))
+            | length')
+
+          if [ "$not_green" != "0" ]; then
+            echo "still waiting on CI ($not_green tracked check(s) not green yet)"
+            exit 0
+          fi
+
+          gh pr merge "$NUMBER" --repo "$REPO" --squash --delete-branch

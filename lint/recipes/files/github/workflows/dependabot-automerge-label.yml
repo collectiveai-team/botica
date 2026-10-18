@@ -1,0 +1,73 @@
+name: dependabot-automerge-label
+
+# Decides whether a Dependabot PR is "easy" (a patch update or a fix for an open
+# security alert) and labels it `automerge`; create that label once in the
+# repository (`gh label create automerge`). It never merges anything itself:
+# dependabot-automerge-run.yml merges, and this repository cannot use GitHub's
+# native auto-merge (see that file).
+#
+# `pull_request_target` (not `pull_request`) is required: fetch-metadata needs
+# write access to label the PR, and a Dependabot `pull_request` run gets a
+# read-only token with no secrets. This workflow only reads PR metadata and
+# applies a label; it never checks out or runs the code of the PR, so the
+# elevated token is not exposed to untrusted input.
+#
+# `dependency-type` is not used: it is derived from dependency-group
+# membership, so a package that a group re-lists is reported as
+# `direct:development` even when it is also a production dependency.
+
+on:
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
+
+concurrency:
+  group: dependabot-automerge-label-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  label:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v3
+        with:
+          # alert-lookup needs a PAT or App token with "Dependabot alerts: read"
+          # (the default GITHUB_TOKEN cannot query alerts). Until the secret
+          # DEPENDABOT_METADATA_TOKEN exists, this degrades to "no security-alert
+          # lane" instead of failing the job, and patch updates still merge.
+          github-token: ${{ secrets.DEPENDABOT_METADATA_TOKEN || github.token }}
+          alert-lookup: ${{ secrets.DEPENDABOT_METADATA_TOKEN != '' }}
+
+      - name: Decide whether this update is "easy"
+        id: gate
+        env:
+          ALERT_STATE: ${{ steps.metadata.outputs.alert-state }}
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+        run: |
+          if [ "$ALERT_STATE" = "OPEN" ]; then
+            reason="open security alert"
+          elif [ "$UPDATE_TYPE" = "version-update:semver-patch" ]; then
+            reason="patch update"
+          else
+            reason=""
+          fi
+          echo "reason=$reason" >> "$GITHUB_OUTPUT"
+
+      - name: Label / unlabel
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          REASON: ${{ steps.gate.outputs.reason }}
+        run: |
+          if [ -n "$REASON" ]; then
+            echo "Marking as auto-mergeable: $REASON"
+            gh pr edit "$PR_URL" --repo "$REPO" --add-label automerge
+          else
+            gh pr edit "$PR_URL" --repo "$REPO" --remove-label automerge || true
+          fi

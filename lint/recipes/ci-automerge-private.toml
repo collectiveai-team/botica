@@ -1,0 +1,10 @@
+description = "GitHub Actions: auto-merge of the Dependabot patch updates, for a repository without branch protection (a private one on the Free plan)"
+extends = ["ci"]
+
+[[files]]
+path = ".github/workflows/dependabot-automerge-label.yml"
+template = "files/github/workflows/dependabot-automerge-label.yml"
+
+[[files]]
+path = ".github/workflows/dependabot-automerge-run.yml"
+template = "files/github/workflows/dependabot-automerge-run.yml"

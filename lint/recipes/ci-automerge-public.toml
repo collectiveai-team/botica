@@ -1,0 +1,6 @@
+description = "GitHub Actions: auto-merge of the Dependabot patch updates, with the native auto-merge (needs branch protection with required checks)"
+extends = ["ci"]
+
+[[files]]
+path = ".github/workflows/dependabot-automerge.yml"
+template = "files/github/workflows/dependabot-automerge.yml"

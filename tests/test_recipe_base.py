@@ -112,13 +112,22 @@ def _github_templates() -> list[tuple[str, str]]:
     ]
 
 
-def test_the_ci_templates_are_the_workflows_of_scaffolding() -> None:
+ONLY_IN_RECIPES = {
+    "github/workflows/dependabot-automerge-label.yml",
+    "github/workflows/dependabot-automerge-run.yml",
+    "github/workflows/dependabot-automerge.yml",
+}
+
+
+def test_the_ci_templates_are_the_workflows_of_scaffolding_and_the_ones_it_lacks() -> None:
     scaffolded = [
         (path.relative_to(TEMPLATES).as_posix(), path.read_text(encoding="utf-8"))
         for path in sorted((TEMPLATES / "github").rglob("*.yml"))
     ]
+    recipes = _github_templates()
 
-    assert _github_templates() == scaffolded
+    assert [item for item in recipes if item[0] not in ONLY_IN_RECIPES] == scaffolded
+    assert {name for name, _ in recipes} - {name for name, _ in scaffolded} == ONLY_IN_RECIPES
 
 
 def test_every_ci_template_is_used_by_one_recipe_at_its_github_path() -> None:
