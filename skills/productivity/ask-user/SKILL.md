@@ -8,6 +8,8 @@ disable-model-invocation: true
 
 Route the user's situation to the smallest suitable workflow. Explain the recommendation briefly, then ask whether they want to invoke it. Do not invoke another user-invoked skill without confirmation.
 
+Before stating what a skill does or recommending a step be skipped, read that skill's `SKILL.md`: the summaries here are for orientation only.
+
 ## Main Flow
 
 For an idea that needs to ship:

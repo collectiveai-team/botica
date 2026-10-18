@@ -9,7 +9,8 @@ RECIPES = Path(__file__).resolve().parent.parent / "lint" / "recipes"
 def _github_templates() -> list[str]:
     return [
         path.relative_to(RECIPES / "files").as_posix()
-        for path in sorted((RECIPES / "files" / "github").rglob("*.yml"))
+        for path in sorted((RECIPES / "files" / "github").rglob("*"))
+        if path.is_file()
     ]
 
 

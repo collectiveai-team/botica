@@ -96,9 +96,20 @@ fn base_installs_the_skills_and_adds_prek_and_the_standards_index_from_its_templ
     assert_eq!(sources[1], "collectiveai-team/botica");
     assert_eq!(sources.len(), 2);
     assert!(base.skills.iter().all(|step| !step.names.is_empty()));
-    assert_eq!(base.files.len(), 1);
-    assert_eq!(base.files[0].path, "prek.toml");
-    assert_eq!(base.files[0].template, "files/prek-base.toml");
+    let files: Vec<String> = base
+        .files
+        .iter()
+        .map(|f| format!("{} <- {}", f.path, f.template))
+        .collect();
+    assert_eq!(
+        files,
+        [
+            "prek.toml <- files/prek-base.toml",
+            ".github/pull_request_template.md <- files/github/pull_request_template.md",
+            ".github/ISSUE_TEMPLATE/bug_report.md <- files/github/ISSUE_TEMPLATE/bug_report.md",
+            ".github/ISSUE_TEMPLATE/feature_proposal.md <- files/github/ISSUE_TEMPLATE/feature_proposal.md",
+        ]
+    );
     assert_eq!(base.sections.len(), 2);
     assert_eq!(base.sections[1].path, "AGENTS.md");
     assert_eq!(base.sections[1].marker, "## Engineering Standards");
@@ -157,7 +168,7 @@ fn base_python_adds_pyproject_the_python_hooks_and_the_dev_tools_to_what_base_do
     assert!(python.tools[0].packages.contains(&"ruff".to_owned()));
     let resolved = recipes.resolve("base-python").expect("resolves");
     assert!(resolved.skills.iter().all(|skill| skill.from == "base"));
-    assert_eq!(resolved.files.len(), 2);
+    assert_eq!(resolved.files.len(), 5);
     assert_eq!(resolved.sections.len(), 9);
     assert!(resolved.warnings.is_empty());
 }

@@ -59,6 +59,18 @@ unignore = ["skills-lock.json"]
 path = "prek.toml"
 template = "files/prek-base.toml"
 
+[[files]]
+path = ".github/pull_request_template.md"
+template = "files/github/pull_request_template.md"
+
+[[files]]
+path = ".github/ISSUE_TEMPLATE/bug_report.md"
+template = "files/github/ISSUE_TEMPLATE/bug_report.md"
+
+[[files]]
+path = ".github/ISSUE_TEMPLATE/feature_proposal.md"
+template = "files/github/ISSUE_TEMPLATE/feature_proposal.md"
+
 [[sections]]
 path = "AGENTS.md"
 marker = "## Repo Workspace Defaults"

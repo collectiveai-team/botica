@@ -13,3 +13,7 @@ The internal version is renamed `ask-user`, condensed to the installed catalog,
 and includes the local engineering gate, refactoring, test review, journal,
 handoff, and PR-body workflows. Recommendations require confirmation before
 invoking another user-invoked skill.
+
+The instruction to read a skill's `SKILL.md` before describing it or skipping a step comes from
+[`954ee7f`](https://github.com/mattpocock/skills/commit/954ee7f) on the `main` branch of
+`mattpocock/skills`, after v1.3.1.

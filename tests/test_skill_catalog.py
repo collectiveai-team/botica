@@ -75,3 +75,10 @@ def test_ask_user_routes_every_installed_skill():
     expected = (set(_names(UPSTREAM_REPO)) | set(_names(LOCAL_SOURCE))) - {"ask-user"}
     missing = sorted(name for name in expected if f"/{name}" not in routed)
     assert not missing, f"ask-user does not route installed skills: {missing}"
+
+
+def test_pr_is_installed_only_from_the_internal_catalog():
+    # The house `pr` replaces the embedded body template of upstream `pr` with the target
+    # repository's `.github/pull_request_template.md`, so upstream must not install it too.
+    assert "pr" in _names(LOCAL_SOURCE)
+    assert "pr" not in _names(UPSTREAM_REPO)
