@@ -220,8 +220,11 @@ scaffolder writes the configuration of a repository from its own components, apa
 
 ## Not built yet
 
-- The components of `scaffolding` as steps: `agent-config`, `prek`, `pyproject`, `ci`,
-  `agents`, `standards`, `skills` and `varlock`.
+- The component `varlock` of `scaffolding` as a recipe. It runs `varlock init` (or
+  `npx varlock init --agent`), and no step runs a command. The other components are recipes:
+  `gitignore`, `agents`, `standards` and `skills` in `base`, `prek` and `pyproject` in
+  `base-python`, `agent-config` in `agent-opencode`, `agent-claude-code` and `agent-codex`, and `ci`
+  in the recipes `ci-*`, `repo-public` and `repo-private`.
 - In `botica recipe check`, the hooks of prek and the fragments of the external rules. `BT004`
   checks the fragments when `botica lint` runs.
 
