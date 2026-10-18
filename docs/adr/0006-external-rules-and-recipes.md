@@ -228,7 +228,8 @@ scaffolder writes the configuration of a repository from its own components, apa
 ## Not built yet
 
 - The component `varlock` of `scaffolding` as a recipe. It runs `varlock init` (or
-  `npx varlock init --agent`), and no step runs a command. The other components are recipes:
+  `npx varlock init --agent`), and the steps of a recipe are files, sections, links, tools,
+  `.gitignore` lines and skills. The other components are recipes:
   `gitignore`, `agents`, `standards` and `skills` in `base`, `prek` and `pyproject` in
   `base-python`, `agent-config` in `agent-opencode`, `agent-claude-code` and `agent-codex`, and `ci`
   in the recipes `ci-*`, `repo-public` and `repo-private`.

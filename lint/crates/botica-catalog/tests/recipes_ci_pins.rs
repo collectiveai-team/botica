@@ -3,21 +3,12 @@
 //! The floors are the versions that the workflows of `collectiveai-team/collectiveai-web`
 //! (`build.yml`, `zizmor.yml`) and `collectiveai-team/coro` (`docker.yml`) run.
 
-use botica_catalog::Recipes;
+mod common;
+
+use common::workflows::{text, version};
 
 fn workflow(recipe: &str, name: &str) -> String {
-    Recipes::embedded()
-        .expect("the built-in recipes load")
-        .template(recipe, &format!("files/github/workflows/{name}"))
-        .unwrap_or_else(|| panic!("{recipe} has no {name}"))
-        .to_owned()
-}
-
-fn version(text: &str) -> Vec<u32> {
-    text.trim_start_matches('v')
-        .split('.')
-        .map(|part| part.parse().expect("a number"))
-        .collect()
+    text(recipe, &format!("files/github/workflows/{name}"))
 }
 
 fn pins(text: &str, action: &str) -> Vec<Vec<u32>> {

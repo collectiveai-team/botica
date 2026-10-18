@@ -14,6 +14,10 @@ name: osv-scanner
 # - main, the weekly schedule and a manual run get the full scan. A newly disclosed CVE in an
 #   existing dependency goes red on main, once, and is fixed there.
 #
+# A branch protection rule that requires the scan of a pull request names the job
+# `osv-scanner (new in this PR)`: GitHub counts a skipped job, which the
+# `osv-scanner` one is on a pull request, as passing.
+#
 # A private repository without GitHub Code Security cannot upload SARIF to Security > Code
 # Scanning: add `upload-sarif: false` under `with:` of both jobs. `fail-on-vuln` (default true)
 # still fails the check, and the findings are in the job log.

@@ -22,8 +22,8 @@ scanner.
 
 A scan of the whole lockfile on a pull request fails every open pull request on the day a
 vulnerability is disclosed against a dependency that is already on `main`, whatever the pull
-request changes. The scan of a pull request compares the base with the head, and the full scan
-runs where the vulnerability belongs: on `main`, once.
+request changes. The scan of a pull request compares the base with the head. The full scan runs on
+`main`, and a vulnerability disclosed against a dependency that is already there fails it once.
 
 ## Configuration
 
@@ -45,8 +45,12 @@ Two settings of the caller fail at startup, with no jobs, and not as a scan erro
   SARIF.
 
 A private repository without GitHub Code Security cannot upload SARIF. It adds `upload-sarif: false`
-to both jobs; `fail-on-vuln` is `true` by default, so the check still fails and the job log lists
-the findings.
+to both jobs. `fail-on-vuln` is `true` by default: the check fails on a finding and the job log
+lists it.
+
+A branch protection rule that requires the scan of a pull request names the job
+`osv-scanner (new in this PR)`. The `osv-scanner` job is skipped on a pull request, and GitHub
+counts a skipped job as passing.
 
 ## Migration (existing repos)
 

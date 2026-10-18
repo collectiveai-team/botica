@@ -41,13 +41,15 @@ pub fn has_trigger(workflow: &Value, trigger: &str) -> bool {
         .is_some_and(|on| on.contains_key(trigger))
 }
 
-/// The tag of an `uses: <path>@<tag>` reference, as numbers.
-pub fn tag(uses: &str) -> Vec<u32> {
-    uses.rsplit('@')
-        .next()
-        .expect("a reference")
-        .trim_start_matches('v')
+/// A version such as `v10.2.0` or `0.12.3`, as numbers.
+pub fn version(text: &str) -> Vec<u32> {
+    text.trim_start_matches('v')
         .split('.')
         .map(|part| part.parse().expect("a number"))
         .collect()
+}
+
+/// The tag of an `uses: <path>@<tag>` reference, as numbers.
+pub fn tag(uses: &str) -> Vec<u32> {
+    version(uses.rsplit('@').next().expect("a reference"))
 }

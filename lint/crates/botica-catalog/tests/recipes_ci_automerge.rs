@@ -217,3 +217,31 @@ fn the_workflows_that_it_waits_for_are_the_ones_that_ci_and_ci_python_add() {
         );
     }
 }
+
+#[test]
+fn a_check_that_was_skipped_does_not_hold_the_merge() {
+    let script = commands(&workflow("ci-automerge-private", RUN)).join("\n");
+
+    assert!(
+        script.contains("select(.bucket != \"pass\" and .bucket != \"skipping\")"),
+        "{script}"
+    );
+}
+
+#[test]
+fn the_label_is_created_before_it_is_added() {
+    for (recipe, template) in [
+        ("ci-automerge-public", PUBLIC),
+        ("ci-automerge-private", LABEL),
+    ] {
+        let script = commands(&workflow(recipe, template)).join("\n");
+
+        let create = script
+            .find("gh label create automerge --repo \"$REPO\"")
+            .unwrap_or_else(|| panic!("{template} does not create the label"));
+        let add = script
+            .find("--add-label automerge")
+            .unwrap_or_else(|| panic!("{template} does not add the label"));
+        assert!(create < add, "{template}");
+    }
+}

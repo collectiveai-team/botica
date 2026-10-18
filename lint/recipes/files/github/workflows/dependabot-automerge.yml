@@ -4,9 +4,11 @@ name: dependabot-automerge
 # security alert, then hands it to GitHub's native auto-merge, which lands it
 # once the required checks pass.
 #
-# Setup, once, in the repository: create the label (`gh label create automerge`),
-# turn on "Allow auto-merge" and add a branch protection rule (or ruleset) on
-# main that names the required status checks.
+# Setup, once, in the repository: turn on "Allow auto-merge" and add a branch
+# protection rule (or ruleset) on main that names the required status checks.
+# The osv-scanner check of a pull request is `osv-scanner (new in this PR)`:
+# GitHub counts the skipped `osv-scanner` job as passing. The workflow creates
+# the label `automerge` when the repository lacks it.
 # With no required check, `gh pr merge --auto` merges at once instead of
 # waiting (cli/cli#8514). A private repository on the GitHub Free plan cannot
 # have branch protection: use ci-automerge-private there.
@@ -77,6 +79,8 @@ jobs:
         run: |
           if [ -n "$REASON" ]; then
             echo "Marking as auto-mergeable: $REASON"
+            # `gh pr edit --add-label` fails when the label does not exist.
+            gh label create automerge --repo "$REPO" --description "Dependabot update that merges on its own" || true
             gh pr edit "$PR_URL" --repo "$REPO" --add-label automerge
             # --auto queues the merge; GitHub completes it once the required
             # status checks go green. Calling it again on every push to the PR

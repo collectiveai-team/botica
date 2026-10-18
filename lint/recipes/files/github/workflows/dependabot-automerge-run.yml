@@ -16,7 +16,9 @@ name: dependabot-automerge-run
 # Every name in `workflows:` must match the `name:` of a workflow, and the list
 # in the `gh pr checks` filter below must have the same names. A name that no
 # workflow of the repository has (Tests, in a repository that is not Python) is
-# ignored. Add the workflows that gate a normal PR and are not listed.
+# ignored. Add the workflows that gate a normal PR and are not listed. A job
+# that a workflow skips (the full scan of osv-scanner on a pull request) is
+# reported by `gh pr checks` as `skipping` and counts as green.
 on:
   workflow_run: # zizmor: ignore[dangerous-triggers]
     workflows: [Tests, osv-scanner, zizmor, Conventional Commits, commit-policy]
@@ -64,7 +66,7 @@ jobs:
           not_green=$(gh pr checks "$NUMBER" --repo "$REPO" --json workflow,bucket --jq '
             [.[] | select(.workflow as $w
               | ["Tests","osv-scanner","zizmor","Conventional Commits","commit-policy"] | index($w))]
-            | map(select(.bucket != "pass"))
+            | map(select(.bucket != "pass" and .bucket != "skipping"))
             | length')
 
           if [ "$not_green" != "0" ]; then

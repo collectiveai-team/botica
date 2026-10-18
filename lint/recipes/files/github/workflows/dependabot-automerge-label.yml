@@ -1,8 +1,8 @@
 name: dependabot-automerge-label
 
 # Decides whether a Dependabot PR is "easy" (a patch update or a fix for an open
-# security alert) and labels it `automerge`; create that label once in the
-# repository (`gh label create automerge`). It never merges anything itself:
+# security alert) and labels it `automerge`, creating the label when the
+# repository lacks it. It never merges anything itself:
 # dependabot-automerge-run.yml merges, and this repository cannot use GitHub's
 # native auto-merge (see that file).
 #
@@ -67,6 +67,8 @@ jobs:
         run: |
           if [ -n "$REASON" ]; then
             echo "Marking as auto-mergeable: $REASON"
+            # `gh pr edit --add-label` fails when the label does not exist.
+            gh label create automerge --repo "$REPO" --description "Dependabot update that merges on its own" || true
             gh pr edit "$PR_URL" --repo "$REPO" --add-label automerge
           else
             gh pr edit "$PR_URL" --repo "$REPO" --remove-label automerge || true
