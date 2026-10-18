@@ -1,4 +1,4 @@
-"""The navigation of the site lists the standards, the rules and the topics of references/.
+"""The navigation of the site lists the standards, the rules and the index of references/.
 
 Asserted through the public seam of `scripts/site_nav.py`: the folders of the pages go in, the
 `nav` of the site comes out (CES-65).
@@ -26,7 +26,7 @@ def page(docs: Path, relative: str) -> None:
     path.write_text("---\ntitle: T\n---\n", encoding="utf-8")
 
 
-def test_the_references_come_last_with_their_index_first_and_the_topics_by_name(tmp_path: Path):
+def test_the_references_come_last_as_their_index_alone_and_the_topics_are_left_out(tmp_path: Path):
     for relative in (
         "index.md",
         "standards/index.md",
@@ -39,13 +39,7 @@ def test_the_references_come_last_with_their_index_first_and_the_topics_by_name(
 
     nav = sn.navigation(tmp_path)
 
-    assert nav[-1] == {
-        "References": [
-            "references/index.md",
-            "references/in-memory-adapters.md",
-            "references/structured-logging.md",
-        ]
-    }
+    assert nav[-1] == {"References": "references/index.md"}
     assert [next(iter(entry)) for entry in nav] == ["Botica", "Standards", "Rules", "References"]
 
 
