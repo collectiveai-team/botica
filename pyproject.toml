@@ -1,25 +1,12 @@
-[build-system]
-requires = ["hatchling", "hatch-vcs"]
-build-backend = "hatchling.build"
-
+# The maintainer scripts under `scripts/` and their tests; botica itself is the Rust workspace in
+# `lint/`, with a `pyproject.toml` of its own.
 [project]
-name = "scaffolding"
-dynamic = ["version"]
-description = "Deterministic, clean-adds-only repo bootstrap CLI (agent-driven)."
-readme = "README.md"
-license = "MIT"
-license-files = ["LICENSE"]
+name = "botica-maintainer"
+version = "0"
 requires-python = ">=3.11"
 dependencies = [
   "cyclopts>=4.22.2",
-  "questionary>=2.0",
-  "pydantic>=2.0",
-  "pydantic-settings>=2.15.0",
-  "rich>=13.0",
 ]
-
-[project.scripts]
-scaffolding = "scaffolding.cli:app"
 
 [dependency-groups]
 dev = [
@@ -30,25 +17,16 @@ dev = [
   "ruff>=0.16.3",
 ]
 
-# Version derived from git tags (vX.Y.Z) by hatch-vcs.
-[tool.hatch.version]
-source = "vcs"
-
-[tool.hatch.build.targets.wheel]
-packages = ["scaffolding"]
-
-[tool.hatch.build.targets.sdist]
-include = ["scaffolding", "README.md", "guide.md"]
+[tool.uv]
+package = false
 
 [tool.ruff]
 line-length = 100
-# Vendored skill scripts and bundled template payload (files shipped verbatim into target
-# repos) are independent artifacts; lint only the tool's code.
+# Vendored skill scripts are independent artifacts; lint only the maintainer code.
 # The botica lint rule fixtures are deliberately bad code (and carry `# noqa: BT…` codes ruff
 # would otherwise strip), so ruff leaves them alone.
 extend-exclude = [
   "skills",
-  "scaffolding/templates",
   "lint/rules/**/fixtures",
 ]
 force-exclude = true
@@ -107,9 +85,9 @@ select = [
   "PERF",
 ]
 
-# This is a CLI orchestrator: shelling out to known tools (git, uv, npx,
-# varlock, gh) by name is intentional, so the subprocess-audit rules that flag
-# that pattern are disabled. The rest of the security ruleset stays on.
+# The maintainer scripts shell out to known tools (git, uv, npx, gh) by name, so
+# the subprocess-audit rules that flag that pattern are disabled. The rest of the
+# security ruleset stays on.
 ignore = ["S603", "S607"]
 task-tags = ["TODO", "FIXME", "XXX", "MARK"]
 
@@ -122,8 +100,7 @@ convention = "google"
 [tool.ruff.lint.mccabe]
 max-complexity = 10
 
-# Ban relative imports (e.g. `from .plan import ...`) — use absolute
-# `from scaffolding.plan import ...` so modules are unambiguous and movable.
+# Ban relative imports (e.g. `from .x import ...`); imports are absolute.
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 
@@ -144,9 +121,6 @@ project-excludes = [
   "**/.tmp/**/*",    # local scratch (spike corpora, benchmarks); gitignored
   "skills/**/*",
   "lint/**/*",       # Rust workspace; its Python SDK and bench scripts have their own deps
-  # Bundled template payload: the files are shipped verbatim into target repos and are not
-  # this tool's code.
-  "scaffolding/templates/**/*",
 ]
 use-ignore-files = false
 disable-project-excludes-heuristics = true
@@ -155,8 +129,6 @@ disable-project-excludes-heuristics = true
 testpaths = ["tests"]
 
 # CES-109 (dep-hygiene-deptry): declared deps must match the actual import graph. `lint` is the
-# Rust workspace and `scaffolding/templates`/`skills` are bundled/vendored payload shipped verbatim
-# into target repos (same rationale as the ruff and pyrefly excludes above) — none of the three
-# belong to this tool's own import graph.
+# Rust workspace and `skills` is vendored payload, outside the import graph of the scripts.
 [tool.deptry]
-extend_exclude = ["lint", "scaffolding/templates", "skills"]
+extend_exclude = ["lint", "skills"]
