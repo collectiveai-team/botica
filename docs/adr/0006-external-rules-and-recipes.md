@@ -129,11 +129,18 @@ scaffolder writes the configuration of a repository from its own components, apa
    anywhere in the file, as the scaffolder does. A skill is in the lock when its name is a key of
    `skills`, and in `.agents/skills/` when `.agents/skills/<name>/SKILL.md` is a file.
 
-   `install` adds what is missing and never edits, merges or overwrites a file that exists (CES-30):
-   - A `[[files]]` step writes the file from its template when the path does not exist.
-   - A `[[sections]]` step writes the file with the section when the path does not exist, and does
-     nothing when the file has the marker.
-   - A file that exists without the marker is listed as pending, for a person or an agent to merge.
+   `install` adds what is missing and never merges or overwrites a file that exists (CES-30). The
+   one edit it makes to a file that exists is to append a section. It does the files first, then the
+   sections, and prints one line for each step:
+   - A `[[files]]` step writes the file from its template when the path does not exist (`added`).
+     A path that exists is `ok` when it has the text of the template and `pending` otherwise, for a
+     person or an agent to merge; `install` does not touch it.
+   - A `[[sections]]` step writes the file with the section when the path does not exist, and
+     appends the section after a blank line to a file that exists without the marker (`added`). It
+     does nothing when the file has the marker (`ok`). A path that is not a file or cannot be read
+     is `pending`.
+   - A step that two of the named recipes share is done once, and a name that is not a recipe fails
+     the command before anything is written.
    - A `[[skills]]` step runs `npx skills add <source> --skill <name>...` for the names that are not
      in `.agents/skills/`, and fails when a name is still absent afterwards. `skills-lock.json` is
      written by the CLI of skills and by nothing else (CES-107).
@@ -148,7 +155,7 @@ scaffolder writes the configuration of a repository from its own components, apa
 
 ## Not built yet
 
-- `botica recipe install`.
+- The `[[skills]]` step of `botica recipe install`: `install` adds files and sections only.
 - The steps of `base-python`. `base` has the skills of `scaffolding`, its `prek.toml` and its
   standards index; a test in `tests/test_recipe_base.py` keeps them equal to the ones of
   `scaffolding` until it is removed.
@@ -167,18 +174,17 @@ scaffolder writes the configuration of a repository from its own components, apa
 - Whether a fragment holds the whole configuration that `botica recipe install` writes or the
   least that `external-config` checks. The fragment of `cognitive-complexity` is a hook of prek
   with the id `complexipy`.
-- What happens when two steps name the same path, or when the path exists without the marker.
-  `base` adds `prek.toml`, and the hooks of Python would go in the same file, which `install` does
-  not edit. `scaffolding` appends the section of the `agents` and `standards` components to an
-  existing `AGENTS.md` when its marker is absent, and does nothing when it is there; whether a
-  `[[sections]]` step does the same is open. The direction under discussion for the rest: `install` tries to merge the template into the file,
-  and when the merge conflicts it leaves the file as it is and reports the conflict for a person or
-  an agent to resolve. That changes the rule that `install` never edits an existing file (CES-30,
-  ADR 0001), and a merge needs a common ancestor that `install` does not have for a file that the
-  repository wrote first. Until it is decided, a file that exists is listed as pending.
+- What happens when two steps name the same path. `base` adds `prek.toml`, and the hooks of Python
+  would go in the same file, which `install` does not edit: the second step finds the file with
+  the text of the first template and reports it as pending. The direction under discussion for a
+  `[[files]]` step: `install` tries to merge the template into the file, and when the merge
+  conflicts it leaves the file as it is and reports the conflict for a person or an agent to
+  resolve. That changes the rule that `install` never merges a file that exists (CES-30, ADR 0001),
+  and a merge needs a common ancestor that `install` does not have for a file that the repository
+  wrote first. Until it is decided, a `[[files]]` step lists a file that exists as pending.
 - Whether the skills of `collectiveai-team/botica` are pinned to the tag of the version of the
   binary. Without a tag they follow the default branch.
-- The exit code of `install` when a file is pending.
+- The exit code of `install` when a step is pending. It exits with 0 today.
 - When `scaffolding` is removed.
 - The bounded edit that `scaffolding` performs today (the `unignore` op of ADR 0001) and how
   `[[gitignore]]` keeps it.

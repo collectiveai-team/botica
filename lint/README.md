@@ -46,6 +46,7 @@ botica refs update <topic> [--write]
 botica recipe list             # the recipes of the binary and of recipes/, with what each extends and lists
 botica recipe show base-python # a recipe with the rules and the exports of the recipes it extends
 botica recipe check base-python # how the project differs from the recipe: rules, exports, files, sections, skills
+botica recipe install base base-python # adds the files and sections of the recipes that the repository lacks
 botica rules test --judge abide [test-through-interface]
                                # abide judges the fixtures of each judgment rule; compared with expected.json
 botica rules conform lint/rules   # each rule over its fixtures, with and without each optimisation;
@@ -232,8 +233,9 @@ finds only the templates of its own `recipes/`.
 A `path` is relative to the root of the project, without `.` or `..`. A recipe names a skill once, a
 file path once and a marker of a path once. The steps of the recipes it extends come first, a step
 that two recipes list the same stays where it first is, and a skill that two recipes take from
-different sources is taken over by the later recipe, with a warning on stderr. `botica recipe install` is not built yet: `list` and `show` print the
-steps, `check` compares them with the project, and no command runs them.
+different sources is taken over by the later recipe, with a warning on stderr. `list` and `show`
+print the steps, `check` compares them with the project, and `install` adds the files and the
+sections; it does not install the skills yet.
 
 The recipes `base` and `base-python` are in `lint/recipes/` and are compiled into the binary. A
 project adds its own in `recipes/` at its root, and a recipe of the project may extend a built-in
@@ -274,6 +276,24 @@ text does not contain the marker. A skill differs when its name is not a key of 
 in `skills-lock.json` or `.agents/skills/<name>/SKILL.md` is not a file. The paths of files and
 sections are from the root of the project, wherever the command runs. The command exits with 1 when
 something differs and with 2 when the recipe does not exist or the recipes do not load.
+
+`botica recipe install <name>...` adds the files and then the sections of one or more recipes, from
+the root of the project, and prints one line for each:
+
+```text
+file prek.toml: added
+section AGENTS.md `## Engineering Standards`: added: appended to the file
+file other.toml: pending: exists and differs from the template `files/other.toml` of `base`
+base: 2 added, 0 ok, 1 pending
+```
+
+A file is written from its template when its path does not exist (`added`). A path that exists is
+`ok` when it has the text of the template and `pending` otherwise; `install` does not change it. A
+section is written to a new file, appended after a blank line to a file that has no marker (`added`),
+and left alone when the file has the marker (`ok`); a path that is not a file or cannot be read is
+`pending`. Running the command again changes nothing. A step that two of the named recipes share is
+done once, and a name that is not a recipe fails the command with 2 before anything is written. The
+command exits with 0 when a step is pending. It does not install skills yet.
 
 ## Which files
 

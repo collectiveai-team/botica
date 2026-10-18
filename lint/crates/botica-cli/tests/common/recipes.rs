@@ -30,6 +30,11 @@ pub fn add_recipe(dir: &Path, id: &str, toml: &str) {
     }
 }
 
+/// Sets the text of a template of the recipes of the project, such as `files/prek.toml`.
+pub fn template(dir: &Path, path: &str, text: &str) {
+    write(dir, &format!("recipes/{path}"), text);
+}
+
 /// Writes `skills-lock.json` with an entry for each name, in the shape the CLI of skills writes.
 pub fn lock_skills(dir: &Path, names: &[&str]) {
     let entries: Vec<String> = names

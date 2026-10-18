@@ -8,6 +8,7 @@ use clap::{Args, Subcommand};
 use crate::project::ProjectArgs;
 use crate::recipes_check;
 use crate::recipes_collection::{self, Collection};
+use crate::recipes_install;
 use crate::recipes_steps_text;
 
 #[derive(Args)]
@@ -22,9 +23,21 @@ enum RecipesCommand {
     List(ListArgs),
     /// Print a recipe with the rules and the exports of the recipes it extends.
     Show(NameArgs),
-    /// Report how the project differs from a recipe: the rules that are not active and the
-    /// exports that are not current.
+    /// Report how the project differs from a recipe: the rules that are not active, the exports
+    /// that are not current, and the files, sections and skills that are missing.
     Check(NameArgs),
+    /// Add the files and sections of one or more recipes to the project. A file that exists is
+    /// left as it is and reported as pending.
+    Install(InstallArgs),
+}
+
+#[derive(Args)]
+struct InstallArgs {
+    /// The ids of the recipes, installed in the order given.
+    #[arg(required = true)]
+    names: Vec<String>,
+    #[command(flatten)]
+    project: ProjectArgs,
 }
 
 #[derive(Args)]
@@ -50,6 +63,9 @@ pub fn run(args: &RecipesArgs) -> Result<ExitCode> {
             &args.name,
             &args.project,
         ),
+        RecipesCommand::Install(args) => {
+            recipes_install::run(&recipes_collection::open(&args.project)?, &args.names)
+        }
     }
 }
 
