@@ -99,8 +99,9 @@ scaffolder writes the configuration of a repository from its own components, apa
    skill, a file path, or a marker of a path once. A recipe that extends others contributes after
    them, each recipe contributes once, and an entry that two recipes list stays where it first is.
    Each step keeps the recipe it comes from. A skill that two recipes take from different sources
-   is an error when the recipe resolves. Recipes that extend one another in a circle are an
-   error.
+   is taken over by the recipe that comes later, which keeps the place of the skill, and the
+   resolution reports a warning for each such skill. Recipes that extend one another in a circle
+   are an error.
 4. **Recipes are built into the binary and read from `recipes/`.** `lint/recipes/` is compiled into
    the binary with its templates: `base` has the three rules that look at any file, and
    `base-python` extends it with the rules about Python code that `scaffolding` selects today. They

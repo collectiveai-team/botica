@@ -226,7 +226,7 @@ template = "sections/standards-index.md"
 A `path` is relative to the root of the project, without `.` or `..`. A recipe names a skill once, a
 file path once and a marker of a path once. The steps of the recipes it extends come first, a step
 that two recipes list the same stays where it first is, and a skill that two recipes take from
-different sources is an error. `botica recipe install` and the templates are not built yet: `list`
+different sources is taken over by the later recipe, with a warning on stderr. `botica recipe install` and the templates are not built yet: `list`
 and `show` print the steps, and no command runs them.
 
 The recipes `base` and `base-python` are in `lint/recipes/` and are compiled into the binary. A

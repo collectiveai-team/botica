@@ -27,35 +27,38 @@ pub struct ResolvedSection {
     pub from: String,
 }
 
-/// The skills of the recipes in `chain`, one for each name. A name that two recipes take from
-/// the same source stays where it is first; from different sources it is an error.
-pub(crate) fn resolve_skills(chain: &[&Recipe]) -> Result<Vec<ResolvedSkill>, String> {
+/// The skills of the recipes in `chain`, one for each name, with a warning for each skill that a
+/// recipe takes from another source than the recipe before it. A name that two recipes take from
+/// the same source stays where it is first; from different sources the later recipe takes it
+/// over and keeps the place of the skill.
+pub(crate) fn resolve_skills(chain: &[&Recipe]) -> (Vec<ResolvedSkill>, Vec<String>) {
     let mut first: BTreeMap<&str, usize> = BTreeMap::new();
     let mut skills: Vec<ResolvedSkill> = Vec::new();
+    let mut warnings = Vec::new();
     for recipe in chain {
         for step in &recipe.skills {
             for name in &step.names {
-                match first.get(name.as_str()) {
-                    None => {
-                        first.insert(name, skills.len());
-                        skills.push(ResolvedSkill {
-                            source: step.source.clone(),
-                            name: name.clone(),
-                            from: recipe.id.clone(),
-                        });
-                    }
-                    Some(&at) if skills[at].source != step.source => {
-                        return Err(format!(
-                            "the skill `{name}` comes from `{}` ({}) and from `{}` ({})",
-                            skills[at].source, skills[at].from, step.source, recipe.id
-                        ));
-                    }
-                    Some(_) => {}
+                let Some(&at) = first.get(name.as_str()) else {
+                    first.insert(name, skills.len());
+                    skills.push(ResolvedSkill {
+                        source: step.source.clone(),
+                        name: name.clone(),
+                        from: recipe.id.clone(),
+                    });
+                    continue;
+                };
+                if skills[at].source != step.source {
+                    warnings.push(format!(
+                        "the skill `{name}` comes from `{}` ({}), which replaces `{}` ({})",
+                        step.source, recipe.id, skills[at].source, skills[at].from
+                    ));
+                    skills[at].source = step.source.clone();
+                    skills[at].from = recipe.id.clone();
                 }
             }
         }
     }
-    Ok(skills)
+    (skills, warnings)
 }
 
 /// The files of the recipes in `chain`; a file that two recipes list the same stays where it is

@@ -92,6 +92,9 @@ fn show(collection: &Collection, name: &str) -> Result<ExitCode> {
     let recipes = collection.loaded()?;
     let resolved = recipes.resolve(name).map_err(anyhow::Error::msg)?;
     let recipe = recipes.recipe(name);
+    for warning in &resolved.warnings {
+        eprintln!("warning: {warning}");
+    }
     print!("{}", show_text(collection, recipe, &resolved));
     Ok(ExitCode::SUCCESS)
 }

@@ -4,6 +4,7 @@ mod common;
 
 use common::recipes::{add_recipe, project, recipe};
 use common::refs::{failed, ok};
+use common::stderr;
 
 const BASE: &str = r###"description = "Any repository"
 rules = ["file-size-guard"]
@@ -119,8 +120,8 @@ fn show_leaves_out_the_steps_a_recipe_does_not_have() {
 }
 
 #[test]
-fn show_fails_when_two_recipes_take_a_skill_from_different_sources() {
-    let dir = project("steps-show-conflict", None);
+fn show_prints_the_skill_of_the_recipe_that_takes_it_over_and_warns_on_stderr() {
+    let dir = project("steps-show-takeover", None);
     add_recipe(&dir, "mine", BASE);
     add_recipe(
         &dir,
@@ -128,12 +129,17 @@ fn show_fails_when_two_recipes_take_a_skill_from_different_sources() {
         "extends = [\"mine\"]\n\n[[skills]]\nsource = \"fork/skills\"\nnames = [\"tdd\"]\n",
     );
 
-    let text = failed(&recipe(&dir, &["show", "fork"]), 2);
+    let output = recipe(&dir, &["show", "fork"]);
 
-    assert!(
-        text.contains("the skill `tdd` comes from `mattpocock/skills#v1.2.3` (mine) and from `fork/skills` (fork)"),
-        "{text}"
+    let text = ok(&output);
+    assert!(text.contains("- tdd (fork/skills, from fork)\n"), "{text}");
+    assert!(!text.contains("warning"), "{text}");
+    assert_eq!(
+        stderr(&output),
+        "warning: the skill `tdd` comes from `fork/skills` (fork), which replaces \
+         `mattpocock/skills#v1.2.3` (mine)\n"
     );
+    assert_eq!(stderr(&recipe(&dir, &["show", "mine"])), "");
 }
 
 #[test]

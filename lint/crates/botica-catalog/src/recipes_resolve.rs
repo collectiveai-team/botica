@@ -25,6 +25,8 @@ pub struct ResolvedRecipe {
     pub skills: Vec<ResolvedSkill>,
     pub files: Vec<ResolvedFile>,
     pub sections: Vec<ResolvedSection>,
+    /// What the resolution changed without failing, one message for each.
+    pub warnings: Vec<String>,
 }
 
 impl Recipes {
@@ -54,12 +56,14 @@ impl Recipes {
             items
         };
         let recipes: Vec<&Recipe> = chain.iter().filter_map(|id| self.recipe(id)).collect();
+        let (skills, warnings) = resolve_skills(&recipes);
         Ok(ResolvedRecipe {
             id: id.to_owned(),
             rules: contribute(|recipe| &recipe.rules),
             judgment: contribute(|recipe| &recipe.judgment),
             exports: contribute(|recipe| &recipe.exports),
-            skills: resolve_skills(&recipes)?,
+            skills,
+            warnings,
             files: resolve_files(&recipes),
             sections: resolve_sections(&recipes),
             chain,

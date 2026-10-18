@@ -323,7 +323,7 @@ fn a_step_that_two_recipes_list_the_same_stays_where_it_first_is() {
 }
 
 #[test]
-fn a_skill_that_two_recipes_take_from_different_sources_is_an_error() {
+fn a_recipe_that_extends_takes_over_a_skill_from_another_source_and_warns() {
     let loaded = project(vec![
         recipe("base", STEPS),
         recipe(
@@ -333,15 +333,76 @@ fn a_skill_that_two_recipes_take_from_different_sources_is_an_error() {
     ])
     .expect("loads");
 
-    let message = loaded.resolve("other").expect_err("conflict");
+    let resolved = loaded.resolve("other").expect("resolves");
 
-    assert!(
-        message.contains(
-            "the skill `handoff` comes from `collectiveai-team/botica` (base) and from `fork/skills` (other)"
-        ),
-        "{message}"
+    let (skills, _, _) = resolved_names(&loaded, "other");
+    assert_eq!(
+        skills,
+        [
+            "tdd=mattpocock/skills#v1.2.3 from base",
+            "grilling=mattpocock/skills#v1.2.3 from base",
+            "handoff=fork/skills from other",
+        ]
     );
-    assert!(loaded.resolve("base").is_ok());
+    assert_eq!(
+        resolved.warnings,
+        ["the skill `handoff` comes from `fork/skills` (other), which replaces `collectiveai-team/botica` (base)"]
+    );
+    assert!(loaded
+        .resolve("base")
+        .expect("resolves")
+        .warnings
+        .is_empty());
+}
+
+#[test]
+fn a_skill_taken_over_twice_keeps_the_last_source_and_warns_each_time() {
+    let loaded = project(vec![
+        recipe(
+            "base",
+            "[[skills]]\nsource = \"a/one\"\nnames = [\"x\", \"y\"]\n",
+        ),
+        recipe(
+            "mid",
+            "extends = [\"base\"]\n\n[[skills]]\nsource = \"b/two\"\nnames = [\"x\"]\n",
+        ),
+        recipe(
+            "top",
+            "extends = [\"mid\"]\n\n[[skills]]\nsource = \"c/three\"\nnames = [\"x\"]\n",
+        ),
+    ])
+    .expect("loads");
+
+    let resolved = loaded.resolve("top").expect("resolves");
+
+    let (skills, _, _) = resolved_names(&loaded, "top");
+    assert_eq!(skills, ["x=c/three from top", "y=a/one from base"]);
+    assert_eq!(
+        resolved.warnings,
+        [
+            "the skill `x` comes from `b/two` (mid), which replaces `a/one` (base)",
+            "the skill `x` comes from `c/three` (top), which replaces `b/two` (mid)",
+        ]
+    );
+}
+
+#[test]
+fn a_skill_from_the_same_source_in_two_recipes_does_not_warn() {
+    let loaded = project(vec![
+        recipe("base", STEPS),
+        recipe(
+            "again",
+            "extends = [\"base\"]\n\n\
+             [[skills]]\nsource = \"collectiveai-team/botica\"\nnames = [\"handoff\"]\n",
+        ),
+    ])
+    .expect("loads");
+
+    assert!(loaded
+        .resolve("again")
+        .expect("resolves")
+        .warnings
+        .is_empty());
 }
 
 #[test]
