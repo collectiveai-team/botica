@@ -1,6 +1,7 @@
 id = "settings-module"
 code = "BTARCH002"
 standard = "CES-76"
+references = ["settings-module"]
 summary = "Environment is read only in the settings module"
 status = "stable"
 tags = ["config"]

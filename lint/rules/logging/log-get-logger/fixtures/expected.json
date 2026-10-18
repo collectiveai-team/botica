@@ -15,7 +15,7 @@
           "column": 34
         }
       },
-      "message": "CES-45 (log-get-logger): Don't call logging.getLogger directly — use the house get_logger (structlog: JSON in prod, colored console in dev, level from LOG_LEVEL). Drop in .agents/snippets/core/logger.py and `from <pkg>.core.logger import get_logger`."
+      "message": "CES-45 (log-get-logger): Don't call logging.getLogger directly — use the house get_logger (structlog: JSON in prod, colored console in dev, level from LOG_LEVEL). Copy the house logger (`botica refs show structured-logging`) and `from <pkg>.core.logger import get_logger`."
     },
     {
       "path": "service.py",
@@ -32,7 +32,7 @@
           "column": 28
         }
       },
-      "message": "CES-45 (log-get-logger): Don't call logging.getLogger directly — use the house get_logger (structlog: JSON in prod, colored console in dev, level from LOG_LEVEL). Drop in .agents/snippets/core/logger.py and `from <pkg>.core.logger import get_logger`."
+      "message": "CES-45 (log-get-logger): Don't call logging.getLogger directly — use the house get_logger (structlog: JSON in prod, colored console in dev, level from LOG_LEVEL). Copy the house logger (`botica refs show structured-logging`) and `from <pkg>.core.logger import get_logger`."
     }
   ]
 }

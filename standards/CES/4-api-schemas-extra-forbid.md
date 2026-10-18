@@ -1,6 +1,7 @@
 ---
 id: CES-4
 title: API schemas forbid extra fields
+references: ["api-schemas"]
 ---
 
 ## Directive

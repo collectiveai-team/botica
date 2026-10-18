@@ -1,8 +1,8 @@
 ## Directive
 
 Never call `logging.getLogger(...)`, or a bare `getLogger(...)`, directly. Get loggers from the
-house `get_logger` of `core/logger.py`, the structlog setup shipped as
-`.agents/snippets/core/logger.py`. A warning by default.
+house `get_logger` of `core/logger.py`, the structlog setup that
+`botica refs show structured-logging` prints. A warning by default.
 
 ## Why
 

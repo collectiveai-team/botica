@@ -4,17 +4,18 @@ title: The house logger (core/logger.py)
 references: ["structured-logging"]
 ---
 
-**Ships as:** snippet (`.agents/snippets/core/logger.py`)
+**Ships as:** reference (`botica refs show structured-logging`)
 
 ## Directive
 
 Logging is configured in exactly one place: a `core/logger.py` module built on
-[structlog](https://www.structlog.org), shipped as the drop-in `.agents/snippets/core/logger.py`. Copy
-it to `<your_package>/core/logger.py` and import `get_logger` everywhere. This is the structure
+[structlog](https://www.structlog.org), whose code is the topic `structured-logging`
+(`botica refs show structured-logging`). Copy it to `<your_package>/core/logger.py` and import
+`get_logger` everywhere. This is the structure
 that `log-get-logger` (CES-45) and `log-no-print` (CES-46) point at.
 
-This is a **snippet**, not auto-generated runtime code — the scaffolder never writes into your
-package path. You drop it in and wire it up.
+This is code to copy, not generated runtime code: botica never writes into your package path. You
+copy it and wire it up.
 
 ## Behaviour
 

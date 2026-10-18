@@ -97,6 +97,7 @@ fn a_page_is_the_front_matter_a_header_and_the_prose_of_its_readme() {
          code: \"BTFAST001\"\n\
          family: \"fastapi\"\n\
          standard: \"CES-4\"\n\
+         references: [\"api-schemas\"]\n\
          description: \"Request and response schemas reject unknown fields\"\n\
          status: \"stable\"\n\
          added: \"0.8.0\"\n\
@@ -337,6 +338,6 @@ fn the_front_matter_of_a_rule_that_cites_topics_lists_them() {
         text.contains("\nstandard: \"CES-45\"\nreferences: [\"structured-logging\"]\ndescription:"),
         "{text}"
     );
-    let plain = page(&site, "fastapi/btfast001-api-schemas-extra-forbid.md");
+    let plain = page(&site, "structure/btstruc002-no-utils.md");
     assert!(!plain.contains("references"), "{plain}");
 }

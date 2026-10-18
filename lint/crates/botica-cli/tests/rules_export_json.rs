@@ -87,7 +87,7 @@ fn a_rule_carries_every_field_of_its_rule_toml_its_releases_and_the_path_of_its_
             "code": "BTFAST001",
             "family": "fastapi",
             "standard": "CES-4",
-            "references": [],
+            "references": ["api-schemas"],
             "summary": "Request and response schemas reject unknown fields",
             "status": "stable",
             "added": "0.8.0",

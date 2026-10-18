@@ -30,7 +30,7 @@ The rule skips:
 
 ### Python
 
-Log through the house `get_logger` (`.agents/snippets/core/logger.py`):
+Log through the house `get_logger` (`botica refs show structured-logging`):
 
 ```python
 log = get_logger(__name__)

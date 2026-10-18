@@ -1,6 +1,7 @@
 ---
 id: CES-76
 title: One settings module per package
+references: ["settings-module"]
 ---
 
 ## Directive

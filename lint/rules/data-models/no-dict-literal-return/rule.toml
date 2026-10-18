@@ -1,6 +1,7 @@
 id = "no-dict-literal-return"
 code = "BTDM004"
 standard = "CES-79"
+references = ["typed-boundaries"]
 summary = "No function returning a dict literal"
 status = "stable"
 tags = ["typing"]

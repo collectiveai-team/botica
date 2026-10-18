@@ -1,6 +1,7 @@
 id = "no-dict-alias"
 code = "BTDM002"
 standard = "CES-79"
+references = ["typed-boundaries"]
 summary = "No type alias that hides a raw dict"
 status = "stable"
 tags = ["typing"]

@@ -48,8 +48,15 @@ fn list_of_a_project_without_topics_has_the_built_in_ones() {
 
     let text = ok(&refs(&dir, &["list"]));
 
-    assert!(text.starts_with("in-memory-adapters: "), "{text}");
-    assert!(text.contains("\nstructured-logging: "), "{text}");
+    assert!(text.starts_with("api-schemas: "), "{text}");
+    for id in [
+        "in-memory-adapters",
+        "settings-module",
+        "structured-logging",
+        "typed-boundaries",
+    ] {
+        assert!(text.contains(&format!("\n{id}: ")), "{id}:\n{text}");
+    }
 }
 
 #[test]

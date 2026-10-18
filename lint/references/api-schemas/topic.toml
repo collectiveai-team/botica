@@ -1,0 +1,28 @@
+title = "API schemas that forbid extra fields"
+
+[[references]]
+repo = "github.com/collectiveai-team/botica"
+rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"
+license = "MIT"
+path = "scaffolding/templates/snippets/api-schemas.py"
+lines = "17-23"
+anchor = "class CreateUserRequest(BaseModel)"
+note = "an inbound model: `extra=forbid` rejects a key that the model does not declare"
+
+[[references]]
+repo = "github.com/collectiveai-team/botica"
+rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"
+license = "MIT"
+path = "scaffolding/templates/snippets/api-schemas.py"
+lines = "26-33"
+anchor = "class UserResponse(BaseModel)"
+note = "an outbound model with the same setting: the response is the fields that the model declares"
+
+[[references]]
+repo = "github.com/collectiveai-team/botica"
+rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"
+license = "MIT"
+path = "scaffolding/templates/snippets/api-schemas.py"
+lines = "36-39"
+anchor = "# Anti-pattern"
+note = "the shape that the rule reports: a boundary model with no `extra`"

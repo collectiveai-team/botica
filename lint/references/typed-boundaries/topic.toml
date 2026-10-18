@@ -1,0 +1,28 @@
+title = "Typed values at the boundaries"
+
+[[references]]
+repo = "github.com/collectiveai-team/botica"
+rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"
+license = "MIT"
+path = "scaffolding/templates/snippets/no-dict-boundary.py"
+lines = "20-28"
+anchor = "class Point"
+note = "an internal boundary: a dataclass that a function returns"
+
+[[references]]
+repo = "github.com/collectiveai-team/botica"
+rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"
+license = "MIT"
+path = "scaffolding/templates/snippets/no-dict-boundary.py"
+lines = "31-38"
+anchor = "class CreateUser(BaseModel)"
+note = "a validated boundary: a pydantic model for input or output that needs validation"
+
+[[references]]
+repo = "github.com/collectiveai-team/botica"
+rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"
+license = "MIT"
+path = "scaffolding/templates/snippets/no-dict-boundary.py"
+lines = "41-44"
+anchor = "# Anti-pattern"
+note = "the two shapes of a raw dict that the rules report: a `dict` annotation and a returned `{...}`"

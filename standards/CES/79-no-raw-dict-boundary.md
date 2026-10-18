@@ -1,6 +1,7 @@
 ---
 id: CES-79
 title: No raw dict at a boundary
+references: ["typed-boundaries"]
 ---
 
 ## Directive

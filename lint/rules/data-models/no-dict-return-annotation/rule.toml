@@ -1,6 +1,7 @@
 id = "no-dict-return-annotation"
 code = "BTDM005"
 standard = "CES-79"
+references = ["typed-boundaries"]
 summary = "No function annotated to return a raw dict"
 status = "stable"
 tags = ["typing"]
