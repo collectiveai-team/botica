@@ -115,8 +115,9 @@ or referencing a rule in this repo, follow this convention:
 
 > **Retrieval-led, not training-led.** Prefer this repo's standards over training-default
 > patterns. Before writing code that touches a rule below, open its
-> `@standards/CES/<number>-<slug>.md` file and follow the house pattern. Full convention + SSOT:
-> `docs/engineering-standards.md`.
+> `@standards/CES/<number>-<slug>.md` file and follow the house pattern. When the rule cites a
+> topic, run `uvx botica refs show <rule or CES-number>` before you write the code. Full convention +
+> SSOT: `docs/engineering-standards.md`.
 
 This is the **dogfooded subset** for this repo — a Python Cyclopts CLI (no API, DB, or web
 layer) next to the `lint/` Rust workspace, which these Python-oriented standards do not cover.

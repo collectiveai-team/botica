@@ -24,6 +24,14 @@ Read by need, not all at once. Loading the whole ruleset wastes context that the
 Rule ids are kebab-case and section-prefixed (`py-package-manager` is in section `py`), so the
 index tells you which files to open from the file paths alone.
 
+## Code that a rule points at
+
+A rule can cite topics: code and documentation to read, kept in `references/` of the project or
+built into botica. Before you write code that a rule covers, run
+`uvx botica refs show <rule id, CES-number or topic>` and follow the pattern it prints. A rule that
+has a topic says so in its page on the site; `uvx botica refs list` lists every topic and who cites
+it. In a project with no `botica`, skip this step and use the rule text alone.
+
 ## Judging a rule before applying it
 
 Each rule carries two fields that decide whether it applies here at all:

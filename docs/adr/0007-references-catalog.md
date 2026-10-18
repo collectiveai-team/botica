@@ -164,11 +164,14 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
     `.agents/snippets/` name `botica refs show <topic>`. The standards CES-4, CES-76 and CES-79
     carry `references` in their front matter. In the index of `AGENTS.md` the tag `[snippet]` is
     `[reference]`.
+20. **Three texts tell an agent to run `botica refs show` before it writes code.** The skill
+    `engineering-rules` has a section for it, the index that the scaffolder appends to `AGENTS.md`
+    has it in its opening note, and so does the `AGENTS.md` of this repository.
+    `tests/test_refs_instruction.py` checks the three.
 
 ## Not built yet
 
 - Writing the `rev` of a built-in topic: it is edited by hand in `lint/references/`.
-- The instruction of the skill to run `botica refs show <rule>` before writing code.
 
 ## Not decided
 
