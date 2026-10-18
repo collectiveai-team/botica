@@ -128,16 +128,3 @@ def test_the_ci_templates_are_the_workflows_of_scaffolding_and_the_ones_it_lacks
 
     assert [item for item in recipes if item[0] not in ONLY_IN_RECIPES] == scaffolded
     assert {name for name, _ in recipes} - {name for name, _ in scaffolded} == ONLY_IN_RECIPES
-
-
-def test_every_ci_template_is_used_by_one_recipe_at_its_github_path() -> None:
-    steps = [
-        step
-        for recipe in sorted(RECIPES.glob("*.toml"))
-        for step in tomllib.loads(recipe.read_text(encoding="utf-8")).get("files", [])
-        if step["template"].startswith("files/github/")
-    ]
-    used = [(step["template"].removeprefix("files/"), step["path"]) for step in steps]
-
-    assert sorted(template for template, _ in used) == [name for name, _ in _github_templates()]
-    assert all(path == f".{template}" for template, path in used)

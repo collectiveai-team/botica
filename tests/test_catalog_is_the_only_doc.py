@@ -73,7 +73,7 @@ def test_the_catalog_is_found():
 
 @pytest.mark.parametrize(
     "index",
-    [ROOT / "scaffolding" / "templates" / "standards-index.md", ROOT / "AGENTS.md"],
+    [ROOT / "lint" / "recipes" / "sections" / "standards-index.md", ROOT / "AGENTS.md"],
     ids=["template", "repo"],
 )
 def test_no_index_lists_a_standard_the_catalog_measures(index: Path):
@@ -84,7 +84,7 @@ def test_no_index_lists_a_standard_the_catalog_measures(index: Path):
 
 @pytest.mark.parametrize(
     "index",
-    [ROOT / "scaffolding" / "templates" / "standards-index.md", ROOT / "AGENTS.md"],
+    [ROOT / "lint" / "recipes" / "sections" / "standards-index.md", ROOT / "AGENTS.md"],
     ids=["template", "repo"],
 )
 def test_the_index_sends_the_reader_to_the_catalog_without_naming_a_rule(index: Path):
@@ -119,7 +119,7 @@ AST_GREP = re.compile(r"ast-grep|sgconfig", re.I)
 
 def _normative_texts() -> list[Path]:
     """List what is installed in a target repo or read as the house standard, and the READMEs."""
-    templates = ROOT / "scaffolding" / "templates"
+    templates = ROOT / "lint" / "recipes"
     github = ROOT / ".github"
     paths = [
         *templates.rglob("*.md"),

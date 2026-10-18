@@ -1,7 +1,7 @@
 """An agent runs `botica refs show` before it writes code that a rule covers (ADR 0007).
 
 The instruction is in the texts that an agent reads: the skill `engineering-rules`, the index that
-the scaffolder appends to `AGENTS.md`, and the `AGENTS.md` of this repository.
+the recipe `base` appends to `AGENTS.md`, and the `AGENTS.md` of this repository.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SKILL = ROOT / "skills" / "engineering" / "engineering-rules" / "SKILL.md"
 INSTRUCTED = [
     SKILL,
-    ROOT / "scaffolding" / "templates" / "standards-index.md",
+    ROOT / "lint" / "recipes" / "sections" / "standards-index.md",
     ROOT / "AGENTS.md",
 ]
 
