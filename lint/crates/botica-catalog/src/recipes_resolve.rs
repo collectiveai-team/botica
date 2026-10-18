@@ -23,6 +23,8 @@ pub struct ResolvedRecipe {
     pub rules: Vec<RecipeItem>,
     pub judgment: Vec<RecipeItem>,
     pub exports: Vec<RecipeItem>,
+    /// The agents that the skills are installed for.
+    pub agents: Vec<RecipeItem>,
     pub skills: Vec<ResolvedSkill>,
     pub files: Vec<ResolvedFile>,
     pub sections: Vec<ResolvedSection>,
@@ -69,6 +71,7 @@ impl Recipes {
             rules: contribute(|recipe| &recipe.rules),
             judgment: contribute(|recipe| &recipe.judgment),
             exports: contribute(|recipe| &recipe.exports),
+            agents: contribute(|recipe| &recipe.agents),
             skills,
             warnings,
             files: resolve_files(&recipes),

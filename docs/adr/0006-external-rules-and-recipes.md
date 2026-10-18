@@ -104,7 +104,8 @@ scaffolder writes the configuration of a repository from its own components, apa
    Every key is optional and the file may be empty. `description` is one line for
    `botica recipe list`. `extends` names recipes whose steps come first. `rules` lists the rules
    that are not judgment rules, `judgment` lists the judgment rules, each by slug, code or alias,
-   and `exports` names `agents-md` or `abide`; the rules are a step like the others. `[[skills]]`
+   `exports` names `agents-md` or `abide`, and `agents` names the agents that the skills are
+   installed for (`opencode`, `claude-code` or `codex`); the rules are a step like the others. `[[skills]]`
    has `source` (a repository, with a `#tag` to pin it) and `names`. `[[files]]` has `path` and
    `template`. `[[sections]]` has `path`, `marker` and `template`. A `template` is a file under the
    folder of the recipe (`files/`, `sections/`). `[[links]]` has `path` and `target`, the text
@@ -187,10 +188,12 @@ scaffolder writes the configuration of a repository from its own components, apa
      When a call for several packages fails, `install` makes it again for each package, because
      `uv add` adds none when one does not exist. A project without `pyproject.toml` leaves each
      package `pending`.
-   - The `[[skills]]` steps run last. `install` runs `npx skills add <source> --agent opencode --yes
-     --json --skill <name>...` once for each source, for the names that are not in `.agents/skills/`. A
+   - The `[[skills]]` steps run last. `install` runs `npx skills add <source> --agent <agents>
+     --yes --json --skill <name>...` once for each source, for the names that are not in `.agents/skills/`. A
      name that is there is `ok`; one that is there afterwards is `added`; one that is absent
      afterwards, or whose call failed or could not run, is `failed` and the command exits with 1.
+     The agents are the ones that the named recipes list, each once and in the order they come,
+     and `opencode` when none lists one.
      `--json` makes `npx` write a JSON array to stdout: a skill that it lists as `skipped` is
      `failed` with the reason of the entry, and the reason of a failed call is the first line of the
      `error` of the first `failed` entry followed by the last `fatal:` or `error:` line below it,
@@ -226,8 +229,6 @@ scaffolder writes the configuration of a repository from its own components, apa
 - Whether a fragment holds the whole configuration that `botica recipe install` writes or the
   least that `external-config` checks. The fragment of `cognitive-complexity` is a hook of prek
   with the id `complexipy`.
-- The agent that `npx skills add` installs for. `install` passes `--agent opencode`, the default of
-  `scaffolding`, until the recipes of the agents exist.
 - When `scaffolding` is removed.
 
 ## Considered options

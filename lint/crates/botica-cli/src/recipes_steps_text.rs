@@ -11,6 +11,7 @@ pub fn count_line(recipe: &Recipe) -> Option<String> {
         .map(|step| step.lines.len() + step.unignore.len())
         .sum();
     let counts = [
+        ("agents", recipe.agents.len()),
         ("skills", skills),
         ("files", recipe.files.len()),
         ("sections", recipe.sections.len()),
@@ -32,6 +33,13 @@ pub fn count_line(recipe: &Recipe) -> Option<String> {
 /// The sections of `botica recipe show` for the steps, each one when the recipe has any.
 pub fn steps_text(resolved: &ResolvedRecipe) -> String {
     let mut text = String::new();
+    if !resolved.agents.is_empty() {
+        text.push_str("## Agents\n\n");
+        for agent in &resolved.agents {
+            let _ = writeln!(text, "- {} (from {})", agent.id, agent.from);
+        }
+        text.push('\n');
+    }
     if !resolved.skills.is_empty() {
         text.push_str("## Skills\n\n");
         for skill in &resolved.skills {

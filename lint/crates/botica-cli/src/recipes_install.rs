@@ -60,6 +60,7 @@ struct Steps {
     files: Vec<ResolvedFile>,
     sections: Vec<ResolvedSection>,
     links: Vec<ResolvedLink>,
+    agents: Vec<RecipeItem>,
     gitignore: Vec<RecipeItem>,
     unignore: Vec<RecipeItem>,
     tools: Vec<ResolvedTool>,
@@ -119,6 +120,7 @@ fn gather(recipes: &Recipes, names: &[String]) -> Result<Steps> {
                 gathered.tools.push(tool);
             }
         }
+        extend_once(&mut gathered.agents, resolved.agents);
         extend_once(&mut gathered.gitignore, resolved.gitignore);
         extend_once(&mut gathered.unignore, resolved.unignore);
         for skill in resolved.skills {
@@ -200,10 +202,16 @@ pub fn run(collection: &Collection, names: &[String]) -> Result<ExitCode> {
     {
         tally.report("tool", &item.package, &outcome);
     }
-    for (item, outcome) in gathered
-        .skills
+    let agents: Vec<&str> = gathered
+        .agents
         .iter()
-        .zip(skills::install(root, &gathered.skills))
+        .map(|item| item.id.as_str())
+        .collect();
+    for (item, outcome) in
+        gathered
+            .skills
+            .iter()
+            .zip(skills::install(root, &gathered.skills, &agents))
     {
         tally.report("skill", &item.name, &outcome);
     }

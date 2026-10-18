@@ -12,8 +12,8 @@ use crate::recipes_install_json::skipped;
 use crate::recipes_install_run::run;
 use crate::recipes_install_steps::Outcome;
 
-/// The agent that `skills add` installs for, as `scaffolding` does by default.
-const AGENT: &str = "opencode";
+/// The agent that `skills add` installs for when no recipe names one, as `scaffolding` does.
+const DEFAULT_AGENT: &str = "opencode";
 
 /// The names to ask each source for, with the sources in the order they first appear.
 fn calls<'a>(missing: &[&'a ResolvedSkill]) -> Vec<(&'a str, Vec<&'a str>)> {
@@ -34,12 +34,12 @@ struct Call {
 }
 
 /// Runs `npx skills add` in the root of the project.
-fn add(root: &Path, source: &str, names: &[&str]) -> Call {
+fn add(root: &Path, source: &str, names: &[&str], agents: &[&str]) -> Call {
     let mut command = Command::new("npx");
     command
-        .args([
-            "skills", "add", source, "--agent", AGENT, "--yes", "--json", "--skill",
-        ])
+        .args(["skills", "add", source, "--agent"])
+        .args(agents)
+        .args(["--yes", "--json", "--skill"])
         .args(names)
         .current_dir(root);
     let ran = run(&mut command, &format!("`npx skills add {source}`"));
@@ -49,9 +49,14 @@ fn add(root: &Path, source: &str, names: &[&str]) -> Call {
     }
 }
 
-/// Installs the skills that are missing and says, for each skill in order, whether it was there,
+/// Installs the skills that are missing for `agents` (`opencode` when there are none) and says, for each skill in order, whether it was there,
 /// was added, or is still missing after the call.
-pub fn install(root: &Path, skills: &[ResolvedSkill]) -> Vec<Outcome> {
+pub fn install(root: &Path, skills: &[ResolvedSkill], agents: &[&str]) -> Vec<Outcome> {
+    let agents = if agents.is_empty() {
+        &[DEFAULT_AGENT]
+    } else {
+        agents
+    };
     let there: Vec<bool> = skills
         .iter()
         .map(|skill| installed(root, &skill.name))
@@ -64,7 +69,7 @@ pub fn install(root: &Path, skills: &[ResolvedSkill]) -> Vec<Outcome> {
         .collect();
     let mut made: BTreeMap<&str, Call> = BTreeMap::new();
     for (source, names) in calls(&missing) {
-        made.insert(source, add(root, source, &names));
+        made.insert(source, add(root, source, &names, agents));
     }
     skills
         .iter()

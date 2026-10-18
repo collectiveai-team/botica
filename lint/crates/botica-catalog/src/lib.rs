@@ -34,7 +34,7 @@ pub use model::{
 };
 pub use question::{BooleanCriteria, Choices, Question};
 pub use readme::Section;
-pub use recipes::{Recipe, Recipes, EXPORTS, RECIPES_DIR};
+pub use recipes::{Recipe, Recipes, AGENTS, EXPORTS, RECIPES_DIR};
 pub use recipes_resolve::{RecipeItem, ResolvedRecipe};
 pub use recipes_steps::{
     normalized_package, FileStep, GitignoreStep, LinkStep, SectionStep, SkillStep, ToolStep,

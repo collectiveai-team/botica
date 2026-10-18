@@ -204,7 +204,8 @@ exports = ["agents-md", "abide"]
 
 `extends` names the recipes whose lists come first. `rules` lists the rules that are not judgment
 rules and `judgment` lists the judgment rules, each by slug, code or alias. `exports` names
-`agents-md` or `abide`, the formats of `botica rules export`. A list names an entry once, and
+`agents-md` or `abide`, the formats of `botica rules export`. `agents` names the agents that the
+skills are installed for: `opencode`, `claude-code` or `codex`. A list names an entry once, and
 recipes that extend one another in a circle are an error.
 
 A recipe also declares steps that prepare the repository:
@@ -283,7 +284,8 @@ exports its file lists, and where it comes from; a recipe with steps has a line 
 steps of each kind that it has: skills, files, sections, links, gitignore (the lines and the
 unignored lines) and tools. `botica recipe show <name>` prints the recipe with the lists of what it extends first, each
 rule with its code, its summary and the recipe that lists it, and then the sections Skills, Files,
-Sections, Links, Gitignore, Unignore and Tools for the steps it has.
+Sections, Links, Gitignore, Unignore and Tools for the steps it has, and a section Agents first
+when the recipe lists agents.
 
 `botica recipe check <name>` takes the options of `botica lint` that select rules (`--select`,
 `--ignore`, `--config`). It prints one line for each rule, export, file, section, link, line
@@ -369,8 +371,9 @@ reason, as for the skills. The reason is the last line of stderr that starts wit
 last line, leaving out the lines that start with `hint:`.
 
 A skill is `ok` when `.agents/skills/<name>/SKILL.md` is a file. For the skills that are not,
-`install` runs `npx skills add <source> --agent opencode --yes --json --skill <name>...` in the root of the
-project, once for each source, so `npx` has to be on the `PATH`. A skill that is there afterwards is
+`install` runs `npx skills add <source> --agent <agents> --yes --json --skill <name>...` in the root of the
+project, once for each source, so `npx` has to be on the `PATH`. The agents are the ones that the
+named recipes list, each once and in the order they come, and `opencode` when none lists one. A skill that is there afterwards is
 `added`. A skill that is not, because the call failed, could not run, or did not install it, is
 `failed`, with the reason, and the summary ends with the number of failures:
 

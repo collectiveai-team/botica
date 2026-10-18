@@ -20,6 +20,9 @@ pub(crate) const TEMPLATE_DIRS: [&str; 2] = ["files", "sections"];
 /// The exports that a recipe can ask for: `botica rules export --format <name>`.
 pub const EXPORTS: [&str; 2] = ["agents-md", "abide"];
 
+/// The agents that a recipe can name, as `npx skills add --agent` knows them.
+pub const AGENTS: [&str; 3] = ["opencode", "claude-code", "codex"];
+
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct RecipeFile {
@@ -32,6 +35,8 @@ struct RecipeFile {
     judgment: Vec<String>,
     #[serde(default)]
     exports: Vec<String>,
+    #[serde(default)]
+    agents: Vec<String>,
     #[serde(default)]
     skills: Vec<SkillStep>,
     #[serde(default)]
@@ -61,6 +66,8 @@ pub struct Recipe {
     pub judgment: Vec<String>,
     /// Names of `EXPORTS`.
     pub exports: Vec<String>,
+    /// Names of `AGENTS` that the skills are installed for; `opencode` when empty.
+    pub agents: Vec<String>,
     pub skills: Vec<SkillStep>,
     pub files: Vec<FileStep>,
     pub sections: Vec<SectionStep>,
@@ -212,6 +219,7 @@ fn load_recipe(
         rules: parsed.rules,
         judgment: parsed.judgment,
         exports: parsed.exports,
+        agents: parsed.agents,
         skills: parsed.skills,
         files: parsed.files,
         sections: parsed.sections,
@@ -227,6 +235,7 @@ fn list_problems(parsed: &RecipeFile) -> Vec<String> {
         ("rules", &parsed.rules),
         ("judgment", &parsed.judgment),
         ("exports", &parsed.exports),
+        ("agents", &parsed.agents),
     ];
     let mut problems = Vec::new();
     for (key, entries) in lists {
@@ -244,6 +253,14 @@ fn list_problems(parsed: &RecipeFile) -> Vec<String> {
             problems.push(format!(
                 "unknown export `{export}` (expected one of {})",
                 EXPORTS.join(", ")
+            ));
+        }
+    }
+    for agent in &parsed.agents {
+        if !AGENTS.contains(&agent.as_str()) {
+            problems.push(format!(
+                "unknown agent `{agent}` (expected one of {})",
+                AGENTS.join(", ")
             ));
         }
     }
