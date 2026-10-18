@@ -12,10 +12,10 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
     let text = ok(&recipe(&dir, &["list"]));
 
     assert!(
-        text.starts_with(
-            "base: Any repository: the rules about any file, the skills, .gitignore, the prek hooks \
-             and the standards index\n  rules: 3, judgment: 0, exports: 0\n  \
-             skills: 29, files: 1, sections: 1, gitignore: 8\n  from: built-in\n"
+        text.contains(
+            "\nbase: Any repository: the rules about any file, the skills, .gitignore, the prek hooks \
+             and the sections of AGENTS.md\n  rules: 3, judgment: 0, exports: 0\n  \
+             skills: 29, files: 1, sections: 2, gitignore: 8\n  from: built-in\n"
         ),
         "{text}"
     );
@@ -46,7 +46,18 @@ fn list_adds_the_recipes_of_the_project_in_the_order_of_their_ids() {
         .filter(|line| !line.starts_with(' '))
         .map(|line| line.split(':').next().unwrap_or_default())
         .collect();
-    assert_eq!(ids, ["base", "base-python", "mine"], "{text}");
+    assert_eq!(
+        ids,
+        [
+            "agent-claude-code",
+            "agent-codex",
+            "agent-opencode",
+            "base",
+            "base-python",
+            "mine"
+        ],
+        "{text}"
+    );
     assert!(
         text.contains(
             "mine: Ours\n  extends: base\n  rules: 1, judgment: 2, exports: 1\n  from: project\n"
@@ -63,7 +74,7 @@ fn a_recipe_without_a_description_is_listed_by_its_id() {
     let text = ok(&recipe(&dir, &["list"]));
 
     assert!(
-        text.starts_with("bare\n  rules: 0, judgment: 0, exports: 0\n  from: project\n"),
+        text.contains("\nbare\n  rules: 0, judgment: 0, exports: 0\n  from: project\n"),
         "{text}"
     );
 }
@@ -81,7 +92,7 @@ fn a_recipe_of_the_project_with_a_built_in_id_fails_unless_the_configuration_rep
     add_recipe(&dir, "base", "rules = [\"file-size-guard\"]\n");
     let text = ok(&recipe(&dir, &["list"]));
     assert!(
-        text.starts_with("base\n  rules: 1, judgment: 0, exports: 0\n  from: project\n"),
+        text.contains("\nbase\n  rules: 1, judgment: 0, exports: 0\n  from: project\n"),
         "{text}"
     );
 }
@@ -136,7 +147,9 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
         text.contains(
             "\n## Files\n\n- prek.toml (template files/prek-base.toml, from base)\n\
              - pyproject.toml (template files/pyproject-base.toml, from base-python)\n\n\
-             ## Sections\n\n- AGENTS.md, `## Engineering Standards` \
+             ## Sections\n\n- AGENTS.md, `## Repo Workspace Defaults` \
+             (template sections/agents-workspace-defaults.md, from base)\n\
+             - AGENTS.md, `## Engineering Standards` \
              (template sections/standards-index.md, from base)\n\
              - prek.toml, `# MARK: validate-pyproject` \
              (template sections/prek-validate-pyproject.toml, from base-python)\n"

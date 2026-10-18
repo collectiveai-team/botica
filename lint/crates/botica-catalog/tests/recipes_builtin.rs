@@ -7,11 +7,11 @@ fn embedded() -> Recipes {
 }
 
 #[test]
-fn the_binary_carries_the_recipes_base_and_base_python() {
+fn the_binary_carries_its_recipes_with_a_description_and_the_origin_built_in() {
     let recipes = embedded();
 
     let ids: Vec<&str> = recipes.recipes().iter().map(|r| r.id.as_str()).collect();
-    assert_eq!(ids, ["base", "base-python"]);
+    assert_eq!(ids.len(), 5);
     for recipe in recipes.recipes() {
         assert_eq!(recipe.origin, Origin::BuiltIn);
         assert!(
@@ -99,10 +99,10 @@ fn base_installs_the_skills_and_adds_prek_and_the_standards_index_from_its_templ
     assert_eq!(base.files.len(), 1);
     assert_eq!(base.files[0].path, "prek.toml");
     assert_eq!(base.files[0].template, "files/prek-base.toml");
-    assert_eq!(base.sections.len(), 1);
-    assert_eq!(base.sections[0].path, "AGENTS.md");
-    assert_eq!(base.sections[0].marker, "## Engineering Standards");
-    assert_eq!(base.sections[0].template, "sections/standards-index.md");
+    assert_eq!(base.sections.len(), 2);
+    assert_eq!(base.sections[1].path, "AGENTS.md");
+    assert_eq!(base.sections[1].marker, "## Engineering Standards");
+    assert_eq!(base.sections[1].template, "sections/standards-index.md");
 
     let prek = recipes
         .template("base", "files/prek-base.toml")
@@ -158,6 +158,71 @@ fn base_python_adds_pyproject_the_python_hooks_and_the_dev_tools_to_what_base_do
     let resolved = recipes.resolve("base-python").expect("resolves");
     assert!(resolved.skills.iter().all(|skill| skill.from == "base"));
     assert_eq!(resolved.files.len(), 2);
-    assert_eq!(resolved.sections.len(), 8);
+    assert_eq!(resolved.sections.len(), 9);
     assert!(resolved.warnings.is_empty());
+}
+
+#[test]
+fn there_is_a_recipe_for_each_agent() {
+    let recipes = embedded();
+    let ids: Vec<&str> = recipes.recipes().iter().map(|r| r.id.as_str()).collect();
+    assert_eq!(
+        ids,
+        [
+            "agent-claude-code",
+            "agent-codex",
+            "agent-opencode",
+            "base",
+            "base-python"
+        ]
+    );
+
+    let opencode = recipes.recipe("agent-opencode").expect("agent-opencode");
+    assert_eq!(opencode.agents, ["opencode"]);
+    assert_eq!(opencode.files.len(), 1);
+    assert_eq!(opencode.files[0].path, "opencode.jsonc");
+    assert!(opencode.links.is_empty());
+
+    let claude = recipes
+        .recipe("agent-claude-code")
+        .expect("agent-claude-code");
+    assert!(claude.agents.is_empty());
+    assert_eq!(claude.files.len(), 1);
+    assert_eq!(claude.files[0].path, ".claude/settings.json");
+    let links: Vec<String> = claude
+        .links
+        .iter()
+        .map(|l| format!("{} -> {}", l.path, l.target))
+        .collect();
+    assert_eq!(
+        links,
+        [
+            "CLAUDE.md -> AGENTS.md",
+            ".claude/skills -> ../.agents/skills"
+        ]
+    );
+
+    let codex = recipes.recipe("agent-codex").expect("agent-codex");
+    assert_eq!(codex.agents, ["codex"]);
+    assert!(codex.files.is_empty() && codex.links.is_empty() && codex.sections.is_empty());
+}
+
+#[test]
+fn base_adds_the_workspace_defaults_to_agents_md_before_the_standards_index() {
+    let recipes = embedded();
+    let base = recipes.recipe("base").expect("base");
+
+    let sections: Vec<String> = base
+        .sections
+        .iter()
+        .map(|s| format!("{} {}", s.path, s.marker))
+        .collect();
+
+    assert_eq!(
+        sections,
+        [
+            "AGENTS.md ## Repo Workspace Defaults",
+            "AGENTS.md ## Engineering Standards"
+        ]
+    );
 }

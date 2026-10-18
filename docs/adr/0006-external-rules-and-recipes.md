@@ -213,12 +213,14 @@ scaffolder writes the configuration of a repository from its own components, apa
 
    A variant of a repository is a recipe chosen by name: `agent-opencode`, `agent-claude-code` and
    `agent-codex` for the agent, one recipe for a public repository and another for a private one.
+   `agent-claude-code` links `.claude/skills` to `../.agents/skills` and names no agent, because
+   `npx skills add --agent claude-code` writes in `.claude/skills/<name>` and fails through that link.
    `install` takes one or more names (`botica recipe install base base-python agent-claude-code`),
    and a step does not carry a condition.
 
 ## Not built yet
 
-- The recipes of the agents and of the visibility of the repository.
+- The recipes of the visibility of the repository, and the recipes of the pieces of CI.
 - The components of `scaffolding` as steps: `agent-config`, `prek`, `pyproject`, `ci`,
   `agents`, `standards`, `skills` and `varlock`.
 - In `botica recipe check`, the hooks of prek and the fragments of the external rules. `BT004`

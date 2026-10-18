@@ -264,7 +264,17 @@ that is not empty, and a recipe lists it once, across its steps. `unignore` name
 from `.gitignore`, and the only line it accepts is `skills-lock.json` (ADR 0001); `lines` does not
 accept it (CES-107).
 
-The recipes `base` and `base-python` are in `lint/recipes/` and are compiled into the binary.
+The recipes `base`, `base-python`, `agent-opencode`, `agent-claude-code` and `agent-codex` are in
+`lint/recipes/` and are compiled into the binary. `base` also adds the section `## Repo Workspace
+Defaults` to `AGENTS.md`, before the standards index; a new `AGENTS.md` has no `# Agent Notes`
+heading, which `scaffolding` writes. An agent is a recipe chosen by name, beside the others
+(`botica recipe install base base-python agent-claude-code`). `agent-opencode` writes
+`opencode.jsonc` and installs the skills for `opencode`; `agent-codex` has no step and installs
+them for `codex`; `agent-claude-code` writes `.claude/settings.json` and links `CLAUDE.md` to
+`AGENTS.md` and `.claude/skills` to `../.agents/skills`, so Claude Code reads the skills that are
+installed once in `.agents/skills`, and it names no agent: `npx skills add --agent claude-code`
+writes in `.claude/skills/<name>`, which the link makes a path inside `.agents/skills`, and fails
+with `ENOTDIR`.
 `base-python` extends `base` with a `pyproject.toml` (a `[[files]]` template with `replace-me` as
 name and description, to fill in), the Python hooks of prek (three sections of `prek.toml`, one for
 each repository of hooks), the configuration of ruff, pyrefly and pytest (sections of

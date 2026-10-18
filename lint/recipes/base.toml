@@ -1,4 +1,4 @@
-description = "Any repository: the rules about any file, the skills, .gitignore, the prek hooks and the standards index"
+description = "Any repository: the rules about any file, the skills, .gitignore, the prek hooks and the sections of AGENTS.md"
 rules = ["file-size-guard", "no-notebooks", "no-artifacts-in-package"]
 
 [[skills]]
@@ -55,6 +55,11 @@ unignore = ["skills-lock.json"]
 [[files]]
 path = "prek.toml"
 template = "files/prek-base.toml"
+
+[[sections]]
+path = "AGENTS.md"
+marker = "## Repo Workspace Defaults"
+template = "sections/agents-workspace-defaults.md"
 
 [[sections]]
 path = "AGENTS.md"

@@ -88,3 +88,18 @@ def test_base_python_adds_the_dev_packages_that_scaffolding_declares() -> None:
     tools = {package for tool in _steps("tools") for package in tool["packages"]}
 
     assert declared <= tools
+
+
+def test_base_has_the_workspace_defaults_section_of_scaffolding() -> None:
+    assert (RECIPES / "sections" / "agents-workspace-defaults.md").read_text(encoding="utf-8") == (
+        TEMPLATES / "agents-workspace-defaults.md"
+    ).read_text(encoding="utf-8")
+
+
+def test_the_recipes_of_the_agents_have_the_templates_of_scaffolding() -> None:
+    assert (RECIPES / "files" / "opencode.jsonc").read_text(encoding="utf-8") == (
+        TEMPLATES / "opencode-template.jsonc"
+    ).read_text(encoding="utf-8")
+    assert (RECIPES / "files" / "claude-settings.json").read_text(encoding="utf-8") == (
+        TEMPLATES / "claude-settings-template.json"
+    ).read_text(encoding="utf-8")

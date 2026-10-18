@@ -1,0 +1,6 @@
+description = "OpenCode: the skills for opencode and its opencode.jsonc"
+agents = ["opencode"]
+
+[[files]]
+path = "opencode.jsonc"
+template = "files/opencode.jsonc"

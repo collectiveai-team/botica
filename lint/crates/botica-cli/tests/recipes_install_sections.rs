@@ -208,7 +208,7 @@ fn a_section_that_two_recipes_share_is_added_once() {
 
 #[cfg(unix)]
 #[test]
-fn the_built_in_base_adds_the_standards_index_and_check_finds_it() {
+fn the_built_in_base_adds_the_workspace_defaults_and_the_standards_index_and_check_finds_them() {
     let dir = project("install-base-section", None);
     write(&dir, "AGENTS.md", "# Agent Notes\n");
 
@@ -216,7 +216,8 @@ fn the_built_in_base_adds_the_standards_index_and_check_finds_it() {
 
     let agents = read(&dir, "AGENTS.md");
     let index = include_str!("../../../recipes/sections/standards-index.md");
-    assert_eq!(agents, format!("# Agent Notes\n\n{index}"));
+    let defaults = include_str!("../../../recipes/sections/agents-workspace-defaults.md");
+    assert_eq!(agents, format!("# Agent Notes\n\n{defaults}\n{index}"));
     let check = recipe(&dir, &["check", "base", "--select", "file-size-guard"]);
     let check = String::from_utf8_lossy(&check.stdout);
     assert!(
