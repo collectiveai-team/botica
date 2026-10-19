@@ -2,11 +2,21 @@
 
 ## Repo Layout
 
-- `lint/` — the `botica` Rust workspace (`botica lint`, more subcommands later), published to
-  PyPI as `botica` (wheels with the binary and the Python module `botica.sdk`) and used by prek through the `botica-pre-commit` mirror.
-  It has its own README (`lint/README.md`), release runbook (`docs/botica-release.md`) and design
-  (`docs/adr/0003-botica-lint-architecture.md`). Ruff, pyrefly and deptry skip it; `ci.yml` runs
-  its fmt, clippy and tests. No pipeline in `.github/workflows/` is specific to `lint`.
+The root holds the standards project: the text of the standards, the skills, the site, the docs
+and the maintainer scripts. `lint/` holds the `botica` package: what its build reads or ships, its
+SDKs and its benchmarks. A directory goes under `lint/` when building or testing the package reads
+it; the binary embeds `lint/rules/`, `lint/references/` and `lint/recipes/`, and never reads
+`standards/`.
+
+- `lint/` — the `botica` Rust workspace (`botica lint`, `rules`, `explain`, `refs`, `recipe`,
+  `server`, `ext`), published to PyPI as `botica` (wheels with the binary and the Python module
+  `botica.sdk`) and used by prek through the `botica-pre-commit` mirror. It has its own README
+  (`lint/README.md`), release runbook (`docs/botica-release.md`) and design
+  (`docs/adr/0003-botica-lint-architecture.md`). Pyrefly and deptry skip it; ruff checks its
+  Python. `ci.yml` runs its fmt, clippy and tests, and `botica-release.yml` builds and publishes
+  it.
+- `lint/sdk/` — the SDKs of the extension protocol, one folder per language: `python` (the
+  `python-source` of the wheel), `go`, `node` and `rust`.
 - `lint/recipes/` — the recipes of `botica recipe install` and `botica recipe check`, with their
   templates (ADR 0006). `install` writes a file that is missing and leaves an existing one as it
   is (`pending`). The one step that deletes text is `unignore`, which removes a literal line of
@@ -20,7 +30,9 @@
   and apart from the rules; `scripts/build_site.sh` copies it into the site (ADR 0004).
 - `skills/` — actual installed skills (`ask-user`, `journalist`, `handoff`,
   `test-smell-review`, `engineering-rules`, `engineering-pr-review`, `pr`,
-  `engineering-refactor`). Each
+  `engineering-refactor`). Their paths are fixed: the `skills-lock.json` of each repository that
+  installed them records `skills/<group>/<name>/SKILL.md`, and `npx skills` fetches that path to
+  restore them. Each
   carries Claude-style `SKILL.md` frontmatter **and** an `agents/openai.yaml`;
   Codex reads only the latter, so `disable-model-invocation: true` must be paired
   with `policy.allow_implicit_invocation: false` (and omitted for model-invoked
