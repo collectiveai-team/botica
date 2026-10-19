@@ -283,6 +283,7 @@ version = "0.11.0"
 dependencies = [
  "aho-corasick",
  "anyhow",
+ "ast-grep-core",
  "ast-grep-language",
  "blake3",
  "botica-astgrep",

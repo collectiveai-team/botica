@@ -107,7 +107,7 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
     );
 }
 
-const PROPOSED: [&str; 7] = [
+const PROPOSED: [&str; 8] = [
     "api-request-schema-name",
     "api-response-schema-name",
     "api-schema-in-route-module",
@@ -115,6 +115,7 @@ const PROPOSED: [&str; 7] = [
     "db-no-create-all",
     "settings-base-class",
     "settings-direct-instantiation",
+    "settings-env-schema",
 ];
 
 #[test]
@@ -146,7 +147,7 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
         &catalog,
         "select = []\nextend-select = [\"all\"]\npreview = true",
     );
-    assert_eq!(active(&resolution).len(), 26);
+    assert_eq!(active(&resolution).len(), 27);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTARCH\"]\npreview = true")),
         [
@@ -154,6 +155,7 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
             "db-no-create-all",
             "settings-base-class",
             "settings-direct-instantiation",
+            "settings-env-schema",
             "settings-module"
         ]
     );

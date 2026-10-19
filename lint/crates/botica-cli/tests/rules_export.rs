@@ -256,6 +256,7 @@ fn the_pages_of_a_family_sort_by_code_when_their_names_are_sorted() {
             "btarch003-settings-base-class.md",
             "btarch004-settings-direct-instantiation.md",
             "btarch005-db-no-create-all.md",
+            "btarch006-settings-env-schema.md",
         ]
     );
 }

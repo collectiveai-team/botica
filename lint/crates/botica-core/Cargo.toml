@@ -12,6 +12,8 @@ fs = ["dep:blake3", "dep:ignore", "dep:rayon"]
 [dependencies]
 aho-corasick = "1"
 anyhow.workspace = true
+ast-grep-core.workspace = true
+ast-grep-language.workspace = true
 botica-astgrep = { path = "../botica-astgrep" }
 blake3 = { version = "1", optional = true }
 botica-catalog = { path = "../botica-catalog" }
@@ -23,7 +25,6 @@ serde_json.workspace = true
 toml.workspace = true
 
 [dev-dependencies]
-ast-grep-language.workspace = true
 criterion.workspace = true
 
 [[bench]]

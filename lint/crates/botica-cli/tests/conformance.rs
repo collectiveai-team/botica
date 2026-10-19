@@ -37,6 +37,7 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
             "no-utils",
             "settings-base-class",
             "settings-direct-instantiation",
+            "settings-env-schema",
             "settings-module",
             "unused-suppression"
         ]

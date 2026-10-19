@@ -18,6 +18,7 @@ mod extensions;
 mod external;
 mod judged;
 mod paths;
+mod settings_schema;
 
 use paths::{lint_paths, Linted};
 
@@ -262,6 +263,11 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     }
     diagnostics.extend(io_errors);
     diagnostics.extend(external::findings(
+        &setup.resolution,
+        &setup.project_root,
+        setup.prefix.as_deref(),
+    ));
+    diagnostics.extend(settings_schema::findings(
         &setup.resolution,
         &setup.project_root,
         setup.prefix.as_deref(),

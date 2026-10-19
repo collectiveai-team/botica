@@ -1,0 +1,15 @@
+id = "settings-env-schema"
+code = "BTARCH006"
+standard = "CES-76"
+summary = "The variables of .env.schema and the fields of the settings classes match"
+status = "preview"
+tags = ["config"]
+scope = "project"
+needs = "bytes"
+run-on = ["cli"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "native"
+languages = ["*"]

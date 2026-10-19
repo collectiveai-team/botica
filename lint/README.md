@@ -77,6 +77,7 @@ the run itself failed (it wins over `1`). `--exit-zero` forgives only the findin
 | `BTARCH003` | [`settings-base-class`](rules/architecture/settings-base-class/README.md) | none yet | Python: a settings class that extends `BaseModel` instead of `BaseSettings` |
 | `BTARCH004` | [`settings-direct-instantiation`](rules/architecture/settings-direct-instantiation/README.md) | none yet | Python: a settings class built where it is used, not through `get_settings()` |
 | `BTARCH005` | [`db-no-create-all`](rules/architecture/db-no-create-all/README.md) | none yet | Python: `metadata.create_all()` outside tests |
+| `BTARCH006` | [`settings-env-schema`](rules/architecture/settings-env-schema/README.md) | CES-76 | the project: `.env.schema` against the settings classes (Python: pydantic-settings) |
 | `BTDM002` | [`no-dict-alias`](rules/data-models/no-dict-alias/README.md) | CES-79 | Python: a type alias for a raw `dict` |
 | `BTDM003` | [`no-dict-call-return`](rules/data-models/no-dict-call-return/README.md) | CES-79 | Python: `return dict(...)` |
 | `BTDM004` | [`no-dict-literal-return`](rules/data-models/no-dict-literal-return/README.md) | CES-79 | Python: returning a dict literal |
@@ -91,7 +92,7 @@ the run itself failed (it wins over `1`). `--exit-zero` forgives only the findin
 | `BT001`–`BT003` | `io-error`, `unused-suppression`, `invalid-suppression` | | the run and the suppressions |
 | `BT004` | [`external-config`](rules/botica/external-config/README.md) | | the files of configuration that the active external rules name |
 
-`BTARCH003`–`BTARCH005`, `BTFAST002`–`BTFAST004` and `BTSTRUC006` have the status `preview` and
+`BTARCH003`–`BTARCH006`, `BTFAST002`–`BTFAST004` and `BTSTRUC006` have the status `preview` and
 are off by default: they run only with `preview = true` and when you select them.
 
 Another tool enforces an external rule (`kind = "external"`) through its configuration. The rule
