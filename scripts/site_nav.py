@@ -26,7 +26,7 @@ NAMES = {"fastapi": "FastAPI", "botica": "Botica"}
 LEADING_NUMBER = re.compile(r"^(\d+)-")
 
 # An entry of the nav of zensical.toml: the title of a section and its pages.
-SectionTable = dict[str, object]  # noqa: BTDM002 -- a lookup table; botica 0.11.0 predates the Table exception
+SectionTable = dict[str, object]
 
 
 def _title(folder: str) -> str:
@@ -47,7 +47,7 @@ def _pages(folder: Path, docs: Path) -> list[str]:
 
 def _section(title: str, entries: Sequence[object]) -> SectionTable:
     """Return an entry of the nav of zensical.toml: the title of a section and its pages."""
-    return {title: entries}  # noqa: BTDM004 -- a lookup table; botica 0.11.0 predates the Table exception
+    return {title: entries}
 
 
 def _folders(root: Path) -> list[Path]:

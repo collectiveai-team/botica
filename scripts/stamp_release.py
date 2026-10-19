@@ -40,7 +40,7 @@ class Event:
     status: str
 
 
-StatusTable = dict[str, str]  # noqa: BTDM002 -- a lookup table; botica 0.11.0 predates the Table exception
+StatusTable = dict[str, str]
 
 
 def _version(text: str) -> tuple[int, ...]:

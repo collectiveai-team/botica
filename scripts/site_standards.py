@@ -54,8 +54,8 @@ class FrontMatter:
     references: list[str] = field(default_factory=list)
 
 
-RulesTable = dict[str, list[RuleLink]]  # noqa: BTDM002 -- a lookup table; botica 0.11.0 predates the Table exception
-PagesTable = dict[str, Path]  # noqa: BTDM002 -- a lookup table; botica 0.11.0 predates the Table exception
+RulesTable = dict[str, list[RuleLink]]
+PagesTable = dict[str, Path]
 
 
 def _front_matter(lines: list[str]) -> FrontMatter:
