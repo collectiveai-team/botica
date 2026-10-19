@@ -10,6 +10,6 @@ mod set;
 mod tests;
 
 pub use language::compiled;
-pub use rule::{AstGrepRule, Hit};
+pub use rule::{path_globs, AstGrepRule, Hit, PathGlobs};
 pub use rule_timing::RuleTime;
 pub use set::{AstGrepSet, Buffer, PrefilterStats, Tuning};

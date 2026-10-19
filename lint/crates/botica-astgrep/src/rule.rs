@@ -99,6 +99,39 @@ impl AstGrepRule {
     }
 }
 
+/// The `files` and `ignores` globs that the rules of an ast-grep YAML document declare, in the
+/// order they are written: the paths each rule looks at, and the paths it leaves out.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct PathGlobs {
+    pub files: Vec<String>,
+    pub ignores: Vec<String>,
+}
+
+pub fn path_globs(yaml: &str) -> Result<PathGlobs> {
+    let mut globs = PathGlobs::default();
+    for config in from_yaml_string::<SupportLang>(yaml, &GlobalRules::default())
+        .context("invalid ast-grep rule")?
+    {
+        let serialized = serde_json::to_value(&*config)?;
+        globs.files.extend(glob_texts(&serialized, "files"));
+        globs.ignores.extend(glob_texts(&serialized, "ignores"));
+    }
+    Ok(globs)
+}
+
+fn glob_texts<'a>(config: &'a serde_json::Value, key: &str) -> impl Iterator<Item = String> + 'a {
+    config
+        .get(key)
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|entry| match entry {
+            serde_json::Value::String(pattern) => Some(pattern.clone()),
+            serde_json::Value::Object(map) => map.get("glob")?.as_str().map(str::to_owned),
+            _ => None,
+        })
+}
+
 /// `RuleFileGlob` is private in ast-grep-config 0.41, so `files`/`ignores` are read back
 /// through the config's `Serialize` impl.
 fn build_globs(config: &serde_json::Value, key: &str) -> Result<Option<GlobSet>> {

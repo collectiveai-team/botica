@@ -49,6 +49,19 @@ fn the_standard_line_names_the_standard_and_nothing_else() {
 }
 
 #[test]
+fn the_globs_of_a_pattern_rule_are_shown_with_its_ignores_and_its_files() {
+    let text = text_of(&explain("pattern-ignores", None, &["log-no-print"]));
+    assert!(text.contains("\n  **/__main__.py  (rule)\n"), "{text}");
+    assert!(!text.contains("ignores: none"), "{text}");
+
+    let text = text_of(&explain("pattern-files", None, &["arch-database-package"]));
+    assert_eq!(
+        line_with(&text, "files:"),
+        "files:     **/persistence/**/*.py  **/meta/**/*.py  **/core/**/*.py"
+    );
+}
+
+#[test]
 fn the_status_line_says_since_which_release_and_when_no_release_has_it_yet() {
     let released = text_of(&explain("released", None, &["no-utils"]));
     assert_eq!(

@@ -46,6 +46,24 @@ pub fn run(args: &ExplainArgs) -> Result<()> {
     Ok(())
 }
 
+/// The `files` and `ignores` globs of the ast-grep implementations of `rule`, each with its key.
+fn pattern_globs(rule: &botica_catalog::Rule) -> Vec<(String, &'static str)> {
+    let mut found = Vec::new();
+    for implementation in &rule.implementations {
+        let Some(yaml) = implementation.source.as_deref() else {
+            continue;
+        };
+        if implementation.kind != Kind::AstGrep {
+            continue;
+        }
+        if let Ok(globs) = botica_astgrep::path_globs(yaml) {
+            found.extend(globs.ignores.into_iter().map(|glob| (glob, "ignores")));
+            found.extend(globs.files.into_iter().map(|glob| (glob, "files")));
+        }
+    }
+    found
+}
+
 fn or_none(items: &[String]) -> String {
     if items.is_empty() {
         "none".to_owned()
@@ -142,10 +160,13 @@ fn write_entry(entry: &Entry, shown: &Shown<'_>, out: &mut impl Write) -> Result
         writeln!(out, "code-dirs: {code_dirs}")?;
     }
     writeln!(out, "config:    {config}")?;
+    let globs = pattern_globs(rule);
+    let yaml_ignores: Vec<&(String, &str)> =
+        globs.iter().filter(|(_, key)| *key == "ignores").collect();
     writeln!(
         out,
         "ignores:{}",
-        if entry.ignore_patterns.is_empty() {
+        if entry.ignore_patterns.is_empty() && yaml_ignores.is_empty() {
             " none"
         } else {
             ""
@@ -157,6 +178,17 @@ fn write_entry(entry: &Entry, shown: &Shown<'_>, out: &mut impl Write) -> Result
             IgnoreOrigin::Config => "config",
         };
         writeln!(out, "  {}  ({origin})", pattern.glob)?;
+    }
+    for (glob, _) in yaml_ignores {
+        writeln!(out, "  {glob}  (rule)")?;
+    }
+    let files: Vec<&str> = globs
+        .iter()
+        .filter(|(_, key)| *key == "files")
+        .map(|(glob, _)| glob.as_str())
+        .collect();
+    if !files.is_empty() {
+        writeln!(out, "files:     {}", files.join("  "))?;
     }
     writeln!(out, "\n{}", rule.readme.trim_end())?;
     Ok(())
