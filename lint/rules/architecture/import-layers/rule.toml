@@ -1,0 +1,18 @@
+id = "import-layers"
+code = "BTARCH007"
+standard = "CES-5"
+summary = "A layer imports nothing of a layer above it"
+status = "stable"
+tags = ["imports"]
+scope = "project"
+needs = "syntax"
+run-on = ["cli"]
+default-enabled = true
+default-severity = "error"
+
+[options]
+layers = { type = "strings", default = [] }
+
+[[implementations]]
+kind = "native"
+languages = ["python"]

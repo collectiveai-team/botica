@@ -38,9 +38,10 @@ myapp/
 ## Enforcement
 
 The rules of botica that depend on the layout read it from the path of each file. The direction,
-that nothing outside `api` imports `api`, is an import-linter contract (CES-5).
+that nothing below `api` imports `api`, is the rule `import-layers` (CES-5) with `api` in its
+`layers`.
 
 ## Related
 
 - CES-4 (`api-schemas-extra-forbid`): the schema rule scoped to this layout.
-- CES-5 (`import-linter`): the layer direction that protects this boundary.
+- CES-5 (`import-layers`): the layer direction that protects this boundary.

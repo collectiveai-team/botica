@@ -6,12 +6,10 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use botica_catalog::RunOn;
-use botica_core::env_schema::SETTINGS_ENV_SCHEMA;
-use botica_core::external_config::EXTERNAL_CONFIG;
 use botica_core::{postprocess, Buffer, Diagnostic};
 use botica_lsp::{Linter, ProjectRun, When};
 
-use super::{external, settings_schema, LintArgs, Setup};
+use super::{project_files, LintArgs, Setup};
 use crate::extension_pool::ExtensionPool;
 use crate::project;
 
@@ -71,11 +69,10 @@ impl Linter for Editor {
         }
     }
 
-    /// `external-config` and `settings-env-schema`, as `botica lint` runs them, when one is
-    /// active.
+    /// The native rules of project scope, as `botica lint` runs them, when one is active.
     fn project(&self) -> Option<ProjectRun> {
         let resolution = Arc::clone(&self.setup.resolution);
-        let active = [EXTERNAL_CONFIG, SETTINGS_ENV_SCHEMA]
+        let active = project_files::RULES
             .iter()
             .any(|id| resolution.entry(id).is_some_and(|entry| entry.active));
         if !active {
@@ -84,12 +81,7 @@ impl Linter for Editor {
         let root = self.setup.project_root.clone();
         let prefix = self.setup.prefix.clone();
         Some(Box::new(move || {
-            let mut found = external::findings(&resolution, &root, prefix.as_deref());
-            found.extend(settings_schema::findings(
-                &resolution,
-                &root,
-                prefix.as_deref(),
-            ));
+            let found = project_files::findings(&resolution, &root, prefix.as_deref());
             postprocess::apply(found, project::verdicts(&resolution, prefix.as_deref()))
         }))
     }

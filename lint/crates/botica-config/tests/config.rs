@@ -137,6 +137,16 @@ fn rule_options_are_checked_against_their_type_and_minimum() {
 }
 
 #[test]
+fn an_option_of_type_strings_takes_a_list_of_strings() {
+    accepted("[rules.import-layers]\nlayers = [\"app.api\", \"app.db | app.impl\"]\n");
+    accepted("[rules.import-layers]\nlayers = []\n");
+    for bad in ["\"app.api\"", "[1]", "[\"app.api\", 2]"] {
+        let message = problems(&format!("[rules.import-layers]\nlayers = {bad}\n"));
+        assert!(message.contains("must be a list of strings"), "{message}");
+    }
+}
+
+#[test]
 fn an_unknown_rule_id_is_an_error_wherever_it_appears() {
     for text in [
         "ignore = [\"no-such-rule\"]",

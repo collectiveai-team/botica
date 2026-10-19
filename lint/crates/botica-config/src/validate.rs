@@ -166,6 +166,12 @@ fn check_value(name: &str, spec: &OptionSpec, value: &toml::Value) -> Result<(),
         | (OptionType::String, toml::Value::String(_)) => Ok(()),
         (OptionType::Bool, _) => Err(format!("option `{name}` must be a boolean")),
         (OptionType::String, _) => Err(format!("option `{name}` must be a string")),
+        (OptionType::Strings, toml::Value::Array(items))
+            if items.iter().all(toml::Value::is_str) =>
+        {
+            Ok(())
+        }
+        (OptionType::Strings, _) => Err(format!("option `{name}` must be a list of strings")),
     }
 }
 

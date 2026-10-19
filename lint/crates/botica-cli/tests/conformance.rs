@@ -23,6 +23,7 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
             "db-no-create-all",
             "external-config",
             "file-size-guard",
+            "import-layers",
             "invalid-suppression",
             "io-error",
             "log-get-logger",

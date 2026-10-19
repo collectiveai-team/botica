@@ -83,7 +83,7 @@ fn base_python_resolves_to_the_rules_of_base_first() {
         first,
         ["file-size-guard", "no-notebooks", "no-artifacts-in-package"]
     );
-    assert_eq!(resolved.rules.len(), 16);
+    assert_eq!(resolved.rules.len(), 17);
 }
 
 #[test]
@@ -159,7 +159,6 @@ fn base_python_adds_pyproject_the_python_hooks_and_the_dev_tools_to_what_base_do
             "prek.toml # MARK: pyrefly",
             "pyproject.toml # MARK: Ruff",
             "pyproject.toml # MARK: Pyrefly",
-            "pyproject.toml # MARK: import-linter",
             "pyproject.toml # MARK: Pytest",
         ]
     );
@@ -169,7 +168,7 @@ fn base_python_adds_pyproject_the_python_hooks_and_the_dev_tools_to_what_base_do
     let resolved = recipes.resolve("base-python").expect("resolves");
     assert!(resolved.skills.iter().all(|skill| skill.from == "base"));
     assert_eq!(resolved.files.len(), 5);
-    assert_eq!(resolved.sections.len(), 9);
+    assert_eq!(resolved.sections.len(), 8);
     assert!(resolved.warnings.is_empty());
 }
 

@@ -5,6 +5,7 @@ use botica_catalog::{Catalog, Kind};
 
 use crate::env_schema::SETTINGS_ENV_SCHEMA;
 use crate::external_config::EXTERNAL_CONFIG;
+use crate::import_layers::IMPORT_LAYERS;
 use crate::layout::{CodeDir, NoArtifactsInPackage, NoNotebooks, NoTestsInPackage};
 use crate::native::{FileSizeGuard, NativeRule, NoUtils};
 use crate::suppress::{INVALID, UNUSED};
@@ -31,11 +32,12 @@ enum Provider {
         reads_code_dirs: bool,
     },
     /// The engine reports these itself while it lints (suppression comments, unreadable files), or
-    /// the run once for the whole project (`external-config`, `settings-env-schema`).
+    /// the run once for the whole project (`external-config`, `settings-env-schema`,
+    /// `import-layers`).
     Engine,
 }
 
-const NATIVES: [(&str, Provider); 10] = [
+const NATIVES: [(&str, Provider); 11] = [
     (
         "file-size-guard",
         Provider::Rule {
@@ -76,6 +78,7 @@ const NATIVES: [(&str, Provider); 10] = [
     (INVALID, Provider::Engine),
     (EXTERNAL_CONFIG, Provider::Engine),
     (SETTINGS_ENV_SCHEMA, Provider::Engine),
+    (IMPORT_LAYERS, Provider::Engine),
 ];
 
 pub fn uses_code_dirs(slug: &str) -> bool {

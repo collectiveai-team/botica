@@ -90,6 +90,7 @@ run on its own. `botica rules test --judge abide` runs abide with the environmen
 | `BTARCH004` | [`settings-direct-instantiation`](rules/architecture/settings-direct-instantiation/README.md) | none yet | Python: a settings class built where it is used, not through `get_settings()` |
 | `BTARCH005` | [`db-no-create-all`](rules/architecture/db-no-create-all/README.md) | none yet | Python: `metadata.create_all()` outside tests |
 | `BTARCH006` | [`settings-env-schema`](rules/architecture/settings-env-schema/README.md) | CES-76 | the project: `.env.schema` against the settings classes (Python: pydantic-settings) |
+| `BTARCH007` | [`import-layers`](rules/architecture/import-layers/README.md) | CES-5 | the project: Python imports against the `layers` of the configuration, direct or through other modules |
 | `BTDM002` | [`no-dict-alias`](rules/data-models/no-dict-alias/README.md) | CES-79 | Python: a type alias for a raw `dict` |
 | `BTDM003` | [`no-dict-call-return`](rules/data-models/no-dict-call-return/README.md) | CES-79 | Python: `return dict(...)` |
 | `BTDM004` | [`no-dict-literal-return`](rules/data-models/no-dict-literal-return/README.md) | CES-79 | Python: returning a dict literal |
@@ -676,9 +677,10 @@ the directory it starts in: start it at the root of the project.
 It publishes the findings of the native and pattern rules of the project for each open buffer. The
 findings of a rule with `type` in its `run-on` change with each edit. Those of a rule with `save`
 and without `type` are found when the buffer opens and at each save, and stay as they are between
-two saves. A rule whose `run-on` is `["cli"]` does not show in the editor. Each save also runs the
-rules of project scope (`external-config`, `settings-env-schema`) over the files on disk, on a
-thread of their own, and their findings are published for the files they name, open or not.
+two saves. A rule of file scope whose `run-on` is `["cli"]` does not show in the editor. Each save
+also runs the native rules of project scope (`external-config`, `settings-env-schema`,
+`import-layers`) over the files on disk, on a thread of their own, and their findings are published
+for the files they name, open or not.
 
 A save of `botica.toml`, of `pyproject.toml` or of a file under `.botica/`, or a
 `workspace/didChangeWatchedFiles` that names one, reads the configuration again and lints the open

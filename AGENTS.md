@@ -124,9 +124,6 @@ describes one, and the hook reports each finding with its slug and its message.
   `@standards/CES/75-agents-conventional-commits.md`
 - **CES-77 · version pin** `[judgment]` — `requires-python` stays a deliberate local choice;
   house default is 3.14. → `@standards/CES/77-py-version-pin.md`
-- **CES-5 · layered import direction** `[judgment]` — imports flow one way through the layers,
-  never upward. →
-  `@standards/CES/5-import-linter.md`
 - **CES-16 · architectural vocabulary** `[judgment]` — name units with house terms, not ad-hoc
   synonyms. → `@standards/CES/16-arch-vocabulary.md`
 - **CES-8 · separate orchestration from logic** `[judgment]` — keep control flow thin; push logic

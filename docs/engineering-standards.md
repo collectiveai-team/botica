@@ -26,8 +26,7 @@ on, so they must stay stable and semantic.
 
 - **Every CES is a file.** A rule cites a CES only if `standards/CES/<number>-<slug>.md` exists.
 - **One CES = one standard.** A standard may ship **multiple slugs** — e.g. `CES-79` ships the
-  four `no-dict-*` botica rules; an architecture rule may ship a botica rule *and* an
-  import-linter contract under the same CES.
+  four `no-dict-*` botica rules.
 - **The number is the next free one of the set**, `max + 1`. The numbers up to `CES-119` are those
   of the issues where the standards were first proposed and are kept; from `CES-120` on, `CES-N`
   is no longer the issue `#N`. A number is never reused or changed.

@@ -13,6 +13,7 @@ rules = [
   "settings-module",
   "cli-typed-framework",
   "arch-database-package",
+  "import-layers",
 ]
 
 [[files]]
@@ -43,11 +44,6 @@ template = "sections/pyproject-ruff.toml"
 path = "pyproject.toml"
 marker = "# MARK: Pyrefly"
 template = "sections/pyproject-pyrefly.toml"
-
-[[sections]]
-path = "pyproject.toml"
-marker = "# MARK: import-linter"
-template = "sections/pyproject-import-linter.toml"
 
 [[sections]]
 path = "pyproject.toml"

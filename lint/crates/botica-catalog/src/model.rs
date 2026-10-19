@@ -78,6 +78,8 @@ pub enum OptionType {
     Int,
     Bool,
     String,
+    /// A list of strings.
+    Strings,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]

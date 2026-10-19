@@ -17,8 +17,10 @@ use std::time::Instant;
 mod editor;
 mod extensions;
 mod external;
+mod import_layers;
 mod judged;
 mod paths;
+mod project_files;
 mod settings_schema;
 
 pub use editor::{when_of, Editor};
@@ -250,12 +252,7 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         errors.extend(ran.errors);
     }
     diagnostics.extend(io_errors);
-    diagnostics.extend(external::findings(
-        &setup.resolution,
-        &setup.project_root,
-        setup.prefix.as_deref(),
-    ));
-    diagnostics.extend(settings_schema::findings(
+    diagnostics.extend(project_files::findings(
         &setup.resolution,
         &setup.project_root,
         setup.prefix.as_deref(),

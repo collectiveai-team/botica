@@ -19,21 +19,17 @@ nothing app-specific, `database` and `impl` never import `api`, and `api` never 
 
 - When `core` cannot import `api`, abstractions cannot leak upward and the lower layers stay
   testable in isolation.
-- An import-linter contract makes the direction executable: a violating import fails CI before a
-  reviewer has to notice it.
+- A rule makes the direction executable: a violating import fails the run before a reviewer has to
+  notice it.
 
-## Contract
+## Rule
 
-To enforce the direction, add `import-linter` to the dev group, put this contract in
-`pyproject.toml` with the name of your package, and run `uvx --from import-linter lint-imports`:
+The botica rule `import-layers` checks the direction. List the layers of the package from the top
+one down in the configuration of botica, with `|` between the modules of one layer that are
+independent of each other:
 
 ```toml
-[tool.importlinter]
-root_package = "myapp"
-
-[[tool.importlinter.contracts]]
-name = "Layered architecture (CES-5)"
-type = "layers"
+[rules.import-layers]
 layers = [
   "myapp.entrypoints",
   "myapp.api",
@@ -42,7 +38,8 @@ layers = [
 ]
 ```
 
-Sibling modules on one layer are separated with `|` and must be independent of each other.
+It reports an import of a layer above, and an import that reaches one through modules that are in
+no layer, with the chain of modules. `botica explain import-layers` describes it.
 
 ## Related
 

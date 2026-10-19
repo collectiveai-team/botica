@@ -18,6 +18,7 @@ fn the_default_selection_runs_every_rule_enabled_by_default() {
             "cli-typed-framework",
             "external-config",
             "file-size-guard",
+            "import-layers",
             "invalid-suppression",
             "io-error",
             "log-get-logger",
@@ -75,7 +76,7 @@ fn select_and_extend_select_are_added_together() {
     );
     assert_eq!(
         active(&resolve(&catalog, "select = []\nextend-select = [\"all\"]")).len(),
-        20
+        21
     );
 }
 
@@ -90,6 +91,7 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
             "arch-database-package",
             "cli-typed-framework",
             "external-config",
+            "import-layers",
             "invalid-suppression",
             "io-error",
             "log-get-logger",
@@ -128,7 +130,7 @@ fn the_preview_rules_stay_out_of_the_default_selection_and_of_all() {
         assert_eq!(reason(&by_default, slug), Reason::NotSelected, "{slug}");
         assert_eq!(reason(&by_all, slug), Reason::OnlyPreview, "{slug}");
     }
-    assert_eq!(active(&by_all).len(), 20);
+    assert_eq!(active(&by_all).len(), 21);
 }
 
 #[test]
@@ -148,12 +150,13 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
         &catalog,
         "select = []\nextend-select = [\"all\"]\npreview = true",
     );
-    assert_eq!(active(&resolution).len(), 27);
+    assert_eq!(active(&resolution).len(), 28);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTARCH\"]\npreview = true")),
         [
             "arch-database-package",
             "db-no-create-all",
+            "import-layers",
             "settings-base-class",
             "settings-direct-instantiation",
             "settings-env-schema",
@@ -176,6 +179,7 @@ fn a_rule_switched_off_in_its_own_section_stays_out() {
             "arch-database-package",
             "cli-typed-framework",
             "external-config",
+            "import-layers",
             "invalid-suppression",
             "io-error",
             "log-get-logger",

@@ -30,9 +30,6 @@ describes one, and the hook reports each finding with its slug and its message.
   `agents-conventional-commits`.
 - **CES-77 · version pin** `[judgment]` — `requires-python` ships as a non-enforced comment
   (house default 3.14); an existing repo's pin wins. → see `pyproject.toml` comment.
-- **CES-5 · layered import direction** `[judgment]` — imports flow `entrypoints → api →
-  database/impl → core`, never upward; ships as a commented `[tool.importlinter]` skeleton to
-  uncomment once layers exist. Slug: `import-linter`.
 - **CES-17 · API boundary layout** `[judgment]` — inbound HTTP lives in a versioned `api` package
   (`api/<v>/schemas/{requests,responses}`, `routers/`); only `api` is the inbound boundary. Slug:
   `api-boundary-layout`.

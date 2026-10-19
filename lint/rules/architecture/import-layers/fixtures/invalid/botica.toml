@@ -1,0 +1,2 @@
+[rules.import-layers]
+layers = ["app.api", "app.core"]
