@@ -31,7 +31,7 @@ if __name__ == "__main__":
 "#;
 
 fn sdk_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../python")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sdk/python")
 }
 
 /// Runs the script with `python3`, the way `uv run --script` would, and gives it the requests.

@@ -26,5 +26,5 @@ sdk = ["ast-grep-py"]
 [tool.maturin]
 bindings = "bin"
 manifest-path = "crates/botica-cli/Cargo.toml"
-python-source = "python"
+python-source = "sdk/python"
 strip = true
