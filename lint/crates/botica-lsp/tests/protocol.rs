@@ -83,15 +83,40 @@ fn exit() -> Value {
 }
 
 #[test]
-fn initialize_answers_with_full_text_sync_and_the_name_of_the_server() {
+fn initialize_answers_with_incremental_sync_utf_16_and_the_name_of_the_server() {
     let (replies, _) = talk(&[initialize(), exit()], |_, _| Vec::new());
 
     assert_eq!(
         replies[0],
         json!({"jsonrpc": "2.0", "id": 1, "result": {
-            "capabilities": {"textDocumentSync": {"openClose": true, "change": 1}},
+            "capabilities": {
+                "positionEncoding": "utf-16",
+                "textDocumentSync": {"openClose": true, "change": 2, "save": {"includeText": false}},
+            },
             "serverInfo": {"name": "botica"},
         }})
+    );
+}
+
+#[test]
+fn the_server_counts_in_utf_8_when_the_editor_offers_it() {
+    let offering = |encodings: Value| {
+        json!({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+            "capabilities": {"general": {"positionEncodings": encodings}}}})
+    };
+
+    let (utf8, _) = talk(&[offering(json!(["utf-16", "utf-8"])), exit()], |_, _| {
+        Vec::new()
+    });
+    let (utf32, _) = talk(&[offering(json!(["utf-32"])), exit()], |_, _| Vec::new());
+
+    assert_eq!(
+        utf8[0]["result"]["capabilities"]["positionEncoding"],
+        "utf-8"
+    );
+    assert_eq!(
+        utf32[0]["result"]["capabilities"]["positionEncoding"],
+        "utf-16"
     );
 }
 

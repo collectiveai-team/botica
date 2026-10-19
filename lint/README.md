@@ -636,9 +636,12 @@ stays alive for the whole session, and it is a risk, because opening a repositor
 then runs the scripts of that repository (Python, Node, commands). A rule of `scope = "file"` has
 its process started when the first document in one of its languages opens. It is sent the text of
 the buffer, not the file on disk: at once when the document opens, and after the text has stayed
-as it is for 250 ms when it changes. What it finds is published after the findings of the engine,
+as it is for 250 ms when it changes. A rule whose `run-on` has `save` and not `type` is sent the
+text when the document opens and at each save, and not at the changes; one whose `run-on` has
+neither does not run in the editor. What it finds is published after the findings of the engine,
 in a second `publishDiagnostics` with both, and leaves the buffer when its text changes, until the
-rule answers again. A rule of `scope = "project"` does not run on a buffer. A process that fails, or
+rule answers again (the findings of a rule that runs at save stay until the next save). A rule of
+`scope = "project"` does not run on a buffer. A process that fails, or
 does not answer within its deadline, is
 started again up to 3 times, with a `window/showMessage` warning each time; after that the rule
 does not run until the server restarts. At `exit`, or at the end of the input, each process gets
@@ -664,6 +667,82 @@ configuration so it does not report `RUF102` for `BT` codes (the section `# MARK
 
 A `# ast-grep-ignore: <rule>` comment is a plain comment to botica: replace it with
 `# botica: ignore[<rule>]`.
+
+## Editor
+
+`botica server` is a language server on stdin and stdout. It takes the paths of the buffers from
+the directory it starts in: start it at the root of the project.
+
+It publishes the findings of the native and pattern rules of the project for each open buffer. The
+findings of a rule with `type` in its `run-on` change with each edit. Those of a rule with `save`
+and without `type` are found when the buffer opens and at each save, and stay as they are between
+two saves. A rule whose `run-on` is `["cli"]` does not show in the editor. Each save also runs the
+rules of project scope (`external-config`, `settings-env-schema`) over the files on disk, on a
+thread of their own, and their findings are published for the files they name, open or not.
+
+A save of `botica.toml`, of `pyproject.toml` or of a file under `.botica/`, or a
+`workspace/didChangeWatchedFiles` that names one, reads the configuration again and lints the open
+buffers with it. The server does not ask the editor to watch files. A configuration that does not
+load is reported in a `window/showMessage` warning, and the rules stay as they were. The processes
+of the extension rules are the ones the session started: a change to them needs a restart of the
+server.
+
+The editor sends each change as a range (incremental sync). A buffer in a language of the pattern
+rules keeps its syntax tree, and an edit parses it again from where the text changed. Columns are
+UTF-16 code units, or bytes when the editor lists `utf-8` in
+`capabilities.general.positionEncodings`.
+
+The option `{"extensions": true}` of `initialize` runs the extension rules too (see
+[Rules of the project](#rules-of-the-project)).
+
+Neovim 0.11 or later, in `init.lua`:
+
+```lua
+vim.lsp.config('botica', {
+  cmd = { 'botica', 'server' },
+  filetypes = { 'python', 'typescript', 'javascript' },
+  root_markers = { 'botica.toml', 'pyproject.toml', '.git' },
+  -- init_options = { extensions = true },
+})
+vim.lsp.enable('botica')
+```
+
+Helix, in `languages.toml`. `language-servers` replaces the list of the language: name the servers
+you keep. `config` is what Helix sends as `initializationOptions`.
+
+```toml
+[language-server.botica]
+command = "botica"
+args = ["server"]
+# config = { extensions = true }
+
+[[language]]
+name = "python"
+language-servers = ["pyright", "ruff", "botica"]
+```
+
+Emacs. Eglot runs one server for a buffer, so this one replaces the Python server:
+
+```elisp
+(with-eval-after-load 'eglot
+  (add-to-list 'eglot-server-programs
+               '((python-mode python-ts-mode) . ("botica" "server"))))
+```
+
+lsp-mode runs it next to the others with `:add-on? t`:
+
+```elisp
+(with-eval-after-load 'lsp-mode
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-stdio-connection '("botica" "server"))
+                    :activation-fn (lsp-activate-on "python")
+                    :server-id 'botica
+                    :add-on? t)))
+```
+
+Zed starts the language servers that its extensions declare
+([language extensions](https://zed.dev/docs/extensions/languages)). botica has no Zed extension: one
+would declare a server for the languages of the rules and return `botica server` as its command.
 
 ## prek
 

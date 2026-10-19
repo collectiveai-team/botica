@@ -238,10 +238,11 @@ It was removed on 2026-10-18, when the recipes of ADR 0006 replaced it.
 What this ADR decides and the code does not have. Delete a line when it ships.
 
 - The editor front-end beyond diagnostics: `botica-lsp` and `botica server` publish the findings
-  of the native and pattern rules for open buffers (full-text sync, columns in characters), and
-  those of the extension rules when the editor asks for them. Missing: code actions, incremental
-  sync, UTF-16 columns and a client for VS Code. No extension has run in a real editor: the tests
-  speak the protocol.
+  of the native and pattern rules for open buffers by their `run-on`, the rules of project scope at
+  each save, and those of the extension rules when the editor asks for them; they sync
+  incrementally, negotiate the position encoding and read the configuration again when it is
+  saved. Missing: code actions, hover, a client for VS Code and an extension for Zed. No
+  extension has run in a real editor: the tests speak the protocol.
 - The runtime `wasm`, after the first release. The Python SDK, `botica.sdk` with the extra `botica[sdk]`, is built. So are
   the TypeScript one in `lint/sdk/node`, the Rust one, `botica-ext-sdk` in `lint/sdk/rust`, and the
   Go one in `lint/sdk/go`; none of the three is published (npm, crates.io, a tag of the module) and

@@ -12,9 +12,10 @@ use botica_config::{OnTimeout, Resolution};
 use botica_core::suppress::Policy;
 use botica_core::{postprocess, Diagnostic, ExtensionRun};
 use botica_ext::{Deadlines, Selection};
-use botica_lsp::{Extensions, Process};
+use botica_lsp::{Extensions, Process, When};
 
 use crate::extension_python::uv_python;
+use crate::lint_cmd::when_of;
 use crate::project::{self, extensions_at, Project};
 
 /// How the processes of the extension rules of a project start: the folders of its catalogs, by
@@ -195,10 +196,11 @@ fn split_key(key: &str) -> (&str, usize) {
 
 impl Extensions for ExtensionPool {
     /// The rules of file scope: a rule of project scope reads the whole project, not a buffer.
-    fn at(&self, path: &str) -> Vec<String> {
+    fn at(&self, path: &str, when: When) -> Vec<String> {
         ExtensionPool::at(self, path)
             .into_iter()
             .filter(|(rule, _)| rule.scope != Some(Scope::Project))
+            .filter(|(rule, _)| when_of(rule.run_on.as_deref()) == Some(when))
             .map(|(rule, implementation)| key_of(rule, implementation))
             .collect()
     }

@@ -14,12 +14,14 @@ use std::process::ExitCode;
 use std::sync::Arc;
 use std::time::Instant;
 
+mod editor;
 mod extensions;
 mod external;
 mod judged;
 mod paths;
 mod settings_schema;
 
+pub use editor::{when_of, Editor};
 use paths::{lint_paths, Linted};
 
 #[derive(Args)]
@@ -111,30 +113,6 @@ impl LintArgs {
             no_regions: false,
             no_subtree_skip: false,
         }
-    }
-}
-
-/// What lints the buffers of an editor: the engine of a run, built once. `lint` runs the rules of
-/// the engine (native and ast-grep); the extension rules are the processes of `extensions`.
-pub struct Editor {
-    setup: Setup,
-}
-
-impl Editor {
-    pub fn build(project: project::ProjectArgs) -> Result<Self> {
-        Ok(Self {
-            setup: Setup::build(&LintArgs::for_editor(project))?,
-        })
-    }
-
-    /// The findings in `text`, the content of the file `path`, given from the working directory.
-    pub fn lint(&self, path: &str, text: &str) -> Vec<Diagnostic> {
-        self.setup.engine.lint_source(path, text)
-    }
-
-    /// The extension rules of the project.
-    pub const fn extensions(&self) -> &ExtensionPool {
-        &self.setup.pool
     }
 }
 

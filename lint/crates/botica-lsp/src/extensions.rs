@@ -7,13 +7,16 @@ use std::sync::mpsc::{Receiver, Sender};
 use botica_core::Diagnostic;
 use serde_json::Value;
 
+use crate::linter::When;
+
 /// How many times the server starts the process of a rule again after it failed.
 pub const MAX_RESTARTS: usize = 3;
 
 /// The extension rules of the project, as the server reaches them. A rule is named by a key.
 pub trait Extensions: Sync {
-    /// The keys of the rules that read the file at `path`, none when no rule does.
-    fn at(&self, path: &str) -> Vec<String>;
+    /// The keys of the rules that read the file at `path` and whose findings show at `when`, none
+    /// when no rule does.
+    fn at(&self, path: &str, when: When) -> Vec<String>;
 
     /// Starts the process of the rule `key`.
     ///
@@ -45,6 +48,11 @@ pub enum Event {
     },
     /// A message for the editor about a rule that failed.
     Warn(String),
+    /// What the rules of project scope found in the run `generation`.
+    Project {
+        generation: u64,
+        found: Vec<Diagnostic>,
+    },
 }
 
 /// A document for a rule to lint, as it was at `revision`.

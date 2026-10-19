@@ -40,8 +40,8 @@ done
 pub fn rule_toml(slug: &str, code: &str, extra: &str, implementation: &str) -> String {
     format!(
         "id = \"acme/{slug}\"\ncode = \"{code}\"\nsummary = \"s\"\nstatus = \"stable\"\n\
-         scope = \"file\"\nneeds = \"syntax\"\nrun-on = [\"cli\"]\ndefault-enabled = true\n\
-         default-severity = \"warning\"\n{extra}\n\n{implementation}"
+         scope = \"file\"\nneeds = \"syntax\"\nrun-on = [\"cli\", \"save\", \"type\"]\n\
+         default-enabled = true\ndefault-severity = \"warning\"\n{extra}\n\n{implementation}"
     )
 }
 

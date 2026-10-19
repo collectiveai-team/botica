@@ -1,9 +1,10 @@
+use crate::buffer::Buffer;
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::document::Document;
 use crate::native::{NativeRule, Needs};
 use crate::suppress::Policy;
 use crate::timings::{RuleTime, TimedKind, Timings};
-use botica_astgrep::AstGrepSet;
+use botica_astgrep::{AstGrepSet, Buffer as Tree};
 
 /// For a path relative to the project root: the indexes of the native rules that apply to it.
 pub type NativePlanner = Box<dyn Fn(&str) -> Vec<usize> + Send + Sync>;
@@ -221,7 +222,29 @@ impl Engine {
     /// Lints text the caller already holds. Does no I/O.
     pub fn lint_source(&self, path: &str, text: &str) -> Vec<Diagnostic> {
         match self.plan(path) {
-            Some(plan) => self.lint_document(&Document::new(path, text), &plan),
+            Some(plan) => self.lint_document(&Document::new(path, text), &plan, None),
+            None => Vec::new(),
+        }
+    }
+
+    /// A buffer of an editor for the file `path`, with its syntax tree when a pattern rule reads
+    /// the file.
+    pub fn open(&self, path: &str, text: &str) -> Buffer {
+        let tree = self
+            .plan(path)
+            .filter(|plan| plan.astgrep)
+            .and_then(|_| self.astgrep.open(path.as_ref(), text));
+        Buffer::with_tree(path, text, tree)
+    }
+
+    /// Lints a buffer: as `lint_source` its text, re-using its syntax tree.
+    pub fn lint_buffer(&self, buffer: &Buffer) -> Vec<Diagnostic> {
+        match self.plan(&buffer.path) {
+            Some(plan) => self.lint_document(
+                &Document::new(&buffer.path, buffer.text()),
+                &plan,
+                buffer.tree.as_ref(),
+            ),
             None => Vec::new(),
         }
     }
@@ -239,7 +262,7 @@ impl Engine {
     /// A file that is not UTF-8 gets only the native rules that do not need its text: ast-grep
     /// cannot parse it and the suppression comments cannot be read.
     pub fn lint_bytes_planned(&self, path: &str, bytes: &[u8], plan: &Plan) -> Vec<Diagnostic> {
-        self.lint_document(&Document::from_bytes(path, bytes), plan)
+        self.lint_document(&Document::from_bytes(path, bytes), plan, None)
     }
 
     /// What the rules that go by the name alone find in a file that looks binary and is not read.
@@ -255,7 +278,12 @@ impl Engine {
         out
     }
 
-    fn lint_document(&self, doc: &Document<'_>, plan: &Plan) -> Vec<Diagnostic> {
+    fn lint_document(
+        &self,
+        doc: &Document<'_>,
+        plan: &Plan,
+        tree: Option<&Tree>,
+    ) -> Vec<Diagnostic> {
         let path = doc.path;
         let text = doc.text();
         let mut out = Vec::new();
@@ -268,8 +296,9 @@ impl Engine {
                 None => self.native[index].check(doc, &mut out),
             }
         }
-        let hits = match text {
-            Some(text) if plan.astgrep => self.astgrep.check(path.as_ref(), text),
+        let hits = match (text, tree) {
+            (Some(_), Some(tree)) if plan.astgrep => self.astgrep.check_buffer(tree),
+            (Some(text), None) if plan.astgrep => self.astgrep.check(path.as_ref(), text),
             _ => Vec::new(),
         };
         for hit in hits {

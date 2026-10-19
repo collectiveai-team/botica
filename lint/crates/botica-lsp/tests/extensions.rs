@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use botica_lsp::Options;
 use common::{
-    asking, exit, finding, finds_something, initialize, messages_of, on, open, saw, serve,
+    asking, change, exit, finding, finds_something, initialize, messages_of, on, open, saw, serve,
     shutdown, Asked, Fake, Gate, A_PY,
 };
 use serde_json::{json, Value};
@@ -148,4 +148,39 @@ fn the_rule_is_given_the_text_of_the_buffer_with_its_path_from_the_root() {
             text: "from the buffer\n".to_owned(),
         }]
     );
+}
+
+#[test]
+fn a_rule_that_runs_at_save_is_not_given_the_changes_and_keeps_what_it_found() {
+    let mut fake = Fake::new(|asked, _| Ok(saw(asked)));
+    fake.saved_keys = |_| vec!["s".to_owned()];
+
+    let written = serve(&fake, on(&fake), |editor| {
+        editor.send(&initialize(&asking()));
+        editor.send(&open(A_PY, 1, "one\n"));
+        editor.wait_for(4);
+        editor.send(&change(A_PY, 2, "two\n"));
+        editor.wait_for(6);
+        editor.send(&json!({"jsonrpc": "2.0", "method": "textDocument/didSave",
+            "params": {"textDocument": {"uri": A_PY}}}));
+        editor.wait_for(8);
+        editor.send(&exit());
+    });
+
+    assert_eq!(messages_of(&written[4]), ["from the engine", "saw one"]);
+    assert_eq!(
+        messages_of(&written[5]),
+        ["from the engine", "saw two", "saw one"]
+    );
+    assert_eq!(
+        messages_of(&written[7]),
+        ["from the engine", "saw two", "saw two"]
+    );
+    let saved: Vec<String> = fake
+        .asked()
+        .into_iter()
+        .filter(|asked| asked.key == "s")
+        .map(|asked| asked.text)
+        .collect();
+    assert_eq!(saved, ["one\n", "two\n"]);
 }

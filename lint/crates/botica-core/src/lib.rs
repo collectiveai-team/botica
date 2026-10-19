@@ -1,3 +1,4 @@
+mod buffer;
 mod diagnostic;
 mod document;
 mod engine;
@@ -17,6 +18,7 @@ pub mod cache;
 #[cfg(feature = "fs")]
 pub mod walk;
 
+pub use buffer::Buffer;
 pub use diagnostic::{Diagnostic, Severity};
 pub use document::Document;
 pub use engine::{Engine, Exclusion, Inclusion, NativePlanner, PathTest, Plan};

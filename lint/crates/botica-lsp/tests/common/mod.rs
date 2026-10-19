@@ -11,7 +11,7 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
 use botica_core::{Diagnostic, Severity};
-use botica_lsp::{Extensions, Options, Process};
+use botica_lsp::{Extensions, Linter, Options, Plain, Process, When};
 use serde_json::{json, Value};
 
 pub const DEADLINE: Duration = Duration::from_secs(5);
@@ -140,6 +140,8 @@ pub type Answer = Box<dyn Fn(&Asked, usize) -> Result<Vec<Diagnostic>, String> +
 /// otherwise. `answer` is given each request and how many that rule has had before it.
 pub struct Fake {
     pub keys: fn(&str) -> Vec<String>,
+    /// The rules whose findings show at save; none unless a test says so.
+    pub saved_keys: fn(&str) -> Vec<String>,
     pub answer: Answer,
     /// Why a process does not start, when none does.
     pub start_error: Option<&'static str>,
@@ -162,6 +164,7 @@ impl Fake {
     ) -> Self {
         Self {
             keys: by_extension,
+            saved_keys: |_| Vec::new(),
             answer: Box::new(answer),
             start_error: None,
             starts: Mutex::default(),
@@ -213,8 +216,11 @@ impl Process for FakeProcess<'_> {
 }
 
 impl Extensions for Fake {
-    fn at(&self, path: &str) -> Vec<String> {
-        (self.keys)(path)
+    fn at(&self, path: &str, when: When) -> Vec<String> {
+        match when {
+            When::Type => (self.keys)(path),
+            When::Save => (self.saved_keys)(path),
+        }
     }
 
     fn start(&self, key: &str) -> Result<Box<dyn Process + '_>, String> {
@@ -263,26 +269,39 @@ pub fn serve(
     options: Options<'_>,
     test: impl FnOnce(&mut Client) + Send,
 ) -> Vec<Value> {
+    let options = Options {
+        extensions: Some(extensions),
+        ..options
+    };
+    serve_linter(
+        &Plain(&|_, _| vec![finding("engine-rule", "from the engine")]),
+        options,
+        test,
+    )
+}
+
+/// As [`serve`], with `linter` for the documents.
+pub fn serve_linter(
+    linter: &dyn Linter,
+    options: Options<'_>,
+    test: impl FnOnce(&mut Client) + Send,
+) -> Vec<Value> {
     let (input, chunks) = channel();
     let output = Written::default();
     let mut client = Client {
         input: Some(input),
         output: output.clone(),
     };
-    let options = Options {
-        extensions: Some(extensions),
-        ..options
-    };
     std::thread::scope(|scope| {
         let editor = scope.spawn(move || test(&mut client));
-        let served = botica_lsp::serve_with(
+        let served = botica_lsp::serve_linter(
             BufReader::new(Pipe {
                 chunks,
                 pending: Vec::new(),
             }),
             output.clone(),
             Path::new("/work/app"),
-            &|_, _| vec![finding("engine-rule", "from the engine")],
+            linter,
             options,
         );
         editor.join().expect("the editor ends");
@@ -328,6 +347,7 @@ pub fn on(extensions: &Fake) -> Options<'_> {
         extensions: Some(extensions),
         enabled: false,
         debounce: Duration::from_millis(60),
+        ..Options::default()
     }
 }
 
