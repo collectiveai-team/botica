@@ -5,8 +5,9 @@
 publisher is registered with). `v0.1.0` to `v0.6.0` are releases of the removed `scaffolding`
 package, so botica starts at `0.7.0`.
 
-A release does not need `main`: a tag runs the workflow as it is in the tagged commit, and
-`git push origin vX.Y.Z` uploads that commit and its history without creating a branch.
+A release does not need `main`: a tag runs the workflow as it is in the tagged commit. The
+branch that holds the tag is pushed with it, because the job `bump` commits to that branch: `main`
+when the tag is on `main`, or else the one remote branch that holds the tag.
 
 1. `test` and `repo-tests` run the `CI` suite (fmt, clippy, `cargo test`) and the
    repository's `Tests` suite (prek, pytest).
@@ -19,6 +20,11 @@ A release does not need `main`: a tag runs the workflow as it is in the tagged c
    "latest". By hand, `gh release edit vA.B.C --latest` marks another one.
 6. `pypi` uploads the wheels to PyPI. It is **off** until the repository variable
    `PUBLISH_TO_PYPI` is `true`.
+7. `mirror` waits until PyPI lists the version, and pushes the mirror with its tag (below).
+8. `bump` runs `scripts/bump_mirror_rev.py X.Y.Z` on the branch of the release, runs the hook of
+   botica at the new `rev` (`uvx prek run botica --all-files`), and pushes the commit
+   `chore(release): the hooks of botica point at vX.Y.Z` to that branch, with no pull request. When
+   the hook fails, nothing is pushed and the run ends red.
 
 `0.7.0` was released on 2026-10-12 (run `38197175421`), `0.7.1` the same day (run `38214642175`),
 `0.8.0` on 2026-10-13 (run `38410864532`) and `0.9.0` on 2026-10-14 (run `38595149595`): every job
@@ -83,37 +89,43 @@ builds are accepted. A wheel built on your machine for a rehearsal needs
 2. Seal the history: `uv run --no-project --with cyclopts python scripts/stamp_release.py stamp X.Y.Z` appends
    to `catalog/rules/history.toml` the status of each rule that no release has recorded. The `version`
    job runs `check` and fails the tag while one is left.
-3. Set the same version and the `botica==` pin in `distribution/botica-pre-commit/pyproject.toml`,
-   and the `rev` in its README. Commit (`chore(lint): release X.Y.Z`). The branch does not have to
-   be pushed: the tag carries the commit, and the workflow runs the `CI` suite itself.
-4. Tag and push: `git tag -a vX.Y.Z -m "botica X.Y.Z" && git push origin vX.Y.Z`.
+3. Commit (`chore(release): botica X.Y.Z`). The version of the mirror's package and every `rev`
+   are moved by the workflow.
+4. Tag and push the branch with the tag:
+   `git tag -a vX.Y.Z -m "botica X.Y.Z" && git push origin HEAD vX.Y.Z`.
 5. Watch the run. If a platform fails, fix it and move the tag, or delete the draft release and the
    tag and start again. Once `publish` has run, treat the version as final.
 6. Approve the `pypi` environment when it asks.
-7. Update the mirror, below.
 
 ## The mirror repository
 
 `collectiveai-team/botica-pre-commit` holds the hook definitions and a package that depends on the
 wheel of the same version, so `rev` pins the binary. Its source is
-`distribution/botica-pre-commit/` in this repository; copy it over after each release.
+`distribution/botica-pre-commit/` in this repository. The job `mirror` sets the version and the
+`botica==` pin of its `pyproject.toml` and the `rev` of its README (`scripts/bump_mirror_rev.py`),
+copies the directory and `LICENSE` into a clone of the mirror, commits (`chore: release X.Y.Z`),
+and pushes a **lightweight** tag `vX.Y.Z`: prek does not install an annotated tag of the mirror.
+The tags of this repository can be annotated. When the mirror has the tag, the job changes nothing.
 
-1. The `version` and the `botica==` pin of `distribution/botica-pre-commit/pyproject.toml` are
-   already `X.Y.Z` (step 2 of "Each release").
-2. Copy that directory (and `LICENSE`) into a clone of the mirror, commit
-   (`chore: release X.Y.Z`), push, and tag `vX.Y.Z` with a **lightweight** tag (`git tag vX.Y.Z`):
-   prek does not install an annotated tag of the mirror. The tags of this repository can be
-   annotated.
-3. In a project, `rev = "vX.Y.Z"`; `prek autoupdate` moves it to the newest tag.
+The tag must come after the wheel is on PyPI, or prek cannot install the hook environment: the
+job waits up to 10 minutes for PyPI to list the version.
 
-The tag must come after the wheel is on PyPI, or prek cannot install the hook environment.
+In a project, `rev = "vX.Y.Z"`; `prek update` moves it to the newest tag.
+
+### Set up the deploy key once
+
+The job pushes with a deploy key of the mirror that has write access; its private half is the
+secret `MIRROR_DEPLOY_KEY` of this repository.
+
+1. `ssh-keygen -t ed25519 -N "" -C "botica release" -f mirror_key`
+2. `gh repo deploy-key add mirror_key.pub -R collectiveai-team/botica-pre-commit --allow-write --title "botica release"`
+3. `gh secret set MIRROR_DEPLOY_KEY -R collectiveai-team/botica < mirror_key`, then delete both
+   files.
 
 ## After the first release
 
-- `catalog/recipes/files/prek-base.toml` and this repository's own `prek.toml` use the mirror
-  (`repo = "https://github.com/collectiveai-team/botica-pre-commit"`, `rev`, `args`). They are not
-  moved by a release: after the mirror has its new tag, set `rev` in both by hand, and in the
-  examples of `docs/botica.md` and of the mirror's README (the templates may name the next version
-  before it exists, as `0.8.0` was named; a repository using them cannot install the hook until
-  the mirror has the tag).
+- `catalog/recipes/files/prek-base.toml`, this repository's own `prek.toml`, the examples of
+  `docs/botica.md` and `website/docs/use.md` and the mirror's README name the mirror and its `rev`.
+  The job `bump` moves them all; `scripts/bump_mirror_rev.py` fails the release when one of them
+  no longer names the mirror on the line above its `rev`.
 - Not published, and not planned yet: npm, Homebrew, a GitHub Action, standalone binaries.
