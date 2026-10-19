@@ -36,7 +36,7 @@ flowchart LR
   export --> abide[Judge: abide]
 ```
 
-**Workspace layout** (`lint/`). Dependencies point one way, and front-ends never depend on each
+**Workspace layout** (`crates/`). Dependencies point one way, and front-ends never depend on each
 other:
 
 ```mermaid

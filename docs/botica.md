@@ -12,7 +12,7 @@ CES are catalogued in [`docs/engineering-standards.md`](../docs/engineering-stan
   [`docs/botica-release.md`](../docs/botica-release.md)): `uv tool install botica` or
   `uvx botica lint`. The wheel holds the binary and the module `botica.sdk`; the binary runs
   without Python.
-- **From source**: `cargo build --release -p botica-cli` in this directory; the binary is
+- **From source**: `cargo build --release -p botica-cli` at the root of the repository; the binary is
   `target/release/botica`.
 
 ## Use

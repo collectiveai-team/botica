@@ -1,6 +1,6 @@
 # Releasing botica
 
-`botica` is built from the Rust workspace in `lint/` and shipped as wheels that carry the binary and the Python module `botica.sdk`. A tag
+`botica` is built from the Rust workspace at the root of the repository and shipped as wheels that carry the binary and the Python module `botica.sdk`. A tag
 `vX.Y.Z` runs `.github/workflows/botica-release.yml` (the file name is the one the PyPI trusted
 publisher is registered with). `v0.1.0` to `v0.6.0` are releases of the removed `scaffolding`
 package, so botica starts at `0.7.0`.
@@ -24,7 +24,7 @@ A release does not need `main`: a tag runs the workflow as it is in the tagged c
 `0.8.0` on 2026-10-13 (run `38410864532`) and `0.9.0` on 2026-10-14 (run `38595149595`): every job
 passed, the seven wheels are on GitHub and on PyPI, and the `publish` step of that time left
 `v0.6.0` as "latest" each time (it was first used on 0.7.1). The
-Linux jobs build in a container that owns `lint/dist`, so the checksums are written to `lint/sums`
+Linux jobs build in a container that owns `dist/`, so the checksums are written to `sums/`
 instead. The two calls to reusable workflows use GitHub's self-repository syntax
 (`uses: $/.github/workflows/ci.yml`, July 2026, github.com only, runner 2.336.0 or newer), which
 worked on GitHub from 0.7.1. `actionlint` 1.7.12 does not know the syntax yet (rhysd/actionlint
@@ -68,7 +68,7 @@ The `botica-pre-commit` project is **not** created on PyPI: prek installs the mi
 its GitHub repository, and the package in it only depends on `botica==X.Y.Z`.
 
 To rehearse, repeat step 2 on test.pypi.org and upload one wheel by hand with
-`uv publish --publish-url https://test.pypi.org/legacy/ lint/dist/*.whl`. The workflow publishes
+`uv publish --publish-url https://test.pypi.org/legacy/ dist/*.whl`. The workflow publishes
 only to PyPI.
 
 PyPI refuses `linux_x86_64` wheels: only the `manylinux`/`musllinux` ones that `maturin-action`
@@ -78,7 +78,7 @@ builds are accepted. A wheel built on your machine for a rehearsal needs
 ## Each release
 
 1. Set `version` in `[workspace.package]` of `Cargo.toml`, and run `cargo update --workspace`
-   in `lint/`. Without it the build, which uses `--locked`, fails; the change to `Cargo.lock` is a
+   at the root. Without it the build, which uses `--locked`, fails; the change to `Cargo.lock` is a
    few lines for the crates of the project.
 2. Seal the history: `uv run --no-project --with cyclopts python scripts/stamp_release.py stamp X.Y.Z` appends
    to `catalog/rules/history.toml` the status of each rule that no release has recorded. The `version`

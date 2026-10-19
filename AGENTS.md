@@ -2,21 +2,24 @@
 
 ## Repo Layout
 
-The root holds the standards project: the text of the standards, the skills, the site, the docs
-and the maintainer scripts. `lint/` holds the `botica` package: what its build reads or ships, its
-SDKs and its benchmarks. A directory goes under `lint/` when building or testing the package reads
-it; the binary embeds `catalog/rules/`, `catalog/references/` and `catalog/recipes/`, and never reads
-`standards/`.
+The root holds the standards project (the text of the standards, the skills, the site, the docs
+and the maintainer scripts) and the `botica` package (its Rust workspace, the catalogs it embeds,
+its SDKs and its benchmarks). The binary embeds `catalog/rules/`, `catalog/references/` and
+`catalog/recipes/`, and never reads `standards/`.
 
-- `lint/` — the `botica` Rust workspace (`botica lint`, `rules`, `explain`, `refs`, `recipe`,
-  `server`, `ext`), published to PyPI as `botica` (wheels with the binary and the Python module
-  `botica.sdk`) and used by prek through the `botica-pre-commit` mirror. It has its own README
-  (`docs/botica.md`), release runbook (`docs/botica-release.md`) and design
-  (`docs/adr/0003-botica-lint-architecture.md`). Pyrefly and deptry skip it; ruff checks its
-  Python. `ci.yml` runs its fmt, clippy and tests, and `botica-release.yml` builds and publishes
-  it.
+- `Cargo.toml` and `crates/` — the `botica` Rust workspace (`botica lint`, `rules`, `explain`,
+  `refs`, `recipe`, `server`, `ext`). The `[project]` of the root `pyproject.toml` is its wheel
+  (maturin, Python 3.9 or newer, with the binary and the Python module `botica.sdk`), published to
+  PyPI as `botica` and used by prek through the `botica-pre-commit` mirror (`distribution/`). Its
+  manual is `docs/botica.md`, its release runbook `docs/botica-release.md` and its design
+  `docs/adr/0003-botica-lint-architecture.md`. Pyrefly and deptry skip it; ruff checks its Python.
+  `ci.yml` runs its fmt, clippy and tests, and `botica-release.yml` builds and publishes it.
+- `catalog/` — what the binary embeds: the built-in rules (`rules/`), the topics of `botica refs`
+  (`references/`) and the recipes (`recipes/`). `references/` and `recipes/` at the root of a
+  project hold the topics and recipes of that project, so the built-in ones live one folder down.
 - `sdk/` — the SDKs of the extension protocol, one folder per language: `python` (the
   `python-source` of the wheel), `go`, `node` and `rust`.
+- `bench/` — the benchmarks of `botica lint`; `schema/` — the JSON schema of `botica.toml`.
 - `catalog/recipes/` — the recipes of `botica recipe install` and `botica recipe check`, with their
   templates (ADR 0006). `install` writes a file that is missing and leaves an existing one as it
   is (`pending`). The one step that deletes text is `unignore`, which removes a literal line of
@@ -38,8 +41,9 @@ it; the binary embeds `catalog/rules/`, `catalog/references/` and `catalog/recip
   Codex reads only the latter, so `disable-model-invocation: true` must be paired
   with `policy.allow_implicit_invocation: false` (and omitted for model-invoked
   skills, which Codex otherwise filters out entirely).
-- `scripts/` — maintainer-only checks, not shipped; the root `pyproject.toml` holds their
-  dependencies and has no package. `check_skill_drift.py` guards
+- `scripts/` — maintainer-only checks, not shipped. Their dependencies are the `dev` group of the
+  root `pyproject.toml` (Python 3.11 or newer); `uv sync` installs the group and leaves the wheel
+  unbuilt. `check_skill_drift.py` guards
   the upstream catalog of skills that `base` pins; the `skills-drift` workflow runs it. `check_skills.sh`
   runs the skill validator over `skills/`; the `skill-validator` hook of prek runs it.
   `check_rule_change.py` flags a change that adds a botica rule and touches more than that rule
@@ -118,7 +122,7 @@ or referencing a rule in this repo, follow this convention:
 > SSOT: `docs/engineering-standards.md`.
 
 This is the **dogfooded subset** for this repo — Python maintainer scripts with Cyclopts (no
-API, DB, or web layer) next to the `lint/` Rust workspace, which these Python-oriented standards do not cover.
+API, DB, or web layer) next to the Rust workspace of botica, which these Python-oriented standards do not cover.
 `[prek]` rules are enforced by `prek`; `[script]` rules by a command (`npx skills`); `[ci]` rules
 by a GitHub Actions workflow; `[dependency]` rules by a dev-dependency; `[judgment]` rules are
 agent/reviewer judgment; `[reference]` points at canonical code that `botica refs show` prints.

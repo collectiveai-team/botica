@@ -2,7 +2,7 @@
 
 The SDK to write a rule of botica as an extension in Rust (ADR 0003). It answers the protocol of
 the extension host on stdin and stdout: `initialize`, `lint/files`, `lint/project` and `shutdown`,
-one JSON-RPC 2.0 message per line. It is a member of the workspace of `lint/` and is not published
+one JSON-RPC 2.0 message per line. It is a member of the workspace of botica and is not published
 to crates.io.
 
 The binary of the extension runs as a rule of the runtime `command`, since the runtime `wasm` is
