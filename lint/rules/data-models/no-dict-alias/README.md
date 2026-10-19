@@ -7,6 +7,9 @@ serialization is needed (a FastAPI endpoint, for one). An error by default.
 This rule catches a type alias that hides a raw dict behind a name: `X = dict`,
 `X = dict[...]`, `X: TypeAlias = dict[...]` and `type X = dict[...]`.
 
+A lookup table, whose keys are data and not field names, is declared with an alias whose name ends
+in `Table` (`StatusTable = dict[str, str]`); the rule accepts it (CES-79, Exceptions).
+
 ## Why
 
 - A `dict[str, Any]` boundary is an untyped contract: callers guess keys, a refactor breaks them

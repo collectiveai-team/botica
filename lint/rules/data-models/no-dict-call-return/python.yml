@@ -1,7 +1,15 @@
 id: no-dict-call-return
 language: python
 severity: error
-message: "CES-79 (no-dict-call-return): Boundary function returns dict(...). Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+message: "CES-79 (no-dict-call-return): Boundary function returns dict(...). Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`."
 rule:
   any:
     - pattern: return dict($$$ARGS)
+  # A function whose return type ends in `Table` returns a lookup table.
+  not:
+    inside:
+      stopBy: end
+      kind: function_definition
+      has:
+        field: return_type
+        regex: "Table$"

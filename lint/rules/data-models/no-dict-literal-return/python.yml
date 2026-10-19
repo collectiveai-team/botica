@@ -1,9 +1,17 @@
 id: no-dict-literal-return
 language: python
 severity: error
-message: "CES-79 (no-dict-literal-return): Boundary function returns a dict literal. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+message: "CES-79 (no-dict-literal-return): Boundary function returns a dict literal. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`."
 rule:
   all:
     - kind: dictionary
     - inside:
         kind: return_statement
+    # A function whose return type ends in `Table` returns a lookup table.
+    - not:
+        inside:
+          stopBy: end
+          kind: function_definition
+          has:
+            field: return_type
+            regex: "Table$"

@@ -1,7 +1,7 @@
 id: no-dict-alias
 language: python
 severity: error
-message: "CES-79 (no-dict-alias): Type alias points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+message: "CES-79 (no-dict-alias): Type alias points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`."
 rule:
   any:
     # X = dict / X = dict[...]
@@ -13,3 +13,8 @@ rule:
     # PEP 695: type X = dict[...]
     - pattern: "type $NAME = dict"
     - pattern: "type $NAME = dict[$$$ARGS]"
+# A name that ends in `Table` declares a lookup table: its keys are data, and a dict is its type.
+constraints:
+  NAME:
+    not:
+      regex: "Table$"

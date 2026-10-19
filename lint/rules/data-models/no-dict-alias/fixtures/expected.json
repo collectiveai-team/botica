@@ -15,7 +15,7 @@
           "column": 15
         }
       },
-      "message": "CES-79 (no-dict-alias): Type alias points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+      "message": "CES-79 (no-dict-alias): Type alias points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`."
     },
     {
       "path": "types.py",
@@ -32,7 +32,7 @@
           "column": 24
         }
       },
-      "message": "CES-79 (no-dict-alias): Type alias points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+      "message": "CES-79 (no-dict-alias): Type alias points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`."
     },
     {
       "path": "types.py",
@@ -49,7 +49,7 @@
           "column": 37
         }
       },
-      "message": "CES-79 (no-dict-alias): Type alias points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+      "message": "CES-79 (no-dict-alias): Type alias points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`."
     },
     {
       "path": "types.py",
@@ -66,7 +66,7 @@
           "column": 26
         }
       },
-      "message": "CES-79 (no-dict-alias): Type alias points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+      "message": "CES-79 (no-dict-alias): Type alias points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`."
     }
   ]
 }

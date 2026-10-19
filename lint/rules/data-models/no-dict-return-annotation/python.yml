@@ -1,7 +1,7 @@
 id: no-dict-return-annotation
 language: python
 severity: error
-message: "CES-79 (no-dict-return-annotation): Boundary function returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints)."
+message: "CES-79 (no-dict-return-annotation): Boundary function returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`."
 rule:
   any:
     - pattern: |
