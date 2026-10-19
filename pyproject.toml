@@ -32,12 +32,12 @@ strip = true
 # dependencies are the `dev` group, which needs Python 3.11.
 [dependency-groups]
 dev = [
-  "cyclopts>=4.22.2",
+  "cyclopts>=5.2.0",
   "pytest>=8.0",
   # CES-111 (test-order-randomization-pytest-randomly): random, reproducibly-seeded test
   # order on every run — catches state-leaking/order-dependent tests for free.
   "pytest-randomly>=4.1.0",
-  "ruff>=0.16.3",
+  "ruff>=0.17.0",
 ]
 
 # `uv sync` and `uv run` install the `dev` group and leave the Rust package unbuilt; `maturin`
