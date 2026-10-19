@@ -48,6 +48,9 @@
         "type": "string"
       }
     },
+    "extensions": {
+      "$ref": "#/$defs/ExtensionsConfig"
+    },
     "external": {
       "description": "Globs of rule IDs that suppressions may name without a warning even when they are unknown.",
       "type": "array",
@@ -139,6 +142,47 @@
       "additionalProperties": false,
       "required": [
         "path"
+      ]
+    },
+    "ExtensionsConfig": {
+      "description": "Settings of the extension rules.",
+      "type": "object",
+      "properties": {
+        "on-timeout": {
+          "$ref": "#/$defs/OnTimeout"
+        },
+        "python": {
+          "description": "The Python of the scripts of the runtime `python`: `project` (the version of\n`.python-version`, of `.venv` or of `requires-python`, else 3.13), `system` (a Python of\nthe system) or a version for uv, as `3.12`. A free-threaded Python is refused.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timeout": {
+          "description": "Seconds that a process has to answer each request. `BOTICA_EXTENSION_TIMEOUT` wins over it.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "OnTimeout": {
+      "description": "What `botica lint` does when the process of an extension rule does not answer in time.",
+      "oneOf": [
+        {
+          "description": "The run fails with exit code 2.",
+          "type": "string",
+          "const": "fail"
+        },
+        {
+          "description": "A warning on stderr; the run goes on without the findings of that rule.",
+          "type": "string",
+          "const": "warn"
+        }
       ]
     },
     "Override": {

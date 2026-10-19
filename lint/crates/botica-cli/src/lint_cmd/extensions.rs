@@ -4,9 +4,11 @@
 use std::collections::{BTreeMap, HashMap};
 
 use botica_catalog::{Implementation, Rule, Scope};
+use botica_config::OnTimeout;
 use botica_core::report::{ErrorKind, RunError};
 use botica_core::walk::SourceFile;
 use botica_core::Diagnostic;
+use botica_ext::TimedOut;
 
 use super::{LintArgs, Setup};
 use crate::extension_pool::own_findings;
@@ -58,7 +60,20 @@ pub(super) fn run(args: &LintArgs, setup: &Setup, sources: &[SourceFile]) -> Ran
             *finished &= !failed;
         }
         found.extend(own_findings(rule, outcome.found));
-        errors.extend(outcome.failure.map(|error| RunError {
+        let warn = setup.pool.launcher().on_timeout == OnTimeout::Warn;
+        let (late, failure): (Option<anyhow::Error>, _) = match outcome.failure {
+            Some(error) if warn && error.downcast_ref::<TimedOut>().is_some() => {
+                (Some(error), None)
+            }
+            failure => (None, failure),
+        };
+        if let Some(error) = late {
+            eprintln!(
+                "botica: warning: `{}` left out of the run: {error:#}",
+                rule.id
+            );
+        }
+        errors.extend(failure.map(|error| RunError {
             kind: ErrorKind::Extension,
             extension: Some(rule.id.clone()),
             path: None,
@@ -115,6 +130,7 @@ fn execute<'a>(job: &Job<'a>, setup: &Setup, batch: usize) -> Done<'a> {
                 dir: setup.pool.project_root(),
                 selection: setup.pool.selection(job.rule),
                 allowed: &setup.pool.sharing(&argv),
+                deadlines: setup.pool.launcher().deadlines,
             },
             &job.files,
             how,

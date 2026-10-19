@@ -1,8 +1,10 @@
 mod agents_md;
 mod catalog_json;
 mod explain_cmd;
+mod ext_cmd;
 mod extension;
 mod extension_pool;
+mod extension_python;
 mod lint_cmd;
 mod project;
 mod recipes_check;
@@ -67,6 +69,8 @@ enum Command {
     Recipe(recipes_cmd::RecipesArgs),
     /// Serve the findings of the rules to an editor, over the Language Server Protocol on stdio.
     Server(server_cmd::ServerArgs),
+    /// Prepare the extension rules of the project before `botica lint` runs them.
+    Ext(ext_cmd::ExtArgs),
 }
 
 fn main() -> ExitCode {
@@ -77,6 +81,7 @@ fn main() -> ExitCode {
         Command::Refs(args) => refs_cmd::run(&args),
         Command::Recipe(args) => recipes_cmd::run(&args),
         Command::Server(args) => server_cmd::run(args).map(|()| ExitCode::SUCCESS),
+        Command::Ext(args) => ext_cmd::run(&args),
     };
     match result {
         Ok(code) => code,

@@ -1,4 +1,4 @@
-use crate::extension_pool::ExtensionPool;
+use crate::extension_pool::{ExtensionPool, Launcher};
 use crate::{extension, project, rules, timings};
 use anyhow::{Context, Result};
 use botica_astgrep::Tuning;
@@ -167,7 +167,7 @@ impl Setup {
     fn build(args: &LintArgs) -> Result<Self> {
         let project = project::load(&args.project)?;
         let project_root = project.loaded.root.clone();
-        let catalog_dirs = project.catalog_dirs.clone();
+        let launcher = Launcher::of(&project);
         let with_astgrep = !args.no_astgrep;
         let io_error_active = project.is_active(IO_ERROR);
         let prefix = project.working_prefix();
@@ -177,7 +177,7 @@ impl Setup {
         let pool = ExtensionPool::new(
             Arc::clone(&resolution),
             prefix.clone(),
-            catalog_dirs,
+            launcher,
             project_root.clone(),
         );
         let has_extensions = resolution

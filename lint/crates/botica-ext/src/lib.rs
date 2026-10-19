@@ -80,13 +80,38 @@ pub struct Deadlines {
     pub request: Duration,
 }
 
+/// The failure of a process that did not answer a request within its deadline; it was killed.
+#[derive(Debug)]
+pub struct TimedOut {
+    pub method: String,
+    pub deadline: Duration,
+}
+
+impl std::fmt::Display for TimedOut {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "extension did not answer `{}` within {:?} and was killed",
+            self.method, self.deadline
+        )
+    }
+}
+
+impl std::error::Error for TimedOut {}
+
 impl Deadlines {
     /// The defaults, or `DEADLINE_VARIABLE` seconds for both when it holds a number.
     pub fn from_env() -> Self {
-        match std::env::var(DEADLINE_VARIABLE)
+        Self::configured(None)
+    }
+
+    /// `DEADLINE_VARIABLE` seconds for both when it holds a number, else `seconds` for both when
+    /// the configuration names it, else the defaults.
+    pub fn configured(seconds: Option<u64>) -> Self {
+        let variable = std::env::var(DEADLINE_VARIABLE)
             .ok()
-            .and_then(|value| value.parse::<u64>().ok())
-        {
+            .and_then(|value| value.parse::<u64>().ok());
+        match variable.or(seconds) {
             Some(seconds) => Self {
                 initialize: Duration::from_secs(seconds),
                 request: Duration::from_secs(seconds),
@@ -279,7 +304,11 @@ impl ExtensionHost {
             Err(RecvTimeoutError::Timeout) => {
                 self.child.kill()?;
                 self.child.wait()?;
-                bail!("extension did not answer `{method}` within {deadline:?} and was killed");
+                return Err(TimedOut {
+                    method: method.to_owned(),
+                    deadline,
+                }
+                .into());
             }
             Err(RecvTimeoutError::Disconnected) => {
                 bail!("extension closed its stdout during `{method}`")

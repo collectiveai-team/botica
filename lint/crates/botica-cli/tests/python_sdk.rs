@@ -194,7 +194,7 @@ fn botica_lint_runs_a_rule_written_with_the_sdk() {
     write(
         &bin,
         "uv",
-        "#!/bin/sh\n[ \"$1 $2\" = \"run --script\" ] || exit 9\nexec python3 \"$3\"\n",
+        "#!/bin/sh\n[ \"$1 $4\" = \"run --script\" ] || exit 9\nexec python3 \"$5\"\n",
     );
     let mut permissions = std::fs::metadata(bin.join("uv"))
         .expect("exists")

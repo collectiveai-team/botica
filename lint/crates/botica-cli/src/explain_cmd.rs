@@ -6,6 +6,7 @@ use botica_config::{Entry, IgnoreOrigin};
 use botica_core::registry;
 use clap::Args;
 
+use crate::extension_pool::Launcher;
 use crate::project::{self, ProjectArgs};
 use crate::rule_view::Programs;
 
@@ -37,7 +38,7 @@ pub fn run(args: &ExplainArgs) -> Result<()> {
         config: &config,
         code_dirs: code_dirs.as_deref(),
         programs: Programs {
-            catalog_dirs: &project.catalog_dirs,
+            launcher: Launcher::of(&project),
             root: &project.loaded.root,
         },
     };

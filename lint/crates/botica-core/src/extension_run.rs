@@ -3,7 +3,7 @@
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::document::Document;
 use anyhow::{Context, Result};
-use botica_ext::{ExtensionHost, FileIn, Selection, WireDiagnostic};
+use botica_ext::{Deadlines, ExtensionHost, FileIn, Selection, WireDiagnostic};
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -44,29 +44,33 @@ impl ExtensionRun {
 
     /// Starts the extension with `dir` as its working directory (botica's own when `None`).
     pub fn start_in(command: &[String], dir: Option<&Path>) -> Result<Self> {
-        let host = ExtensionHost::spawn_in(command, dir)?;
+        Ok(Self::started(ExtensionHost::spawn_in(command, dir)?))
+    }
+
+    fn started(host: ExtensionHost) -> Self {
         let languages = host
             .rules
             .iter()
             .flat_map(|rule| rule.languages.iter().cloned())
             .collect();
-        Ok(Self {
+        Self {
             host,
             languages,
             selection: None,
-        })
+        }
     }
 
     /// Starts the extension of the rules of a catalog: it must declare the rules of `selection`
-    /// and no rule outside `allowed`, the rules that the catalogs run with the same command. Each
-    /// request names the rules of `selection` with their options.
+    /// and no rule outside `allowed`, the rules that the catalogs run with the same command, with
+    /// `deadlines`. Each request names the rules of `selection` with their options.
     pub fn start_for(
         command: &[String],
         dir: Option<&Path>,
         selection: Selection,
         allowed: &[String],
+        deadlines: Deadlines,
     ) -> Result<Self> {
-        let mut run = Self::start_in(command, dir)?;
+        let mut run = Self::started(ExtensionHost::spawn_with(command, dir, deadlines)?);
         run.host.check_declared(&selection.rules, allowed)?;
         run.selection = Some(selection);
         Ok(run)

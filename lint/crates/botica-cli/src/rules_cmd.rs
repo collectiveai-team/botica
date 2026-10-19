@@ -6,6 +6,7 @@ use botica_catalog::Kind;
 use clap::{Args, Subcommand};
 use serde::Serialize;
 
+use crate::extension_pool::Launcher;
 use crate::project::{self, Project, ProjectArgs};
 use crate::rule_view::{Programs, RuleView};
 use crate::rules_conform::{self, ConformArgs};
@@ -95,7 +96,7 @@ fn success(_: ()) -> ExitCode {
 
 fn programs(project: &Project) -> Programs<'_> {
     Programs {
-        catalog_dirs: &project.catalog_dirs,
+        launcher: Launcher::of(project),
         root: &project.loaded.root,
     }
 }

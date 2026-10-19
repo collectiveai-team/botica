@@ -73,7 +73,7 @@ fn json_lists_each_implementation_with_its_kind_and_what_it_runs() {
     let check = format!("{}/check.py", folder("py-rule"));
     assert_eq!(
         rule(&document, "acme/py-rule")["implementations"][0]["runs"],
-        serde_json::json!(["uv", "run", "--script", check])
+        serde_json::json!(["uv", "run", "--python", "3.13", "--script", check])
     );
 }
 
@@ -87,7 +87,7 @@ fn the_listing_names_the_programs_lint_runs_and_the_tools_outside_it() {
 
     let runs = format!(
         "programs that `botica lint` runs:\n  acme/by-sh  sh {by_sh}/ext.sh\n  \
-         acme/py-rule  uv run --script {py}/check.py\n",
+         acme/py-rule  uv run --python 3.13 --script {py}/check.py\n",
         by_sh = folder("by-sh"),
         py = folder("py-rule"),
     );

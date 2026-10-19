@@ -48,6 +48,7 @@ fn the_schema_forbids_unknown_keys_and_documents_the_known_ones() {
         "overrides",
         "references",
         "recipes",
+        "extensions",
     ] {
         assert!(
             schema["properties"].get(key).is_some(),

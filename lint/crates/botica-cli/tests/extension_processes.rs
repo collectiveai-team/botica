@@ -108,6 +108,75 @@ read -r line"#,
     );
 }
 
+/// A process of `acme/by-sh` that declares its rule and never answers `lint/files`, next to
+/// `acme/other`, which answers.
+fn silent_on_lint_files(name: &str, config: &str) -> PathBuf {
+    let dir = project(name, config);
+    add_rule(&dir, "by-sh", "ACMESTRUC001", "", "acme/by-sh");
+    add_rule(&dir, "other", "ACMESTRUC002", "", "acme/other");
+    let silent = silent_after(
+        r#"read -r line
+printf '%s\n' '{"jsonrpc":"2.0","id":1,"result":{"rules":[{"id":"acme/by-sh","languages":["python"]}]}}'
+read -r line"#,
+    );
+    write(&dir, &format!("{}/ext.sh", folder("by-sh")), &silent);
+    dir
+}
+
+#[test]
+fn the_configuration_sets_the_deadline_of_the_extensions() {
+    let dir = silent_on_lint_files("config-timeout", "[extensions]\ntimeout = 1\n");
+
+    let output = lint_within_a_minute(&dir, &[]);
+
+    assert_eq!(output.status.code(), Some(2), "{}", stdout(&output));
+    assert!(stderr(&output).contains("within 1s"), "{}", stderr(&output));
+}
+
+#[test]
+fn the_variable_wins_over_the_deadline_of_the_configuration() {
+    let dir = silent_on_lint_files("variable-wins", "[extensions]\ntimeout = 600\n");
+
+    let output = lint_within_a_minute(&dir, &[("BOTICA_EXTENSION_TIMEOUT", "1")]);
+
+    assert_eq!(output.status.code(), Some(2), "{}", stdout(&output));
+    assert!(stderr(&output).contains("within 1s"), "{}", stderr(&output));
+}
+
+#[test]
+fn on_timeout_warn_reports_a_process_out_of_time_as_a_warning_and_the_run_goes_on() {
+    let dir = silent_on_lint_files(
+        "timeout-warn",
+        "[extensions]\ntimeout = 1\non-timeout = \"warn\"\n",
+    );
+
+    let output = lint_within_a_minute(&dir, &[]);
+
+    assert_eq!(output.status.code(), Some(1), "{}", stderr(&output));
+    assert_eq!(findings(&output), ["app.py acme/other"]);
+    let message = stderr(&output);
+    assert!(
+        message.contains("warning")
+            && message.contains("acme/by-sh")
+            && message.contains("within 1s"),
+        "{message}"
+    );
+}
+
+#[test]
+fn on_timeout_warn_still_fails_a_process_that_fails_otherwise() {
+    let dir = project(
+        "timeout-warn-crash",
+        "[extensions]\non-timeout = \"warn\"\n",
+    );
+    add_rule(&dir, "by-sh", "ACMESTRUC001", "", "acme/by-sh");
+    write(&dir, &format!("{}/ext.sh", folder("by-sh")), "exit 3\n");
+
+    let output = lint(&dir, &[]);
+
+    assert_eq!(output.status.code(), Some(2), "{}", stderr(&output));
+}
+
 #[test]
 fn a_process_that_does_not_answer_initialize_is_killed_and_is_a_failure_of_the_run() {
     let dir = project("silent-initialize", "");
@@ -159,7 +228,7 @@ fn a_program_that_does_not_exist_is_a_failure_of_the_run() {
 }
 
 #[test]
-fn comments_silence_an_extension_finding_and_are_never_reported_as_unused() {
+fn comments_silence_an_extension_finding() {
     let dir = project("silenced", "");
     add_rule(&dir, "by-sh", "ACMESTRUC001", "", "acme/by-sh");
     write(&dir, "app.py", "x = 1  # botica: ignore[acme/by-sh]\n");
@@ -183,7 +252,7 @@ fn fake_tools(dir: &Path) -> PathBuf {
     write(
         &bin,
         "uv",
-        "#!/bin/sh\necho \"uv $*\" >> \"$(dirname \"$0\")/../runs.log\"\n[ \"$1 $2\" = \"run --script\" ] || exit 9\nexec sh \"$3\"\n",
+        "#!/bin/sh\necho \"uv $*\" >> \"$(dirname \"$0\")/../runs.log\"\n[ \"$1 $4\" = \"run --script\" ] || exit 9\nexec sh \"$5\"\n",
     );
     write(
         &bin,
@@ -247,7 +316,10 @@ fn a_python_rule_runs_with_uv_and_a_node_rule_with_node() {
         lines,
         [
             format!("node {root}/{}/ext.mjs", folder("by-js")),
-            format!("uv run --script {root}/{}/ext.py", folder("by-py")),
+            format!(
+                "uv run --python 3.13 --script {root}/{}/ext.py",
+                folder("by-py")
+            ),
         ]
     );
 }

@@ -2,7 +2,7 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 
 use botica_core::{walk, Diagnostic, ExtensionRun};
-use botica_ext::Selection;
+use botica_ext::{Deadlines, Selection};
 
 /// How long each step of an extension took, wall time.
 #[derive(Debug, Default)]
@@ -49,9 +49,10 @@ pub fn run_rule(process: Process<'_>, files: &[(&str, &str)], how: Send) -> Outc
         dir,
         selection,
         allowed,
+        deadlines,
     } = process;
     run_with(
-        || ExtensionRun::start_for(argv, Some(dir), selection, allowed),
+        || ExtensionRun::start_for(argv, Some(dir), selection, allowed, deadlines),
         |run| match how {
             Send::Files { batch } => run.lint_all(files.iter().copied(), batch),
             Send::Project => run.lint_project(dir, files),
@@ -60,12 +61,13 @@ pub fn run_rule(process: Process<'_>, files: &[(&str, &str)], how: Send) -> Outc
 }
 
 /// The process of a rule of a catalog: what runs it and from where, the rule it is asked for with
-/// its options, and the rules it may declare.
+/// its options, the rules it may declare, and the deadlines of its requests.
 pub struct Process<'a> {
     pub argv: &'a [String],
     pub dir: &'a Path,
     pub selection: Selection,
     pub allowed: &'a [String],
+    pub deadlines: Deadlines,
 }
 
 /// How the files reach the process of a rule.

@@ -17,7 +17,8 @@ pub use inline::inline_setting;
 pub use issue::{ConfigError, ConfigIssue};
 pub use matcher::PathMatcher;
 pub use model::{
-    CatalogSource, Config, Override, RecipesConfig, ReferencesConfig, RuleConfig, RuleSeverity,
+    CatalogSource, Config, ExtensionsConfig, OnTimeout, Override, RecipesConfig, ReferencesConfig,
+    RuleConfig, RuleSeverity,
 };
 pub use parse::json_schema;
 pub use resolve::{FileRule, Resolution};

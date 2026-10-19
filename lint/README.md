@@ -30,6 +30,7 @@ botica server                  # the Language Server Protocol on stdio: the find
 botica server --extensions     # and the extension rules of the project: heavy, and it runs the scripts
                                # of the project (see "Rules of the project")
 botica explain no-notebooks    # what a rule is, how it is built and how it is configured here
+botica ext sync                # create the environments of the Python scripts of the extension rules
 botica rules export --format markdown --output site   # one page per rule of the catalog, and an index;
                                # the catalogs of .botica/rules get a folder and an index section each
 botica rules export --format json --output out       # the whole catalog in out/catalog.json
@@ -565,7 +566,7 @@ with the same command, fails. Its implementation says what runs:
 kind = "extension"
 runtime = "python"          # python | node | command
 languages = ["python"]
-file = "no-blobs.py"        # python: `uv run --script`; node: `node` (.js or .mjs)
+file = "no-blobs.py"        # python: `uv run --python <version> --script`; node: `node` (.js or .mjs)
 # command = ["sh", ".botica/rules/acme/structure/no-blobs/check.sh"]   # runtime = "command", no file
 ```
 
@@ -603,9 +604,25 @@ process that fails, that does not answer a request in time, or that is still run
 after `shutdown`, is killed and stops the run with exit code 2; the findings of the other rules
 stay. The process has 120 seconds to answer `initialize`, because a script run with `uv` may
 download its dependencies first, and 60 seconds to answer `lint/files`, `lint/project` and
-`shutdown`. The
-variable `BOTICA_EXTENSION_TIMEOUT`, a number of seconds, sets both. The built-in catalog takes no
-extension: an extension is a program of the project.
+`shutdown`. `timeout` of `[extensions]` in `botica.toml`, a number of seconds, sets both, and the
+variable `BOTICA_EXTENSION_TIMEOUT` wins over it. With `on-timeout = "warn"` a process that does not
+answer in time is a warning on stderr and the run goes on without the findings of its rule. The
+built-in catalog takes no extension: an extension is a program of the project.
+
+```toml
+[extensions]
+python = "project"    # project (default) | system | a version for uv, as "3.12"
+timeout = 30          # seconds for each request; BOTICA_EXTENSION_TIMEOUT wins
+on-timeout = "fail"   # fail (default, exit 2) | warn
+```
+
+`uv` runs a script of the runtime `python` with `--python <version>`. With `project` the version
+comes from `.python-version`, else from `.venv/pyvenv.cfg`, else from `requires-python` of
+`pyproject.toml`, else it is 3.13. `system` runs it with a Python of the system
+(`--python-preference only-system`). A free-threaded Python (`3.13t`, `3.14+freethreaded`) is
+refused: the run fails and names where the version is written. `botica ext sync` runs
+`uv sync --script` with that Python on the script of each active Python rule, so that the first
+`botica lint`, in a hook or in CI, does not create the environments.
 
 `botica server` runs the extension rules only when the editor asks for them: the flag
 `--extensions`, or the option `{"extensions": true}` in the `initializationOptions` of

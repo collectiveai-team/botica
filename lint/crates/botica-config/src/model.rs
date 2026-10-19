@@ -68,6 +68,31 @@ pub struct RecipesConfig {
     pub replace: Vec<String>,
 }
 
+/// What `botica lint` does when the process of an extension rule does not answer in time.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum OnTimeout {
+    /// The run fails with exit code 2.
+    #[default]
+    Fail,
+    /// A warning on stderr; the run goes on without the findings of that rule.
+    Warn,
+}
+
+/// Settings of the extension rules.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct ExtensionsConfig {
+    /// The Python of the scripts of the runtime `python`: `project` (the version of
+    /// `.python-version`, of `.venv` or of `requires-python`, else 3.13), `system` (a Python of
+    /// the system) or a version for uv, as `3.12`. A free-threaded Python is refused.
+    pub python: Option<String>,
+    /// Seconds that a process has to answer each request. `BOTICA_EXTENSION_TIMEOUT` wins over it.
+    pub timeout: Option<u64>,
+    #[serde(default)]
+    pub on_timeout: OnTimeout,
+}
+
 /// Settings of `botica lint`: `botica.toml`, or the `[tool.botica]` table of `pyproject.toml`.
 #[derive(Debug, Clone, PartialEq, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
@@ -119,6 +144,8 @@ pub struct Config {
     pub references: ReferencesConfig,
     #[serde(default)]
     pub recipes: RecipesConfig,
+    #[serde(default)]
+    pub extensions: ExtensionsConfig,
 }
 
 fn default_select() -> Vec<String> {
@@ -148,6 +175,7 @@ impl Default for Config {
             overrides: Vec::new(),
             references: ReferencesConfig::default(),
             recipes: RecipesConfig::default(),
+            extensions: ExtensionsConfig::default(),
         }
     }
 }

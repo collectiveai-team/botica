@@ -8,18 +8,92 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use botica_catalog::{Implementation, Kind, Rule, Runtime, Scope};
-use botica_config::Resolution;
+use botica_config::{OnTimeout, Resolution};
 use botica_core::suppress::Policy;
 use botica_core::{postprocess, Diagnostic, ExtensionRun};
-use botica_ext::Selection;
+use botica_ext::{Deadlines, Selection};
 use botica_lsp::{Extensions, Process};
 
-use crate::project::{self, extensions_at};
+use crate::extension_python::uv_python;
+use crate::project::{self, extensions_at, Project};
+
+/// How the processes of the extension rules of a project start: the folders of its catalogs, by
+/// name, the Python of its scripts, and the deadlines of their requests.
+pub struct Launcher {
+    catalog_dirs: BTreeMap<String, PathBuf>,
+    /// The arguments of `uv` that choose the Python, or why the setting is refused.
+    python: Result<Vec<String>, String>,
+    pub deadlines: Deadlines,
+    pub on_timeout: OnTimeout,
+}
+
+impl Launcher {
+    pub fn of(project: &Project) -> Self {
+        let settings = &project.loaded.config.extensions;
+        Self {
+            catalog_dirs: project.catalog_dirs.clone(),
+            python: uv_python(settings.python.as_deref(), &project.loaded.root),
+            deadlines: Deadlines::configured(settings.timeout),
+            on_timeout: settings.on_timeout,
+        }
+    }
+
+    /// The arguments of `uv` that choose the Python of the scripts.
+    pub fn python(&self) -> Result<&[String], String> {
+        self.python.as_deref().map_err(Clone::clone)
+    }
+
+    /// What runs an extension implementation: `uv run --script` on the script of a Python rule,
+    /// with the Python of the project, `node` on the script of a Node rule, the command of a rule
+    /// that names one.
+    pub fn command(
+        &self,
+        rule: &Rule,
+        implementation: &Implementation,
+    ) -> Result<Vec<String>, String> {
+        let named = |what: &str| format!("`{}` has no {what}", rule.id);
+        match implementation.runtime {
+            Some(Runtime::Command) => implementation
+                .command
+                .clone()
+                .ok_or_else(|| named("`command`")),
+            Some(runtime) => {
+                let script = self
+                    .script(rule, implementation)
+                    .ok_or_else(|| named("script"))?;
+                let script = script.to_string_lossy().into_owned();
+                Ok(match runtime {
+                    Runtime::Python => {
+                        let mut argv = vec!["uv".to_owned(), "run".to_owned()];
+                        argv.extend(self.python()?.iter().cloned());
+                        argv.extend(["--script".to_owned(), script]);
+                        argv
+                    }
+                    _ => vec!["node".to_owned(), script],
+                })
+            }
+            None => Err(named("runtime")),
+        }
+    }
+
+    /// The script of the rule, in its folder of `<catalog>/<family>/<slug>/`, where the catalog
+    /// is.
+    pub fn script(&self, rule: &Rule, implementation: &Implementation) -> Option<PathBuf> {
+        let catalog = rule.catalog.as_deref()?;
+        let slug = rule.id.strip_prefix(catalog)?.strip_prefix('/')?;
+        let folder = self
+            .catalog_dirs
+            .get(catalog)?
+            .join(rule.family.as_deref()?)
+            .join(slug);
+        Some(folder.join(implementation.file.as_deref()?))
+    }
+}
 
 pub struct ExtensionPool {
     resolution: Arc<Resolution>,
     prefix: Option<String>,
-    catalog_dirs: BTreeMap<String, PathBuf>,
+    launcher: Launcher,
     project_root: PathBuf,
 }
 
@@ -27,13 +101,13 @@ impl ExtensionPool {
     pub const fn new(
         resolution: Arc<Resolution>,
         prefix: Option<String>,
-        catalog_dirs: BTreeMap<String, PathBuf>,
+        launcher: Launcher,
         project_root: PathBuf,
     ) -> Self {
         Self {
             resolution,
             prefix,
-            catalog_dirs,
+            launcher,
             project_root,
         }
     }
@@ -41,6 +115,11 @@ impl ExtensionPool {
     /// Where the processes of the rules run.
     pub fn project_root(&self) -> &Path {
         &self.project_root
+    }
+
+    /// How the processes start.
+    pub const fn launcher(&self) -> &Launcher {
+        &self.launcher
     }
 
     /// The extension implementations that read the file at `path`, each with its rule.
@@ -73,7 +152,9 @@ impl ExtensionPool {
             .filter(|entry| {
                 entry.rule.implementations.iter().any(|implementation| {
                     implementation.kind == Kind::Extension
-                        && command(&entry.rule, implementation, &self.catalog_dirs)
+                        && self
+                            .launcher
+                            .command(&entry.rule, implementation)
                             .is_ok_and(|other| other == argv)
                 })
             })
@@ -81,60 +162,14 @@ impl ExtensionPool {
             .collect()
     }
 
-    /// What runs the implementation (see [`command`]).
+    /// What runs the implementation (see [`Launcher::command`]).
     pub fn command_of(
         &self,
         rule: &Rule,
         implementation: &Implementation,
     ) -> Result<Vec<String>, String> {
-        command(rule, implementation, &self.catalog_dirs)
+        self.launcher.command(rule, implementation)
     }
-}
-
-/// What runs an extension implementation: `uv run --script` on the script of a Python rule,
-/// `node` on the script of a Node rule, the command of a rule that names one. `catalog_dirs` are
-/// the folders of the catalogs of the project, by name.
-pub fn command(
-    rule: &Rule,
-    implementation: &Implementation,
-    catalog_dirs: &BTreeMap<String, PathBuf>,
-) -> Result<Vec<String>, String> {
-    let named = |what: &str| format!("`{}` has no {what}", rule.id);
-    match implementation.runtime {
-        Some(Runtime::Command) => implementation
-            .command
-            .clone()
-            .ok_or_else(|| named("`command`")),
-        Some(runtime) => {
-            let script =
-                script_of(rule, implementation, catalog_dirs).ok_or_else(|| named("script"))?;
-            let script = script.to_string_lossy().into_owned();
-            Ok(match runtime {
-                Runtime::Python => ["uv", "run", "--script"]
-                    .map(str::to_owned)
-                    .into_iter()
-                    .chain([script])
-                    .collect(),
-                _ => vec!["node".to_owned(), script],
-            })
-        }
-        None => Err(named("runtime")),
-    }
-}
-
-/// The script of the rule, in its folder of `<catalog>/<family>/<slug>/`, where the catalog is.
-fn script_of(
-    rule: &Rule,
-    implementation: &Implementation,
-    catalog_dirs: &BTreeMap<String, PathBuf>,
-) -> Option<PathBuf> {
-    let catalog = rule.catalog.as_deref()?;
-    let slug = rule.id.strip_prefix(catalog)?.strip_prefix('/')?;
-    let folder = catalog_dirs
-        .get(catalog)?
-        .join(rule.family.as_deref()?)
-        .join(slug);
-    Some(folder.join(implementation.file.as_deref()?))
 }
 
 /// The rules of the server are named by the id of the rule, and `<id>#<n>` for the implementation
@@ -185,6 +220,7 @@ impl Extensions for ExtensionPool {
             Some(&self.project_root),
             self.selection(rule),
             &self.sharing(&argv),
+            self.launcher.deadlines,
         )
         .map_err(|error| format!("{error:#}"))?;
         Ok(Box::new(Live {

@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use botica_catalog::{Implementation, Kind, Rule, Runtime, Severity, Status};
 use botica_config::{Entry, IgnoreOrigin};
 use serde::Serialize;
 
-use crate::extension_pool;
+use crate::extension_pool::Launcher;
 
 #[derive(Serialize)]
 pub struct IgnoreView<'a> {
@@ -46,10 +46,10 @@ pub struct ImplementationView<'a> {
     pub tool: Option<&'a str>,
 }
 
-/// Where the programs of the extension rules of a project are: the folders of its catalogs, and
-/// its root, which the paths of the programs are shown from.
+/// How the programs of the extension rules of a project start, and its root, which the paths of
+/// the programs are shown from.
 pub struct Programs<'a> {
-    pub catalog_dirs: &'a BTreeMap<String, PathBuf>,
+    pub launcher: Launcher,
     pub root: &'a Path,
 }
 
@@ -60,7 +60,7 @@ impl Programs<'_> {
         if implementation.kind != Kind::Extension {
             return None;
         }
-        let argv = extension_pool::command(rule, implementation, self.catalog_dirs).ok()?;
+        let argv = self.launcher.command(rule, implementation).ok()?;
         Some(
             argv.into_iter()
                 .map(|arg| match Path::new(&arg).strip_prefix(self.root) {

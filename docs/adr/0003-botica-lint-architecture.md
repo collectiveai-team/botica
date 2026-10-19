@@ -103,7 +103,9 @@ findings of the other rules as they are. `ExtensionHost` gives a process 120 sec
 `initialize` and 60 seconds to answer `lint/files`, `lint/project` and `shutdown`, and kills one that has not
 answered by then; the failure names the method and the deadline. A thread reads the stdout of the
 process and another writes its stdin, so a process that does not read a large request is also
-killed at the deadline. `BOTICA_EXTENSION_TIMEOUT`, in seconds, replaces both deadlines. `# botica: ignore[<id>]` and `# noqa: <code>` silence a
+killed at the deadline. `timeout` of `[extensions]` in `botica.toml`, in seconds, replaces both
+deadlines, and `BOTICA_EXTENSION_TIMEOUT` wins over it; with `on-timeout = "warn"` a process out of
+time is a warning and the run goes on without the findings of its rule. `# botica: ignore[<id>]` and `# noqa: <code>` silence a
 finding of an extension. The engine does not see the findings of an extension, so the comments
 that name an active extension rule are read again after the extensions have run: one that silences
 nothing is reported as unused, unless the process of the rule failed. The code of the rule is in its folder and the catalog
@@ -129,7 +131,7 @@ warning each time; after the limit the rule does not run until the server restar
 
 | `runtime` | The rule names | botica runs |
 |---|---|---|
-| `python` | `file = "<name>.py"` | `uv run --script <file>`; the script declares its dependencies (PEP 723) and uv caches its environment |
+| `python` | `file = "<name>.py"` | `uv run --python <version> --script <file>`; the script declares its dependencies (PEP 723) and uv caches its environment. The version is `[extensions] python`: by default the one the project pins, else 3.13; a free-threaded Python is refused. `botica ext sync` creates the environments beforehand |
 | `node` | `file = "<name>.js"` or `.mjs` | `node <file>`, with the `node_modules` the rule brings, if any |
 | `command` | `command = ["<argv>", …]`, no `file` | the command, from the root of the project |
 
