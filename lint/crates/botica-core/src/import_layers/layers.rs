@@ -13,6 +13,7 @@ pub struct Layers {
 }
 
 /// Why an import breaks the layers.
+#[derive(Clone)]
 pub enum Breach<'a> {
     /// The imported module is in a layer above.
     Above { from: &'a str, to: &'a str },

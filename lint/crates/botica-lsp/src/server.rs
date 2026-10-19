@@ -29,6 +29,17 @@ struct Document {
 }
 
 impl Document {
+    fn new(buffer: Buffer, revision: u64) -> Self {
+        Self {
+            buffer,
+            revision,
+            typed: Vec::new(),
+            saved: Vec::new(),
+            found: BTreeMap::new(),
+            due: None,
+        }
+    }
+
     fn findings(&self) -> impl Iterator<Item = &Diagnostic> {
         self.typed
             .iter()
@@ -201,14 +212,7 @@ impl<'scope, 'env, W: Write> Server<'scope, 'env, W> {
     /// Lints and publishes a document the editor opened, and gives it to the extensions at once.
     fn open(&mut self, uri: &str, text: &str) -> io::Result<()> {
         let path = path_of(uri, self.root);
-        let mut document = Document {
-            buffer: self.linter.open(&path, text),
-            revision: self.next_revision(uri),
-            typed: Vec::new(),
-            saved: Vec::new(),
-            found: BTreeMap::new(),
-            due: None,
-        };
+        let mut document = Document::new(self.linter.open(&path, text), self.next_revision(uri));
         document.lint(&*self.linter, true);
         self.documents.insert(uri.to_owned(), document);
         self.publish(uri)?;
@@ -223,25 +227,14 @@ impl<'scope, 'env, W: Write> Server<'scope, 'env, W> {
         let Some(changes) = changes.as_array() else {
             return Ok(());
         };
-        if !self.documents.contains_key(uri) {
-            let path = path_of(uri, self.root);
-            let document = Document {
-                buffer: self.linter.open(&path, ""),
-                revision: 0,
-                typed: Vec::new(),
-                saved: Vec::new(),
-                found: BTreeMap::new(),
-                due: None,
-            };
-            self.documents.insert(uri.to_owned(), document);
-        }
         let extensions = self.extensions();
         let encoding = self.encoding;
         let due = Instant::now() + self.options.debounce;
+        let (linter, root) = (&*self.linter, self.root);
         let document = self
             .documents
-            .get_mut(uri)
-            .expect("the document is held just above");
+            .entry(uri.to_owned())
+            .or_insert_with(|| Document::new(linter.open(&path_of(uri, root), ""), 0));
         for change in changes {
             let text = change["text"].as_str().unwrap_or_default();
             match change.get("range").filter(|range| !range.is_null()) {

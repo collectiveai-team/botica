@@ -74,16 +74,9 @@ pub fn check(layers: &[String], sources: &[Source<'_>], severity: Severity) -> V
                         .or_insert_with(|| graph.breach_from(&layers, from, target))
                         .clone()
                 });
-            let Some(chain) = breach else {
+            let Some((chain, breach)) = breach else {
                 continue;
             };
-            let to = chain
-                .last()
-                .and_then(|last| layers.place_of(last))
-                .expect("a chain ends in a module of the layers");
-            let breach = layers
-                .breach(from, to)
-                .expect("a chain ends in a module that breaks the layers");
             let document = Document::new(module.source.path, module.source.text);
             let (line, column) = document.position(import.start);
             let (end_line, end_column) = document.position(import.end);

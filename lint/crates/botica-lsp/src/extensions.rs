@@ -108,13 +108,11 @@ fn attempt<'a>(
     extensions: &'a dyn Extensions,
     job: &Job,
 ) -> Result<Vec<Diagnostic>, String> {
-    if process.is_none() {
-        *process = Some(extensions.start(key)?);
-    }
-    process
-        .as_mut()
-        .expect("the process was started above")
-        .lint(&job.path, &job.text)
+    let running = match process.take() {
+        Some(running) => running,
+        None => extensions.start(key)?,
+    };
+    process.insert(running).lint(&job.path, &job.text)
 }
 
 fn failure_message(key: &str, reason: &str, failures: usize) -> String {

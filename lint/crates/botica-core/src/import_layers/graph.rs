@@ -4,7 +4,7 @@
 
 use std::collections::{BTreeMap, HashMap, VecDeque};
 
-use super::layers::{within, Layers, Place};
+use super::layers::{within, Breach, Layers, Place};
 use super::python::{imports, Import};
 use super::Source;
 
@@ -136,16 +136,18 @@ impl<'s> Graph<'s> {
     }
 
     /// The chain from `target` to a module that a module at `from` may not import, through
-    /// modules of no layer, shortest first: `[target]` when `target` is one.
-    pub fn breach_from(&self, layers: &Layers, from: Place, target: &str) -> Option<Vec<String>> {
-        let breaks = |name: &str| {
-            layers
-                .place_of(name)
-                .map(|to| layers.breach(from, to).is_some())
-        };
+    /// modules of no layer, shortest first (`[target]` when `target` is one), with why it breaks
+    /// the layers.
+    pub fn breach_from<'l>(
+        &self,
+        layers: &'l Layers,
+        from: Place,
+        target: &str,
+    ) -> Option<(Vec<String>, Breach<'l>)> {
+        let breaks = |name: &str| layers.place_of(name).map(|to| layers.breach(from, to));
         match breaks(target) {
-            Some(true) => return Some(vec![target.to_owned()]),
-            Some(false) => return None,
+            Some(Some(breach)) => return Some((vec![target.to_owned()], breach)),
+            Some(None) => return None,
             None => {}
         }
         let mut came_from: HashMap<&str, &str> = HashMap::new();
@@ -157,8 +159,8 @@ impl<'s> Graph<'s> {
                 }
                 came_from.insert(next, current);
                 match breaks(next) {
-                    Some(true) => return Some(chain(&came_from, target, next)),
-                    Some(false) => {}
+                    Some(Some(breach)) => return Some((chain(&came_from, target, next), breach)),
+                    Some(None) => {}
                     None => queue.push_back(next),
                 }
             }
