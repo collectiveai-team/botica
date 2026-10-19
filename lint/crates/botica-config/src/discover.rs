@@ -71,6 +71,8 @@ fn git_root(start: &Path) -> Option<&Path> {
     start.ancestors().find(|dir| dir.join(".git").exists())
 }
 
+/// The configuration of the first directory from `start` up that has one, without going past the
+/// root of the git repository. Without one, the defaults, rooted at the git repository or `start`.
 pub fn discover(start: &Path) -> Result<Loaded, ConfigError> {
     for dir in start.ancestors() {
         if let Some((source, config, table)) = config_in(dir)? {
@@ -80,6 +82,9 @@ pub fn discover(start: &Path) -> Result<Loaded, ConfigError> {
                 config,
                 table,
             });
+        }
+        if dir.join(".git").exists() {
+            break;
         }
     }
     Ok(Loaded {

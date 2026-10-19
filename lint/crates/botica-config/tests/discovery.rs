@@ -43,6 +43,26 @@ fn walks_up_and_the_first_directory_with_a_config_is_the_root() {
 }
 
 #[test]
+fn the_walk_stops_at_the_root_of_the_git_repository() {
+    let root = fresh("repository");
+    write(&root.join("botica.toml"), "select = [\"all\"]\n");
+    let repository = root.join("nested");
+    fs::create_dir_all(repository.join(".git")).expect("create the repository");
+    let deep = repository.join("src/pkg");
+    fs::create_dir_all(&deep).expect("create the deep directory");
+
+    let loaded = discover(&deep).expect("discovers");
+
+    assert_eq!(loaded.root, repository);
+    assert_eq!(loaded.source, None);
+
+    write(&repository.join("botica.toml"), "select = [\"BTSTRUC\"]\n");
+    let loaded = discover(&deep).expect("discovers");
+    assert_eq!(loaded.root, repository);
+    assert_eq!(loaded.config.select, ["BTSTRUC"]);
+}
+
+#[test]
 fn a_pyproject_counts_only_when_it_has_tool_botica() {
     let root = fresh("pyproject");
     write(&root.join("botica.toml"), "select = [\"all\"]\n");

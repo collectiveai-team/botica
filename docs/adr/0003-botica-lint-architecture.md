@@ -174,7 +174,8 @@ replacement declares `replaces = "<id>"` *and* the project config confirms it; s
 written for the original keep working.
 
 **Configuration** lives in `botica.toml` or `[tool.botica]` in `pyproject.toml`. It is found by
-walking up from the working directory; defining it in both files at once is an error. Unknown
+walking up from the working directory, and the walk ends at the root of the git repository;
+defining it in both files at once is an error. Unknown
 keys and unknown rule ids are errors, and the schema is published as JSON Schema.
 
 **Distribution.** `botica` is the whole package and `lint` is its first subcommand, so no

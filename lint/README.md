@@ -483,7 +483,8 @@ file.
 ## Configuration
 
 `botica.toml`, or `[tool.botica]` in `pyproject.toml`, found by walking up from the working
-directory. Defining both is an error, and so is an unknown key or rule. The JSON Schema is
+directory to the root of the git repository; a configuration above that root belongs to another
+project. Defining both is an error, and so is an unknown key or rule. The JSON Schema is
 [`schema/botica.schema.json`](schema/botica.schema.json).
 
 ```toml

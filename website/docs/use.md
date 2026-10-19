@@ -34,7 +34,7 @@ the severity error, and `2` when the run itself failed.
 ## Configure
 
 Botica reads `botica.toml`, or `[tool.botica]` in `pyproject.toml`, found by walking up from the
-working directory. Defining both is an error, and so is an unknown key or rule.
+working directory to the root of the git repository. Defining both is an error, and so is an unknown key or rule.
 
 === "TOML"
 
