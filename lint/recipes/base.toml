@@ -1,5 +1,5 @@
-description = "Any repository: the rules about any file, the skills, .gitignore, the prek hooks and the sections of AGENTS.md"
-rules = ["file-size-guard", "no-notebooks", "no-artifacts-in-package"]
+description = "Any repository: the rules about any file and about the whole project, the skills, .gitignore, the prek hooks and the sections of AGENTS.md"
+rules = ["file-size-guard", "no-notebooks", "no-artifacts-in-package", "settings-env-schema"]
 
 [[skills]]
 source = "mattpocock/skills#v1.3.1"

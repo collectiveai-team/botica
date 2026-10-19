@@ -92,7 +92,7 @@ the run itself failed (it wins over `1`). `--exit-zero` forgives only the findin
 | `BT001`–`BT003` | `io-error`, `unused-suppression`, `invalid-suppression` | | the run and the suppressions |
 | `BT004` | [`external-config`](rules/botica/external-config/README.md) | | the files of configuration that the active external rules name |
 
-`BTARCH003`–`BTARCH006`, `BTFAST002`–`BTFAST004` and `BTSTRUC006` have the status `preview` and
+`BTARCH003`–`BTARCH005`, `BTFAST002`–`BTFAST004` and `BTSTRUC006` have the status `preview` and
 are off by default: they run only with `preview = true` and when you select them.
 
 Another tool enforces an external rule (`kind = "external"`) through its configuration. The rule

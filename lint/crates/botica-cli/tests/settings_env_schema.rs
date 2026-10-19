@@ -5,7 +5,7 @@ mod common;
 
 use common::{botica, project_in, stdout, write};
 
-const SELECTS: &str = "preview = true\nextend-select = [\"settings-env-schema\"]\n";
+const SELECTS: &str = "select = [\"settings-env-schema\"]\n";
 
 const SETTINGS: &str = "from pydantic_settings import BaseSettings\n\n\
                         class Settings(BaseSettings):\n    database_url: str\n";
@@ -43,7 +43,7 @@ fn a_project_without_the_schema_or_without_the_rule_has_no_finding() {
     let dir = project("no-schema", SELECTS);
     assert!(!stdout(&botica(&dir, &[])).contains("settings-env-schema"));
 
-    let dir = project("not-selected", "preview = true\n");
+    let dir = project("ignored", "ignore = [\"settings-env-schema\"]\n");
     write(&dir, SCHEMA, "API_KEY=\n");
     assert!(!stdout(&botica(&dir, &[])).contains("settings-env-schema"));
 }

@@ -124,6 +124,14 @@ id = "botica"
 args = ["--select", "file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package,no-dict-alias,no-dict-call-return,no-dict-literal-return,no-dict-return-annotation,api-schemas-extra-forbid,log-get-logger,log-no-print,settings-module,cli-typed-framework,arch-database-package"]
 priority = 2
 
+# The rules that need the whole project, run once per commit with no file names: CES-76
+# settings-env-schema compares .env.schema with the settings classes of the project (Python:
+# pydantic-settings) and does nothing in a project without the schema.
+[[repos.hooks]]
+id = "botica-project"
+args = ["--select", "settings-env-schema"]
+priority = 2
+
 # MARK: hadolint-docker
 # CES-114: lint Dockerfile source (unpinned base images, missing --no-install-recommends, ADD
 # vs COPY misuse, running as root, etc). File-pattern-scoped, so it is inert unless a Dockerfile

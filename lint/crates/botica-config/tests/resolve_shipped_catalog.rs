@@ -30,6 +30,7 @@ fn the_default_selection_runs_every_rule_enabled_by_default() {
             "no-notebooks",
             "no-tests-in-package",
             "no-utils",
+            "settings-env-schema",
             "settings-module",
             "unused-suppression"
         ]
@@ -74,7 +75,7 @@ fn select_and_extend_select_are_added_together() {
     );
     assert_eq!(
         active(&resolve(&catalog, "select = []\nextend-select = [\"all\"]")).len(),
-        19
+        20
     );
 }
 
@@ -97,6 +98,7 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
             "no-dict-call-return",
             "no-dict-literal-return",
             "no-dict-return-annotation",
+            "settings-env-schema",
             "settings-module",
             "unused-suppression"
         ]
@@ -107,7 +109,7 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
     );
 }
 
-const PROPOSED: [&str; 8] = [
+const PROPOSED: [&str; 7] = [
     "api-request-schema-name",
     "api-response-schema-name",
     "api-schema-in-route-module",
@@ -115,7 +117,6 @@ const PROPOSED: [&str; 8] = [
     "db-no-create-all",
     "settings-base-class",
     "settings-direct-instantiation",
-    "settings-env-schema",
 ];
 
 #[test]
@@ -127,7 +128,7 @@ fn the_preview_rules_stay_out_of_the_default_selection_and_of_all() {
         assert_eq!(reason(&by_default, slug), Reason::NotSelected, "{slug}");
         assert_eq!(reason(&by_all, slug), Reason::OnlyPreview, "{slug}");
     }
-    assert_eq!(active(&by_all).len(), 19);
+    assert_eq!(active(&by_all).len(), 20);
 }
 
 #[test]
@@ -186,6 +187,7 @@ fn a_rule_switched_off_in_its_own_section_stays_out() {
             "no-dict-return-annotation",
             "no-notebooks",
             "no-tests-in-package",
+            "settings-env-schema",
             "settings-module",
             "unused-suppression"
         ]
