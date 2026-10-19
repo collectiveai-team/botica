@@ -28,8 +28,10 @@ pub struct Policy {
     astgrep: HashSet<String>,
     /// Judgment rules: suppressed by file only, with a reason, and never unused.
     judgment: HashSet<String>,
-    /// Rules that an extension runs after the walk: never reported unused.
-    extension: HashSet<String>,
+    /// Rules that an extension runs after the walk, each with whether it is active. The walk
+    /// reports a comment that names an inactive one; [`Policy::report_extensions`] reports the
+    /// others once the extensions have run.
+    extension: HashMap<String, bool>,
     external: Option<External>,
     /// What the codes in a `noqa` comment start with when they are botica's.
     code_prefixes: Vec<String>,
@@ -53,7 +55,7 @@ impl Policy {
             spellings: HashMap::new(),
             astgrep: HashSet::new(),
             judgment: HashSet::new(),
-            extension: HashSet::new(),
+            extension: HashMap::new(),
             external: None,
             code_prefixes: vec!["BT".to_owned()],
             unused: None,
@@ -80,11 +82,11 @@ impl Policy {
         self.with_rule(slug, spellings)
     }
 
-    /// A rule that an extension runs after the walk. A comment may name it, but the engine does
-    /// not see its findings, so it cannot tell whether the comment silences any: it is never
-    /// reported as unused.
-    pub fn with_extension_rule(mut self, slug: &str, spellings: &[&str]) -> Self {
-        self.extension.insert(slug.to_owned());
+    /// A rule that an extension runs after the walk. The engine does not see its findings, so a
+    /// comment that names an active one is reported by [`Policy::report_extensions`], after the
+    /// extensions have run.
+    pub fn with_extension_rule(mut self, slug: &str, spellings: &[&str], active: bool) -> Self {
+        self.extension.insert(slug.to_owned(), active);
         self.with_rule(slug, spellings)
     }
 
@@ -281,7 +283,21 @@ impl Policy {
     /// judge, which botica reads apart from the rules it runs. It adds no finding about the
     /// comments.
     pub fn silence(&self, path: &str, text: &str, found: &mut Vec<Diagnostic>) {
-        self.filter(&Document::new(path, text), &|_| true, found, false);
+        self.filter(&Document::new(path, text), &Pass::Silence, found);
+    }
+
+    /// Drops from `found`, the findings of the extension rules in the file at `path`, what its
+    /// comments silence, and adds a finding about each comment that names an active extension
+    /// rule and silences nothing. `ran` says whether the extension rule read the file: `None`
+    /// when its process failed, and then its comments are not reported.
+    pub fn report_extensions(
+        &self,
+        path: &str,
+        text: &str,
+        ran: &dyn Fn(&str) -> Option<bool>,
+        found: &mut Vec<Diagnostic>,
+    ) {
+        self.filter(&Document::new(path, text), &Pass::Extensions(ran), found);
     }
 
     /// Drops what the comments of the file silence and adds the findings about the comments.
@@ -291,16 +307,36 @@ impl Policy {
         is_active: &dyn Fn(&str) -> bool,
         found: &mut Vec<Diagnostic>,
     ) {
-        self.filter(doc, is_active, found, true);
+        self.filter(doc, &Pass::Walk(is_active), found);
     }
 
-    fn filter(
-        &self,
-        doc: &Document<'_>,
-        is_active: &dyn Fn(&str) -> bool,
-        found: &mut Vec<Diagnostic>,
-        report: bool,
-    ) {
+    /// Whether a token that silenced nothing is reported in this pass, and how.
+    fn unused_kind(&self, slug: &str, pass: &Pass<'_>) -> Option<Unused> {
+        if slug == UNUSED || slug == INVALID || self.judgment.contains(slug) {
+            return None;
+        }
+        let extension = self.extension.get(slug).copied();
+        match (pass, extension) {
+            (Pass::Silence, _)
+            | (Pass::Walk(_), Some(true))
+            | (Pass::Extensions(_), None | Some(false)) => None,
+            (Pass::Walk(_), Some(false)) => Some(Unused::Disabled),
+            (Pass::Walk(is_active), None) => Some(if is_active(slug) {
+                Unused::Unused
+            } else {
+                Unused::Disabled
+            }),
+            (Pass::Extensions(ran), Some(true)) => ran(slug).map(|read| {
+                if read {
+                    Unused::Unused
+                } else {
+                    Unused::Disabled
+                }
+            }),
+        }
+    }
+
+    fn filter(&self, doc: &Document<'_>, pass: &Pass<'_>, found: &mut Vec<Diagnostic>) {
         let Some(syntax) = Syntax::of(doc.path) else {
             return;
         };
@@ -343,7 +379,8 @@ impl Policy {
         }
 
         let mut about = Vec::new();
-        if let Some(severity) = self.invalid.filter(|_| report) {
+        let walk = matches!(pass, Pass::Walk(_));
+        if let Some(severity) = self.invalid.filter(|_| walk) {
             for directive in &directives {
                 for token in directive
                     .tokens
@@ -368,29 +405,23 @@ impl Policy {
                 }
             }
         }
-        if let Some(severity) = self.unused.filter(|_| report) {
+        if let Some(severity) = self.unused.filter(|_| !matches!(pass, Pass::Silence)) {
             for directive in &directives {
                 let mut unused = Vec::new();
                 let mut disabled = Vec::new();
                 let mut file_hint = Vec::new();
                 for token in &directive.tokens {
-                    let Some(slug) = token.slug.as_deref() else {
+                    let Some(slug) = token.slug.as_deref().filter(|_| !token.used) else {
                         continue;
                     };
-                    if token.used
-                        || slug == UNUSED
-                        || slug == INVALID
-                        || self.judgment.contains(slug)
-                        || self.extension.contains(slug)
-                    {
-                        continue;
-                    }
-                    if !self.is_known_active(slug, is_active) {
-                        disabled.push(token.name.as_str());
-                    } else {
-                        unused.push(token.name.as_str());
-                        if directive.scope == Scope::Line && file_level.contains(slug) {
-                            file_hint.push(token.name.as_str());
+                    match self.unused_kind(slug, pass) {
+                        None => {}
+                        Some(Unused::Disabled) => disabled.push(token.name.as_str()),
+                        Some(Unused::Unused) => {
+                            unused.push(token.name.as_str());
+                            if directive.scope == Scope::Line && file_level.contains(slug) {
+                                file_hint.push(token.name.as_str());
+                            }
                         }
                     }
                 }
@@ -428,8 +459,22 @@ impl Policy {
             })
             .collect()
     }
+}
 
-    fn is_known_active(&self, slug: &str, is_active: &dyn Fn(&str) -> bool) -> bool {
-        is_active(slug)
-    }
+/// A pass over the comments of a file.
+enum Pass<'a> {
+    /// It drops what the comments silence and reports nothing.
+    Silence,
+    /// The walk of the engine: it reports the comments; the function says whether the engine runs
+    /// a rule on the file.
+    Walk(&'a dyn Fn(&str) -> bool),
+    /// After the extensions: it reports the comments that name an active extension rule; the
+    /// function says whether the rule read the file, `None` when its process failed.
+    Extensions(&'a dyn Fn(&str) -> Option<bool>),
+}
+
+/// Why a token that silenced nothing is reported: its rule ran on the file, or did not.
+enum Unused {
+    Unused,
+    Disabled,
 }

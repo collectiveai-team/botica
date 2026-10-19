@@ -98,8 +98,9 @@ findings of the other rules as they are. `ExtensionHost` gives a process 120 sec
 answered by then; the failure names the method and the deadline. A thread reads the stdout of the
 process and another writes its stdin, so a process that does not read a large request is also
 killed at the deadline. `BOTICA_EXTENSION_TIMEOUT`, in seconds, replaces both deadlines. `# botica: ignore[<id>]` and `# noqa: <code>` silence a
-finding of an extension, and a comment that names an extension rule is never reported as unused,
-because the engine does not see its findings. The code of the rule is in its folder and the catalog
+finding of an extension. The engine does not see the findings of an extension, so the comments
+that name an active extension rule are read again after the extensions have run: one that silences
+nothing is reported as unused, unless the process of the rule failed. The code of the rule is in its folder and the catalog
 loads it as it loads the YAML of an ast-grep rule. An extension is a program that the project runs,
 and the built-in catalog is compiled into the binary, which has no folder with such a program: the
 built-in catalog takes no `extension` rule.

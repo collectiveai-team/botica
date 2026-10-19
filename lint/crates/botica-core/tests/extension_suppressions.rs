@@ -1,4 +1,4 @@
-//! A rule that an extension runs after the walk: a comment may name it, and the engine cannot tell
+//! A rule that an extension runs after the walk: a comment may name it, and the walk cannot tell
 //! whether the comment silences anything.
 
 mod common;
@@ -11,8 +11,8 @@ fn lint(policy: Policy, text: &str) -> Vec<String> {
 }
 
 #[test]
-fn a_comment_that_names_an_extension_rule_is_never_reported_as_unused() {
-    let extension = policy().with_extension_rule("flag-rule", &["ACMEFLG001"]);
+fn the_walk_leaves_a_comment_that_names_an_active_extension_rule_to_the_extensions() {
+    let extension = policy().with_extension_rule("flag-rule", &["ACMEFLG001"], true);
 
     assert!(lint(extension, "x = 1  # botica: ignore[flag-rule]\n").is_empty());
 }
@@ -27,16 +27,17 @@ fn a_comment_that_names_another_rule_is_reported_as_unused_as_ever() {
 
 #[test]
 fn an_extension_rule_is_known_by_its_spellings() {
-    let extension = policy()
-        .with_code_prefix("ACME")
-        .with_extension_rule("flag-rule", &["ACMEFLG001"]);
+    let extension =
+        policy()
+            .with_code_prefix("ACME")
+            .with_extension_rule("flag-rule", &["ACMEFLG001"], true);
 
     assert!(lint(extension, "x = 1  # noqa: ACMEFLG001\n").is_empty());
 }
 
 #[test]
 fn the_other_names_of_the_comment_are_still_checked() {
-    let extension = policy().with_extension_rule("flag-rule", &["ACMEFLG001"]);
+    let extension = policy().with_extension_rule("flag-rule", &["ACMEFLG001"], true);
 
     assert_eq!(
         lint(

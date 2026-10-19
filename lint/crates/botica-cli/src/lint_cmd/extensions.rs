@@ -47,9 +47,15 @@ pub(super) fn run(args: &LintArgs, setup: &Setup, sources: &[SourceFile]) -> Ran
 
     let mut found = Vec::new();
     let mut errors = Vec::new();
-    for Done { rule, outcome } in done {
+    let mut read = Read::new();
+    for (job, Done { rule, outcome }) in jobs.iter().zip(done) {
         if args.timings {
             timings::print_extension(&rule.id, &outcome.time);
+        }
+        let failed = outcome.failure.is_some();
+        for (path, _) in &job.files {
+            let finished = read.entry((rule.id.as_str(), path)).or_insert(true);
+            *finished &= !failed;
         }
         found.extend(own_findings(rule, outcome.found));
         errors.extend(outcome.failure.map(|error| RunError {
@@ -60,10 +66,14 @@ pub(super) fn run(args: &LintArgs, setup: &Setup, sources: &[SourceFile]) -> Ran
         }));
     }
     Ran {
-        found: silenced(setup, sources, found),
+        found: silenced(setup, sources, found, &read),
         errors,
     }
 }
+
+/// The files each extension rule was sent, as `(rule, path)`, and whether every process of the
+/// rule that read the file finished.
+type Read<'a> = HashMap<(&'a str, &'a str), bool>;
 
 /// The processes to start: for each active extension rule, the files where it applies. The
 /// files are in the order of the sources, and the processes in the order of the rules.
@@ -107,13 +117,15 @@ fn execute<'a>(job: &Job<'a>, setup: &Setup, batch: usize) -> Done<'a> {
     }
 }
 
-/// What the comments of the files leave of the findings. The engine did not see these findings,
-/// so the comments are read here.
-fn silenced(setup: &Setup, sources: &[SourceFile], found: Vec<Diagnostic>) -> Vec<Diagnostic> {
-    let texts: HashMap<&str, &str> = sources
-        .iter()
-        .filter_map(|source| Some((source.path.as_str(), source.text()?)))
-        .collect();
+/// What the comments of the files leave of the findings, and the findings about the comments
+/// that name an extension rule and silence nothing. The engine did not see these findings, so the
+/// comments are read here.
+fn silenced(
+    setup: &Setup,
+    sources: &[SourceFile],
+    found: Vec<Diagnostic>,
+    read: &Read<'_>,
+) -> Vec<Diagnostic> {
     let policy = project::suppression_policy(&setup.resolution);
     let mut by_path: BTreeMap<String, Vec<Diagnostic>> = BTreeMap::new();
     for finding in found {
@@ -123,11 +135,18 @@ fn silenced(setup: &Setup, sources: &[SourceFile], found: Vec<Diagnostic>) -> Ve
             .push(finding);
     }
     let mut kept = Vec::new();
-    for (path, mut findings) in by_path {
-        if let Some(text) = texts.get(path.as_str()) {
-            policy.silence(&path, text, &mut findings);
+    for source in sources {
+        let path = source.path.as_str();
+        let mut findings = by_path.remove(path).unwrap_or_default();
+        if let Some(text) = source.text() {
+            let ran = |slug: &str| match read.get(&(slug, path)) {
+                Some(&finished) => finished.then_some(true),
+                None => Some(false),
+            };
+            policy.report_extensions(path, text, &ran, &mut findings);
         }
         kept.extend(findings);
     }
+    kept.extend(by_path.into_values().flatten());
     kept
 }
