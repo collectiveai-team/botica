@@ -211,7 +211,7 @@ dependencies = [
 
 [[package]]
 name = "botica-astgrep"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -230,7 +230,7 @@ dependencies = [
 
 [[package]]
 name = "botica-catalog"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "serde",
  "serde_yaml",
@@ -239,7 +239,7 @@ dependencies = [
 
 [[package]]
 name = "botica-cli"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "anyhow",
  "blake3",
@@ -258,7 +258,7 @@ dependencies = [
 
 [[package]]
 name = "botica-config"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "botica-catalog",
  "ignore",
@@ -270,7 +270,7 @@ dependencies = [
 
 [[package]]
 name = "botica-conformance"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "anyhow",
  "serde_json",
@@ -279,7 +279,7 @@ dependencies = [
 
 [[package]]
 name = "botica-core"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -299,7 +299,7 @@ dependencies = [
 
 [[package]]
 name = "botica-ext"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "anyhow",
  "serde",
@@ -308,14 +308,14 @@ dependencies = [
 
 [[package]]
 name = "botica-ext-sdk"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "serde_json",
 ]
 
 [[package]]
 name = "botica-lsp"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "botica-core",
  "serde_json",

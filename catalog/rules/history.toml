@@ -130,3 +130,13 @@ status = "preview"
 version = "0.10.0"
 rule = "settings-direct-instantiation"
 status = "preview"
+
+[[event]]
+version = "0.12.0"
+rule = "import-layers"
+status = "stable"
+
+[[event]]
+version = "0.12.0"
+rule = "settings-env-schema"
+status = "stable"
