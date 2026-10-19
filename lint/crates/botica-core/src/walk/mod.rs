@@ -74,10 +74,7 @@ pub fn discover(dir: &Path, root: &Path, engine: &Engine) -> Discovered {
                 ignore::WalkState::Continue
             })
         });
-    let mut found = found.into_inner().expect("walk");
-    found.paths.sort_unstable();
-    found.unreadable.sort_by(|a, b| a.path.cmp(&b.path));
-    found
+    sorted(found)
 }
 
 /// What a walk that only lists brings back.
@@ -127,10 +124,7 @@ pub fn walk_asked_for(dir: &Path, root: &Path, engine: &Engine, reached: &[Strin
                 ignore::WalkState::Continue
             })
         });
-    let mut found = found.into_inner().expect("walk");
-    found.paths.sort_unstable();
-    found.unreadable.sort_by(|a, b| a.path.cmp(&b.path));
-    found
+    sorted(found)
 }
 
 /// Whether the walk for what `extend-include` asks for goes on into this entry: not `.git`, not
@@ -254,7 +248,9 @@ pub fn walk_and_lint(engine: &Engine, root: &Path, dir: &Path) -> Walked {
         .threads(rayon::current_num_threads())
         .build_parallel()
         .visit(&mut builder);
-    let mut walked = into.into_inner().expect("walk");
+    let mut walked = into
+        .into_inner()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     sort(&mut walked.diagnostics);
     walked.unreadable.sort_by(|a, b| a.path.cmp(&b.path));
     walked
@@ -306,6 +302,16 @@ impl Drop for Flush<'_> {
             all.asked_for.append(&mut self.found.asked_for);
         }
     }
+}
+
+/// What the threads of a walk flushed, with the paths and the unreadable places sorted.
+fn sorted(found: std::sync::Mutex<Discovered>) -> Discovered {
+    let mut found = found
+        .into_inner()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    found.paths.sort_unstable();
+    found.unreadable.sort_by(|a, b| a.path.cmp(&b.path));
+    found
 }
 
 /// Every file under `root` that a walk reaches, from `root` and sorted: the walk honours

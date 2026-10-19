@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use botica_catalog::{Catalog, Implementation, Rule, Scope, Severity};
 
-use crate::entry::{entry, runs, severity_of, Entry, Reason};
+use crate::entry::{entry, path_matcher, runs, severity_of, Entry, Reason};
 use crate::issue::ConfigError;
 use crate::matcher::PathMatcher;
 use crate::model::{Config, RuleConfig, RuleSeverity};
@@ -52,14 +52,7 @@ pub(crate) fn selectors_of(values: &[String]) -> Selectors {
 }
 
 fn matcher_of(patterns: &[String], key: &str) -> Result<PathMatcher, ConfigError> {
-    PathMatcher::new(patterns).map_err(|errors| {
-        let detail = errors
-            .iter()
-            .map(|(_, message)| message.as_str())
-            .collect::<Vec<_>>()
-            .join("; ");
-        ConfigError::single(key, detail)
-    })
+    path_matcher(patterns, key, |detail| detail)
 }
 
 impl Resolution {

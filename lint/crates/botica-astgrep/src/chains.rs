@@ -249,31 +249,10 @@ impl LangChains {
     /// Which chains occur in `text`, as a flag per chain.
     #[cfg(test)]
     pub fn scan(&self, text: &[u8]) -> Vec<bool> {
-        let mut found = vec![false; self.chains.len()];
-        let Some(anchors) = &self.anchors else {
-            return found;
-        };
-        let mut left = found.len();
-        for hit in anchors.find_overlapping_iter(text) {
-            let index = hit.pattern().as_usize();
-            if found[index] || !bounded(text, hit.start(), hit.end()) {
-                continue;
-            }
-            let chain = &self.chains[index];
-            if self.rest_follows(&chain.tokens[chain.anchor + 1..], text, hit.end())
-                && self.rest_precedes(&chain.tokens[..chain.anchor], text, hit.start())
-            {
-                found[index] = true;
-                left -= 1;
-                if left == 0 {
-                    break;
-                }
-            }
-        }
-        found
+        self.scan_all(text).0
     }
 
-    /// Like `scan`, without stopping early: also every verified occurrence as
+    /// Which chains occur in `text`, as a flag per chain, and every verified occurrence as
     /// `(chain, anchor offset)`, for region parsing.
     pub fn scan_all(&self, text: &[u8]) -> ChainScan {
         let mut found = vec![false; self.chains.len()];

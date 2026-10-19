@@ -115,16 +115,25 @@ pub(crate) fn matcher(
     rule: &Rule,
     what: &str,
 ) -> Result<PathMatcher, ConfigError> {
+    path_matcher(patterns, format!("rule {}", rule.id), |detail| {
+        format!("invalid `{what}` pattern: {detail}")
+    })
+}
+
+/// The matcher of `patterns`; an invalid pattern is an error at `location`, with the messages of
+/// the patterns joined by `; ` and passed through `message`.
+pub(crate) fn path_matcher(
+    patterns: &[String],
+    location: impl Into<String>,
+    message: impl FnOnce(String) -> String,
+) -> Result<PathMatcher, ConfigError> {
     PathMatcher::new(patterns).map_err(|errors| {
         let detail = errors
             .iter()
             .map(|(_, message)| message.as_str())
             .collect::<Vec<_>>()
             .join("; ");
-        ConfigError::single(
-            format!("rule {}", rule.id),
-            format!("invalid `{what}` pattern: {detail}"),
-        )
+        ConfigError::single(location, message(detail))
     })
 }
 
