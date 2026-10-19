@@ -1,8 +1,11 @@
 use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 
-use botica_catalog::{Severity, Status};
+use botica_catalog::{Implementation, Kind, Rule, Runtime, Severity, Status};
 use botica_config::{Entry, IgnoreOrigin};
 use serde::Serialize;
+
+use crate::extension_pool;
 
 #[derive(Serialize)]
 pub struct IgnoreView<'a> {
@@ -28,10 +31,64 @@ pub struct RuleView<'a> {
     pub tags: &'a [String],
     pub ignores: Vec<IgnoreView<'a>>,
     pub options: &'a BTreeMap<String, toml::Value>,
+    pub implementations: Vec<ImplementationView<'a>>,
+}
+
+/// One implementation of a rule: its kind, the program that `botica lint` starts for an
+/// extension, and the tool that enforces an external one.
+#[derive(Serialize)]
+pub struct ImplementationView<'a> {
+    pub kind: Kind,
+    pub languages: &'a [String],
+    pub status: Status,
+    pub runtime: Option<Runtime>,
+    pub runs: Option<Vec<String>>,
+    pub tool: Option<&'a str>,
+}
+
+/// Where the programs of the extension rules of a project are: the folders of its catalogs, and
+/// its root, which the paths of the programs are shown from.
+pub struct Programs<'a> {
+    pub catalog_dirs: &'a BTreeMap<String, PathBuf>,
+    pub root: &'a Path,
+}
+
+impl Programs<'_> {
+    /// The program and arguments that `botica lint` starts for an extension implementation, with
+    /// the paths inside the project shown from its root.
+    pub fn runs(&self, rule: &Rule, implementation: &Implementation) -> Option<Vec<String>> {
+        if implementation.kind != Kind::Extension {
+            return None;
+        }
+        let argv = extension_pool::command(rule, implementation, self.catalog_dirs).ok()?;
+        Some(
+            argv.into_iter()
+                .map(|arg| match Path::new(&arg).strip_prefix(self.root) {
+                    Ok(inside) if Path::new(&arg).is_absolute() => {
+                        inside.to_string_lossy().into_owned()
+                    }
+                    _ => arg,
+                })
+                .collect(),
+        )
+    }
+}
+
+impl<'a> ImplementationView<'a> {
+    pub fn new(rule: &Rule, implementation: &'a Implementation, programs: &Programs<'_>) -> Self {
+        Self {
+            kind: implementation.kind,
+            languages: &implementation.languages,
+            status: rule.status_of(implementation),
+            runtime: implementation.runtime,
+            runs: programs.runs(rule, implementation),
+            tool: implementation.tool.as_deref(),
+        }
+    }
 }
 
 impl<'a> RuleView<'a> {
-    pub fn new(entry: &'a Entry) -> Self {
+    pub fn new(entry: &'a Entry, programs: &Programs<'_>) -> Self {
         let rule = &entry.rule;
         Self {
             rule: &rule.id,
@@ -54,6 +111,11 @@ impl<'a> RuleView<'a> {
                 })
                 .collect(),
             options: &entry.options,
+            implementations: rule
+                .implementations
+                .iter()
+                .map(|implementation| ImplementationView::new(rule, implementation, programs))
+                .collect(),
         }
     }
 }

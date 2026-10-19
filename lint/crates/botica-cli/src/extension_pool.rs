@@ -47,48 +47,60 @@ impl ExtensionPool {
         extensions_at(&self.resolution, self.prefix.as_deref(), path)
     }
 
-    /// What runs the implementation: `uv run --script` on the script of a Python rule, `node` on
-    /// the script of a Node rule, the command of a rule that names one.
+    /// What runs the implementation (see [`command`]).
     pub fn command_of(
         &self,
         rule: &Rule,
         implementation: &Implementation,
     ) -> Result<Vec<String>, String> {
-        let named = |what: &str| format!("`{}` has no {what}", rule.id);
-        match implementation.runtime {
-            Some(Runtime::Command) => implementation
-                .command
-                .clone()
-                .ok_or_else(|| named("`command`")),
-            Some(runtime) => {
-                let script = self
-                    .script_of(rule, implementation)
-                    .ok_or_else(|| named("script"))?;
-                let script = script.to_string_lossy().into_owned();
-                Ok(match runtime {
-                    Runtime::Python => ["uv", "run", "--script"]
-                        .map(str::to_owned)
-                        .into_iter()
-                        .chain([script])
-                        .collect(),
-                    _ => vec!["node".to_owned(), script],
-                })
-            }
-            None => Err(named("runtime")),
-        }
+        command(rule, implementation, &self.catalog_dirs)
     }
+}
 
-    /// The script of the rule, in its folder of `<catalog>/<family>/<slug>/`, where the catalog is.
-    fn script_of(&self, rule: &Rule, implementation: &Implementation) -> Option<PathBuf> {
-        let catalog = rule.catalog.as_deref()?;
-        let slug = rule.id.strip_prefix(catalog)?.strip_prefix('/')?;
-        let folder = self
-            .catalog_dirs
-            .get(catalog)?
-            .join(rule.family.as_deref()?)
-            .join(slug);
-        Some(folder.join(implementation.file.as_deref()?))
+/// What runs an extension implementation: `uv run --script` on the script of a Python rule,
+/// `node` on the script of a Node rule, the command of a rule that names one. `catalog_dirs` are
+/// the folders of the catalogs of the project, by name.
+pub fn command(
+    rule: &Rule,
+    implementation: &Implementation,
+    catalog_dirs: &BTreeMap<String, PathBuf>,
+) -> Result<Vec<String>, String> {
+    let named = |what: &str| format!("`{}` has no {what}", rule.id);
+    match implementation.runtime {
+        Some(Runtime::Command) => implementation
+            .command
+            .clone()
+            .ok_or_else(|| named("`command`")),
+        Some(runtime) => {
+            let script =
+                script_of(rule, implementation, catalog_dirs).ok_or_else(|| named("script"))?;
+            let script = script.to_string_lossy().into_owned();
+            Ok(match runtime {
+                Runtime::Python => ["uv", "run", "--script"]
+                    .map(str::to_owned)
+                    .into_iter()
+                    .chain([script])
+                    .collect(),
+                _ => vec!["node".to_owned(), script],
+            })
+        }
+        None => Err(named("runtime")),
     }
+}
+
+/// The script of the rule, in its folder of `<catalog>/<family>/<slug>/`, where the catalog is.
+fn script_of(
+    rule: &Rule,
+    implementation: &Implementation,
+    catalog_dirs: &BTreeMap<String, PathBuf>,
+) -> Option<PathBuf> {
+    let catalog = rule.catalog.as_deref()?;
+    let slug = rule.id.strip_prefix(catalog)?.strip_prefix('/')?;
+    let folder = catalog_dirs
+        .get(catalog)?
+        .join(rule.family.as_deref()?)
+        .join(slug);
+    Some(folder.join(implementation.file.as_deref()?))
 }
 
 /// The rules of the server are named by the id of the rule, and `<id>#<n>` for the implementation

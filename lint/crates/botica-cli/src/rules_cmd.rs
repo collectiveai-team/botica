@@ -2,11 +2,12 @@ use std::io::Write;
 use std::process::ExitCode;
 
 use anyhow::Result;
+use botica_catalog::Kind;
 use clap::{Args, Subcommand};
 use serde::Serialize;
 
 use crate::project::{self, Project, ProjectArgs};
-use crate::rule_view::RuleView;
+use crate::rule_view::{Programs, RuleView};
 use crate::rules_conform::{self, ConformArgs};
 use crate::rules_export::{self, ExportArgs};
 use crate::rules_new::{self, NewArgs};
@@ -92,7 +93,15 @@ fn success(_: ()) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+fn programs(project: &Project) -> Programs<'_> {
+    Programs {
+        catalog_dirs: &project.catalog_dirs,
+        root: &project.loaded.root,
+    }
+}
+
 fn write_json(project: &Project, all: bool, out: &mut impl Write) -> Result<()> {
+    let programs = programs(project);
     let document = RulesDocument {
         schema_version: SCHEMA_VERSION,
         config: ConfigView {
@@ -109,7 +118,7 @@ fn write_json(project: &Project, all: bool, out: &mut impl Write) -> Result<()> 
             .entries()
             .iter()
             .filter(|entry| all || entry.active)
-            .map(RuleView::new)
+            .map(|entry| RuleView::new(entry, &programs))
             .collect(),
     };
     serde_json::to_writer(&mut *out, &document)?;
@@ -138,6 +147,34 @@ fn write_table(project: &Project, all: bool, out: &mut impl Write) -> Result<()>
             "{:<12} {:<22} {:<9} {}",
             entry.rule.code, entry.rule.id, state, entry.reason
         )?;
+    }
+    write_outside(project, out)
+}
+
+/// The programs that `botica lint` starts for the active extension rules, and the tools that
+/// enforce the active external rules.
+fn write_outside(project: &Project, out: &mut impl Write) -> Result<()> {
+    let programs = programs(project);
+    let mut runs = Vec::new();
+    let mut tools = Vec::new();
+    for entry in project.resolution.entries().iter().filter(|e| e.active) {
+        let rule = &entry.rule;
+        for implementation in &rule.implementations {
+            if let Some(argv) = programs.runs(rule, implementation) {
+                runs.push(format!("  {}  {}", rule.id, argv.join(" ")));
+            }
+            if let (Kind::External, Some(tool)) = (implementation.kind, &implementation.tool) {
+                tools.push(format!("  {}  {tool}", rule.id));
+            }
+        }
+    }
+    for (title, lines) in [
+        ("programs that `botica lint` runs", runs),
+        ("tools that enforce rules outside `botica lint`", tools),
+    ] {
+        if !lines.is_empty() {
+            writeln!(out, "\n{title}:\n{}", lines.join("\n"))?;
+        }
     }
     Ok(())
 }

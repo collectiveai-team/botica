@@ -22,12 +22,14 @@ botica lint src tests/a.py     # directories to walk, or files (as prek passes t
 botica lint --select file-size-guard,no-utils
 botica lint --output-format json   # text (default), json, sarif or github
 botica lint --judged judge.sarif   # the findings of a judge, filtered by the configuration and comments
-botica rules                   # which rules are active, and why (--all adds the inactive ones)
+botica rules                   # which rules are active, and why (--all adds the inactive ones), the
+                               # programs that `botica lint` runs and the tools that enforce rules
+                               # outside it; --json adds the kind of each implementation
 botica server                  # the Language Server Protocol on stdio: the findings for the buffers of an
                                # editor (native and pattern rules), paths from the working directory
 botica server --extensions     # and the extension rules of the project: heavy, and it runs the scripts
                                # of the project (see "Rules of the project")
-botica explain no-notebooks    # what a rule is and how it is configured here
+botica explain no-notebooks    # what a rule is, how it is built and how it is configured here
 botica rules export --format markdown --output site   # one page per rule of the catalog, and an index;
                                # the catalogs of .botica/rules get a folder and an index section each
 botica rules export --format json --output out       # the whole catalog in out/catalog.json

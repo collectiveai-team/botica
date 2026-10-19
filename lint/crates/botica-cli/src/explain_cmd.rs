@@ -1,12 +1,13 @@
 use std::io::Write;
 
 use anyhow::{bail, Result};
-use botica_catalog::{Catalog, Severity, Status};
+use botica_catalog::{Catalog, Kind, Severity, Status};
 use botica_config::{Entry, IgnoreOrigin};
 use botica_core::registry;
 use clap::Args;
 
 use crate::project::{self, ProjectArgs};
+use crate::rule_view::Programs;
 
 #[derive(Args)]
 pub struct ExplainArgs {
@@ -31,13 +32,16 @@ pub fn run(args: &ExplainArgs) -> Result<()> {
     let mut out = std::io::stdout().lock();
     let code_dirs = registry::uses_code_dirs(&entry.rule.id).then(|| project.describe_code_dirs());
     let since = Catalog::embedded()?.lifecycle(&entry.rule).since;
-    write_entry(
-        entry,
-        since.as_deref(),
-        &config,
-        code_dirs.as_deref(),
-        &mut out,
-    )?;
+    let shown = Shown {
+        since: since.as_deref(),
+        config: &config,
+        code_dirs: code_dirs.as_deref(),
+        programs: Programs {
+            catalog_dirs: &project.catalog_dirs,
+            root: &project.loaded.root,
+        },
+    };
+    write_entry(entry, &shown, &mut out)?;
     Ok(())
 }
 
@@ -66,13 +70,27 @@ fn severity_name(severity: Severity) -> &'static str {
     }
 }
 
-fn write_entry(
-    entry: &Entry,
-    since: Option<&str>,
-    config: &str,
-    code_dirs: Option<&str>,
-    out: &mut impl Write,
-) -> Result<()> {
+fn kind_name(kind: Kind) -> &'static str {
+    match kind {
+        Kind::Native => "native",
+        Kind::AstGrep => "ast-grep",
+        Kind::Extension => "extension",
+        Kind::Judgment => "judgment",
+        Kind::External => "external",
+    }
+}
+
+/// What the configuration resolved for one rule, and how the rule is built.
+struct Shown<'a> {
+    since: Option<&'a str>,
+    config: &'a str,
+    code_dirs: Option<&'a str>,
+    programs: Programs<'a>,
+}
+
+fn write_entry(entry: &Entry, shown: &Shown<'_>, out: &mut impl Write) -> Result<()> {
+    let (since, config, code_dirs, programs) =
+        (shown.since, shown.config, shown.code_dirs, &shown.programs);
     let rule = &entry.rule;
     writeln!(out, "{} ({}): {}\n", rule.id, rule.code, rule.summary)?;
     let state = if entry.active {
@@ -97,6 +115,20 @@ fn write_entry(
         writeln!(out, "standard:  {standard}")?;
     }
     writeln!(out, "languages: {}", rule.languages().join(", "))?;
+    for implementation in &rule.implementations {
+        let mut line = format!(
+            "kind:      {} ({})",
+            kind_name(implementation.kind),
+            implementation.languages.join(", ")
+        );
+        if let Some(argv) = programs.runs(rule, implementation) {
+            line.push_str(&format!(", runs {}", argv.join(" ")));
+        }
+        if let Some(tool) = &implementation.tool {
+            line.push_str(&format!(", tool {tool}"));
+        }
+        writeln!(out, "{line}")?;
+    }
     writeln!(out, "aliases:   {}", or_none(&rule.aliases))?;
     writeln!(out, "tags:      {}", or_none(&rule.tags))?;
     let options: Vec<String> = entry
