@@ -1,6 +1,6 @@
 mod common;
 
-use common::{botica, lines, stdout, write};
+use common::{botica, lines, stderr, stdout, write};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -285,19 +285,31 @@ fn ast_grep_findings_are_silenced_by_the_botica_channel() {
 }
 
 #[test]
-fn compat_honours_ast_grep_ignore_only_when_asked() {
+fn an_ast_grep_ignore_comment_silences_nothing() {
     let source = "print('a')  # ast-grep-ignore: log-no-print\n# ast-grep-ignore: log-no-print\nprint('b')\n";
-    let dir = project("suppress-compat-off", None);
+    let dir = project("suppress-ast-grep-comment", None);
     write(&dir, "pkg/a.py", source);
     let text = stdout(&with_astgrep(&dir, &["."]));
     assert!(
         text.contains("pkg/a.py:1:1") && text.contains("pkg/a.py:3:1"),
         "{text}"
     );
+}
+
+#[test]
+fn the_setting_that_honoured_ast_grep_ignore_is_gone() {
     let dir = project(
-        "suppress-compat-on",
+        "suppress-compat-gone",
         Some("compat-ast-grep-ignore = true\n"),
     );
-    write(&dir, "pkg/a.py", source);
-    assert_eq!(stdout(&with_astgrep(&dir, &["."])), "");
+    write(&dir, "pkg/a.py", "print('a')\n");
+
+    let output = with_astgrep(&dir, &["."]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        stderr(&output).contains("compat-ast-grep-ignore"),
+        "{}",
+        stderr(&output)
+    );
 }

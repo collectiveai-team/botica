@@ -485,7 +485,7 @@ max = 900
 
 Keys: `select`, `extend-select`, `ignore`, `preview`, `languages`, `extend-exclude`,
 `extend-include`, `code-dirs`, `rules` (settings per rule), `overrides`, `external`, `replace`,
-`rule-dirs`, `catalogs`, `compat-ast-grep-ignore`. Any of them can be given for one run with
+`rule-dirs`, `catalogs`. Any of them can be given for one run with
 `--config 'key = value'`.
 
 `code-dirs` says where the code of the project lives (`python`, `js`, `rust`, `go`, `jvm`), for
@@ -626,9 +626,8 @@ A finding about a whole file (size, name, layout) has no line: use `ignore-file`
 configuration so it does not report `RUF102` for `BT` codes (the section `# MARK: Ruff` of
 `base-python` has it).
 
-While a repository migrates from ast-grep, `compat-ast-grep-ignore = true` makes botica honour
-`# ast-grep-ignore: <rule>` too, on the line of a finding and on the line before it. It is off by
-default, and the README of a rule does not repeat it.
+A `# ast-grep-ignore: <rule>` comment is a plain comment to botica: replace it with
+`# botica: ignore[<rule>]`.
 
 ## prek
 

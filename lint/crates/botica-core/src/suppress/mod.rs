@@ -8,7 +8,7 @@ mod scan;
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::document::Document;
 use aho_corasick::AhoCorasick;
-use directive::{Channel, Channels, Directive, Malformed, Scope};
+use directive::{Channels, Directive, Malformed, Scope};
 use message::{judgment_on_a_line, judgment_without_reason, malformed_message, unused_message};
 use scan::{allows_noqa, scan, Syntax};
 use std::collections::{HashMap, HashSet};
@@ -33,7 +33,6 @@ pub struct Policy {
     external: Option<External>,
     /// What the codes in a `noqa` comment start with when they are botica's.
     code_prefixes: Vec<String>,
-    compat_ast_grep_ignore: bool,
     unused: Option<Severity>,
     invalid: Option<Severity>,
     /// One pass over a file tells whether it holds any marker at all.
@@ -57,7 +56,6 @@ impl Policy {
             extension: HashSet::new(),
             external: None,
             code_prefixes: vec!["BT".to_owned()],
-            compat_ast_grep_ignore: false,
             unused: None,
             invalid: None,
             markers: OnceLock::new(),
@@ -115,11 +113,6 @@ impl Policy {
         self
     }
 
-    pub fn with_compat_ast_grep_ignore(mut self, enabled: bool) -> Self {
-        self.compat_ast_grep_ignore = enabled;
-        self
-    }
-
     pub fn report_unused(mut self, severity: Severity) -> Self {
         self.unused = Some(severity);
         self
@@ -133,11 +126,7 @@ impl Policy {
     fn has_marker(&self, text: &str) -> bool {
         self.markers
             .get_or_init(|| {
-                let mut needles = vec!["botica:", "noqa", "NOQA"];
-                if self.compat_ast_grep_ignore {
-                    needles.push("ast-grep-ignore");
-                }
-                AhoCorasick::new(needles).expect("literal needles compile")
+                AhoCorasick::new(["botica:", "noqa", "NOQA"]).expect("literal needles compile")
             })
             .is_match(text)
     }
@@ -170,10 +159,7 @@ struct Token {
 
 struct Found {
     scope: Scope,
-    channel: Channel,
     line: usize,
-    /// Nothing but the comment on its line (for `ast-grep-ignore`, which then covers the next line).
-    comment_only: bool,
     span: Range<usize>,
     tokens: Vec<Token>,
     reason: bool,
@@ -199,33 +185,13 @@ impl Policy {
         })
     }
 
-    /// The last line a finding touches.
-    fn last_line(diagnostic: &Diagnostic, doc: &Document<'_>) -> usize {
-        if diagnostic.file_level || diagnostic.end <= diagnostic.start {
-            diagnostic.line
-        } else {
-            doc.position(diagnostic.end - 1).0
-        }
-    }
-
     /// Marks the tokens that silence `diagnostic` and says whether any did.
-    fn silenced(
-        found: &mut [Found],
-        diagnostic: &Diagnostic,
-        line: Option<usize>,
-        end_line: usize,
-    ) -> bool {
+    fn silenced(found: &mut [Found], diagnostic: &Diagnostic, line: Option<usize>) -> bool {
         let mut silenced = false;
         for directive in found.iter_mut() {
-            let reaches = match (directive.scope, directive.channel) {
-                (Scope::File, _) => true,
-                (Scope::Line, Channel::AstGrep) => {
-                    !diagnostic.file_level
-                        && (diagnostic.line == directive.line
-                            || end_line == directive.line
-                            || (directive.comment_only && diagnostic.line == directive.line + 1))
-                }
-                (Scope::Line, _) => line == Some(directive.line),
+            let reaches = match directive.scope {
+                Scope::File => true,
+                Scope::Line => line == Some(directive.line),
             };
             if !reaches {
                 continue;
@@ -252,7 +218,7 @@ impl Policy {
                 Directive::Malformed { span, reason } => malformed.push((span, reason)),
                 Directive::Suppress {
                     scope,
-                    channel,
+                    channel: _,
                     ids,
                     span,
                     reason,
@@ -275,9 +241,7 @@ impl Policy {
                     let line = doc.position(span.start).0;
                     found.push(Found {
                         scope,
-                        channel,
                         line,
-                        comment_only: is_comment_only(doc.text().unwrap_or_default(), span.start),
                         span,
                         tokens,
                         reason,
@@ -342,7 +306,6 @@ impl Policy {
         };
         let channels = Channels {
             noqa: allows_noqa(doc.path),
-            ast_grep: self.compat_ast_grep_ignore,
             prefixes: &self.code_prefixes,
         };
         let Some(text) = doc.text() else {
@@ -370,8 +333,7 @@ impl Policy {
         let mut file_level: HashSet<String> = HashSet::new();
         for diagnostic in found.drain(..) {
             let line = Self::effective_line(&diagnostic, &scanned.strings, doc);
-            let last = Self::last_line(&diagnostic, doc);
-            if Self::silenced(&mut directives, &diagnostic, line, last) {
+            if Self::silenced(&mut directives, &diagnostic, line) {
                 continue;
             }
             if diagnostic.file_level {
@@ -388,9 +350,6 @@ impl Policy {
                     .iter()
                     .filter(|t| t.slug.is_none() && !t.external)
                 {
-                    if directive.channel == Channel::AstGrep {
-                        continue;
-                    }
                     about.push(self.about(
                         doc,
                         INVALID,
@@ -410,7 +369,7 @@ impl Policy {
             }
         }
         if let Some(severity) = self.unused.filter(|_| report) {
-            for directive in directives.iter().filter(|d| d.channel != Channel::AstGrep) {
+            for directive in &directives {
                 let mut unused = Vec::new();
                 let mut disabled = Vec::new();
                 let mut file_hint = Vec::new();
@@ -442,8 +401,7 @@ impl Policy {
         }
         for diagnostic in about {
             let line = Self::effective_line(&diagnostic, &scanned.strings, doc);
-            let last = Self::last_line(&diagnostic, doc);
-            if !Self::silenced(&mut directives, &diagnostic, line, last) {
+            if !Self::silenced(&mut directives, &diagnostic, line) {
                 kept.push(diagnostic);
             }
         }
@@ -457,7 +415,7 @@ impl Policy {
             .iter()
             .filter_map(|token| {
                 let slug = token.slug.as_deref()?;
-                if !self.judgment.contains(slug) || directive.channel == Channel::AstGrep {
+                if !self.judgment.contains(slug) {
                     return None;
                 }
                 if directive.scope == Scope::Line {
@@ -474,13 +432,4 @@ impl Policy {
     fn is_known_active(&self, slug: &str, is_active: &dyn Fn(&str) -> bool) -> bool {
         is_active(slug)
     }
-}
-
-/// Whether the directive at `offset` is preceded on its line only by a comment delimiter.
-fn is_comment_only(text: &str, offset: usize) -> bool {
-    let line_start = text[..offset].rfind('\n').map_or(0, |at| at + 1);
-    matches!(
-        text[line_start..offset].trim(),
-        "#" | "//" | "///" | "/*" | "<!--"
-    )
 }

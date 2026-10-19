@@ -109,10 +109,8 @@ severity = { no-utils = "warning" }
 }
 
 #[test]
-fn compat_ast_grep_ignore_is_off_by_default_and_a_boolean() {
-    assert!(!parse("").compat_ast_grep_ignore);
-    assert!(parse("compat-ast-grep-ignore = true\n").compat_ast_grep_ignore);
-    assert!(Config::from_botica_toml("compat-ast-grep-ignore = \"yes\"\n").is_err());
+fn compat_ast_grep_ignore_is_no_longer_a_setting() {
+    assert!(Config::from_botica_toml("compat-ast-grep-ignore = true\n").is_err());
 }
 
 #[test]

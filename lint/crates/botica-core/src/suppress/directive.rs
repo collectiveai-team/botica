@@ -12,8 +12,6 @@ pub(crate) enum Scope {
 pub(crate) enum Channel {
     Botica,
     Noqa,
-    /// `ast-grep-ignore`, honoured only while migrating.
-    AstGrep,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -49,14 +47,12 @@ pub(crate) enum Directive {
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Channels<'a> {
     pub noqa: bool,
-    pub ast_grep: bool,
     /// What the codes of botica start with in a `noqa` comment: `BT`, and the code of each
     /// catalog of the project.
     pub prefixes: &'a [String],
 }
 
 const BOTICA: &str = "botica:";
-const AST_GREP: &str = "ast-grep-ignore";
 
 fn is_separator(byte: u8) -> bool {
     matches!(byte, b',' | b' ' | b'\t' | b'\r')
@@ -72,9 +68,6 @@ fn next_marker(body: &str, from: usize, channels: Channels<'_>) -> Option<(usize
     if channels.noqa {
         markers.push(("noqa", Channel::Noqa));
         markers.push(("NOQA", Channel::Noqa));
-    }
-    if channels.ast_grep {
-        markers.push((AST_GREP, Channel::AstGrep));
     }
     markers
         .into_iter()
@@ -264,26 +257,6 @@ fn noqa(
     i.max(after)
 }
 
-/// Parses `ast-grep-ignore: a, b`. Without the list it does not suppress anything.
-fn ast_grep(body: &str, start: usize, base: usize, out: &mut Vec<Directive>) -> usize {
-    let after = start + AST_GREP.len();
-    let colon = skip_blanks(body, after);
-    if !body[colon..].starts_with(':') {
-        return after;
-    }
-    let ids = split_ids(body, colon + 1, body.len(), base);
-    if !ids.is_empty() {
-        out.push(Directive::Suppress {
-            scope: Scope::Line,
-            channel: Channel::AstGrep,
-            ids,
-            span: base + start..base + body.trim_end().len(),
-            reason: false,
-        });
-    }
-    body.len()
-}
-
 /// Reads every directive in the text of one comment that starts at absolute offset `base`.
 pub(crate) fn parse(body: &str, base: usize, channels: Channels<'_>, out: &mut Vec<Directive>) {
     let mut cursor = 0;
@@ -294,7 +267,6 @@ pub(crate) fn parse(body: &str, base: usize, channels: Channels<'_>, out: &mut V
         cursor = match channel {
             Channel::Botica => botica(body, at, base, out),
             Channel::Noqa => noqa(body, at, base, channels.prefixes, out),
-            Channel::AstGrep => ast_grep(body, at, base, out),
         };
     }
 }

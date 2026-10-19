@@ -390,57 +390,22 @@ fn invalid_suppression_can_silence_itself() {
     assert!(found("a.py", text).is_empty());
 }
 
-// --- compat-ast-grep-ignore --------------------------------------------------------------------------
+// --- ast-grep-ignore ----------------------------------------------------------------------------
 
 #[test]
-fn ast_grep_ignore_is_ignored_unless_compat_is_on() {
-    let text = "x = FLAG  # ast-grep-ignore: flag-rule\n";
-    assert_eq!(found("a.py", text), ["flag-rule@1"]);
-}
-
-#[test]
-fn compat_honours_ast_grep_ignore_on_the_same_line_and_on_the_previous_one() {
-    let on = || policy().with_compat_ast_grep_ignore(true);
-    let same = "x = FLAG  # ast-grep-ignore: flag-rule\n";
-    assert!(engine(on()).lint_source("a.py", same).is_empty());
-    let before = "# ast-grep-ignore: other, flag-rule\nx = FLAG\n";
-    assert!(engine(on()).lint_source("a.py", before).is_empty());
-    let far = "# ast-grep-ignore: flag-rule\n\nx = FLAG\n";
+fn an_ast_grep_ignore_comment_is_a_plain_comment() {
     assert_eq!(
-        summarize(&engine(on()).lint_source("a.py", far)),
-        ["flag-rule@3"]
-    );
-    let bare = "x = FLAG  # ast-grep-ignore\n";
-    assert_eq!(
-        summarize(&engine(on()).lint_source("a.py", bare)),
+        found("a.py", "x = FLAG  # ast-grep-ignore: flag-rule\n"),
         ["flag-rule@1"]
     );
-}
-
-#[test]
-fn compat_follows_ast_grep_about_which_lines_count() {
-    let on = || policy().with_compat_ast_grep_ignore(true);
-    let lint = |text: &str| summarize(&engine(on()).lint_source("a.py", text));
-    // a comment after code on the previous line covers only that line
     assert_eq!(
-        lint("x = 1  # ast-grep-ignore: flag-rule\ny = FLAG\n"),
+        found("a.py", "# ast-grep-ignore: flag-rule\nx = FLAG\n"),
         ["flag-rule@2"]
     );
-    // a finding that spans lines is covered from its first line and from its last line, not the middle
-    assert!(lint("BEGIN  # ast-grep-ignore: multi-rule\n  END\n").is_empty());
-    assert!(lint("BEGIN\n  END  # ast-grep-ignore: multi-rule\n").is_empty());
     assert_eq!(
-        lint("BEGIN\n  # ast-grep-ignore: multi-rule\n  END\n"),
-        ["multi-rule@1"]
+        found("a.py", "x = 1  # ast-grep-ignore: typo\n"),
+        Vec::<String>::new()
     );
-    assert!(lint("  # ast-grep-ignore: multi-rule\nBEGIN\n  END\n").is_empty());
-}
-
-#[test]
-fn compat_directives_are_never_reported_as_unused_or_invalid() {
-    let text = "x = 1  # ast-grep-ignore: flag-rule, whatever\n";
-    let found = engine(policy().with_compat_ast_grep_ignore(true)).lint_source("a.py", text);
-    assert!(found.is_empty(), "{found:?}");
 }
 
 // --- robustness ------------------------------------------------------------------------------------
@@ -492,7 +457,7 @@ fn no_input_makes_the_parser_panic() {
         "a.toml",
         "Dockerfile",
     ];
-    let engine = engine(policy().with_compat_ast_grep_ignore(true));
+    let engine = engine(policy());
     let mut state = 0x9E37_79B9_7F4A_7C15_u64;
     for round in 0..4000 {
         let mut text = String::new();

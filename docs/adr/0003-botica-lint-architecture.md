@@ -212,9 +212,8 @@ It was removed on 2026-10-18, when the recipes of ADR 0006 replaced it.
 - **One conformance runner exercises the rules with the same fixtures.** It runs each rule in its
   variants and compares the result with `fixtures/expected.json`, which makes a Python→Rust
   migration and `replaces` checkable.
-- **The ast-grep rules are rules of the catalog, and there is no `ast-grep` hook.** The opt-in
-  setting `compat-ast-grep-ignore` (off by default) makes botica honour `# ast-grep-ignore: <slug>`
-  in code that still carries those comments.
+- **The ast-grep rules are rules of the catalog, and there is no `ast-grep` hook.** A
+  `# ast-grep-ignore: <slug>` comment suppresses nothing; `# botica: ignore[<slug>]` replaces it.
 - **The `python -c` hooks for CES-71, CES-63, and CES-32 are replaced** by the `botica` hook of the
   mirror. `repo-shape` became three layout rules (`no-notebooks`, `no-artifacts-in-package`,
   `no-tests-in-package`) that find the code of each ecosystem on their own, or from `code-dirs`,
