@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
-use botica_catalog::{Catalog, Family, SourceFile, CONFIG_DIR};
+use botica_catalog::{Catalog, Family, Rule, SourceFile, CONFIG_DIR};
 use clap::{Args, ValueEnum};
 
 use crate::project::PROJECT_RULES;
@@ -39,6 +39,10 @@ pub struct NewArgs {
     /// for a catalog of a project (the one with a `catalog.toml`).
     #[arg(long, default_value = "lint/rules")]
     catalog: PathBuf,
+    /// A judgment rule of the catalog that the new deterministic rule starts from: the new rule
+    /// takes its summary, its standard and the text of its README, and joins its `covered-by`.
+    #[arg(long)]
+    from: Option<String>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, ValueEnum)]
@@ -105,7 +109,8 @@ pub fn run(args: &NewArgs) -> Result<()> {
         bail!("`{}/{slug}` exists in the catalog", family.name);
     }
 
-    let draft = draft(args, &target, family, slug);
+    let source = judgment_source(args, &target)?;
+    let draft = draft(args, &target, family, slug, source);
     let catalog_files: Vec<SourceFile> = draft
         .files
         .iter()
@@ -125,7 +130,81 @@ pub fn run(args: &NewArgs) -> Result<()> {
     for file in &draft.files {
         println!("  {}", file.path);
     }
+    if let Some(source) = source {
+        let id = target.id(slug);
+        let changed = cover(&args.catalog, &target, source, &id)?;
+        println!("{changed}: `covered-by` names `{id}`");
+    }
     Ok(())
+}
+
+/// The judgment rule that `--from` names, in the catalog.
+fn judgment_source<'a>(args: &NewArgs, target: &'a Target) -> Result<Option<&'a Rule>> {
+    let Some(name) = &args.from else {
+        return Ok(None);
+    };
+    if args.kind == NewKind::Judgment {
+        bail!(
+            "--from writes a deterministic rule that covers a judgment rule: pick another --kind"
+        );
+    }
+    let rule = target
+        .catalog
+        .resolve(name)
+        .with_context(|| format!("`{name}` is not a rule of the catalog"))?;
+    if !rule.is_judgment() {
+        bail!("`{}` is not a judgment rule", rule.id);
+    }
+    Ok(Some(rule))
+}
+
+/// Adds `id` to `covered-by` of the judgment rule `source`, in its `rule.toml`, and says which
+/// file changed.
+fn cover(catalog: &Path, target: &Target, source: &Rule, id: &str) -> Result<String> {
+    let slug = match &target.project {
+        Some(name) => source
+            .id
+            .strip_prefix(name.as_str())
+            .and_then(|rest| rest.strip_prefix('/'))
+            .unwrap_or(&source.id),
+        None => &source.id,
+    };
+    let relative = format!(
+        "{}/{slug}/rule.toml",
+        source.family.as_deref().unwrap_or_default()
+    );
+    let path = catalog.join(&relative);
+    let text =
+        fs::read_to_string(&path).with_context(|| format!("cannot read `{}`", path.display()))?;
+    let changed = with_cover(&text, id).with_context(|| {
+        format!("add `{id}` to `covered-by` of `{relative}` by hand: botica cannot place it")
+    })?;
+    fs::write(&path, changed).with_context(|| format!("cannot write `{}`", path.display()))?;
+    Ok(relative)
+}
+
+/// The text of a `rule.toml` with `id` in the `covered-by` of its judgment implementation: added
+/// to a list on one line, or as a new line after `kind = "judgment"`. `None` when it is written
+/// some other way.
+fn with_cover(text: &str, id: &str) -> Option<String> {
+    let mut lines: Vec<String> = text.lines().map(str::to_owned).collect();
+    if let Some(line) = lines
+        .iter_mut()
+        .find(|l| l.trim_start().starts_with("covered-by"))
+    {
+        let inside = line.split_once('[')?.1.strip_suffix(']')?.trim().to_owned();
+        *line = if inside.is_empty() {
+            format!("covered-by = [\"{id}\"]")
+        } else {
+            format!("covered-by = [{inside}, \"{id}\"]")
+        };
+    } else {
+        let at = lines
+            .iter()
+            .position(|l| l.trim() == "kind = \"judgment\"")?;
+        lines.insert(at + 1, format!("covered-by = [\"{id}\"]"));
+    }
+    Some(lines.join("\n") + "\n")
 }
 
 fn check_kind(args: &NewArgs) -> Result<()> {
@@ -216,12 +295,22 @@ struct Names<'a> {
     root: String,
 }
 
-fn rule_toml(args: &NewArgs, names: &Names, code: &str) -> String {
+fn rule_toml(args: &NewArgs, names: &Names, code: &str, source: Option<&Rule>) -> String {
     let mut text = format!("id = \"{}\"\ncode = \"{code}\"\n", names.id);
-    if let Some(standard) = &args.standard {
+    let standard = args
+        .standard
+        .as_deref()
+        .or_else(|| source.and_then(|rule| rule.standard.as_deref()));
+    if let Some(standard) = standard {
         text.push_str(&format!("standard = \"{standard}\"\n"));
     }
-    text.push_str("summary = \"TODO: what the rule asks, in one line\"\nstatus = \"preview\"\n");
+    let summary = source.map_or("TODO: what the rule asks, in one line", |rule| {
+        rule.summary.as_str()
+    });
+    text.push_str(&format!(
+        "summary = {}\nstatus = \"preview\"\n",
+        toml::Value::String(summary.to_owned())
+    ));
     let scope = match args.kind {
         NewKind::AstGrep => Some("\"cli\", \"save\", \"type\""),
         NewKind::Extension => Some("\"cli\""),
@@ -284,7 +373,41 @@ fn ast_grep_yaml(args: &NewArgs, id: &str) -> String {
     )
 }
 
-fn draft(args: &NewArgs, target: &Target, family: &Family, slug: &str) -> Draft {
+/// The README of a deterministic rule from the README of the judgment rule it covers: its
+/// Directive, Why, Do and Don't, and its Do not flag as Exceptions.
+fn readme_from(source: &Rule) -> String {
+    let sections = source.sections();
+    let text = |title: &str| {
+        sections
+            .iter()
+            .find(|section| section.title == title)
+            .map(|section| section.text.trim().to_owned())
+    };
+    let mut readme = String::new();
+    for (title, from) in [
+        ("Directive", "Directive"),
+        ("Why", "Why"),
+        ("Exceptions", "Do not flag"),
+        ("Do", "Do"),
+        ("Don't", "Don't"),
+    ] {
+        if let Some(body) = text(from).filter(|body| !body.is_empty()) {
+            readme.push_str(&format!("## {title}\n\n{body}\n\n"));
+        }
+    }
+    readme.push_str(
+        "## Suppression\n\nTODO: the comment or the configuration that silences a finding.\n",
+    );
+    readme
+}
+
+fn draft(
+    args: &NewArgs,
+    target: &Target,
+    family: &Family,
+    slug: &str,
+    source: Option<&Rule>,
+) -> Draft {
     let folder = format!("{}/{slug}", family.name);
     let code = next_code(&target.catalog, family);
     let names = Names {
@@ -300,15 +423,20 @@ fn draft(args: &NewArgs, target: &Target, family: &Family, slug: &str) -> Draft 
         text,
     };
     let mut files = vec![
-        file("rule.toml", rule_toml(args, &names, &code)),
+        file("rule.toml", rule_toml(args, &names, &code, source)),
         file(
             "README.md",
-            match args.kind {
-                NewKind::Judgment => JUDGMENT_README,
-                NewKind::External => EXTERNAL_README,
-                _ => README,
-            }
-            .to_owned(),
+            source.map_or_else(
+                || {
+                    match args.kind {
+                        NewKind::Judgment => JUDGMENT_README,
+                        NewKind::External => EXTERNAL_README,
+                        _ => README,
+                    }
+                    .to_owned()
+                },
+                readme_from,
+            ),
         ),
     ];
     if args.kind == NewKind::External {

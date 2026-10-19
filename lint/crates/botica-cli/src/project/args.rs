@@ -33,6 +33,30 @@ pub struct ProjectArgs {
     pub(super) scope: ScopeArg,
 }
 
+impl ProjectArgs {
+    /// The same configuration with `rule` alone selected, preview or not, and on whatever the
+    /// configuration says of it.
+    pub fn only(&self, rule: &str) -> Self {
+        let mut on = toml::Table::new();
+        on.insert("enabled".to_owned(), toml::Value::Boolean(true));
+        let mut by_rule = toml::Table::new();
+        by_rule.insert(rule.to_owned(), toml::Value::Table(on));
+        let mut setting = toml::Table::new();
+        setting.insert("rules".to_owned(), toml::Value::Table(by_rule));
+        let mut config = self.config.clone();
+        config.push(ConfigOption::Setting(setting));
+        Self {
+            config,
+            select: vec![rule.to_owned()],
+            extend_select: Vec::new(),
+            ignore: Vec::new(),
+            preview: true,
+            no_preview: false,
+            scope: ScopeArg::All,
+        }
+    }
+}
+
 /// One `--config`: a file, or a setting that goes over the configuration.
 #[derive(Clone)]
 pub(super) enum ConfigOption {

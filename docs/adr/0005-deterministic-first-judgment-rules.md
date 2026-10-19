@@ -38,7 +38,13 @@ no check at all.
    | Implementation | `python.yml`, `typescript.yml` or code in the core | none |
    | `fixtures/` | `valid/`, `invalid/` and `expected.json` with the range of each finding | `valid/`, `invalid/` and `expected.json` with the verdict of each file |
 
-   `covered-by` lists the deterministic rules that check part of a judgment rule. The fixtures of a
+   `covered-by` lists the deterministic rules that check part of a judgment rule. A judgment rule
+   whose `covered-by` names a rule active in the project is left out of the block of `AGENTS.md`
+   and of the rubric, and `botica rules` says so on its line. `botica rules new <family>/<slug>
+   --from <judgment rule>` writes a deterministic rule with the summary, the standard and the text
+   of the judgment rule, and adds it to the `covered-by` of the judgment rule; `botica rules eval
+   <rule> [paths]` runs that one rule over real code, whatever the configuration selects, for a
+   review of its false positives. The fixtures of a
    judgment rule are the set a judge is calibrated against. A judgment rule has one implementation,
    of kind `judgment`, and the fields of a judge live on it: a rule that becomes deterministic
    replaces that implementation and keeps the root of its `rule.toml`. A deterministic rule

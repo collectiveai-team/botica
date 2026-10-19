@@ -35,7 +35,8 @@ botica rules export --format markdown --output site   # one page per rule of the
                                # the catalogs of .botica/rules get a folder and an index section each
 botica rules export --format json --output out       # the whole catalog in out/catalog.json
 botica rules export --format agents-md --output AGENTS.md [--check]
-                               # the active judgment rules, between <!-- botica:rules --> and <!-- /botica:rules -->
+                               # the active judgment rules, between <!-- botica:rules --> and <!-- /botica:rules -->;
+                               # a judgment rule whose covered-by names an active rule is left out
 botica rules export --format abide [--check]   # the rubric of abide, .abide/rubric.json, with the
                                # judgment rules of the block of AGENTS.md (--agents-md names another file)
 botica refs list               # the topics (built-in and of references/), their references and who cites them
@@ -60,6 +61,10 @@ botica rules new structure/no-blobs --kind extension --runtime python --language
   --catalog .botica/rules/acme   # a rule of a catalog of a project: id acme/no-blobs, code ACMESTRUC001
 botica rules new structure/dep-hygiene --kind external --language python --tool deptry \
   --docs https://deptry.com/ --config prek.toml   # an external rule and its fragment config/prek.toml
+botica rules new structure/no-exec --kind ast-grep --language python --from judge-it
+                               # a rule with the text of the judgment rule judge-it, added to its covered-by
+botica rules eval no-utils src # what one rule finds in real code, on or off in the configuration,
+                               # for a review of its false positives; the findings do not fail it
 ```
 
 Exit code: `0` clean (a warning does not fail the run), `1` a finding of severity error, `2`

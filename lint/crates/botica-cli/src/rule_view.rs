@@ -32,6 +32,8 @@ pub struct RuleView<'a> {
     pub ignores: Vec<IgnoreView<'a>>,
     pub options: &'a BTreeMap<String, toml::Value>,
     pub implementations: Vec<ImplementationView<'a>>,
+    /// The active rules that cover a judgment rule (`covered-by`): the judges do not read it.
+    pub covered_by: Vec<&'a str>,
 }
 
 /// One implementation of a rule: its kind, the program that `botica lint` starts for an
@@ -88,7 +90,7 @@ impl<'a> ImplementationView<'a> {
 }
 
 impl<'a> RuleView<'a> {
-    pub fn new(entry: &'a Entry, programs: &Programs<'_>) -> Self {
+    pub fn new(entry: &'a Entry, programs: &Programs<'_>, covered_by: Vec<&'a str>) -> Self {
         let rule = &entry.rule;
         Self {
             rule: &rule.id,
@@ -116,6 +118,7 @@ impl<'a> RuleView<'a> {
                 .iter()
                 .map(|implementation| ImplementationView::new(rule, implementation, programs))
                 .collect(),
+            covered_by,
         }
     }
 }

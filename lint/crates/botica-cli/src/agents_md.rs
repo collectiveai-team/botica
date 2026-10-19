@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use botica_catalog::Rule;
 use botica_config::Resolution;
 
+use crate::judgment;
 use crate::rule_page::{file_name, group_of};
 
 pub const START: &str = "<!-- botica:rules -->";
@@ -18,7 +19,7 @@ pub const SITE: &str = "https://collectiveai-team.github.io/botica/";
 pub fn block(resolution: &Resolution, base_url: &str) -> String {
     let mut families: BTreeMap<&str, Vec<&Rule>> = BTreeMap::new();
     for entry in resolution.entries() {
-        if entry.active && entry.rule.is_judgment() {
+        if judgment::exported(resolution, &entry.rule, entry.active) {
             families
                 .entry(group_of(&entry.rule))
                 .or_default()

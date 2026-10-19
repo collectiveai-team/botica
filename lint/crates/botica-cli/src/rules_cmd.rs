@@ -2,14 +2,17 @@ use std::io::Write;
 use std::process::ExitCode;
 
 use anyhow::Result;
-use botica_catalog::Kind;
+use botica_catalog::{Kind, Rule};
+use botica_config::Resolution;
 use clap::{Args, Subcommand};
 use serde::Serialize;
 
 use crate::extension_pool::Launcher;
+use crate::judgment;
 use crate::project::{self, Project, ProjectArgs};
 use crate::rule_view::{Programs, RuleView};
 use crate::rules_conform::{self, ConformArgs};
+use crate::rules_eval::{self, EvalArgs};
 use crate::rules_export::{self, ExportArgs};
 use crate::rules_new::{self, NewArgs};
 use crate::rules_test::{self, TestArgs};
@@ -41,6 +44,9 @@ enum RulesCommand {
     /// Run each rule of a catalog over its fixtures, with and without each optimisation, and
     /// compare the findings with the `expected.json` of the rule.
     Conform(ConformArgs),
+    /// Run one deterministic rule over real code, whatever the configuration selects, and list
+    /// what it finds, for a review of its false positives. The findings do not fail the run.
+    Eval(EvalArgs),
 }
 
 #[derive(Args)]
@@ -77,6 +83,7 @@ pub fn run(args: &RulesArgs) -> Result<ExitCode> {
         Some(RulesCommand::New(new)) => return rules_new::run(new).map(success),
         Some(RulesCommand::Test(test)) => return rules_test::run(test),
         Some(RulesCommand::Conform(conform)) => return rules_conform::run(conform),
+        Some(RulesCommand::Eval(eval)) => return rules_eval::run(eval),
         Some(RulesCommand::List(list)) => list,
         None => &args.list,
     };
@@ -119,7 +126,13 @@ fn write_json(project: &Project, all: bool, out: &mut impl Write) -> Result<()> 
             .entries()
             .iter()
             .filter(|entry| all || entry.active)
-            .map(|entry| RuleView::new(entry, &programs))
+            .map(|entry| {
+                RuleView::new(
+                    entry,
+                    &programs,
+                    judgment::covering(&project.resolution, &entry.rule),
+                )
+            })
             .collect(),
     };
     serde_json::to_writer(&mut *out, &document)?;
@@ -145,11 +158,32 @@ fn write_table(project: &Project, all: bool, out: &mut impl Write) -> Result<()>
         let state = if entry.active { "active" } else { "inactive" };
         writeln!(
             out,
-            "{:<12} {:<22} {:<9} {}",
-            entry.rule.code, entry.rule.id, state, entry.reason
+            "{:<12} {:<22} {:<9} {}{}",
+            entry.rule.code,
+            entry.rule.id,
+            state,
+            entry.reason,
+            judged(resolution, &entry.rule)
         )?;
     }
     write_outside(project, out)
+}
+
+/// What the listing adds to a judgment rule: that a judge evaluates it, and the active rules that
+/// cover it, which leave it out of the exports.
+fn judged(resolution: &Resolution, rule: &Rule) -> String {
+    if !rule.is_judgment() {
+        return String::new();
+    }
+    let covering = judgment::covering(resolution, rule);
+    if covering.is_empty() {
+        return "; judged outside lint".to_owned();
+    }
+    let named: Vec<String> = covering.iter().map(|slug| format!("`{slug}`")).collect();
+    format!(
+        "; judged outside lint, covered by {}, left out of the exports",
+        named.join(", ")
+    )
 }
 
 /// The programs that `botica lint` starts for the active extension rules, and the tools that

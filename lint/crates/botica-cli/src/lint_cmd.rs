@@ -80,6 +80,16 @@ pub struct LintArgs {
 }
 
 impl LintArgs {
+    /// The arguments of a run over `paths` that reports and does not fail on the findings, for
+    /// `botica rules eval`.
+    pub fn for_eval(paths: Vec<PathBuf>, project: project::ProjectArgs) -> Self {
+        Self {
+            paths,
+            exit_zero: true,
+            ..Self::for_editor(project)
+        }
+    }
+
     /// The arguments of a run that lints no path: what an editor session builds its engine from.
     fn for_editor(project: project::ProjectArgs) -> Self {
         Self {

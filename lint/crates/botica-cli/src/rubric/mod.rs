@@ -13,6 +13,7 @@ use botica_core::{extensions_of, language_of, Diagnostic, Severity};
 use serde::Serialize;
 use serde_json::Value;
 
+use crate::judgment;
 use crate::project;
 
 pub const DEFAULT_OUTPUT: &str = ".abide/rubric.json";
@@ -76,7 +77,7 @@ pub fn rubric<'a>(inputs: &Inputs<'a>, compiled_at: String) -> Result<Rubric<'a>
         .resolution
         .entries()
         .iter()
-        .filter(|entry| entry.active && entry.rule.is_judgment())
+        .filter(|entry| judgment::exported(inputs.resolution, &entry.rule, entry.active))
         .map(|entry| &entry.rule)
         .filter(|rule| when(rule).is_some_and(|when| when != When::PullRequest))
         .collect();
