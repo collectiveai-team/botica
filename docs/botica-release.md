@@ -22,9 +22,10 @@ when the tag is on `main`, or else the one remote branch that holds the tag.
    `PUBLISH_TO_PYPI` is `true`.
 7. `mirror` waits until PyPI lists the version, and pushes the mirror with its tag (below).
 8. `bump` runs `scripts/bump_mirror_rev.py X.Y.Z` on the branch of the release, runs the hook of
-   botica at the new `rev` (`uvx prek run botica --all-files`), and pushes the commit
+   botica at the new `rev` (`uvx prek run botica --all-files`) and the tests of the repository
+   (`uv run pytest`), and pushes the commit
    `chore(release): the hooks of botica point at vX.Y.Z` to that branch, with no pull request. When
-   the hook fails, nothing is pushed and the run ends red.
+   the hook or a test fails, nothing is pushed and the run ends red.
 
 `0.7.0` was released on 2026-10-12 (run `38197175421`), `0.7.1` the same day (run `38214642175`),
 `0.8.0` on 2026-10-13 (run `38410864532`) and `0.9.0` on 2026-10-14 (run `38595149595`): every job
@@ -125,7 +126,8 @@ secret `MIRROR_DEPLOY_KEY` of this repository.
 ## After the first release
 
 - `catalog/recipes/files/prek-base.toml`, this repository's own `prek.toml`, the examples of
-  `docs/botica.md` and `website/docs/use.md` and the mirror's README name the mirror and its `rev`.
+  `docs/botica.md` and `website/docs/use.md`, the mirror's README and the rule
+  `py-ruff-format-modern` of the skill `engineering-rules` name the mirror and its `rev`.
   The job `bump` moves them all; `scripts/bump_mirror_rev.py` fails the release when one of them
   no longer names the mirror on the line above its `rev`.
 - Not published, and not planned yet: npm, Homebrew, a GitHub Action, standalone binaries.

@@ -227,8 +227,8 @@ jobs:
 
   # After the mirror has the tag, the branch of the release points its own `prek.toml`, the
   # template of the recipes and the docs at it (scripts/bump_mirror_rev.py), and the commit goes
-  # straight to that branch. The hook of botica runs first at the new `rev`: when it fails, nothing
-  # is pushed and the release ends red. The branch is `main` when the tag is on it, or else the one
+  # straight to that branch. The hook of botica at the new `rev` and the tests of the repository run
+  # first: when one fails, nothing is pushed and the release ends red. The branch is `main` when the tag is on it, or else the one
   # branch that holds the tag.
   bump:
     name: point the hooks at the release
@@ -271,6 +271,10 @@ jobs:
 
       - name: Run the hook of botica at the new rev
         run: uvx prek run botica --all-files
+
+      # tests/test_engineering_rules_pins.py compares the `rev` the skills teach with prek.toml.
+      - name: Run the tests of the repository
+        run: uv sync --frozen && uv run pytest
 
       - name: Commit and push
         run: |
