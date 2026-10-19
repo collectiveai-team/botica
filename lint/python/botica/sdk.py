@@ -8,17 +8,19 @@ the project gives the rule. The SDK answers `initialize`, `lint/files`, `lint/pr
 `shutdown`, and runs the rules that each request names.
 """
 
+from __future__ import annotations
+
 import json
 import sys
 from collections.abc import Callable, Iterable
 from dataclasses import asdict, dataclass
-from typing import Any
+from typing import Any, Union
 
 PROTOCOL_VERSION = 1
 
 Finding = tuple[int, int, str]
 ProjectFinding = tuple[str, int, int, str]
-Check = Callable[..., Iterable[tuple]]
+Check = Callable[..., Iterable[Union[Finding, ProjectFinding]]]
 
 
 @dataclass(frozen=True)

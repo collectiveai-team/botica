@@ -30,6 +30,8 @@ extend-exclude = [
   "lint/rules/**/fixtures",
 ]
 force-exclude = true
+# `botica.sdk` ships in the wheel of `lint/pyproject.toml`, whose floor is Python 3.9.
+per-file-target-version = { "lint/python/**" = "py39" }
 
 [tool.ruff.lint]
 select = [
