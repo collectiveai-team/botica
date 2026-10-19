@@ -17,7 +17,7 @@ const SCRIPT: &str = r#"from botica.sdk import char_to_byte_offsets, rule, serve
 
 
 @rule("acme/no-leading-x", ["python"], severity="error")
-def no_leading_x(path, text):
+def no_leading_x(path, text, options):
     to_byte = char_to_byte_offsets(text)
     offset = 0
     for line in text.splitlines(keepends=True):
@@ -101,6 +101,67 @@ fn a_script_with_the_sdk_answers_the_protocol() {
             r#"{"jsonrpc": "2.0", "id": 1, "result": {"protocolVersion": 1, "rules": [{"id": "acme/no-leading-x", "languages": ["python"]}]}}"#,
             r#"{"jsonrpc": "2.0", "id": 2, "result": {"diagnostics": [{"path": "a.py", "rule": "acme/no-leading-x", "severity": "error", "start": 7, "end": 8, "message": "a line starts with x"}]}}"#,
             r#"{"jsonrpc": "2.0", "id": 3, "result": null}"#,
+        ]
+    );
+}
+
+/// Three rules: one that reports its option `limit`, one that reports every file, and one of
+/// project scope that reports the first path with the number of paths and the root.
+const OPTIONS_SCRIPT: &str = r#"from botica.sdk import rule, serve
+
+
+@rule("acme/limit", ["python"])
+def limit(path, text, options):
+    yield (0, 1, f"limit {options.get('limit', 'none')}")
+
+
+@rule("acme/other", ["python"])
+def other(path, text, options):
+    yield (0, 1, "other")
+
+
+@rule("acme/whole", ["python"], scope="project")
+def whole(root, paths, options):
+    yield (paths[0], 0, 1, f"{len(paths)} files in {root}, limit {options.get('limit')}")
+
+
+if __name__ == "__main__":
+    serve()
+"#;
+
+fn options_script(name: &str) -> PathBuf {
+    let dir = lay_out(name);
+    let script = dir.join("options.py");
+    write(&dir, "options.py", OPTIONS_SCRIPT);
+    script
+}
+
+#[test]
+fn lint_files_runs_the_rules_it_names_with_their_options() {
+    let script = options_script("options");
+    let files = r#"{"jsonrpc":"2.0","id":2,"method":"lint/files","params":{"files":[{"path":"a.py","text":"x\n"}],"rules":["acme/limit"],"options":{"acme/limit":{"limit":4}}}}"#;
+
+    let replies = talk(&script, &[files]);
+
+    assert_eq!(
+        replies,
+        [
+            r#"{"jsonrpc": "2.0", "id": 2, "result": {"diagnostics": [{"path": "a.py", "rule": "acme/limit", "severity": "warning", "start": 0, "end": 1, "message": "limit 4"}]}}"#
+        ]
+    );
+}
+
+#[test]
+fn a_rule_of_project_scope_answers_lint_project_with_paths_of_its_own() {
+    let script = options_script("project");
+    let project = r#"{"jsonrpc":"2.0","id":2,"method":"lint/project","params":{"root":"/repo","files":["a.py","b.py"],"rules":["acme/whole"],"options":{"acme/whole":{"limit":2}}}}"#;
+
+    let replies = talk(&script, &[project]);
+
+    assert_eq!(
+        replies,
+        [
+            r#"{"jsonrpc": "2.0", "id": 2, "result": {"diagnostics": [{"path": "a.py", "rule": "acme/whole", "severity": "warning", "start": 0, "end": 1, "message": "2 files in /repo, limit 2"}]}}"#
         ]
     );
 }

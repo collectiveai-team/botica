@@ -90,11 +90,17 @@ under the same id and fixtures. Extensions load only from catalogs the project d
 
 `botica lint` runs each active `extension` rule of a catalog of the project as a process of its own,
 started in the root of the project, and sends it only the files where the rule applies (its
-languages, `files`, `ignores` and the `overrides` of the configuration). A finding whose `rule` is
+languages, `files`, `ignores` and the `overrides` of the configuration). In its answer to
+`initialize` the process declares the rule it was started for, and may declare the other rules
+whose implementation runs the same command; a rule missing or one more fails the process. Each
+request names the rule in `rules` and carries the options that the configuration resolves for it
+in `options`, by id. A rule of file scope gets the files with their text in batches of
+`lint/files`; a rule of project scope gets one `lint/project` with the root of the project and the
+paths of the files, and reads them itself. A finding whose `rule` is
 not the id of its rule is left out with a warning on stderr; a finding keeps its severity unless
 the configuration names one. A process that fails is a failure of the run (exit 2) and leaves the
 findings of the other rules as they are. `ExtensionHost` gives a process 120 seconds to answer
-`initialize` and 60 seconds to answer `lint/files` and `shutdown`, and kills one that has not
+`initialize` and 60 seconds to answer `lint/files`, `lint/project` and `shutdown`, and kills one that has not
 answered by then; the failure names the method and the deadline. A thread reads the stdout of the
 process and another writes its stdin, so a process that does not read a large request is also
 killed at the deadline. `BOTICA_EXTENSION_TIMEOUT`, in seconds, replaces both deadlines. `# botica: ignore[<id>]` and `# noqa: <code>` silence a

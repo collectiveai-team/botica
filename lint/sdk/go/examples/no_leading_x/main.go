@@ -14,7 +14,7 @@ func main() {
 		ID:        "acme/no-leading-x",
 		Languages: []string{"python"},
 		Severity:  "error",
-		Check: func(path, text string) []botica.Finding {
+		Check: func(path, text string, options map[string]any) []botica.Finding {
 			var found []botica.Finding
 			offset := 0
 			for _, line := range strings.SplitAfter(text, "\n") {

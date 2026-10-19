@@ -238,7 +238,7 @@ fn each_implementation_of_a_rule_is_a_process_of_its_own() {
 fn a_process_that_does_not_answer_in_time_is_warned_about_and_does_not_hold_the_server() {
     let dir = with_a_rule("silent", "");
     let silent = r#"read -r line
-printf '%s\n' '{"jsonrpc":"2.0","id":1,"result":{"rules":[]}}'
+printf '%s\n' '{"jsonrpc":"2.0","id":1,"result":{"rules":[{"id":"acme/by-sh","languages":["python"]}]}}'
 exec sleep 600
 "#;
     write(&dir, &format!("{}/ext.sh", folder("by-sh")), silent);

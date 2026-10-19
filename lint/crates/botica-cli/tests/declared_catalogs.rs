@@ -204,7 +204,7 @@ fn the_script_of_an_extension_rule_is_read_from_the_folder_of_its_declared_catal
 const reply = (id, result) => console.log(JSON.stringify({ jsonrpc: "2.0", id, result }));
 for await (const line of createInterface({ input: process.stdin })) {
   const request = JSON.parse(line);
-  if (request.method === "initialize") reply(request.id, { protocolVersion: 1, rules: [] });
+  if (request.method === "initialize") reply(request.id, { protocolVersion: 1, rules: [{ id: "shared/no-eval", languages: ["python"] }] });
   else if (request.method === "lint/files") {
     const diagnostics = request.params.files.map((file) => ({
       path: file.path, rule: "shared/no-eval", severity: "error", start: 0, end: 1, message: "seen",

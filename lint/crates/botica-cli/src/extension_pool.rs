@@ -7,10 +7,11 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use botica_catalog::{Implementation, Rule, Runtime, Scope};
+use botica_catalog::{Implementation, Kind, Rule, Runtime, Scope};
 use botica_config::Resolution;
 use botica_core::suppress::Policy;
 use botica_core::{postprocess, Diagnostic, ExtensionRun};
+use botica_ext::Selection;
 use botica_lsp::{Extensions, Process};
 
 use crate::project::{self, extensions_at};
@@ -45,6 +46,39 @@ impl ExtensionPool {
     /// The extension implementations that read the file at `path`, each with its rule.
     pub fn at(&self, path: &str) -> Vec<(&Rule, &Implementation)> {
         extensions_at(&self.resolution, self.prefix.as_deref(), path)
+    }
+
+    /// The rule that the process of `rule` is asked for, with the options that the configuration
+    /// resolves for it.
+    pub fn selection(&self, rule: &Rule) -> Selection {
+        let options = self
+            .resolution
+            .entry(&rule.id)
+            .map(|entry| serde_json::to_value(&entry.options).unwrap_or_default())
+            .unwrap_or_else(|| serde_json::json!({}));
+        let mut by_rule = serde_json::Map::new();
+        by_rule.insert(rule.id.clone(), options);
+        Selection {
+            rules: vec![rule.id.clone()],
+            options: by_rule,
+        }
+    }
+
+    /// The rules of the catalogs whose implementation runs `argv`: the rules that its process may
+    /// declare.
+    pub fn sharing(&self, argv: &[String]) -> Vec<String> {
+        self.resolution
+            .entries()
+            .iter()
+            .filter(|entry| {
+                entry.rule.implementations.iter().any(|implementation| {
+                    implementation.kind == Kind::Extension
+                        && command(&entry.rule, implementation, &self.catalog_dirs)
+                            .is_ok_and(|other| other == argv)
+                })
+            })
+            .map(|entry| entry.rule.id.clone())
+            .collect()
     }
 
     /// What runs the implementation (see [`command`]).
@@ -146,8 +180,13 @@ impl Extensions for ExtensionPool {
             .get(position)
             .ok_or_else(|| format!("`{id}` has no implementation {position}"))?;
         let argv = self.command_of(rule, implementation)?;
-        let run = ExtensionRun::start_in(&argv, Some(&self.project_root))
-            .map_err(|error| format!("{error:#}"))?;
+        let run = ExtensionRun::start_for(
+            &argv,
+            Some(&self.project_root),
+            self.selection(rule),
+            &self.sharing(&argv),
+        )
+        .map_err(|error| format!("{error:#}"))?;
         Ok(Box::new(Live {
             pool: self,
             rule,

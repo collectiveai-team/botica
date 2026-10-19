@@ -554,7 +554,11 @@ catalog. A project replaces a built-in rule with `replaces` in its `rule.toml` a
 
 A rule of kind `extension` is a program that `botica lint` starts, one process for each active
 rule, in the root of the project. It is sent only the files where the rule applies and answers
-with findings over JSON-RPC (ADR 0003). Its implementation says what runs:
+with findings over JSON-RPC (ADR 0003). Each request names the rule and carries the options that
+`botica.toml` gives it. A rule of `scope = "project"` gets the root of the project and the paths of
+its files in one `lint/project`, and reads the files itself. When it starts, the program declares
+the rule it runs; a program that does not declare it, or declares a rule that no `rule.toml` runs
+with the same command, fails. Its implementation says what runs:
 
 ```toml
 [[implementations]]
@@ -578,12 +582,15 @@ pins the version of `botica` that the project runs (`<version>` below is the out
 from botica.sdk import rule, serve
 
 @rule("acme/no-blobs", ["python"], severity="error")
-def no_blobs(path, text):
+def no_blobs(path, text, options):
     yield (0, 1, "acme/no-blobs: a finding is a start and an end in bytes, and a message")
 
 if __name__ == "__main__":
     serve()
 ```
+
+`options` holds the options of the rule after the configuration. A rule registered with
+`scope="project"` gets `(root, paths, options)` and yields `(path, start, end, message)`.
 
 A script of the runtime `node` can write its rule with [`@botica/sdk`](sdk/node/README.md)
 (`rule`, `byteOffsets`, `serve`), which is not published to npm yet; `botica rules new --runtime
@@ -595,7 +602,8 @@ A finding with another `rule` than the id of its rule is left out, with a warnin
 process that fails, that does not answer a request in time, or that is still running 5 seconds
 after `shutdown`, is killed and stops the run with exit code 2; the findings of the other rules
 stay. The process has 120 seconds to answer `initialize`, because a script run with `uv` may
-download its dependencies first, and 60 seconds to answer `lint/files` and `shutdown`. The
+download its dependencies first, and 60 seconds to answer `lint/files`, `lint/project` and
+`shutdown`. The
 variable `BOTICA_EXTENSION_TIMEOUT`, a number of seconds, sets both. The built-in catalog takes no
 extension: an extension is a program of the project.
 

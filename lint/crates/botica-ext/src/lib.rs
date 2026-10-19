@@ -41,6 +41,13 @@ pub struct WireDiagnostic {
     pub message: String,
 }
 
+/// The rules that a request asks for, and the options of each one, by id.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct Selection {
+    pub rules: Vec<String>,
+    pub options: serde_json::Map<String, Value>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct RuleInfo {
     pub id: String,
@@ -165,13 +172,71 @@ impl ExtensionHost {
         Ok(host)
     }
 
-    pub fn lint_files(&mut self, files: &[FileIn<'_>]) -> Result<Vec<WireDiagnostic>> {
-        let result: LintResult = self.call(
-            "lint/files",
-            json!({ "files": files }),
-            self.deadlines.request,
-        )?;
+    /// Sends the files with their texts; with a selection, it names the rules and their options.
+    pub fn lint_files(
+        &mut self,
+        files: &[FileIn<'_>],
+        selection: Option<&Selection>,
+    ) -> Result<Vec<WireDiagnostic>> {
+        let mut params = json!({ "files": files });
+        if let Some(selection) = selection {
+            params["rules"] = json!(selection.rules);
+            params["options"] = Value::Object(selection.options.clone());
+        }
+        let result: LintResult = self.call("lint/files", params, self.deadlines.request)?;
         Ok(result.diagnostics)
+    }
+
+    /// Sends the root of the project and the paths of its files, for the rules of project scope:
+    /// the extension reads the files itself.
+    pub fn lint_project(
+        &mut self,
+        root: &str,
+        files: &[&str],
+        selection: &Selection,
+    ) -> Result<Vec<WireDiagnostic>> {
+        let params = json!({
+            "root": root,
+            "files": files,
+            "rules": selection.rules,
+            "options": selection.options,
+        });
+        let result: LintResult = self.call("lint/project", params, self.deadlines.request)?;
+        Ok(result.diagnostics)
+    }
+
+    /// Fails unless the extension declared, when it started, every rule of `required` and no rule
+    /// outside `allowed`: the rules that the catalogs run with the same program.
+    pub fn check_declared(&self, required: &[String], allowed: &[String]) -> Result<()> {
+        let declared: Vec<&str> = self.rules.iter().map(|rule| rule.id.as_str()).collect();
+        let missing: Vec<String> = required
+            .iter()
+            .filter(|id| !declared.contains(&id.as_str()))
+            .map(|id| format!("`{id}`"))
+            .collect();
+        let extra: Vec<String> = declared
+            .iter()
+            .filter(|id| !allowed.iter().chain(required).any(|known| known == *id))
+            .map(|id| format!("`{id}`"))
+            .collect();
+        let mut problems = Vec::new();
+        if !missing.is_empty() {
+            problems.push(format!("does not declare {}", missing.join(", ")));
+        }
+        if !extra.is_empty() {
+            problems.push(format!(
+                "declares {}, which its catalog does not run with it",
+                extra.join(", ")
+            ));
+        }
+        if problems.is_empty() {
+            Ok(())
+        } else {
+            bail!(
+                "the extension {} in its answer to `initialize`",
+                problems.join(" and ")
+            )
+        }
     }
 
     /// Asks the extension to end and waits `SHUTDOWN_GRACE` for it to do so; a process that is

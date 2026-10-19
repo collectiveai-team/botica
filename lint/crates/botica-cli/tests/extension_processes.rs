@@ -85,7 +85,7 @@ fn a_process_that_does_not_answer_lint_files_is_killed_and_is_a_failure_of_the_r
     add_rule(&dir, "other", "ACMESTRUC002", "", "acme/other");
     let silent = silent_after(
         r#"read -r line
-printf '%s\n' '{"jsonrpc":"2.0","id":1,"result":{"rules":[]}}'
+printf '%s\n' '{"jsonrpc":"2.0","id":1,"result":{"rules":[{"id":"acme/by-sh","languages":["python"]}]}}'
 read -r line"#,
     );
     write(&dir, &format!("{}/ext.sh", folder("by-sh")), &silent);

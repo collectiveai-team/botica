@@ -9,14 +9,20 @@ use super::{command, project_in, stdout, write};
 pub const README: &str =
     "## Directive\n\nd\n\n## Why\n\nw\n\n## Do\n\ndo\n\n## Don't\n\ndont\n\n## Suppression\n\ns\n";
 
-/// A shell script that speaks the protocol. It notes where it started in `starts.log`, and answers
-/// every `lint/files` with one finding of `rule` and `severity` for each file it was sent.
+/// A shell script that speaks the protocol and declares `rule`. It notes where it started in
+/// `starts.log`, and answers every `lint/files` with one finding of `rule` and `severity` for each
+/// file it was sent.
 pub fn script(rule: &str, severity: &str) -> String {
+    script_for(rule, rule, severity)
+}
+
+/// As [`script`], declaring `declares` and answering with findings of `rule`.
+pub fn script_for(declares: &str, rule: &str, severity: &str) -> String {
     format!(
         r#"echo "{rule} $(pwd)" >> starts.log
 while IFS= read -r line; do
   case "$line" in
-    *'"initialize"'*) printf '%s\n' '{{"jsonrpc":"2.0","id":1,"result":{{"rules":[]}}}}' ;;
+    *'"initialize"'*) printf '%s\n' '{{"jsonrpc":"2.0","id":1,"result":{{"rules":[{{"id":"{declares}","languages":["python"]}}]}}}}' ;;
     *'"lint/files"'*)
       items=""
       for path in $(printf '%s' "$line" | grep -o '"path":"[^"]*"' | sed 's/"path":"//; s/"$//'); do
@@ -77,7 +83,11 @@ pub fn add_rule_with(
         ),
     );
     write(dir, &format!("{root}/README.md"), README);
-    write(dir, &format!("{root}/ext.sh"), &script(reports, severity));
+    write(
+        dir,
+        &format!("{root}/ext.sh"),
+        &script_for(&format!("acme/{slug}"), reports, severity),
+    );
 }
 
 pub fn project(name: &str, config: &str) -> PathBuf {

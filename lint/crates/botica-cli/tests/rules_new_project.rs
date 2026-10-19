@@ -89,8 +89,8 @@ fn a_python_extension_gets_the_id_and_the_code_of_its_catalog_and_a_script_that_
         "{script}"
     );
     assert!(
-        script.contains("@rule(\"acme/no-blobs\", [\"python\"]"),
-        "{script}"
+        script.contains("@rule(\"acme/no-blobs\", [\"python\"])\ndef check(path, text, options):"),
+        "the check of the SDK gets the options of the rule:\n{script}"
     );
     assert!(dir
         .join(&folder)

@@ -38,7 +38,10 @@ fn a_process_that_does_not_answer_lint_files_is_gone_when_the_error_returns() {
         deadlines(1),
     );
 
-    let error = host.lint_files(&[]).expect_err("no answer").to_string();
+    let error = host
+        .lint_files(&[], None)
+        .expect_err("no answer")
+        .to_string();
 
     assert_eq!(
         error,
@@ -58,10 +61,13 @@ fn a_process_that_does_not_read_its_requests_is_killed_at_the_deadline() {
     let started = Instant::now();
 
     let error = host
-        .lint_files(&[FileIn {
-            path: "a.py",
-            text: &text,
-        }])
+        .lint_files(
+            &[FileIn {
+                path: "a.py",
+                text: &text,
+            }],
+            None,
+        )
         .expect_err("no answer")
         .to_string();
 
@@ -80,7 +86,7 @@ fn a_process_that_answers_in_time_is_not_touched() {
         deadlines(30),
     );
 
-    let found = host.lint_files(&[]).expect("answered");
+    let found = host.lint_files(&[], None).expect("answered");
 
     assert!(found.is_empty());
     assert!(is_running(&pid));

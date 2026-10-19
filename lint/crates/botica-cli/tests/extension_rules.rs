@@ -124,7 +124,7 @@ fn selecting_only_an_extension_rule_still_sends_it_the_files() {
 /// An extension that reports `notes.txt` only when it is sent the text of that file.
 const READS_NOTES: &str = r#"while IFS= read -r line; do
   case "$line" in
-    *'"initialize"'*) printf '%s\n' '{"jsonrpc":"2.0","id":1,"result":{"rules":[]}}' ;;
+    *'"initialize"'*) printf '%s\n' '{"jsonrpc":"2.0","id":1,"result":{"rules":[{"id":"acme/by-sh","languages":["python"]}]}}' ;;
     *'"lint/files"'*)
       case "$line" in
         *'"path":"notes.txt","text":"x\n"'*)

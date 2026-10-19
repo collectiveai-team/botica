@@ -3,7 +3,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use botica_catalog::{Implementation, Rule};
+use botica_catalog::{Implementation, Rule, Scope};
 use botica_core::report::{ErrorKind, RunError};
 use botica_core::walk::SourceFile;
 use botica_core::Diagnostic;
@@ -103,8 +103,22 @@ fn jobs<'a>(setup: &'a Setup, sources: &'a [SourceFile]) -> Vec<Job<'a>> {
 }
 
 fn execute<'a>(job: &Job<'a>, setup: &Setup, batch: usize) -> Done<'a> {
+    let how = if job.rule.scope == Some(Scope::Project) {
+        extension::Send::Project
+    } else {
+        extension::Send::Files { batch }
+    };
     let outcome = match setup.pool.command_of(job.rule, job.implementation) {
-        Ok(argv) => extension::run_files(&argv, setup.pool.project_root(), &job.files, batch),
+        Ok(argv) => extension::run_rule(
+            extension::Process {
+                argv: &argv,
+                dir: setup.pool.project_root(),
+                selection: setup.pool.selection(job.rule),
+                allowed: &setup.pool.sharing(&argv),
+            },
+            &job.files,
+            how,
+        ),
         Err(message) => extension::Outcome {
             found: Vec::new(),
             failure: Some(anyhow::anyhow!(message)),

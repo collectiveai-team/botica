@@ -61,8 +61,9 @@ fn python(id: &str, language: &str) -> String {
         "# /// script\n# requires-python = \">=3.10\"\n\
          # dependencies = [\"botica[sdk]=={}\"]\n# ///\n\
          from botica.sdk import rule, serve\n\n\n\
-         @rule(\"{id}\", [\"{language}\"])\ndef check(path, text):\n    \
-         # TODO: yield (start, end, message) for each finding; start and end are byte offsets\n    \
+         @rule(\"{id}\", [\"{language}\"])\ndef check(path, text, options):\n    \
+         # TODO: yield (start, end, message) for each finding; start and end are byte offsets,\n    \
+         # and options holds the options of the rule\n    \
          return []\n\n\n\
          if __name__ == \"__main__\":\n    serve()\n",
         env!("CARGO_PKG_VERSION")
@@ -94,4 +95,4 @@ fn node(id: &str, language: &str) -> String {
 
 const COMMAND: &str =
     "# TODO: speak the extension protocol of botica on stdin and stdout: newline-delimited\n\
-# JSON-RPC 2.0, with the methods `initialize`, `lint/files` and `shutdown`.\n";
+# JSON-RPC 2.0, with the methods `initialize`, `lint/files`, `lint/project` and `shutdown`.\n";

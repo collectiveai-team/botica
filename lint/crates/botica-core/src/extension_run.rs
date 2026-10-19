@@ -2,14 +2,16 @@
 
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::document::Document;
-use anyhow::Result;
-use botica_ext::{ExtensionHost, FileIn};
+use anyhow::{Context, Result};
+use botica_ext::{ExtensionHost, FileIn, Selection, WireDiagnostic};
 use std::collections::HashMap;
 use std::path::Path;
 
 pub struct ExtensionRun {
     host: ExtensionHost,
     languages: Vec<String>,
+    /// The rules of a catalog that the process runs, and their options; `None` for `--ext`.
+    selection: Option<Selection>,
 }
 
 /// Each language that a rule may name, with the extensions of its files.
@@ -48,7 +50,26 @@ impl ExtensionRun {
             .iter()
             .flat_map(|rule| rule.languages.iter().cloned())
             .collect();
-        Ok(Self { host, languages })
+        Ok(Self {
+            host,
+            languages,
+            selection: None,
+        })
+    }
+
+    /// Starts the extension of the rules of a catalog: it must declare the rules of `selection`
+    /// and no rule outside `allowed`, the rules that the catalogs run with the same command. Each
+    /// request names the rules of `selection` with their options.
+    pub fn start_for(
+        command: &[String],
+        dir: Option<&Path>,
+        selection: Selection,
+        allowed: &[String],
+    ) -> Result<Self> {
+        let mut run = Self::start_in(command, dir)?;
+        run.host.check_declared(&selection.rules, allowed)?;
+        run.selection = Some(selection);
+        Ok(run)
     }
 
     /// Sends the files in the languages that the extension says it reads.
@@ -79,30 +100,52 @@ impl ExtensionRun {
         let mut out = Vec::new();
         for batch in wanted.chunks(batch_size.max(1)) {
             let texts: HashMap<&str, &str> = batch.iter().map(|f| (f.path, f.text)).collect();
-            for wire in self.host.lint_files(batch)? {
-                let text = texts.get(wire.path.as_str()).copied().unwrap_or("");
-                let doc = Document::new(&wire.path, text);
-                let (line, column) = doc.position(wire.start);
-                let (end_line, end_column) = doc.position(wire.end);
-                out.push(Diagnostic {
-                    path: wire.path,
-                    rule: wire.rule,
-                    severity: Severity::parse(&wire.severity),
-                    start: wire.start,
-                    end: wire.end,
-                    line,
-                    column,
-                    end_line,
-                    end_column,
-                    file_level: false,
-                    message: wire.message,
-                });
-            }
+            let found = self.host.lint_files(batch, self.selection.as_ref())?;
+            out.extend(found.into_iter().map(|wire| diagnostic(wire, &texts)));
         }
         Ok(out)
     }
 
+    /// Sends `root` and the paths of `files`, as `(path, text)`, in one `lint/project`: the rules
+    /// of project scope read the project themselves. The texts give the lines of the findings.
+    pub fn lint_project(&mut self, root: &Path, files: &[(&str, &str)]) -> Result<Vec<Diagnostic>> {
+        let selection = self
+            .selection
+            .as_ref()
+            .context("`lint/project` asks for the rules of a catalog")?;
+        let paths: Vec<&str> = files.iter().map(|(path, _)| *path).collect();
+        let texts: HashMap<&str, &str> = files.iter().copied().collect();
+        let found = self
+            .host
+            .lint_project(&root.to_string_lossy(), &paths, selection)?;
+        Ok(found
+            .into_iter()
+            .map(|wire| diagnostic(wire, &texts))
+            .collect())
+    }
+
     pub fn finish(self) -> Result<()> {
         self.host.shutdown()
+    }
+}
+
+/// A finding of the extension, with its lines and columns in the text of its file.
+fn diagnostic(wire: WireDiagnostic, texts: &HashMap<&str, &str>) -> Diagnostic {
+    let text = texts.get(wire.path.as_str()).copied().unwrap_or("");
+    let doc = Document::new(&wire.path, text);
+    let (line, column) = doc.position(wire.start);
+    let (end_line, end_column) = doc.position(wire.end);
+    Diagnostic {
+        path: wire.path,
+        rule: wire.rule,
+        severity: Severity::parse(&wire.severity),
+        start: wire.start,
+        end: wire.end,
+        line,
+        column,
+        end_line,
+        end_column,
+        file_level: false,
+        message: wire.message,
     }
 }

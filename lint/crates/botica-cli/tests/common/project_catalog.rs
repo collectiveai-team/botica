@@ -15,7 +15,7 @@ fn script(flags: &str) -> String {
     format!(
         r#"while IFS= read -r line; do
   case "$line" in
-    *'"initialize"'*) printf '%s\n' '{{"jsonrpc":"2.0","id":1,"result":{{"rules":[]}}}}' ;;
+    *'"initialize"'*) printf '%s\n' '{{"jsonrpc":"2.0","id":1,"result":{{"rules":[{{"id":"acme/by-sh","languages":["python"]}}]}}}}' ;;
     *'"lint/files"'*)
       items=""
       for path in $(printf '%s' "$line" | grep -o '"path":"[^"]*"' | sed 's/"path":"//; s/"$//'); do

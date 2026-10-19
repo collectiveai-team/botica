@@ -37,12 +37,74 @@ rule(
   {{ severity: "error" }},
 );
 
-rule("acme/js-anything", ["javascript"], (path, text) => [{{ start: 0, end: 1, message: "js" }}]);
+{JS_ANYTHING}
+serve();
+"#,
+        sdk.display()
+    )
+}
+
+/// A second rule of the script, which no `rule.toml` of the catalog runs.
+const JS_ANYTHING: &str =
+    "rule(\"acme/js-anything\", [\"javascript\"], (path, text) => [{ start: 0, end: 1, message: \"js\" }]);\n";
+
+/// Three rules: one that reports its option `limit`, one that reports every file, and one of
+/// project scope that reports the first path with the number of paths and the root.
+fn options_script(sdk: &Path) -> String {
+    format!(
+        r#"import {{ rule, serve }} from "file://{}";
+
+rule("acme/limit", ["python"], (path, text, options) => [
+  {{ start: 0, end: 1, message: `limit ${{options.limit ?? "none"}}` }},
+]);
+rule("acme/other", ["python"], () => [{{ start: 0, end: 1, message: "other" }}]);
+rule(
+  "acme/whole",
+  ["python"],
+  (root, paths, options) => [
+    {{ path: paths[0], start: 0, end: 1, message: `${{paths.length}} files in ${{root}}, limit ${{options.limit}}` }},
+  ],
+  {{ scope: "project" }},
+);
 
 serve();
 "#,
         sdk.display()
     )
+}
+
+#[test]
+fn lint_files_runs_the_rules_it_names_with_their_options() {
+    if !common::node::installed() {
+        return;
+    }
+    let dir = lay_out("options");
+    write(&dir, "options.mjs", &options_script(&sdk_entry()));
+    let files = r#"{"jsonrpc":"2.0","id":2,"method":"lint/files","params":{"files":[{"path":"a.py","text":"x\n"}],"rules":["acme/limit"],"options":{"acme/limit":{"limit":4}}}}"#;
+
+    let replies = talk(&dir.join("options.mjs"), &[files, SHUTDOWN]);
+
+    assert_eq!(
+        replies[0],
+        r#"{"jsonrpc":"2.0","id":2,"result":{"diagnostics":[{"path":"a.py","rule":"acme/limit","severity":"warning","start":0,"end":1,"message":"limit 4"}]}}"#
+    );
+}
+
+#[test]
+fn a_rule_of_project_scope_answers_lint_project_with_paths_of_its_own() {
+    if !common::node::installed() {
+        return;
+    }
+    let dir = lay_out("project");
+    write(&dir, "options.mjs", &options_script(&sdk_entry()));
+    let project = r#"{"jsonrpc":"2.0","id":2,"method":"lint/project","params":{"root":"/repo","files":["a.py","b.py"],"rules":["acme/whole"],"options":{"acme/whole":{"limit":2}}}}"#;
+
+    let replies = talk(&dir.join("options.mjs"), &[project, SHUTDOWN]);
+
+    assert_eq!(
+        replies[0],
+        r#"{"jsonrpc":"2.0","id":2,"result":{"diagnostics":[{"path":"a.py","rule":"acme/whole","severity":"warning","start":0,"end":1,"message":"2 files in /repo, limit 2"}]}}"#
+    );
 }
 
 fn sdk_entry() -> PathBuf {
@@ -187,6 +249,9 @@ fn botica_lint_runs_a_rule_written_with_the_sdk() {
         return;
     }
     let dir = lay_out("lint");
+    let path = ".botica/rules/acme/structure/no-leading-x/no-leading-x.mjs";
+    let only_its_rule = script(&sdk_entry()).replace(JS_ANYTHING, "");
+    write(&dir, path, &only_its_rule);
     write(&dir, "app.py", "ok = 1\nx = 2\n");
 
     let output = Command::new(env!("CARGO_BIN_EXE_botica"))
