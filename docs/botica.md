@@ -759,7 +759,7 @@ would declare a server for the languages of the rules and return `botica server`
 # prek.toml: the mirror installs the wheel of the same version from PyPI
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
-rev = "v0.11.0"
+rev = "v0.12.0"
 
 [[repos.hooks]]
 id = "botica"
