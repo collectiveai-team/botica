@@ -136,7 +136,7 @@ fn a_rule_of_botica_itself_has_no_family_and_a_rule_without_a_standard_has_no_ce
          code: \"BT001\"\n\
          description: \"A path given on the command line cannot be read\"\n\
          status: \"stable\"\n\
-         added: \"0.1.0\"\n\
+         added: \"0.7.0\"\n\
          default-enabled: true\n\
          default-severity: \"error\"\n\
          languages: [\"*\"]\n\
@@ -147,7 +147,7 @@ fn a_rule_of_botica_itself_has_no_family_and_a_rule_without_a_standard_has_no_ce
          \n\
          # io-error (BT001)\n\
          \n\
-         Added in 0.1.0 · Stable · Enabled by default (error)\n\
+         Added in 0.7.0 · Stable · Enabled by default (error)\n\
          \n\
          Rule of botica itself · Languages: all\n\
          \n\
@@ -228,7 +228,7 @@ fn the_index_groups_the_rules_by_family_in_the_order_of_their_codes() {
                \n\
                | Code | Rule | Standard | Status | Added in | Default |\n\
                |---|---|---|---|---|---|\n\
-               | `BT001` | [`io-error`](botica/bt001-io-error.md)<br>A path given on the command line cannot be read |  | stable | 0.1.0 | on |\n";
+               | `BT001` | [`io-error`](botica/bt001-io-error.md)<br>A path given on the command line cannot be read |  | stable | 0.7.0 | on |\n";
     assert!(index.contains(own), "{index}");
 }
 

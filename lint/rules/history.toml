@@ -2,42 +2,42 @@
 # is cut, never by hand: a rule whose status has no event here yet is not released.
 
 [[event]]
-version = "0.1.0"
+version = "0.7.0"
 rule = "file-size-guard"
 status = "stable"
 
 [[event]]
-version = "0.1.0"
+version = "0.7.0"
 rule = "invalid-suppression"
 status = "stable"
 
 [[event]]
-version = "0.1.0"
+version = "0.7.0"
 rule = "io-error"
 status = "stable"
 
 [[event]]
-version = "0.1.0"
+version = "0.7.0"
 rule = "no-artifacts-in-package"
 status = "stable"
 
 [[event]]
-version = "0.1.0"
+version = "0.7.0"
 rule = "no-notebooks"
 status = "stable"
 
 [[event]]
-version = "0.1.0"
+version = "0.7.0"
 rule = "no-tests-in-package"
 status = "stable"
 
 [[event]]
-version = "0.1.0"
+version = "0.7.0"
 rule = "no-utils"
 status = "stable"
 
 [[event]]
-version = "0.1.0"
+version = "0.7.0"
 rule = "unused-suppression"
 status = "stable"
 

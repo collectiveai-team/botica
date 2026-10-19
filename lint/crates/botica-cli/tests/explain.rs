@@ -53,7 +53,7 @@ fn the_status_line_says_since_which_release_and_when_no_release_has_it_yet() {
     let released = text_of(&explain("released", None, &["no-utils"]));
     assert_eq!(
         line_with(&released, "status:"),
-        "status:    stable (since 0.1.0)"
+        "status:    stable (since 0.7.0)"
     );
 
     let dir = project_in("explain", "fresh", None);
