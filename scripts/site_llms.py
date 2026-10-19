@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import tomllib
+from dataclasses import dataclass, fields
 from pathlib import Path  # noqa: TC003 (cyclopts reads the annotations at runtime)
 
 import cyclopts
@@ -15,11 +16,27 @@ import cyclopts
 app = cyclopts.App(name="site-llms", help=__doc__)
 
 
-def _fields(page: Path) -> dict[str, str]:  # noqa: BTDM005 -- front matter
-    """Return the fields of the front matter of a page, with their quotes removed."""
+@dataclass(frozen=True)
+class FrontMatter:
+    """The fields of the front matter of a page that llms.txt shows; a missing one is empty."""
+
+    rule: str = ""
+    code: str = ""
+    description: str = ""
+    id: str = ""
+    title: str = ""
+    subtitle: str = ""
+
+
+def _front_matter(page: Path) -> FrontMatter:
+    """Return the front matter of a page, with the quotes of its values removed."""
     head, _, _ = page.read_text(encoding="utf-8").removeprefix("---\n").partition("\n---\n")
-    pairs = (line.partition(": ") for line in head.splitlines())
-    return {key: json.loads(raw) if raw.startswith('"') else raw for key, _, raw in pairs if raw}
+    known = {field.name for field in fields(FrontMatter)}
+    values = {}
+    for key, _, raw in (line.partition(": ") for line in head.splitlines()):
+        if raw and key in known:
+            values[key] = json.loads(raw) if raw.startswith('"') else raw
+    return FrontMatter(**values)
 
 
 def _address(site: str, docs: Path, page: Path) -> str:
@@ -27,17 +44,17 @@ def _address(site: str, docs: Path, page: Path) -> str:
 
 
 def _rules(site: str, docs: Path) -> str:
-    pages = sorted((docs / "rules").glob("*/*.md"), key=lambda page: _fields(page)["code"])
+    pages = sorted((docs / "rules").glob("*/*.md"), key=lambda page: _front_matter(page).code)
     items = []
     for page in pages:
-        fields = _fields(page)
-        name = f"{fields['rule']} ({fields['code']})"
-        items.append(f"- [{name}]({_address(site, docs, page)}): {fields['description']}\n")
+        front = _front_matter(page)
+        name = f"{front.rule} ({front.code})"
+        items.append(f"- [{name}]({_address(site, docs, page)}): {front.description}\n")
     return "\n## Rules\n\n" + "".join(items)
 
 
 def _number(page: Path) -> tuple[str, int]:
-    prefix, _, number = _fields(page)["id"].rpartition("-")
+    prefix, _, number = _front_matter(page).id.rpartition("-")
     return prefix, int(number)
 
 
@@ -45,8 +62,8 @@ def _standards(site: str, docs: Path) -> str:
     pages = [page for page in (docs / "standards").glob("*/*.md") if page.name != "index.md"]
     items = []
     for page in sorted(pages, key=_number):
-        fields = _fields(page)
-        items.append(f"- [{fields['id']}]({_address(site, docs, page)}): {fields['title']}\n")
+        front = _front_matter(page)
+        items.append(f"- [{front.id}]({_address(site, docs, page)}): {front.title}\n")
     return "\n## Standards\n\n" + "".join(items)
 
 
@@ -56,8 +73,8 @@ def _references(site: str, docs: Path) -> str:
         return ""
     items = []
     for page in pages:
-        fields = _fields(page)
-        items.append(f"- [{fields['subtitle']}]({_address(site, docs, page)}): {fields['title']}\n")
+        front = _front_matter(page)
+        items.append(f"- [{front.subtitle}]({_address(site, docs, page)}): {front.title}\n")
     return "\n## References\n\n" + "".join(items)
 
 

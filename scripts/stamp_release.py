@@ -31,20 +31,33 @@ class Change:
     status: str
 
 
+@dataclass(frozen=True)
+class Event:
+    """What one release did to the status of one rule: an `[[event]]` of the history."""
+
+    version: str
+    rule: str
+    status: str
+
+
+StatusTable = dict[str, str]  # noqa: BTDM002 -- a lookup table; botica 0.11.0 predates the Table exception
+
+
 def _version(text: str) -> tuple[int, ...]:
     return tuple(int(part) for part in text.split("."))
 
 
-def _events(root: Path) -> list[dict[str, str]]:
+def _events(root: Path) -> list[Event]:
     path = root / HISTORY
     if not path.is_file():
         return []
-    return tomllib.loads(path.read_text(encoding="utf-8")).get("event", [])
+    events = tomllib.loads(path.read_text(encoding="utf-8")).get("event", [])
+    return [Event(event["version"], event["rule"], event["status"]) for event in events]
 
 
-def _statuses(root: Path) -> dict[str, str]:  # noqa: BTDM005 -- a lookup by slug
+def _statuses(root: Path) -> StatusTable:
     """Return the status of each rule as its `rule.toml` says it, by slug."""
-    found = {}
+    found: StatusTable = {}
     for rule_toml in (root / CATALOG).glob("*/*/rule.toml"):
         data = tomllib.loads(rule_toml.read_text(encoding="utf-8"))
         found[data["id"]] = data["status"]
@@ -53,7 +66,7 @@ def _statuses(root: Path) -> dict[str, str]:  # noqa: BTDM005 -- a lookup by slu
 
 def unsealed(root: Path) -> list[Change]:
     """List the statuses that the history does not have as the last of their rule."""
-    recorded = {event["rule"]: event["status"] for event in _events(root)}
+    recorded = {event.rule: event.status for event in _events(root)}
     return [
         Change(rule, status)
         for rule, status in sorted(_statuses(root).items())
@@ -65,7 +78,7 @@ def _check_version(root: Path, version: str) -> None:
     if not VERSION.match(version):
         raise ValueError(f"version `{version}` must look like `0.10.0`")
     events = _events(root)
-    if events and _version(version) < _version(events[-1]["version"]):
+    if events and _version(version) < _version(events[-1].version):
         raise ValueError(f"version `{version}` is older than the last event of the history")
 
 

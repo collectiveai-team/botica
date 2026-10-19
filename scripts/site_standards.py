@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import os
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import cyclopts
@@ -42,19 +42,42 @@ def _value(raw: str) -> str | list[str]:
     return json.loads(raw) if raw.startswith(('"', "[")) else raw
 
 
-def _fields(lines: list[str]) -> dict[str, str | list[str]]:  # noqa: BTDM005 -- front matter
-    pairs = (line.partition(": ") for line in lines)
-    return {key: _value(value) for key, _, value in pairs if value}
+@dataclass(frozen=True)
+class FrontMatter:
+    """The fields of the front matter of a page that this script reads; a missing one is empty."""
+
+    id: str = ""
+    title: str = ""
+    rule: str = ""
+    code: str = ""
+    standard: str = ""
+    references: list[str] = field(default_factory=list)
 
 
-def _rules_by_standard(docs: Path) -> dict[str, list[RuleLink]]:  # noqa: BTDM005 -- a lookup
-    found: dict[str, list[RuleLink]] = defaultdict(list)
+RulesTable = dict[str, list[RuleLink]]  # noqa: BTDM002 -- a lookup table; botica 0.11.0 predates the Table exception
+PagesTable = dict[str, Path]  # noqa: BTDM002 -- a lookup table; botica 0.11.0 predates the Table exception
+
+
+def _front_matter(lines: list[str]) -> FrontMatter:
+    values = {key: _value(raw) for key, _, raw in (line.partition(": ") for line in lines) if raw}
+    references = values.get("references", [])
+    return FrontMatter(
+        id=str(values.get("id", "")),
+        title=str(values.get("title", "")),
+        rule=str(values.get("rule", "")),
+        code=str(values.get("code", "")),
+        standard=str(values.get("standard", "")),
+        references=[str(item) for item in references] if isinstance(references, list) else [],
+    )
+
+
+def _rules_by_standard(docs: Path) -> RulesTable:
+    found: RulesTable = defaultdict(list)
     for page in sorted((docs / "rules").glob("*/*.md")):
         lines, _ = _split(page.read_text(encoding="utf-8"))
-        fields = _fields(lines)
-        if "standard" in fields:
-            link = RuleLink(str(fields["rule"]), str(fields["code"]), page)
-            found[str(fields["standard"])].append(link)
+        front = _front_matter(lines)
+        if front.standard:
+            found[front.standard].append(RuleLink(front.rule, front.code, page))
     return {
         standard: sorted(links, key=lambda link: link.code) for standard, links in found.items()
     }
@@ -69,9 +92,9 @@ def _rule_list(page: Path, links: list[RuleLink]) -> str:
     return "\n## Rules\n\n" + "".join(items)
 
 
-def _decorated(page: Path, rules: dict[str, list[RuleLink]]) -> str:
+def _decorated(page: Path, rules: RulesTable) -> str:
     lines, body = _split(page.read_text(encoding="utf-8"))
-    standard = str(_fields(lines)["id"])
+    standard = _front_matter(lines).id
     lines = [*lines, f"subtitle: {standard}"]
     text = "---\n" + "\n".join(lines) + FRONT_MATTER_END + body
     if standard in rules:
@@ -79,12 +102,12 @@ def _decorated(page: Path, rules: dict[str, list[RuleLink]]) -> str:
     return text
 
 
-def _standard_pages(docs: Path) -> dict[str, Path]:  # noqa: BTDM005 -- a lookup by id
-    pages = {}
+def _standard_pages(docs: Path) -> PagesTable:
+    pages: PagesTable = {}
     for page in sorted((docs / "standards").glob("*/*.md")):
         if page.name != "index.md":
             lines, _ = _split(page.read_text(encoding="utf-8"))
-            pages[str(_fields(lines)["id"])] = page
+            pages[_front_matter(lines).id] = page
     return pages
 
 
@@ -105,21 +128,18 @@ def _cell(text: str) -> str:
     return text.replace("|", "\\|")
 
 
-def _standards_table(
-    index: Path, standards: dict[str, Path], rules: dict[str, list[RuleLink]]
-) -> str:
+def _standards_table(index: Path, standards: PagesTable, rules: RulesTable) -> str:
     rows = []
     for standard in sorted(standards, key=_number):
         page = standards[standard]
-        fields = _fields(_split(page.read_text(encoding="utf-8"))[0])
+        front = _front_matter(_split(page.read_text(encoding="utf-8"))[0])
         address = Path(os.path.relpath(page, index.parent)).as_posix()
         names = ", ".join(
             f"[`{link.slug}`]({Path(os.path.relpath(link.page, index.parent)).as_posix()})"
             for link in rules.get(standard, [])
         )
-        cited = fields.get("references", [])
-        topics = ", ".join(f"[{topic}](../references/{topic}.md)" for topic in cited)
-        title = _cell(str(fields["title"]))
+        topics = ", ".join(f"[{topic}](../references/{topic}.md)" for topic in front.references)
+        title = _cell(front.title)
         rows.append(f"| [{standard}]({address}) | {title} | {names} | {topics} |\n")
     header = "| Standard | Title | Rules | Topics |\n|---|---|---|---|\n"
     return "\n## All standards\n\n" + header + "".join(rows)

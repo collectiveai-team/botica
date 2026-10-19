@@ -80,16 +80,26 @@ def _value(raw: str) -> object:
     return json.loads(raw) if raw.startswith(('"', "[")) else raw
 
 
-def _fields(page: Path) -> dict[str, object]:  # noqa: BTDM005 -- front matter
+@dataclass(frozen=True)
+class FrontMatter:
+    """The fields of the front matter of a page that the citations read; a missing one is empty."""
+
+    rule: str = ""
+    code: str = ""
+    id: str = ""
+    references: list[str] = field(default_factory=list)
+
+
+def _front_matter(page: Path) -> FrontMatter:
     lines, _ = _split(page.read_text(encoding="utf-8"))
-    pairs = (line.partition(": ") for line in lines)
-    return {key: _value(raw) for key, _, raw in pairs if raw}
-
-
-def _cited(fields: dict[str, object]) -> list[str]:
-    """Return the ids of the topics that the front matter of a page cites."""
-    value = fields.get("references")
-    return [str(item) for item in value] if isinstance(value, list) else []
+    values = {key: _value(raw) for key, _, raw in (line.partition(": ") for line in lines) if raw}
+    references = values.get("references", [])
+    return FrontMatter(
+        rule=str(values.get("rule", "")),
+        code=str(values.get("code", "")),
+        id=str(values.get("id", "")),
+        references=[str(item) for item in references] if isinstance(references, list) else [],
+    )
 
 
 def _reference(raw: dict[str, str | None]) -> Reference:
@@ -129,27 +139,27 @@ def _citations(docs: Path) -> list[Citation]:
     """Return the rules and the standards that cite topics: rules by code, then standards."""
     found = []
     for page in sorted((docs / "rules").glob("*/*.md")):
-        fields = _fields(page)
-        if _cited(fields):
+        front = _front_matter(page)
+        if front.references:
             found.append(
                 Citation(
                     page=page,
-                    name=f"`{fields['rule']}` ({fields['code']})",
-                    topics=_cited(fields),
-                    link=f"[`{fields['rule']}`]({{page}}) ({fields['code']})",
-                    sort=(0, str(fields["code"]), 0),
+                    name=f"`{front.rule}` ({front.code})",
+                    topics=front.references,
+                    link=f"[`{front.rule}`]({{page}}) ({front.code})",
+                    sort=(0, front.code, 0),
                 )
             )
     for page in sorted((docs / "standards").glob("*/*.md")):
-        fields = _fields(page)
-        if _cited(fields):
-            prefix, _, number = str(fields["id"]).rpartition("-")
+        front = _front_matter(page)
+        if front.references:
+            prefix, _, number = front.id.rpartition("-")
             found.append(
                 Citation(
                     page=page,
-                    name=str(fields["id"]),
-                    topics=_cited(fields),
-                    link=f"[{fields['id']}]({{page}})",
+                    name=front.id,
+                    topics=front.references,
+                    link=f"[{front.id}]({{page}})",
                     sort=(1, prefix, int(number)),
                 )
             )

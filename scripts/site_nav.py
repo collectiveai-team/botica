@@ -25,6 +25,9 @@ app = cyclopts.App(name="site-nav", help=__doc__)
 NAMES = {"fastapi": "FastAPI", "botica": "Botica"}
 LEADING_NUMBER = re.compile(r"^(\d+)-")
 
+# An entry of the nav of zensical.toml: the title of a section and its pages.
+SectionTable = dict[str, object]  # noqa: BTDM002 -- a lookup table; botica 0.11.0 predates the Table exception
+
 
 def _title(folder: str) -> str:
     return NAMES.get(folder, folder.replace("-", " ").capitalize())
@@ -42,10 +45,9 @@ def _pages(folder: Path, docs: Path) -> list[str]:
     return [page.relative_to(docs).as_posix() for page in sorted(folder.glob("*.md"), key=_order)]
 
 
-def _section(  # noqa: BTDM005 -- the format of the nav of zensical.toml
-    title: str, entries: Sequence[object]
-) -> dict[str, object]:
-    return {title: entries}  # noqa: BTDM004 -- the format of the nav
+def _section(title: str, entries: Sequence[object]) -> SectionTable:
+    """Return an entry of the nav of zensical.toml: the title of a section and its pages."""
+    return {title: entries}  # noqa: BTDM004 -- a lookup table; botica 0.11.0 predates the Table exception
 
 
 def _folders(root: Path) -> list[Path]:
