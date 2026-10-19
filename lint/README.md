@@ -62,6 +62,10 @@ botica rules new structure/dep-hygiene --kind external --language python --tool 
 Exit code: `0` clean (a warning does not fail the run), `1` a finding of severity error, `2`
 the run itself failed (it wins over `1`). `--exit-zero` forgives only the findings.
 
+abide judges the judgment rules through the API of TypeSafe. With `TYPESAFE_AI_BASE_URL` it sends
+its calls to another server with the same API instead, such as the server of llama.cpp or a model
+run on its own. `botica rules test --judge abide` runs abide with the environment as it is.
+
 ## Rules
 
 | Code | Rule | Standard | Looks at |

@@ -140,12 +140,11 @@ no check at all.
    abide sends its calls to `<base URL>/systemone` instead of `https://api.typesafe.ai/v1`. The
    endpoint receives the model, the state (the diff, the file, the task) and one question per rule,
    and answers each question as a `choice` or a `score` with its probabilities, or as a boolean
-   probability (`noul`). A local model needs an adapter that serves that API; Ollama and the
-   OpenAI-compatible servers do not serve it.
+   probability (`noul`). The server of llama.cpp and other servers of a local model serve the
+   same API; which one a project uses is its own choice, and botica only passes the environment.
 
 ## Not decided
 
-- Who serves the API of TypeSafe for a local model.
 - The classification of each standard marked `[judgment]`, one pull request per standard.
 
 ## Considered options
