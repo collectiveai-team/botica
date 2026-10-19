@@ -7,7 +7,7 @@
         "start": { "offset": 20, "line": 2, "column": 5 },
         "end": { "offset": 44, "line": 2, "column": 29 }
       },
-      "message": "CES-46 (log-no-print): Libraries log, they don't print — use the house get_logger (`botica refs show structured-logging`) instead of print() in library code. CLI/__main__ entrypoints are exempt; this is for importable modules."
+      "message": "CES-46 (log-no-print): Libraries log, they don't print — use the house get_logger (`botica refs show structured-logging`) instead of print() in library code. `__main__.py`, `cli.py`, `cli/` and `if __name__ == \"__main__\":` blocks are exempt; another entry point goes in `extend-ignores`."
     },
     {
       "path": "service.ts",

@@ -1,7 +1,7 @@
 id: log-no-print
 language: python
 severity: warning
-message: "CES-46 (log-no-print): Libraries log, they don't print — use the house get_logger (`botica refs show structured-logging`) instead of print() in library code. CLI/__main__ entrypoints are exempt; this is for importable modules."
+message: "CES-46 (log-no-print): Libraries log, they don't print — use the house get_logger (`botica refs show structured-logging`) instead of print() in library code. `__main__.py`, `cli.py`, `cli/` and `if __name__ == \"__main__\":` blocks are exempt; another entry point goes in `extend-ignores`."
 ignores:
   - "**/__main__.py"
   - "**/cli.py"
