@@ -138,7 +138,7 @@ def _normative_texts() -> list[Path]:
 def test_no_normative_text_describes_the_stack_or_a_rule_with_ast_grep():
     """Botica is the tool; ast-grep is how some of its rules are written, and nobody has to know.
 
-    `compat-ast-grep-ignore` is documented once, in `lint/README.md`, not in every rule README.
+    That an `ast-grep-ignore` comment suppresses nothing is said once, in `lint/README.md`.
     """
     found = {
         str(path.relative_to(ROOT)): sorted({m.lower() for m in AST_GREP.findall(text)})
@@ -149,11 +149,11 @@ def test_no_normative_text_describes_the_stack_or_a_rule_with_ast_grep():
     assert not found, f"texts that name ast-grep: {found}"
 
 
-def test_compat_ast_grep_ignore_is_documented_once_in_the_readme_of_botica():
+def test_the_readme_of_botica_says_an_ast_grep_ignore_comment_suppresses_nothing():
     text = (ROOT / "lint" / "README.md").read_text(encoding="utf-8")
 
-    assert "# ast-grep-ignore:" in text
-    assert "compat-ast-grep-ignore = true" in text
+    assert "`# ast-grep-ignore: <rule>` comment is a plain comment" in text
+    assert "compat-ast-grep-ignore" not in text
 
 
 def test_a_readme_holds_the_prose_of_a_rule_and_not_what_its_rule_toml_says():
