@@ -53,5 +53,5 @@ from app.impl.service import price
 
 ## Suppression
 
-`# botica: ignore[import-layers]` on the import statement, or `per-file-ignores` for the file in
-the configuration of botica.
+The rule is of project scope, and only the configuration of botica silences it: `per-file-ignores`
+for the file, or `ignore = ["import-layers"]`. A comment that names it is `invalid-suppression`.

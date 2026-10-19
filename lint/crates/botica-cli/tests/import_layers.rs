@@ -79,6 +79,31 @@ fn layers_that_are_not_a_list_of_strings_stop_the_run() {
 }
 
 #[test]
+fn a_comment_that_names_the_rule_keeps_the_finding_and_is_an_invalid_suppression() {
+    let dir = project("comment", LAYERS);
+    write(
+        &dir,
+        "src/app/core/models.py",
+        "import app.api.routes  # botica: ignore[import-layers]\n",
+    );
+
+    let text = stdout(&botica(&dir, &[]));
+
+    assert!(
+        text.contains("src/app/core/models.py:1:1: error [import-layers]"),
+        "{text}"
+    );
+    assert!(
+        text.contains(
+            "src/app/core/models.py:1:41: warning [invalid-suppression] `import-layers` is a rule \
+             of the project and only the configuration silences it"
+        ),
+        "{text}"
+    );
+    assert!(!text.contains("unused-suppression"), "{text}");
+}
+
+#[test]
 fn per_file_ignores_leave_out_the_findings_of_a_file() {
     let dir = project(
         "per-file",

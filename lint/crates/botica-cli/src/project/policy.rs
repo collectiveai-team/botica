@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use botica_catalog::Scope;
 use botica_config::Resolution;
 use botica_core::report::RuleDoc;
 use botica_core::suppress::{Policy, INVALID, UNUSED};
@@ -22,6 +23,8 @@ pub fn suppression_policy(resolution: &Arc<Resolution>) -> Policy {
             policy.with_judgment_rule(&entry.rule.id, &spellings)
         } else if entry.rule.has_extension() {
             policy.with_extension_rule(&entry.rule.id, &spellings, entry.active)
+        } else if entry.rule.scope == Some(Scope::Project) {
+            policy.with_project_rule(&entry.rule.id, &spellings)
         } else {
             policy.with_rule(&entry.rule.id, &spellings)
         };

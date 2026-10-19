@@ -9,7 +9,10 @@ use crate::diagnostic::{Diagnostic, Severity};
 use crate::document::Document;
 use aho_corasick::AhoCorasick;
 use directive::{Channels, Directive, Malformed, Scope};
-use message::{judgment_on_a_line, judgment_without_reason, malformed_message, unused_message};
+use message::{
+    judgment_on_a_line, judgment_without_reason, malformed_message, project_rule_in_a_comment,
+    unused_message,
+};
 use scan::{allows_noqa, scan, Syntax};
 use std::collections::{HashMap, HashSet};
 use std::ops::Range;
@@ -28,6 +31,9 @@ pub struct Policy {
     astgrep: HashSet<String>,
     /// Judgment rules: suppressed by file only, with a reason, and never unused.
     judgment: HashSet<String>,
+    /// Rules of project scope: the configuration silences them, and a comment that names one is
+    /// invalid.
+    project: HashSet<String>,
     /// Rules that an extension runs after the walk, each with whether it is active. The walk
     /// reports a comment that names an inactive one; [`Policy::report_extensions`] reports the
     /// others once the extensions have run.
@@ -55,6 +61,7 @@ impl Policy {
             spellings: HashMap::new(),
             astgrep: HashSet::new(),
             judgment: HashSet::new(),
+            project: HashSet::new(),
             extension: HashMap::new(),
             external: None,
             code_prefixes: vec!["BT".to_owned()],
@@ -79,6 +86,13 @@ impl Policy {
     /// A judgment rule a suppression may name: a judge evaluates it, and botica never runs it.
     pub fn with_judgment_rule(mut self, slug: &str, spellings: &[&str]) -> Self {
         self.judgment.insert(slug.to_owned());
+        self.with_rule(slug, spellings)
+    }
+
+    /// A rule of project scope a suppression may name: its findings are about the project, and the
+    /// configuration silences them.
+    pub fn with_project_rule(mut self, slug: &str, spellings: &[&str]) -> Self {
+        self.project.insert(slug.to_owned());
         self.with_rule(slug, spellings)
     }
 
@@ -312,7 +326,11 @@ impl Policy {
 
     /// Whether a token that silenced nothing is reported in this pass, and how.
     fn unused_kind(&self, slug: &str, pass: &Pass<'_>) -> Option<Unused> {
-        if slug == UNUSED || slug == INVALID || self.judgment.contains(slug) {
+        if slug == UNUSED
+            || slug == INVALID
+            || self.judgment.contains(slug)
+            || self.project.contains(slug)
+        {
             return None;
         }
         let extension = self.extension.get(slug).copied();
@@ -400,7 +418,7 @@ impl Policy {
                 about.push(self.about(doc, INVALID, severity, span, malformed_message(reason)));
             }
             for directive in &directives {
-                for (token, message) in self.judgment_problems(directive) {
+                for (token, message) in self.kind_problems(directive) {
                     about.push(self.about(doc, INVALID, severity, &token.span, message));
                 }
             }
@@ -439,13 +457,17 @@ impl Policy {
         *found = kept;
     }
 
-    /// What is wrong with how a directive suppresses the judgment rules it names.
-    fn judgment_problems<'a>(&self, directive: &'a Found) -> Vec<(&'a Token, String)> {
+    /// What is wrong with how a directive suppresses the judgment rules and the rules of project
+    /// scope it names.
+    fn kind_problems<'a>(&self, directive: &'a Found) -> Vec<(&'a Token, String)> {
         directive
             .tokens
             .iter()
             .filter_map(|token| {
                 let slug = token.slug.as_deref()?;
+                if self.project.contains(slug) {
+                    return Some((token, project_rule_in_a_comment(&token.name)));
+                }
                 if !self.judgment.contains(slug) {
                     return None;
                 }
