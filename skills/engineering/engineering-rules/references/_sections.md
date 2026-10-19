@@ -80,8 +80,6 @@ through prek, line 100, latest Python.
 **Description:** Production observability. What botica measures is documented only in its
 catalog.
 
-- `log-observability` — Logfire instrumentation in prod services
-
 ## 8. FastAPI (api)
 
 **Scope:** specific — `applies-to: fastapi`.
