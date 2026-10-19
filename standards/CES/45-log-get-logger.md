@@ -1,6 +1,7 @@
 ---
 id: CES-45
 title: Get loggers from the house get_logger
+references: ["structured-logging"]
 ---
 
 ## Directive

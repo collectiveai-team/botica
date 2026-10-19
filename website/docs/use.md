@@ -57,7 +57,7 @@ working directory to the root of the git repository. Defining both is an error, 
     ```python
     x = compute()  # botica: ignore[some-rule]
     # botica: ignore-file[file-size-guard]    <- anywhere in the file
-    y = 1  # noqa: BTSTRUC002 -- reason
+    print(x)  # noqa: BTLOG002 -- reason
     ```
 
 === "TypeScript"
@@ -69,6 +69,10 @@ working directory to the root of the git repository. Defining both is an error, 
 A finding about a whole file (its size, its name, its layout) has no line: use `ignore-file`, the
 `ignores` of the rule in the configuration, or `extend-exclude`.
 
+A rule of project scope (`external-config`, `import-layers`, `settings-env-schema`) is silenced in
+the configuration, with the path in `extend-ignores` of `[rules.<slug>]` or the rule in `ignore`. A
+judgment rule is silenced for a whole file, with a reason after `--`.
+
 ## Run it on every commit
 
 === "TOML"
@@ -77,7 +81,7 @@ A finding about a whole file (its size, its name, its layout) has no line: use `
     # prek.toml
     [[repos]]
     repo = "https://github.com/collectiveai-team/botica-pre-commit"
-    rev = "v0.9.0"
+    rev = "v0.11.0"
 
     [[repos.hooks]]
     id = "botica"

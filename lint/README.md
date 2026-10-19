@@ -10,7 +10,8 @@ CES are catalogued in [`docs/engineering-standards.md`](../docs/engineering-stan
 
 - **From a wheel**, published on PyPI since 0.7.0 (see
   [`docs/botica-release.md`](../docs/botica-release.md)): `uv tool install botica` or
-  `uvx botica lint`. The wheel holds only the binary, so it needs no Python at run time.
+  `uvx botica lint`. The wheel holds the binary and the module `botica.sdk`; the binary runs
+  without Python.
 - **From source**: `cargo build --release -p botica-cli` in this directory; the binary is
   `target/release/botica`.
 
@@ -499,7 +500,7 @@ max = 900
 
 Keys: `select`, `extend-select`, `ignore`, `preview`, `languages`, `extend-exclude`,
 `extend-include`, `code-dirs`, `rules` (settings per rule), `overrides`, `external`, `replace`,
-`rule-dirs`, `catalogs`. Any of them can be given for one run with
+`rule-dirs`, `catalogs`, `extensions`, `references`, `recipes`. Any of them can be given for one run with
 `--config 'key = value'`.
 
 `code-dirs` says where the code of the project lives (`python`, `js`, `rust`, `go`, `jvm`), for
@@ -659,13 +660,18 @@ not load stops the command with exit code 2 and names the file and the problem.
 ```python
 x = compute()  # botica: ignore[some-rule]
 # botica: ignore-file[file-size-guard]    <- anywhere in the file
-y = 1  # noqa: BTSTRUC002 -- reason
+print(x)  # noqa: BTLOG002 -- reason
 ```
 
 A finding about a whole file (size, name, layout) has no line: use `ignore-file`, the rule's
 `ignores`/`extend-ignores`, or `extend-exclude`. With ruff, put `lint.external = ["BT"]` in its
 configuration so it does not report `RUF102` for `BT` codes (the section `# MARK: Ruff` of
 `base-python` has it).
+
+A rule of project scope (`external-config`, `import-layers`, `settings-env-schema`) is silenced in
+the configuration, with the path in `extend-ignores` of `[rules.<slug>]` or the rule in `ignore`; a
+comment that names it is `invalid-suppression`. A judgment rule is silenced for a whole file, with a
+reason: `# botica: ignore-file[<slug>] -- <reason>`.
 
 A `# ast-grep-ignore: <rule>` comment is a plain comment to botica: replace it with
 `# botica: ignore[<rule>]`.

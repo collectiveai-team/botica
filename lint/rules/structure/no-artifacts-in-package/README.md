@@ -21,8 +21,8 @@ names only at files that are not code.
 ## Exceptions
 
 Java and Kotlin resources live in `src/main/resources`, outside `src/main/java`, so they are never
-flagged. Files under `tests`, `fixtures`, `testdata`, `examples`, `docs`, `benches`, `snapshots`
-and `*_tests` are left alone.
+flagged. Files under `tests`, `test`, `__tests__`, `fixtures`, `testdata`, `examples`, `docs`,
+`benches`, `snapshots` or a `*_tests` / `*-tests` directory are left alone.
 
 ## Do
 

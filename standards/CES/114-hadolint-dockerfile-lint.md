@@ -17,8 +17,7 @@ Dockerfile itself: it is deterministic, it runs as a prek hook, and it needs no 
 ## Scope
 
 The hook is scoped with `files = "^Dockerfile"`. It runs only when a Dockerfile exists at the root
-of the repo and does nothing in a repo without one, which is the placement-scoping of `repo-shape`
-(CES-32).
+of the repo and does nothing in a repo without one.
 
 ## License
 

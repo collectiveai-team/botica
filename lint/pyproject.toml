@@ -2,7 +2,7 @@
 requires = ["maturin>=1.7,<2"]
 build-backend = "maturin"
 
-# Binary-only wheels of `botica lint`, built from the Rust workspace in this directory. The
+# Wheels of `botica` with the binary and the module `botica.sdk`, built from the Rust workspace in this directory. The
 # pyproject.toml at the root of the repo holds the maintainer scripts. The version comes from
 # `[workspace.package]` in Cargo.toml.
 [project]

@@ -96,7 +96,8 @@ _Avoid_: rule id (the id is the slug)
 **Suppression channel**:
 A comment syntax that silences a rule on the line of its finding: `# botica: ignore[<id>]` in any
 language, or `# noqa: <code>` in Python. A finding about a whole file takes only
-`# botica: ignore-file[<id>]`.
+`# botica: ignore-file[<id>]`, and so does a judgment rule, with a reason after `--`. A rule of
+project scope takes no comment: the configuration silences it.
 _Avoid_: ignore, disable
 
 **Code dirs**:

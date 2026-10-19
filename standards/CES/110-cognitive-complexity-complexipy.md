@@ -7,7 +7,7 @@ title: Cognitive complexity
 
 The
 [Cognitive Complexity](https://www.sonarsource.com/resources/cognitive-complexity/) score of a
-function stays under 15, checked by
+function is at most 15, checked by
 [`complexipy --max-complexity-allowed 15`](https://github.com/rohaquinlop/complexipy).
 
 ## Why

@@ -12,7 +12,7 @@ code or the reverse (`DEP004`).
 
 ## Why
 
-`pip-audit` and `osv-scanner` check the resolved dependency set for CVEs. Neither checks whether the
+`osv-scanner` checks the resolved dependency set for CVEs. It does not check whether the
 declared set matches what is imported. An agent that tries an approach mid-session and reverts
 often leaves dependencies declared and unused, or imports something that came in transitively and
 was never declared. Ruff gives no signal about this.

@@ -12,7 +12,7 @@ as the workflow `dependency-review.yml`.
 
 ## Why
 
-`pip-audit` and `osv-scanner` scan the resolved dependency set for known CVEs. Neither shows what
+`osv-scanner` scans the resolved dependency set for known CVEs. It does not show what
 changed in a pull request against the base branch, so a reviewer finds a new dependency by reading
 the diff of `uv.lock` line by line. `dependency-review-action` shows it in the pull request. It
 addresses dependency creep: an agent that adds a library for one HTTP call where the standard

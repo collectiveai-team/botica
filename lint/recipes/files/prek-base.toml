@@ -106,8 +106,7 @@ priority = 2
 # MARK: botica
 # The rules of the house standards that look at one file, run by `botica lint`: CES-71
 # file-size-guard (400 warn / 700 error, any language), CES-63 no-utils (Python only), the layout
-# rules that replaced the old `repo-shape` hook (CES-32 no-notebooks and no-artifacts-in-package,
-# plus no-tests-in-package, Python only), and the syntax rules (CES-79, CES-45, CES-46, CES-4,
+# rules (CES-32 no-notebooks and no-artifacts-in-package, plus no-tests-in-package, Python only), and the syntax rules (CES-79, CES-45, CES-46, CES-4,
 # CES-76, CES-67, CES-18; Python only). Each rule looks at the
 # languages it declares, so the hook is inert where none applies. Findings carry their own CES
 # code. The selection is explicit: a rule that botica adds later does not reach this repository

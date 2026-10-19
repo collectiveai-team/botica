@@ -1,6 +1,7 @@
 ---
 id: CES-46
 title: Libraries log, they don't print
+references: ["structured-logging"]
 ---
 
 ## Directive

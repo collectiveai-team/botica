@@ -12,7 +12,7 @@ rev = "v0.11.0"
 
 [[repos.hooks]]
 id = "botica"
-args = ["--select", "<the rules of prek-generic.toml>"]
+args = ["--select", "<the rules of the prek-base.toml of the base recipe>"]
 ```
 
 Hooks: `botica` (the rules that look at one file; gets the file names) and `botica-project` (the

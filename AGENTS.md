@@ -30,7 +30,8 @@ it; the binary embeds `lint/rules/`, `lint/references/` and `lint/recipes/`, and
   and apart from the rules; `scripts/build_site.sh` copies it into the site (ADR 0004).
 - `skills/` — actual installed skills (`ask-user`, `journalist`, `handoff`,
   `test-smell-review`, `engineering-rules`, `engineering-pr-review`, `pr`,
-  `engineering-refactor`). Their paths are fixed: the `skills-lock.json` of each repository that
+  `engineering-refactor`; `botica-rule-author` is for the authors of rules, and `base` leaves it
+  out). Their paths are fixed: the `skills-lock.json` of each repository that
   installed them records `skills/<group>/<name>/SKILL.md`, and `npx skills` fetches that path to
   restore them. Each
   carries Claude-style `SKILL.md` frontmatter **and** an `agents/openai.yaml`;
@@ -39,7 +40,7 @@ it; the binary embeds `lint/rules/`, `lint/references/` and `lint/recipes/`, and
   skills, which Codex otherwise filters out entirely).
 - `scripts/` — maintainer-only checks, not shipped; the root `pyproject.toml` holds their
   dependencies and has no package. `check_skill_drift.py` guards
-  the curated upstream catalog; the `skills-drift` workflow runs it. `check_skills.sh`
+  the upstream catalog of skills that `base` pins; the `skills-drift` workflow runs it. `check_skills.sh`
   runs the skill validator over `skills/`; the `skill-validator` hook of prek runs it.
   `check_rule_change.py` flags a change that adds a botica rule and touches more than that rule
   needs; the `rule-contract` job of `ci.yml` runs it. `build_site.sh` builds the standards site.
@@ -118,8 +119,9 @@ or referencing a rule in this repo, follow this convention:
 
 This is the **dogfooded subset** for this repo — Python maintainer scripts with Cyclopts (no
 API, DB, or web layer) next to the `lint/` Rust workspace, which these Python-oriented standards do not cover.
-`[prek]` rules are enforced by `prek`; `[judgment]` rules are agent/reviewer judgment;
-`[reference]` points at canonical code that `botica refs show` prints.
+`[prek]` rules are enforced by `prek`; `[script]` rules by a command (`npx skills`); `[ci]` rules
+by a GitHub Actions workflow; `[dependency]` rules by a dev-dependency; `[judgment]` rules are
+agent/reviewer judgment; `[reference]` points at canonical code that `botica refs show` prints.
 
 The rules that `botica lint` measures are not listed here and have no detail file: the catalog
 of botica is their only documentation. `uvx botica rules` lists them, `uvx botica explain <slug>`
@@ -169,7 +171,7 @@ describes one, and the hook reports each finding with its slug and its message.
 ### Excluded here (don't apply to a CLI with no API, database or web layer)
 
 - **CES-17 · api-boundary-layout** — no inbound HTTP/`api` package.
-- **CES-114 · hadolint-dockerfile-lint** — no root `Dockerfile` / `docker` CI component in this
+- **CES-114 · hadolint-dockerfile-lint** — no root `Dockerfile` / `ci-docker` recipe in this
   repo.
 
 ## Reading linter output

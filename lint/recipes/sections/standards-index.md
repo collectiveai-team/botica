@@ -6,8 +6,8 @@
 > one.
 
 Each rule is a **CES — Collective Engineering Standard** (`CES-<number>` is the citable code;
-the kebab-case slug is the machine id used by tooling and `# botica: ignore[<slug>]`
-suppressions). `[prek]` rules are enforced automatically by `prek`; `[ci]` rules
+the kebab-case slug names the file of the standard). `[prek]` rules are enforced automatically by
+`prek`; `[script]` rules are kept by a command of botica or of a tool (`npx skills`); `[ci]` rules
 are enforced by a GitHub Actions workflow (no local hook); `[dependency]` rules ship as a
 dev-dependency that activates automatically, no separate check; `[judgment]` rules are
 reviewer/agent judgment; `[reference]` points at canonical code that `botica refs show` prints. Full convention:

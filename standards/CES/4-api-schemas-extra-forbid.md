@@ -8,7 +8,7 @@ references: ["api-schemas"]
 
 Every request and response model of a public API sets `model_config = ConfigDict(extra="forbid")`.
 Which models are public is answered by where they live: the schema modules of the API boundary
-(`api/schemas/requests/` and `api/schemas/responses/`, see CES-17). Internal and domain models are
+(`api/<version>/schemas/requests/` and `api/<version>/schemas/responses/`, see CES-17). Internal and domain models are
 out of scope.
 
 ```python

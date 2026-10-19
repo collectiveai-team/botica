@@ -1,7 +1,7 @@
 id = "cognitive-complexity"
 code = "BTSTRUC006"
 standard = "CES-110"
-summary = "A Python function has a cognitive complexity under 15"
+summary = "A Python function has a cognitive complexity of at most 15"
 status = "preview"
 tags = ["complexity"]
 default-enabled = false
