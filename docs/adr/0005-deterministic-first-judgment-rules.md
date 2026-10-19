@@ -145,8 +145,6 @@ no check at all.
 
 ## Not decided
 
-- The formats `skill` and `continue` of `botica rules export`. The order is `agents-md`, `abide`,
-  `skill` and `continue`.
 - Who serves the API of TypeSafe for a local model.
 - The classification of each standard marked `[judgment]`, one pull request per standard.
 

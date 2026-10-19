@@ -32,14 +32,12 @@ flowchart LR
   core --> ext[[Extension processes<br/>Python · Node · command]]
   catalog[(Rule catalog<br/>rules/&lt;family&gt;/&lt;slug&gt;)] --> core
   catalog --> export[botica rules export]
-  export --> site[Standards site · ADR 0002]:::planned
+  export --> site[Standards site · ADR 0002]
   export --> abide[Judge: abide]
-  export --> continue[Judge: Continue checks]:::planned
-  classDef planned stroke-dasharray: 4 4
 ```
 
 **Workspace layout** (`lint/`). Dependencies point one way, and front-ends never depend on each
-other. Dashed boxes are decided here and not built yet (see "Not built yet"):
+other:
 
 ```mermaid
 flowchart TD
@@ -53,7 +51,6 @@ flowchart TD
   core --> astgrep[botica-astgrep]
   core --> ext[botica-ext<br/>extension host]
   sdk[SDK · python · node · go · rust] -. protocol .-> ext
-  classDef planned stroke-dasharray: 4 4
 ```
 
 The core lints text it is given (`lint_source(path, text, …)`) and does no I/O unless its `fs`
@@ -195,7 +192,7 @@ It was removed on 2026-10-18, when the recipes of ADR 0006 replaced it.
 - **Tree-sitter directly instead of ast-grep.** More control, but more code to own. ast-grep
   reuses the existing YAML rules, covers about 20 languages, and has bindings the SDKs can share.
 - **Model-based ("LLM") rules inside lint.** Rejected: they break determinism and the exit-code
-  contract. Judgment stays with external judges (Continue checks, abide), fed by
+  contract. Judgment stays with an external judge (abide), fed by
   `botica rules export`. A model may help *author* a deterministic rule (the `botica-rule-author`
   skill), but never runs at lint time.
 - **Flake8-style implicit plugin discovery.** Rejected: results would depend on what happens to
@@ -237,7 +234,7 @@ What this ADR decides and the code does not have. Delete a line when it ships.
   those of the extension rules when the editor asks for them. Missing: code actions, incremental
   sync, UTF-16 columns and a client for VS Code. No extension has run in a real editor: the tests
   speak the protocol.
-- The runtime `wasm`. The Python SDK, `botica.sdk` with the extra `botica[sdk]`, is built. So are
+- The runtime `wasm`, after the first release. The Python SDK, `botica.sdk` with the extra `botica[sdk]`, is built. So are
   the TypeScript one in `lint/sdk/node`, the Rust one, `botica-ext-sdk` in `lint/sdk/rust`, and the
   Go one in `lint/sdk/go`; none of the three is published (npm, crates.io, a tag of the module) and
   none parses with ast-grep yet. Until the runtime `wasm` exists, a rule in Rust or Go runs as a
@@ -246,13 +243,3 @@ What this ADR decides and the code does not have. Delete a line when it ships.
   the `rule-dirs` folders (`.botica/rules/` by default) and those that `[catalogs]` declares by
   `path` load and their `extension` rules run. A catalog name is the folder name or the key, is
   unique, and is not the name of a built-in family.
-- `botica rules export` with the formats `continue` and `schema` (ADR 0005 leaves `continue`
-  and `skill` undecided). The formats `markdown`, `json`, `agents-md` and `abide` exist, and so do
-  `botica rules test --judge abide`, `botica rules conform` and `botica rules new` with
-  `--kind ast-grep`, `judgment` or `external`, and with `--kind extension --runtime <runtime>`
-  for a catalog of a project (`--catalog .botica/rules/<name>`); the built-in catalog takes no
-  extension.
-- `botica refs pin` and `botica refs update` (ADR 0007). `botica refs list`, `show` and `check` read the
-  topics of the binary and of `references/`, and the files of external references with `git`.
-- Recipes (`recipes/<name>.toml`, `botica recipe install` and `botica recipe check`, ADR 0006). The standards site that reads the Markdown export is built (`website/`) but not
-  published, and it has no discussion thread and no "edit this page" yet.
