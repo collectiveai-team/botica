@@ -15,7 +15,7 @@ import cyclopts
 app = cyclopts.App(name="site-llms", help=__doc__)
 
 
-def _fields(page: Path) -> dict[str, str]:
+def _fields(page: Path) -> dict[str, str]:  # noqa: BTDM005 -- front matter
     """Return the fields of the front matter of a page, with their quotes removed."""
     head, _, _ = page.read_text(encoding="utf-8").removeprefix("---\n").partition("\n---\n")
     pairs = (line.partition(": ") for line in head.splitlines())

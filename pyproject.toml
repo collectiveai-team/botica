@@ -34,6 +34,8 @@ force-exclude = true
 per-file-target-version = { "lint/python/**" = "py39" }
 
 [tool.ruff.lint]
+# The codes of botica in `# noqa` comments.
+external = ["BT"]
 select = [
   "E",
   "F",
@@ -112,6 +114,21 @@ ban-relative-imports = "all"
 "scripts/**" = ["INP001"]
 # botica lint's Python extension SDK and benchmark scripts run as files, not as a package.
 "lint/**" = ["INP001"]
+
+[tool.botica]
+# The fixtures of the rules are wrong on purpose, and the skills are vendored payload (ruff leaves
+# them out for the same reason).
+extend-exclude = ["lint/rules/**/fixtures/", "lint/proposals/**/fixtures/", "skills/"]
+
+# The maintainer scripts and the benchmarks are command-line programs run as files: their output
+# is what they print.
+[tool.botica.rules.log-no-print]
+extend-ignores = ["scripts/**", "lint/bench/**"]
+
+# The benchmarks run with a bare `python` and the standard library only, so they parse their
+# arguments with `sys.argv`.
+[tool.botica.rules.cli-typed-framework]
+extend-ignores = ["lint/bench/**"]
 
 [tool.pyrefly]
 search-path = [".", "tests"]  # the tests import the support module of the site tests

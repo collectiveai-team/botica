@@ -42,8 +42,10 @@ def _pages(folder: Path, docs: Path) -> list[str]:
     return [page.relative_to(docs).as_posix() for page in sorted(folder.glob("*.md"), key=_order)]
 
 
-def _section(title: str, entries: Sequence[object]) -> dict[str, object]:
-    return {title: entries}
+def _section(  # noqa: BTDM005 -- the format of the nav of zensical.toml
+    title: str, entries: Sequence[object]
+) -> dict[str, object]:
+    return {title: entries}  # noqa: BTDM004 -- the format of the nav
 
 
 def _folders(root: Path) -> list[Path]:

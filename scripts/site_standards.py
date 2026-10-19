@@ -42,12 +42,12 @@ def _value(raw: str) -> str | list[str]:
     return json.loads(raw) if raw.startswith(('"', "[")) else raw
 
 
-def _fields(lines: list[str]) -> dict[str, str | list[str]]:
+def _fields(lines: list[str]) -> dict[str, str | list[str]]:  # noqa: BTDM005 -- front matter
     pairs = (line.partition(": ") for line in lines)
     return {key: _value(value) for key, _, value in pairs if value}
 
 
-def _rules_by_standard(docs: Path) -> dict[str, list[RuleLink]]:
+def _rules_by_standard(docs: Path) -> dict[str, list[RuleLink]]:  # noqa: BTDM005 -- a lookup
     found: dict[str, list[RuleLink]] = defaultdict(list)
     for page in sorted((docs / "rules").glob("*/*.md")):
         lines, _ = _split(page.read_text(encoding="utf-8"))
@@ -79,7 +79,7 @@ def _decorated(page: Path, rules: dict[str, list[RuleLink]]) -> str:
     return text
 
 
-def _standard_pages(docs: Path) -> dict[str, Path]:
+def _standard_pages(docs: Path) -> dict[str, Path]:  # noqa: BTDM005 -- a lookup by id
     pages = {}
     for page in sorted((docs / "standards").glob("*/*.md")):
         if page.name != "index.md":

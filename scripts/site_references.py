@@ -80,7 +80,7 @@ def _value(raw: str) -> object:
     return json.loads(raw) if raw.startswith(('"', "[")) else raw
 
 
-def _fields(page: Path) -> dict[str, object]:
+def _fields(page: Path) -> dict[str, object]:  # noqa: BTDM005 -- front matter
     lines, _ = _split(page.read_text(encoding="utf-8"))
     pairs = (line.partition(": ") for line in lines)
     return {key: _value(raw) for key, _, raw in pairs if raw}

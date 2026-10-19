@@ -42,7 +42,7 @@ def _events(root: Path) -> list[dict[str, str]]:
     return tomllib.loads(path.read_text(encoding="utf-8")).get("event", [])
 
 
-def _statuses(root: Path) -> dict[str, str]:
+def _statuses(root: Path) -> dict[str, str]:  # noqa: BTDM005 -- a lookup by slug
     """Return the status of each rule as its `rule.toml` says it, by slug."""
     found = {}
     for rule_toml in (root / CATALOG).glob("*/*/rule.toml"):
