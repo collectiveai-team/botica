@@ -132,7 +132,7 @@ scaffolder writes the configuration of a repository from its own components, apa
    `[[sections]]` template under `sections/`, and a recipe loads only when the template of each of
    its steps exists. Recipes of the same folder share templates. A standard that cites a template
    as canonical code cites it with a reference (ADR 0007).
-4. **Recipes are built into the binary and read from `recipes/`.** `lint/recipes/` is compiled into
+4. **Recipes are built into the binary and read from `recipes/`.** `catalog/recipes/` is compiled into
    the binary with its templates: `base` has the three rules that look at any file, the skills,
    `.gitignore`, `prek.toml` and the standards index that `scaffolding` installed, and `base-python`
    extends it with the rules about Python code that `scaffolding` selected, a `pyproject.toml` template,
@@ -290,7 +290,7 @@ scaffolder writes the configuration of a repository from its own components, apa
 - The site shows the tool and its documentation on the page of an external rule.
 - `botica recipe install` and `botica recipe check` replaced `scaffolding install` and
   `scaffolding check`, and `scaffolding` was removed on 2026-10-18.
-- The catalog carries `lint/recipes/` and its templates, loads `recipes/` of the project, and the
+- The catalog carries `catalog/recipes/` and its templates, loads `recipes/` of the project, and the
   configuration has the table `[recipes]` with `replace`.
 - A recipe installs skills (`npx skills add`), so `botica recipe install` needs `npx` on the
   `PATH` for a recipe with a `[[skills]]` step.

@@ -55,7 +55,7 @@ Scattering policy across sibling messages is context-poisoning: one rule ends up
 superseding another's decision. The grouped rationale, the relationships between a standard's
 slugs, and the escape-hatch mechanism live **once**, in the file of the standard
 (`standards/<set>/<number>-<slug>.md`; for a rule that `botica lint` measures, the README of its
-folder in `lint/rules`) — the single source of truth. If a message needs more than "what +
+folder in `catalog/rules`) — the single source of truth. If a message needs more than "what +
 fix + code", that belongs in the file of the standard, not the message.
 
 ## Where the pieces live
@@ -67,7 +67,7 @@ fix + code", that belongs in the file of the standard, not the message.
 - **On-demand detail:** `standards/<set>/<number>-<slug>.md` — full rationale, examples,
   migration. A rule that `botica lint` measures has its own documentation, the README of its
   catalog folder, and its `standard` field names the standard it implements.
-- **Canonical code:** the topics of `references/` (`lint/references/` for botica's own), read with
+- **Canonical code:** the topics of `references/` (`catalog/references/` for botica's own), read with
   `botica refs show <topic, rule or standard>`. A topic points at the code at a commit.
 
 (Rationale for index-in-AGENTS.md over packaged skills: passive always-on context outperforms
@@ -77,5 +77,5 @@ on-demand retrieval for horizontal standards — see PRD #78.)
 
 - Roll-out plan: **PRD #78** (`meta/standards-integration`).
 - The text of each standard: `standards/CES/`.
-- The rules that `botica lint` measures: the catalog (`lint/rules`) lists them, each with the
+- The rules that `botica lint` measures: the catalog (`catalog/rules`) lists them, each with the
   standard it implements, and documents them.

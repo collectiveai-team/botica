@@ -26,22 +26,22 @@ if TYPE_CHECKING:
 
 app = cyclopts.App(name="check-rule-change", help=__doc__)
 
-BUILTIN_CATALOG = "lint/rules"
+BUILTIN_CATALOG = "catalog/rules"
 # The Rust a native rule lives in: its own code and the table that registers it.
 NATIVE_FILES = (
-    "lint/crates/botica-core/src/native.rs",
-    "lint/crates/botica-core/src/layout.rs",
-    "lint/crates/botica-core/src/registry.rs",
+    "crates/botica-core/src/native.rs",
+    "crates/botica-core/src/layout.rs",
+    "crates/botica-core/src/registry.rs",
 )
-NATIVE_TESTS = "lint/crates/botica-core/tests/"
+NATIVE_TESTS = "crates/botica-core/tests/"
 STANDARDS = "standards/"
 STANDARD_FILE = re.compile(r"^standards/(?P<set>[^/]+)/(?P<number>\d+)-[^/]+\.md$")
 # What lists the built-in catalog: pinned on purpose, so that a rule the runner stops running is
 # noticed. A new rule is added to each.
 INDEX_FILES = (
-    "lint/crates/botica-cli/tests/conformance.rs",
-    "lint/crates/botica-config/tests/resolve_shipped_catalog.rs",
-    "lint/README.md",
+    "crates/botica-cli/tests/conformance.rs",
+    "crates/botica-config/tests/resolve_shipped_catalog.rs",
+    "docs/botica.md",
 )
 
 

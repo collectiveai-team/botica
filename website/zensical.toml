@@ -13,7 +13,7 @@ extra_javascript = ["javascripts/filter.js"]
 edit_uri = "edit/feat/botica-lint/website/docs/"
 
 [project.extra.edit]
-catalog_uri = "edit/feat/botica-lint/lint/rules/"
+catalog_uri = "edit/feat/botica-lint/catalog/rules/"
 
 # The `status` of a rule page is the status of the rule; the sidebar shows what each one means.
 [project.extra.status]

@@ -5,19 +5,19 @@
 The root holds the standards project: the text of the standards, the skills, the site, the docs
 and the maintainer scripts. `lint/` holds the `botica` package: what its build reads or ships, its
 SDKs and its benchmarks. A directory goes under `lint/` when building or testing the package reads
-it; the binary embeds `lint/rules/`, `lint/references/` and `lint/recipes/`, and never reads
+it; the binary embeds `catalog/rules/`, `catalog/references/` and `catalog/recipes/`, and never reads
 `standards/`.
 
 - `lint/` — the `botica` Rust workspace (`botica lint`, `rules`, `explain`, `refs`, `recipe`,
   `server`, `ext`), published to PyPI as `botica` (wheels with the binary and the Python module
   `botica.sdk`) and used by prek through the `botica-pre-commit` mirror. It has its own README
-  (`lint/README.md`), release runbook (`docs/botica-release.md`) and design
+  (`docs/botica.md`), release runbook (`docs/botica-release.md`) and design
   (`docs/adr/0003-botica-lint-architecture.md`). Pyrefly and deptry skip it; ruff checks its
   Python. `ci.yml` runs its fmt, clippy and tests, and `botica-release.yml` builds and publishes
   it.
-- `lint/sdk/` — the SDKs of the extension protocol, one folder per language: `python` (the
+- `sdk/` — the SDKs of the extension protocol, one folder per language: `python` (the
   `python-source` of the wheel), `go`, `node` and `rust`.
-- `lint/recipes/` — the recipes of `botica recipe install` and `botica recipe check`, with their
+- `catalog/recipes/` — the recipes of `botica recipe install` and `botica recipe check`, with their
   templates (ADR 0006). `install` writes a file that is missing and leaves an existing one as it
   is (`pending`). The one step that deletes text is `unignore`, which removes a literal line of
   `UNIGNORE_WHITELIST` (`skills-lock.json`) from `.gitignore` and reports it as `edited`. Keep the
@@ -76,7 +76,7 @@ that warning; it is a decision about the ruleset.
 
 `tessl review` is not used: it asks for an interactive login.
 
-The upstream skill catalog is the `[[skills]]` step of `lint/recipes/base.toml` whose source
+The upstream skill catalog is the `[[skills]]` step of `catalog/recipes/base.toml` whose source
 pins `mattpocock/skills#vX.Y.Z`. Bump the tag there to take a new upstream release, after
 `uv run python scripts/check_skill_drift.py --check-upstream` reports no missing skill.
 
@@ -107,7 +107,7 @@ or referencing a rule in this repo, follow this convention:
   Grouped rationale + the escape-hatch mechanism live once, in the file of the standard —
   scattering policy across sibling messages is context-poisoning.
 - Canonical map + per-standard detail live in the `## Engineering Standards` index and
-  `standards/<set>/<number>-<slug>.md`; canonical code lives in the topics of `lint/references/` (`botica refs show <topic>`).
+  `standards/<set>/<number>-<slug>.md`; canonical code lives in the topics of `catalog/references/` (`botica refs show <topic>`).
 
 ## Engineering Standards
 

@@ -1,7 +1,7 @@
 """The catalog of botica is the only documentation of the rules that botica measures.
 
 A rule that `botica lint` checks deterministically is described once, in the README of its
-folder under `lint/rules`. Nothing else may describe it again: not the index of standards, not a
+folder under `catalog/rules`. Nothing else may describe it again: not the index of standards, not a
 detail file, not the skill. The CES a rule cites (`standard` in its `rule.toml`) is how the copies
 are found, since a detail file or an index entry is named after a CES, not always after a slug.
 """
@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-CATALOG = ROOT / "lint" / "rules"
+CATALOG = ROOT / "catalog" / "rules"
 SKILL_RULES = ROOT / "skills" / "engineering" / "engineering-rules" / "references"
 
 # Rules of the skill that say what a catalog rule measures, under a name that is not its slug.
@@ -73,7 +73,7 @@ def test_the_catalog_is_found():
 
 @pytest.mark.parametrize(
     "index",
-    [ROOT / "lint" / "recipes" / "sections" / "standards-index.md", ROOT / "AGENTS.md"],
+    [ROOT / "catalog" / "recipes" / "sections" / "standards-index.md", ROOT / "AGENTS.md"],
     ids=["template", "repo"],
 )
 def test_no_index_lists_a_standard_the_catalog_measures(index: Path):
@@ -84,7 +84,7 @@ def test_no_index_lists_a_standard_the_catalog_measures(index: Path):
 
 @pytest.mark.parametrize(
     "index",
-    [ROOT / "lint" / "recipes" / "sections" / "standards-index.md", ROOT / "AGENTS.md"],
+    [ROOT / "catalog" / "recipes" / "sections" / "standards-index.md", ROOT / "AGENTS.md"],
     ids=["template", "repo"],
 )
 def test_the_index_sends_the_reader_to_the_catalog_without_naming_a_rule(index: Path):
@@ -119,7 +119,7 @@ AST_GREP = re.compile(r"ast-grep|sgconfig", re.I)
 
 def _normative_texts() -> list[Path]:
     """List what is installed in a target repo or read as the house standard, and the READMEs."""
-    templates = ROOT / "lint" / "recipes"
+    templates = ROOT / "catalog" / "recipes"
     github = ROOT / ".github"
     paths = [
         *templates.rglob("*.md"),
@@ -138,7 +138,7 @@ def _normative_texts() -> list[Path]:
 def test_no_normative_text_describes_the_stack_or_a_rule_with_ast_grep():
     """Botica is the tool; ast-grep is how some of its rules are written, and nobody has to know.
 
-    That an `ast-grep-ignore` comment suppresses nothing is said once, in `lint/README.md`.
+    That an `ast-grep-ignore` comment suppresses nothing is said once, in `docs/botica.md`.
     """
     found = {
         str(path.relative_to(ROOT)): sorted({m.lower() for m in AST_GREP.findall(text)})
@@ -150,7 +150,7 @@ def test_no_normative_text_describes_the_stack_or_a_rule_with_ast_grep():
 
 
 def test_the_readme_of_botica_says_an_ast_grep_ignore_comment_suppresses_nothing():
-    text = (ROOT / "lint" / "README.md").read_text(encoding="utf-8")
+    text = (ROOT / "docs" / "botica.md").read_text(encoding="utf-8")
 
     assert "`# ast-grep-ignore: <rule>` comment is a plain comment" in text
     assert "compat-ast-grep-ignore" not in text

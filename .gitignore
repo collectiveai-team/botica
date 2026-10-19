@@ -32,7 +32,7 @@ __pycache__/
 !website/docs/assets/*.svg
 
 # rust (botica lint)
-lint/target/
+target/
 
 # standards site: the rule pages are exported from the catalog and the standards are copied from
 # standards/, the site is built from them

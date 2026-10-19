@@ -21,7 +21,7 @@ csd = importlib.util.module_from_spec(_SPEC)
 sys.modules["check_skill_drift"] = csd
 _SPEC.loader.exec_module(csd)
 
-BASE = Path(__file__).resolve().parents[1] / "lint" / "recipes" / "base.toml"
+BASE = Path(__file__).resolve().parents[1] / "catalog" / "recipes" / "base.toml"
 
 
 def _recipe(tmp_path: Path, text: str) -> Path:

@@ -2,7 +2,7 @@
 
 `npx skills add` skips unknown skill names without failing, so an upstream rename
 lands as a silently missing skill in every repository that installs the recipe `base`.
-This checks the `[[skills]]` step of `lint/recipes/base.toml` whose source pins a tag
+This checks the `[[skills]]` step of `catalog/recipes/base.toml` whose source pins a tag
 against that tag (always) and against the newest upstream tag (with --check-upstream,
 for the scheduled run).
 
@@ -21,7 +21,7 @@ from pathlib import Path
 
 import cyclopts
 
-BASE_RECIPE = Path(__file__).resolve().parents[1] / "lint" / "recipes" / "base.toml"
+BASE_RECIPE = Path(__file__).resolve().parents[1] / "catalog" / "recipes" / "base.toml"
 SEMVER_TAG = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")
 FRONTMATTER_NAME = re.compile(r"^name:\s*(\S+)\s*$", re.MULTILINE)
 
@@ -138,7 +138,7 @@ def check(*, check_upstream: bool = False) -> None:
             lines += _describe(catalog, report, show_added=True)
             if upstream_drifted:
                 lines.append(
-                    "\nBumping the tag in `lint/recipes/base.toml` as-is would silently drop "
+                    "\nBumping the tag in `catalog/recipes/base.toml` as-is would silently drop "
                     "the skills listed above. Rename them in its `names` first."
                 )
 

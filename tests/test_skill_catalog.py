@@ -10,7 +10,7 @@ import tomllib
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-BASE = REPO_ROOT / "lint" / "recipes" / "base.toml"
+BASE = REPO_ROOT / "catalog" / "recipes" / "base.toml"
 LOCAL_SOURCE = "collectiveai-team/botica"
 UPSTREAM_REPO = "mattpocock/skills"
 

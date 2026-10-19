@@ -1,7 +1,7 @@
 name: Botica release
 
 # Tag-driven: `git tag vX.Y.Z && git push origin vX.Y.Z`, with X.Y.Z equal to the version in
-# lint/Cargo.toml ([workspace.package]) and Cargo.lock in sync. v0.1.0 to v0.6.0 are releases of
+# Cargo.toml ([workspace.package]) and Cargo.lock in sync. v0.1.0 to v0.6.0 are releases of
 # the removed scaffolding package: botica starts at 0.7.0. The file name is the one the PyPI trusted publisher is registered with.
 # Gated on the CI suite and on the repository's own Tests suite. Builds wheels with the binary and `botica.sdk`
 # (maturin, bindings = "bin") per platform, attaches them with a .sha256 each to a GitHub Release,
@@ -47,9 +47,9 @@ jobs:
       - name: Compare the tag with the workspace version
         run: |
           expected="${TAG#v}"
-          found="$(sed -n '/^\[workspace\.package\]/,/^\[/{s/^version = "\(.*\)"$/\1/p}' lint/Cargo.toml)"
+          found="$(sed -n '/^\[workspace\.package\]/,/^\[/{s/^version = "\(.*\)"$/\1/p}' Cargo.toml)"
           if [ "$found" != "$expected" ]; then
-            echo "tag $TAG names $expected but lint/Cargo.toml has ${found:-no version}" >&2
+            echo "tag $TAG names $expected but Cargo.toml has ${found:-no version}" >&2
             exit 1
           fi
 
@@ -108,12 +108,11 @@ jobs:
           command: build
           target: ${{ matrix.target }}
           manylinux: ${{ matrix.manylinux }}
-          working-directory: lint
           args: --release --locked --out dist
 
       - name: Attach the wheel and its checksum to the release
         shell: bash
-        working-directory: lint/dist
+        working-directory: dist
         # On Linux maturin builds in a container as root, so dist/ is not writable here: the
         # checksums go to a directory of their own.
         run: |

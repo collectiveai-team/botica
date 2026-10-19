@@ -9,7 +9,7 @@ install them, the agent config and the agent skills into a repository.
 
 **Recipe**:
 A named package of steps, with no condition, that `botica recipe install` applies and
-`botica recipe check` compares with a repository. Built-in recipes live in `lint/recipes/`; a
+`botica recipe check` compares with a repository. Built-in recipes live in `catalog/recipes/`; a
 project adds its own in `recipes/`. A variant (an agent, a public or a private repository) is a
 recipe chosen by name. See `docs/adr/0006-external-rules-and-recipes.md`.
 _Avoid_: profile, component, preset
@@ -79,7 +79,7 @@ _Avoid_: botica lint (for the package)
 
 **Rule**:
 What botica evaluates, selects, ignores and suppresses. Identified by its slug, and by a **code**.
-Lives in `lint/rules/<family>/<slug>/`, belongs to one **family** and can have one implementation
+Lives in `catalog/rules/<family>/<slug>/`, belongs to one **family** and can have one implementation
 per language.
 _Avoid_: CES, check, standard
 

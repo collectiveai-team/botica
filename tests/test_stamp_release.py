@@ -1,4 +1,4 @@
-"""A release seals the status of every rule in `lint/rules/history.toml`.
+"""A release seals the status of every rule in `catalog/rules/history.toml`.
 
 Nobody writes a version by hand: the author of a change sets the `status` of a rule, and the release
 records, under its own version, every status that the history does not have yet. Asserted through
@@ -24,7 +24,7 @@ sr = importlib.util.module_from_spec(_SPEC)
 sys.modules["stamp_release"] = sr
 _SPEC.loader.exec_module(sr)
 
-RULES = "lint/rules"
+RULES = "catalog/rules"
 
 
 def add_rule(root: Path, family: str, slug: str, status: str) -> None:

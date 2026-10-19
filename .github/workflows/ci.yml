@@ -1,6 +1,6 @@
 name: CI
 
-# Check the Rust workspace in lint/ that builds the `botica` binary, with all of its subcommands:
+# Check the Rust workspace that builds the `botica` binary, with all of its subcommands:
 # format, clippy and tests. Add the checks of new subcommands here, not in a workflow of their own.
 # Two switches turn tests that skip themselves into failures, so a runner that cannot
 # exercise them does not pass silently:
@@ -13,7 +13,13 @@ on:
     branches: [main]
   pull_request:
     paths:
-      - "lint/**"
+      - "crates/**"
+      - "catalog/**"
+      - "schema/**"
+      - "sdk/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "pyproject.toml"
       - "standards/**"
       - "scripts/check_rule_change.py"
       - ".github/workflows/ci.yml"
@@ -37,9 +43,6 @@ jobs:
   test:
     name: fmt, clippy & test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: lint
     steps:
       - uses: actions/checkout@v7
         with:
@@ -69,14 +72,13 @@ jobs:
       - name: Test
         run: cargo test --workspace --locked --no-fail-fast
 
-      # The built-in topics of lint/references/ point at lines of files of this repository at a
+      # The built-in topics of catalog/references/ point at lines of files of this repository at a
       # commit: --all fetches them with git over the network.
       - name: Check the references
-        working-directory: .
-        run: cargo run --quiet --locked --manifest-path lint/Cargo.toml -p botica-cli -- refs check --all
+        run: cargo run --quiet --locked -p botica-cli -- refs check --all
 
       - name: Test the Go SDK
-        working-directory: lint/sdk/go
+        working-directory: sdk/go
         run: go vet ./... && go test ./...
 
   # A change that adds a rule may only touch what that kind of rule needs (scripts/check_rule_change.py).

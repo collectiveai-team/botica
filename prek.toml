@@ -141,7 +141,7 @@ priority = 2
 # engineering skills are scanned, which is what caught the two skills shipping byte-identical
 # bundles, and the compiled `AGENTS.md` of `engineering-rules` (a copy of its own
 # `references/*.md`) is no longer kept.
-# `lint/recipes/files/**` and `lint/recipes/sections/**` are the templates of the recipes of botica:
+# `catalog/recipes/files/**` and `catalog/recipes/sections/**` are the templates of the recipes of botica:
 # this repo's own config files are installed from them, and the variants of a workflow for each
 # ecosystem repeat its header, so they are left out too.
 # The gate reads the **duplicated-lines** percentage, not the token one. jscpd prints both
@@ -159,7 +159,7 @@ priority = 2
 [[repos.hooks]]
 id = "jscpd"
 name = "jscpd (copy-paste duplication)"
-entry = "npx --yes jscpd@5 . --threshold 2.5 --ignore \"lint/recipes/files/**,lint/recipes/sections/**,standards/**\""
+entry = "npx --yes jscpd@5 . --threshold 2.5 --ignore \"catalog/recipes/files/**,catalog/recipes/sections/**,standards/**\""
 language = "system"
 pass_filenames = false
 priority = 2
@@ -195,7 +195,7 @@ hooks = [{ id = "agnix", args = [], priority = 2 }]
 # no-notebooks and no-artifacts-in-package, no-tests-in-package), run by `botica lint` through the
 # mirror, which installs botica from PyPI at the release `rev` names. Own `[[repos]]` table, so it
 # goes after the `local` hooks above, not among them. The selection is the one of
-# `lint/recipes/files/prek-base.toml`: the structure rules and the syntax rules.
+# `catalog/recipes/files/prek-base.toml`: the structure rules and the syntax rules.
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
 rev = "v0.11.0"

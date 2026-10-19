@@ -1,6 +1,6 @@
 ---
 name: botica-rule-author
-description: Write a new botica lint rule, either in the built-in catalog (lint/rules) or in a catalog of a project (.botica/rules/<name>), with its fixtures, and check that it loads and conforms. Use when the user asks to add, write, draft or port a botica rule, a pattern rule, an extension rule or a judgment rule.
+description: Write a new botica lint rule, either in the built-in catalog (catalog/rules) or in a catalog of a project (.botica/rules/<name>), with its fixtures, and check that it loads and conforms. Use when the user asks to add, write, draft or port a botica rule, a pattern rule, an extension rule or a judgment rule.
 ---
 
 # Botica rule author
@@ -23,7 +23,7 @@ loads. This skill writes the rule through that command, fills in the files it le
    - `judgment`: no deterministic check can express it, with or without configuration from the
      repository. The `why-not-deterministic` field must say why (ADR 0005). Look for a
      deterministic rule with a required option first.
-3. Pick the catalog. `lint/rules` is the built-in one. A project writes into
+3. Pick the catalog. `catalog/rules` is the built-in one. A project writes into
    `.botica/rules/<name>`, the folder with a `catalog.toml`, and the family must already exist
    there (`<family>/family.toml`); `rules new` does not create it.
 
@@ -50,7 +50,7 @@ with the sections of its template, the implementation and empty `fixtures/`. The
 ## Check
 
 ```bash
-botica rules conform lint/rules              # or .botica/rules/<name>
+botica rules conform catalog/rules              # or .botica/rules/<name>
 botica rules --all                           # the rule is listed, with its code
 botica lint --select <slug> --preview <path> # preview rules run only with --preview
 ```

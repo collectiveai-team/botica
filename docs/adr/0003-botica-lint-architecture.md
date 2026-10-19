@@ -141,9 +141,9 @@ Python, TypeScript, Go and Rust; any other language speaks the protocol through 
 | SDK | Published as | Parses with |
 |---|---|---|
 | Python | the module `botica.sdk` of the wheel `botica` (`from botica.sdk import rule, serve`); the extra `botica[sdk]` adds `ast-grep-py`, and a script declares `botica[sdk]==<version>` | `ast-grep-py` |
-| TypeScript | the npm package `@botica/sdk`, from `lint/sdk/node`, released with the same tag | `@ast-grep/napi` |
-| Go | the module `github.com/collectiveai-team/botica/lint/sdk/go`, tagged `lint/sdk/go/vX.Y.Z` | the bindings of tree-sitter for Go, with the grammars of ast-grep: the same kinds of node, without the patterns of ast-grep |
-| Rust | the crate `botica-ext-sdk`, from `lint/sdk/rust` | `ast-grep-core` |
+| TypeScript | the npm package `@botica/sdk`, from `sdk/node`, released with the same tag | `@ast-grep/napi` |
+| Go | the module `github.com/collectiveai-team/botica/sdk/go`, tagged `sdk/go/vX.Y.Z` | the bindings of tree-sitter for Go, with the grammars of ast-grep: the same kinds of node, without the patterns of ast-grep |
+| Rust | the crate `botica-ext-sdk`, from `sdk/rust` | `ast-grep-core` |
 
 A rule in Go or Rust runs as WASM: a fourth runtime, `wasm`, takes `file = "<name>.wasm"`, built
 from Rust or from Go with TinyGo, and botica runs it in the binary with no toolchain in the project.
@@ -245,8 +245,8 @@ What this ADR decides and the code does not have. Delete a line when it ships.
   saved. Missing: code actions, hover, a client for VS Code and an extension for Zed. No
   extension has run in a real editor: the tests speak the protocol.
 - The runtime `wasm`, after the first release. The Python SDK, `botica.sdk` with the extra `botica[sdk]`, is built. So are
-  the TypeScript one in `lint/sdk/node`, the Rust one, `botica-ext-sdk` in `lint/sdk/rust`, and the
-  Go one in `lint/sdk/go`; none of the three is published (npm, crates.io, a tag of the module) and
+  the TypeScript one in `sdk/node`, the Rust one, `botica-ext-sdk` in `sdk/rust`, and the
+  Go one in `sdk/go`; none of the three is published (npm, crates.io, a tag of the module) and
   none parses with ast-grep yet. Until the runtime `wasm` exists, a rule in Rust or Go runs as a
   program of the runtime `command`.
 - Catalogs fetched from elsewhere: a git repository, PyPI or npm. The catalogs of the project in

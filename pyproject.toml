@@ -1,15 +1,38 @@
-# The maintainer scripts under `scripts/` and their tests; botica itself is the Rust workspace in
-# `lint/`, with a `pyproject.toml` of its own.
+[build-system]
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+# Wheels of `botica` with the binary and the module `botica.sdk`, built from the Rust workspace of
+# this repository. The version comes from `[workspace.package]` in Cargo.toml.
 [project]
-name = "botica-maintainer"
-version = "0"
-requires-python = ">=3.11"
-dependencies = [
-  "cyclopts>=4.22.2",
+name = "botica"
+description = "Deterministic linter for the house engineering standards"
+requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE"]
+dynamic = ["version"]
+classifiers = [
+    "Environment :: Console",
+    "Programming Language :: Rust",
+    "Topic :: Software Development :: Quality Assurance",
 ]
 
+# `botica[sdk]` is what an extension script declares to write its rule with `botica.sdk` and to
+# parse with ast-grep.
+[project.optional-dependencies]
+sdk = ["ast-grep-py"]
+
+[tool.maturin]
+bindings = "bin"
+manifest-path = "crates/botica-cli/Cargo.toml"
+python-source = "sdk/python"
+strip = true
+
+# The maintainer scripts under `scripts/` and their tests. They are not part of the wheel: their
+# dependencies are the `dev` group, which needs Python 3.11.
 [dependency-groups]
 dev = [
+  "cyclopts>=4.22.2",
   "pytest>=8.0",
   # CES-111 (test-order-randomization-pytest-randomly): random, reproducibly-seeded test
   # order on every run — catches state-leaking/order-dependent tests for free.
@@ -17,21 +40,28 @@ dev = [
   "ruff>=0.16.3",
 ]
 
+# `uv sync` and `uv run` install the `dev` group and leave the Rust package unbuilt; `maturin`
+# builds the wheel.
 [tool.uv]
 package = false
 
+[tool.uv.dependency-groups]
+dev = { requires-python = ">=3.11" }
+
 [tool.ruff]
 line-length = 100
+# The scripts need 3.11 (the `dev` group); `requires-python` is the floor of the wheel.
+target-version = "py311"
 # Vendored skill scripts are independent artifacts; lint only the maintainer code.
 # The botica lint rule fixtures are deliberately bad code (and carry `# noqa: BT…` codes ruff
 # would otherwise strip), so ruff leaves them alone.
 extend-exclude = [
   "skills",
-  "lint/rules/**/fixtures",
+  "catalog/rules/**/fixtures",
 ]
 force-exclude = true
-# `botica.sdk` ships in the wheel of `lint/pyproject.toml`, whose floor is Python 3.9.
-per-file-target-version = { "lint/sdk/python/**" = "py39" }
+# `botica.sdk` ships in the wheel, whose floor is Python 3.9.
+per-file-target-version = { "sdk/python/**" = "py39" }
 
 [tool.ruff.lint]
 # The codes of botica in `# noqa` comments.
@@ -112,25 +142,27 @@ ban-relative-imports = "all"
 "tests/**" = ["S101", "INP001"]
 # Maintainer scripts run as files, not as an importable package.
 "scripts/**" = ["INP001"]
-# botica lint's Python extension SDK and benchmark scripts run as files, not as a package.
-"lint/**" = ["INP001"]
+# botica's Python extension SDK and benchmark scripts run as files, not as a package.
+"sdk/**" = ["INP001"]
+"bench/**" = ["INP001"]
 
 [tool.botica]
 # The fixtures of the rules are wrong on purpose, and the skills are vendored payload (ruff leaves
 # them out for the same reason).
-extend-exclude = ["lint/rules/**/fixtures/", "lint/proposals/**/fixtures/", "skills/"]
+extend-exclude = ["catalog/rules/**/fixtures/", "skills/"]
 
 # The maintainer scripts and the benchmarks are command-line programs run as files: their output
 # is what they print.
 [tool.botica.rules.log-no-print]
-extend-ignores = ["scripts/**", "lint/bench/**"]
+extend-ignores = ["scripts/**", "bench/**"]
 
 # The benchmarks run with a bare `python` and the standard library only, so they parse their
 # arguments with `sys.argv`.
 [tool.botica.rules.cli-typed-framework]
-extend-ignores = ["lint/bench/**"]
+extend-ignores = ["bench/**"]
 
 [tool.pyrefly]
+python-version = "3.11"
 search-path = [".", "tests"]  # the tests import the support module of the site tests
 project-excludes = [
   "**/node_modules",
@@ -139,7 +171,14 @@ project-excludes = [
   "**/.worktrees/**/*",
   "**/.tmp/**/*",    # local scratch (spike corpora, benchmarks); gitignored
   "skills/**/*",
-  "lint/**/*",       # Rust workspace; its Python SDK and bench scripts have their own deps
+  # The Rust workspace and what its build reads; the Python SDK needs `botica[sdk]`, outside
+  # the `dev` group, and the benchmarks run with a bare `python`.
+  "crates/**/*",
+  "target/**/*",
+  "catalog/**/*",
+  "distribution/**/*",
+  "sdk/**/*",
+  "bench/**/*",
 ]
 use-ignore-files = false
 disable-project-excludes-heuristics = true
@@ -147,7 +186,16 @@ disable-project-excludes-heuristics = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
-# CES-109 (dep-hygiene-deptry): declared deps must match the actual import graph. `lint` is the
-# Rust workspace and `skills` is vendored payload, outside the import graph of the scripts.
+# CES-109 (dep-hygiene-deptry): declared deps must match the actual import graph. The Rust
+# workspace, what its build reads, its SDKs and its benchmarks are outside the import graph of the
+# scripts, and `skills` is vendored payload.
 [tool.deptry]
-extend_exclude = ["lint", "skills"]
+extend_exclude = [
+  "crates", "target", "catalog", "distribution", "sdk", "bench", "skills",
+]
+
+# `[project]` is the wheel of botica. `ast-grep-py` is its `sdk` extra, which the extension scripts
+# of a project import; the maintainer scripts import `cyclopts` from the `dev` group.
+[tool.deptry.per_rule_ignores]
+DEP002 = ["ast-grep-py"]
+DEP004 = ["cyclopts"]

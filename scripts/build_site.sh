@@ -19,11 +19,11 @@ topics="$(mktemp)"
 trap 'rm -f "${topics}"' EXIT
 
 rm -rf website/docs/rules website/docs/standards website/docs/references website/site
-cargo run --quiet --locked --manifest-path lint/Cargo.toml -p botica-cli -- \
+cargo run --quiet --locked --manifest-path Cargo.toml -p botica-cli -- \
   rules export --format markdown --output website/docs/rules
 cp -r standards website/docs/standards
 uv run --no-project --python 3.14 --with cyclopts python scripts/site_standards.py website/docs
-cargo run --quiet --locked --manifest-path lint/Cargo.toml -p botica-cli -- \
+cargo run --quiet --locked --manifest-path Cargo.toml -p botica-cli -- \
   refs export > "${topics}"
 uv run --no-project --python 3.14 --with cyclopts python scripts/site_references.py \
   "${topics}" website/docs

@@ -1,6 +1,6 @@
 """Seal the status of every rule of the catalog in its release history.
 
-`lint/rules/history.toml` says, for each release, which rules were added and which ones changed
+`catalog/rules/history.toml` says, for each release, which rules were added and which ones changed
 status. Nobody writes it by hand: the author of a change sets the `status` of a rule, and the
 release runs `stamp` with its own version, which appends one event for each rule whose status the
 history does not have yet. `check` fails while a status is still unsealed, so a release cannot go
@@ -18,7 +18,7 @@ import cyclopts
 
 app = cyclopts.App(name="stamp-release", help=__doc__)
 
-CATALOG = Path("lint/rules")
+CATALOG = Path("catalog/rules")
 HISTORY = CATALOG / "history.toml"
 VERSION = re.compile(r"^\d+\.\d+\.\d+$")
 

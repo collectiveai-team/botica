@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SKILL = ROOT / "skills" / "engineering" / "engineering-rules" / "SKILL.md"
 INSTRUCTED = [
     SKILL,
-    ROOT / "lint" / "recipes" / "sections" / "standards-index.md",
+    ROOT / "catalog" / "recipes" / "sections" / "standards-index.md",
     ROOT / "AGENTS.md",
 ]
 

@@ -20,7 +20,7 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
    standard.
 
    ```toml
-   # lint/references/structured-logging/topic.toml
+   # catalog/references/structured-logging/topic.toml
    title = "Structured logging with structlog"
 
    [[references]]
@@ -76,8 +76,8 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
    is `<host>/<path>` with no scheme, no user and no port, and botica asks `https://<host>/<path>.git`.
    `note` is required. `lines` is `<first>-<last>` or one line, counted from 1, and a file reference
    without it is the whole file. `quote` belongs to a page and is not empty.
-9. **The topics that the built-in rules cite are in the binary,** in `lint/references/`, compiled
-   in like `lint/rules/`. They point at pages and at external files only. A project adds its own in
+9. **The topics that the built-in rules cite are in the binary,** in `catalog/references/`, compiled
+   in like `catalog/rules/`. They point at pages and at external files only. A project adds its own in
    `references/` at its root, read from disk like the standards (ADR 0004). The loader is a module
    of `botica-catalog`. A topic of the project with the id of a built-in topic is a load error,
    unless `replace` in the `[references]` table of the configuration lists the id; the topic of the
@@ -137,7 +137,7 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
     list every one, the rules with their tags and their standard. A field above each table
     (`scripts/site_filter.py`, `docs/javascripts/filter.js`) hides the rows that lack a word typed
     in it, or in the heading of their section, such as the family of a rule.
-16. **The first topics are `structured-logging` and `in-memory-adapters`,** in `lint/references/`.
+16. **The first topics are `structured-logging` and `in-memory-adapters`,** in `catalog/references/`.
     They point at the snippets of `scaffolding/templates/snippets/` at the commit `9c225ad`.
     `log-get-logger` and `log-no-print` cite the first, and so does CES-74. CES-64 cites
     `in-memory-adapters`.
@@ -171,7 +171,7 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
 
 ## Not built yet
 
-- Writing the `rev` of a built-in topic: it is edited by hand in `lint/references/`.
+- Writing the `rev` of a built-in topic: it is edited by hand in `catalog/references/`.
 
 ## Not decided
 
@@ -231,7 +231,7 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
 
 ## Consequences
 
-- The catalog carries `lint/references/`, loads `references/` of the project, and `botica refs
+- The catalog carries `catalog/references/`, loads `references/` of the project, and `botica refs
   check --all` runs in CI.
 - `botica refs show <rule>` works in any project with `git`, and reads the network once per file.
 - `.agents/snippets/` and `scaffolding/templates/snippets/` are gone: the `standards` component

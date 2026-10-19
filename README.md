@@ -29,7 +29,7 @@ This repository has:
 - `standards/` — the text of each house standard, `CES-<number>` (see
   [`docs/engineering-standards.md`](docs/engineering-standards.md)).
 - `lint/` — `botica`, published on PyPI: `botica lint` measures the rules of the catalog, and
-  `botica recipe` installs the recipes. Its manual is [`lint/README.md`](lint/README.md).
+  `botica recipe` installs the recipes. Its manual is [`docs/botica.md`](docs/botica.md).
 - `skills/` — the agent skills of the house.
 - `website/` — the site of the standards and the rules.
 

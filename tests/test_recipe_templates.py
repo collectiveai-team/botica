@@ -1,9 +1,9 @@
-"""Every CI template under `lint/recipes/files/github/` is a step of one recipe, at its path."""
+"""Every CI template under `catalog/recipes/files/github/` is a step of one recipe, at its path."""
 
 import tomllib
 from pathlib import Path
 
-RECIPES = Path(__file__).resolve().parent.parent / "lint" / "recipes"
+RECIPES = Path(__file__).resolve().parent.parent / "catalog" / "recipes"
 
 
 def _github_templates() -> list[str]:

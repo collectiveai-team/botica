@@ -10,7 +10,7 @@ A release does not need `main`: a tag runs the workflow as it is in the tagged c
 
 1. `test` and `repo-tests` run the `CI` suite (fmt, clippy, `cargo test`) and the
    repository's `Tests` suite (prek, pytest).
-2. `version` fails unless `X.Y.Z` equals `version` in `[workspace.package]` of `lint/Cargo.toml`
+2. `version` fails unless `X.Y.Z` equals `version` in `[workspace.package]` of `Cargo.toml`
    and `scripts/stamp_release.py check` finds every status of the catalog sealed in the history.
 3. `draft` creates a draft GitHub Release.
 4. `wheels` builds a wheel per platform and attaches it, with a `.sha256`, to the draft: Linux
@@ -77,13 +77,13 @@ builds are accepted. A wheel built on your machine for a rehearsal needs
 
 ## Each release
 
-1. Set `version` in `[workspace.package]` of `lint/Cargo.toml`, and run `cargo update --workspace`
+1. Set `version` in `[workspace.package]` of `Cargo.toml`, and run `cargo update --workspace`
    in `lint/`. Without it the build, which uses `--locked`, fails; the change to `Cargo.lock` is a
    few lines for the crates of the project.
 2. Seal the history: `uv run --no-project --with cyclopts python scripts/stamp_release.py stamp X.Y.Z` appends
-   to `lint/rules/history.toml` the status of each rule that no release has recorded. The `version`
+   to `catalog/rules/history.toml` the status of each rule that no release has recorded. The `version`
    job runs `check` and fails the tag while one is left.
-3. Set the same version and the `botica==` pin in `lint/distribution/botica-pre-commit/pyproject.toml`,
+3. Set the same version and the `botica==` pin in `distribution/botica-pre-commit/pyproject.toml`,
    and the `rev` in its README. Commit (`chore(lint): release X.Y.Z`). The branch does not have to
    be pushed: the tag carries the commit, and the workflow runs the `CI` suite itself.
 4. Tag and push: `git tag -a vX.Y.Z -m "botica X.Y.Z" && git push origin vX.Y.Z`.
@@ -96,9 +96,9 @@ builds are accepted. A wheel built on your machine for a rehearsal needs
 
 `collectiveai-team/botica-pre-commit` holds the hook definitions and a package that depends on the
 wheel of the same version, so `rev` pins the binary. Its source is
-`lint/distribution/botica-pre-commit/` in this repository; copy it over after each release.
+`distribution/botica-pre-commit/` in this repository; copy it over after each release.
 
-1. The `version` and the `botica==` pin of `lint/distribution/botica-pre-commit/pyproject.toml` are
+1. The `version` and the `botica==` pin of `distribution/botica-pre-commit/pyproject.toml` are
    already `X.Y.Z` (step 2 of "Each release").
 2. Copy that directory (and `LICENSE`) into a clone of the mirror, commit
    (`chore: release X.Y.Z`), push, and tag `vX.Y.Z` with a **lightweight** tag (`git tag vX.Y.Z`):
@@ -110,10 +110,10 @@ The tag must come after the wheel is on PyPI, or prek cannot install the hook en
 
 ## After the first release
 
-- `lint/recipes/files/prek-base.toml` and this repository's own `prek.toml` use the mirror
+- `catalog/recipes/files/prek-base.toml` and this repository's own `prek.toml` use the mirror
   (`repo = "https://github.com/collectiveai-team/botica-pre-commit"`, `rev`, `args`). They are not
   moved by a release: after the mirror has its new tag, set `rev` in both by hand, and in the
-  examples of `lint/README.md` and of the mirror's README (the templates may name the next version
+  examples of `docs/botica.md` and of the mirror's README (the templates may name the next version
   before it exists, as `0.8.0` was named; a repository using them cannot install the hook until
   the mirror has the tag).
 - Not published, and not planned yet: npm, Homebrew, a GitHub Action, standalone binaries.

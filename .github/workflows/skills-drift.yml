@@ -1,6 +1,6 @@
 name: skills-drift
 
-# Guard the curated upstream skill catalog: the pinned [[skills]] step of lint/recipes/base.toml.
+# Guard the curated upstream skill catalog: the pinned [[skills]] step of catalog/recipes/base.toml.
 #
 # `npx skills add` skips unknown skill names without failing, so an upstream
 # rename lands as a silently missing skill in every repo that installs the recipe base — which is
