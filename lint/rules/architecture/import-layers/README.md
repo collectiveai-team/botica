@@ -53,5 +53,5 @@ from app.impl.service import price
 
 ## Suppression
 
-The rule is of project scope, and only the configuration of botica silences it: `per-file-ignores`
-for the file, or `ignore = ["import-layers"]`. A comment that names it is `invalid-suppression`.
+The rule is of project scope, and only the configuration of botica silences it: the path in
+`extend-ignores` of `[rules.import-layers]`, or `ignore = ["import-layers"]`. A comment that names it is `invalid-suppression`.

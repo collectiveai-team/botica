@@ -62,5 +62,5 @@ STRIPE_KEY=
 ## Suppression
 
 Mark a variable that another program reads with `# @auditIgnore` above it in the schema. A field is
-silenced through the configuration of botica, with `per-file-ignores` for its file or
-`ignore = ["settings-env-schema"]`. A comment that names the rule is `invalid-suppression`.
+silenced through the configuration of botica, with its file in `extend-ignores` of
+`[rules.settings-env-schema]` or `ignore = ["settings-env-schema"]`. A comment that names the rule is `invalid-suppression`.

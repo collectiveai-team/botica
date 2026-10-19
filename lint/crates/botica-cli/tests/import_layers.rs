@@ -104,13 +104,14 @@ fn a_comment_that_names_the_rule_keeps_the_finding_and_is_an_invalid_suppression
 }
 
 #[test]
-fn per_file_ignores_leave_out_the_findings_of_a_file() {
+fn extend_ignores_leave_out_the_findings_of_a_file() {
     let dir = project(
         "per-file",
-        &format!(
-            "{LAYERS}\n[per-file-ignores]\n\"src/app/core/models.py\" = [\"import-layers\"]\n"
-        ),
+        &format!("{LAYERS}extend-ignores = [\"src/app/core/models.py\"]\n"),
     );
 
-    assert!(!stdout(&botica(&dir, &[])).contains("import-layers"));
+    let output = botica(&dir, &[]);
+
+    assert_eq!(output.status.code(), Some(0), "{}", stdout(&output));
+    assert!(!stdout(&output).contains("import-layers"));
 }

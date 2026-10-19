@@ -49,6 +49,27 @@ fn a_project_without_the_schema_or_without_the_rule_has_no_finding() {
 }
 
 #[test]
+fn extend_ignores_leave_out_the_findings_of_a_file() {
+    let dir = project(
+        "extend-ignores",
+        &format!(
+            "{SELECTS}\n[rules.settings-env-schema]\nextend-ignores = [\"src/app/settings.py\"]\n"
+        ),
+    );
+    write(&dir, SCHEMA, "API_KEY=\n");
+
+    let output = botica(&dir, &[]);
+
+    let text = stdout(&output);
+    assert_eq!(output.status.code(), Some(0), "{text}");
+    assert!(!text.contains("src/app/settings.py"), "{text}");
+    assert!(
+        text.contains(".env.schema:1:1: warning [settings-env-schema]"),
+        "{text}"
+    );
+}
+
+#[test]
 fn the_rule_runs_with_the_project_rules_and_not_with_the_rules_of_one_file() {
     let dir = project("scope", SELECTS);
     write(&dir, SCHEMA, "API_KEY=\n");

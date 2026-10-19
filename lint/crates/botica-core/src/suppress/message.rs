@@ -57,9 +57,9 @@ pub(super) fn judgment_without_reason(name: &str) -> String {
     format!("A suppression of the judgment rule `{name}` needs a reason after `--`")
 }
 
-pub(super) fn project_rule_in_a_comment(name: &str) -> String {
+pub(super) fn project_rule_in_a_comment(name: &str, slug: &str) -> String {
     format!(
         "`{name}` is a rule of the project and only the configuration silences it: \
-         name the path in `per-file-ignores`"
+         add the path to `extend-ignores` in `[rules.{slug}]`"
     )
 }

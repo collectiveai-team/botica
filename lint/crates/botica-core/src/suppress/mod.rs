@@ -466,7 +466,7 @@ impl Policy {
             .filter_map(|token| {
                 let slug = token.slug.as_deref()?;
                 if self.project.contains(slug) {
-                    return Some((token, project_rule_in_a_comment(&token.name)));
+                    return Some((token, project_rule_in_a_comment(&token.name, slug)));
                 }
                 if !self.judgment.contains(slug) {
                     return None;
