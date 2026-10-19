@@ -59,6 +59,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
+    /// Check the files of the project against the active rules and report the findings.
     Lint(lint_cmd::LintArgs),
     /// Show which rules are active and why.
     Rules(rules_cmd::RulesArgs),
