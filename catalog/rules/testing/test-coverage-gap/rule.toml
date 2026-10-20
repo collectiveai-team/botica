@@ -1,0 +1,19 @@
+id = "test-coverage-gap"
+code = "BTTEST003"
+standard = "CES-66"
+summary = "A coverage gap is closed with a test or a deletion, not hidden"
+status = "preview"
+tags = ["tests", "coverage"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "judgment"
+languages = ["*"]
+when = "pull-request"
+why-not-deterministic = "A `# pragma: no cover` or an `omit` is visible in the diff, but whether it hides a branch that a test should reach or marks code that cannot run under test needs the code around it."
+
+[implementations.question]
+type = "boolean"
+instructions = "Read the title, the description and the diff of the pull request. When it touches coverage (a `pragma: no cover`, an `omit` or `exclude_lines` of coverage, a threshold, a test that asserts nothing), does it close the gap with a test or by deleting dead code, instead of hiding the gap or writing a test only to run the lines?"
+criteria = { true = "the change closes coverage gaps with tests or deletions, or does not touch coverage", false = "the change hides a gap or adds a test that runs lines without asserting a behaviour" }

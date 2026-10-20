@@ -1,0 +1,7 @@
+test(orders): an empty order costs nothing
+
+--- a/tests/test_orders.py
++++ b/tests/test_orders.py
+@@ -10,0 +11,3 @@
++def test_an_empty_order_costs_nothing():
++    assert total(Order(items=[])) == 0

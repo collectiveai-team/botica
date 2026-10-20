@@ -1,0 +1,6 @@
+{
+  "verdicts": [
+    { "file": "valid/test-added.diff", "band": "clear" },
+    { "file": "invalid/gap-hidden.diff", "band": "act" }
+  ]
+}
