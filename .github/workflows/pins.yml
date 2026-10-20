@@ -8,8 +8,9 @@ name: pins
 #
 # The mirror of botica is left out: the release moves it (botica-release.yml, job `bump`).
 #
-# A pull request opened with the token of the workflow runs no workflow; close and reopen it, or
-# push to its branch, to run the checks.
+# The push and the pull request use the secret PINS_TOKEN (a fine-grained token of this repository
+# with write access to contents and pull requests): what the token of the workflow pushes or opens
+# runs no workflow, so the checks would not run on the pull request.
 
 on:
   schedule:
@@ -28,8 +29,7 @@ jobs:
     name: update the pins
     runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
     steps:
       - uses: actions/checkout@v7
         with:
@@ -59,9 +59,13 @@ jobs:
 
       - name: Open or update the pull request
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PINS_TOKEN }}
           REPOSITORY: ${{ github.repository }}
         run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "The secret PINS_TOKEN is missing." >&2
+            exit 1
+          fi
           if git diff --quiet; then
             echo "Every pin is current." >> "$GITHUB_STEP_SUMMARY"
             exit 0

@@ -58,6 +58,9 @@ brain; skills install once into `.agents/skills`.
 
 ## Skill Development
 
+A skill describes a workflow and states no rule: the text of a rule lives in botica, and a skill
+runs `botica explain <rule>` or `botica refs show <rule or topic>` to read it (ADR 0008).
+
 After creating or editing any skill under `skills/`, validate it before committing:
 
 ```bash
