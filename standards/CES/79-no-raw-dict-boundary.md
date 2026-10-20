@@ -6,10 +6,16 @@ references: ["typed-boundaries"]
 
 ## Directive
 
-A function does not return a bare `dict` and a type alias does not point at one. Use a
-`@dataclass` for an internal boundary and a `pydantic` `BaseModel` where validation is needed.
-Returning a `{...}` literal or the result of `dict(...)` from a boundary function is the same
-mistake.
+A boundary function does not return a bare `dict` and a public type alias does not point at one.
+Use a `@dataclass` for an internal boundary and a `pydantic` `BaseModel` where validation is
+needed. Returning a `{...}` literal or the result of `dict(...)` from a boundary function is the
+same mistake.
+
+A boundary function is one that another module can call: a function of a module or a method of a
+class, whose name and whose class name do not start with `_`, and that is not defined inside another
+function. An endpoint, a command of a command line program and the public functions of a layer are
+boundary functions. A private function (`_name`) and a nested function are internal, and may use a
+`dict`.
 
 ## Why
 

@@ -1,18 +1,37 @@
 id: no-dict-return-annotation
 language: python
 severity: error
-message: "CES-79 (no-dict-return-annotation): Boundary function returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`."
+message: "CES-79 (no-dict-return-annotation): A boundary function (public, not nested) returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
+utils:
+  internal-function:
+    kind: function_definition
+    any:
+      - has:
+          field: name
+          regex: "^_"
+      - inside:
+          kind: function_definition
+          stopBy: end
+      - inside:
+          kind: class_definition
+          stopBy: end
+          has:
+            field: name
+            regex: "^_"
 rule:
-  any:
-    - pattern: |
-        def $FUNC($$$ARGS) -> dict:
-            $$$BODY
-    - pattern: |
-        def $FUNC($$$ARGS) -> dict[$$$TYPES]:
-            $$$BODY
-    - pattern: |
-        async def $FUNC($$$ARGS) -> dict:
-            $$$BODY
-    - pattern: |
-        async def $FUNC($$$ARGS) -> dict[$$$TYPES]:
-            $$$BODY
+  all:
+    - any:
+        - pattern: |
+            def $FUNC($$$ARGS) -> dict:
+                $$$BODY
+        - pattern: |
+            def $FUNC($$$ARGS) -> dict[$$$TYPES]:
+                $$$BODY
+        - pattern: |
+            async def $FUNC($$$ARGS) -> dict:
+                $$$BODY
+        - pattern: |
+            async def $FUNC($$$ARGS) -> dict[$$$TYPES]:
+                $$$BODY
+    - not:
+        matches: internal-function

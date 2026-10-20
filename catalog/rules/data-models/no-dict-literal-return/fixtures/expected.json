@@ -1,6 +1,23 @@
 {
   "diagnostics": [
     {
+      "path": "nested.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 59,
+          "line": 5,
+          "column": 12
+        },
+        "end": {
+          "offset": 77,
+          "line": 5,
+          "column": 30
+        }
+      },
+      "message": "CES-79 (no-dict-literal-return): A boundary function (public, not nested) returns a dict literal. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
+    },
+    {
       "path": "service.py",
       "severity": "error",
       "range": {
@@ -15,7 +32,7 @@
           "column": 24
         }
       },
-      "message": "CES-79 (no-dict-literal-return): Boundary function returns a dict literal. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`."
+      "message": "CES-79 (no-dict-literal-return): A boundary function (public, not nested) returns a dict literal. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
     }
   ]
 }
