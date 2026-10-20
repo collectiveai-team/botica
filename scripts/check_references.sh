@@ -16,6 +16,9 @@ export PYDANTIC_AI_NO_BANNER=1
 
 logger=catalog/references/structured-logging/code
 
+# uv downloads no interpreter for a request with a variant (`+gil`); `3.14` alone is the GIL build.
+uv python install --quiet 3.14 || exit 1
+
 run() {
     uv run --quiet --locked --group references --python 3.14+gil "$@"
 }
