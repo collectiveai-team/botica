@@ -11,24 +11,6 @@ methods or assert on internal state. What is not part of the contract is not tes
 
 ## Why
 
-- Tests bound to internals break on every refactor even when behaviour is unchanged, which trains
-  people to delete tests instead of trusting them. Interface tests survive refactors and protect
-  the contract.
-- Testing through the public surface is also pressure on the design: if something is hard to test
-  without poking internals, the interface is probably wrong.
-
-## Do and don't
-
-```python
-# Do: observable behaviour through the public API
-result = service.register(CreateUser(email="a@b.com"))
-assert service.find(result.id).email == "a@b.com"
-
-# Don't: reaching into internals
-assert service._store._rows[0]["email"] == "a@b.com"
-```
-
-## When only private state shows the behaviour
-
-The class is missing a public query. Add it, and test through it. Combined with CES-64 (fake the
-ports), the public path is fast to drive.
+A test bound to internals breaks on a refactor that keeps the behaviour, and a test that breaks on
+every refactor gets deleted. A test through the interface survives the refactor and checks the
+contract. Code that cannot be tested without reaching into its internals is missing a public query.

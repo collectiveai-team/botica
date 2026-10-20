@@ -52,3 +52,10 @@ In TypeScript and JavaScript, `// botica: ignore[no-disabled-typecheck]` on the 
 `# botica: ignore[no-disabled-typecheck]` or `# noqa: BTTOOL001 -- <reason>`. JSON has no comments
 that botica reads: a `tsconfig` that has to keep an option off goes in the `extend-ignores` of
 `[rules.no-disabled-typecheck]`.
+
+A repository where the checker is off somewhere turns it back on in its own pull request: remove
+the directive or the setting, run the checker (`pyrefly check`, `tsc --noEmit`), and fix the errors
+or silence each on its line with the reason (`# pyrefly: ignore[<code>]`,
+`// @ts-expect-error <reason>`). When the errors are too many for one pull request, keep the file in
+the `extend-ignores` of `[rules.no-disabled-typecheck]` and take it out file by file; a `baseline`
+file of pyrefly holds the existing errors and reports only new ones.

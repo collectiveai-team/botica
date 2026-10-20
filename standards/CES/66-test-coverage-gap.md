@@ -11,20 +11,6 @@ investigated to find which one, and `# pragma: no cover` is not added to raise a
 
 ## Why
 
-- A coverage percentage is easy to game (assert nothing, exclude files) and says little. The gaps
-  are the signal: the specific line that nothing exercises is where a bug hides.
-- Chasing a number leads to low-value tests written to touch lines. Chasing gaps leads to a real
-  test or to the deletion of code that should not exist.
-
-## How to read a gap
-
-| The uncovered code is | Do |
-|---|---|
-| a real branch that nothing tests | write the test, ideally through the interface (CES-65) |
-| unreachable or dead | delete it |
-| hard to reach without internals | refactor the seam so it can be driven from the outside |
-
-## No coverage gate
-
-A hard coverage threshold is not added to win, and a gap is not suppressed to hide it. When a gap
-appears, decide which of the three cases it is and act on that. Coverage is a lens on design.
+A test that asserts nothing and an excluded file both raise the percentage, so the number alone
+says nothing about the tests. The uncovered line is the signal: it leads to a test that checks
+behaviour, or to the deletion of code that nothing needs.
