@@ -144,8 +144,6 @@ describes one, and the hook reports each finding with its slug and its message.
   house default is 3.14. → `@standards/CES/77-version-pin.md`
 - **CES-16 · architectural vocabulary** `[judgment]` — name units with house terms, not ad-hoc
   synonyms. → `@standards/CES/16-architecture-vocabulary.md`
-- **CES-8 · separate orchestration from logic** `[judgment]` — keep control flow thin; push logic
-  and I/O into named units. → `@standards/CES/8-mixed-orchestration.md`
 - **CES-30 · respect the local repo** `[judgment]` — existing deliberate choices win over house
   defaults (`botica recipe install` leaves an existing file as it is for this reason). →
   `@standards/CES/30-respect-local-repo.md`

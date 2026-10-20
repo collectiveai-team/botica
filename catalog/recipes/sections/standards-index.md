@@ -33,9 +33,6 @@ describes one, and the hook reports each finding with its slug and its message.
 - **CES-16 · architectural vocabulary** `[judgment]` — name units with the house terms
   (`entrypoints`/`api`/`database`/`impl`/`core`, ports/adapters), not ad-hoc synonyms. Slug:
   `architecture-vocabulary`.
-- **CES-8 · separate orchestration from logic** `[judgment]` — keep control flow thin; push
-  business logic and I/O into named, separately-testable units. Slug:
-  `mixed-orchestration`.
 - **CES-30 · respect the local repo** `[judgment]` — existing deliberate choices (pins, config,
   layout) win over house defaults; adopt standards as explicit migrations, never silent
   overwrites. Slug: `respect-local-repo`.

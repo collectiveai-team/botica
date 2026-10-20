@@ -33,6 +33,22 @@ fn copy(from: &Path, to: &Path) {
     }
 }
 
+/// Removes the folder of each judgment rule of the catalog at `catalog`.
+fn drop_judgment_rules(catalog: &Path) {
+    for family in fs::read_dir(catalog).expect("read the catalog").flatten() {
+        let Ok(rules) = fs::read_dir(family.path()) else {
+            continue;
+        };
+        for rule in rules.flatten() {
+            let judged = fs::read_to_string(rule.path().join("rule.toml"))
+                .is_ok_and(|text| text.contains("kind = \"judgment\""));
+            if judged {
+                fs::remove_dir_all(rule.path()).expect("drop a judgment rule");
+            }
+        }
+    }
+}
+
 fn write(path: &Path, text: &str) {
     fs::create_dir_all(path.parent().expect("a parent")).expect("a directory");
     fs::write(path, text).expect("write a file");
@@ -50,10 +66,7 @@ fn workdir(name: &str, when: &str, report: &str) -> PathBuf {
         &dir.join("cat"),
     );
     // Without a rule named, `rules test` judges every judgment rule: here only `test-foo`.
-    for family in ["writing", "process"] {
-        fs::remove_dir_all(dir.join("cat").join(family))
-            .expect("drop the judgment rules of the catalog");
-    }
+    drop_judgment_rules(&dir.join("cat"));
     let rule = dir.join("cat/testing/test-foo");
     write(&rule.join("rule.toml"), &RULE.replace("WHEN", when));
     write(&rule.join("README.md"), README);
