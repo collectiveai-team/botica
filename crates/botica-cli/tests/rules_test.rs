@@ -67,6 +67,7 @@ fn workdir(name: &str, when: &str, report: &str) -> PathBuf {
     );
     // Without a rule named, `rules test` judges every judgment rule: here only `test-foo`.
     drop_judgment_rules(&dir.join("cat"));
+    fs::remove_file(dir.join("cat/history.toml")).expect("drop the history, which names them");
     let rule = dir.join("cat/testing/test-foo");
     write(&rule.join("rule.toml"), &RULE.replace("WHEN", when));
     write(&rule.join("README.md"), README);

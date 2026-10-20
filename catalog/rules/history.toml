@@ -140,3 +140,78 @@ status = "stable"
 version = "0.12.0"
 rule = "settings-env-schema"
 status = "stable"
+
+[[event]]
+version = "0.13.0"
+rule = "architecture-vocabulary"
+status = "preview"
+
+[[event]]
+version = "0.13.0"
+rule = "jwt-verified"
+status = "preview"
+
+[[event]]
+version = "0.13.0"
+rule = "lockfile-committed"
+status = "preview"
+
+[[event]]
+version = "0.13.0"
+rule = "minimal-comments"
+status = "preview"
+
+[[event]]
+version = "0.13.0"
+rule = "no-disabled-typecheck"
+status = "preview"
+
+[[event]]
+version = "0.13.0"
+rule = "no-token-in-web-storage"
+status = "preview"
+
+[[event]]
+version = "0.13.0"
+rule = "plain-writing"
+status = "preview"
+
+[[event]]
+version = "0.13.0"
+rule = "pr-small-by-intent"
+status = "preview"
+
+[[event]]
+version = "0.13.0"
+rule = "respect-local-repo"
+status = "preview"
+
+[[event]]
+version = "0.13.0"
+rule = "route-auth"
+status = "preview"
+
+[[event]]
+version = "0.13.0"
+rule = "separate-orchestration"
+status = "preview"
+
+[[event]]
+version = "0.13.0"
+rule = "test-coverage-gap"
+status = "preview"
+
+[[event]]
+version = "0.13.0"
+rule = "test-in-memory-adapters"
+status = "preview"
+
+[[event]]
+version = "0.13.0"
+rule = "test-through-interface"
+status = "preview"
+
+[[event]]
+version = "0.13.0"
+rule = "ubiquitous-language"
+status = "preview"
