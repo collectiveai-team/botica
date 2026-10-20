@@ -102,6 +102,17 @@ priority = 2
 id = "botica-project"
 priority = 2
 
+# The block of AGENTS.md and the rubric of abide, against the catalog and the configuration. After a
+# change to the selection, or a new file, run `botica rules export --format agents-md --output
+# AGENTS.md` and `botica rules export --format abide`.
+[[repos.hooks]]
+id = "botica-agents-md"
+priority = 2
+
+[[repos.hooks]]
+id = "botica-rubric"
+priority = 2
+
 # MARK: hadolint-docker
 # CES-114; runs only when a Dockerfile exists.
 [[repos]]

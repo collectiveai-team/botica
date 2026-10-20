@@ -15,3 +15,20 @@
   pass_filenames: false
   always_run: true
   verbose: true
+
+- id: botica-agents-md
+  name: botica (block of the judgment rules in AGENTS.md)
+  description: The block between the markers of AGENTS.md lists the judgment rules that the configuration selects.
+  entry: botica rules export --format agents-md --output AGENTS.md --check
+  language: python
+  pass_filenames: false
+  always_run: true
+
+- id: botica-rubric
+  name: botica (rubric of abide)
+  description: .abide/rubric.json holds the judgment rules, their questions and the files they judge.
+  # The scope of a rule lists files, so a new file changes the rubric: the hook runs on every commit.
+  entry: botica rules export --format abide --check
+  language: python
+  pass_filenames: false
+  always_run: true

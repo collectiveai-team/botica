@@ -15,11 +15,19 @@ id = "botica"
 
 [[repos.hooks]]
 id = "botica-project"
+
+[[repos.hooks]]
+id = "botica-agents-md"
+
+[[repos.hooks]]
+id = "botica-rubric"
 ```
 
 Hooks: `botica` (the rules that look at one file; gets the file names) and `botica-project` (the
 rules that need the whole project; gets none). Both read the selection from the configuration of
 botica (`botica.toml` or `[tool.botica]`), the one that `botica recipe install` writes.
+`botica-agents-md` and `botica-rubric` fail when the block of `AGENTS.md` or `.abide/rubric.json`
+differs from what `botica rules export` writes; run the export to update them.
 
 ## Releasing
 

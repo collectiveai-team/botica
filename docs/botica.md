@@ -725,9 +725,17 @@ id = "botica"
 
 [[repos.hooks]]
 id = "botica-project"
+
+[[repos.hooks]]
+id = "botica-agents-md"
+
+[[repos.hooks]]
+id = "botica-rubric"
 ```
 
-The hooks read the selection from the configuration, as `botica lint` and the editor do. The
+The hooks read the selection from the configuration, as `botica lint` and the editor do.
+`botica-agents-md` and `botica-rubric` run `botica rules export --check` for the block of
+`AGENTS.md` and for `.abide/rubric.json`, on every commit, since a new file changes the rubric. The
 mirror's hooks are `verbose`: prek hides the output of a passing hook, and a size warning does
 not fail it ([`distribution/botica-pre-commit`](../distribution/botica-pre-commit/README.md)). The
 recipe `base` installs these hooks from `catalog/recipes/files/prek-base.toml`, and writes the

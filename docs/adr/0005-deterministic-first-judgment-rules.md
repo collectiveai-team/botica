@@ -132,7 +132,8 @@ no check at all.
    language; any other directory lists its kept files one by one. abide judges only `model` rules
    with status `active`.
 
-   - A hook of prek, `botica rules export --format abide --check`, fails when the rubric differs
+   - The hook `botica-rubric` of the mirror, `botica rules export --format abide --check`, which
+     the recipe `base` installs, fails when the rubric differs
      from the catalog, the configuration or the `ignore-file` comments of the repository. A new file
      in a directory with exclusions is outside the `scope` until the next export.
    - `botica rules test --judge abide` calibrates a rule: it runs `abide audit --json` on the
