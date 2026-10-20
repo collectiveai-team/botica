@@ -196,7 +196,7 @@ hooks = [{ id = "agnix", args = [], priority = 2 }]
 # `[tool.botica]` of `pyproject.toml`, which `botica lint` and the editor read too.
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
-rev = "v0.12.0"
+rev = "v0.13.0"
 
 [[repos.hooks]]
 id = "botica"

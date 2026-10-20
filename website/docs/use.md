@@ -81,7 +81,7 @@ judgment rule is silenced for a whole file, with a reason after `--`.
     # prek.toml
     [[repos]]
     repo = "https://github.com/collectiveai-team/botica-pre-commit"
-    rev = "v0.12.0"
+    rev = "v0.13.0"
 
     [[repos.hooks]]
     id = "botica"
