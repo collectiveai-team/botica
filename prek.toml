@@ -191,18 +191,19 @@ rev = "v0.57.0"
 hooks = [{ id = "agnix", args = [], priority = 2 }]
 
 # MARK: botica
-# The same structure rules as the generic template (CES-71 file-size-guard, CES-63 no-utils, CES-32
-# no-notebooks and no-artifacts-in-package, no-tests-in-package), run by `botica lint` through the
-# mirror, which installs botica from PyPI at the release `rev` names. Own `[[repos]]` table, so it
-# goes after the `local` hooks above, not among them. The selection is the one of
-# `catalog/recipes/files/prek-base.toml`: the structure rules and the syntax rules.
+# The hooks of `catalog/recipes/files/prek-base.toml`, run by `botica lint` through the mirror, which
+# installs botica from PyPI at the release `rev` names. Own `[[repos]]` table, so it goes after the
+# `local` hooks above, not among them. The hooks select nothing: the selection, what botica leaves
+# out here (the fixtures of the rules, the vendored skills) and the exceptions of the scripts are in
+# `[tool.botica]` of `pyproject.toml`, which `botica lint` and the editor read too.
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
 rev = "v0.12.0"
 
 [[repos.hooks]]
 id = "botica"
-args = ["--select", "file-size-guard,no-utils,no-notebooks,no-artifacts-in-package,no-tests-in-package,no-dict-alias,no-dict-call-return,no-dict-literal-return,no-dict-return-annotation,api-schemas-extra-forbid,log-get-logger,log-no-print,settings-module,cli-typed-framework,arch-database-package"]
-# What botica leaves out here (the fixtures of the rules, the vendored skills) and the exceptions of
-# the scripts are in `[tool.botica]` of `pyproject.toml`, which `botica lint` and the editor read too.
+priority = 2
+
+[[repos.hooks]]
+id = "botica-project"
 priority = 2

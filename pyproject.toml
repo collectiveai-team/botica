@@ -147,6 +147,30 @@ ban-relative-imports = "all"
 "bench/**" = ["INP001"]
 
 [tool.botica]
+# The rules of the recipes `base` and `base-python`.
+select = [
+  "file-size-guard",
+  "no-notebooks",
+  "no-artifacts-in-package",
+  "io-error",
+  "unused-suppression",
+  "invalid-suppression",
+  "external-config",
+  "no-utils",
+  "no-tests-in-package",
+  "no-dict-alias",
+  "no-dict-call-return",
+  "no-dict-literal-return",
+  "no-dict-return-annotation",
+  "api-schemas-extra-forbid",
+  "log-get-logger",
+  "log-no-print",
+  "settings-module",
+  "cli-typed-framework",
+  "arch-database-package",
+  "import-layers",
+  "settings-env-schema",
+]
 # The fixtures of the rules are wrong on purpose, and the skills are vendored payload (ruff leaves
 # them out for the same reason).
 extend-exclude = ["catalog/rules/**/fixtures/", "skills/"]

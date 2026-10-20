@@ -85,7 +85,11 @@ judgment rule is silenced for a whole file, with a reason after `--`.
 
     [[repos.hooks]]
     id = "botica"
-    args = ["--select", "file-size-guard,no-utils,log-no-print"]
+
+    [[repos.hooks]]
+    id = "botica-project"
     ```
+
+The hooks run the rules that the configuration selects (`select` of `botica.toml`).
 
 The mirror installs the wheel of the same version, so `rev` pins the binary.

@@ -6,6 +6,7 @@ use anyhow::{anyhow, Result};
 
 use crate::recipes_collection::Collection;
 use crate::recipes_install_gitignore as gitignore;
+use crate::recipes_install_selection as selection;
 use crate::recipes_install_skills as skills;
 use crate::recipes_install_steps::{self as steps, Outcome, Template};
 use crate::recipes_install_tools as tools;
@@ -51,7 +52,7 @@ impl Tally {
     }
 }
 
-/// Adds the files, then the sections, then the links, then the lines of `.gitignore`, then the tools, then the skills, of the recipes in `names`, from the root of
+/// Writes the selection of the rules, then adds the files, then the sections, then the links, then the lines of `.gitignore`, then the tools, then the skills, of the recipes in `names`, from the root of
 /// the project. The command exits with 1 when a step is pending or a skill is not installed at the
 /// end.
 pub fn run(collection: &Collection, names: &[String]) -> Result<ExitCode> {
@@ -67,6 +68,16 @@ pub fn run(collection: &Collection, names: &[String]) -> Result<ExitCode> {
             .ok_or_else(|| anyhow!("the template `{path}` of `{recipe}` is missing"))
     };
     let mut tally = Tally::default();
+    let rules: Vec<&str> = gathered
+        .rules
+        .iter()
+        .chain(&gathered.judgment)
+        .map(|item| item.id.as_str())
+        .collect();
+    if !rules.is_empty() {
+        let outcome = selection::add(root, names, &rules)?;
+        tally.report("selection", selection::BOTICA_TOML, &outcome);
+    }
     for item in &gathered.files {
         let template = Template {
             text: text(&item.from, &item.template)?,

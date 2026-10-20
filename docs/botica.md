@@ -262,8 +262,14 @@ A `path` is relative to the root of the project, without `.` or `..`. A recipe n
 file path once and a marker of a path once. The steps of the recipes it extends come first, a step
 that two recipes list the same stays where it first is, and a skill that two recipes take from
 different sources is taken over by the later recipe, with a warning on stderr. `list` and `show`
-print the steps, `check` compares them with the project, and `install` adds the files, the sections,
-the links, the lines of `.gitignore`, the tools and the skills.
+print the steps, `check` compares them with the project, and `install` writes the selection, then
+adds the files, the sections, the links, the lines of `.gitignore`, the tools and the skills.
+
+The selection is the `rules` and `judgment` lists of the recipes. In a project with no configuration
+of botica, `install` writes them to the `select` of a new `botica.toml` (the line `selection
+botica.toml: added`); `botica lint`, the hooks of `prek.toml` and the editor read that list, and the
+hooks pass no `--select`. A `botica.toml` or a `[tool.botica]` of `pyproject.toml` that exists is left
+as it is: `ok` when its `select` lists every rule, `pending` with the rules it lacks otherwise.
 
 A `[[links]]` step has the `path` of the link and its `target`, which is the text of the link:
 relative to the folder of the link, so `../.agents/skills` for `.claude/skills`. A target is not
@@ -763,12 +769,16 @@ rev = "v0.12.0"
 
 [[repos.hooks]]
 id = "botica"
-args = ["--select", "<the rules of prek-base.toml>"]
+
+[[repos.hooks]]
+id = "botica-project"
 ```
 
-The mirror's hook is `verbose`: prek hides the output of a passing hook, and a size warning does
-not fail it ([`distribution/botica-pre-commit`](distribution/botica-pre-commit/README.md)). The
-recipe `base` installs this hook, with the rules it selects, from `catalog/recipes/files/prek-base.toml`.
+The hooks read the selection from the configuration, as `botica lint` and the editor do. The
+mirror's hooks are `verbose`: prek hides the output of a passing hook, and a size warning does
+not fail it ([`distribution/botica-pre-commit`](../distribution/botica-pre-commit/README.md)). The
+recipe `base` installs these hooks from `catalog/recipes/files/prek-base.toml`, and writes the
+selection to `botica.toml`.
 
 ## Result cache
 

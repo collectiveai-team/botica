@@ -13,9 +13,9 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
 
     assert!(
         text.contains(
-            "\nbase: Any repository: the rules about any file and about the whole project, the \
-             skills, .gitignore, the prek hooks and the sections of AGENTS.md\n  \
-             rules: 4, judgment: 0, exports: 0\n  \
+            "\nbase: Any repository, in any language: the rules about any file, the rules of \
+             botica itself, the skills, .gitignore, the prek hooks and the sections of AGENTS.md\n  \
+             rules: 7, judgment: 0, exports: 0\n  \
              skills: 32, files: 4, sections: 2, gitignore: 8\n  from: built-in\n"
         ),
         "{text}"
@@ -23,7 +23,7 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
     assert!(text.contains("\nbase-python: A Python project"), "{text}");
     assert!(
         text.contains(
-            "  extends: base\n  rules: 13, judgment: 0, exports: 0\n  \
+            "  extends: base\n  rules: 14, judgment: 0, exports: 0\n  \
              files: 1, sections: 6, tools: 6\n  from: built-in\n"
         ),
         "{text}"
@@ -141,7 +141,7 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
         .lines()
         .filter(|line| line.starts_with("- "))
         .collect();
-    assert_eq!(lines.len(), 17, "{text}");
+    assert_eq!(lines.len(), 21, "{text}");
     assert!(
         lines[0].starts_with("- file-size-guard (BT"),
         "{}",
@@ -149,12 +149,12 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
     );
     assert!(lines[0].contains(", from base): "), "{}", lines[0]);
     assert!(
-        lines[3].starts_with("- settings-env-schema (BTARCH006, from base): "),
+        lines[6].starts_with("- external-config (BT004, from base): "),
         "{}",
-        lines[3]
+        lines[6]
     );
-    assert!(lines[4].starts_with("- no-utils (BT"), "{}", lines[4]);
-    assert!(lines[4].contains(", from base-python): "), "{}", lines[4]);
+    assert!(lines[7].starts_with("- no-utils (BT"), "{}", lines[7]);
+    assert!(lines[7].contains(", from base-python): "), "{}", lines[7]);
     assert!(text.contains("\n## Judgment rules\n\n(none)\n"), "{text}");
     assert!(text.contains("\n## Exports\n\n(none)\n"), "{text}");
     assert!(

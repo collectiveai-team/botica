@@ -17,7 +17,8 @@ _Avoid_: profile, component, preset
 **Step**:
 One entry of a recipe: `[[files]]`, `[[sections]]`, `[[links]]`, `[[tools]]`, `[[gitignore]]`,
 `[[skills]]`, or the rules it selects. A recipe names no command: `[[tools]]` runs `uv add`,
-`[[skills]]` runs `npx skills add`, and the other steps write files.
+`[[skills]]` runs `npx skills add`, and the other steps write files; the rules go into the `select`
+of a new `botica.toml`.
 _Avoid_: op, action, task
 
 **Template**:

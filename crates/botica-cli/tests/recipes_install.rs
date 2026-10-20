@@ -149,9 +149,9 @@ fn installing_twice_changes_nothing_the_second_time() {
 }
 
 #[test]
-fn a_recipe_without_files_or_sections_does_nothing() {
+fn a_recipe_without_rules_or_steps_does_nothing() {
     let dir = project("install-nothing", None);
-    add_recipe(&dir, "mine", "rules = [\"file-size-guard\"]\n");
+    add_recipe(&dir, "mine", "description = \"Nothing\"\n");
 
     let text = ok(&recipe(&dir, &["install", "mine"]));
 
