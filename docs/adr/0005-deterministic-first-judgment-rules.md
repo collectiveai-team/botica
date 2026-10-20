@@ -1,6 +1,6 @@
 # Deterministic first: judgment rules are rules of the catalog, for what botica cannot measure
 
-**Status:** proposed
+**Status:** accepted
 
 ADR 0003 lists `judgment` as a fourth kind of implementation, run by no part of `botica lint` and
 catalogued for the judges and the site. ADR 0002 makes a standard with nothing to run a `judgment`

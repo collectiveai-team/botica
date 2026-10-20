@@ -1,6 +1,10 @@
 # CES lifecycle: proposals are pull requests, the catalog documents what botica measures, the site is generated
 
-**Status:** proposed
+**Status:** accepted
+
+Amended on 2026-10-19: the message of a finding starts with `CES-<number> (<slug>)` and `botica
+explain` prints the `standard` of the rule, so item 1 no longer holds that the CES is absent from
+the output of botica. Botica still selects, ignores and suppresses by slug or code, never by CES.
 
 A CES was born as a GitHub issue. The issue number is the CES number and the issue body is the
 standard's text. Its review state used to be a set of labels that a bot rewrote from slash commands

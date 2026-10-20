@@ -1,6 +1,6 @@
 # External rules and recipes: the catalog describes the tools that enforce a standard, and botica installs them
 
-**Status:** proposed
+**Status:** accepted
 
 Several standards are enforced by another tool, set up through its configuration: CES-109 by
 deptry, CES-110 by complexipy, CES-118 by jscpd, CES-58 by the stack of ruff and pyrefly, and the

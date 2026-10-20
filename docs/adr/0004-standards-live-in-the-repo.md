@@ -1,6 +1,6 @@
 # Standards live in the repo, apart from the rules that implement them
 
-**Status:** proposed
+**Status:** accepted
 
 ADR 0002 left open where the text of a standard lives. A standard states what is required; a rule
 is one way to check it. A standard has any number of rules, none included, and a rule names at most
@@ -31,8 +31,7 @@ standards of its own.
 
 ## Not decided
 
-The lifecycle of a standard (its statuses and transitions). The CES that no file described yet,
-the ten that only the catalog documents and CES-77, still have to be written. How a standard says
+The lifecycle of a standard (its statuses and transitions). Every CES now has its file. How a standard says
 what enforces it when no rule does, and the rest of what the 20 migrated CES still carry of the
 scaffolder, is in [`docs/standards-migration-pending.md`](../standards-migration-pending.md).
 

@@ -1,6 +1,6 @@
 # References: a collection of the catalog that points at code and documentation
 
-**Status:** proposed
+**Status:** accepted
 
 The scaffolder copies five snippets of `scaffolding/templates/snippets/` to `.agents/snippets/` of a
 repository: `core/logger.py` (CES-74), `tests/in_memory_repository.py` (CES-64), `settings.py`,
