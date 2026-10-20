@@ -46,8 +46,8 @@ the README of each rule.
 
 - `AGENTS.md` lists no standard. Its `## Botica rules` section holds the block that
   `botica rules export --format agents-md` writes: one line for each active judgment rule.
-- `standards/<set>/<number>-<slug>.md`: the Directive and the Why of a standard. A standard with
-  rules keeps only those; the examples, configuration, migration and suppression are in the README
-  of each rule in `catalog/rules`.
+- `standards/<set>/<number>-<slug>.md`: the text of a standard, written and kept by people, with
+  its rationale, examples and migration. It may repeat what the README of a rule in
+  `catalog/rules` says, which is the documentation of one implementation.
 - The topics of `references/` (`catalog/references/` for botica's own) hold code to read and copy,
   read with `botica refs show <topic, rule or standard>`.

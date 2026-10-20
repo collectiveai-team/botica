@@ -32,3 +32,20 @@ False}` in PyJWT, `jwt.decode` in `jsonwebtoken` or `ParseUnverified` in `golang
 Every script of the origin can read web storage. The OWASP HTML5 Security Cheat Sheet says: "Do not
 store session identifiers in local storage as the data is always accessible by JavaScript. Cookies
 can mitigate this risk using the `httpOnly` flag."
+
+## Examples
+
+```python
+CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+@router.get("/orders")
+async def list_orders(user: CurrentUser) -> list[Order]: ...
+```
+
+```python
+@router.get("/orders")
+async def list_orders(user_id: str = Header()) -> list[Order]: ...
+```
+
+The first route verifies the caller through `get_current_user`; the second trusts a header.

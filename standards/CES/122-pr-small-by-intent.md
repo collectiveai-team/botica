@@ -19,3 +19,6 @@ A reviewer reads each line against the intent of the change. With two intents in
 reviewer has to sort the lines first, the review takes longer and misses more, and a revert takes
 both out. Google's guide on small changes gives the same advice:
 <https://google.github.io/eng-practices/review/developer/small-cls.html>.
+
+This repository already works this way: a pull request touches one standard, and
+`scripts/check_rule_change.py` fails one that touches two.

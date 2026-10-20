@@ -2,10 +2,9 @@
 
 **Status:** accepted
 
-**Amended 2026-10-20:** a standard that has rules keeps its Directive and its Why; its examples,
-configuration, migration and suppression are in the README of its rules, and the site lists the
-rules of each standard. A standard with no rule keeps its text. `docs/standards-migration-pending.md`
-is removed.
+**Amended 2026-10-20:** a standard is written and kept by people, at a higher level than its
+rules, and it may repeat what the README of a rule says: its examples, configuration and migration
+stay in the standard. `docs/standards-migration-pending.md` is removed.
 
 ADR 0002 left open where the text of a standard lives. A standard states what is required; a rule
 is one way to check it. A standard has any number of rules, none included, and a rule names at most

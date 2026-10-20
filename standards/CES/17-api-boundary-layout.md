@@ -13,7 +13,36 @@ boundary: `core` and `database` never import it.
 
 ## Why
 
-The rules of botica read the layer of a file from its path: CES-4 (`api-schemas-extra-forbid`)
-reports only models under `api/**/schemas/`, and leaves internal models alone. A versioned
-subpackage (`v1`, `v2`) makes a breaking change of the API a new directory, and the modules that the
-versions share stay as they are.
+- A predictable layout lets tooling reason about code by placement instead of guesswork: CES-4
+  (`api-schemas-extra-forbid`) fires only on models under `api/**/schemas/...`, so it stays silent
+  for internal models without inferring intent.
+- Versioned subpackages (`v1`, `v2`) make breaking API changes additive: a new version is a new
+  directory, not an edit that ripples through shared modules.
+
+## Layout
+
+```text
+myapp/
+  api/
+    v1/
+      routers/
+        users.py
+      schemas/
+        requests/
+          create_user.py     # BaseModel + ConfigDict(extra="forbid")  (CES-4)
+        responses/
+          user.py
+  core/        # never imports api
+  database/    # never imports api
+```
+
+## Enforcement
+
+The rules of botica that depend on the layout read it from the path of each file. The direction,
+that nothing below `api` imports `api`, is the rule `import-layers` (CES-5) with `api` in its
+`layers`.
+
+## Related
+
+- CES-4 (`api-schemas-extra-forbid`): the schema rule scoped to this layout.
+- CES-5 (`import-layers`): the layer direction that protects this boundary.

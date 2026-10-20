@@ -12,6 +12,20 @@ migration and not a silent rewrite.
 
 ## Why
 
-The configuration of a repository often records a decision that cost something to reach.
-Overwriting it to match a default loses that context and can break the build, and nobody reviews a
-rewrite that the description of the change does not mention.
+- A tool that bootstraps a repo adds what is missing and defers to what is already there. The same
+  restraint applies to people and agents working in the repo.
+- A repo's config often encodes hard-won, intentional decisions. Overwriting them to match a
+  default destroys context and breaks builds.
+
+## In practice
+
+- An existing `requires-python` pin wins over the default of CES-77.
+- An existing `prek.toml` or `pyproject.toml` is not replaced: new rules are merged in by hand,
+  deliberately.
+- A standard is adopted on the next natural touch, or as a named migration pull request, and never
+  as a drive-by overwrite.
+
+## When in doubt
+
+Standards are defaults. Add alongside and leave the existing choice intact until a migration is
+agreed.

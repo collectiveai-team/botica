@@ -21,11 +21,13 @@ covers the frontend, Docker and YAML files of a repo and not only Python.
 
 The threshold is `--threshold 1` (percent) and is calibrated per repo. `jscpd` respects
 `.gitignore` by default, and v5 needs no `--gitignore` flag. A file that mirrors another on purpose,
-such as the copy of a rule for each language that it covers, is exempted with `-i` or `--ignore` glob
+such as a guide that repeats the instructions of a README, is exempted with `-i` or `--ignore` glob
 patterns, and the global threshold does not go up to cover real duplication elsewhere.
 
-`--threshold` alone is the gate. `--exit-code` is not added: it fails on any clone, whatever the
-percentage.
+`--threshold` alone is the pass or fail gate: the command exits non-zero only when the duplication
+is above the percentage. `jscpd` v5 also has `--exit-code [<code>]`, which exits with that code
+when any duplicate is found. It is not combined with `--threshold`: it fails on any clone, whatever
+the percentage, and so the threshold has no effect.
 
 ## When the hook reports a violation
 
