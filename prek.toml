@@ -184,3 +184,26 @@ priority = 2
 [[repos.hooks]]
 id = "botica-project"
 priority = 2
+
+# The block of AGENTS.md and the rubric of abide match the catalog and the configuration. Local
+# until the mirror has the hooks `botica-agents-md` and `botica-rubric`.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "botica-agents-md"
+name = "botica (block of the judgment rules in AGENTS.md)"
+entry = "uvx botica@0.13.0 rules export --format agents-md --output AGENTS.md --check"
+language = "system"
+pass_filenames = false
+always_run = true
+priority = 2
+
+[[repos.hooks]]
+id = "botica-rubric"
+name = "botica (rubric of abide)"
+entry = "uvx botica@0.13.0 rules export --format abide --check"
+language = "system"
+pass_filenames = false
+always_run = true
+priority = 2
