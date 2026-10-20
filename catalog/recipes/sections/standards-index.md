@@ -30,8 +30,6 @@ describes one, and the hook reports each finding with its slug and its message.
   `agents-conventional-commits`.
 - **CES-77 · version pin** `[judgment]` — `requires-python` ships as a non-enforced comment
   (house default 3.14); an existing repo's pin wins. → see `pyproject.toml` comment.
-- **CES-65 · test through the interface** `[judgment]` — assert on observable behaviour via the
-  public seam, never private internals. Slug: `test-through-interface`.
 - **CES-66 · coverage gaps are a signal** `[judgment]` — treat an uncovered branch as a missing
   test, dead code, or a seam to refactor — not a number to game. Slug: `test-coverage-gap`.
 - **CES-91 · no AI co-authorship in commits** `[prek]` `[ci]` — commit messages must not carry
