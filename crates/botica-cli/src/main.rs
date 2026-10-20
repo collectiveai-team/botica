@@ -72,7 +72,7 @@ enum Command {
     Recipe(recipes_cmd::RecipesArgs),
     /// Serve the findings of the rules to an editor, over the Language Server Protocol on stdio.
     Server(server_cmd::ServerArgs),
-    /// Prepare the extension rules of the project before `botica lint` runs them.
+    /// Prepare the extension rules of the catalogs of the project before `botica lint` runs them.
     Ext(ext_cmd::ExtArgs),
 }
 

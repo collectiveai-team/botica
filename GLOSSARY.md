@@ -79,18 +79,55 @@ _Avoid_: botica lint (for the package)
 
 **Rule**:
 What botica evaluates, selects, ignores and suppresses. Identified by its slug, and by a **code**.
-Lives in `catalog/rules/<family>/<slug>/`, belongs to one **family** and can have one implementation
-per language.
+Lives in a folder of a **catalog**, `<family>/<slug>/`, belongs to one **family** and can have one
+implementation per language.
 _Avoid_: CES, check, standard
 
+**Catalog**:
+A folder of rules. The built-in catalog is `catalog/rules/`, compiled into the binary. A **catalog
+of a project** is `.botica/rules/<name>/`, with a `catalog.toml` that gives its code; the ids of its
+rules are `<name>/<slug>`.
+_Avoid_: rules of the project, project rules, rule set
+
+**Scope**:
+What a rule reads. A rule of file scope looks at one file at a time. A **rule of project scope**
+(`scope = "project"`: `external-config`, `import-layers`, `settings-env-schema`) reads the whole
+project once, and only the configuration silences it.
+_Avoid_: project rule
+
+**Status**:
+`preview` or `stable`. A preview rule runs only when the configuration turns on `preview` and
+selects it.
+
+**Judgment rule**:
+A rule whose implementation is `kind = "judgment"`: a question that an agent or a reviewer answers.
+`botica lint` does not run it; `botica rules export` writes it into the block of `AGENTS.md` and the
+rubric of abide.
+_Avoid_: soft rule, guideline
+
+**External rule**:
+A rule whose implementation is `kind = "external"`: another tool measures it, through the
+configuration that the rule names.
+
+**Extension rule**:
+A rule of a catalog of a project whose implementation is a script that botica runs over the
+extension protocol (`sdk/`).
+_Avoid_: plugin
+
+**Topic**:
+A folder of `catalog/references/` or of `references/` of a project: code and documentation that
+`botica refs show` prints. A rule or a standard cites topics in its `references` field.
+_Avoid_: snippet, reference (for the folder)
+
 **Family**:
-A group of rules that share a code prefix (`STRUC`, `ARCH`, `TEST`, …). Its folder holds a
+A group of rules that share a code prefix (`STRUC`, `ARCH`, `DM`, …). Its folder holds a
 `family.toml` with the code. The linter's own rules have no family and live in `rules/botica/`.
 _Avoid_: category, group
 
 **Code**:
-A rule's identifier with the `BT` header and its family, then three digits (`BTSTRUC001`; the
-linter's own are `BT002`). The only identifier `# noqa` takes.
+A rule's identifier: a header, the family, then three digits. The header of the built-in catalog
+is `BT` (`BTSTRUC001`; the linter's own rules are `BT002`), and the header of a catalog of a project
+is its code (`ACMESTRUC001`), which does not start with `BT`. The only identifier `# noqa` takes.
 _Avoid_: rule id (the id is the slug)
 
 **Suppression channel**:

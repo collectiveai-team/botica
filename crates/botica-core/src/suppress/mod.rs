@@ -10,8 +10,8 @@ use crate::document::Document;
 use aho_corasick::AhoCorasick;
 use directive::{Channels, Directive, Malformed, Scope};
 use message::{
-    judgment_on_a_line, judgment_without_reason, malformed_message, project_rule_in_a_comment,
-    unused_message,
+    judgment_on_a_line, judgment_without_reason, malformed_message,
+    project_scope_rule_in_a_comment, unused_message,
 };
 use scan::{allows_noqa, scan, Syntax};
 use std::collections::{HashMap, HashSet};
@@ -466,7 +466,7 @@ impl Policy {
             .filter_map(|token| {
                 let slug = token.slug.as_deref()?;
                 if self.project.contains(slug) {
-                    return Some((token, project_rule_in_a_comment(&token.name, slug)));
+                    return Some((token, project_scope_rule_in_a_comment(&token.name, slug)));
                 }
                 if !self.judgment.contains(slug) {
                     return None;

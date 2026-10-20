@@ -1,5 +1,5 @@
 //! `botica server`: an editor opens a buffer that is not on disk and gets the findings of the
-//! rules of the project, as it types and when it saves.
+//! active rules, as it types and when it saves.
 
 mod common;
 

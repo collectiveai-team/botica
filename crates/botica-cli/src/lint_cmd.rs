@@ -149,7 +149,7 @@ struct Setup {
     has_extensions: bool,
     /// Where the configuration was found (the working directory when there is none).
     project_root: PathBuf,
-    /// The extension rules of the project.
+    /// The extension rules of the catalogs of the project.
     pool: ExtensionPool,
 }
 

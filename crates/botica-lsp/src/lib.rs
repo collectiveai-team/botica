@@ -33,7 +33,7 @@ pub const DEBOUNCE: Duration = Duration::from_millis(250);
 
 /// What the server runs besides the engine.
 pub struct Options<'a> {
-    /// The extension rules of the project, if there are any to run.
+    /// The extension rules of the catalogs of the project, if there are any to run.
     pub extensions: Option<&'a dyn Extensions>,
     /// Whether the extensions run although the editor did not ask for them.
     pub enabled: bool,

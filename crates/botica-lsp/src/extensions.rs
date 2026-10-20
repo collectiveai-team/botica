@@ -12,7 +12,7 @@ use crate::linter::When;
 /// How many times the server starts the process of a rule again after it failed.
 pub const MAX_RESTARTS: usize = 3;
 
-/// The extension rules of the project, as the server reaches them. A rule is named by a key.
+/// The extension rules of the catalogs of the project, as the server reaches them. A rule is named by a key.
 pub trait Extensions: Sync {
     /// The keys of the rules that read the file at `path` and whose findings show at `when`, none
     /// when no rule does.

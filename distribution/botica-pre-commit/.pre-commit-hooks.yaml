@@ -8,7 +8,7 @@
   verbose: true
 
 - id: botica-project
-  name: botica (project rules)
+  name: botica (rules of project scope)
   description: The rules that need the whole project, not one file at a time.
   entry: botica lint --scope project
   language: python

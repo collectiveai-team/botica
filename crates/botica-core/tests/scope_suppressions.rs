@@ -26,7 +26,7 @@ fn a_comment_that_names_a_project_rule_is_invalid_and_says_where_to_silence_it()
         assert_eq!(
             found[0].message,
             format!(
-                "`{name}` is a rule of the project and only the configuration silences it: \
+                "`{name}` is a rule of project scope and only the configuration silences it: \
                  add the path to `extend-ignores` in `[rules.layered-rule]`"
             ),
             "{text:?}"

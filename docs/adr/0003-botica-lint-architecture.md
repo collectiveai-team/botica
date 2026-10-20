@@ -67,7 +67,7 @@ implementation picks how it runs:
 
 | Kind | Runs | For |
 |---|---|---|
-| `native` | in the binary | house rules, hot paths, expensive project rules |
+| `native` | in the binary | house rules, hot paths, expensive rules of project scope |
 | `ast-grep` | in the binary (YAML compiled once) | most syntactic rules, any ast-grep language |
 | `extension` | separate process, `runtime = python \| node \| command`; catalogs of a project only | logic YAML cannot express, third-party libraries, repo-local rules |
 | `external` | by another tool, through its configuration | a standard that a tool such as ruff or complexipy enforces; botica checks that the tool is set up (ADR 0006) |

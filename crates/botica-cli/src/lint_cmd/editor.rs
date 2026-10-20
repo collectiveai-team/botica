@@ -30,7 +30,7 @@ impl Editor {
         })
     }
 
-    /// The extension rules of the project.
+    /// The extension rules of the catalogs of the project.
     pub const fn extensions(&self) -> &ExtensionPool {
         &self.setup.pool
     }

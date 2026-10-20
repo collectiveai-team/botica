@@ -11,7 +11,7 @@ use crate::project::ProjectArgs;
 pub struct ServerArgs {
     #[command(flatten)]
     project: ProjectArgs,
-    /// Run the extension rules of the project on the buffers; the option `{"extensions": true}` of
+    /// Run the extension rules of the catalogs of the project on the buffers; the option `{"extensions": true}` of
     /// `initialize` asks for the same. Heavy, and a risk: opening a repository in the editor runs
     /// the scripts of the project (Python, Node, commands).
     #[arg(long)]

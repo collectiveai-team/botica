@@ -1,4 +1,4 @@
-//! `botica server` with the extension rules of the project: the flag or the option of the editor
+//! `botica server` with the extension rules of the catalogs of the project: the flag or the option of the editor
 //! asks for them, and what they find in a buffer follows what the engine found.
 
 mod common;

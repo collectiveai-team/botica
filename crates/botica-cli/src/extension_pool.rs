@@ -210,7 +210,7 @@ impl Extensions for ExtensionPool {
         let rule = &self
             .resolution
             .entry(id)
-            .ok_or_else(|| format!("`{id}` is not a rule of the project"))?
+            .ok_or_else(|| format!("`{id}` is not an extension rule of a catalog of the project"))?
             .rule;
         let implementation = rule
             .implementations
