@@ -134,7 +134,7 @@ impl NativeRule for NoTestsInPackage {
             doc,
             self.id(),
             format!(
-                "no-tests-in-package: {} is a test inside the package — keep tests in a `tests/` directory beside the package, not in it.",
+                "CES-32 (no-tests-in-package): {} is a test inside the package — keep tests in a `tests/` directory beside the package, not in it.",
                 doc.path
             ),
         ));

@@ -15,7 +15,7 @@
           "column": 22
         }
       },
-      "message": "botica/settings-base-class: a settings class extends pydantic_settings.BaseSettings, not BaseModel. Change the base class so that the environment is read and validated."
+      "message": "CES-76 (settings-base-class): A settings class extends pydantic_settings.BaseSettings, not BaseModel. Change the base class so that the environment is read and validated."
     },
     {
       "path": "settings.py",
@@ -32,7 +32,7 @@
           "column": 24
         }
       },
-      "message": "botica/settings-base-class: a settings class extends pydantic_settings.BaseSettings, not BaseModel. Change the base class so that the environment is read and validated."
+      "message": "CES-76 (settings-base-class): A settings class extends pydantic_settings.BaseSettings, not BaseModel. Change the base class so that the environment is read and validated."
     }
   ]
 }

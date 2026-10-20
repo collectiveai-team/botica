@@ -1,5 +1,6 @@
 id = "api-request-schema-name"
 code = "BTFAST003"
+standard = "CES-17"
 summary = "Request schemas are named {Name}Request"
 status = "preview"
 tags = ["typing"]

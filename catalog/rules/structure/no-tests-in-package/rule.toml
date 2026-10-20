@@ -1,5 +1,6 @@
 id = "no-tests-in-package"
 code = "BTSTRUC005"
+standard = "CES-32"
 summary = "Keep tests beside the package, not in it"
 status = "stable"
 tags = ["layout"]

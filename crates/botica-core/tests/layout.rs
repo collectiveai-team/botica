@@ -157,7 +157,7 @@ mod tests_in_the_package {
         assert!(found[0].file_level);
         assert_eq!(
             found[0].message,
-            "no-tests-in-package: backend/amarc/tests/test_a.py is a test inside the package — keep tests in a `tests/` directory beside the package, not in it."
+            "CES-32 (no-tests-in-package): backend/amarc/tests/test_a.py is a test inside the package — keep tests in a `tests/` directory beside the package, not in it."
         );
     }
 }

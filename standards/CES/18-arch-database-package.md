@@ -20,6 +20,9 @@ database/
 `core` holds the pure domain models and the repository protocol; `database` holds the tables and
 the concrete repositories. `sqlmodel`, `sqlalchemy` and `alembic` are imported only there.
 
+The schema changes only through a migration of `database/migrations/`. Code that runs in production
+does not create tables with `metadata.create_all()`; a test may.
+
 ## Why
 
 The persistence libraries are imported in one package, so the domain imports no database library

@@ -15,7 +15,7 @@
           "column": 14
         }
       },
-      "message": "botica/api-schema-in-route-module: a Pydantic schema is defined in a route module. Move it to the schemas/requests or schemas/responses package of api."
+      "message": "CES-17 (api-schema-in-route-module): A Pydantic schema is defined in a route module. Move it to the schemas/requests or schemas/responses package of api."
     },
     {
       "path": "api/v1/routes/users.py",
@@ -32,7 +32,7 @@
           "column": 15
         }
       },
-      "message": "botica/api-schema-in-route-module: a Pydantic schema is defined in a route module. Move it to the schemas/requests or schemas/responses package of api."
+      "message": "CES-17 (api-schema-in-route-module): A Pydantic schema is defined in a route module. Move it to the schemas/requests or schemas/responses package of api."
     }
   ]
 }

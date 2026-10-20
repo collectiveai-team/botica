@@ -4,13 +4,13 @@
       "path": "backend/amarc/core/test_inline.py",
       "severity": "error",
       "range": null,
-      "message": "no-tests-in-package: backend/amarc/core/test_inline.py is a test inside the package — keep tests in a `tests/` directory beside the package, not in it."
+      "message": "CES-32 (no-tests-in-package): backend/amarc/core/test_inline.py is a test inside the package — keep tests in a `tests/` directory beside the package, not in it."
     },
     {
       "path": "backend/amarc/core/tests/test_service.py",
       "severity": "error",
       "range": null,
-      "message": "no-tests-in-package: backend/amarc/core/tests/test_service.py is a test inside the package — keep tests in a `tests/` directory beside the package, not in it."
+      "message": "CES-32 (no-tests-in-package): backend/amarc/core/tests/test_service.py is a test inside the package — keep tests in a `tests/` directory beside the package, not in it."
     }
   ]
 }

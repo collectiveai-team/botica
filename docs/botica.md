@@ -28,7 +28,7 @@ botica rules                   # which rules are active, and why (--all adds the
                                # outside it; --json adds the kind of each implementation
 botica server                  # the Language Server Protocol on stdio: the findings for the buffers of an
                                # editor (native and pattern rules), paths from the working directory
-botica server --extensions     # and the extension rules of the project: heavy, and it runs the scripts
+botica server --extensions     # and the extension rules of the catalogs of the project: heavy, and it runs the scripts
                                # of the project (see "Rules of the project")
 botica explain no-notebooks    # what a rule is, how it is built and how it is configured here
 botica ext sync                # create the environments of the Python scripts of the extension rules
@@ -83,13 +83,13 @@ run on its own. `botica rules test --judge abide` runs abide with the environmen
 | `BTSTRUC002` | [`no-utils`](rules/structure/no-utils/README.md) | CES-63 | Python: `utils.py`, `helpers.py`, … |
 | `BTSTRUC003` | [`no-artifacts-in-package`](rules/structure/no-artifacts-in-package/README.md) | CES-32 | data, models and reports inside the code |
 | `BTSTRUC004` | [`no-notebooks`](rules/structure/no-notebooks/README.md) | CES-32 | notebooks inside the code |
-| `BTSTRUC005` | [`no-tests-in-package`](rules/structure/no-tests-in-package/README.md) | none yet | Python: tests inside the package |
+| `BTSTRUC005` | [`no-tests-in-package`](rules/structure/no-tests-in-package/README.md) | CES-32 | Python: tests inside the package |
 | `BTSTRUC006` | [`cognitive-complexity`](rules/structure/cognitive-complexity/README.md) | CES-110 | external: complexipy measures it, through its hook in `prek.toml` |
 | `BTARCH001` | [`arch-database-package`](rules/architecture/arch-database-package/README.md) | CES-18 | Python: tables and engines outside a `database` package |
 | `BTARCH002` | [`settings-module`](rules/architecture/settings-module/README.md) | CES-76 | Python: `os.getenv` and `os.environ` outside the settings module |
-| `BTARCH003` | [`settings-base-class`](rules/architecture/settings-base-class/README.md) | none yet | Python: a settings class that extends `BaseModel` instead of `BaseSettings` |
-| `BTARCH004` | [`settings-direct-instantiation`](rules/architecture/settings-direct-instantiation/README.md) | none yet | Python: a settings class built where it is used, not through `get_settings()` |
-| `BTARCH005` | [`db-no-create-all`](rules/architecture/db-no-create-all/README.md) | none yet | Python: `metadata.create_all()` outside tests |
+| `BTARCH003` | [`settings-base-class`](rules/architecture/settings-base-class/README.md) | CES-76 | Python: a settings class that extends `BaseModel` instead of `BaseSettings` |
+| `BTARCH004` | [`settings-direct-instantiation`](rules/architecture/settings-direct-instantiation/README.md) | CES-76 | Python: a settings class built where it is used, not through `get_settings()` |
+| `BTARCH005` | [`db-no-create-all`](rules/architecture/db-no-create-all/README.md) | CES-18 | Python: `metadata.create_all()` outside tests |
 | `BTARCH006` | [`settings-env-schema`](rules/architecture/settings-env-schema/README.md) | CES-76 | the project: `.env.schema` against the settings classes (Python: pydantic-settings) |
 | `BTARCH007` | [`import-layers`](rules/architecture/import-layers/README.md) | CES-5 | the project: Python imports against the `layers` of the configuration, direct or through other modules |
 | `BTDM002` | [`no-dict-alias`](rules/data-models/no-dict-alias/README.md) | CES-79 | Python: a type alias for a raw `dict` |
@@ -97,9 +97,9 @@ run on its own. `botica rules test --judge abide` runs abide with the environmen
 | `BTDM004` | [`no-dict-literal-return`](rules/data-models/no-dict-literal-return/README.md) | CES-79 | Python: returning a dict literal |
 | `BTDM005` | [`no-dict-return-annotation`](rules/data-models/no-dict-return-annotation/README.md) | CES-79 | Python: a function annotated to return `dict` |
 | `BTFAST001` | [`api-schemas-extra-forbid`](rules/fastapi/api-schemas-extra-forbid/README.md) | CES-4 | Python: API schemas without `extra="forbid"` |
-| `BTFAST002` | [`api-schema-in-route-module`](rules/fastapi/api-schema-in-route-module/README.md) | none yet | Python: a Pydantic schema defined in a route module |
-| `BTFAST003` | [`api-request-schema-name`](rules/fastapi/api-request-schema-name/README.md) | none yet | Python: a request schema not named `{Name}Request` |
-| `BTFAST004` | [`api-response-schema-name`](rules/fastapi/api-response-schema-name/README.md) | none yet | Python: a response schema not named `{Name}Response` |
+| `BTFAST002` | [`api-schema-in-route-module`](rules/fastapi/api-schema-in-route-module/README.md) | CES-17 | Python: a Pydantic schema defined in a route module |
+| `BTFAST003` | [`api-request-schema-name`](rules/fastapi/api-request-schema-name/README.md) | CES-17 | Python: a request schema not named `{Name}Request` |
+| `BTFAST004` | [`api-response-schema-name`](rules/fastapi/api-response-schema-name/README.md) | CES-17 | Python: a response schema not named `{Name}Response` |
 | `BTLOG001` | [`log-get-logger`](rules/logging/log-get-logger/README.md) | CES-45 | Python: `logging.getLogger` called directly |
 | `BTLOG002` | [`log-no-print`](rules/logging/log-no-print/README.md) | CES-46 | Python and TypeScript: `print()` and `console.log()` in library code |
 | `BTPROC001` | [`cli-typed-framework`](rules/process/cli-typed-framework/README.md) | CES-67 | Python: `argparse`, `click` and `sys.argv` |
@@ -681,7 +681,7 @@ A `# ast-grep-ignore: <rule>` comment is a plain comment to botica: replace it w
 `botica server` is a language server on stdin and stdout. It takes the paths of the buffers from
 the directory it starts in: start it at the root of the project.
 
-It publishes the findings of the native and pattern rules of the project for each open buffer. The
+It publishes the findings of the active native and pattern rules for each open buffer. The
 findings of a rule with `type` in its `run-on` change with each edit. Those of a rule with `save`
 and without `type` are found when the buffer opens and at each save, and stay as they are between
 two saves. A rule of file scope whose `run-on` is `["cli"]` does not show in the editor. Each save

@@ -1,5 +1,6 @@
 id = "settings-direct-instantiation"
 code = "BTARCH004"
+standard = "CES-76"
 summary = "Settings are read through get_settings(), never built where they are used"
 status = "preview"
 tags = ["config"]

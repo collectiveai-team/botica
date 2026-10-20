@@ -1,5 +1,6 @@
 id = "api-schema-in-route-module"
 code = "BTFAST002"
+standard = "CES-17"
 summary = "Pydantic schemas are not defined in route modules"
 status = "preview"
 tags = ["typing"]

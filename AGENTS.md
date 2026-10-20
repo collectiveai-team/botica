@@ -174,7 +174,6 @@ describes one, and the hook reports each finding with its slug and its message.
 
 ### Excluded here (don't apply to a CLI with no API, database or web layer)
 
-- **CES-17 · api-boundary-layout** — no inbound HTTP/`api` package.
 - **CES-114 · hadolint-dockerfile-lint** — no root `Dockerfile` / `ci-docker` recipe in this
   repo.
 

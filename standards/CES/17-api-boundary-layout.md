@@ -7,8 +7,9 @@ title: API boundary layout
 
 All inbound HTTP lives in one `api` package with a fixed, versioned shape. Request and response
 schemas live under `api/<version>/schemas/{requests,responses}/`, and routers and endpoints under
-`api/<version>/routers/`. The `api` package is the only inbound boundary: `core` and `database`
-never import it.
+`api/<version>/routers/`. A router module defines no schema. A request schema is named
+`<Thing>Request` and a response schema `<Thing>Response`. The `api` package is the only inbound
+boundary: `core` and `database` never import it.
 
 ## Why
 
