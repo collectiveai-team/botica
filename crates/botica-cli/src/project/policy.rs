@@ -91,7 +91,7 @@ mod tests {
     use botica_config::Config;
     use botica_core::Engine;
 
-    const RULE: &str = "id = \"test-foo\"\ncode = \"BTTEST001\"\nsummary = \"s\"\n\
+    const RULE: &str = "id = \"test-foo\"\ncode = \"BTTEST901\"\nsummary = \"s\"\n\
         status = \"stable\"\ndefault-enabled = true\ndefault-severity = \"warning\"\n\n\
         [[implementations]]\nkind = \"judgment\"\nlanguages = [\"python\"]\nwhen = \"edit\"\n\
         why-not-deterministic = \"w\"\n\n\
@@ -126,9 +126,9 @@ mod tests {
     fn a_judgment_rule_of_the_catalog_is_suppressed_by_file_with_a_reason_only() {
         assert!(lint("# botica: ignore-file[test-foo] -- a reason\n").is_empty());
         assert_eq!(
-            lint("x = 1  # botica: ignore[BTTEST001]\n"),
+            lint("x = 1  # botica: ignore[BTTEST901]\n"),
             [
-                "`BTTEST001` is a judgment rule: suppress it for the whole file with \
+                "`BTTEST901` is a judgment rule: suppress it for the whole file with \
               `botica: ignore-file[test-foo] -- <reason>`"
             ]
         );

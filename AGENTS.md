@@ -142,8 +142,6 @@ describes one, and the hook reports each finding with its slug and its message.
   `@standards/CES/75-agents-conventional-commits.md`
 - **CES-77 · version pin** `[judgment]` — `requires-python` stays a deliberate local choice;
   house default is 3.14. → `@standards/CES/77-version-pin.md`
-- **CES-64 · test against in-memory adapters** `[judgment]` — fakes over mocks. →
-  `@standards/CES/64-test-in-memory-adapters.md`
 - **CES-65 · test through the interface** `[judgment]` — assert behaviour via the public seam
   (the command line of botica, the functions of a script), not internals. → `@standards/CES/65-test-through-interface.md`
 - **CES-66 · coverage gaps are a signal** `[judgment]` — an untested branch is a missing test or

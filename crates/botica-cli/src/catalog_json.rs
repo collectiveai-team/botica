@@ -182,7 +182,7 @@ mod tests {
 
     #[test]
     fn the_question_of_a_judgment_rule_is_written_as_abide_reads_it() {
-        let rule = "id = \"test-foo\"\ncode = \"BTTEST001\"\nsummary = \"s\"\n\
+        let rule = "id = \"test-foo\"\ncode = \"BTTEST901\"\nsummary = \"s\"\n\
                     status = \"preview\"\ndefault-enabled = false\ndefault-severity = \"warning\"\n\n\
                     [[implementations]]\nkind = \"judgment\"\nlanguages = [\"python\"]\n\
                     when = \"edit\"\nwhy-not-deterministic = \"w\"\n\n\

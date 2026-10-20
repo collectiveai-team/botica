@@ -171,7 +171,7 @@ mod tests {
     use botica_catalog::{read_files, Catalog, SourceFile};
     use botica_config::{Config, Resolution};
 
-    const RULE: &str = "id = \"test-foo\"\ncode = \"BTTEST001\"\nsummary = \"s\"\n\
+    const RULE: &str = "id = \"test-foo\"\ncode = \"BTTEST901\"\nsummary = \"s\"\n\
         status = \"stable\"\ndefault-enabled = true\ndefault-severity = \"warning\"\n\n\
         [[implementations]]\nkind = \"judgment\"\nlanguages = [\"python\"]\nwhen = \"edit\"\n\
         why-not-deterministic = \"w\"\n\n\
@@ -238,7 +238,7 @@ mod tests {
 
     #[test]
     fn a_finding_of_an_active_judgment_rule_is_reported_where_the_judge_puts_it() {
-        let judged = judge("", &[result("BTTEST001", &at("src/a.py", 3))], &[]);
+        let judged = judge("", &[result("BTTEST901", &at("src/a.py", 3))], &[]);
 
         let finding = &judged.diagnostics[0];
         assert_eq!(summary(&judged), ["test-foo@src/a.py:3 warning"]);

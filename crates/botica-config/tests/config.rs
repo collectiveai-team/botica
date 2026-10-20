@@ -211,9 +211,9 @@ fn selectors_follow_the_family_rules_of_the_spec() {
 }
 
 #[test]
-fn an_empty_family_can_be_selected_but_a_prefix_must_match_a_rule() {
+fn a_family_can_be_selected_but_a_prefix_must_match_a_rule() {
     accepted("select = [\"BTTEST\"]");
-    assert!(problems("select = [\"BTTEST0\"]").contains("select[0]"));
+    assert!(problems("select = [\"BTTEST9\"]").contains("select[0]"));
 }
 
 #[test]
