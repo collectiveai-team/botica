@@ -2,6 +2,11 @@
 
 **Status:** accepted
 
+**Amended 2026-10-20:** a standard that has rules keeps its Directive and its Why; its examples,
+configuration, migration and suppression are in the README of its rules, and the site lists the
+rules of each standard. A standard with no rule keeps its text. `docs/standards-migration-pending.md`
+is removed.
+
 ADR 0002 left open where the text of a standard lives. A standard states what is required; a rule
 is one way to check it. A standard has any number of rules, none included, and a rule names at most
 one standard. Botica evaluates rules. Collective writes the CES, and another team can write
@@ -31,9 +36,7 @@ standards of its own.
 
 ## Not decided
 
-The lifecycle of a standard (its statuses and transitions). Every CES now has its file. How a standard says
-what enforces it when no rule does, and the rest of what the 20 migrated CES still carry of the
-scaffolder, is in [`docs/standards-migration-pending.md`](../standards-migration-pending.md).
+The lifecycle of a standard (its statuses and transitions). Every CES now has its file.
 
 ## Considered options
 

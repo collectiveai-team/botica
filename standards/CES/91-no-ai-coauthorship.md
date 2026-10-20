@@ -30,8 +30,7 @@ attribution agent in the metadata of a Git commit.
    of the pull request or push (`git log --format=%B <base>..<head>`) and fails when a line of a
    subject or body matches the trailer pattern.
 
-Both use one fixed Python regex that is never interpolated into a shell command, and the pattern
-is written once so the two layers cannot drift.
+Both use one fixed Python regex that is never interpolated into a shell command.
 
 ## Disallowed and allowed
 
