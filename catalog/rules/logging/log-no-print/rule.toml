@@ -20,3 +20,13 @@ file = "python.yml"
 kind = "ast-grep"
 languages = ["typescript"]
 file = "typescript.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["tsx"]
+file = "tsx.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["javascript"]
+file = "javascript.yml"

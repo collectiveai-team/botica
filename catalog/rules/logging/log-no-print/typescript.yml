@@ -1,12 +1,28 @@
 id: log-no-print
 language: typescript
 severity: warning
-message: "CES-46 (log-no-print): Libraries log, they don't print — use the project logger instead of console.log() in library code."
+message: "CES-46 (log-no-print): Libraries log, they don't print: use the logger of the project instead of console.* or process.stdout/stderr.write in library code. `cli.*`, `cli/`, `bin/`, the tests and `if (import.meta.main)` or `if (require.main === module)` blocks are exempt; another entry point goes in `extend-ignores`."
 ignores:
-  - "**/*.test.ts"
+  - "**/cli.*"
+  - "**/cli/**"
+  - "**/bin/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/__tests__/**"
+  - "**/tests/**"
 rule:
-  pattern: console.log($$$ARGS)
+  any:
+    - pattern: console.$METHOD($$$ARGS)
+    - pattern: process.stdout.write($$$ARGS)
+    - pattern: process.stderr.write($$$ARGS)
   not:
     inside:
       stopBy: end
-      kind: catch_clause
+      any:
+        - pattern: |
+            if (import.meta.main) { $$$BODY }
+        - pattern: |
+            if (require.main === module) { $$$BODY }
+constraints:
+  METHOD:
+    regex: "^(log|info|debug|warn|error|trace|dir|table)$"

@@ -198,8 +198,10 @@ fn a_rule_carries_the_sections_of_its_readme_in_their_order() {
     );
     assert_eq!(
         sections[0]["text"],
-        "Importable library code logs through a logger. A `print()` in Python or a \
-         `console.log()` in\nTypeScript is a violation. A warning by default."
+        "Importable library code logs through a logger. In Python, `print()`, `sys.stdout.write()` and\n\
+         `sys.stderr.write()` are violations. In TypeScript and JavaScript (`.ts`, `.tsx`, `.js`), a call to\n\
+         `console.log`, `info`, `debug`, `warn`, `error`, `trace`, `dir` or `table`, and\n\
+         `process.stdout.write()` or `process.stderr.write()`, are violations. A warning by default."
     );
 }
 

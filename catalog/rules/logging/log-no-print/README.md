@@ -1,30 +1,36 @@
 ## Directive
 
-Importable library code logs through a logger. A `print()` in Python or a `console.log()` in
-TypeScript is a violation. A warning by default.
+Importable library code logs through a logger. In Python, `print()`, `sys.stdout.write()` and
+`sys.stderr.write()` are violations. In TypeScript and JavaScript (`.ts`, `.tsx`, `.js`), a call to
+`console.log`, `info`, `debug`, `warn`, `error`, `trace`, `dir` or `table`, and
+`process.stdout.write()` or `process.stderr.write()`, are violations. A warning by default.
 
 ## Why
 
-`print()` and `console.log()` write unstructured text to stdout, with no level, timestamp or
-context, and a library that prints pollutes the stdout of every program that imports it. Logging
-lets the application decide where output goes.
+These calls write unstructured text to stdout or stderr, with no level, timestamp or context, and a
+library that prints pollutes the output of every program that imports it. Logging lets the
+application decide where output goes.
 
 ## Exceptions
+
+The entry points of a command line program and the tests write there on purpose. Another entry
+point goes in the `extend-ignores` of the rule.
 
 ### Python
 
 The rule skips:
 
-- `__main__.py`, `cli.py` and every file under a `cli/` directory, because stdout is their output.
+- `__main__.py`, `cli.py` and every file under a `cli/` directory.
 - `conftest.py` and every file under `tests/`.
-- A `print()` inside an `if __name__ == "__main__":` block.
+- A write inside an `if __name__ == "__main__":` block.
 
-### TypeScript
+### TypeScript and JavaScript
 
 The rule skips:
 
-- A `console.log()` inside a `catch` clause.
-- Files named `*.test.ts`.
+- `cli.*` and every file under a `cli/` or `bin/` directory.
+- `*.test.*`, `*.spec.*` and every file under `__tests__/` or `tests/`.
+- A write inside an `if (import.meta.main)` or `if (require.main === module)` block.
 
 ## Do
 

@@ -101,7 +101,7 @@ run on its own. `botica rules test --judge abide` runs abide with the environmen
 | `BTFAST003` | [`api-request-schema-name`](rules/fastapi/api-request-schema-name/README.md) | CES-17 | Python: a request schema not named `{Name}Request` |
 | `BTFAST004` | [`api-response-schema-name`](rules/fastapi/api-response-schema-name/README.md) | CES-17 | Python: a response schema not named `{Name}Response` |
 | `BTLOG001` | [`log-get-logger`](rules/logging/log-get-logger/README.md) | CES-45 | Python: `logging.getLogger` called directly |
-| `BTLOG002` | [`log-no-print`](rules/logging/log-no-print/README.md) | CES-46 | Python and TypeScript: `print()` and `console.log()` in library code |
+| `BTLOG002` | [`log-no-print`](rules/logging/log-no-print/README.md) | CES-46 | Python, TypeScript and JavaScript: `print()`, `console.*` and writes to stdout or stderr in library code |
 | `BTPROC001` | [`cli-typed-framework`](rules/process/cli-typed-framework/README.md) | CES-67 | Python: `argparse`, `click` and `sys.argv` |
 | `BT001`–`BT003` | `io-error`, `unused-suppression`, `invalid-suppression` | | the run and the suppressions |
 | `BT004` | [`external-config`](rules/botica/external-config/README.md) | | the files of configuration that the active external rules name |
