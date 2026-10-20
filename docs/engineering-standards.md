@@ -1,33 +1,27 @@
 # Engineering Standards — CES (Collective Engineering Standard)
 
-Single source of truth for how house engineering rules are coded, cited, and shipped.
-`AGENTS.md` and `README.md` reference this file rather than restating it.
+How the standards of the house are numbered, cited and connected to the rules of botica.
 
 ## What a CES is
 
-A **CES — Collective Engineering Standard** is one house rule that the recipes of botica ship into
-target repos (as a botica rule, a prek hook, a `pyproject` setting, or an AGENTS.md
-directive + detail file). Each standard is the file `standards/CES/<number>-<slug>.md`, which holds
-its text (ADR 0004).
+A standard is the file `standards/CES/<number>-<slug>.md`, which holds its text (ADR 0004). A rule
+of the catalog cites it in the `standard` field of its `rule.toml`. A standard has any number of
+rules, none included.
 
 ## Two identifiers, two jobs
 
 | Layer | Value | Used in |
 |---|---|---|
-| **Catalog code** | `CES-<number>` | AGENTS.md index, commit/PR refs, human citation, violation messages |
-| **Machine id** | kebab-case **slug** (`log-no-print`, `api-schemas-extra-forbid`) | botica rule id, prek hook id, `# botica: ignore[<slug>]` |
+| Catalog code | `CES-<number>` | commit and pull request references, human citation |
+| Machine id | kebab-case slug (`log-no-print`, `api-schemas-extra-forbid`) | botica rule id, prek hook id, `# botica: ignore[<slug>]` |
 
-Always written together where space allows: **`CES-46 · log-no-print`**.
-
-Never encode the CES number in the machine id — slugs are what tooling and suppressions key
-on, so they must stay stable and semantic.
+The CES number is not part of a machine id: tooling and suppressions key on the slug.
 
 ## Invariants
 
-- **Every CES is a file.** A rule cites a CES only if `standards/CES/<number>-<slug>.md` exists.
-- **One CES = one standard.** A standard may ship **multiple slugs** — e.g. `CES-79` ships the
-  four `no-dict-*` botica rules.
-- **The number is the next free one of the set**, `max + 1`. The numbers up to `CES-119` are those
+- A rule cites a CES only if `standards/CES/<number>-<slug>.md` exists.
+- One CES is one standard, and it may have several rules: `CES-79` has the four `no-dict-*` rules.
+- The number is the next free one of the set, `max + 1`. The numbers up to `CES-119` are those
   of the issues where the standards were first proposed and are kept; from `CES-120` on, `CES-N`
   is no longer the issue `#N`. A number is never reused or changed.
   `scripts/check_rule_change.py` fails a change that leaves two standards of a set with the same
@@ -44,34 +38,16 @@ carries the `standard` of the rule in each diagnostic and SARIF in the `properti
 and `botica explain <slug>` prints it. The slug remains the suppression key
 (`# botica: ignore[<slug>]`).
 
-### Messages are self-contained (no cross-rule references)
-
-A violation message states **its own** rule and the fix — nothing else. It must
-**not**:
-
-- name a sibling rule (e.g. "hidden from the no-dict-return rules"), or
-- prescribe another rule's suppression key (a message for `no-dict-alias` telling you to add
-  `# botica: ignore[no-dict-return-annotation]` is wrong — and wouldn't even silence itself).
-
-Scattering policy across sibling messages is context-poisoning: one rule ends up restating or
-superseding another's decision. The grouped rationale, the relationships between a standard's
-slugs, and the escape-hatch mechanism live **once**, in the file of the standard
-(`standards/<set>/<number>-<slug>.md`; for a rule that `botica lint` measures, the README of its
-folder in `catalog/rules`) — the single source of truth. If a message needs more than "what +
-fix", that belongs in the file of the standard, not the message.
+A message states its own rule and the fix. It names no other rule and gives no other rule's
+suppression key. What a standard's rules share is written once, in the file of the standard or in
+the README of each rule.
 
 ## Where the pieces live
 
 - `AGENTS.md` lists no standard. Its `## Botica rules` section holds the block that
   `botica rules export --format agents-md` writes: one line for each active judgment rule.
-- **On-demand detail:** `standards/<set>/<number>-<slug>.md` — full rationale, examples,
-  migration. A rule that `botica lint` measures has its own documentation, the README of its
-  catalog folder, and its `standard` field names the standard it implements.
-- **Canonical code:** the topics of `references/` (`catalog/references/` for botica's own), read with
-  `botica refs show <topic, rule or standard>`. A topic points at the code at a commit.
-
-## References
-
-- The text of each standard: `standards/CES/`.
-- The rules that `botica lint` measures: the catalog (`catalog/rules`) lists them, each with the
-  standard it implements, and documents them.
+- `standards/<set>/<number>-<slug>.md`: the Directive and the Why of a standard. A standard with
+  rules keeps only those; the examples, configuration, migration and suppression are in the README
+  of each rule in `catalog/rules`.
+- The topics of `references/` (`catalog/references/` for botica's own) hold code to read and copy,
+  read with `botica refs show <topic, rule or standard>`.
