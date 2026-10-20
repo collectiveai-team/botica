@@ -1,0 +1,12 @@
+{
+  "verdicts": [
+    {
+      "file": "valid/guide.md",
+      "band": "clear"
+    },
+    {
+      "file": "invalid/guide.md",
+      "band": "act"
+    }
+  ]
+}

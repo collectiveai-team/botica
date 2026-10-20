@@ -150,7 +150,7 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
         &catalog,
         "select = []\nextend-select = [\"all\"]\npreview = true",
     );
-    assert_eq!(active(&resolution).len(), 28);
+    assert_eq!(active(&resolution).len(), 31);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTCONF\"]\npreview = true")),
         [

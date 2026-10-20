@@ -1,0 +1,19 @@
+id = "ubiquitous-language"
+code = "BTWRIT003"
+standard = "CES-120"
+summary = "One term per concept of the domain, the one of the glossary"
+status = "preview"
+tags = ["writing"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "judgment"
+languages = ["*"]
+when = "edit"
+why-not-deterministic = "Whether two words name the same concept of the domain depends on what they mean in the project, which the glossary and a reading of the code decide."
+
+[implementations.question]
+type = "boolean"
+instructions = "Read the names and the prose of the file. Does it name each concept of the domain with one term, the one that the glossary of the project (GLOSSARY.md) lists, and none of the words the glossary says to avoid for it?"
+criteria = { true = "each concept has one term, the one of the glossary", false = "a concept has two names, or a name the glossary says to avoid" }

@@ -171,9 +171,6 @@ describes one, and the hook reports each finding with its slug and its message.
   `standards/` exempted (see `prek.toml`). → `@standards/CES/118-code-duplication-jscpd.md`
 - **CES-119 · dependency vulnerability scanning** `[ci]` — `osv-scanner` on `uv.lock`; replaces
   the old `pip-audit.yml`. → `@standards/CES/119-osv-scanner-replace-pip-audit.md`
-- **CES-120 · language, documentation and comments** `[judgment]` — plain text with no signs of
-  model writing, comments only for what the code cannot say, one term per concept (`GLOSSARY.md`).
-  → `@standards/CES/120-language-documentation-comments.md`
 
 ### Excluded here (don't apply to a CLI with no API, database or web layer)
 

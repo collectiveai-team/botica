@@ -1,0 +1,12 @@
+{
+  "verdicts": [
+    {
+      "file": "valid/billing.py",
+      "band": "clear"
+    },
+    {
+      "file": "invalid/billing.py",
+      "band": "act"
+    }
+  ]
+}

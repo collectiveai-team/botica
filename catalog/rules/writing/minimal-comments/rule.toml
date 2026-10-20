@@ -1,0 +1,19 @@
+id = "minimal-comments"
+code = "BTWRIT002"
+standard = "CES-120"
+summary = "A comment says only what the code cannot"
+status = "preview"
+tags = ["writing"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "judgment"
+languages = ["*"]
+when = "edit"
+why-not-deterministic = "Whether a comment repeats the code or explains a choice the code cannot show depends on what the code says, which needs a reading of both."
+
+[implementations.question]
+type = "boolean"
+instructions = "Read the comments of the file and the code next to them. Is every comment one that the code cannot say by itself: the reason for a choice that looks wrong, an invariant the types do not show, a workaround with the link to its cause, or the docstring of a public interface?"
+criteria = { true = "every comment says something the code cannot", false = "a comment repeats the code, names a section, keeps old code or tells the history of a change" }

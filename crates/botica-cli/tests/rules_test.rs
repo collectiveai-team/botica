@@ -38,7 +38,7 @@ fn write(path: &Path, text: &str) {
     fs::write(path, text).expect("write a file");
 }
 
-/// A working directory with the catalog of this checkout under `cat/` and the judgment rule
+/// A working directory with the catalog of this checkout under `cat/`, with the judgment rule
 /// `test-foo`, judged on `when`, and a fake abide that prints `report`.
 fn workdir(name: &str, when: &str, report: &str) -> PathBuf {
     let dir = Path::new(env!("CARGO_TARGET_TMPDIR"))
@@ -49,6 +49,8 @@ fn workdir(name: &str, when: &str, report: &str) -> PathBuf {
         &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../catalog/rules"),
         &dir.join("cat"),
     );
+    // Without a rule named, `rules test` judges every judgment rule: here only `test-foo`.
+    fs::remove_dir_all(dir.join("cat/writing")).expect("drop the judgment rules of the catalog");
     let rule = dir.join("cat/testing/test-foo");
     write(&rule.join("rule.toml"), &RULE.replace("WHEN", when));
     write(&rule.join("README.md"), README);
