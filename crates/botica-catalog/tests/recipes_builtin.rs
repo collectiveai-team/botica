@@ -105,6 +105,7 @@ fn base_installs_the_skills_and_adds_prek_and_the_standards_index_from_its_templ
         files,
         [
             "prek.toml <- files/prek-base.toml",
+            ".github/workflows/abide.yml <- files/github/workflows/abide.yml",
             ".github/pull_request_template.md <- files/github/pull_request_template.md",
             ".github/ISSUE_TEMPLATE/bug_report.md <- files/github/ISSUE_TEMPLATE/bug_report.md",
             ".github/ISSUE_TEMPLATE/feature_proposal.md <- files/github/ISSUE_TEMPLATE/feature_proposal.md",
@@ -167,7 +168,7 @@ fn base_python_adds_pyproject_the_python_hooks_and_the_dev_tools_to_what_base_do
     assert!(python.tools[0].packages.contains(&"ruff".to_owned()));
     let resolved = recipes.resolve("base-python").expect("resolves");
     assert!(resolved.skills.iter().all(|skill| skill.from == "base"));
-    assert_eq!(resolved.files.len(), 5);
+    assert_eq!(resolved.files.len(), 6);
     assert_eq!(resolved.sections.len(), 8);
     assert!(resolved.warnings.is_empty());
 }

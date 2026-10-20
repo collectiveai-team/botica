@@ -17,7 +17,7 @@ mod recipes_gitignore;
 mod recipes_install;
 mod recipes_install_gitignore;
 mod recipes_install_json;
-mod recipes_install_mirror;
+mod recipes_install_release;
 mod recipes_install_run;
 mod recipes_install_selection;
 mod recipes_install_skills;

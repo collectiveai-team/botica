@@ -78,6 +78,12 @@ abide judges the judgment rules through the API of TypeSafe. With `TYPESAFE_AI_B
 its calls to another server with the same API instead, such as the server of llama.cpp or a model
 run on its own. `botica rules test --judge abide` runs abide with the environment as it is.
 
+The workflow `.github/workflows/abide.yml`, which the recipe `base` installs, judges the diff of
+each pull request: `abide check --json --diff`, then `botica lint --judged` with `--fail-on
+warning`, and an artifact `abide` with the rubric, the report of abide and the findings as SARIF.
+It reads the secret `TYPESAFE_AI_API_KEY` and the variable `TYPESAFE_AI_BASE_URL` of the
+repository; a pull request from a fork gets no secret, and the job fails.
+
 ## Rules
 
 `botica rules --all` lists the rules of the catalog, with their code and whether each is active and

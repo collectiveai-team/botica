@@ -10,7 +10,7 @@ use botica_catalog::Status;
 use crate::project::ProjectArgs;
 use crate::recipes_collection::Collection;
 use crate::recipes_install_gitignore as gitignore;
-use crate::recipes_install_mirror;
+use crate::recipes_install_release;
 use crate::recipes_install_selection as selection;
 use crate::recipes_install_skills as skills;
 use crate::recipes_install_steps::{self as steps, Outcome, Template};
@@ -115,7 +115,7 @@ pub fn run(collection: &Collection, names: &[String], project: &ProjectArgs) -> 
         tally.report("selection", selection::BOTICA_TOML, &outcome);
     }
     for item in &gathered.files {
-        let pinned = recipes_install_mirror::at_this_release(text(&item.from, &item.template)?);
+        let pinned = recipes_install_release::at_this_release(text(&item.from, &item.template)?);
         let template = Template {
             text: &pinned,
             path: &item.template,

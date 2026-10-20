@@ -14,9 +14,10 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
     assert!(
         text.contains(
             "\nbase: Any repository, in any language: the rules about any file, the rules of \
-             botica itself, the skills, .gitignore, the prek hooks and the sections of AGENTS.md\n  \
+             botica itself, the skills, .gitignore, the prek hooks, the workflow of abide and the \
+             sections of AGENTS.md\n  \
              rules: 7, judgment: 10, exports: 2\n  \
-             skills: 31, files: 4, sections: 2, gitignore: 8\n  from: built-in\n"
+             skills: 31, files: 5, sections: 2, gitignore: 8\n  from: built-in\n"
         ),
         "{text}"
     );
@@ -169,6 +170,7 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
     assert!(
         text.contains(
             "\n## Files\n\n- prek.toml (template files/prek-base.toml, from base)\n\
+             - .github/workflows/abide.yml (template files/github/workflows/abide.yml, from base)\n\
              - .github/pull_request_template.md (template files/github/pull_request_template.md, from base)\n\
              - .github/ISSUE_TEMPLATE/bug_report.md (template files/github/ISSUE_TEMPLATE/bug_report.md, from base)\n\
              - .github/ISSUE_TEMPLATE/feature_proposal.md (template files/github/ISSUE_TEMPLATE/feature_proposal.md, from base)\n\
