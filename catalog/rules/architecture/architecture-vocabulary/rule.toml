@@ -16,5 +16,5 @@ why-not-deterministic = "A list of banned words finds `manager` or `helper`, but
 
 [implementations.question]
 type = "boolean"
-instructions = "Read the names of the modules, packages, classes and functions that the file defines or imports. Do they use the house vocabulary (layers entrypoints, api, database, impl, core; ports and adapters), with no synonym such as manager, handler, helper, processor, common, shared, persistence or dal for a unit that already has a name?"
-criteria = { true = "the units are named with the house vocabulary", false = "a unit is named with a synonym of a term the vocabulary already has" }
+instructions = "Read the names of the modules, packages, classes and functions that the file defines or imports. Is one of them a synonym of a term of the house vocabulary (layers entrypoints, api, database, impl, core; ports and adapters), such as manager, handler, helper, processor, common, shared, persistence or dal? Names of the domain, of a library, and folders inside a layer such as routers, schemas, requests, responses, tests or fakes are not synonyms."
+criteria = { true = "a unit is named with a synonym of a term the vocabulary already has", false = "no unit is named with a synonym of the vocabulary" }

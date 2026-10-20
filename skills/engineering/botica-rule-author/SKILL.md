@@ -62,7 +62,9 @@ output.
 
 A judgment rule is calibrated with `botica rules test --judge abide <slug>`, which sends its
 fixtures to abide and needs abide and its key. If abide is not available, say that the rule is
-uncalibrated.
+uncalibrated. abide reads `true` of a boolean question as the violation: the question asks whether
+the file breaks the rule, and `criteria.true` describes the broken case. A question asked the
+other way round fails every fixture of the rule, with each band reversed.
 
 ## Finish
 

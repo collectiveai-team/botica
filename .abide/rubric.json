@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-20T23:27:30Z",
+  "compiledAt": "2026-10-20T23:56:14Z",
   "compiledBy": "botica 0.13.0",
   "manual": true,
   "sources": [
@@ -133,10 +133,10 @@
         "type": "model",
         "question": {
           "type": "boolean",
-          "instructions": "Read each function of the file. Does each one either order the steps of a task (calls, control flow) or carry out one step (a calculation, a rule of the domain, an I/O call), without one function deciding the flow, computing the domain rules and doing the I/O all at once?",
+          "instructions": "Read each function of the file. Is there a function that decides the order of the steps of a task (calls, control flow) and also computes a rule of the domain and does the I/O of those steps itself? A function that only orders calls, one that carries out one step, and a file with no function or with only classes that declare data do not break the rule.",
           "criteria": {
-            "true": "orchestration and the steps it calls live in separate functions",
-            "false": "a function mixes the order of the steps with the logic and the I/O of those steps"
+            "true": "a function mixes the order of the steps with the logic and the I/O of those steps",
+            "false": "orchestration and the steps it calls live in separate functions, or the file declares data only"
           }
         }
       }
@@ -215,10 +215,10 @@
         "type": "model",
         "question": {
           "type": "boolean",
-          "instructions": "Read the names of the modules, packages, classes and functions that the file defines or imports. Do they use the house vocabulary (layers entrypoints, api, database, impl, core; ports and adapters), with no synonym such as manager, handler, helper, processor, common, shared, persistence or dal for a unit that already has a name?",
+          "instructions": "Read the names of the modules, packages, classes and functions that the file defines or imports. Is one of them a synonym of a term of the house vocabulary (layers entrypoints, api, database, impl, core; ports and adapters), such as manager, handler, helper, processor, common, shared, persistence or dal? Names of the domain, of a library, and folders inside a layer such as routers, schemas, requests, responses, tests or fakes are not synonyms.",
           "criteria": {
-            "true": "the units are named with the house vocabulary",
-            "false": "a unit is named with a synonym of a term the vocabulary already has"
+            "true": "a unit is named with a synonym of a term the vocabulary already has",
+            "false": "no unit is named with a synonym of the vocabulary"
           }
         }
       }
@@ -253,10 +253,10 @@
         "type": "model",
         "question": {
           "type": "boolean",
-          "instructions": "Read the tests of the file. Do they drive the logic through working in-memory adapters of the ports of the project and assert on outcomes, using a mock only for a third-party boundary that cannot reasonably be faked?",
+          "instructions": "Read the tests of the file. Does a test replace a port of the project with a mock, or assert on the calls that a mock received, where a working in-memory adapter of the port would drive the logic? A mock of a third-party boundary that cannot reasonably be faked does not break the rule.",
           "criteria": {
-            "true": "the tests use in-memory adapters of the ports and assert on outcomes",
-            "false": "the tests mock a port of the project, or assert on the calls a mock received"
+            "true": "the tests mock a port of the project, or assert on the calls a mock received",
+            "false": "the tests use in-memory adapters of the ports and assert on outcomes"
           }
         }
       }
@@ -355,10 +355,10 @@
         "type": "model",
         "question": {
           "type": "boolean",
-          "instructions": "Read the tests of the file. Do they call the unit under test through the same public interface that production code calls and assert on observable behaviour, without reading private attributes, calling underscore-prefixed members or asserting on internal state?",
+          "instructions": "Read the tests of the file. Does a test read a private attribute of the unit under test, call one of its underscore-prefixed members, or assert on its internal state instead of on what its public interface returns or does? A name with an underscore that the test file defines itself, and loading the module under test from its path, do not break the rule.",
           "criteria": {
-            "true": "the tests go through the public interface",
-            "false": "a test reaches into private attributes, private methods or internal state of the unit under test"
+            "true": "a test reaches into private attributes, private methods or internal state of the unit under test",
+            "false": "the tests call the public interface and assert on observable behaviour"
           }
         }
       }
@@ -450,10 +450,10 @@
         "type": "model",
         "question": {
           "type": "boolean",
-          "instructions": "Read the prose of the file. Is it written in plain sentences that say what a thing is and what it does, with none of these signs of model writing (inflated significance, a trailing clause that judges, words that avoid is and has, definition by negation, lists of three, hedges and vague attribution, bold for emphasis, text addressed to the reader, a claim with no source)?",
+          "instructions": "Read the prose of the file. Does it carry a sign of model writing: inflated significance, a trailing clause that judges, words that avoid is and has, definition by negation, a sentence that strings three items for rhythm, hedges and vague attribution, bold for emphasis, text addressed to the reader, or a claim with no source? Commands, code, lists of names and a bulleted list of cases are not prose.",
           "criteria": {
-            "true": "the prose is plain and carries none of the signs",
-            "false": "the prose carries one or more of the signs"
+            "true": "the prose carries one or more of the signs",
+            "false": "the prose is plain and carries none of the signs"
           }
         }
       }
@@ -657,10 +657,10 @@
         "type": "model",
         "question": {
           "type": "boolean",
-          "instructions": "Read the comments of the file and the code next to them. Is every comment one that the code cannot say by itself: the reason for a choice that looks wrong, an invariant the types do not show, a workaround with the link to its cause, or the docstring of a public interface?",
+          "instructions": "Read the comments of the file and the code next to them. Leave out first the comments that never break the rule: a comment whose text starts with `MARK:`, which botica and editors read as the start of a section; a suppression; a docstring of a public interface or of a module; and an option of a template left commented out under a comment that says how to turn it on. Of the comments left, does one repeat what the next lines say, name a section of the file, keep code commented out or tell the history of a change? A comment that gives the reason for a choice, an invariant the types do not show or a workaround with the link to its cause does not break the rule. Attributes such as `#[test]` are not comments. A file with no comment left does not break the rule.",
           "criteria": {
-            "true": "every comment says something the code cannot",
-            "false": "a comment repeats the code, names a section, keeps old code or tells the history of a change"
+            "true": "a comment repeats the code, names a section, keeps old code or tells the history of a change",
+            "false": "every comment says something the code cannot, or the file has none"
           }
         }
       }
@@ -809,10 +809,10 @@
         "type": "model",
         "question": {
           "type": "boolean",
-          "instructions": "Read the names and the prose of the file. Does it name each concept of the domain with one term, the one that the glossary of the project (GLOSSARY.md) lists, and none of the words the glossary says to avoid for it?",
+          "instructions": "Read the names and the prose of the file. Does it give one concept of the domain two or more names, such as a parameter `client` of type `Customer` next to an `account` of the same type, or a name that the glossary of the project (GLOSSARY.md) says to avoid, when the glossary is in view? Terms of programming and names of a library are not terms of the domain.",
           "criteria": {
-            "true": "each concept has one term, the one of the glossary",
-            "false": "a concept has two names, or a name the glossary says to avoid"
+            "true": "a concept has two names, or a name the glossary says to avoid",
+            "false": "each concept has one term, the one of the glossary"
           }
         }
       }

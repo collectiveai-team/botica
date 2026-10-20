@@ -84,7 +84,7 @@ TODO: what the rule asks, and the tool that measures it.\n\n\
 const WHY: &str =
     "TODO: why no check of the code or of the configuration of a repository decides it";
 
-const INSTRUCTIONS: &str = "TODO: the question the judge answers about the code";
+const INSTRUCTIONS: &str = "TODO: does the code break the rule? A yes (true) is a violation";
 
 const EXPECTED: &str = "{\n  \"diagnostics\": []\n}\n";
 

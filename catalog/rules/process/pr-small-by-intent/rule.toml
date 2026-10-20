@@ -15,5 +15,5 @@ why-not-deterministic = "A count of files or lines does not say how many intents
 
 [implementations.question]
 type = "boolean"
-instructions = "Read the title, the description and the diff of the pull request. Does every change in it serve one intent that a sentence with no \"and\" states, with no reformatting sweep, no refactor that the intent does not need and no fix of something unrelated?"
-criteria = { true = "the change carries one intent, and each part of it serves that intent", false = "the change mixes intents: a reformatting sweep, a refactor the intent does not need or an unrelated fix sits next to the intent" }
+instructions = "Read the title, the description and the diff of the pull request. Does it carry more than one intent: a reformatting sweep, a refactor that the intent does not need or a fix of something unrelated next to the change that one sentence with no \"and\" states?"
+criteria = { true = "the change mixes intents: a reformatting sweep, a refactor the intent does not need or an unrelated fix sits next to the intent", false = "the change carries one intent, and each part of it serves that intent" }

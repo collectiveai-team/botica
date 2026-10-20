@@ -16,5 +16,5 @@ why-not-deterministic = "Whether a comment repeats the code or explains a choice
 
 [implementations.question]
 type = "boolean"
-instructions = "Read the comments of the file and the code next to them. Is every comment one that the code cannot say by itself: the reason for a choice that looks wrong, an invariant the types do not show, a workaround with the link to its cause, or the docstring of a public interface?"
-criteria = { true = "every comment says something the code cannot", false = "a comment repeats the code, names a section, keeps old code or tells the history of a change" }
+instructions = "Read the comments of the file and the code next to them. Leave out first the comments that never break the rule: a comment whose text starts with `MARK:`, which botica and editors read as the start of a section; a suppression; a docstring of a public interface or of a module; and an option of a template left commented out under a comment that says how to turn it on. Of the comments left, does one repeat what the next lines say, name a section of the file, keep code commented out or tell the history of a change? A comment that gives the reason for a choice, an invariant the types do not show or a workaround with the link to its cause does not break the rule. Attributes such as `#[test]` are not comments. A file with no comment left does not break the rule."
+criteria = { true = "a comment repeats the code, names a section, keeps old code or tells the history of a change", false = "every comment says something the code cannot, or the file has none" }

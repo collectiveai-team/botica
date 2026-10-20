@@ -267,7 +267,7 @@ fn a_judgment_rule_has_the_fields_of_a_judge_and_the_readme_of_its_kind() {
          \n\
          [implementations.question]\n\
          type = \"boolean\"\n\
-         instructions = \"TODO: the question the judge answers about the code\"\n"
+         instructions = \"TODO: does the code break the rule? A yes (true) is a violation\"\n"
     );
     assert!(!folder.join("python.yml").exists());
     assert_eq!(

@@ -16,5 +16,5 @@ why-not-deterministic = "An underscore marks a private name, but whether a test 
 
 [implementations.question]
 type = "boolean"
-instructions = "Read the tests of the file. Do they call the unit under test through the same public interface that production code calls and assert on observable behaviour, without reading private attributes, calling underscore-prefixed members or asserting on internal state?"
-criteria = { true = "the tests go through the public interface", false = "a test reaches into private attributes, private methods or internal state of the unit under test" }
+instructions = "Read the tests of the file. Does a test read a private attribute of the unit under test, call one of its underscore-prefixed members, or assert on its internal state instead of on what its public interface returns or does? A name with an underscore that the test file defines itself, and loading the module under test from its path, do not break the rule."
+criteria = { true = "a test reaches into private attributes, private methods or internal state of the unit under test", false = "the tests call the public interface and assert on observable behaviour" }

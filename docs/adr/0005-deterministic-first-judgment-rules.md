@@ -106,7 +106,10 @@ no check at all.
    (`@coldtea/abide-schema` 0.0.5): a table `[implementations.question]` with `type` (`boolean`,
    `choice` or `score`), `instructions`, and `criteria`: `{ true, false }` for a boolean, a map of
    options with `violating` for a choice, a list from compliant to violating with `violatingFrom`
-   for a score.
+   for a score. abide reads the probability of `true` of a boolean as the probability that the rule
+   is broken, so a boolean question asks whether the file breaks the rule, and `true` describes the
+   violation. A question asked the other way round judges each compliant file as broken; the
+   fixtures of the rule show it when `botica rules test --judge abide` runs.
 
    The block of `AGENTS.md` is written by `botica rules export --format agents-md --output
    AGENTS.md`, which replaces the text between `<!-- botica:rules -->` and `<!-- /botica:rules -->`

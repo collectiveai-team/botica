@@ -16,7 +16,9 @@ A comment that repeats the code is a second copy of it, and the two drift apart 
 ## Do not flag
 
 - A docstring of a public function, class or module.
-- A comment that a tool reads: a suppression, a type ignore, a license header, a shebang.
+- A comment that a tool reads: a suppression, a type ignore, a license header, a shebang, a
+  `MARK:` line that `botica recipe` and editors use to find a section.
+- An option of a template left commented out under a comment that says how to turn it on.
 - A comment that gives the reason for a choice, an invariant or a link to a bug.
 - A generated file, such as a lockfile or a schema.
 

@@ -15,5 +15,5 @@ why-not-deterministic = "A diff shows that a pin or a setting changed; whether t
 
 [implementations.question]
 type = "boolean"
-instructions = "Read the title, the description and the diff of the pull request. Does it keep the existing, deliberate choices of the repository (version pins, lint and tool configuration, dependencies, layout), changing one only as a migration that the description names and explains?"
-criteria = { true = "existing choices are kept, or changed as a named migration", false = "an existing choice is overwritten to match a default, with no migration named" }
+instructions = "Read the title, the description and the diff of the pull request. Does it overwrite an existing, deliberate choice of the repository (a version pin, the configuration of a lint or a tool, a dependency, the layout) to match a default, with no migration that the description names and explains?"
+criteria = { true = "an existing choice is overwritten to match a default, with no migration named", false = "existing choices are kept, or changed as a named migration" }

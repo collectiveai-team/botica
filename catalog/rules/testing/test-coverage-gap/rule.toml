@@ -15,5 +15,5 @@ why-not-deterministic = "A `# pragma: no cover` or an `omit` is visible in the d
 
 [implementations.question]
 type = "boolean"
-instructions = "Read the title, the description and the diff of the pull request. When it touches coverage (a `pragma: no cover`, an `omit` or `exclude_lines` of coverage, a threshold, a test that asserts nothing), does it close the gap with a test or by deleting dead code, instead of hiding the gap or writing a test only to run the lines?"
-criteria = { true = "the change closes coverage gaps with tests or deletions, or does not touch coverage", false = "the change hides a gap or adds a test that runs lines without asserting a behaviour" }
+instructions = "Read the title, the description and the diff of the pull request. Does it hide a coverage gap (a new `pragma: no cover`, an `omit` or `exclude_lines` of coverage, a lower threshold) or add a test that runs lines without asserting a behaviour, instead of closing the gap with a test or by deleting dead code? A change that does not touch coverage does not break the rule."
+criteria = { true = "the change hides a gap or adds a test that runs lines without asserting a behaviour", false = "the change closes coverage gaps with tests or deletions, or does not touch coverage" }

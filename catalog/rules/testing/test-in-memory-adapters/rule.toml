@@ -17,5 +17,5 @@ why-not-deterministic = "An import of `unittest.mock` is visible, but whether th
 
 [implementations.question]
 type = "boolean"
-instructions = "Read the tests of the file. Do they drive the logic through working in-memory adapters of the ports of the project and assert on outcomes, using a mock only for a third-party boundary that cannot reasonably be faked?"
-criteria = { true = "the tests use in-memory adapters of the ports and assert on outcomes", false = "the tests mock a port of the project, or assert on the calls a mock received" }
+instructions = "Read the tests of the file. Does a test replace a port of the project with a mock, or assert on the calls that a mock received, where a working in-memory adapter of the port would drive the logic? A mock of a third-party boundary that cannot reasonably be faked does not break the rule."
+criteria = { true = "the tests mock a port of the project, or assert on the calls a mock received", false = "the tests use in-memory adapters of the ports and assert on outcomes" }
