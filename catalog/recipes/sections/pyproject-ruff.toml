@@ -68,8 +68,6 @@ convention = "google"
 [tool.ruff.lint.mccabe]
 max-complexity = 10
 
-# Ban relative imports (e.g. `from .module import ...`) in favor of absolute
-# package imports, so modules are unambiguous and easy to move.
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 

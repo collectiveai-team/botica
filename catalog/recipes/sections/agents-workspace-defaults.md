@@ -23,7 +23,7 @@ systemd-run --user --scope -p MemoryMax=4G -p MemorySwapMax=0 -p CPUQuota=400% \
   /usr/bin/time -v -o "$log" <command>
 ```
 
-Run long commands in the background with a saved PID so they are not tied to the agent tool timeout, and delegate polling to a cheap monitor sub-agent (e.g. Haiku) that runs a `while kill -0 <pid>; do sleep <n>; done` loop and reports only the final exit status, output tail, and stats log path. This keeps the main session from being poisoned by repeated status checks.
+Run long commands in the background with a saved PID so they are not tied to the agent tool timeout, and delegate polling to a monitor sub-agent on a cheap model that runs a `while kill -0 <pid>; do sleep <n>; done` loop and reports only the final exit status, output tail, and stats log path.
 
 ```bash
 ( systemd-run --user --scope -p MemoryMax=4G -p CPUQuota=400% \
@@ -31,6 +31,6 @@ Run long commands in the background with a saved PID so they are not tied to the
 echo $! > ".tmp/logs/$cmd/${ts}.pid"
 ```
 
-Scripts we write ourselves must emit periodic progress to the output log (current step, counts, percent, or heartbeat with a timestamp) so the monitor can tell what they are doing. Flush each line (e.g. Python `print(..., flush=True)` or `PYTHONUNBUFFERED=1`) so progress appears live. The monitor always `tail`s the latest lines of the `.out` log — never reads the full log — to avoid poisoning the session with bulk output.
+Scripts we write ourselves must emit periodic progress to the output log (current step, counts, percent, or heartbeat with a timestamp) so the monitor can tell what they are doing. Flush each line (e.g. Python `print(..., flush=True)` or `PYTHONUNBUFFERED=1`) so progress appears live. The monitor always `tail`s the latest lines of the `.out` log and does not read the full log.
 
-A consistently too-expensive step is a signal of poor code that needs optimization, not a reason to keep raising the limits — flag it.
+Flag a step that keeps exceeding its limits: the code needs optimization.

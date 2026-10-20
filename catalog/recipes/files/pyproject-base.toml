@@ -11,9 +11,7 @@ name = "replace-me"
 dynamic = ["version"]
 description = "Replace me"
 readme = "README.md"
-# CES-77 (version pin): requires-python is intentionally left as a non-enforced comment so an
-# existing repo's pin wins (pairs with respect-local-repo, CES-30). The house baseline
-# default is 3.14 — uncomment and adjust only when you deliberately set a floor:
+# CES-77: uncomment to set a floor; an existing pin of the repository wins.
 # requires-python = ">=3.14"
 
 # MARK: Dependencies
