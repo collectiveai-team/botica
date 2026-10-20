@@ -2,7 +2,7 @@
 
 How the engineering skills should consume this repo's domain documentation when exploring the codebase.
 
-Layout: **single-context** — one `GLOSSARY.md` + `docs/adr/` at the repo root (created lazily).
+Layout: **single-context** — one `GLOSSARY.md` + `docs/adr/` at the repo root.
 
 ## Before exploring, read these
 

@@ -1,7 +1,7 @@
 # Botica
 
-The house engineering standards, the `botica` linter that measures them, and the recipes that
-install them, the agent config and the agent skills into a repository.
+The house engineering standards, the `botica` linter that runs rules, and the recipes that install
+the tools, the agent config and the agent skills into a repository.
 
 ## Language
 
@@ -41,7 +41,7 @@ in the catalog.
 
 **Skills manifest**:
 `skills-lock.json` — the tracked declaration of which skills a repo uses and where they come
-from. **Owned by the third-party `skills` CLI**: botica reads it and never writes it. It
+from. Owned by the third-party `skills` CLI: botica reads it and never writes it. It
 records a `ref` only when the source was pinned, and its `computedHash` is never verified on
 restore, so it reproduces which skills from where at what ref — not bytes.
 _Avoid_: lockfile, skills lock, skill list
@@ -74,8 +74,7 @@ _Avoid_: rule, convention, lint rule
 
 **Botica**:
 The Rust package published on PyPI as `botica` (wheels with the binary and the Python module `botica.sdk`), built from the Rust workspace at the root of this repository. `lint` is
-its first subcommand, and `botica recipe` replaced the removed `scaffolding` package, so no
-pipeline of its own is specific to `lint`. See `docs/adr/0003-botica-lint-architecture.md`.
+one of its subcommands. See `docs/adr/0003-botica-lint-architecture.md`.
 _Avoid_: botica lint (for the package)
 
 **Rule**:
@@ -122,7 +121,7 @@ _Avoid_: snippet, reference (for the folder)
 
 **Family**:
 A group of rules that share a code prefix (`STRUC`, `ARCH`, `DM`, …). Its folder holds a
-`family.toml` with the code. The linter's own rules have no family and live in `rules/botica/`.
+`family.toml` with the code. The linter's own rules have no family and live in `catalog/rules/botica/`.
 _Avoid_: category, group
 
 **Code**:

@@ -1,4 +1,4 @@
-"""Report drift between the curated upstream skill catalog and mattpocock/skills.
+"""Report drift between the upstream skills of the house baseline and mattpocock/skills.
 
 `npx skills add` skips unknown skill names without failing, so an upstream rename
 lands as a silently missing skill in every repository that installs the recipe `base`.

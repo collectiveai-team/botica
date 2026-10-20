@@ -6,7 +6,7 @@ build-backend = "maturin"
 # this repository. The version comes from `[workspace.package]` in Cargo.toml.
 [project]
 name = "botica"
-description = "Deterministic linter for the house engineering standards"
+description = "Deterministic linter: the rules of its catalog and of a project"
 requires-python = ">=3.9"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -34,8 +34,7 @@ strip = true
 dev = [
   "cyclopts>=5.2.0",
   "pytest>=8.0",
-  # CES-111 (test-order-randomization-pytest-randomly): random, reproducibly-seeded test
-  # order on every run — catches state-leaking/order-dependent tests for free.
+  # CES-111
   "pytest-randomly>=4.1.0",
   "ruff>=0.17.0",
 ]
@@ -136,8 +135,7 @@ select = [
 ]
 
 # The maintainer scripts shell out to known tools (git, uv, npx, gh) by name, so
-# the subprocess-audit rules that flag that pattern are disabled. The rest of the
-# security ruleset stays on.
+# the subprocess-audit rules that flag that pattern are disabled.
 ignore = ["S603", "S607"]
 task-tags = ["TODO", "FIXME", "XXX", "MARK"]
 
@@ -168,7 +166,6 @@ runtime-evaluated-decorators = [
   "fastapi.FastAPI.post",
 ]
 
-# Ban relative imports (e.g. `from .x import ...`); imports are absolute.
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 
@@ -220,8 +217,8 @@ select = [
   "ubiquitous-language",
 ]
 preview = true
-# The fixtures of the rules are wrong on purpose, and the skills are vendored payload (ruff leaves
-# them out for the same reason).
+# The fixtures of the rules are wrong on purpose, and the skills are authored skills, checked by
+# skill-validator (ruff leaves them out for the same reason).
 extend-exclude = ["catalog/rules/**/fixtures/", "skills/"]
 
 # The maintainer scripts and the benchmarks are command-line programs run as files: their output
@@ -264,9 +261,8 @@ disable-project-excludes-heuristics = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
-# CES-109 (dep-hygiene-deptry): declared deps must match the actual import graph. The Rust
-# workspace, what its build reads, its SDKs and its benchmarks are outside the import graph of the
-# scripts, and `skills` is vendored payload.
+# CES-109. The Rust workspace, what its build reads, its SDKs and its benchmarks are outside the
+# import graph of the scripts, and `skills` holds authored skills, checked by skill-validator.
 [tool.deptry]
 extend_exclude = [
   "crates", "target", "catalog", "distribution", "sdk", "bench", "skills",

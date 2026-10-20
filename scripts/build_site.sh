@@ -1,16 +1,7 @@
 #!/usr/bin/env bash
-# Build the standards site into website/site: export the rule pages from the catalog of this
-# checkout, copy the standards of standards/ and add to each its subtitle and the list of the rules
-# that implement it (scripts/site_standards.py) and a table of all the standards, write a page per
-# topic of `botica refs export`, with the lines that its references show, and list the topics on
-# the pages of the rules and the standards that cite them (scripts/site_references.py), add to the
-# index of each of the three the field that filters its table (scripts/site_filter.py), put the
-# code blocks of the pages of the rules and the standards in tabs by
-# language (scripts/site_language_tabs.py), write the configuration with the navigation of those
-# pages (scripts/site_nav.py), then run Zensical (the version is pinned in website/requirements.txt)
-# in strict mode, so a broken link fails the build, and write website/site/llms.txt with the address
-# of each rule, standard and topic (scripts/site_llms.py). The pages of the rules, the standards and
-# the topics and the configuration with the navigation are generated, never committed.
+# Build website/site from the catalog, standards/ and the topics; each step is a script of
+# scripts/site_*.py. Zensical runs in strict mode, so a broken link fails the build. The generated
+# pages and the configuration with the navigation are not committed.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

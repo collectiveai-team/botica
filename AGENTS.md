@@ -22,12 +22,11 @@ its SDKs and its benchmarks). The binary embeds `catalog/rules/`, `catalog/refer
 - `bench/` — the benchmarks of `botica lint`; `schema/` — the JSON schema of `botica.toml`.
 - `catalog/recipes/` — the recipes of `botica recipe install` and `botica recipe check`, with their
   templates (ADR 0006). `install` writes a file that is missing and leaves an existing one as it
-  is (`pending`). The one step that deletes text is `unignore`, which removes a literal line of
-  `UNIGNORE_WHITELIST` (`skills-lock.json`) from `.gitignore` and reports it as `edited`. Keep the
-  whitelist literal and do not remove the step as a violation (ADR 0006).
+  is (`pending`). Do not remove the `unignore` step of the recipes as a violation (ADR 0006).
 - `website/` — the standards site, built with Zensical (`zensical.toml`; the version is pinned in
   `requirements.txt`). `website/docs/rules/` is exported from the catalog by `scripts/build_site.sh`
-  (`botica rules export`) and is gitignored; only `website/docs/index.md` is written by hand.
+  (`botica rules export`) and is gitignored; `website/docs/index.md` and `website/docs/use.md`
+  are written by hand.
   `.github/workflows/site.yml` builds it on a pull request and publishes it from `main`.
 - `standards/` — the text of each standard, `standards/<set>/<number>-<slug>.md`, written by hand
   and apart from the rules; `scripts/build_site.sh` copies it into the site (ADR 0004).
@@ -37,7 +36,7 @@ its SDKs and its benchmarks). The binary embeds `catalog/rules/`, `catalog/refer
   out). Their paths are fixed: the `skills-lock.json` of each repository that
   installed them records `skills/<group>/<name>/SKILL.md`, and `npx skills` fetches that path to
   restore them. Each
-  carries Claude-style `SKILL.md` frontmatter **and** an `agents/openai.yaml`;
+  carries Claude-style `SKILL.md` frontmatter and an `agents/openai.yaml`;
   Codex reads only the latter, so `disable-model-invocation: true` must be paired
   with `policy.allow_implicit_invocation: false` (and omitted for model-invoked
   skills, which Codex otherwise filters out entirely).
@@ -51,10 +50,7 @@ its SDKs and its benchmarks). The binary embeds `catalog/rules/`, `catalog/refer
   templates of the recipes; the weekly `pins` workflow runs it after `prek update` and opens a pull
   request.
 
-An agent is a recipe chosen by name: `agent-opencode` writes `opencode.jsonc`,
-`agent-claude-code` writes `.claude/settings.json` and links `CLAUDE.md`→`AGENTS.md` and
-`.claude/skills`→`../.agents/skills`, and `agent-codex` has no file. `AGENTS.md` is the shared
-brain; skills install once into `.agents/skills`.
+`AGENTS.md` is the shared brain; skills install once into `.agents/skills`.
 
 ## Skill Development
 
@@ -67,18 +63,8 @@ After creating or editing any skill under `skills/`, validate it before committi
 prek run skill-validator --all-files
 ```
 
-This is the `skill-validator` hook of `prek.toml` (agent-ecosystem/skill-validator; no
-account; needs Go on the `PATH`). `scripts/check_skills.sh` holds the flags. It checks the
-frontmatter, the directory layout, the links, the token counts and the content of every
-skill, and it fails on warnings. prek runs it on commit when a file under `skills/` changes.
-Fix what it reports; do not silence it.
-
-A skill is a `SKILL.md` plus, optionally, `references/`, `scripts/`, `assets/` and
-`agents/` (Codex reads `agents/openai.yaml`). Text a skill bundles goes under `references/`;
-any other directory or loose file at its root fails. The frontmatter fields that Claude and
-Codex read beyond the spec (`disable-model-invocation`, `argument-hint`) are allowed.
-
-`tessl review` is not used: it asks for an interactive login.
+It needs Go on the `PATH`; `scripts/check_skills.sh` holds the flags. Fix what it reports; do not
+silence it.
 
 The upstream skill catalog is the `[[skills]]` step of `catalog/recipes/base.toml` whose source
 pins `mattpocock/skills#vX.Y.Z`. Bump the tag there to take a new upstream release, after
@@ -135,7 +121,7 @@ standard, ADR, commit message, message of a rule and comment.
 
 ## Domain docs
 
-Single-context — `GLOSSARY.md` + `docs/adr/` at the repo root (created lazily).
+Single-context — `GLOSSARY.md` + `docs/adr/` at the repo root.
 See `docs/agents/domain.md`.
 
 ## Repo Workspace Defaults
