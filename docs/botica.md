@@ -1,10 +1,10 @@
 # botica lint
 
-A deterministic linter for the house engineering standards. It never calls a model or the
-network, reads your files once, and runs its rules in parallel. The design is in
-[ADR 0003](../docs/adr/0003-botica-lint-architecture.md). The catalog under `rules/` is the only
-documentation of the rules it measures: each rule has a README, and `botica rules` lists them. The
-CES are catalogued in [`docs/engineering-standards.md`](../docs/engineering-standards.md).
+A linter that runs the rules of its catalog and of the catalogs of a project. It never calls a
+model or the network, reads your files once, and runs its rules in parallel. The design is in
+[ADR 0003](adr/0003-botica-lint-architecture.md). The catalog under `catalog/rules/` is the only
+documentation of the rules: each rule has a README, and `botica rules` lists them. The text of each
+standard is in [`standards/`](../standards/).
 
 ## Install
 
@@ -78,51 +78,15 @@ run on its own. `botica rules test --judge abide` runs abide with the environmen
 
 ## Rules
 
-| Code | Rule | Standard | Looks at |
-|---|---|---|---|
-| `BTSTRUC001` | [`file-size-guard`](../catalog/rules/structure/file-size-guard/README.md) | CES-71 | every file: warns at 400 lines, errors at 700 |
-| `BTSTRUC002` | [`no-utils`](../catalog/rules/structure/no-utils/README.md) | CES-63 | Python: `utils.py`, `helpers.py`, … |
-| `BTSTRUC003` | [`no-artifacts-in-package`](../catalog/rules/structure/no-artifacts-in-package/README.md) | CES-32 | data, models and reports inside the code |
-| `BTSTRUC004` | [`no-notebooks`](../catalog/rules/structure/no-notebooks/README.md) | CES-32 | notebooks inside the code |
-| `BTSTRUC005` | [`no-tests-in-package`](../catalog/rules/structure/no-tests-in-package/README.md) | CES-32 | Python: tests inside the package |
-| `BTSTRUC006` | [`cognitive-complexity`](../catalog/rules/structure/cognitive-complexity/README.md) | CES-110 | external: complexipy measures it, through its hook in `prek.toml` |
-| `BTSTRUC007` | [`lockfile-committed`](../catalog/rules/structure/lockfile-committed/README.md) | CES-109 | the project: each manifest of Python, Node, Go and Rust has the committed lockfile of one package manager |
-| `BTARCH001` | [`import-layers`](../catalog/rules/architecture/import-layers/README.md) | CES-5 | the project: Python imports against the `layers` of the configuration, direct or through other modules |
-| `BTCLI001` | [`cli-typed-framework`](../catalog/rules/cli/cli-typed-framework/README.md) | CES-67 | Python: `argparse`, `click` and `sys.argv` |
-| `BTCONF001` | [`settings-module`](../catalog/rules/config/settings-module/README.md) | CES-76 | Python: `os.getenv` and `os.environ` outside the settings module |
-| `BTCONF002` | [`settings-base-class`](../catalog/rules/config/settings-base-class/README.md) | CES-76 | Python: a settings class that extends `BaseModel` instead of `BaseSettings` |
-| `BTCONF003` | [`settings-direct-instantiation`](../catalog/rules/config/settings-direct-instantiation/README.md) | CES-76 | Python: a settings class built where it is used, not through `get_settings()` |
-| `BTCONF004` | [`settings-env-schema`](../catalog/rules/config/settings-env-schema/README.md) | CES-76 | the project: `.env.schema` against the settings classes (Python: pydantic-settings) |
-| `BTDB001` | [`database-package`](../catalog/rules/database/database-package/README.md) | CES-18 | Python: tables and engines outside a `database` package |
-| `BTDB002` | [`db-no-create-all`](../catalog/rules/database/db-no-create-all/README.md) | CES-18 | Python: `metadata.create_all()` outside tests |
-| `BTDM001` | [`no-dict-alias`](../catalog/rules/data-models/no-dict-alias/README.md) | CES-79 | Python: a type alias for a raw `dict` |
-| `BTDM002` | [`no-dict-call-return`](../catalog/rules/data-models/no-dict-call-return/README.md) | CES-79 | Python: `return dict(...)` |
-| `BTDM003` | [`no-dict-literal-return`](../catalog/rules/data-models/no-dict-literal-return/README.md) | CES-79 | Python: returning a dict literal |
-| `BTDM004` | [`no-dict-return-annotation`](../catalog/rules/data-models/no-dict-return-annotation/README.md) | CES-79 | Python: a function annotated to return `dict` |
-| `BTFAST001` | [`api-schemas-extra-forbid`](../catalog/rules/fastapi/api-schemas-extra-forbid/README.md) | CES-4 | Python: API schemas without `extra="forbid"` |
-| `BTFAST002` | [`api-schema-in-route-module`](../catalog/rules/fastapi/api-schema-in-route-module/README.md) | CES-17 | Python: a Pydantic schema defined in a route module |
-| `BTFAST003` | [`api-request-schema-name`](../catalog/rules/fastapi/api-request-schema-name/README.md) | CES-17 | Python: a request schema not named `{Name}Request` |
-| `BTFAST004` | [`api-response-schema-name`](../catalog/rules/fastapi/api-response-schema-name/README.md) | CES-17 | Python: a response schema not named `{Name}Response` |
-| `BTLOG001` | [`log-get-logger`](../catalog/rules/logging/log-get-logger/README.md) | CES-45 | Python: `logging.getLogger` called directly |
-| `BTLOG002` | [`log-no-print`](../catalog/rules/logging/log-no-print/README.md) | CES-46 | Python, TypeScript and JavaScript: `print()`, `console.*` and writes to stdout or stderr in library code |
-| `BTSEC001` | [`route-auth`](../catalog/rules/security/route-auth/README.md) | CES-121 | Python: a FastAPI route with none of the `dependencies` of the configuration |
-| `BTSEC002` | [`jwt-verified`](../catalog/rules/security/jwt-verified/README.md) | CES-121 | Python, TypeScript, JavaScript, Go and Rust: a token decoded without its signature or its expiry checked |
-| `BTSEC003` | [`no-token-in-web-storage`](../catalog/rules/security/no-token-in-web-storage/README.md) | CES-121 | TypeScript and JavaScript: a credential written to `localStorage` or `sessionStorage` |
-| `BTTOOL001` | [`no-disabled-typecheck`](../catalog/rules/tooling/no-disabled-typecheck/README.md) | CES-58 | TypeScript, JavaScript, `tsconfig.json` and Python: `@ts-nocheck`, `ignoreBuildErrors: true`, `"strict": false`, `# pyrefly: ignore-errors` |
-| `BT001`–`BT003` | `io-error`, `unused-suppression`, `invalid-suppression` | | the run and the suppressions |
-| `BT004` | [`external-config`](../catalog/rules/botica/external-config/README.md) | | the files of configuration that the active external rules name |
-
-`BTCONF002`, `BTCONF003`, `BTDB002`, `BTFAST002`–`BTFAST004`, `BTSEC001`–`BTSEC003`, `BTSTRUC006`, `BTSTRUC007` and `BTTOOL001` have the status `preview` and
-are off by default: they run only with `preview = true` and when you select them.
+`botica rules --all` lists the rules of the catalog, with their code and whether each is active and
+why; `botica explain <slug>` shows one, with its standard and its status. A rule with the status
+`preview` is off by default: it runs only with `preview = true` and when you select it.
 
 Another tool enforces an external rule (`kind = "external"`) through its configuration. The rule
 names the tool, the address of its documentation and, in `config/<file>.toml` of its folder,
-the fragment of configuration that goes into `<file>.toml` at the root of the project.
-`external-config` reports that file, on every run, when an active external rule finds its fragment
+the fragment of configuration that goes into `<file>.toml` at the root of the project;
+[`external-config`](../catalog/rules/botica/external-config/README.md) reports a fragment that is
 missing.
-
-The rules written in ast-grep's YAML run too, unless you pass `--no-astgrep`. Each rule has a
-README with its directive, its reasons and how to silence it.
 
 ## References
 
@@ -299,20 +263,14 @@ that is not empty, and a recipe lists it once, across its steps. `unignore` name
 from `.gitignore`, and the only line it accepts is `skills-lock.json` (ADR 0006); `lines` does not
 accept it (CES-107).
 
-The recipes `base`, `base-python`, `agent-opencode`, `agent-claude-code`, `agent-codex` and the
-ones of CI (`ci`, `ci-python`, `ci-automerge-public`, `ci-automerge-private`,
-`ci-dependency-review`, `ci-docker`, `ci-publish`, `ci-node`, `ci-go`, `repo-public` and
-`repo-private`) and `secrets-varlock` are in `catalog/recipes/` and are compiled into the binary. `base` also adds the section `## Repo Workspace
-Defaults` to `AGENTS.md`, before `## Botica rules`, whose block `install` fills with the judgment
-rules (the exports `agents-md` and `abide`); a new `AGENTS.md` starts with that section.
-An agent is a recipe chosen by name, beside the others
-(`botica recipe install base base-python agent-claude-code`). `agent-opencode` writes
-`opencode.jsonc` and installs the skills for `opencode`; `agent-codex` has no step and installs
-them for `codex`; `agent-claude-code` writes `.claude/settings.json` and links `CLAUDE.md` to
-`AGENTS.md` and `.claude/skills` to `../.agents/skills`, so Claude Code reads the skills that are
-installed once in `.agents/skills`, and it names no agent: `npx skills add --agent claude-code`
-writes in `.claude/skills/<name>`, which the link makes a path inside `.agents/skills`, and fails
-with `ENOTDIR`.
+The built-in recipes are in `catalog/recipes/` and are compiled into the binary; `botica recipe
+list` prints each with its description, and `botica recipe show <name>` its steps. `base` also adds
+the section `## Repo Workspace Defaults` to `AGENTS.md`, before `## Botica rules`, whose block
+`install` fills with the judgment rules (the exports `agents-md` and `abide`); a new `AGENTS.md`
+starts with that section. An agent is a recipe chosen by name, beside the others
+(`botica recipe install base base-python agent-claude-code`). `agent-claude-code` names no agent
+for the skills: `npx skills add --agent claude-code` writes in `.claude/skills/<name>`, which the
+link `.claude/skills` makes a path inside `.agents/skills`, and fails with `ENOTDIR`.
 
 `secrets-varlock` installs the skill `varlock` of `dmno-dev/varlock` and has no other step. A
 person or an agent runs `varlock init --agent`, which writes a draft of `.env.schema` from
@@ -321,45 +279,22 @@ asks to review the draft with the user. `varlock init` keeps an `.env.schema` th
 drafts nothing, so the recipe has no template of it. `base` ignores `.env` and keeps
 `.env.schema` in git.
 
-The recipes of CI have the workflows as `[[files]]` steps under `.github/`:
-`ci` has `conventional-commits.yml`, `commit-policy.yml`, `zizmor.yml` and the config
-`.github/zizmor.yml`; `ci-python` extends it with `tests.yml`, `dependabot.yml` and
-`osv-scanner.yml`; `ci-dependency-review` and `ci-docker` have one piece each, and `ci-publish` has
-`release.yml` and `pypi.yml`. `repo-public` extends `ci`, `ci-dependency-review` and
-`ci-docker`, and `repo-private` extends `ci`: the dependency review needs a paid plan on a private
-repository and `docker.yml` pushes to GHCR, which bills a private repository. A recipe has no
-condition, so `ci-docker` and `repo-public` add `docker.yml` also to a repository that has no
-`Dockerfile`: name them only when it has one, and `ci-python` only for a Python project.
-`ci-automerge-public` and `ci-automerge-private` extend `ci` and merge the Dependabot pull requests
-that are patch updates or fix an open security alert. A repository names one of them beside
-`repo-public` or `repo-private`. `ci-automerge-public` has `dependabot-automerge.yml`, which
-labels the pull request `automerge` (it creates the label when the repository lacks it) and runs
-`gh pr merge --auto`. The repository needs the setting "Allow auto-merge" and a branch protection
-rule with required checks; without a required check the merge is immediate. The osv-scanner check of
-a pull request is `osv-scanner (new in this PR)`, because GitHub counts the skipped `osv-scanner`
-job as passing. `ci-automerge-private` is for a repository with no branch protection (a private one
-on the Free plan): `dependabot-automerge-label.yml` labels, and `dependabot-automerge-run.yml` merges
-on `workflow_run` once the workflows that it lists (`Tests`, `osv-scanner`, `zizmor`,
-`Conventional Commits` and `commit-policy`) pass, and counts a skipped job as passing. Both run on
-`pull_request_target` or `workflow_run` and check out nothing from the pull request; the `zizmor`
-finding `dangerous-triggers` is ignored in the line of the trigger. The sources are the workflows
-of `coro` and `collectiveai-web`.
-`ci-node` extends `ci` for a Node project that uses pnpm: `dependabot.yml` (the actions in one pull
-request, and npm with the patch and minor updates grouped as development and production and each
-major alone) and `osv-scanner.yml` with `--lockfile=pnpm-lock.yaml`. The templates of a recipe for
-another ecosystem are in `catalog/recipes/files/github-<ecosystem>/`. `ci-go` extends `ci` for a Go
-module: `go.yml` (`gofmt` with its diff, `go build`, `go vet` and `go test -race`, on `main` and on
-every pull request whatever its base), `dependabot.yml` (the actions and `gomod`) and
-`osv-scanner.yml` with `--lockfile=go.mod`. `ci-python`, `ci-node` and `ci-go` add the same
-`.github/dependabot.yml` and `.github/workflows/osv-scanner.yml`. A repository names one of them; the
-second `install` leaves the files that exist and reports them as pending.
-`base-python` extends `base` with a `pyproject.toml` (a `[[files]]` template with `replace-me` as
-name and description, to fill in), the Python hooks of prek (three sections of `prek.toml`, one for
-each repository of hooks), the configuration of ruff, pyrefly and pytest (sections of
-`pyproject.toml`) and the dev packages (a `[[tools]]` step). The template of `pyproject.toml` has
-`readme = "README.md"`, so `uv add` fails to build a project that has no `README.md`. A
-project adds its own in `recipes/` at its root, and a recipe of the project may extend a built-in
-one. A recipe of the project with the id of a built-in one does not load, unless the configuration
+What the recipes cannot say about themselves:
+
+- A recipe has no condition, so `ci-docker` and `repo-public` add `docker.yml` also to a
+  repository that has no `Dockerfile`: name them only when it has one, and `ci-python`, `ci-node`
+  or `ci-go` only for a project of that ecosystem. The three add the same `.github/dependabot.yml`
+  and `.github/workflows/osv-scanner.yml`, so a repository names one of them.
+- `repo-private` leaves out the dependency review, which needs a paid plan on a private
+  repository, and `docker.yml`, which pushes to GHCR and bills it. `ci-automerge-public` needs the
+  setting "Allow auto-merge" and a branch protection rule with required checks; without a required
+  check the merge is immediate. `ci-automerge-private` is for a repository with no branch protection
+  (a private one on the Free plan).
+- The template of `pyproject.toml` of `base-python` has `readme = "README.md"`, so `uv add` fails
+  to build a project that has no `README.md`.
+
+A project adds its own recipes in `recipes/` at its root, and a recipe of the project may extend a
+built-in one. A recipe of the project with the id of a built-in one does not load, unless the configuration
 lists the id:
 
 ```toml
@@ -507,7 +442,7 @@ file.
 `botica.toml`, or `[tool.botica]` in `pyproject.toml`, found by walking up from the working
 directory to the root of the git repository; a configuration above that root belongs to another
 project. Defining both is an error, and so is an unknown key or rule. The JSON Schema is
-[`schema/botica.schema.json`](schema/botica.schema.json).
+[`schema/botica.schema.json`](../schema/botica.schema.json).
 
 ```toml
 # botica.toml
@@ -624,10 +559,10 @@ if __name__ == "__main__":
 `options` holds the options of the rule after the configuration. A rule registered with
 `scope="project"` gets `(root, paths, options)` and yields `(path, start, end, message)`.
 
-A script of the runtime `node` can write its rule with [`@botica/sdk`](sdk/node/README.md)
+A script of the runtime `node` can write its rule with [`@botica/sdk`](../sdk/node/README.md)
 (`rule`, `byteOffsets`, `serve`), which is not published to npm yet; `botica rules new --runtime
 node` writes a script that speaks the protocol with no dependency. A program in Rust uses the crate
-[`botica-ext-sdk`](sdk/rust/README.md) and a program in Go uses the [Go module](sdk/go/README.md);
+[`botica-ext-sdk`](../sdk/rust/README.md) and a program in Go uses the [Go module](../sdk/go/README.md);
 both run as a rule of the runtime `command`.
 
 A finding with another `rule` than the id of its rule is left out, with a warning on stderr. A
@@ -695,9 +630,6 @@ A rule of project scope (`external-config`, `import-layers`, `settings-env-schem
 the configuration, with the path in `extend-ignores` of `[rules.<slug>]` or the rule in `ignore`; a
 comment that names it is `invalid-suppression`. A judgment rule is silenced for a whole file, with a
 reason: `# botica: ignore-file[<slug>] -- <reason>`.
-
-A `# ast-grep-ignore: <rule>` comment is a plain comment to botica: replace it with
-`# botica: ignore[<rule>]`.
 
 ## Editor
 

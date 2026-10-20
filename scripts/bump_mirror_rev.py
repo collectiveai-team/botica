@@ -23,7 +23,6 @@ REV_FILES = (
     "prek.toml",
     "catalog/recipes/files/prek-base.toml",
     "docs/botica.md",
-    "website/docs/use.md",
     "distribution/botica-pre-commit/README.md",
 )
 REV = re.compile(rf'^(?P<head>\s*repo = "{re.escape(MIRROR)}"\n\s*rev = ")v[^"]*(?P<tail>")', re.M)

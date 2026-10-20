@@ -127,13 +127,6 @@ def test_no_normative_text_describes_the_stack_or_a_rule_with_ast_grep():
     assert not found, f"texts that name ast-grep: {found}"
 
 
-def test_the_readme_of_botica_says_an_ast_grep_ignore_comment_suppresses_nothing():
-    text = (ROOT / "docs" / "botica.md").read_text(encoding="utf-8")
-
-    assert "`# ast-grep-ignore: <rule>` comment is a plain comment" in text
-    assert "compat-ast-grep-ignore" not in text
-
-
 CES_CODE = re.compile(r"\bCES-\d+")
 
 
