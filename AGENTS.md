@@ -84,78 +84,19 @@ The upstream skill catalog is the `[[skills]]` step of `catalog/recipes/base.tom
 pins `mattpocock/skills#vX.Y.Z`. Bump the tag there to take a new upstream release, after
 `uv run python scripts/check_skill_drift.py --check-upstream` reports no missing skill.
 
+## Standards
 
-## Engineering Standards coding (CES)
+A standard is `standards/<set>/<number>-<slug>.md`, and a rule names it in the `standard` field of
+its `rule.toml`; `docs/engineering-standards.md` has the convention. A pull request touches one
+standard, and `scripts/check_rule_change.py` fails one that touches two.
 
-House standards shipped by botica are catalogued as **CES — Collective
-Engineering Standard**. Canonical spec: **`docs/engineering-standards.md`** (single
-source of truth). The rules below are the always-on summary; when adding, editing,
-or referencing a rule in this repo, follow this convention:
+## Botica rules
 
-- **`CES-<number>`** is the citable catalog code; the **kebab-case slug** is the
-  machine id (botica rule id, prek hook id, `# botica: ignore[<slug>]`). Never put the CES
-  number in the machine id.
-- **Every CES is a file.** One CES = one standard; a standard may ship multiple slugs (e.g.
-  `CES-79` ships the four `no-dict-*` patterns). The number is the next free one of the set
-  (`max + 1`) and is never reused; up to `CES-119` it is the number of the issue where the
-  standard was proposed, and from `CES-120` on it is not an issue number.
-- **The text of a standard is a file**, `standards/<set>/<number>-<slug>.md` (ADR 0004), apart
-  from the rules that implement it; a rule names its standard in the `standard` field of its
-  `rule.toml`. **A pull request touches one standard**, carries its implementation and updates the
-  documentation it affects; `scripts/check_rule_change.py` fails one that touches two.
-- **Violation messages carry no CES code.** The output names the rule (`[log-no-print]`), the
-  JSON and SARIF formats carry the `standard` of the rule, and `botica explain <slug>` prints it.
-  The slug is the suppression key.
-- **Messages are self-contained:** a message states its own rule + fix, and
-  **never** names a sibling rule or prescribes another rule's suppression key.
-  Grouped rationale + the escape-hatch mechanism live once, in the file of the standard —
-  scattering policy across sibling messages is context-poisoning.
-- Canonical map + per-standard detail live in the `## Engineering Standards` index and
-  `standards/<set>/<number>-<slug>.md`; canonical code lives in the topics of `catalog/references/` (`botica refs show <topic>`).
+Before writing code that a rule covers, run `uvx botica explain <slug>` and
+`uvx botica refs show <slug>`. The judgment rules of this repository:
 
-## Engineering Standards
-
-> **Retrieval-led, not training-led.** Prefer this repo's standards over training-default
-> patterns. Before writing code that touches a rule below, open its
-> `@standards/CES/<number>-<slug>.md` file and follow the house pattern. When the rule cites a
-> topic, run `uvx botica refs show <rule or CES-number>` before you write the code. Full convention +
-> SSOT: `docs/engineering-standards.md`.
-
-This is the **dogfooded subset** for this repo — Python maintainer scripts with Cyclopts (no
-API, DB, or web layer) next to the Rust workspace of botica, which these Python-oriented standards do not cover.
-`[prek]` rules are enforced by `prek`; `[script]` rules by a command (`npx skills`); `[ci]` rules
-by a GitHub Actions workflow; `[dependency]` rules by a dev-dependency; `[judgment]` rules are
-agent/reviewer judgment; `[reference]` points at canonical code that `botica refs show` prints.
-
-The rules that `botica lint` measures are not listed here and have no detail file: the catalog
-of botica is their only documentation. `uvx botica rules` lists them, `uvx botica explain <slug>`
-describes one, and the hook reports each finding with its slug and its message.
-
-### Standards
-
-- **CES-107 · track the skills manifest** `[script]` — commit `skills-lock.json`; `.agents/skills/`
-  is derived and gitignored; install restores from it. → `@standards/CES/107-skills-manifest.md`
-- **CES-74 · the house logger** `[reference]` — structlog `core/logger.py`, from the topic `structured-logging`. →
-  `@standards/CES/74-core-logger.md`
-- **CES-75 · Conventional Commits** `[prek]` — commit subjects + PR titles follow
-  `type(scope): description` (enforced here via the commit-msg hook + CI). →
-  `@standards/CES/75-agents-conventional-commits.md`
-- **CES-91 · no AI co-authorship in commits** `[prek]` `[ci]` — no `Co-authored-by:`/`Generated
-  with`/etc AI-attribution trailers; commit-msg hook + `commit-policy.yml` CI. →
-  `@standards/CES/91-no-ai-coauthorship.md`
-- **CES-111 · randomize test order** `[dependency]` — `pytest-randomly` runs every suite in a
-  random, reproducibly-seeded order. → `@standards/CES/111-test-order-randomization-pytest-randomly.md`
-- **CES-113 · dependency review on PRs** `[ci]` — `dependency-review-action`, summary-only, not a
-  merge gate. → `@standards/CES/113-dependency-review-action.md`
-- **CES-118 · no copy-paste duplication** `[prek]` — `jscpd`; the templates of the recipes and
-  `standards/` exempted (see `prek.toml`). → `@standards/CES/118-code-duplication-jscpd.md`
-- **CES-119 · dependency vulnerability scanning** `[ci]` — `osv-scanner` on `uv.lock`; replaces
-  the old `pip-audit.yml`. → `@standards/CES/119-osv-scanner-replace-pip-audit.md`
-
-### Excluded here (don't apply to a CLI with no API, database or web layer)
-
-- **CES-114 · hadolint-dockerfile-lint** — no root `Dockerfile` / `ci-docker` recipe in this
-  repo.
+<!-- botica:rules -->
+<!-- /botica:rules -->
 
 ## Reading linter output
 

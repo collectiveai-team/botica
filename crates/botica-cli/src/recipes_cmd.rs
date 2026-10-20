@@ -73,9 +73,11 @@ pub fn run(args: &RecipesArgs) -> Result<ExitCode> {
             &args.names,
             &args.project,
         ),
-        RecipesCommand::Install(args) => {
-            recipes_install::run(&recipes_collection::open(&args.project)?, &args.names)
-        }
+        RecipesCommand::Install(args) => recipes_install::run(
+            &recipes_collection::open(&args.project)?,
+            &args.names,
+            &args.project,
+        ),
     }
 }
 

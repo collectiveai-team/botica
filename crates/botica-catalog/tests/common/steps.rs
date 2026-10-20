@@ -38,6 +38,6 @@ template = "files/prek-base.toml"
 
 [[sections]]
 path = "AGENTS.md"
-marker = "## Engineering Standards"
-template = "sections/standards-index.md"
+marker = "## Botica rules"
+template = "sections/botica-rules.md"
 "###;

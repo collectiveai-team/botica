@@ -330,7 +330,7 @@ fn the_built_in_base_checks_its_skill_its_file_and_its_section() {
         "{text}"
     );
     assert!(
-        text.contains("section AGENTS.md `## Engineering Standards`: differs: does not exist\n"),
+        text.contains("section AGENTS.md `## Botica rules`: differs: does not exist\n"),
         "{text}"
     );
     assert!(

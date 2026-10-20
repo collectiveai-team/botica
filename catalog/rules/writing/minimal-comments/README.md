@@ -1,6 +1,6 @@
 ## Directive
 
-Code explains itself through its names and its structure. A comment is written only for what the code cannot say: the reason for a choice that looks wrong, an invariant, a workaround with the link to its cause, or the docstring of a public interface.
+A comment says only what the code cannot say through its names and its structure: the reason for a choice that looks wrong, an invariant, a workaround with the link to its cause, or the docstring of a public interface.
 
 ## Why
 

@@ -13,7 +13,7 @@ upstream `code-review` skill.
 
 1. Pin the target branch and capture the diff: `git diff <target>...HEAD` and
    `git log <target>..HEAD --oneline`.
-2. Read `AGENTS.md` (its standards index and the judgment rules between `<!-- botica:rules -->` and
+2. Read the judgment rules of `AGENTS.md` (between `<!-- botica:rules -->` and
    `<!-- /botica:rules -->`), `GLOSSARY.md` and the ADRs under `docs/adr/` that the diff touches.
 
 ## 2. Deterministic rules

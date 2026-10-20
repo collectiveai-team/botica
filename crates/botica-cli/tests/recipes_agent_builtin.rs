@@ -75,9 +75,7 @@ fn base_creates_agents_md_with_the_workspace_defaults_and_the_standards_index() 
         "{text}"
     );
     assert!(
-        text.contains(
-            "section AGENTS.md `## Engineering Standards`: added: appended to the file\n"
-        ),
+        text.contains("section AGENTS.md `## Botica rules`: added: appended to the file\n"),
         "{text}"
     );
     let agents = fs::read_to_string(dir.join("AGENTS.md")).expect("read");
@@ -85,7 +83,7 @@ fn base_creates_agents_md_with_the_workspace_defaults_and_the_standards_index() 
         agents.starts_with("## Repo Workspace Defaults\n"),
         "{agents}"
     );
-    assert!(agents.contains("\n## Engineering Standards\n"), "{agents}");
+    assert!(agents.contains("\n## Botica rules\n"), "{agents}");
 }
 
 #[test]

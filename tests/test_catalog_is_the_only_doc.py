@@ -62,24 +62,26 @@ def test_the_catalog_is_found():
 
 @pytest.mark.parametrize(
     "index",
-    [ROOT / "catalog" / "recipes" / "sections" / "standards-index.md", ROOT / "AGENTS.md"],
+    [ROOT / "catalog" / "recipes" / "sections" / "botica-rules.md", ROOT / "AGENTS.md"],
     ids=["template", "repo"],
 )
-def test_no_index_lists_a_standard_the_catalog_measures(index: Path):
-    listed = {int(n) for n in CES_ENTRY.findall(index.read_text(encoding="utf-8"))}
+def test_agents_md_lists_no_standard(index: Path):
+    """`AGENTS.md` holds the rules that the export writes into its block, never a standard."""
+    listed = CES_ENTRY.findall(index.read_text(encoding="utf-8"))
 
-    assert not listed & MEASURED_CES, f"{index.name} lists {sorted(listed & MEASURED_CES)}"
+    assert not listed, f"{index.name} lists CES-{', CES-'.join(listed)}"
 
 
 @pytest.mark.parametrize(
     "index",
-    [ROOT / "catalog" / "recipes" / "sections" / "standards-index.md", ROOT / "AGENTS.md"],
+    [ROOT / "catalog" / "recipes" / "sections" / "botica-rules.md", ROOT / "AGENTS.md"],
     ids=["template", "repo"],
 )
-def test_the_index_sends_the_reader_to_the_catalog_without_naming_a_rule(index: Path):
+def test_agents_md_has_the_block_of_the_rules_and_sends_the_agent_to_botica_explain(index: Path):
     text = index.read_text(encoding="utf-8")
 
-    assert "uvx botica rules" in text
+    assert "<!-- botica:rules -->" in text
+    assert "<!-- /botica:rules -->" in text
     assert "uvx botica explain" in text
 
 

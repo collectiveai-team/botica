@@ -112,17 +112,17 @@ fn base_installs_the_skills_and_adds_prek_and_the_standards_index_from_its_templ
     );
     assert_eq!(base.sections.len(), 2);
     assert_eq!(base.sections[1].path, "AGENTS.md");
-    assert_eq!(base.sections[1].marker, "## Engineering Standards");
-    assert_eq!(base.sections[1].template, "sections/standards-index.md");
+    assert_eq!(base.sections[1].marker, "## Botica rules");
+    assert_eq!(base.sections[1].template, "sections/botica-rules.md");
 
     let prek = recipes
         .template("base", "files/prek-base.toml")
         .expect("the template is embedded");
     assert!(prek.starts_with("# MARK: uv-lock\n"), "{prek}");
     let index = recipes
-        .template("base", "sections/standards-index.md")
+        .template("base", "sections/botica-rules.md")
         .expect("the template is embedded");
-    assert!(index.starts_with("## Engineering Standards\n"), "{index}");
+    assert!(index.starts_with("## Botica rules\n"), "{index}");
 }
 
 #[test]
@@ -264,7 +264,7 @@ fn base_adds_the_workspace_defaults_to_agents_md_before_the_standards_index() {
         sections,
         [
             "AGENTS.md ## Repo Workspace Defaults",
-            "AGENTS.md ## Engineering Standards"
+            "AGENTS.md ## Botica rules"
         ]
     );
 }

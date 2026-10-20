@@ -1,15 +1,20 @@
 //! `botica recipe install`: prepare the repository with the steps of one or more recipes.
 
+use std::fs;
+use std::path::Path;
 use std::process::ExitCode;
 
 use anyhow::{anyhow, Result};
+use botica_catalog::Status;
 
+use crate::project::ProjectArgs;
 use crate::recipes_collection::Collection;
 use crate::recipes_install_gitignore as gitignore;
 use crate::recipes_install_selection as selection;
 use crate::recipes_install_skills as skills;
 use crate::recipes_install_steps::{self as steps, Outcome, Template};
 use crate::recipes_install_tools as tools;
+use crate::{rubric, rules_export};
 
 #[derive(Default)]
 struct Tally {
@@ -52,10 +57,33 @@ impl Tally {
     }
 }
 
+/// The file that the export `name` writes, from the root of the project.
+fn export_file(name: &str) -> &'static str {
+    match name {
+        "abide" => rubric::DEFAULT_OUTPUT,
+        _ => rubric::DEFAULT_AGENTS_MD,
+    }
+}
+
+/// Runs the export `name` that a recipe asks for, after the sections that give `AGENTS.md` its
+/// block, and says whether its file changed.
+fn export(root: &Path, name: &str, project: &ProjectArgs) -> Outcome {
+    let file = root.join(export_file(name));
+    let before = fs::read_to_string(&file).ok();
+    if let Err(error) = rules_export::write_export(name, project) {
+        return Outcome::Pending(format!("{error:#}"));
+    }
+    match (before, fs::read_to_string(&file).ok()) {
+        (None, Some(_)) => Outcome::Added(None),
+        (Some(old), Some(new)) if old != new => Outcome::Edited("wrote the judgment rules"),
+        _ => Outcome::Present,
+    }
+}
+
 /// Writes the selection of the rules, then adds the files, then the sections, then the links, then the lines of `.gitignore`, then the tools, then the skills, of the recipes in `names`, from the root of
 /// the project. The command exits with 1 when a step is pending or a skill is not installed at the
 /// end.
-pub fn run(collection: &Collection, names: &[String]) -> Result<ExitCode> {
+pub fn run(collection: &Collection, names: &[String], project: &ProjectArgs) -> Result<ExitCode> {
     let recipes = collection.loaded()?;
     let gathered = recipes.resolve_many(names).map_err(anyhow::Error::msg)?;
     for warning in &gathered.warnings {
@@ -74,8 +102,15 @@ pub fn run(collection: &Collection, names: &[String]) -> Result<ExitCode> {
         .chain(&gathered.judgment)
         .map(|item| item.id.as_str())
         .collect();
+    let preview = rules.iter().any(|rule| {
+        collection
+            .project
+            .catalog
+            .resolve(rule)
+            .is_some_and(|rule| rule.status == Status::Preview)
+    });
     if !rules.is_empty() {
-        let outcome = selection::add(root, names, &rules)?;
+        let outcome = selection::add(root, names, &rules, preview)?;
         tally.report("selection", selection::BOTICA_TOML, &outcome);
     }
     for item in &gathered.files {
@@ -132,6 +167,10 @@ pub fn run(collection: &Collection, names: &[String]) -> Result<ExitCode> {
             .zip(skills::install(root, &gathered.skills, &agents))
     {
         tally.report("skill", &item.name, &outcome);
+    }
+    for item in &gathered.exports {
+        let outcome = export(root, &item.id, project);
+        tally.report("export", &item.id, &outcome);
     }
     println!("{}", tally.summary(names));
     Ok(if tally.failed == 0 && tally.pending == 0 {

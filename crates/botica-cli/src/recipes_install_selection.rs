@@ -13,7 +13,7 @@ pub const BOTICA_TOML: &str = "botica.toml";
 const PYPROJECT: &str = "pyproject.toml";
 
 /// The text of a new `botica.toml` that selects `rules`.
-fn text(names: &[String], rules: &[&str]) -> String {
+fn text(names: &[String], rules: &[&str], preview: bool) -> String {
     let mut text = format!(
         "# The rules of the recipes {}, written by `botica recipe install`. `botica lint`, its hooks\n\
          # in prek.toml and the editor read this list, and a rule that botica adds later runs once it\n\
@@ -29,6 +29,9 @@ fn text(names: &[String], rules: &[&str]) -> String {
         let _ = writeln!(text, "  \"{rule}\",");
     }
     text.push_str("]\n");
+    if preview {
+        text.push_str("preview = true\n");
+    }
     text
 }
 
@@ -47,12 +50,13 @@ fn existing(root: &Path) -> Option<(&'static str, Option<toml::Table>)> {
     Some((PYPROJECT, Some(table)))
 }
 
-/// Writes `botica.toml` with the rules when the project has no configuration of botica. One that
-/// exists is `ok` when its `select` lists every rule, and pending otherwise.
-pub fn add(root: &Path, names: &[String], rules: &[&str]) -> Result<Outcome> {
+/// Writes `botica.toml` with the rules when the project has no configuration of botica, with
+/// `preview = true` when one of them is in preview. One that exists is `ok` when its `select`
+/// lists every rule and it has `preview = true` where needed, and pending otherwise.
+pub fn add(root: &Path, names: &[String], rules: &[&str], preview: bool) -> Result<Outcome> {
     let Some((file, table)) = existing(root) else {
         let path = root.join(BOTICA_TOML);
-        fs::write(&path, text(names, rules))
+        fs::write(&path, text(names, rules, preview))
             .with_context(|| format!("cannot write `{}`", path.display()))?;
         return Ok(Outcome::Added(None));
     };
@@ -69,7 +73,14 @@ pub fn add(root: &Path, names: &[String], rules: &[&str]) -> Result<Outcome> {
         .copied()
         .filter(|rule| !selected.contains(rule))
         .collect();
-    Ok(if missing.is_empty() {
+    let lacks_preview =
+        preview && table.get("preview").and_then(toml::Value::as_bool) != Some(true);
+    Ok(if missing.is_empty() && lacks_preview {
+        Outcome::Pending(format!(
+            "the configuration in `{file}` lacks `preview = true`, which the rules of the \
+             recipes in preview need"
+        ))
+    } else if missing.is_empty() {
         Outcome::Present
     } else {
         Outcome::Pending(format!(

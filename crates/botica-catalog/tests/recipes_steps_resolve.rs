@@ -61,7 +61,7 @@ fn a_recipe_resolves_the_steps_of_what_it_extends_first_with_the_recipe_of_each(
     assert_eq!(
         sections,
         [
-            "AGENTS.md### Engineering Standards=sections/standards-index.md from base",
+            "AGENTS.md### Botica rules=sections/botica-rules.md from base",
             "README.md## Python=sections/py.md from base-python",
         ]
     );
@@ -76,8 +76,8 @@ fn a_step_that_two_recipes_list_the_same_stays_where_it_first_is() {
             "extends = [\"base\"]\n\n\
              [[skills]]\nsource = \"mattpocock/skills#v1.2.3\"\nnames = [\"tdd\"]\n\n\
              [[files]]\npath = \"prek.toml\"\ntemplate = \"files/prek-base.toml\"\n\n\
-             [[sections]]\npath = \"AGENTS.md\"\nmarker = \"## Engineering Standards\"\n\
-             template = \"sections/standards-index.md\"\n",
+             [[sections]]\npath = \"AGENTS.md\"\nmarker = \"## Botica rules\"\n\
+             template = \"sections/botica-rules.md\"\n",
         ),
     ])
     .expect("loads");

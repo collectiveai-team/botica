@@ -8,6 +8,19 @@ rules = [
   "invalid-suppression",
   "external-config",
 ]
+judgment = [
+  "separate-orchestration",
+  "architecture-vocabulary",
+  "pr-small-by-intent",
+  "respect-local-repo",
+  "test-in-memory-adapters",
+  "test-through-interface",
+  "test-coverage-gap",
+  "plain-writing",
+  "minimal-comments",
+  "ubiquitous-language",
+]
+exports = ["agents-md", "abide"]
 
 [[skills]]
 source = "mattpocock/skills#v1.3.1"
@@ -85,5 +98,5 @@ template = "sections/agents-workspace-defaults.md"
 
 [[sections]]
 path = "AGENTS.md"
-marker = "## Engineering Standards"
-template = "sections/standards-index.md"
+marker = "## Botica rules"
+template = "sections/botica-rules.md"

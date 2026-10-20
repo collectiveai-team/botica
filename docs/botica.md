@@ -250,8 +250,8 @@ template = "files/prek-base.toml"
 
 [[sections]]                # a section of a file, which starts with the marker
 path = "AGENTS.md"
-marker = "## Engineering Standards"
-template = "sections/standards-index.md"
+marker = "## Botica rules"
+template = "sections/botica-rules.md"
 
 [[links]]                   # a symbolic link to add
 path = "CLAUDE.md"
@@ -303,7 +303,8 @@ The recipes `base`, `base-python`, `agent-opencode`, `agent-claude-code`, `agent
 ones of CI (`ci`, `ci-python`, `ci-automerge-public`, `ci-automerge-private`,
 `ci-dependency-review`, `ci-docker`, `ci-publish`, `ci-node`, `ci-go`, `repo-public` and
 `repo-private`) and `secrets-varlock` are in `catalog/recipes/` and are compiled into the binary. `base` also adds the section `## Repo Workspace
-Defaults` to `AGENTS.md`, before the standards index; a new `AGENTS.md` starts with that section.
+Defaults` to `AGENTS.md`, before `## Botica rules`, whose block `install` fills with the judgment
+rules (the exports `agents-md` and `abide`); a new `AGENTS.md` starts with that section.
 An agent is a recipe chosen by name, beside the others
 (`botica recipe install base base-python agent-claude-code`). `agent-opencode` writes
 `opencode.jsonc` and installs the skills for `opencode`; `agent-codex` has no step and installs
@@ -388,7 +389,7 @@ rule cognitive-complexity: ok
 fragment prek.toml `cognitive-complexity`: differs: prek.toml lacks the configuration of complexipy that `cognitive-complexity` (CES-110) needs: `botica explain cognitive-complexity` shows it
 export agents-md: differs: cannot read `AGENTS.md`
 file prek.toml: differs: does not exist
-section AGENTS.md `## Engineering Standards`: differs: marker not in the file
+section AGENTS.md `## Botica rules`: differs: marker not in the file
 link CLAUDE.md: differs: does not exist
 gitignore .tmp/: differs: not in .gitignore
 unignore skills-lock.json: differs: .gitignore still has the line
@@ -424,7 +425,7 @@ one line for each:
 ```text
 file prek.toml: added
 file other.toml: pending: exists and differs from the template `files/other.toml` of `base`
-section AGENTS.md `## Engineering Standards`: added: appended to the file
+section AGENTS.md `## Botica rules`: added: appended to the file
 link CLAUDE.md: added
 gitignore .tmp/: added
 unignore skills-lock.json: edited: removed the line from .gitignore

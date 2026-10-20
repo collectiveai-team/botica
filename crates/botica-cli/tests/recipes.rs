@@ -15,7 +15,7 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
         text.contains(
             "\nbase: Any repository, in any language: the rules about any file, the rules of \
              botica itself, the skills, .gitignore, the prek hooks and the sections of AGENTS.md\n  \
-             rules: 7, judgment: 0, exports: 0\n  \
+             rules: 7, judgment: 10, exports: 2\n  \
              skills: 31, files: 4, sections: 2, gitignore: 8\n  from: built-in\n"
         ),
         "{text}"
@@ -155,10 +155,15 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
     );
     assert!(lines[7].starts_with("- no-utils (BT"), "{}", lines[7]);
     assert!(lines[7].contains(", from base-python): "), "{}", lines[7]);
-    assert!(text.contains("\n## Judgment rules\n\n(none)\n"), "{text}");
-    assert!(text.contains("\n## Exports\n\n(none)\n"), "{text}");
     assert!(
-        text.contains("\n## Exports\n\n(none)\n\n## Skills\n\n- grill-with-docs ("),
+        text.contains("\n## Judgment rules\n\n- separate-orchestration (BTARCH002, from base): "),
+        "{text}"
+    );
+    assert!(
+        text.contains(
+            "\n## Exports\n\n- agents-md (from base)\n- abide (from base)\n\n\
+             ## Skills\n\n- grill-with-docs ("
+        ),
         "{text}"
     );
     assert!(
@@ -170,8 +175,8 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
              - pyproject.toml (template files/pyproject-base.toml, from base-python)\n\n\
              ## Sections\n\n- AGENTS.md, `## Repo Workspace Defaults` \
              (template sections/agents-workspace-defaults.md, from base)\n\
-             - AGENTS.md, `## Engineering Standards` \
-             (template sections/standards-index.md, from base)\n\
+             - AGENTS.md, `## Botica rules` \
+             (template sections/botica-rules.md, from base)\n\
              - prek.toml, `# MARK: validate-pyproject` \
              (template sections/prek-validate-pyproject.toml, from base-python)\n"
         ),
@@ -213,13 +218,10 @@ fn show_names_the_exports_and_the_rules_that_the_catalog_does_not_have() {
         "{text}"
     );
     assert!(
-        text.contains("## Judgment rules\n\n- phantom (not in the catalog, from mine)\n"),
+        text.contains("- phantom (not in the catalog, from mine)\n"),
         "{text}"
     );
-    assert!(
-        text.contains("## Exports\n\n- agents-md (from mine)\n"),
-        "{text}"
-    );
+    assert!(text.contains("## Exports\n\n- agents-md (from "), "{text}");
 }
 
 #[test]

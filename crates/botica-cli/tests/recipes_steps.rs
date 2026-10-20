@@ -23,8 +23,8 @@ template = "files/prek-base.toml"
 
 [[sections]]
 path = "AGENTS.md"
-marker = "## Engineering Standards"
-template = "sections/standards-index.md"
+marker = "## Botica rules"
+template = "sections/botica-rules.md"
 "###;
 
 #[test]
@@ -79,8 +79,8 @@ fn show_prints_each_step_with_the_recipe_that_lists_it() {
     );
     assert!(
         text.ends_with(
-            "\n## Sections\n\n- AGENTS.md, `## Engineering Standards` \
-             (template sections/standards-index.md, from mine)\n"
+            "\n## Sections\n\n- AGENTS.md, `## Botica rules` \
+             (template sections/botica-rules.md, from mine)\n"
         ),
         "{text}"
     );

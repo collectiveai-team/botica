@@ -13,7 +13,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 INSTRUCTED = [
-    ROOT / "catalog" / "recipes" / "sections" / "standards-index.md",
+    ROOT / "catalog" / "recipes" / "sections" / "botica-rules.md",
     ROOT / "AGENTS.md",
 ]
 

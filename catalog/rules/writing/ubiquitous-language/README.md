@@ -1,6 +1,6 @@
 ## Directive
 
-The project names each concept of its domain with one term. `GLOSSARY.md` lists each term with its definition and the words to avoid for it, and the code and the documentation use the term.
+Each concept of the domain has one term, the one that `GLOSSARY.md` defines, in the code and in the documentation. `GLOSSARY.md` lists each term with its definition and the words to avoid for it, and the code and the documentation use the term.
 
 ## Why
 

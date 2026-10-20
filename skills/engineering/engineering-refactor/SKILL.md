@@ -11,7 +11,7 @@ and the architecture vocabulary is the one of the upstream `codebase-design` ski
 
 ## 1. Baseline
 
-Read `AGENTS.md` (its standards index and the judgment rules between `<!-- botica:rules -->` and
+Read the judgment rules of `AGENTS.md` (between `<!-- botica:rules -->` and
 `<!-- /botica:rules -->`), `GLOSSARY.md` and the ADRs under `docs/adr/`. Then read the local
 contracts and write down, with the file that shows each:
 
@@ -19,8 +19,7 @@ contracts and write down, with the file that shows each:
 - lint, format and type-check tools, and where they run (prek, CI);
 - language versions, package layout, test layout and entry points.
 
-Keep that toolchain unless the user asked to migrate it, as the standard on respecting the local
-repository in the `AGENTS.md` index says. Run `botica lint` once and keep its output as the baseline.
+Keep that toolchain unless the user asked to migrate it (`botica explain respect-local-repo`). Run `botica lint` once and keep its output as the baseline.
 
 ## 2. Targets
 

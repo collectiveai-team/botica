@@ -62,22 +62,16 @@ fix", that belongs in the file of the standard, not the message.
 
 ## Where the pieces live
 
-- **Always-on index:** a marker-delimited `## Engineering Standards` section in `AGENTS.md`
-  listing every rule that `botica lint` does not measure (terse directive + `[prek]`/`[judgment]`
-  marker + an `@standards/<set>/<number>-<slug>.md` pointer), and one sentence that sends the
-  reader to `uvx botica rules` and `uvx botica explain <slug>` for the rest.
+- `AGENTS.md` lists no standard. Its `## Botica rules` section holds the block that
+  `botica rules export --format agents-md` writes: one line for each active judgment rule.
 - **On-demand detail:** `standards/<set>/<number>-<slug>.md` — full rationale, examples,
   migration. A rule that `botica lint` measures has its own documentation, the README of its
   catalog folder, and its `standard` field names the standard it implements.
 - **Canonical code:** the topics of `references/` (`catalog/references/` for botica's own), read with
   `botica refs show <topic, rule or standard>`. A topic points at the code at a commit.
 
-(Rationale for index-in-AGENTS.md over packaged skills: passive always-on context outperforms
-on-demand retrieval for horizontal standards — see PRD #78.)
-
 ## References
 
-- Roll-out plan: **PRD #78** (`meta/standards-integration`).
 - The text of each standard: `standards/CES/`.
 - The rules that `botica lint` measures: the catalog (`catalog/rules`) lists them, each with the
   standard it implements, and documents them.

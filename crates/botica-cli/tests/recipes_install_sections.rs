@@ -208,20 +208,47 @@ fn a_section_that_two_recipes_share_is_added_once() {
 
 #[cfg(unix)]
 #[test]
-fn the_built_in_base_adds_the_workspace_defaults_and_the_standards_index_and_check_finds_them() {
+fn the_built_in_base_writes_the_judgment_rules_into_agents_md_and_the_rubric_and_check_finds_them()
+{
     let dir = project("install-base-section", None);
     write(&dir, "AGENTS.md", "# Agent Notes\n");
+    write(&dir, "src/app.py", "x = 1\n");
+    write(
+        &dir,
+        "tests/test_app.py",
+        "def test_app():\n    assert True\n",
+    );
 
-    ok(&with_npx(&dir, NPX_INSTALLS, &["install", "base"]));
+    let text = ok(&with_npx(&dir, NPX_INSTALLS, &["install", "base"]));
 
+    assert!(
+        text.contains("export agents-md: edited: wrote the judgment rules\n"),
+        "{text}"
+    );
+    assert!(text.contains("export abide: added\n"), "{text}");
     let agents = read(&dir, "AGENTS.md");
-    let index = include_str!("../../../catalog/recipes/sections/standards-index.md");
     let defaults = include_str!("../../../catalog/recipes/sections/agents-workspace-defaults.md");
-    assert_eq!(agents, format!("# Agent Notes\n\n{defaults}\n{index}"));
-    let check = recipe(&dir, &["check", "base", "--select", "file-size-guard"]);
+    assert!(
+        agents.starts_with(&format!("# Agent Notes\n\n{defaults}\n## Botica rules\n")),
+        "{agents}"
+    );
+    assert!(
+        agents.contains("- BTARCH002 `separate-orchestration`: "),
+        "{agents}"
+    );
+    assert!(
+        agents.contains("- BTPROC001 `pr-small-by-intent`: "),
+        "{agents}"
+    );
+    assert!(!agents.contains("CES-"), "{agents}");
+    let rubric = read(&dir, ".abide/rubric.json");
+    assert!(rubric.contains("\"test-through-interface\""), "{rubric}");
+    let check = recipe(&dir, &["check", "base"]);
     let check = String::from_utf8_lossy(&check.stdout);
     assert!(
-        check.contains("section AGENTS.md `## Engineering Standards`: ok\n"),
+        check.contains("section AGENTS.md `## Botica rules`: ok\n")
+            && check.contains("export agents-md: ok\n")
+            && check.contains("export abide: ok\n"),
         "{check}"
     );
 }

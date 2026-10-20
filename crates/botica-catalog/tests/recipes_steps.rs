@@ -24,8 +24,8 @@ fn loads_the_skills_the_files_and_the_sections_of_a_recipe_in_order() {
     assert_eq!(base.files[0].template, "files/prek-base.toml");
     assert_eq!(base.sections.len(), 1);
     assert_eq!(base.sections[0].path, "AGENTS.md");
-    assert_eq!(base.sections[0].marker, "## Engineering Standards");
-    assert_eq!(base.sections[0].template, "sections/standards-index.md");
+    assert_eq!(base.sections[0].marker, "## Botica rules");
+    assert_eq!(base.sections[0].template, "sections/botica-rules.md");
 }
 
 #[test]

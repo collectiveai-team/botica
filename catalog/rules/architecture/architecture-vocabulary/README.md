@@ -1,6 +1,6 @@
 ## Directive
 
-Units are named with one architectural vocabulary. The layers and packages are `entrypoints`, `api`, `database`, `impl` and `core`; an interface is a port and its implementation is an adapter. A concept that already has a name gets no synonym.
+Layers and packages are named `entrypoints`, `api`, `database`, `impl` and `core`, an interface is a port and its implementation an adapter, and a concept that already has a name gets no synonym.
 
 ## Why
 

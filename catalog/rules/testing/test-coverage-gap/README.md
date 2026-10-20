@@ -1,6 +1,6 @@
 ## Directive
 
-A coverage gap is a missing test, dead code or a seam to refactor. A change closes it with a test through the interface or by deleting the code; it does not hide the gap with `# pragma: no cover`, an `omit` of coverage or a lower threshold, and it does not add a test that runs the lines without asserting a behaviour.
+A change closes a coverage gap with a test through the interface or by deleting dead code. It does not hide the gap with `# pragma: no cover`, an `omit` of coverage or a lower threshold, and adds no test that runs the lines without asserting a behaviour.
 
 ## Why
 

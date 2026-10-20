@@ -2,6 +2,13 @@
 
 **Status:** accepted
 
+**Amended 2026-10-20:** `AGENTS.md` lists no standard. The recipe `base` lists the judgment rules
+under `judgment` and asks for the exports `agents-md` and `abide`, and `botica recipe install`
+runs them after its sections: the section `## Botica rules` brings the markers of the block, the
+export fills the block with one line per active judgment rule, and the rubric names those lines.
+A configuration that `install` writes gets `preview = true` when a rule of the recipes is in
+preview. The hand-written index of standards that the scaffolder installed is removed.
+
 ADR 0003 lists `judgment` as a fourth kind of implementation, run by no part of `botica lint` and
 catalogued for the judges and the site. ADR 0002 makes a standard with nothing to run a `judgment`
 rule. Neither says where such a rule lives, what its folder holds, how it is numbered, or when a
