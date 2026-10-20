@@ -1,0 +1,6 @@
+{
+  "verdicts": [
+    { "file": "valid/orders.py", "band": "clear" },
+    { "file": "invalid/orders.py", "band": "act" }
+  ]
+}

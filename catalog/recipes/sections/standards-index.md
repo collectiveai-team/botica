@@ -30,9 +30,6 @@ describes one, and the hook reports each finding with its slug and its message.
   `agents-conventional-commits`.
 - **CES-77 · version pin** `[judgment]` — `requires-python` ships as a non-enforced comment
   (house default 3.14); an existing repo's pin wins. → see `pyproject.toml` comment.
-- **CES-16 · architectural vocabulary** `[judgment]` — name units with the house terms
-  (`entrypoints`/`api`/`database`/`impl`/`core`, ports/adapters), not ad-hoc synonyms. Slug:
-  `architecture-vocabulary`.
 - **CES-30 · respect the local repo** `[judgment]` — existing deliberate choices (pins, config,
   layout) win over house defaults; adopt standards as explicit migrations, never silent
   overwrites. Slug: `respect-local-repo`.
