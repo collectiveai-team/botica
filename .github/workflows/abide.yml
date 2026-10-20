@@ -1,0 +1,88 @@
+name: abide
+
+# The judgment rules of botica on the diff of a pull request. abide judges the diff with the rubric
+# `.abide/rubric.json`, which `botica rules export --format abide` writes; botica keeps the verdicts
+# that the configuration and the `ignore-file` comments keep, and a finding of severity warning or
+# higher fails the job. The rubric, the report of abide and the findings as SARIF are an artifact.
+#
+# TYPESAFE_AI_API_KEY is a secret of the repository and TYPESAFE_AI_BASE_URL a variable
+# (https://api.typesafe.ai/v1, or the address of a server with the same API). A pull request from a
+# fork gets no secret, and the job fails.
+#
+# The copy of `catalog/recipes/files/github/workflows/abide.yml` that the recipe `base` installs,
+# with the botica built from this checkout instead of `uvx botica@X.Y.Z`.
+
+on:
+  pull_request:
+
+concurrency:
+  group: abide-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  abide:
+    name: judgment rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
+      TYPESAFE_AI_BASE_URL: ${{ vars.TYPESAFE_AI_BASE_URL }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      BOTICA: target/debug/botica
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Build botica
+        run: cargo build --locked -p botica-cli
+
+      - name: Check the rubric
+        run: |
+          "$BOTICA" rules export --format abide --check
+
+      - name: Judge the diff
+        run: |
+          mkdir -p "$RUNNER_TEMP/abide"
+          cp .abide/rubric.json "$RUNNER_TEMP/abide/"
+          if [ -z "$TYPESAFE_AI_API_KEY" ]; then
+            echo "::error::the secret TYPESAFE_AI_API_KEY is not set"
+            exit 2
+          fi
+          git diff "$BASE_SHA"...HEAD > "$RUNNER_TEMP/abide/pr.diff"
+          status=0
+          npx --yes @coldtea/abide@0.0.11 check --json --diff "$RUNNER_TEMP/abide/pr.diff" \
+            > "$RUNNER_TEMP/abide/abide.json" || status=$?
+          # abide exits with 1 when a verdict is in the band act; botica decides below.
+          if [ "$status" -gt 1 ]; then
+            exit "$status"
+          fi
+
+      - name: Findings as SARIF
+        run: |
+          "$BOTICA" lint --judged "$RUNNER_TEMP/abide/abide.json" --output-format sarif \
+            --exit-zero > "$RUNNER_TEMP/abide/judged.sarif"
+
+      - name: Upload the rubric and the verdicts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: abide
+          path: ${{ runner.temp }}/abide/
+          if-no-files-found: ignore
+
+      - name: Fail on the findings
+        run: |
+          "$BOTICA" lint --judged "$RUNNER_TEMP/abide/abide.json" --output-format github \
+            --fail-on warning
