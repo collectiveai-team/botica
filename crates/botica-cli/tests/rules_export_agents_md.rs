@@ -12,7 +12,7 @@ fn workdir(name: &str, agents: &str) -> PathBuf {
         .join("rules-export-agents-md")
         .join(name);
     let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).expect("create the working directory");
+    fs::create_dir_all(dir.join(".git")).expect("create the working directory");
     fs::write(dir.join("AGENTS.md"), agents).expect("write AGENTS.md");
     dir
 }

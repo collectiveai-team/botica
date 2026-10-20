@@ -1,6 +1,6 @@
 //! `botica rules export --format abide`: the rubric of abide from the catalog and the project.
-//! The catalog of botica has no judgment rule yet, so the rubric of these tests has no rule; the
-//! unit tests of `rubric` cover the rules.
+//! The project of these tests selects no judgment rule, so its rubric has none; the unit tests of
+//! `rubric` cover the rules.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -15,7 +15,7 @@ fn workdir(name: &str) -> PathBuf {
         .join("rules-export-abide")
         .join(name);
     let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).expect("create the working directory");
+    fs::create_dir_all(dir.join(".git")).expect("create the working directory");
     fs::write(dir.join("AGENTS.md"), AGENTS_MD).expect("write AGENTS.md");
     dir
 }

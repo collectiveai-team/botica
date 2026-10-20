@@ -205,11 +205,21 @@ select = [
   "log-no-print",
   "settings-module",
   "cli-typed-framework",
-  # The old name: the botica of the hooks is the last release, and the next one keeps it as an alias.
-  "arch-database-package",
+  "database-package",
   "import-layers",
   "settings-env-schema",
+  "separate-orchestration",
+  "architecture-vocabulary",
+  "pr-small-by-intent",
+  "respect-local-repo",
+  "test-in-memory-adapters",
+  "test-through-interface",
+  "test-coverage-gap",
+  "plain-writing",
+  "minimal-comments",
+  "ubiquitous-language",
 ]
+preview = true
 # The fixtures of the rules are wrong on purpose, and the skills are vendored payload (ruff leaves
 # them out for the same reason).
 extend-exclude = ["catalog/rules/**/fixtures/", "skills/"]

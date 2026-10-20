@@ -1,0 +1,458 @@
+{
+  "version": 1,
+  "compiledAt": "2026-10-20T17:41:53Z",
+  "compiledBy": "botica 0.13.0",
+  "manual": true,
+  "sources": [
+    {
+      "path": "AGENTS.md"
+    }
+  ],
+  "rules": [
+    {
+      "id": "separate-orchestration",
+      "text": "A function either orders the steps of a task or carries out one of them. The orchestration (the order of the calls and the control flow) does not share a function with the rules of the domain and the I/O; it calls named units that hold them.",
+      "source": {
+        "path": "AGENTS.md",
+        "line": 101
+      },
+      "scope": [
+        "bench/**/*.js",
+        "bench/**/*.jsx",
+        "bench/**/*.mjs",
+        "bench/**/*.cjs",
+        "bench/**/*.py",
+        "bench/**/*.pyi",
+        "bench/**/*.ts",
+        "bench/**/*.tsx",
+        "bench/**/*.mts",
+        "bench/**/*.cts",
+        "catalog/references/api-schemas/code/**/*.js",
+        "catalog/references/api-schemas/code/**/*.jsx",
+        "catalog/references/api-schemas/code/**/*.mjs",
+        "catalog/references/api-schemas/code/**/*.cjs",
+        "catalog/references/api-schemas/code/**/*.py",
+        "catalog/references/api-schemas/code/**/*.pyi",
+        "catalog/references/api-schemas/code/**/*.ts",
+        "catalog/references/api-schemas/code/**/*.tsx",
+        "catalog/references/api-schemas/code/**/*.mts",
+        "catalog/references/api-schemas/code/**/*.cts",
+        "catalog/references/in-memory-adapters/code/app/**/*.js",
+        "catalog/references/in-memory-adapters/code/app/**/*.jsx",
+        "catalog/references/in-memory-adapters/code/app/**/*.mjs",
+        "catalog/references/in-memory-adapters/code/app/**/*.cjs",
+        "catalog/references/in-memory-adapters/code/app/**/*.py",
+        "catalog/references/in-memory-adapters/code/app/**/*.pyi",
+        "catalog/references/in-memory-adapters/code/app/**/*.ts",
+        "catalog/references/in-memory-adapters/code/app/**/*.tsx",
+        "catalog/references/in-memory-adapters/code/app/**/*.mts",
+        "catalog/references/in-memory-adapters/code/app/**/*.cts",
+        "catalog/references/llm/code/**/*.js",
+        "catalog/references/llm/code/**/*.jsx",
+        "catalog/references/llm/code/**/*.mjs",
+        "catalog/references/llm/code/**/*.cjs",
+        "catalog/references/llm/code/**/*.py",
+        "catalog/references/llm/code/**/*.pyi",
+        "catalog/references/llm/code/**/*.ts",
+        "catalog/references/llm/code/**/*.tsx",
+        "catalog/references/llm/code/**/*.mts",
+        "catalog/references/llm/code/**/*.cts",
+        "catalog/references/prefect/code/**/*.js",
+        "catalog/references/prefect/code/**/*.jsx",
+        "catalog/references/prefect/code/**/*.mjs",
+        "catalog/references/prefect/code/**/*.cjs",
+        "catalog/references/prefect/code/**/*.py",
+        "catalog/references/prefect/code/**/*.pyi",
+        "catalog/references/prefect/code/**/*.ts",
+        "catalog/references/prefect/code/**/*.tsx",
+        "catalog/references/prefect/code/**/*.mts",
+        "catalog/references/prefect/code/**/*.cts",
+        "catalog/references/settings-module/code/**/*.js",
+        "catalog/references/settings-module/code/**/*.jsx",
+        "catalog/references/settings-module/code/**/*.mjs",
+        "catalog/references/settings-module/code/**/*.cjs",
+        "catalog/references/settings-module/code/**/*.py",
+        "catalog/references/settings-module/code/**/*.pyi",
+        "catalog/references/settings-module/code/**/*.ts",
+        "catalog/references/settings-module/code/**/*.tsx",
+        "catalog/references/settings-module/code/**/*.mts",
+        "catalog/references/settings-module/code/**/*.cts",
+        "catalog/references/structured-logging/code/**/*.js",
+        "catalog/references/structured-logging/code/**/*.jsx",
+        "catalog/references/structured-logging/code/**/*.mjs",
+        "catalog/references/structured-logging/code/**/*.cjs",
+        "catalog/references/structured-logging/code/**/*.py",
+        "catalog/references/structured-logging/code/**/*.pyi",
+        "catalog/references/structured-logging/code/**/*.ts",
+        "catalog/references/structured-logging/code/**/*.tsx",
+        "catalog/references/structured-logging/code/**/*.mts",
+        "catalog/references/structured-logging/code/**/*.cts",
+        "catalog/references/typed-boundaries/code/**/*.js",
+        "catalog/references/typed-boundaries/code/**/*.jsx",
+        "catalog/references/typed-boundaries/code/**/*.mjs",
+        "catalog/references/typed-boundaries/code/**/*.cjs",
+        "catalog/references/typed-boundaries/code/**/*.py",
+        "catalog/references/typed-boundaries/code/**/*.pyi",
+        "catalog/references/typed-boundaries/code/**/*.ts",
+        "catalog/references/typed-boundaries/code/**/*.tsx",
+        "catalog/references/typed-boundaries/code/**/*.mts",
+        "catalog/references/typed-boundaries/code/**/*.cts",
+        "scripts/**/*.js",
+        "scripts/**/*.jsx",
+        "scripts/**/*.mjs",
+        "scripts/**/*.cjs",
+        "scripts/**/*.py",
+        "scripts/**/*.pyi",
+        "scripts/**/*.ts",
+        "scripts/**/*.tsx",
+        "scripts/**/*.mts",
+        "scripts/**/*.cts",
+        "sdk/**/*.js",
+        "sdk/**/*.jsx",
+        "sdk/**/*.mjs",
+        "sdk/**/*.cjs",
+        "sdk/**/*.py",
+        "sdk/**/*.pyi",
+        "sdk/**/*.ts",
+        "sdk/**/*.tsx",
+        "sdk/**/*.mts",
+        "sdk/**/*.cts",
+        "website/**/*.js",
+        "website/**/*.jsx",
+        "website/**/*.mjs",
+        "website/**/*.cjs",
+        "website/**/*.py",
+        "website/**/*.pyi",
+        "website/**/*.ts",
+        "website/**/*.tsx",
+        "website/**/*.mts",
+        "website/**/*.cts"
+      ],
+      "when": "edit",
+      "check": {
+        "type": "model",
+        "question": {
+          "type": "boolean",
+          "instructions": "Read each function of the file. Does each one either order the steps of a task (calls, control flow) or carry out one step (a calculation, a rule of the domain, an I/O call), without one function deciding the flow, computing the domain rules and doing the I/O all at once?",
+          "criteria": {
+            "true": "orchestration and the steps it calls live in separate functions",
+            "false": "a function mixes the order of the steps with the logic and the I/O of those steps"
+          }
+        }
+      }
+    },
+    {
+      "id": "architecture-vocabulary",
+      "text": "Layers and packages are named `entrypoints`, `api`, `database`, `impl` and `core`, an interface is a port and its implementation an adapter, and a concept that already has a name gets no synonym.",
+      "source": {
+        "path": "AGENTS.md",
+        "line": 102
+      },
+      "scope": [
+        "**/*.js",
+        "**/*.jsx",
+        "**/*.mjs",
+        "**/*.cjs",
+        "**/*.py",
+        "**/*.pyi",
+        "**/*.ts",
+        "**/*.tsx",
+        "**/*.mts",
+        "**/*.cts"
+      ],
+      "when": "edit",
+      "check": {
+        "type": "model",
+        "question": {
+          "type": "boolean",
+          "instructions": "Read the names of the modules, packages, classes and functions that the file defines or imports. Do they use the house vocabulary (layers entrypoints, api, database, impl, core; ports and adapters), with no synonym such as manager, handler, helper, processor, common, shared, persistence or dal for a unit that already has a name?",
+          "criteria": {
+            "true": "the units are named with the house vocabulary",
+            "false": "a unit is named with a synonym of a term the vocabulary already has"
+          }
+        }
+      }
+    },
+    {
+      "id": "test-in-memory-adapters",
+      "text": "Tests drive the logic through in-memory adapters of the ports of the project: working fakes that implement the same interface as the production adapter. A mock stands in only for a third-party boundary that cannot reasonably be faked. `botica refs show in-memory-adapters` prints an adapter with its port.",
+      "source": {
+        "path": "AGENTS.md",
+        "line": 111
+      },
+      "scope": [
+        "catalog/references/api-schemas/tests/**/*.py",
+        "catalog/references/api-schemas/tests/**/*.pyi",
+        "catalog/references/in-memory-adapters/code/tests/**/*.py",
+        "catalog/references/in-memory-adapters/code/tests/**/*.pyi",
+        "catalog/references/llm/tests/**/*.py",
+        "catalog/references/llm/tests/**/*.pyi",
+        "catalog/references/prefect/tests/**/*.py",
+        "catalog/references/prefect/tests/**/*.pyi",
+        "catalog/references/settings-module/tests/**/*.py",
+        "catalog/references/settings-module/tests/**/*.pyi",
+        "catalog/references/structured-logging/tests/**/*.py",
+        "catalog/references/structured-logging/tests/**/*.pyi",
+        "catalog/references/typed-boundaries/tests/**/*.py",
+        "catalog/references/typed-boundaries/tests/**/*.pyi",
+        "tests/**/*.py",
+        "tests/**/*.pyi"
+      ],
+      "when": "edit",
+      "check": {
+        "type": "model",
+        "question": {
+          "type": "boolean",
+          "instructions": "Read the tests of the file. Do they drive the logic through working in-memory adapters of the ports of the project and assert on outcomes, using a mock only for a third-party boundary that cannot reasonably be faked?",
+          "criteria": {
+            "true": "the tests use in-memory adapters of the ports and assert on outcomes",
+            "false": "the tests mock a port of the project, or assert on the calls a mock received"
+          }
+        }
+      }
+    },
+    {
+      "id": "test-through-interface",
+      "text": "Tests call the unit under test through the public interface that production code calls, and assert on observable behaviour. A test reads no private attribute, calls no underscore-prefixed member and asserts on no internal state of the unit.",
+      "source": {
+        "path": "AGENTS.md",
+        "line": 112
+      },
+      "scope": [
+        "catalog/references/api-schemas/tests/**/*.js",
+        "catalog/references/api-schemas/tests/**/*.jsx",
+        "catalog/references/api-schemas/tests/**/*.mjs",
+        "catalog/references/api-schemas/tests/**/*.cjs",
+        "catalog/references/api-schemas/tests/**/*.py",
+        "catalog/references/api-schemas/tests/**/*.pyi",
+        "catalog/references/api-schemas/tests/**/*.ts",
+        "catalog/references/api-schemas/tests/**/*.tsx",
+        "catalog/references/api-schemas/tests/**/*.mts",
+        "catalog/references/api-schemas/tests/**/*.cts",
+        "catalog/references/in-memory-adapters/code/tests/**/*.js",
+        "catalog/references/in-memory-adapters/code/tests/**/*.jsx",
+        "catalog/references/in-memory-adapters/code/tests/**/*.mjs",
+        "catalog/references/in-memory-adapters/code/tests/**/*.cjs",
+        "catalog/references/in-memory-adapters/code/tests/**/*.py",
+        "catalog/references/in-memory-adapters/code/tests/**/*.pyi",
+        "catalog/references/in-memory-adapters/code/tests/**/*.ts",
+        "catalog/references/in-memory-adapters/code/tests/**/*.tsx",
+        "catalog/references/in-memory-adapters/code/tests/**/*.mts",
+        "catalog/references/in-memory-adapters/code/tests/**/*.cts",
+        "catalog/references/llm/tests/**/*.js",
+        "catalog/references/llm/tests/**/*.jsx",
+        "catalog/references/llm/tests/**/*.mjs",
+        "catalog/references/llm/tests/**/*.cjs",
+        "catalog/references/llm/tests/**/*.py",
+        "catalog/references/llm/tests/**/*.pyi",
+        "catalog/references/llm/tests/**/*.ts",
+        "catalog/references/llm/tests/**/*.tsx",
+        "catalog/references/llm/tests/**/*.mts",
+        "catalog/references/llm/tests/**/*.cts",
+        "catalog/references/prefect/tests/**/*.js",
+        "catalog/references/prefect/tests/**/*.jsx",
+        "catalog/references/prefect/tests/**/*.mjs",
+        "catalog/references/prefect/tests/**/*.cjs",
+        "catalog/references/prefect/tests/**/*.py",
+        "catalog/references/prefect/tests/**/*.pyi",
+        "catalog/references/prefect/tests/**/*.ts",
+        "catalog/references/prefect/tests/**/*.tsx",
+        "catalog/references/prefect/tests/**/*.mts",
+        "catalog/references/prefect/tests/**/*.cts",
+        "catalog/references/settings-module/tests/**/*.js",
+        "catalog/references/settings-module/tests/**/*.jsx",
+        "catalog/references/settings-module/tests/**/*.mjs",
+        "catalog/references/settings-module/tests/**/*.cjs",
+        "catalog/references/settings-module/tests/**/*.py",
+        "catalog/references/settings-module/tests/**/*.pyi",
+        "catalog/references/settings-module/tests/**/*.ts",
+        "catalog/references/settings-module/tests/**/*.tsx",
+        "catalog/references/settings-module/tests/**/*.mts",
+        "catalog/references/settings-module/tests/**/*.cts",
+        "catalog/references/structured-logging/tests/**/*.js",
+        "catalog/references/structured-logging/tests/**/*.jsx",
+        "catalog/references/structured-logging/tests/**/*.mjs",
+        "catalog/references/structured-logging/tests/**/*.cjs",
+        "catalog/references/structured-logging/tests/**/*.py",
+        "catalog/references/structured-logging/tests/**/*.pyi",
+        "catalog/references/structured-logging/tests/**/*.ts",
+        "catalog/references/structured-logging/tests/**/*.tsx",
+        "catalog/references/structured-logging/tests/**/*.mts",
+        "catalog/references/structured-logging/tests/**/*.cts",
+        "catalog/references/typed-boundaries/tests/**/*.js",
+        "catalog/references/typed-boundaries/tests/**/*.jsx",
+        "catalog/references/typed-boundaries/tests/**/*.mjs",
+        "catalog/references/typed-boundaries/tests/**/*.cjs",
+        "catalog/references/typed-boundaries/tests/**/*.py",
+        "catalog/references/typed-boundaries/tests/**/*.pyi",
+        "catalog/references/typed-boundaries/tests/**/*.ts",
+        "catalog/references/typed-boundaries/tests/**/*.tsx",
+        "catalog/references/typed-boundaries/tests/**/*.mts",
+        "catalog/references/typed-boundaries/tests/**/*.cts",
+        "tests/**/*.js",
+        "tests/**/*.jsx",
+        "tests/**/*.mjs",
+        "tests/**/*.cjs",
+        "tests/**/*.py",
+        "tests/**/*.pyi",
+        "tests/**/*.ts",
+        "tests/**/*.tsx",
+        "tests/**/*.mts",
+        "tests/**/*.cts"
+      ],
+      "when": "edit",
+      "check": {
+        "type": "model",
+        "question": {
+          "type": "boolean",
+          "instructions": "Read the tests of the file. Do they call the unit under test through the same public interface that production code calls and assert on observable behaviour, without reading private attributes, calling underscore-prefixed members or asserting on internal state?",
+          "criteria": {
+            "true": "the tests go through the public interface",
+            "false": "a test reaches into private attributes, private methods or internal state of the unit under test"
+          }
+        }
+      }
+    },
+    {
+      "id": "plain-writing",
+      "text": "Prose says what a thing is and what it does, in plain sentences that a file, a command or an issue of the repository backs, with no inflated words, hedges, trailing judgments, bold emphasis or claims without a source.",
+      "source": {
+        "path": "AGENTS.md",
+        "line": 117
+      },
+      "scope": [
+        "AGENTS.md",
+        "GLOSSARY.md",
+        "README.md",
+        ".github/pull_request_template.md",
+        ".github/ISSUE_TEMPLATE/**",
+        ".github/PULL_REQUEST_TEMPLATE/**",
+        "bench/layout-repos.txt",
+        "bench/real-repos.txt",
+        "catalog/recipes/files/github/pull_request_template.md",
+        "catalog/recipes/files/github/ISSUE_TEMPLATE/**",
+        "catalog/recipes/sections/agents-workspace-defaults.md",
+        "catalog/recipes/sections/botica-rules.md",
+        "catalog/references/api-schemas/README.md",
+        "catalog/references/in-memory-adapters/README.md",
+        "catalog/references/llm/README.md",
+        "catalog/references/llm/code/app/prompts/**",
+        "catalog/references/prefect/README.md",
+        "catalog/references/settings-module/README.md",
+        "catalog/references/structured-logging/README.md",
+        "catalog/references/typed-boundaries/README.md",
+        "catalog/rules/architecture/architecture-vocabulary/README.md",
+        "catalog/rules/architecture/import-layers/README.md",
+        "catalog/rules/architecture/separate-orchestration/README.md",
+        "catalog/rules/botica/external-config/README.md",
+        "catalog/rules/botica/invalid-suppression/README.md",
+        "catalog/rules/botica/io-error/README.md",
+        "catalog/rules/botica/unused-suppression/README.md",
+        "catalog/rules/cli/cli-typed-framework/README.md",
+        "catalog/rules/config/settings-base-class/README.md",
+        "catalog/rules/config/settings-direct-instantiation/README.md",
+        "catalog/rules/config/settings-env-schema/README.md",
+        "catalog/rules/config/settings-module/README.md",
+        "catalog/rules/data-models/no-dict-alias/README.md",
+        "catalog/rules/data-models/no-dict-call-return/README.md",
+        "catalog/rules/data-models/no-dict-literal-return/README.md",
+        "catalog/rules/data-models/no-dict-return-annotation/README.md",
+        "catalog/rules/database/database-package/README.md",
+        "catalog/rules/database/db-no-create-all/README.md",
+        "catalog/rules/fastapi/api-request-schema-name/README.md",
+        "catalog/rules/fastapi/api-response-schema-name/README.md",
+        "catalog/rules/fastapi/api-schema-in-route-module/README.md",
+        "catalog/rules/fastapi/api-schemas-extra-forbid/README.md",
+        "catalog/rules/logging/log-get-logger/README.md",
+        "catalog/rules/logging/log-no-print/README.md",
+        "catalog/rules/process/pr-small-by-intent/README.md",
+        "catalog/rules/process/respect-local-repo/README.md",
+        "catalog/rules/security/jwt-verified/README.md",
+        "catalog/rules/security/no-token-in-web-storage/README.md",
+        "catalog/rules/security/route-auth/README.md",
+        "catalog/rules/structure/cognitive-complexity/README.md",
+        "catalog/rules/structure/file-size-guard/README.md",
+        "catalog/rules/structure/lockfile-committed/README.md",
+        "catalog/rules/structure/no-artifacts-in-package/README.md",
+        "catalog/rules/structure/no-notebooks/README.md",
+        "catalog/rules/structure/no-tests-in-package/README.md",
+        "catalog/rules/structure/no-utils/README.md",
+        "catalog/rules/testing/test-coverage-gap/README.md",
+        "catalog/rules/testing/test-in-memory-adapters/README.md",
+        "catalog/rules/testing/test-through-interface/README.md",
+        "catalog/rules/tooling/no-disabled-typecheck/README.md",
+        "catalog/rules/writing/minimal-comments/README.md",
+        "catalog/rules/writing/plain-writing/README.md",
+        "catalog/rules/writing/ubiquitous-language/README.md",
+        "distribution/botica-pre-commit/README.md",
+        "docs/**",
+        "sdk/go/README.md",
+        "sdk/node/README.md",
+        "sdk/python/README.md",
+        "sdk/rust/README.md",
+        "standards/**",
+        "website/requirements.txt",
+        "website/docs/index.md",
+        "website/docs/use.md"
+      ],
+      "when": "edit",
+      "check": {
+        "type": "model",
+        "question": {
+          "type": "boolean",
+          "instructions": "Read the prose of the file. Is it written in plain sentences that say what a thing is and what it does, with none of these signs of model writing (inflated significance, a trailing clause that judges, words that avoid is and has, definition by negation, lists of three, hedges and vague attribution, bold for emphasis, text addressed to the reader, a claim with no source)?",
+          "criteria": {
+            "true": "the prose is plain and carries none of the signs",
+            "false": "the prose carries one or more of the signs"
+          }
+        }
+      }
+    },
+    {
+      "id": "minimal-comments",
+      "text": "A comment says only what the code cannot say through its names and its structure: the reason for a choice that looks wrong, an invariant, a workaround with the link to its cause, or the docstring of a public interface.",
+      "source": {
+        "path": "AGENTS.md",
+        "line": 118
+      },
+      "scope": [
+        "**"
+      ],
+      "when": "edit",
+      "check": {
+        "type": "model",
+        "question": {
+          "type": "boolean",
+          "instructions": "Read the comments of the file and the code next to them. Is every comment one that the code cannot say by itself: the reason for a choice that looks wrong, an invariant the types do not show, a workaround with the link to its cause, or the docstring of a public interface?",
+          "criteria": {
+            "true": "every comment says something the code cannot",
+            "false": "a comment repeats the code, names a section, keeps old code or tells the history of a change"
+          }
+        }
+      }
+    },
+    {
+      "id": "ubiquitous-language",
+      "text": "Each concept of the domain has one term, the one that `GLOSSARY.md` defines, in the code and in the documentation. `GLOSSARY.md` lists each term with its definition and the words to avoid for it, and the code and the documentation use the term.",
+      "source": {
+        "path": "AGENTS.md",
+        "line": 119
+      },
+      "scope": [
+        "**"
+      ],
+      "when": "edit",
+      "check": {
+        "type": "model",
+        "question": {
+          "type": "boolean",
+          "instructions": "Read the names and the prose of the file. Does it name each concept of the domain with one term, the one that the glossary of the project (GLOSSARY.md) lists, and none of the words the glossary says to avoid for it?",
+          "criteria": {
+            "true": "each concept has one term, the one of the glossary",
+            "false": "a concept has two names, or a name the glossary says to avoid"
+          }
+        }
+      }
+    }
+  ]
+}
