@@ -15,12 +15,13 @@ pub struct ExtensionRun {
 }
 
 /// Each language that a rule may name, with the extensions of its files.
-const LANGUAGES: [(&str, &[&str]); 5] = [
+const LANGUAGES: [(&str, &[&str]); 6] = [
     ("python", &["py", "pyi"]),
     ("typescript", &["ts", "tsx", "mts", "cts"]),
     ("javascript", &["js", "jsx", "mjs", "cjs"]),
     ("go", &["go"]),
     ("rust", &["rs"]),
+    ("json", &["json"]),
 ];
 
 pub fn language_of(path: &str) -> Option<&'static str> {

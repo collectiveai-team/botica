@@ -149,8 +149,6 @@ describes one, and the hook reports each finding with its slug and its message.
 - **CES-30 · respect the local repo** `[judgment]` — existing deliberate choices win over house
   defaults (`botica recipe install` leaves an existing file as it is for this reason). →
   `@standards/CES/30-respect-local-repo.md`
-- **CES-58 · one modern lint stack** `[judgment]` — ruff + pyrefly + botica via prek; no
-  black/isort/flake8/pylint. → `@standards/CES/58-one-lint-stack.md`
 - **CES-64 · test against in-memory adapters** `[judgment]` — fakes over mocks. →
   `@standards/CES/64-test-in-memory-adapters.md`
 - **CES-65 · test through the interface** `[judgment]` — assert behaviour via the public seam

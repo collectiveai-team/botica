@@ -1,0 +1,16 @@
+id: no-disabled-typecheck
+language: tsx
+severity: error
+message: "This turns off the type checker for a whole file or build: remove `// @ts-nocheck` or `ignoreBuildErrors: true` and fix the type errors, or silence one line with `// @ts-expect-error` and its reason."
+rule:
+  any:
+    - kind: comment
+      regex: "^(//|/\\*)\\s*@ts-nocheck\\b"
+    - kind: pair
+      all:
+        - has:
+            field: key
+            regex: "^[\"']?ignoreBuildErrors[\"']?$"
+        - has:
+            field: value
+            kind: "true"

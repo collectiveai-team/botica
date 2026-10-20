@@ -39,8 +39,6 @@ describes one, and the hook reports each finding with its slug and its message.
 - **CES-30 · respect the local repo** `[judgment]` — existing deliberate choices (pins, config,
   layout) win over house defaults; adopt standards as explicit migrations, never silent
   overwrites. Slug: `respect-local-repo`.
-- **CES-58 · one modern lint stack** `[judgment]` — ruff + pyrefly + botica via prek; don't
-  reintroduce black/isort/flake8/pylint. Slug: `one-lint-stack`.
 - **CES-64 · test against in-memory adapters** `[judgment]` — drive logic through working
   in-memory fakes of your ports, not mocks or live I/O. Slug: `test-in-memory-adapters`.
 - **CES-65 · test through the interface** `[judgment]` — assert on observable behaviour via the

@@ -108,10 +108,11 @@ run on its own. `botica rules test --judge abide` runs abide with the environmen
 | `BTSEC001` | [`route-auth`](../catalog/rules/security/route-auth/README.md) | CES-121 | Python: a FastAPI route with none of the `dependencies` of the configuration |
 | `BTSEC002` | [`jwt-verified`](../catalog/rules/security/jwt-verified/README.md) | CES-121 | Python, TypeScript, JavaScript, Go and Rust: a token decoded without its signature or its expiry checked |
 | `BTSEC003` | [`no-token-in-web-storage`](../catalog/rules/security/no-token-in-web-storage/README.md) | CES-121 | TypeScript and JavaScript: a credential written to `localStorage` or `sessionStorage` |
+| `BTTOOL001` | [`no-disabled-typecheck`](../catalog/rules/tooling/no-disabled-typecheck/README.md) | CES-58 | TypeScript, JavaScript, `tsconfig.json` and Python: `@ts-nocheck`, `ignoreBuildErrors: true`, `"strict": false`, `# pyrefly: ignore-errors` |
 | `BT001`–`BT003` | `io-error`, `unused-suppression`, `invalid-suppression` | | the run and the suppressions |
 | `BT004` | [`external-config`](../catalog/rules/botica/external-config/README.md) | | the files of configuration that the active external rules name |
 
-`BTCONF002`, `BTCONF003`, `BTDB002`, `BTFAST002`–`BTFAST004`, `BTSEC001`–`BTSEC003`, `BTSTRUC006` and `BTSTRUC007` have the status `preview` and
+`BTCONF002`, `BTCONF003`, `BTDB002`, `BTFAST002`–`BTFAST004`, `BTSEC001`–`BTSEC003`, `BTSTRUC006`, `BTSTRUC007` and `BTTOOL001` have the status `preview` and
 are off by default: they run only with `preview = true` and when you select them.
 
 Another tool enforces an external rule (`kind = "external"`) through its configuration. The rule

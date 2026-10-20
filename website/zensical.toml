@@ -42,6 +42,7 @@ process = "DIC_kwDOS6BBd84DIcb9" # betterleaks:allow
 security = "DIC_kwDOS6BBd84DJLLx" # betterleaks:allow
 standards = "DIC_kwDOS6BBd84DIeEU" # betterleaks:allow
 structure = "DIC_kwDOS6BBd84DIcb-" # betterleaks:allow
+tooling = "DIC_kwDOS6BBd84DJLL-" # betterleaks:allow
 writing = "DIC_kwDOS6BBd84DJFlh" # betterleaks:allow
 
 [project.theme]
