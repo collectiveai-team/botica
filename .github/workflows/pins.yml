@@ -9,8 +9,9 @@ name: pins
 # The mirror of botica is left out: the release moves it (botica-release.yml, job `bump`).
 #
 # The push and the pull request use the secret PINS_TOKEN (a fine-grained token of this repository
-# with write access to contents and pull requests): what the token of the workflow pushes or opens
-# runs no workflow, so the checks would not run on the pull request.
+# with write access to contents, pull requests and workflows; `scripts/sync_pins.py` edits the files
+# of `.github/workflows/`, and GitHub rejects that push without the last one): what the token of the
+# workflow pushes or opens runs no workflow, so the checks would not run on the pull request.
 
 on:
   schedule:
