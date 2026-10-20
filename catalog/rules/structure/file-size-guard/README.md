@@ -18,8 +18,8 @@ such as `.github`, and skips the directories of tools, caches and configuration 
 and `extend-exclude` wins over it.
 
 Of those, the generated or documentation files in the rule's default `ignores` are left out
-(lockfiles, snapshots, translations, minified files, maps, SVG, `.rst`/`.md`/`.mdx` and JSON under
-`fixtures/`). Replace them with `ignores` or extend them with `extend-ignores` in the project
+(lockfiles, snapshots, translations, minified files, maps, SVG, `.rst`/`.md`/`.mdx`, JSON under
+`fixtures/` and the rubric of abide, `.abide/rubric.json`). Replace them with `ignores` or extend them with `extend-ignores` in the project
 configuration. Binary files (a NUL in the first 8 KB) are skipped.
 
 ## Do

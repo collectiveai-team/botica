@@ -182,7 +182,8 @@ fn export_abide(args: &ExportArgs) -> Result<()> {
     let project = project::load(&args.project)?;
     let root = project.loaded.root.clone();
     let resolution = Arc::new(project.resolution);
-    let files = project_files(&root, &resolution);
+    let files = walk::files(&root, None);
+    let linted = project_files(&root, &resolution);
     let agents_md = fs::read_to_string(&args.agents_md)
         .with_context(|| format!("cannot read `{}`", args.agents_md.display()))?;
     let read = |path: &str| fs::read_to_string(root.join(path)).ok();
@@ -190,6 +191,7 @@ fn export_abide(args: &ExportArgs) -> Result<()> {
     let inputs = rubric::Inputs {
         resolution: &resolution,
         files: &files,
+        linted: &linted,
         read: &read,
         agents_md_path: &agents_md_path,
         agents_md: &agents_md,

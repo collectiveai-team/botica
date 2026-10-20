@@ -236,6 +236,11 @@ extend-ignores = ["catalog/references/**"]
 [tool.botica.rules.cli-typed-framework]
 extend-ignores = ["bench/**"]
 
+# The rubric is written by `botica rules export --format abide`. The `ignores` of the rule leave it
+# out from the release after 0.13.0; remove this table then.
+[tool.botica.rules.file-size-guard]
+extend-ignores = [".abide/rubric.json"]
+
 [tool.pyrefly]
 python-version = "3.11"
 search-path = [".", "tests"]  # the tests import the support module of the site tests

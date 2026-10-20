@@ -23,6 +23,7 @@ ignores = [
     "*.md",
     "*.mdx",
     "**/fixtures/**/*.json",
+    ".abide/rubric.json",
 ]
 scope = "file"
 needs = "bytes"

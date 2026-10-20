@@ -65,7 +65,12 @@ struct Check<'a> {
 /// its root, how to read one, and the file of the block with the judgment rules.
 pub struct Inputs<'a> {
     pub resolution: &'a Arc<Resolution>,
+    /// Every file of the project, those that `extend-exclude` leaves out included: a glob of the
+    /// scope covers a directory only when none of its files is left out.
     pub files: &'a [String],
+    /// The files that a walk of `botica lint` reaches: `files` minus what `extend-exclude` leaves
+    /// out.
+    pub linted: &'a [String],
     pub read: &'a dyn Fn(&str) -> Option<String>,
     pub agents_md_path: &'a str,
     pub agents_md: &'a str,
@@ -193,7 +198,7 @@ fn of_languages(file: &str, languages: &[&str]) -> bool {
 /// it and no `ignore-file` comment silences it, as `botica lint --judged` keeps a finding.
 fn inside(inputs: &Inputs<'_>, rules: &[&Rule]) -> BTreeMap<String, BTreeSet<String>> {
     let mut by_path: BTreeMap<String, Vec<Diagnostic>> = BTreeMap::new();
-    for file in inputs.files {
+    for file in inputs.linted {
         for rule in rules {
             if of_languages(file, &languages(rule)) {
                 by_path

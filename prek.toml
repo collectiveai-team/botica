@@ -199,10 +199,12 @@ pass_filenames = false
 always_run = true
 priority = 2
 
+# 0.13.0 writes a scope that covers the files of `extend-exclude`; the botica of the checkout
+# does not. `tests.yml` skips this hook: the workflow `abide` checks the rubric with that botica.
 [[repos.hooks]]
 id = "botica-rubric"
 name = "botica (rubric of abide)"
-entry = "uvx botica@0.13.0 rules export --format abide --check"
+entry = "cargo run --quiet --locked -p botica-cli -- rules export --format abide --check"
 language = "system"
 pass_filenames = false
 always_run = true

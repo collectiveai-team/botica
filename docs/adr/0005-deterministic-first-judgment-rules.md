@@ -129,7 +129,9 @@ no check at all.
    walks them, and keeps those in the languages of the rule where `botica lint --judged` would
    keep a finding of the rule. A directory whose files of those languages are all kept is one glob
    per extension of the languages (`src/**/*.py`, `src/**/*.pyi`), or `src/**` for a rule of every
-   language; any other directory lists its kept files one by one. abide judges only `model` rules
+   language; any other directory lists its kept files one by one. A file that `extend-exclude`
+   leaves out of the walk counts as a file of its directory that is not kept, so the glob of the
+   directory does not cover it. abide judges only `model` rules
    with status `active`.
 
    - The hook `botica-rubric` of the mirror, `botica rules export --format abide --check`, which

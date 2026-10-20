@@ -36,6 +36,7 @@ fn build(rules: &[Judgment], config: &str, read: &dyn Fn(&str) -> Option<String>
     let inputs = Inputs {
         resolution: &resolution,
         files: &files,
+        linted: &files,
         read,
         agents_md_path: "AGENTS.md",
         agents_md: AGENTS_MD,
@@ -160,6 +161,36 @@ fn a_rule_of_every_language_covers_every_file() {
 }
 
 #[test]
+fn a_file_that_extend_exclude_leaves_out_keeps_its_directory_out_of_one_glob() {
+    let rule = Judgment {
+        languages: "\"*\"",
+        ..ONE
+    };
+    let resolution = Arc::new(resolution_with(&[rule], ""));
+    let linted = files();
+    let mut every = files();
+    every.push("src/fixtures/bad.py".to_owned());
+    let inputs = Inputs {
+        resolution: &resolution,
+        files: &every,
+        linted: &linted,
+        read: &no_comments,
+        agents_md_path: "AGENTS.md",
+        agents_md: AGENTS_MD,
+    };
+
+    let rubric: Value = serde_json::from_str(&render(
+        &rubric(&inputs, String::new()).expect("the rubric"),
+    ))
+    .expect("JSON");
+
+    assert_eq!(
+        rubric["rules"][0]["scope"],
+        json!(["README.md", "src/a.py", "src/b.py", "src/c.ts", "tests/**"])
+    );
+}
+
+#[test]
 fn a_rule_of_every_language_covers_a_directory_with_files_of_any_language() {
     let rule = Judgment {
         languages: "\"*\"",
@@ -193,6 +224,7 @@ fn a_rule_without_its_line_in_agents_md_is_an_error() {
     let inputs = Inputs {
         resolution: &resolution,
         files: &files,
+        linted: &files,
         read: &no_comments,
         agents_md_path: "docs/AGENTS.md",
         agents_md: "<!-- botica:rules -->\n<!-- /botica:rules -->\n",
@@ -220,6 +252,7 @@ fn same(existing: &Value) -> bool {
     let inputs = Inputs {
         resolution: &resolution,
         files: &files,
+        linted: &files,
         read: &no_comments,
         agents_md_path: "AGENTS.md",
         agents_md: AGENTS_MD,
@@ -264,6 +297,7 @@ fn the_check_sees_a_rule_or_a_source_that_changed() {
     let inputs = Inputs {
         resolution: &resolution,
         files: &files,
+        linted: &files,
         read: &no_comments,
         agents_md_path: "AGENTS.md",
         agents_md: AGENTS_MD,

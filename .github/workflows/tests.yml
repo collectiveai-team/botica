@@ -43,7 +43,10 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
+      # botica-rubric builds botica from the checkout; the workflow `abide` runs that check.
       - name: Lint, format & type check (prek)
+        env:
+          SKIP: botica-rubric
         run: uvx prek run --all-files --show-diff-on-failure
 
       - name: Run tests
