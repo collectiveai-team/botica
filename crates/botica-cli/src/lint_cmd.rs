@@ -47,6 +47,9 @@ pub struct LintArgs {
     /// Exit with 0 even when there are findings of severity error. Failures of the run still exit 2.
     #[arg(long)]
     exit_zero: bool,
+    /// The lowest severity of a finding that exits with 1.
+    #[arg(long, value_enum, default_value_t = FailOn::Error)]
+    fail_on: FailOn,
     /// Extension command, e.g. "uv run --script ext.py".
     #[arg(long)]
     ext: Option<String>,
@@ -104,6 +107,7 @@ impl LintArgs {
             force_exclude: false,
             statistics: false,
             exit_zero: false,
+            fail_on: FailOn::Error,
             ext: None,
             judged: None,
             batch: 256,
@@ -125,6 +129,25 @@ enum OutputFormat {
     Json,
     Sarif,
     Github,
+}
+
+#[derive(Clone, Copy, ValueEnum)]
+enum FailOn {
+    Error,
+    Warning,
+    Info,
+    Hint,
+}
+
+impl From<FailOn> for Severity {
+    fn from(arg: FailOn) -> Self {
+        match arg {
+            FailOn::Error => Severity::Error,
+            FailOn::Warning => Severity::Warning,
+            FailOn::Info => Severity::Info,
+            FailOn::Hint => Severity::Hint,
+        }
+    }
 }
 
 impl From<OutputFormat> for Format {
@@ -272,7 +295,7 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
             diagnostics.len()
         );
     }
-    Ok(exit_code(&errors, &diagnostics, args.exit_zero))
+    Ok(exit_code(&errors, &diagnostics, &args))
 }
 
 fn run_judged(
@@ -292,7 +315,7 @@ fn run_judged(
         );
     }
     write_report(args, format, setup, &judged.diagnostics, &[])?;
-    Ok(exit_code(&[], &judged.diagnostics, args.exit_zero))
+    Ok(exit_code(&[], &judged.diagnostics, args))
 }
 
 fn check_statistics_format(args: &LintArgs, format: Format) -> Result<()> {
@@ -392,12 +415,13 @@ fn write_report(
     Ok(())
 }
 
-/// 2 when the run itself failed (it wins over everything), 1 when a finding is an error, else 0.
-/// `--exit-zero` only forgives the findings.
-fn exit_code(errors: &[RunError], diagnostics: &[Diagnostic], exit_zero: bool) -> ExitCode {
+/// 2 when the run itself failed (it wins over everything), 1 when a finding has the severity of
+/// `--fail-on` or a higher one, else 0. `--exit-zero` only forgives the findings.
+fn exit_code(errors: &[RunError], diagnostics: &[Diagnostic], args: &LintArgs) -> ExitCode {
+    let lowest = Severity::from(args.fail_on);
     if !errors.is_empty() {
         ExitCode::from(2)
-    } else if !exit_zero && diagnostics.iter().any(|d| d.severity == Severity::Error) {
+    } else if !args.exit_zero && diagnostics.iter().any(|d| d.severity >= lowest) {
         ExitCode::from(1)
     } else {
         ExitCode::SUCCESS

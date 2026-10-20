@@ -70,7 +70,8 @@ botica rules eval no-utils src # what one rule finds in real code, on or off in 
 ```
 
 Exit code: `0` clean (a warning does not fail the run), `1` a finding of severity error, `2`
-the run itself failed (it wins over `1`). `--exit-zero` forgives only the findings.
+the run itself failed (it wins over `1`). `--fail-on warning` (or `info`, `hint`) lowers the
+severity that exits with `1`. `--exit-zero` forgives only the findings.
 
 abide judges the judgment rules through the API of TypeSafe. With `TYPESAFE_AI_BASE_URL` it sends
 its calls to another server with the same API instead, such as the server of llama.cpp or a model

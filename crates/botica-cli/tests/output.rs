@@ -175,6 +175,19 @@ fn exit_zero_forces_success_when_only_violations_are_left() {
 }
 
 #[test]
+fn fail_on_names_the_lowest_severity_that_fails_the_run() {
+    let dir = project("fail-on", None);
+    write(&dir, "src/a.py", "x = 1  # botica: ignore[no-utils]\n");
+
+    let code = |args: &[&str]| botica(&dir, args).status.code();
+
+    assert_eq!(code(&["."]), Some(0), "a warning alone does not fail");
+    assert_eq!(code(&[".", "--fail-on", "warning"]), Some(1));
+    assert_eq!(code(&[".", "--fail-on", "info"]), Some(1));
+    assert_eq!(code(&[".", "--fail-on", "warning", "--exit-zero"]), Some(0));
+}
+
+#[test]
 fn a_clean_run_exits_zero_and_json_is_still_a_document() {
     let dir = project("clean", None);
     write(&dir, "a.py", "x = 1\n");
