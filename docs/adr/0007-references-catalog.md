@@ -10,6 +10,12 @@ type-checks and tests the code of the built-in topics. The five built-in topics 
 a fix had no file to go to; their code now lives in their folders. Items 6 and 8 still hold for
 `path` references.
 
+Amended on 2026-10-20, again: item 9 holds with the `file` references above, which point at the
+code of a topic. Item 20 counts two texts: ADR 0008 removed the skill `engineering-rules`, and
+`tests/test_refs_instruction.py` checks the section `## Botica rules` that the recipe `base` adds
+(`catalog/recipes/sections/botica-rules.md`) and the `AGENTS.md` of this repository. The notes of
+"Not built yet" on the commit `9c225ad` and on the skill no longer hold.
+
 The scaffolder copies five snippets of `scaffolding/templates/snippets/` to `.agents/snippets/` of a
 repository: `core/logger.py` (CES-74), `tests/in_memory_repository.py` (CES-64), `settings.py`,
 `api-schemas.py` and `no-dict-boundary.py`. Each needs adapting before it can be used: the logger

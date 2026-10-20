@@ -10,6 +10,12 @@ Amended on 2026-10-20: the message of a finding no longer starts with the CES. T
 carries the `standard` of the rule in each diagnostic, SARIF carries it in the `properties` of each
 rule, and `botica explain` prints it. The text output names the rule only. Botica still selects, ignores and suppresses by slug or code, never by CES.
 
+Amended on 2026-10-20, again: item 1 of the Migration is done in another form: the rules that no
+tool measures are judgment rules of the catalog (ADR 0005), and ADR 0008 removed the
+`engineering-rules` skill. Item 2 is done: the site is `website/`, built by `site.yml`, with giscus
+in `website/overrides/partials/comments.html`, and the Discussions categories exist. Item 3 is
+open.
+
 A CES was born as a GitHub issue. The issue number is the CES number and the issue body is the
 standard's text. Its review state used to be a set of labels that a bot rewrote from slash commands
 in the comments, which proved confusing for contributors and expensive to maintain:

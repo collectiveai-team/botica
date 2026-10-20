@@ -9,6 +9,12 @@ export fills the block with one line per active judgment rule, and the rubric na
 A configuration that `install` writes gets `preview = true` when a rule of the recipes is in
 preview. The hand-written index of standards that the scaffolder installed is removed.
 
+Amended 2026-10-20, again: ADR 0008 removed the skill `engineering-rules`, so decision 5 generates
+the block of `AGENTS.md` and the files of each judge only. The classification that "Not decided"
+lists is done: the standards marked `[judgment]` have judgment rules, `import-layers` or
+`no-disabled-typecheck`. An `extension` rule of the catalog of a project runs in `botica lint`
+(docs/botica.md, "Catalogs of a project").
+
 ADR 0003 lists `judgment` as a fourth kind of implementation, run by no part of `botica lint` and
 catalogued for the judges and the site. ADR 0002 makes a standard with nothing to run a `judgment`
 rule. Neither says where such a rule lives, what its folder holds, how it is numbered, or when a

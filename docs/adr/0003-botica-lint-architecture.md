@@ -184,8 +184,7 @@ glibc and musl, macOS x64 and arm64, Windows x64) and repackaged as PyPI wheels
 (maturin) under the name `botica`, each with the binary and the Python module `botica.sdk`, released from a `vX.Y.Z` tag and published through PyPI trusted
 publishing. Botica starts at 0.7.0 because `v0.1.0` to `v0.6.0` are releases of `scaffolding`. A
 mirror repo, `botica-pre-commit`, gives prek a pinnable hook whose tag pins the matching wheel.
-The `scaffolding` Python package keeps its name until it is migrated, which is out of scope here.
-It was removed on 2026-10-18, when the recipes of ADR 0006 replaced it.
+The `scaffolding` Python package was removed on 2026-10-18, when the recipes of ADR 0006 replaced it.
 
 ## Considered options
 
@@ -228,7 +227,8 @@ It was removed on 2026-10-18, when the recipes of ADR 0006 replaced it.
   mirror. `repo-shape` became three layout rules (`no-notebooks`, `no-artifacts-in-package`,
   `no-tests-in-package`) that find the code of each ecosystem on their own, or from `code-dirs`,
   instead of relying on a placeholder.
-- **Botica maintains a protocol, two SDKs, and a per-platform release matrix.** These are real,
+- **Botica maintains a protocol, four SDKs (Python, Node, Go and Rust), and a per-platform release
+  matrix.** These are real,
   ongoing costs.
 - **Later, not now:** `--diff <base>` rules, autofix with safety levels, catalogs
   distributed via PyPI or npm, an MCP server, a VS Code client, and architecture-conformance
