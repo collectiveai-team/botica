@@ -167,6 +167,7 @@ select = [
   "log-no-print",
   "settings-module",
   "cli-typed-framework",
+  # The old name: the botica of the hooks is the last release, and the next one keeps it as an alias.
   "arch-database-package",
   "import-layers",
   "settings-env-schema",

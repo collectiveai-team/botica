@@ -5,7 +5,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 const PY_RULES: [&str; 10] = [
     include_str!("../../../catalog/rules/fastapi/api-schemas-extra-forbid/python.yml"),
-    include_str!("../../../catalog/rules/database/arch-database-package/python.yml"),
+    include_str!("../../../catalog/rules/database/database-package/python.yml"),
     include_str!("../../../catalog/rules/cli/cli-typed-framework/python.yml"),
     include_str!("../../../catalog/rules/logging/log-get-logger/python.yml"),
     include_str!("../../../catalog/rules/logging/log-no-print/python.yml"),

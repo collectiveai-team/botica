@@ -44,4 +44,4 @@ no layer, with the chain of modules. `botica explain import-layers` describes it
 ## Related
 
 - CES-17 (`api-boundary-layout`): the layout that the `api` layer assumes.
-- CES-18 (`arch-database-package`): the `database` package that this direction refers to.
+- CES-18 (`database-package`): the `database` package that this direction refers to.

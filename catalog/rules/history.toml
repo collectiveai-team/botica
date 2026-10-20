@@ -48,7 +48,7 @@ status = "stable"
 
 [[event]]
 version = "0.8.0"
-rule = "arch-database-package"
+rule = "database-package"
 status = "stable"
 
 [[event]]

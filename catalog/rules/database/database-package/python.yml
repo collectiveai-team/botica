@@ -1,7 +1,7 @@
-id: arch-database-package
+id: database-package
 language: python
 severity: warning
-message: "CES-18 (arch-database-package): Relational persistence belongs in its own `database` package (SQLModel tables, repositories, migrations, connection setup) — not under persistence/, meta/, or core/. Move this into the database unit."
+message: "CES-18 (database-package): Relational persistence belongs in its own `database` package (SQLModel tables, repositories, migrations, connection setup) — not under persistence/, meta/, or core/. Move this into the database unit."
 # Placement-scoped structural check: SQLModel tables / engine / session setup found under the
 # common wrong homes (persistence/, meta/, core/) are flagged. Inert in non-DB repos and in a
 # correctly-placed database/ package.

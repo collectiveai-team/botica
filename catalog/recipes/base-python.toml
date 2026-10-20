@@ -12,7 +12,7 @@ rules = [
   "log-no-print",
   "settings-module",
   "cli-typed-framework",
-  "arch-database-package",
+  "database-package",
   "import-layers",
   "settings-env-schema",
 ]

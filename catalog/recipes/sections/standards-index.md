@@ -32,15 +32,15 @@ describes one, and the hook reports each finding with its slug and its message.
   (house default 3.14); an existing repo's pin wins. → see `pyproject.toml` comment.
 - **CES-16 · architectural vocabulary** `[judgment]` — name units with the house terms
   (`entrypoints`/`api`/`database`/`impl`/`core`, ports/adapters), not ad-hoc synonyms. Slug:
-  `arch-vocabulary`.
+  `architecture-vocabulary`.
 - **CES-8 · separate orchestration from logic** `[judgment]` — keep control flow thin; push
   business logic and I/O into named, separately-testable units. Slug:
-  `spaghetti-mixed-orchestration`.
+  `mixed-orchestration`.
 - **CES-30 · respect the local repo** `[judgment]` — existing deliberate choices (pins, config,
   layout) win over house defaults; adopt standards as explicit migrations, never silent
-  overwrites. Slug: `general-respect-local-repo`.
+  overwrites. Slug: `respect-local-repo`.
 - **CES-58 · one modern lint stack** `[judgment]` — ruff + pyrefly + botica via prek; don't
-  reintroduce black/isort/flake8/pylint. Slug: `py-legacy-lint-stack`.
+  reintroduce black/isort/flake8/pylint. Slug: `one-lint-stack`.
 - **CES-64 · test against in-memory adapters** `[judgment]` — drive logic through working
   in-memory fakes of your ports, not mocks or live I/O. Slug: `test-in-memory-adapters`.
 - **CES-65 · test through the interface** `[judgment]` — assert on observable behaviour via the

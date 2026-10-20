@@ -141,16 +141,16 @@ describes one, and the hook reports each finding with its slug and its message.
   `type(scope): description` (enforced here via the commit-msg hook + CI). →
   `@standards/CES/75-agents-conventional-commits.md`
 - **CES-77 · version pin** `[judgment]` — `requires-python` stays a deliberate local choice;
-  house default is 3.14. → `@standards/CES/77-py-version-pin.md`
+  house default is 3.14. → `@standards/CES/77-version-pin.md`
 - **CES-16 · architectural vocabulary** `[judgment]` — name units with house terms, not ad-hoc
-  synonyms. → `@standards/CES/16-arch-vocabulary.md`
+  synonyms. → `@standards/CES/16-architecture-vocabulary.md`
 - **CES-8 · separate orchestration from logic** `[judgment]` — keep control flow thin; push logic
-  and I/O into named units. → `@standards/CES/8-spaghetti-mixed-orchestration.md`
+  and I/O into named units. → `@standards/CES/8-mixed-orchestration.md`
 - **CES-30 · respect the local repo** `[judgment]` — existing deliberate choices win over house
   defaults (`botica recipe install` leaves an existing file as it is for this reason). →
-  `@standards/CES/30-general-respect-local-repo.md`
+  `@standards/CES/30-respect-local-repo.md`
 - **CES-58 · one modern lint stack** `[judgment]` — ruff + pyrefly + botica via prek; no
-  black/isort/flake8/pylint. → `@standards/CES/58-py-legacy-lint-stack.md`
+  black/isort/flake8/pylint. → `@standards/CES/58-one-lint-stack.md`
 - **CES-64 · test against in-memory adapters** `[judgment]` — fakes over mocks. →
   `@standards/CES/64-test-in-memory-adapters.md`
 - **CES-65 · test through the interface** `[judgment]` — assert behaviour via the public seam

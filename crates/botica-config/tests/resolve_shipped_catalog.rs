@@ -14,8 +14,8 @@ fn the_default_selection_runs_every_rule_enabled_by_default() {
         active(&resolution),
         [
             "api-schemas-extra-forbid",
-            "arch-database-package",
             "cli-typed-framework",
+            "database-package",
             "external-config",
             "file-size-guard",
             "import-layers",
@@ -88,8 +88,8 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
         active(&resolution),
         [
             "api-schemas-extra-forbid",
-            "arch-database-package",
             "cli-typed-framework",
+            "database-package",
             "external-config",
             "import-layers",
             "invalid-suppression",
@@ -173,8 +173,8 @@ fn a_rule_switched_off_in_its_own_section_stays_out() {
         active(&resolution),
         [
             "api-schemas-extra-forbid",
-            "arch-database-package",
             "cli-typed-framework",
+            "database-package",
             "external-config",
             "import-layers",
             "invalid-suppression",

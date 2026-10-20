@@ -54,7 +54,7 @@ fn the_globs_of_a_pattern_rule_are_shown_with_its_ignores_and_its_files() {
     assert!(text.contains("\n  **/__main__.py  (rule)\n"), "{text}");
     assert!(!text.contains("ignores: none"), "{text}");
 
-    let text = text_of(&explain("pattern-files", None, &["arch-database-package"]));
+    let text = text_of(&explain("pattern-files", None, &["database-package"]));
     assert_eq!(
         line_with(&text, "files:"),
         "files:     **/persistence/**/*.py  **/meta/**/*.py  **/core/**/*.py"

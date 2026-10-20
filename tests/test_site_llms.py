@@ -86,14 +86,14 @@ def test_each_standard_is_listed_by_number_with_the_address_of_its_page_and_its_
 ):
     config, docs = site(tmp_path)
     add_standard(docs, 107, "skills-manifest", "Track the skills manifest")
-    add_standard(docs, 16, "arch-vocabulary", "Architectural vocabulary")
+    add_standard(docs, 16, "architecture-vocabulary", "Architectural vocabulary")
     add_standard(docs, 5, "import-linter", "Layered import direction")
 
     assert (
         "\n## Standards\n\n"
         "- [CES-5](https://example.org/botica/standards/CES/5-import-linter/):"
         " Layered import direction\n"
-        "- [CES-16](https://example.org/botica/standards/CES/16-arch-vocabulary/):"
+        "- [CES-16](https://example.org/botica/standards/CES/16-architecture-vocabulary/):"
         " Architectural vocabulary\n"
         "- [CES-107](https://example.org/botica/standards/CES/107-skills-manifest/):"
         " Track the skills manifest\n"

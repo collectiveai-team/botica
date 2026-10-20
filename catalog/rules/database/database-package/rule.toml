@@ -1,4 +1,5 @@
-id = "arch-database-package"
+id = "database-package"
+aliases = ["arch-database-package"]
 code = "BTDB001"
 standard = "CES-18"
 summary = "Relational persistence lives in a database package"

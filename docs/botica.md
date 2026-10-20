@@ -91,7 +91,7 @@ run on its own. `botica rules test --judge abide` runs abide with the environmen
 | `BTCONF002` | [`settings-base-class`](../catalog/rules/config/settings-base-class/README.md) | CES-76 | Python: a settings class that extends `BaseModel` instead of `BaseSettings` |
 | `BTCONF003` | [`settings-direct-instantiation`](../catalog/rules/config/settings-direct-instantiation/README.md) | CES-76 | Python: a settings class built where it is used, not through `get_settings()` |
 | `BTCONF004` | [`settings-env-schema`](../catalog/rules/config/settings-env-schema/README.md) | CES-76 | the project: `.env.schema` against the settings classes (Python: pydantic-settings) |
-| `BTDB001` | [`arch-database-package`](../catalog/rules/database/arch-database-package/README.md) | CES-18 | Python: tables and engines outside a `database` package |
+| `BTDB001` | [`database-package`](../catalog/rules/database/database-package/README.md) | CES-18 | Python: tables and engines outside a `database` package |
 | `BTDB002` | [`db-no-create-all`](../catalog/rules/database/db-no-create-all/README.md) | CES-18 | Python: `metadata.create_all()` outside tests |
 | `BTDM001` | [`no-dict-alias`](../catalog/rules/data-models/no-dict-alias/README.md) | CES-79 | Python: a type alias for a raw `dict` |
 | `BTDM002` | [`no-dict-call-return`](../catalog/rules/data-models/no-dict-call-return/README.md) | CES-79 | Python: `return dict(...)` |
