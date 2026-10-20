@@ -373,7 +373,9 @@ base: 6 added, 1 ok, 1 pending, 1 edited
 ```
 
 A file is written from its template when its path does not exist (`added`). A path that exists is
-`ok` when it has the text of the template and `pending` otherwise; `install` does not change it. A
+`ok` when it has the text of the template and `pending` otherwise; `install` does not change it. In
+the text of a template, the `rev` on the line after the mirror `botica-pre-commit` is set to the
+release of the binary that runs `install`, so the file asks for the hooks of that release. A
 section is written to a new file, appended after a blank line to a file that has no marker (`added`),
 and left alone when the file has the marker (`ok`); a path that is not a file or cannot be read is
 `pending`. A path that ends in `.toml` gets the section only when the file is valid TOML before and

@@ -279,7 +279,20 @@ fn the_built_in_base_writes_its_prek_toml_and_check_finds_it() {
     ok(&with_npx(&dir, NPX_INSTALLS, &["install", "base"]));
 
     let template = include_str!("../../../catalog/recipes/files/prek-base.toml");
-    assert_eq!(read(&dir, "prek.toml"), template);
+    let written = read(&dir, "prek.toml");
+    let this_release = format!("rev = \"v{}\"", env!("CARGO_PKG_VERSION"));
+    let mirror = "repo = \"https://github.com/collectiveai-team/botica-pre-commit\"\n";
+    let rev = written
+        .split(mirror)
+        .nth(1)
+        .and_then(|rest| rest.lines().next());
+    assert_eq!(rev, Some(this_release.as_str()), "{written}");
+    let template_rev = template
+        .split(mirror)
+        .nth(1)
+        .and_then(|rest| rest.lines().next())
+        .expect("the template names the mirror and its rev");
+    assert_eq!(written, template.replace(template_rev, &this_release));
     let check = failed(
         &recipe(&dir, &["check", "base", "--select", "file-size-guard"]),
         1,
