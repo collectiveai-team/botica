@@ -145,7 +145,7 @@ with pytest.raises(ZeroDivisionError, match="division by zero"):
 | D3 | Duplicate Assert: the identical assertion appears twice. |
 | D4 | `@pytest.mark.parametrize` with 3+ cases and no `ids=` — CI shows `test[0]`, `test[1]`. |
 | D5 | 5+ setup statements before the first assert — consider a fixture. |
-| D6 | `print()` in the test body — usually a forgotten debug statement. Note: this repo's `log-no-print` (CES-46) explicitly excludes `tests/**`, so this diagnostic is the only place print-in-test is surfaced at all. |
+| D6 | `print()` in the test body — usually a forgotten debug statement. |
 | M2 | Test body over 50 lines — consider splitting into focused tests. |
 
 ---

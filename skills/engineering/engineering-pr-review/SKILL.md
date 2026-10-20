@@ -1,85 +1,55 @@
 ---
 name: engineering-pr-review
-description: PR gate that applies the shared rules plus deep-module and large-file/spaghetti checks before creating, opening, updating, or marking a pull request ready. Use when an agent is about to create a PR, update a PR, publish a branch, request review, or summarize PR readiness.
+description: PR gate that runs botica, reviews the diff with the upstream code-review skill and writes the body with the pr skill, before creating, opening, updating, or marking a pull request ready. Use when an agent is about to create a PR, update a PR, publish a branch, request review, or summarize PR readiness.
 ---
 
 # Engineering PR Review
 
-Run this before creating, opening, updating, or marking a PR ready.
+Run this before creating, opening, updating, or marking a PR ready. This skill is a workflow and
+states no rule of its own: the rules are in botica, and the review procedure is the one of the
+upstream `code-review` skill.
 
-## Required: the ruleset
+## 1. Context
 
-This skill carries the **gate**, not the rules. The rules live in the `engineering-rules`
-skill.
+1. Pin the target branch and capture the diff: `git diff <target>...HEAD` and
+   `git log <target>..HEAD --oneline`.
+2. Read `AGENTS.md` (its standards index and the judgment rules between `<!-- botica:rules -->` and
+   `<!-- /botica:rules -->`), `GLOSSARY.md` and the ADRs under `docs/adr/` that the diff touches.
 
-**Invoke `engineering-rules` first** and follow its reading protocol: read its index, then the
-specific rules the diff touches. Every rule id cited below resolves through it.
+## 2. Deterministic rules
 
-> If `engineering-rules` is not available, **stop and say so**. Do not run the gate from
-> memory — a rule recited from memory is how a standard drifts. Install it with
-> `npx skills add collectiveai-team/botica --skill engineering-rules`.
+Run `botica lint` on the changed files (`botica lint $(git diff --name-only <target>...HEAD)`), or
+the hooks of the repository with `uvx prek run --from-ref <target> --to-ref HEAD`. Fix each finding
+of severity error. A warning is fixed only if the diff introduced it.
 
-## Required context
+For a finding you do not understand, run `botica explain <slug>`. When the rule or its standard
+cites a topic, `botica refs show <slug>` prints the code it expects.
 
-1. Read the `engineering-rules` index and the `pr-*` gate rules.
-2. Inspect the diff against the target branch and the files receiving the largest additions.
-3. Identify the repo's toolchain, tests, CI, package layout; read `GLOSSARY.md`/ADRs if present (fall back to `CONTEXT.md` in repos not yet migrated).
+## 3. Review
 
-## PR gate
+Invoke the upstream `code-review` skill against `<target>`. Its Standards axis reads the documents
+of step 1, and the judgment rules of the `AGENTS.md` block are part of them. Its Spec axis compares
+the diff with the issue or spec.
 
-The PR is not ready until each check has been considered and material issues are fixed or
-explicitly called out.
+## 4. Verification
 
-### 1. Shared rules check
+Run the checks the diff affects: the tests of the touched code first, then the broader suite and
+type checks when the scope requires them. Name every check that did not run. Never report a check
+as passed if it did not run.
 
-Walk the diff against the rules that match the touched files. At minimum:
-- Toolchain preserved; no unrelated formatter churn (`py-no-formatter-churn`, `py-package-manager`).
-- New dependencies justified and consistent with the repo (`py-package-manager`).
-- Settings/schemas/API/CLI/logging/adapters placed per the repo shape (`pylayout-*`, `api-*`, `log-*`).
-- Stack-specific rules where relevant: `prefect-*`, `llm-*`, `asr-*`, `fe-*`, `k8s-*`.
-- Tests added/updated for behavior changes; default tests need no live creds/cloud/model downloads (`test-ship-with-change`, `test-in-memory-adapters`).
+## 5. Summary and body
 
-Judge each rule against what the repo actually uses, not a one-size-fits-all standard
-(`general-respect-local-repo`).
-
-### 2. Deep-module check
-
-Apply `arch-deletion-test`, `arch-adapter-discipline`, `arch-interface-is-test-surface`, using
-the vocabulary in `arch-deep-modules`:
-
-- Shallow module: did the PR add a wrapper whose interface is nearly as complex as its implementation?
-- Deletion test: if the new module were deleted, would complexity vanish (pass-through) or spread back across callers (earning its place)?
-- Adapter discipline: a new seam with only one adapter is just indirection — remove it or justify the second adapter.
-- Interface as test surface: do tests exercise observable behavior through the same seam callers use?
-
-### 3. Spaghetti & large-file check
-
-Per the `spaghetti-*` rules:
-- List touched files over 400 lines (large) and over 700 lines (enormous) — these thresholds are a house heuristic, not Matt Pocock; use them to *trigger* judgement, then apply the deletion test.
-- For each large touched file, decide whether the PR makes it smaller, keeps the change narrowly localized, or piles on unrelated responsibility.
-- Reject changes that add branches to mixed orchestration without improving the seam (`spaghetti-mixed-concerns`).
-- Watch for duplicated conditionals across callers, boolean-flag proliferation, catch-all `utils.py` (`no-utils`), and over-long functions (`spaghetti-function-size`).
-
-### 4. Verification check
-
-Per `pr-run-checks`: run the relevant checks for the diff (linters/pytest directly — Makefiles
-here are docker-only, `infra-makefile-docker`). If only narrow tests are practical, run those
-and name the broader checks not run. Never claim a check passed if it was not run.
-
-## Required PR summary
-
-Before publishing, produce a short readiness summary:
+Before publishing, write a short readiness summary:
 
 ```md
-Engineering PR gate:
-- Shared rules: pass/fail with notes (cite rule ids)
-- Deep-module check: pass/fail with notes
-- Large-file/spaghetti check: pass/fail with touched large files
-- Verification: commands run and results
-- Residual risks: anything reviewers should inspect
+PR gate:
+- botica lint: findings fixed, findings left and why
+- code-review: Standards and Spec, with the findings left open
+- Verification: commands run and results; checks not run
+- Residual risks: what reviewers should inspect
 ```
 
-If any item fails, fix it before creating the PR unless the user explicitly accepts the risk
-(`pr-complexity-check`, `pr-description`).
+If an item fails, fix it before creating the PR unless the user accepts the risk. Write the PR body
+with the `pr` skill.
 
 Credits and sources: [`references/CREDITS.md`](references/CREDITS.md).

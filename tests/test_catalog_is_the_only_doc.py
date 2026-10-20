@@ -2,7 +2,7 @@
 
 A rule that `botica lint` checks deterministically is described once, in the README of its
 folder under `catalog/rules`. Nothing else may describe it again: not the index of standards, not a
-detail file, not the skill. The CES a rule cites (`standard` in its `rule.toml`) is how the copies
+detail file. The CES a rule cites (`standard` in its `rule.toml`) is how the copies
 are found, since a detail file or an index entry is named after a CES, not always after a slug.
 """
 
@@ -16,17 +16,6 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "catalog" / "rules"
-SKILL_RULES = ROOT / "skills" / "engineering" / "engineering-rules" / "references"
-
-# Rules of the skill that say what a catalog rule measures, under a name that is not its slug.
-# They were removed once; this keeps them from coming back.
-SKILL_RULES_THAT_REPEATED_THE_CATALOG = (
-    "general-repo-shape",
-    "spaghetti-large-file-thresholds",
-    "spaghetti-no-utils-dumping",
-    "pylayout-cli-typer-rich",
-    "log-get-logger-structlog",
-)
 
 CES_ENTRY = re.compile(r"^- \*\*CES-(\d+) · ", re.M)
 CES_ROW = re.compile(r"^\| \*\*CES-(\d+)\*\* \|", re.M)
@@ -99,19 +88,6 @@ def test_the_table_of_shipped_standards_leaves_the_measured_ones_to_the_catalog(
     rows = {int(n) for n in CES_ROW.findall(text)}
 
     assert not rows & MEASURED_CES, f"rows for {sorted(rows & MEASURED_CES)}"
-
-
-def test_the_skill_does_not_repeat_a_rule_of_the_catalog():
-    names = {path.stem for path in SKILL_RULES.glob("*.md")}
-    sections = (SKILL_RULES / "_sections.md").read_text(encoding="utf-8")
-
-    repeated = sorted(
-        (names & SLUGS)
-        | {name for name in SKILL_RULES_THAT_REPEATED_THE_CATALOG if name in names}
-        | {name for name in SKILL_RULES_THAT_REPEATED_THE_CATALOG if f"`{name}`" in sections}
-    )
-
-    assert not repeated, f"the skill repeats the catalog: {repeated}"
 
 
 AST_GREP = re.compile(r"ast-grep|sgconfig", re.I)

@@ -45,7 +45,6 @@ names = [
   "journalist",
   "handoff",
   "test-smell-review",
-  "engineering-rules",
   "engineering-pr-review",
   "engineering-refactor",
   "pr",

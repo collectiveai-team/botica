@@ -77,12 +77,10 @@ skills of Matt Pocock that its `[[skills]]` step pins to a tag.
 - `skills/productivity/ask-user` — route a situation to the smallest suitable installed workflow.
 - `skills/quality/test-smell-review` — review tests for false-green smells (tests that pass
   without protecting anything).
-- `skills/engineering/engineering-rules` — the house engineering rules that no tool measures,
-  under `references/` and indexed by `references/_sections.md`.
-- `skills/engineering/engineering-pr-review` — the house PR gate: the shared rules, the
-  deep-module check and the large-file check, run before a PR is opened.
-- `skills/engineering/engineering-refactor` — move an existing repository toward the house
-  standard (toolchain, layout, tests, architecture) and keep its local contracts.
+- `skills/engineering/engineering-pr-review` — the PR gate: `botica lint`, the upstream
+  `code-review` skill, the checks and the body of the `pr` skill, run before a PR is opened.
+- `skills/engineering/engineering-refactor` — refactor an existing repository in tested slices
+  with botica and the upstream `codebase-design` skill, and keep its local conventions.
 
 `npx skills add` and `skills update` overwrite the installed copies in place, so local edits go
 in this repository's `skills/`, not in `.agents/skills`.

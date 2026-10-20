@@ -139,8 +139,7 @@ priority = 2
 # texts, and the skill carries a copy of some of them; `tests/test_engineering_rules_pins.py` fails
 # if they drift, so the copy is deliberate and `standards/**` is left out. The
 # engineering skills are scanned, which is what caught the two skills shipping byte-identical
-# bundles, and the compiled `AGENTS.md` of `engineering-rules` (a copy of its own
-# `references/*.md`) is no longer kept.
+# bundles.
 # `catalog/recipes/files/**` and `catalog/recipes/sections/**` are the templates of the recipes of botica:
 # this repo's own config files are installed from them, and the variants of a workflow for each
 # ecosystem repeat its header, so they are left out too.
@@ -150,10 +149,7 @@ priority = 2
 # lines column when judging headroom, or the margin looks several times tighter than it is.
 # Threshold calibrated to this repo's baseline (2.15% of lines when `scaffolding` was removed,
 # 2026-10-18); tighten as the clones get refactored, per the "flag, don't silently exempt" posture in
-# CES-71. The rule files under engineering-rules share a rigid Prefer/Avoid/Reference
-# skeleton, but it does not clone: the headers sit under jscpd's minimum clone size, so markdown
-# contributes 0.51% of lines. Growing the ruleset adds far more unique lines than duplicated
-# ones, so it dilutes the ratio rather than raising it — the "tighten over time" posture holds.
+# CES-71.
 # `--threshold` alone is the gate; jscpd v5's separate `--exit-code` flag fails on ANY clone
 # regardless of threshold — do not combine the two or the threshold becomes inert.
 [[repos.hooks]]
@@ -166,8 +162,7 @@ priority = 2
 
 # MARK: skill-validator
 # Spec, links, token counts and content checks of the skills under `skills/`, by
-# agent-ecosystem/skill-validator. A GATE: warnings fail like errors (`--strict`), except for
-# `engineering-rules`, where only errors fail. The flags and the reason for that exception are in
+# agent-ecosystem/skill-validator. A GATE: warnings fail like errors (`--strict`). The flags are in
 # `scripts/check_skills.sh`. Needs Go on the PATH.
 [[repos]]
 repo = "local"

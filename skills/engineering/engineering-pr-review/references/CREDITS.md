@@ -1,14 +1,7 @@
 # Credits
 
-The deep-module portion of this internal PR gate uses architecture concepts from
-[Matt Pocock](https://github.com/mattpocock)'s
-[`codebase-design` skill](https://github.com/mattpocock/skills/blob/v1.3.1/skills/engineering/codebase-design/SKILL.md)
-in `mattpocock/skills`: the deletion test, adapter discipline, interface-based
-testing, and depth as leverage.
+The review step of this PR gate delegates to [Matt Pocock](https://github.com/mattpocock)'s
+[`code-review` skill](https://github.com/mattpocock/skills/blob/v1.3.1/skills/engineering/code-review/SKILL.md)
+in `mattpocock/skills`, which the `base` recipe installs.
 
-Those concepts are carried by the local `engineering-rules` skill, whose
-[credits](../../engineering-rules/references/CREDITS.md) distinguish the adapted architecture
-rules from house standards.
-
-The PR-gate workflow, toolchain checks, complexity reporting, and large-file
-thresholds are local work. This skill is not a copy of Pocock's `code-review`.
+The order of the steps, the use of botica and the readiness summary are local work.

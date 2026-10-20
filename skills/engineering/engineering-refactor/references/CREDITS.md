@@ -1,14 +1,9 @@
 # Credits
 
-The architectural reasoning in this internal refactoring workflow uses concepts
-from [Matt Pocock](https://github.com/mattpocock)'s
-[`codebase-design` skill](https://github.com/mattpocock/skills/blob/v1.3.1/skills/engineering/codebase-design/SKILL.md)
-in `mattpocock/skills`: deep modules, the deletion test, adapter discipline,
-interface-based testing, leverage, and locality.
+The architecture vocabulary of this workflow is the one of [Matt Pocock](https://github.com/mattpocock)'s
+[`codebase-design` skill](https://github.com/mattpocock/skills/blob/v1.3.1/skills/engineering/codebase-design/SKILL.md),
+and the search for candidates is his
+[`improve-codebase-architecture` skill](https://github.com/mattpocock/skills/blob/v1.3.1/skills/engineering/improve-codebase-architecture/SKILL.md),
+both in `mattpocock/skills` and installed by the `base` recipe.
 
-Those concepts are carried by the local `engineering-rules` skill, whose
-[credits](../../engineering-rules/references/CREDITS.md) distinguish the adapted architecture
-rules from house standards.
-
-The house-stack migration and refactoring procedure are local work, not a copy
-of an upstream refactoring skill.
+The order of the steps and the use of botica are local work.

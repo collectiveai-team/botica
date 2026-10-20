@@ -25,7 +25,6 @@ REV_FILES = (
     "docs/botica.md",
     "website/docs/use.md",
     "distribution/botica-pre-commit/README.md",
-    "skills/engineering/engineering-rules/references/py-ruff-format-modern.md",
 )
 REV = re.compile(rf'^(?P<head>\s*repo = "{re.escape(MIRROR)}"\n\s*rev = ")v[^"]*(?P<tail>")', re.M)
 PACKAGE = "distribution/botica-pre-commit/pyproject.toml"

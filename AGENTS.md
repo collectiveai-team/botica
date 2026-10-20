@@ -32,7 +32,7 @@ its SDKs and its benchmarks). The binary embeds `catalog/rules/`, `catalog/refer
 - `standards/` — the text of each standard, `standards/<set>/<number>-<slug>.md`, written by hand
   and apart from the rules; `scripts/build_site.sh` copies it into the site (ADR 0004).
 - `skills/` — actual installed skills (`ask-user`, `journalist`, `handoff`,
-  `test-smell-review`, `engineering-rules`, `engineering-pr-review`, `pr`,
+  `test-smell-review`, `engineering-pr-review`, `pr`,
   `engineering-refactor`; `botica-rule-author` is for the authors of rules, and `base` leaves it
   out). Their paths are fixed: the `skills-lock.json` of each repository that
   installed them records `skills/<group>/<name>/SKILL.md`, and `npx skills` fetches that path to
@@ -77,11 +77,6 @@ A skill is a `SKILL.md` plus, optionally, `references/`, `scripts/`, `assets/` a
 `agents/` (Codex reads `agents/openai.yaml`). Text a skill bundles goes under `references/`;
 any other directory or loose file at its root fails. The frontmatter fields that Claude and
 Codex read beyond the spec (`disable-model-invocation`, `argument-hint`) are allowed.
-
-One skill is judged more loosely: for `engineering-rules` only errors fail. Its
-`references/` hold about 30k tokens, above the validator's fixed warning of 25k, and the
-rules are read by need through an index that names them by id. Do not cut rules to silence
-that warning; it is a decision about the ruleset.
 
 `tessl review` is not used: it asks for an interactive login.
 

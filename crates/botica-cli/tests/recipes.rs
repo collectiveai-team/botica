@@ -16,7 +16,7 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
             "\nbase: Any repository, in any language: the rules about any file, the rules of \
              botica itself, the skills, .gitignore, the prek hooks and the sections of AGENTS.md\n  \
              rules: 7, judgment: 0, exports: 0\n  \
-             skills: 32, files: 4, sections: 2, gitignore: 8\n  from: built-in\n"
+             skills: 31, files: 4, sections: 2, gitignore: 8\n  from: built-in\n"
         ),
         "{text}"
     );
