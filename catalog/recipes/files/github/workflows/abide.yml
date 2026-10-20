@@ -55,7 +55,8 @@ jobs:
             echo "::error::the secret TYPESAFE_AI_API_KEY is not set"
             exit 2
           fi
-          git diff "$BASE_SHA"...HEAD > "$RUNNER_TEMP/abide/pr.diff"
+          # Deleted files have nothing left to judge.
+          git diff --diff-filter=d "$BASE_SHA"...HEAD > "$RUNNER_TEMP/abide/pr.diff"
           status=0
           npx --yes @coldtea/abide@0.0.11 check --json --diff "$RUNNER_TEMP/abide/pr.diff" \
             > "$RUNNER_TEMP/abide/abide.json" || status=$?
