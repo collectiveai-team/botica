@@ -12,7 +12,6 @@ const HOOK: &str = "[[repos]]\n[[repos.hooks]]\nid = \"complexipy\"\n";
 fn requirement(fragment: &str) -> Requirement<'_> {
     Requirement {
         rule: "cognitive-complexity",
-        standard: Some("CES-110"),
         tool: "complexipy",
         target: "prek.toml",
         fragment,
@@ -56,7 +55,7 @@ fn a_file_without_the_fragment_has_a_finding_about_the_whole_file() {
     assert!(finding.file_level);
     assert_eq!(
         finding.message,
-        "prek.toml lacks the configuration of complexipy that `cognitive-complexity` (CES-110) \
+        "prek.toml lacks the configuration of complexipy that `cognitive-complexity` \
          needs: `botica explain cognitive-complexity` shows it"
     );
 }
@@ -68,7 +67,7 @@ fn a_missing_file_or_one_that_is_not_toml_has_a_finding() {
     assert_eq!(missing[0].path, "prek.toml");
     assert_eq!(
         missing[0].message,
-        "prek.toml does not exist, and complexipy needs it for `cognitive-complexity` (CES-110): \
+        "prek.toml does not exist, and complexipy needs it for `cognitive-complexity`: \
          `botica explain cognitive-complexity` shows what goes in it"
     );
 
@@ -77,7 +76,7 @@ fn a_missing_file_or_one_that_is_not_toml_has_a_finding() {
     assert!(
         broken[0].message.starts_with(
             "prek.toml is not TOML, so botica cannot find the configuration of \
-                          complexipy that `cognitive-complexity` (CES-110) needs: "
+                          complexipy that `cognitive-complexity` needs: "
         ),
         "{}",
         broken[0].message
@@ -119,7 +118,6 @@ fn a_table_holds_a_fragment_when_it_has_each_key_with_a_value_that_holds_the_fra
 fn each_rule_that_lacks_its_configuration_has_a_finding_of_its_own() {
     let deptry = Requirement {
         rule: "dep-hygiene",
-        standard: None,
         tool: "deptry",
         target: "prek.toml",
         fragment: "[[repos]]\n[[repos.hooks]]\nid = \"deptry\"\n",
@@ -149,7 +147,6 @@ fn the_requirements_of_a_rule_are_the_fragments_of_its_external_implementations(
     assert_eq!(requirements.len(), 1);
     let requirement = &requirements[0];
     assert_eq!(requirement.rule, "cognitive-complexity");
-    assert_eq!(requirement.standard, Some("CES-110"));
     assert_eq!(requirement.tool, "complexipy");
     assert_eq!(requirement.target, "prek.toml");
     assert_eq!(requirement.fragment, HOOK);

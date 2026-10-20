@@ -27,6 +27,8 @@ pub enum Format {
 pub struct RuleDoc {
     pub id: String,
     pub code: String,
+    /// The standard the rule implements (`CES-71`), if it names one.
+    pub standard: Option<String>,
     pub summary: String,
     pub severity: Severity,
 }
@@ -164,6 +166,7 @@ struct Range {
 struct JsonDiagnostic<'a> {
     rule: &'a str,
     code: Option<&'a str>,
+    standard: Option<&'a str>,
     severity: &'static str,
     path: &'a str,
     range: Option<Range>,
@@ -193,29 +196,33 @@ impl<'a> From<&'a RunError> for JsonError<'a> {
 
 struct Diagnostics<'a> {
     items: &'a [Diagnostic],
-    codes: HashMap<&'a str, &'a str>,
+    rules: HashMap<&'a str, &'a RuleDoc>,
 }
 
 impl Serialize for Diagnostics<'_> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.collect_seq(self.items.iter().map(|d| JsonDiagnostic {
-            rule: &d.rule,
-            code: self.codes.get(d.rule.as_str()).copied(),
-            severity: d.severity.as_str(),
-            path: &d.path,
-            range: (!d.file_level).then_some(Range {
-                start: Point {
-                    offset: d.start,
-                    line: d.line,
-                    column: d.column,
-                },
-                end: Point {
-                    offset: d.end,
-                    line: d.end_line,
-                    column: d.end_column,
-                },
-            }),
-            message: &d.message,
+        serializer.collect_seq(self.items.iter().map(|d| {
+            let doc = self.rules.get(d.rule.as_str());
+            JsonDiagnostic {
+                rule: &d.rule,
+                code: doc.map(|rule| rule.code.as_str()),
+                standard: doc.and_then(|rule| rule.standard.as_deref()),
+                severity: d.severity.as_str(),
+                path: &d.path,
+                range: (!d.file_level).then_some(Range {
+                    start: Point {
+                        offset: d.start,
+                        line: d.line,
+                        column: d.column,
+                    },
+                    end: Point {
+                        offset: d.end,
+                        line: d.end_line,
+                        column: d.end_column,
+                    },
+                }),
+                message: &d.message,
+            }
         }))
     }
 }
@@ -232,10 +239,10 @@ fn json(report: &Report<'_>, out: &mut impl Write) -> io::Result<()> {
         schema_version: SCHEMA_VERSION,
         diagnostics: Diagnostics {
             items: report.diagnostics,
-            codes: report
+            rules: report
                 .rules
                 .iter()
-                .map(|rule| (rule.id.as_str(), rule.code.as_str()))
+                .map(|rule| (rule.id.as_str(), rule))
                 .collect(),
         },
         errors: report.errors.iter().map(JsonError::from).collect(),

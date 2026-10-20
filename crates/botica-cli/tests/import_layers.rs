@@ -29,7 +29,7 @@ fn an_import_of_a_layer_above_is_an_error_whatever_file_botica_is_given() {
     assert_eq!(output.status.code(), Some(1), "{text}");
     assert!(
         text.contains(
-            "src/app/core/models.py:1:1: error [import-layers] CES-5 (import-layers): \
+            "src/app/core/models.py:1:1: error [import-layers] \
              `app.core.models` imports `app.api.routes`"
         ),
         "{text}"

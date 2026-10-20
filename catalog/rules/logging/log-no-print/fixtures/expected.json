@@ -15,7 +15,7 @@
           "column": 23
         }
       },
-      "message": "CES-46 (log-no-print): Libraries log, they don't print: use the logger of the project instead of console.* or process.stdout/stderr.write in library code. `cli.*`, `cli/`, `bin/`, the tests and `if (import.meta.main)` or `if (require.main === module)` blocks are exempt; another entry point goes in `extend-ignores`."
+      "message": "Libraries log, they don't print: use the logger of the project instead of console.* or process.stdout/stderr.write in library code. `cli.*`, `cli/`, `bin/`, the tests and `if (import.meta.main)` or `if (require.main === module)` blocks are exempt; another entry point goes in `extend-ignores`."
     },
     {
       "path": "catch.ts",
@@ -32,7 +32,7 @@
           "column": 26
         }
       },
-      "message": "CES-46 (log-no-print): Libraries log, they don't print: use the logger of the project instead of console.* or process.stdout/stderr.write in library code. `cli.*`, `cli/`, `bin/`, the tests and `if (import.meta.main)` or `if (require.main === module)` blocks are exempt; another entry point goes in `extend-ignores`."
+      "message": "Libraries log, they don't print: use the logger of the project instead of console.* or process.stdout/stderr.write in library code. `cli.*`, `cli/`, `bin/`, the tests and `if (import.meta.main)` or `if (require.main === module)` blocks are exempt; another entry point goes in `extend-ignores`."
     },
     {
       "path": "legacy.js",
@@ -49,7 +49,7 @@
           "column": 36
         }
       },
-      "message": "CES-46 (log-no-print): Libraries log, they don't print: use the logger of the project instead of console.* or process.stdout/stderr.write in library code. `cli.*`, `cli/`, `bin/`, the tests and `if (import.meta.main)` or `if (require.main === module)` blocks are exempt; another entry point goes in `extend-ignores`."
+      "message": "Libraries log, they don't print: use the logger of the project instead of console.* or process.stdout/stderr.write in library code. `cli.*`, `cli/`, `bin/`, the tests and `if (import.meta.main)` or `if (require.main === module)` blocks are exempt; another entry point goes in `extend-ignores`."
     },
     {
       "path": "report.tsx",
@@ -66,7 +66,7 @@
           "column": 28
         }
       },
-      "message": "CES-46 (log-no-print): Libraries log, they don't print: use the logger of the project instead of console.* or process.stdout/stderr.write in library code. `cli.*`, `cli/`, `bin/`, the tests and `if (import.meta.main)` or `if (require.main === module)` blocks are exempt; another entry point goes in `extend-ignores`."
+      "message": "Libraries log, they don't print: use the logger of the project instead of console.* or process.stdout/stderr.write in library code. `cli.*`, `cli/`, `bin/`, the tests and `if (import.meta.main)` or `if (require.main === module)` blocks are exempt; another entry point goes in `extend-ignores`."
     },
     {
       "path": "service.py",
@@ -83,7 +83,7 @@
           "column": 29
         }
       },
-      "message": "CES-46 (log-no-print): Libraries log, they don't print: use the house get_logger (`botica refs show structured-logging`) instead of print() or sys.stdout/stderr.write in library code. `__main__.py`, `cli.py`, `cli/`, the tests and `if __name__ == \"__main__\":` blocks are exempt; another entry point goes in `extend-ignores`."
+      "message": "Libraries log, they don't print: use the house get_logger (`botica refs show structured-logging`) instead of print() or sys.stdout/stderr.write in library code. `__main__.py`, `cli.py`, `cli/`, the tests and `if __name__ == \"__main__\":` blocks are exempt; another entry point goes in `extend-ignores`."
     },
     {
       "path": "service.ts",
@@ -100,7 +100,7 @@
           "column": 25
         }
       },
-      "message": "CES-46 (log-no-print): Libraries log, they don't print: use the logger of the project instead of console.* or process.stdout/stderr.write in library code. `cli.*`, `cli/`, `bin/`, the tests and `if (import.meta.main)` or `if (require.main === module)` blocks are exempt; another entry point goes in `extend-ignores`."
+      "message": "Libraries log, they don't print: use the logger of the project instead of console.* or process.stdout/stderr.write in library code. `cli.*`, `cli/`, `bin/`, the tests and `if (import.meta.main)` or `if (require.main === module)` blocks are exempt; another entry point goes in `extend-ignores`."
     },
     {
       "path": "stream.py",
@@ -117,7 +117,7 @@
           "column": 27
         }
       },
-      "message": "CES-46 (log-no-print): Libraries log, they don't print: use the house get_logger (`botica refs show structured-logging`) instead of print() or sys.stdout/stderr.write in library code. `__main__.py`, `cli.py`, `cli/`, the tests and `if __name__ == \"__main__\":` blocks are exempt; another entry point goes in `extend-ignores`."
+      "message": "Libraries log, they don't print: use the house get_logger (`botica refs show structured-logging`) instead of print() or sys.stdout/stderr.write in library code. `__main__.py`, `cli.py`, `cli/`, the tests and `if __name__ == \"__main__\":` blocks are exempt; another entry point goes in `extend-ignores`."
     }
   ]
 }

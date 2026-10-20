@@ -60,10 +60,8 @@ fn json_output_has_the_schema_version_the_codes_and_a_null_range_for_whole_files
         unused["range"]["end"]["offset"].as_u64() > unused["range"]["start"]["offset"].as_u64()
     );
     assert_eq!(by_rule("io-error")["path"], "typo/");
-    assert!(
-        diagnostics.iter().all(|d| d.get("standard").is_none()),
-        "standard is not a field of the format"
-    );
+    assert_eq!(big["standard"], "CES-71");
+    assert_eq!(unused["standard"], Value::Null);
     assert_eq!(output.status.code(), Some(1));
 }
 

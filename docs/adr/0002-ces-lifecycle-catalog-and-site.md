@@ -4,7 +4,11 @@
 
 Amended on 2026-10-19: the message of a finding starts with `CES-<number> (<slug>)` and `botica
 explain` prints the `standard` of the rule, so item 1 no longer holds that the CES is absent from
-the output of botica. Botica still selects, ignores and suppresses by slug or code, never by CES.
+the output of botica.
+
+Amended on 2026-10-20: the message of a finding no longer starts with the CES. The JSON format
+carries the `standard` of the rule in each diagnostic, SARIF carries it in the `properties` of each
+rule, and `botica explain` prints it. The text output names the rule only. Botica still selects, ignores and suppresses by slug or code, never by CES.
 
 A CES was born as a GitHub issue. The issue number is the CES number and the issue body is the
 standard's text. Its review state used to be a set of labels that a bot rewrote from slash commands

@@ -55,6 +55,8 @@ struct Configuration {
 #[derive(Serialize)]
 struct Properties<'a> {
     code: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    standard: Option<&'a str>,
 }
 
 #[derive(Serialize)]
@@ -157,7 +159,10 @@ fn descriptors<'a>(report: &'a Report<'a>) -> (Vec<Descriptor<'a>>, HashMap<&'a 
             default_configuration: Some(Configuration {
                 level: level(rule.severity),
             }),
-            properties: Some(Properties { code: &rule.code }),
+            properties: Some(Properties {
+                code: &rule.code,
+                standard: rule.standard.as_deref(),
+            }),
         })
         .collect();
     let known: BTreeSet<&str> = report.rules.iter().map(|rule| rule.id.as_str()).collect();

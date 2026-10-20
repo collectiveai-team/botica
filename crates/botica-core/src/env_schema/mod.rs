@@ -128,7 +128,7 @@ pub fn check(schema: &str, sources: &[Source<'_>], severity: Severity) -> Vec<Di
             (declaration.field.start, declaration.field.end),
             severity,
             format!(
-                "CES-76 ({SETTINGS_ENV_SCHEMA}): the field `{field}` of `{class}` reads \
+                "the field `{field}` of `{class}` reads \
                  `{expected}`, which {SCHEMA} does not declare: add `{expected}` to {SCHEMA}"
             ),
         ));
@@ -145,7 +145,7 @@ pub fn check(schema: &str, sources: &[Source<'_>], severity: Severity) -> Vec<Di
                 (variable.start, variable.end),
                 severity,
                 format!(
-                    "CES-76 ({SETTINGS_ENV_SCHEMA}): {SCHEMA} declares `{name}`, and no settings \
+                    "{SCHEMA} declares `{name}`, and no settings \
                      class of the project reads it: add a field that reads it, remove it, or mark \
                      it `# @auditIgnore` when another program reads it"
                 ),

@@ -15,7 +15,7 @@
           "column": 14
         }
       },
-      "message": "CES-4 (api-schemas-extra-forbid): API request/response schema omits model_config = ConfigDict(extra='forbid'). Reject unknown fields at the API boundary so a typo'd or stale payload fails loudly instead of being silently dropped. See `botica refs show api-schemas`."
+      "message": "API request/response schema omits model_config = ConfigDict(extra='forbid'). Reject unknown fields at the API boundary so a typo'd or stale payload fails loudly instead of being silently dropped. See `botica refs show api-schemas`."
     },
     {
       "path": "api/v1/schemas/responses/user.py",
@@ -32,7 +32,7 @@
           "column": 12
         }
       },
-      "message": "CES-4 (api-schemas-extra-forbid): API request/response schema omits model_config = ConfigDict(extra='forbid'). Reject unknown fields at the API boundary so a typo'd or stale payload fails loudly instead of being silently dropped. See `botica refs show api-schemas`."
+      "message": "API request/response schema omits model_config = ConfigDict(extra='forbid'). Reject unknown fields at the API boundary so a typo'd or stale payload fails loudly instead of being silently dropped. See `botica refs show api-schemas`."
     }
   ]
 }

@@ -15,7 +15,7 @@
           "column": 37
         }
       },
-      "message": "CES-18 (db-no-create-all): The schema is created with metadata.create_all(), which bypasses the migrations. Change it with an Alembic migration."
+      "message": "The schema is created with metadata.create_all(), which bypasses the migrations. Change it with an Alembic migration."
     },
     {
       "path": "app/db.py",
@@ -32,7 +32,7 @@
           "column": 38
         }
       },
-      "message": "CES-18 (db-no-create-all): The schema is created with metadata.create_all(), which bypasses the migrations. Change it with an Alembic migration."
+      "message": "The schema is created with metadata.create_all(), which bypasses the migrations. Change it with an Alembic migration."
     }
   ]
 }

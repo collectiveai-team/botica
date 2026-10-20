@@ -44,7 +44,7 @@ fn a_field_with_no_variable_in_the_schema_is_reported_at_its_name() {
     assert!(!finding.file_level);
     assert_eq!(
         finding.message,
-        "CES-76 (settings-env-schema): the field `database_url` of `Settings` reads \
+        "the field `database_url` of `Settings` reads \
          `DATABASE_URL`, which .env.schema does not declare: add `DATABASE_URL` to .env.schema"
     );
 }
@@ -65,7 +65,7 @@ fn a_variable_that_no_settings_class_reads_is_reported_at_its_key() {
     assert_eq!((finding.end_line, finding.end_column), (4, 15));
     assert_eq!(
         finding.message,
-        "CES-76 (settings-env-schema): .env.schema declares `API_KEY`, and no settings class of \
+        ".env.schema declares `API_KEY`, and no settings class of \
          the project reads it: add a field that reads it, remove it, or mark it \
          `# @auditIgnore` when another program reads it"
     );

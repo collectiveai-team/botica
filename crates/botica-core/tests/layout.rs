@@ -157,7 +157,7 @@ mod tests_in_the_package {
         assert!(found[0].file_level);
         assert_eq!(
             found[0].message,
-            "CES-32 (no-tests-in-package): backend/amarc/tests/test_a.py is a test inside the package — keep tests in a `tests/` directory beside the package, not in it."
+            "backend/amarc/tests/test_a.py is a test inside the package — keep tests in a `tests/` directory beside the package, not in it."
         );
     }
 }
@@ -242,11 +242,11 @@ mod artifacts_in_the_package {
 
         assert_eq!(
             data[0].message,
-            "CES-32 (no-artifacts-in-package): backend/amarc/rows.csv is a data or model file inside the code of the project — keep data, models and reports outside it."
+            "backend/amarc/rows.csv is a data or model file inside the code of the project — keep data, models and reports outside it."
         );
         assert_eq!(
             under[0].message,
-            "CES-32 (no-artifacts-in-package): backend/amarc/data/schema.yaml is a file under a `data/` directory inside the code of the project — keep data, models and reports outside it."
+            "backend/amarc/data/schema.yaml is a file under a `data/` directory inside the code of the project — keep data, models and reports outside it."
         );
     }
 }
@@ -263,7 +263,7 @@ fn the_notebook_message_says_the_rule_the_standard_and_the_fix() {
     assert_eq!(found.len(), 1);
     assert_eq!(
         found[0].message,
-        "CES-32 (no-notebooks): backend/amarc/a.ipynb is a notebook inside the code of the project — keep notebooks outside it."
+        "backend/amarc/a.ipynb is a notebook inside the code of the project — keep notebooks outside it."
     );
 }
 

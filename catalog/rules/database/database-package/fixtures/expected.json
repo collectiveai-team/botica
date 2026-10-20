@@ -15,7 +15,7 @@
           "column": 38
         }
       },
-      "message": "CES-18 (database-package): Relational persistence belongs in its own `database` package (SQLModel tables, repositories, migrations, connection setup) — not under persistence/, meta/, or core/. Move this into the database unit."
+      "message": "Relational persistence belongs in its own `database` package (SQLModel tables, repositories, migrations, connection setup) — not under persistence/, meta/, or core/. Move this into the database unit."
     },
     {
       "path": "core/models.py",
@@ -32,7 +32,7 @@
           "column": 36
         }
       },
-      "message": "CES-18 (database-package): Relational persistence belongs in its own `database` package (SQLModel tables, repositories, migrations, connection setup) — not under persistence/, meta/, or core/. Move this into the database unit."
+      "message": "Relational persistence belongs in its own `database` package (SQLModel tables, repositories, migrations, connection setup) — not under persistence/, meta/, or core/. Move this into the database unit."
     },
     {
       "path": "core/models.py",
@@ -49,7 +49,7 @@
           "column": 31
         }
       },
-      "message": "CES-18 (database-package): Relational persistence belongs in its own `database` package (SQLModel tables, repositories, migrations, connection setup) — not under persistence/, meta/, or core/. Move this into the database unit."
+      "message": "Relational persistence belongs in its own `database` package (SQLModel tables, repositories, migrations, connection setup) — not under persistence/, meta/, or core/. Move this into the database unit."
     }
   ]
 }

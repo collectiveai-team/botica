@@ -188,10 +188,7 @@ fn an_ast_grep_rule_of_a_project_declares_the_full_id_in_its_yaml() {
     assert!(output.status.success(), "{}", stderr(&output));
     let yaml = read(&dir, &format!("{CATALOG}/structure/no-foo/python.yml"));
     assert!(yaml.starts_with("id: acme/no-foo\n"), "{yaml}");
-    assert!(
-        yaml.contains("message: \"ACME-1 (acme/no-foo): TODO"),
-        "{yaml}"
-    );
+    assert!(yaml.contains("message: \"TODO"), "{yaml}");
     assert!(listed(&dir).contains("ACMESTRUC001"), "{}", listed(&dir));
 }
 

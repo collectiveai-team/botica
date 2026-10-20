@@ -15,7 +15,7 @@
           "column": 22
         }
       },
-      "message": "CES-76 (settings-direct-instantiation): A settings class is built where it is used. Read it through the cached get_settings() so that the environment is read once and tests can override it."
+      "message": "A settings class is built where it is used. Read it through the cached get_settings() so that the environment is read once and tests can override it."
     },
     {
       "path": "app.py",
@@ -32,7 +32,7 @@
           "column": 32
         }
       },
-      "message": "CES-76 (settings-direct-instantiation): A settings class is built where it is used. Read it through the cached get_settings() so that the environment is read once and tests can override it."
+      "message": "A settings class is built where it is used. Read it through the cached get_settings() so that the environment is read once and tests can override it."
     }
   ]
 }

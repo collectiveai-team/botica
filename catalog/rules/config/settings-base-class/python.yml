@@ -1,7 +1,7 @@
 id: settings-base-class
 language: python
 severity: warning
-message: "CES-76 (settings-base-class): A settings class extends pydantic_settings.BaseSettings, not BaseModel. Change the base class so that the environment is read and validated."
+message: "A settings class extends pydantic_settings.BaseSettings, not BaseModel. Change the base class so that the environment is read and validated."
 ignores:
   - "**/conftest.py"
   - "**/tests/**"

@@ -15,7 +15,7 @@
           "column": 12
         }
       },
-      "message": "CES-17 (api-response-schema-name): A response schema is named {Name}Response. Rename the class so that its name ends with `Response`."
+      "message": "A response schema is named {Name}Response. Rename the class so that its name ends with `Response`."
     }
   ]
 }

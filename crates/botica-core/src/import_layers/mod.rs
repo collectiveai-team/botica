@@ -47,7 +47,7 @@ fn message(importer: &str, chain: &[String], breach: &Breach<'_>) -> String {
              layer below them"
         ),
     };
-    format!("CES-5 ({IMPORT_LAYERS}): {what}, and {why}")
+    format!("{what}, and {why}")
 }
 
 /// The imports of the modules of `sources` that break `layers`, one finding for each import

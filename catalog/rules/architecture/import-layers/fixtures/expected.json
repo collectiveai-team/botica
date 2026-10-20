@@ -15,7 +15,7 @@
           "column": 34
         }
       },
-      "message": "CES-5 (import-layers): `app.core.models` imports `app.api.routes`, and `app.api` is a layer above `app.core`: move what it needs to `app.core` or below, or invert the dependency"
+      "message": "`app.core.models` imports `app.api.routes`, and `app.api` is a layer above `app.core`: move what it needs to `app.core` or below, or invert the dependency"
     },
     {
       "path": "app/core/models.py",
@@ -32,7 +32,7 @@
           "column": 29
         }
       },
-      "message": "CES-5 (import-layers): `app.core.models` reaches `app.api.routes` through app.core.models -> app.shared.money -> app.api.routes, and `app.api` is a layer above `app.core`: move what it needs to `app.core` or below, or invert the dependency"
+      "message": "`app.core.models` reaches `app.api.routes` through app.core.models -> app.shared.money -> app.api.routes, and `app.api` is a layer above `app.core`: move what it needs to `app.core` or below, or invert the dependency"
     }
   ]
 }

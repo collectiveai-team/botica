@@ -1,7 +1,7 @@
 id: no-dict-alias
 language: python
 severity: error
-message: "CES-79 (no-dict-alias): A public type alias at module level points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
+message: "A public type alias at module level points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
 rule:
   all:
     - any:

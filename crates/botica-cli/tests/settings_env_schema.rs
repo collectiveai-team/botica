@@ -29,11 +29,11 @@ fn both_kinds_of_finding_come_out_whatever_file_botica_is_given() {
     let text = stdout(&output);
     assert_eq!(output.status.code(), Some(0), "{text}");
     assert!(
-        text.contains(".env.schema:1:1: warning [settings-env-schema] CES-76"),
+        text.contains(".env.schema:1:1: warning [settings-env-schema] .env.schema declares"),
         "{text}"
     );
     assert!(
-        text.contains("src/app/settings.py:4:5: warning [settings-env-schema] CES-76"),
+        text.contains("src/app/settings.py:4:5: warning [settings-env-schema] the field"),
         "{text}"
     );
 }

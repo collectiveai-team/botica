@@ -68,7 +68,8 @@ uncalibrated.
 
 - Start the rule at `status = "preview"` and `default-enabled = false`. Promoting it is a
   separate decision.
-- Messages name the code and the fix of their own rule and no other rule.
+- Messages state the fix of their own rule, name no other rule and carry no CES code (the output
+  takes the standard from `rule.toml`).
 - A change to the built-in catalog touches one standard: `scripts/check_rule_change.py` fails a
   change that adds a rule and touches more than that rule needs.
 - Text in the README states what the rule does, in plain sentences.

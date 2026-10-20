@@ -103,10 +103,10 @@ or referencing a rule in this repo, follow this convention:
   from the rules that implement it; a rule names its standard in the `standard` field of its
   `rule.toml`. **A pull request touches one standard**, carries its implementation and updates the
   documentation it affects; `scripts/check_rule_change.py` fails one that touches two.
-- **Violation messages must embed the code**, e.g.
-  `message: "CES-46 (log-no-print): libraries log, they don't print …"`. Keep the
-  slug as the suppression key so tooling stays stable.
-- **Messages are self-contained:** a message states its own rule + fix + code, and
+- **Violation messages carry no CES code.** The output names the rule (`[log-no-print]`), the
+  JSON and SARIF formats carry the `standard` of the rule, and `botica explain <slug>` prints it.
+  The slug is the suppression key.
+- **Messages are self-contained:** a message states its own rule + fix, and
   **never** names a sibling rule or prescribes another rule's suppression key.
   Grouped rationale + the escape-hatch mechanism live once, in the file of the standard —
   scattering policy across sibling messages is context-poisoning.

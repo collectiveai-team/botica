@@ -15,7 +15,7 @@
           "column": 18
         }
       },
-      "message": "CES-79 (no-dict-return-annotation): A boundary function (public, not nested) returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
+      "message": "A boundary function (public, not nested) returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
     },
     {
       "path": "service.py",
@@ -32,7 +32,7 @@
           "column": 18
         }
       },
-      "message": "CES-79 (no-dict-return-annotation): A boundary function (public, not nested) returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
+      "message": "A boundary function (public, not nested) returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
     },
     {
       "path": "service.py",
@@ -49,7 +49,7 @@
           "column": 18
         }
       },
-      "message": "CES-79 (no-dict-return-annotation): A boundary function (public, not nested) returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
+      "message": "A boundary function (public, not nested) returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
     },
     {
       "path": "service.py",
@@ -66,7 +66,7 @@
           "column": 24
         }
       },
-      "message": "CES-79 (no-dict-return-annotation): A boundary function (public, not nested) returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
+      "message": "A boundary function (public, not nested) returns a raw dict. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
     }
   ]
 }

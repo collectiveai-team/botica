@@ -11,7 +11,6 @@ pub const EXTERNAL_CONFIG: &str = "external-config";
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Requirement<'a> {
     pub rule: &'a str,
-    pub standard: Option<&'a str>,
     pub tool: &'a str,
     /// The file, from the root of the project.
     pub target: &'a str,
@@ -27,7 +26,6 @@ impl<'a> Requirement<'a> {
             .filter_map(|implementation| {
                 Some(Self {
                     rule: &rule.id,
-                    standard: rule.standard.as_deref(),
                     tool: implementation.tool.as_deref()?,
                     target: implementation.target()?,
                     fragment: implementation.source.as_deref()?,
@@ -37,10 +35,7 @@ impl<'a> Requirement<'a> {
     }
 
     fn label(&self) -> String {
-        match self.standard {
-            Some(standard) => format!("`{}` ({standard})", self.rule),
-            None => format!("`{}`", self.rule),
-        }
+        format!("`{}`", self.rule)
     }
 }
 

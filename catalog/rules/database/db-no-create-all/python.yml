@@ -1,7 +1,7 @@
 id: db-no-create-all
 language: python
 severity: warning
-message: "CES-18 (db-no-create-all): The schema is created with metadata.create_all(), which bypasses the migrations. Change it with an Alembic migration."
+message: "The schema is created with metadata.create_all(), which bypasses the migrations. Change it with an Alembic migration."
 ignores:
   - "**/conftest.py"
   - "**/tests/**"

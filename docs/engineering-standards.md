@@ -33,18 +33,20 @@ on, so they must stay stable and semantic.
   `scripts/check_rule_change.py` fails a change that leaves two standards of a set with the same
   number.
 
-## Violation messages embed the code
+## Violation messages carry no code
 
 ```yaml
-message: "CES-46 (log-no-print): libraries log, they don't print — use the house get_logger."
+message: "Libraries log, they don't print — use the house get_logger."
 ```
 
-The slug remains the suppression key (`# botica: ignore[<slug>]`), so embedding the code in
-the message text never affects tooling stability.
+The text output names the rule of each finding (`warning [log-no-print] …`), the JSON format
+carries the `standard` of the rule in each diagnostic and SARIF in the `properties` of each rule,
+and `botica explain <slug>` prints it. The slug remains the suppression key
+(`# botica: ignore[<slug>]`).
 
 ### Messages are self-contained (no cross-rule references)
 
-A violation message states **its own** rule, the fix, and its CES code — nothing else. It must
+A violation message states **its own** rule and the fix — nothing else. It must
 **not**:
 
 - name a sibling rule (e.g. "hidden from the no-dict-return rules"), or
@@ -56,7 +58,7 @@ superseding another's decision. The grouped rationale, the relationships between
 slugs, and the escape-hatch mechanism live **once**, in the file of the standard
 (`standards/<set>/<number>-<slug>.md`; for a rule that `botica lint` measures, the README of its
 folder in `catalog/rules`) — the single source of truth. If a message needs more than "what +
-fix + code", that belongs in the file of the standard, not the message.
+fix", that belongs in the file of the standard, not the message.
 
 ## Where the pieces live
 

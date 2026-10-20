@@ -38,6 +38,7 @@ fn catalog() -> Vec<RuleDoc> {
     vec![RuleDoc {
         id: "file-size-guard".to_owned(),
         code: "BTSTRUC001".to_owned(),
+        standard: Some("CES-71".to_owned()),
         summary: "Files that grow too large".to_owned(),
         severity: Severity::Error,
     }]
@@ -142,7 +143,7 @@ fn sarif_lists_the_rules_locates_each_result_and_reports_the_errors_as_notificat
                             "id": "file-size-guard",
                             "shortDescription": {"text": "Files that grow too large"},
                             "defaultConfiguration": {"level": "error"},
-                            "properties": {"code": "BTSTRUC001"}
+                            "properties": {"code": "BTSTRUC001", "standard": "CES-71"}
                         },
                         {"id": "log-no-print"}
                     ]
@@ -270,6 +271,7 @@ fn json_carries_the_schema_version_the_diagnostics_and_the_errors_apart() {
                 {
                     "rule": "log-no-print",
                     "code": null,
+                    "standard": null,
                     "severity": "warning",
                     "path": "src/a.py",
                     "range": {
@@ -281,6 +283,7 @@ fn json_carries_the_schema_version_the_diagnostics_and_the_errors_apart() {
                 {
                     "rule": "file-size-guard",
                     "code": "BTSTRUC001",
+                    "standard": "CES-71",
                     "severity": "error",
                     "path": "big.py",
                     "range": null,

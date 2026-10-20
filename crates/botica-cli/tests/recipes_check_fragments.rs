@@ -16,7 +16,7 @@ const WITH_THE_HOOK: &str = "[[repos]]\nrepo = \"local\"\n\n[[repos.hooks]]\nid 
 entry = \"uvx complexipy --max-complexity-allowed 15\"\n";
 
 const LACKS: &str = "prek.toml lacks the configuration of complexipy that `cognitive-complexity` \
-(CES-110) needs: `botica explain cognitive-complexity` shows it";
+needs: `botica explain cognitive-complexity` shows it";
 
 fn tooling(name: &str, config: &str, prek: Option<&str>) -> std::path::PathBuf {
     let dir = project(name, Some(config));
@@ -70,7 +70,7 @@ fn a_file_that_does_not_exist_differs() {
     assert!(
         text.contains(
             "fragment prek.toml `cognitive-complexity`: differs: prek.toml does not exist, and \
-             complexipy needs it for `cognitive-complexity` (CES-110)"
+             complexipy needs it for `cognitive-complexity`"
         ),
         "{text}"
     );

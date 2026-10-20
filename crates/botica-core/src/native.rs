@@ -52,7 +52,7 @@ impl NativeRule for FileSizeGuard {
             (
                 Severity::Error,
                 format!(
-                    "CES-71 (file-size-guard): {} is too large ({lines} lines, limit is {})",
+                    "{} is too large ({lines} lines, limit is {})",
                     doc.path, self.error_at
                 ),
             )
@@ -60,7 +60,7 @@ impl NativeRule for FileSizeGuard {
             (
                 Severity::Warning,
                 format!(
-                    "CES-71 (file-size-guard): {} has {lines} lines (warns at {}, fails at {})",
+                    "{} has {lines} lines (warns at {}, fails at {})",
                     doc.path, self.warn_at, self.error_at
                 ),
             )
@@ -120,7 +120,7 @@ impl NativeRule for NoUtils {
             self.id(),
             Severity::Error,
             format!(
-                "CES-63 (no-utils): {path} is a catch-all module — name modules for what they hold, not utils/helpers/aux/misc/common."
+                "{path} is a catch-all module — name modules for what they hold, not utils/helpers/aux/misc/common."
             ),
         ));
     }

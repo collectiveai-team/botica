@@ -44,7 +44,7 @@ fn an_ast_grep_rule_gets_the_next_code_of_its_family_and_a_folder_that_loads() {
         "id: no-foo\n\
          language: python\n\
          severity: warning\n\
-         message: \"CES-63 (no-foo): TODO: the rule and its fix\"\n\
+         message: \"TODO: the rule and its fix\"\n\
          rule:\n  pattern: TODO\n"
     );
     assert_eq!(
@@ -205,7 +205,7 @@ fn a_rule_the_catalog_would_reject_is_not_written() {
 }
 
 #[test]
-fn the_message_of_a_rule_without_a_standard_starts_with_its_slug() {
+fn a_rule_without_a_standard_has_no_standard_field() {
     let dir = workdir("no-standard");
 
     let output = new_rule(
@@ -222,7 +222,7 @@ fn the_message_of_a_rule_without_a_standard_starts_with_its_slug() {
     succeeded(&output);
     let yaml = read(&dir.join("cat/structure/no-foo/python.yml"));
     assert!(
-        yaml.contains("message: \"no-foo: TODO: the rule and its fix\"\n"),
+        yaml.contains("message: \"TODO: the rule and its fix\"\n"),
         "{yaml}"
     );
     let toml = read(&dir.join("cat/structure/no-foo/rule.toml"));

@@ -62,7 +62,7 @@ fn an_import_of_a_layer_above_is_reported_at_the_import() {
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(
         found[0].message,
-        "CES-5 (import-layers): `app.core.models` imports `app.api.routes`, and `app.api` is a \
+        "`app.core.models` imports `app.api.routes`, and `app.api` is a \
          layer above `app.core`: move what it needs to `app.core` or below, or invert the \
          dependency"
     );
@@ -78,7 +78,7 @@ fn the_independent_modules_of_one_layer_do_not_import_each_other() {
     assert_eq!(places(&found), ["app/database/tables.py:1:1"]);
     assert_eq!(
         found[0].message,
-        "CES-5 (import-layers): `app.database.tables` imports `app.impl.service`, and \
+        "`app.database.tables` imports `app.impl.service`, and \
          `app.database` and `app.impl` are independent modules of one layer: move what both need \
          to a layer below them"
     );
@@ -96,7 +96,7 @@ fn an_import_through_modules_of_no_layer_is_reported_with_the_chain() {
     assert_eq!(places(&found), ["app/core/models.py:1:1"]);
     assert_eq!(
         found[0].message,
-        "CES-5 (import-layers): `app.core.models` reaches `app.api.routes` through \
+        "`app.core.models` reaches `app.api.routes` through \
          app.core.models -> app.shared.helpers -> app.shared.more -> app.api.routes, and `app.api` \
          is a layer above `app.core`: move what it needs to `app.core` or below, or invert the \
          dependency"

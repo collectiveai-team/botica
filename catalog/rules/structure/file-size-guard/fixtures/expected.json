@@ -4,19 +4,19 @@
       "path": "large.txt",
       "severity": "error",
       "range": null,
-      "message": "CES-71 (file-size-guard): large.txt is too large (701 lines, limit is 700)"
+      "message": "large.txt is too large (701 lines, limit is 700)"
     },
     {
       "path": "latin1.txt",
       "severity": "error",
       "range": null,
-      "message": "CES-71 (file-size-guard): latin1.txt is too large (700 lines, limit is 700)"
+      "message": "latin1.txt is too large (700 lines, limit is 700)"
     },
     {
       "path": "warning.txt",
       "severity": "warning",
       "range": null,
-      "message": "CES-71 (file-size-guard): warning.txt has 400 lines (warns at 400, fails at 700)"
+      "message": "warning.txt has 400 lines (warns at 400, fails at 700)"
     }
   ]
 }

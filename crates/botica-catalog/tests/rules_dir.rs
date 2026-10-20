@@ -99,7 +99,7 @@ fn every_rule_that_botica_or_a_judge_evaluates_has_valid_and_invalid_fixtures() 
 }
 
 #[test]
-fn the_message_of_an_ast_grep_rule_with_a_standard_carries_its_code_and_slug() {
+fn the_message_of_an_ast_grep_rule_carries_no_standard() {
     let catalog = embedded();
     for rule in catalog.rules() {
         let Some(standard) = &rule.standard else {
@@ -111,10 +111,13 @@ fn the_message_of_an_ast_grep_rule_with_a_standard_carries_its_code_and_slug() {
             .filter(|implementation| implementation.kind == Kind::AstGrep)
             .filter_map(|implementation| implementation.source.as_deref())
         {
-            let expected = format!("message: \"{standard} ({}):", rule.id);
+            let message = yaml
+                .lines()
+                .find(|line| line.starts_with("message:"))
+                .unwrap_or_default();
             assert!(
-                yaml.contains(&expected),
-                "{}: expected `{expected}`",
+                !message.contains(standard.as_str()),
+                "{}: the message names `{standard}`, which the output takes from rule.toml",
                 rule.id
             );
         }

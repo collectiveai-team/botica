@@ -14,7 +14,7 @@ const WITH_THE_HOOK: &str = "[[repos]]\nrepo = \"local\"\n\n[[repos.hooks]]\nid 
 entry = \"uvx complexipy --max-complexity-allowed 15\"\n";
 
 const FINDING: &str = "prek.toml:1:1: error [external-config] prek.toml lacks the configuration \
-of complexipy that `cognitive-complexity` (CES-110) needs: `botica explain cognitive-complexity` \
+of complexipy that `cognitive-complexity` needs: `botica explain cognitive-complexity` \
 shows it";
 
 #[test]

@@ -1,7 +1,7 @@
 id: log-no-print
 language: javascript
 severity: warning
-message: "CES-46 (log-no-print): Libraries log, they don't print: use the logger of the project instead of console.* or process.stdout/stderr.write in library code. `cli.*`, `cli/`, `bin/`, the tests and `if (import.meta.main)` or `if (require.main === module)` blocks are exempt; another entry point goes in `extend-ignores`."
+message: "Libraries log, they don't print: use the logger of the project instead of console.* or process.stdout/stderr.write in library code. `cli.*`, `cli/`, `bin/`, the tests and `if (import.meta.main)` or `if (require.main === module)` blocks are exempt; another entry point goes in `extend-ignores`."
 ignores:
   - "**/cli.*"
   - "**/cli/**"

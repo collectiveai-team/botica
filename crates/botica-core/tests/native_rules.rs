@@ -39,10 +39,7 @@ fn the_size_warning_states_both_thresholds_and_does_not_judge() {
 
     let warn = engine.lint_source("a.py", &lines(6));
 
-    assert_eq!(
-        warn[0].message,
-        "CES-71 (file-size-guard): a.py has 6 lines (warns at 5, fails at 9)"
-    );
+    assert_eq!(warn[0].message, "a.py has 6 lines (warns at 5, fails at 9)");
 }
 
 #[test]

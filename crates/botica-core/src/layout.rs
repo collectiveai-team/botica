@@ -134,7 +134,7 @@ impl NativeRule for NoTestsInPackage {
             doc,
             self.id(),
             format!(
-                "CES-32 (no-tests-in-package): {} is a test inside the package — keep tests in a `tests/` directory beside the package, not in it.",
+                "{} is a test inside the package — keep tests in a `tests/` directory beside the package, not in it.",
                 doc.path
             ),
         ));
@@ -169,7 +169,7 @@ impl NativeRule for NoNotebooks {
             doc,
             self.id(),
             format!(
-                "CES-32 (no-notebooks): {} is a notebook inside the code of the project — keep notebooks outside it.",
+                "{} is a notebook inside the code of the project — keep notebooks outside it.",
                 doc.path
             ),
         ));
@@ -225,7 +225,7 @@ impl NativeRule for NoArtifactsInPackage {
             doc,
             self.id(),
             format!(
-                "CES-32 (no-artifacts-in-package): {} is {what} inside the code of the project — keep data, models and reports outside it.",
+                "{} is {what} inside the code of the project — keep data, models and reports outside it.",
                 doc.path
             ),
         ));

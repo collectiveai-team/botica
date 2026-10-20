@@ -362,13 +362,9 @@ fn external_implementation(args: &NewArgs) -> String {
 }
 
 fn ast_grep_yaml(args: &NewArgs, id: &str) -> String {
-    let label = match &args.standard {
-        Some(standard) => format!("{standard} ({id})"),
-        None => id.to_owned(),
-    };
     format!(
         "id: {id}\nlanguage: {}\nseverity: warning\n\
-         message: \"{label}: TODO: the rule and its fix\"\nrule:\n  pattern: TODO\n",
+         message: \"TODO: the rule and its fix\"\nrule:\n  pattern: TODO\n",
         args.language
     )
 }

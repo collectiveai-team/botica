@@ -15,7 +15,7 @@
           "column": 18
         }
       },
-      "message": "CES-76 (settings-module): Read env/flags only in the settings module. Move this os.getenv/os.environ access into a pydantic_settings.BaseSettings subclass and read it via get_settings(). See `botica refs show settings-module`."
+      "message": "Read env/flags only in the settings module. Move this os.getenv/os.environ access into a pydantic_settings.BaseSettings subclass and read it via get_settings(). See `botica refs show settings-module`."
     },
     {
       "path": "service.py",
@@ -32,7 +32,7 @@
           "column": 32
         }
       },
-      "message": "CES-76 (settings-module): Read env/flags only in the settings module. Move this os.getenv/os.environ access into a pydantic_settings.BaseSettings subclass and read it via get_settings(). See `botica refs show settings-module`."
+      "message": "Read env/flags only in the settings module. Move this os.getenv/os.environ access into a pydantic_settings.BaseSettings subclass and read it via get_settings(). See `botica refs show settings-module`."
     },
     {
       "path": "service.py",
@@ -49,7 +49,7 @@
           "column": 18
         }
       },
-      "message": "CES-76 (settings-module): Read env/flags only in the settings module. Move this os.getenv/os.environ access into a pydantic_settings.BaseSettings subclass and read it via get_settings(). See `botica refs show settings-module`."
+      "message": "Read env/flags only in the settings module. Move this os.getenv/os.environ access into a pydantic_settings.BaseSettings subclass and read it via get_settings(). See `botica refs show settings-module`."
     }
   ]
 }

@@ -74,6 +74,7 @@ pub fn rule_docs(resolution: &Resolution) -> Vec<RuleDoc> {
         .map(|entry| RuleDoc {
             id: entry.rule.id.clone(),
             code: entry.rule.code.clone(),
+            standard: entry.rule.standard.clone(),
             summary: entry.rule.summary.clone(),
             severity: Severity::from(entry.severity),
         })
