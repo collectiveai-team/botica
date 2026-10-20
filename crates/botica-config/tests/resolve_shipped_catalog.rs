@@ -155,7 +155,7 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
         &catalog,
         "select = []\nextend-select = [\"all\"]\npreview = true",
     );
-    assert_eq!(active(&resolution).len(), 44);
+    assert_eq!(active(&resolution).len(), 43);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTSEC\"]\npreview = true")),
         ["jwt-verified", "no-token-in-web-storage", "route-auth"]
@@ -166,8 +166,7 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
             "settings-base-class",
             "settings-direct-instantiation",
             "settings-env-schema",
-            "settings-module",
-            "version-pin"
+            "settings-module"
         ]
     );
 }
