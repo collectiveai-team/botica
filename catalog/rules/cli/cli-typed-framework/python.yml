@@ -2,8 +2,6 @@ id: cli-typed-framework
 language: python
 severity: warning
 message: "Build command lines with a typed, declarative framework (Typer or Cyclopts) and Rich, instead of argparse, click or sys.argv handled by hand. Reading sys.argv[0] or handing sys.argv to the framework is fine."
-# Inert in a repo that uses none of these. `sys.argv[0]` (the name of the program) and `sys.argv`
-# handed whole, or from index 1, to a call are the exceptions of CES-67.
 rule:
   any:
     - pattern: import argparse

@@ -1,6 +1,6 @@
 ## Directive
 
-Documentation, standards, ADRs and other prose say what a thing is and what it does, in plain sentences that a file, a command or an issue of the repository backs, with none of the signs of model writing that CES-120 lists.
+Documentation, standards, ADRs and other prose say what a thing is and what it does, in plain sentences that a file, a command or an issue of the repository backs, with none of the signs of model writing listed under Flag.
 
 ## Why
 

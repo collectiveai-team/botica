@@ -13,7 +13,7 @@ This rule catches a type alias that hides a raw dict behind a name: `X = dict`,
 name does not start with `_`; an assignment inside a function is a local variable.
 
 A lookup table, whose keys are data and not field names, is declared with an alias whose name ends
-in `Table` (`StatusTable = dict[str, str]`); the rule accepts it (CES-79, Exceptions).
+in `Table` (`StatusTable = dict[str, str]`); the rule accepts it.
 
 ## Why
 

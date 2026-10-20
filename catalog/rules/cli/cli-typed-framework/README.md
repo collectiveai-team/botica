@@ -2,8 +2,8 @@
 
 Build command-line interfaces with a typed, declarative framework (Typer or Cyclopts) and Rich for
 the output. The rule reports `argparse`, `click` and `sys.argv` handled by hand. Reading
-`sys.argv[0]` and handing `sys.argv` (whole, or from index 1) to a call are the exceptions of
-CES-67, and the rule leaves them alone. A warning by default.
+`sys.argv[0]` and handing `sys.argv` (whole, or from index 1) to a call are left alone. A warning
+by default.
 
 Typer and Cyclopts are both approved; follow whichever the repository already uses. Cyclopts
 derives its commands from plain signatures and needs no decorator on every parameter, so it suits

@@ -132,6 +132,31 @@ def test_the_readme_of_botica_says_an_ast_grep_ignore_comment_suppresses_nothing
     assert "compat-ast-grep-ignore" not in text
 
 
+CES_CODE = re.compile(r"\bCES-\d+")
+
+
+def test_the_text_of_a_rule_names_no_standard():
+    """A rule says what it asks; its standard is the `standard` field of its `rule.toml`."""
+    texts = [*CATALOG.glob("*/*/README.md"), *CATALOG.glob("*/*/*.yml")]
+    questions = [
+        path
+        for path in CATALOG.glob("*/*/rule.toml")
+        if any(
+            CES_CODE.search(str(implementation.get("question", "")))
+            for implementation in tomllib.loads(path.read_text(encoding="utf-8")).get(
+                "implementations", []
+            )
+        )
+    ]
+    named = sorted(
+        str(path.relative_to(CATALOG))
+        for path in texts
+        if CES_CODE.search(path.read_text(encoding="utf-8"))
+    ) + sorted(str(path.relative_to(CATALOG)) for path in questions)
+
+    assert not named, f"rule texts that name a standard: {named}"
+
+
 def test_a_readme_holds_the_prose_of_a_rule_and_not_what_its_rule_toml_says():
     """The title, the status, the family and the standard of a rule come from `rule.toml`."""
     repeated = sorted(

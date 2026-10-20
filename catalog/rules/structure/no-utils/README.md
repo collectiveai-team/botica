@@ -39,9 +39,8 @@ The finding belongs to the file name. An `ignore-file` comment anywhere in the f
 # botica: ignore-file[no-utils]
 ```
 
-CES-63 keeps a catch-all module that a repository already has; give it `ignore-file` or list it
-in `extend-ignores`. `extend-ignores` in the configuration of the rule leaves out the files that
-match a glob:
+`extend-ignores` in the configuration of the rule leaves out the files that match a glob, such as a
+catch-all module that the repository already has:
 
 ```toml
 # botica.toml

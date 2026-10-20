@@ -11,7 +11,7 @@ and nested functions.
 This rule catches a function (`def` or `async def`) annotated to return `dict` or `dict[...]`.
 
 A lookup table, whose keys are data and not field names, is declared with an alias whose name ends
-in `Table` (`StatusTable = dict[str, str]`); the rule accepts it (CES-79, Exceptions).
+in `Table` (`StatusTable = dict[str, str]`); the rule accepts it.
 
 ## Why
 
