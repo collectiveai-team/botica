@@ -126,10 +126,10 @@ def serve() -> None:
                 "id": request["id"],
                 "error": {"code": -32601, "message": method},
             }
-            sys.stdout.write(json.dumps(reply) + "\n")
+            sys.stdout.write(json.dumps(reply) + "\n")  # noqa: BTLOG002 -- the protocol channel
             sys.stdout.flush()
             continue
-        sys.stdout.write(
+        sys.stdout.write(  # noqa: BTLOG002 -- stdout is the channel of the protocol
             json.dumps({"jsonrpc": "2.0", "id": request["id"], "result": result}, default=asdict)
             + "\n"
         )

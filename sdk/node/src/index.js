@@ -90,7 +90,7 @@ function answer(request) {
 export async function serve() {
   for await (const line of createInterface({ input: process.stdin })) {
     const request = JSON.parse(line);
-    console.log(JSON.stringify({ jsonrpc: "2.0", id: request.id, ...answer(request) }));
+    console.log(JSON.stringify({ jsonrpc: "2.0", id: request.id, ...answer(request) })); // botica: ignore[log-no-print] -- the protocol channel
     if (request.method === "shutdown") {
       break;
     }
