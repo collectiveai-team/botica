@@ -1,9 +1,10 @@
-id = "arch-database-package"
-code = "BTARCH001"
-standard = "CES-18"
-summary = "Relational persistence lives in a database package"
+id = "settings-module"
+code = "BTCONF001"
+standard = "CES-76"
+references = ["settings-module"]
+summary = "Environment is read only in the settings module"
 status = "stable"
-tags = ["layout"]
+tags = ["config"]
 scope = "file"
 needs = "syntax"
 run-on = ["cli", "save", "type"]

@@ -1,10 +1,9 @@
-id = "settings-module"
-code = "BTARCH002"
-standard = "CES-76"
-references = ["settings-module"]
-summary = "Environment is read only in the settings module"
+id = "cli-typed-framework"
+code = "BTCLI001"
+standard = "CES-67"
+summary = "Command-line interfaces use a typed, declarative framework"
 status = "stable"
-tags = ["config"]
+tags = ["cli"]
 scope = "file"
 needs = "syntax"
 run-on = ["cli", "save", "type"]

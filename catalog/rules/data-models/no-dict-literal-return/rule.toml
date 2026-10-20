@@ -1,5 +1,5 @@
 id = "no-dict-literal-return"
-code = "BTDM004"
+code = "BTDM003"
 standard = "CES-79"
 references = ["typed-boundaries"]
 summary = "No function returning a dict literal"

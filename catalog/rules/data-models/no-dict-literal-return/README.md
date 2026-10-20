@@ -50,5 +50,5 @@ A comment on the `return` line silences it.
 ```python
 def payload():
     return {"ok": True}  # botica: ignore[no-dict-literal-return]
-    return {"ok": True}  # noqa: BTDM004 -- reason
+    return {"ok": True}  # noqa: BTDM003 -- reason
 ```

@@ -28,5 +28,5 @@ A comment on the line of the call silences it.
 
 ```python
 settings = Settings()  # botica: ignore[settings-direct-instantiation]
-settings = Settings()  # noqa: BTARCH004 -- reason
+settings = Settings()  # noqa: BTCONF003 -- reason
 ```

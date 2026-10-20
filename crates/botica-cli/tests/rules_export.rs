@@ -236,7 +236,7 @@ fn the_index_groups_the_rules_by_family_in_the_order_of_their_codes() {
 fn the_pages_of_a_family_sort_by_code_when_their_names_are_sorted() {
     let site = exported(&workdir("order"));
 
-    let mut names: Vec<String> = fs::read_dir(site.join("architecture"))
+    let mut names: Vec<String> = fs::read_dir(site.join("config"))
         .expect("the family")
         .map(|entry| {
             entry
@@ -251,13 +251,10 @@ fn the_pages_of_a_family_sort_by_code_when_their_names_are_sorted() {
     assert_eq!(
         names,
         [
-            "btarch001-arch-database-package.md",
-            "btarch002-settings-module.md",
-            "btarch003-settings-base-class.md",
-            "btarch004-settings-direct-instantiation.md",
-            "btarch005-db-no-create-all.md",
-            "btarch006-settings-env-schema.md",
-            "btarch007-import-layers.md",
+            "btconf001-settings-module.md",
+            "btconf002-settings-base-class.md",
+            "btconf003-settings-direct-instantiation.md",
+            "btconf004-settings-env-schema.md",
         ]
     );
 }

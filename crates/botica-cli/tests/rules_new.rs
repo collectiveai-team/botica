@@ -152,7 +152,7 @@ fn a_family_that_the_catalog_does_not_have_is_rejected_with_the_ones_it_has() {
         assert_eq!(output.status.code(), Some(2));
         let message = stderr(&output);
         assert!(message.contains(&format!("`{family}`")), "{message}");
-        assert!(message.contains("architecture, asr,"), "{message}");
+        assert!(message.contains("architecture, cli, config,"), "{message}");
         assert!(!dir.join(format!("cat/{family}/no-foo")).exists());
     }
 }

@@ -50,5 +50,5 @@ A comment on the `return` line silences it.
 ```python
 def settings():
     return dict(debug=True)  # botica: ignore[no-dict-call-return]
-    return dict(debug=True)  # noqa: BTDM003 -- reason
+    return dict(debug=True)  # noqa: BTDM002 -- reason
 ```

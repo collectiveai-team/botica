@@ -79,34 +79,34 @@ run on its own. `botica rules test --judge abide` runs abide with the environmen
 
 | Code | Rule | Standard | Looks at |
 |---|---|---|---|
-| `BTSTRUC001` | [`file-size-guard`](rules/structure/file-size-guard/README.md) | CES-71 | every file: warns at 400 lines, errors at 700 |
-| `BTSTRUC002` | [`no-utils`](rules/structure/no-utils/README.md) | CES-63 | Python: `utils.py`, `helpers.py`, … |
-| `BTSTRUC003` | [`no-artifacts-in-package`](rules/structure/no-artifacts-in-package/README.md) | CES-32 | data, models and reports inside the code |
-| `BTSTRUC004` | [`no-notebooks`](rules/structure/no-notebooks/README.md) | CES-32 | notebooks inside the code |
-| `BTSTRUC005` | [`no-tests-in-package`](rules/structure/no-tests-in-package/README.md) | CES-32 | Python: tests inside the package |
-| `BTSTRUC006` | [`cognitive-complexity`](rules/structure/cognitive-complexity/README.md) | CES-110 | external: complexipy measures it, through its hook in `prek.toml` |
-| `BTARCH001` | [`arch-database-package`](rules/architecture/arch-database-package/README.md) | CES-18 | Python: tables and engines outside a `database` package |
-| `BTARCH002` | [`settings-module`](rules/architecture/settings-module/README.md) | CES-76 | Python: `os.getenv` and `os.environ` outside the settings module |
-| `BTARCH003` | [`settings-base-class`](rules/architecture/settings-base-class/README.md) | CES-76 | Python: a settings class that extends `BaseModel` instead of `BaseSettings` |
-| `BTARCH004` | [`settings-direct-instantiation`](rules/architecture/settings-direct-instantiation/README.md) | CES-76 | Python: a settings class built where it is used, not through `get_settings()` |
-| `BTARCH005` | [`db-no-create-all`](rules/architecture/db-no-create-all/README.md) | CES-18 | Python: `metadata.create_all()` outside tests |
-| `BTARCH006` | [`settings-env-schema`](rules/architecture/settings-env-schema/README.md) | CES-76 | the project: `.env.schema` against the settings classes (Python: pydantic-settings) |
-| `BTARCH007` | [`import-layers`](rules/architecture/import-layers/README.md) | CES-5 | the project: Python imports against the `layers` of the configuration, direct or through other modules |
-| `BTDM002` | [`no-dict-alias`](rules/data-models/no-dict-alias/README.md) | CES-79 | Python: a type alias for a raw `dict` |
-| `BTDM003` | [`no-dict-call-return`](rules/data-models/no-dict-call-return/README.md) | CES-79 | Python: `return dict(...)` |
-| `BTDM004` | [`no-dict-literal-return`](rules/data-models/no-dict-literal-return/README.md) | CES-79 | Python: returning a dict literal |
-| `BTDM005` | [`no-dict-return-annotation`](rules/data-models/no-dict-return-annotation/README.md) | CES-79 | Python: a function annotated to return `dict` |
-| `BTFAST001` | [`api-schemas-extra-forbid`](rules/fastapi/api-schemas-extra-forbid/README.md) | CES-4 | Python: API schemas without `extra="forbid"` |
-| `BTFAST002` | [`api-schema-in-route-module`](rules/fastapi/api-schema-in-route-module/README.md) | CES-17 | Python: a Pydantic schema defined in a route module |
-| `BTFAST003` | [`api-request-schema-name`](rules/fastapi/api-request-schema-name/README.md) | CES-17 | Python: a request schema not named `{Name}Request` |
-| `BTFAST004` | [`api-response-schema-name`](rules/fastapi/api-response-schema-name/README.md) | CES-17 | Python: a response schema not named `{Name}Response` |
-| `BTLOG001` | [`log-get-logger`](rules/logging/log-get-logger/README.md) | CES-45 | Python: `logging.getLogger` called directly |
-| `BTLOG002` | [`log-no-print`](rules/logging/log-no-print/README.md) | CES-46 | Python, TypeScript and JavaScript: `print()`, `console.*` and writes to stdout or stderr in library code |
-| `BTPROC001` | [`cli-typed-framework`](rules/process/cli-typed-framework/README.md) | CES-67 | Python: `argparse`, `click` and `sys.argv` |
+| `BTSTRUC001` | [`file-size-guard`](../catalog/rules/structure/file-size-guard/README.md) | CES-71 | every file: warns at 400 lines, errors at 700 |
+| `BTSTRUC002` | [`no-utils`](../catalog/rules/structure/no-utils/README.md) | CES-63 | Python: `utils.py`, `helpers.py`, … |
+| `BTSTRUC003` | [`no-artifacts-in-package`](../catalog/rules/structure/no-artifacts-in-package/README.md) | CES-32 | data, models and reports inside the code |
+| `BTSTRUC004` | [`no-notebooks`](../catalog/rules/structure/no-notebooks/README.md) | CES-32 | notebooks inside the code |
+| `BTSTRUC005` | [`no-tests-in-package`](../catalog/rules/structure/no-tests-in-package/README.md) | CES-32 | Python: tests inside the package |
+| `BTSTRUC006` | [`cognitive-complexity`](../catalog/rules/structure/cognitive-complexity/README.md) | CES-110 | external: complexipy measures it, through its hook in `prek.toml` |
+| `BTARCH001` | [`import-layers`](../catalog/rules/architecture/import-layers/README.md) | CES-5 | the project: Python imports against the `layers` of the configuration, direct or through other modules |
+| `BTCLI001` | [`cli-typed-framework`](../catalog/rules/cli/cli-typed-framework/README.md) | CES-67 | Python: `argparse`, `click` and `sys.argv` |
+| `BTCONF001` | [`settings-module`](../catalog/rules/config/settings-module/README.md) | CES-76 | Python: `os.getenv` and `os.environ` outside the settings module |
+| `BTCONF002` | [`settings-base-class`](../catalog/rules/config/settings-base-class/README.md) | CES-76 | Python: a settings class that extends `BaseModel` instead of `BaseSettings` |
+| `BTCONF003` | [`settings-direct-instantiation`](../catalog/rules/config/settings-direct-instantiation/README.md) | CES-76 | Python: a settings class built where it is used, not through `get_settings()` |
+| `BTCONF004` | [`settings-env-schema`](../catalog/rules/config/settings-env-schema/README.md) | CES-76 | the project: `.env.schema` against the settings classes (Python: pydantic-settings) |
+| `BTDB001` | [`arch-database-package`](../catalog/rules/database/arch-database-package/README.md) | CES-18 | Python: tables and engines outside a `database` package |
+| `BTDB002` | [`db-no-create-all`](../catalog/rules/database/db-no-create-all/README.md) | CES-18 | Python: `metadata.create_all()` outside tests |
+| `BTDM001` | [`no-dict-alias`](../catalog/rules/data-models/no-dict-alias/README.md) | CES-79 | Python: a type alias for a raw `dict` |
+| `BTDM002` | [`no-dict-call-return`](../catalog/rules/data-models/no-dict-call-return/README.md) | CES-79 | Python: `return dict(...)` |
+| `BTDM003` | [`no-dict-literal-return`](../catalog/rules/data-models/no-dict-literal-return/README.md) | CES-79 | Python: returning a dict literal |
+| `BTDM004` | [`no-dict-return-annotation`](../catalog/rules/data-models/no-dict-return-annotation/README.md) | CES-79 | Python: a function annotated to return `dict` |
+| `BTFAST001` | [`api-schemas-extra-forbid`](../catalog/rules/fastapi/api-schemas-extra-forbid/README.md) | CES-4 | Python: API schemas without `extra="forbid"` |
+| `BTFAST002` | [`api-schema-in-route-module`](../catalog/rules/fastapi/api-schema-in-route-module/README.md) | CES-17 | Python: a Pydantic schema defined in a route module |
+| `BTFAST003` | [`api-request-schema-name`](../catalog/rules/fastapi/api-request-schema-name/README.md) | CES-17 | Python: a request schema not named `{Name}Request` |
+| `BTFAST004` | [`api-response-schema-name`](../catalog/rules/fastapi/api-response-schema-name/README.md) | CES-17 | Python: a response schema not named `{Name}Response` |
+| `BTLOG001` | [`log-get-logger`](../catalog/rules/logging/log-get-logger/README.md) | CES-45 | Python: `logging.getLogger` called directly |
+| `BTLOG002` | [`log-no-print`](../catalog/rules/logging/log-no-print/README.md) | CES-46 | Python, TypeScript and JavaScript: `print()`, `console.*` and writes to stdout or stderr in library code |
 | `BT001`–`BT003` | `io-error`, `unused-suppression`, `invalid-suppression` | | the run and the suppressions |
-| `BT004` | [`external-config`](rules/botica/external-config/README.md) | | the files of configuration that the active external rules name |
+| `BT004` | [`external-config`](../catalog/rules/botica/external-config/README.md) | | the files of configuration that the active external rules name |
 
-`BTARCH003`–`BTARCH005`, `BTFAST002`–`BTFAST004` and `BTSTRUC006` have the status `preview` and
+`BTCONF002`, `BTCONF003`, `BTDB002`, `BTFAST002`–`BTFAST004` and `BTSTRUC006` have the status `preview` and
 are off by default: they run only with `preview = true` and when you select them.
 
 Another tool enforces an external rule (`kind = "external"`) through its configuration. The rule

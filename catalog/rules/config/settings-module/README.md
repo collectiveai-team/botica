@@ -40,5 +40,5 @@ A comment on the line of the `os.getenv(...)` or `os.environ` read silences it.
 
 ```python
 url = os.getenv("DATABASE_URL")  # botica: ignore[settings-module]
-url = os.getenv("DATABASE_URL")  # noqa: BTARCH002 -- reason
+url = os.getenv("DATABASE_URL")  # noqa: BTCONF001 -- reason
 ```

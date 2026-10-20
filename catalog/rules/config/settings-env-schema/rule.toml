@@ -1,5 +1,5 @@
 id = "settings-env-schema"
-code = "BTARCH006"
+code = "BTCONF004"
 standard = "CES-76"
 summary = "The variables of .env.schema and the fields of the settings classes match"
 status = "stable"

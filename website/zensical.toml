@@ -32,12 +32,16 @@ fallback = { name = "General", id = "DIC_kwDOS6BBd84DIcYi" } # betterleaks:allow
 [project.extra.giscus.categories]
 architecture = "DIC_kwDOS6BBd84DIcbn" # betterleaks:allow
 botica = "DIC_kwDOS6BBd84DIcb_" # betterleaks:allow
+cli = "DIC_kwDOS6BBd84DJFlY" # betterleaks:allow
+config = "DIC_kwDOS6BBd84DJFlf" # betterleaks:allow
 data-models = "DIC_kwDOS6BBd84DIcbo" # betterleaks:allow
+database = "DIC_kwDOS6BBd84DJFlg" # betterleaks:allow
 fastapi = "DIC_kwDOS6BBd84DIcbv" # betterleaks:allow
 logging = "DIC_kwDOS6BBd84DIcb2" # betterleaks:allow
 process = "DIC_kwDOS6BBd84DIcb9" # betterleaks:allow
 standards = "DIC_kwDOS6BBd84DIeEU" # betterleaks:allow
 structure = "DIC_kwDOS6BBd84DIcb-" # betterleaks:allow
+writing = "DIC_kwDOS6BBd84DJFlh" # betterleaks:allow
 
 [project.theme]
 language = "en"

@@ -45,5 +45,5 @@ A comment on the line of the import or of the `sys.argv` access silences it.
 
 ```python
 import argparse  # botica: ignore[cli-typed-framework]
-import argparse  # noqa: BTPROC001 -- reason
+import argparse  # noqa: BTCLI001 -- reason
 ```

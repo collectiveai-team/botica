@@ -1,5 +1,5 @@
 id = "settings-base-class"
-code = "BTARCH003"
+code = "BTCONF002"
 standard = "CES-76"
 summary = "A settings class extends BaseSettings, not BaseModel"
 status = "preview"

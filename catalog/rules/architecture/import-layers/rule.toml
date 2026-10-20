@@ -1,5 +1,5 @@
 id = "import-layers"
-code = "BTARCH007"
+code = "BTARCH001"
 standard = "CES-5"
 summary = "A layer imports nothing of a layer above it"
 status = "stable"

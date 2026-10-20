@@ -49,5 +49,5 @@ A comment on the `def` line silences it.
 
 ```python
 def payload() -> dict:  # botica: ignore[no-dict-return-annotation]
-def payload() -> dict:  # noqa: BTDM005 -- reason
+def payload() -> dict:  # noqa: BTDM004 -- reason
 ```

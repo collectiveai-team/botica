@@ -1,5 +1,5 @@
 id = "db-no-create-all"
-code = "BTARCH005"
+code = "BTDB002"
 standard = "CES-18"
 summary = "The schema changes through migrations, not metadata.create_all()"
 status = "preview"

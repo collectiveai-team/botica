@@ -1,5 +1,5 @@
 id = "no-dict-call-return"
-code = "BTDM003"
+code = "BTDM002"
 standard = "CES-79"
 references = ["typed-boundaries"]
 summary = "No function returning dict(...)"

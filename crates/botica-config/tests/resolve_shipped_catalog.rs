@@ -152,11 +152,8 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
     );
     assert_eq!(active(&resolution).len(), 28);
     assert_eq!(
-        active(&resolve(&catalog, "select = [\"BTARCH\"]\npreview = true")),
+        active(&resolve(&catalog, "select = [\"BTCONF\"]\npreview = true")),
         [
-            "arch-database-package",
-            "db-no-create-all",
-            "import-layers",
             "settings-base-class",
             "settings-direct-instantiation",
             "settings-env-schema",

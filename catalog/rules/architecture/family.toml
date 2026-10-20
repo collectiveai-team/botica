@@ -1,2 +1,2 @@
 code = "ARCH"
-description = "How modules depend on each other: layers, adapters, import direction."
+description = "How modules depend on each other: the layers and the direction of the imports."

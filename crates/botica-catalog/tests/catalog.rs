@@ -38,7 +38,7 @@ fn loads_families_and_rules_and_resolves_slug_code_and_alias() {
 fn rejects_a_code_without_the_prefix_of_its_family() {
     let message = issues(vec![
         vec![family("structure", "STRUC")],
-        rule("structure", "file-size-guard", "BTARCH001"),
+        rule("structure", "file-size-guard", "BTDB001"),
     ]);
     assert!(message.contains("BTSTRUC"), "{message}");
 }
@@ -292,10 +292,10 @@ fn rejects_unknown_keys_and_reports_every_problem_at_once() {
     let message = issues(vec![
         vec![family("structure", "STRUC")],
         rule_with("structure", "one", "BTSTRUC001", "typo-key = 1", NATIVE_ALL),
-        rule("structure", "two", "BTARCH002"),
+        rule("structure", "two", "BTCONF001"),
     ]);
     assert!(message.contains("typo-key"), "{message}");
-    assert!(message.contains("BTARCH002"), "{message}");
+    assert!(message.contains("BTCONF001"), "{message}");
 }
 
 #[test]

@@ -49,5 +49,5 @@ A comment on the line where the finding starts silences it: the `class` line, or
 
 ```python
 class User(SQLModel, table=True):  # botica: ignore[arch-database-package]
-class User(SQLModel, table=True):  # noqa: BTARCH001 -- reason
+class User(SQLModel, table=True):  # noqa: BTDB001 -- reason
 ```

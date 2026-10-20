@@ -5,15 +5,15 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 const PY_RULES: [&str; 10] = [
     include_str!("../../../catalog/rules/fastapi/api-schemas-extra-forbid/python.yml"),
-    include_str!("../../../catalog/rules/architecture/arch-database-package/python.yml"),
-    include_str!("../../../catalog/rules/process/cli-typed-framework/python.yml"),
+    include_str!("../../../catalog/rules/database/arch-database-package/python.yml"),
+    include_str!("../../../catalog/rules/cli/cli-typed-framework/python.yml"),
     include_str!("../../../catalog/rules/logging/log-get-logger/python.yml"),
     include_str!("../../../catalog/rules/logging/log-no-print/python.yml"),
     include_str!("../../../catalog/rules/data-models/no-dict-alias/python.yml"),
     include_str!("../../../catalog/rules/data-models/no-dict-call-return/python.yml"),
     include_str!("../../../catalog/rules/data-models/no-dict-literal-return/python.yml"),
     include_str!("../../../catalog/rules/data-models/no-dict-return-annotation/python.yml"),
-    include_str!("../../../catalog/rules/architecture/settings-module/python.yml"),
+    include_str!("../../../catalog/rules/config/settings-module/python.yml"),
 ];
 const TS_RULE: &str = include_str!("../../../catalog/rules/logging/log-no-print/typescript.yml");
 

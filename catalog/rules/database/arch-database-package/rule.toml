@@ -1,9 +1,9 @@
-id = "cli-typed-framework"
-code = "BTPROC001"
-standard = "CES-67"
-summary = "Command-line interfaces use a typed, declarative framework"
+id = "arch-database-package"
+code = "BTDB001"
+standard = "CES-18"
+summary = "Relational persistence lives in a database package"
 status = "stable"
-tags = ["cli"]
+tags = ["layout"]
 scope = "file"
 needs = "syntax"
 run-on = ["cli", "save", "type"]
