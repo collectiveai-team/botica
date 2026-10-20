@@ -23,6 +23,7 @@ A reader acts on what a page says. A sentence that inflates, hedges or claims wi
 - A quotation, which keeps its words.
 - A negation that states a fact a reader needs: "the hook does not run on merge commits".
 - Bold in a table header or a term defined in a glossary.
+- A generated file, such as a lockfile or a schema.
 
 ## Confirm
 

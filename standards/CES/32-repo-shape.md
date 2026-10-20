@@ -16,8 +16,3 @@ code (`_test.go`) and Rust in the file it tests (`#[cfg(test)]`); there the test
 
 Notebooks and datasets bloat the wheel, break reproducible imports and trip the check for large
 files.
-
-## Exceptions
-
-A package that ships a small data file on purpose names it as an exception. The default is that
-artifacts go to the top level.

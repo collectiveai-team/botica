@@ -13,8 +13,3 @@ allowed: a directory is a namespace and forces its contents to be named.
 
 A file named `utils.py` collects unrelated helpers. A module named for what it holds is found by
 that name.
-
-## Exceptions
-
-A repository that already has such a file keeps it (CES-30). The standard applies to the files
-that are added.

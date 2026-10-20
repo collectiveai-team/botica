@@ -16,6 +16,7 @@ When two words name one concept, a reader searches for one and misses the other,
 
 - Terms of programming that are not of the domain: array, function, endpoint, request.
 - The names of a library or of an external API, which the project does not choose.
+- A generated file, such as a lockfile or a schema.
 
 ## Confirm
 

@@ -18,6 +18,7 @@ A comment that repeats the code is a second copy of it, and the two drift apart 
 - A docstring of a public function, class or module.
 - A comment that a tool reads: a suppression, a type ignore, a license header, a shebang.
 - A comment that gives the reason for a choice, an invariant or a link to a bug.
+- A generated file, such as a lockfile or a schema.
 
 ## Confirm
 

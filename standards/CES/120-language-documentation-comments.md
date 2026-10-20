@@ -47,7 +47,3 @@ The list follows the Wikipedia guide "Signs of AI writing"
 A reader of a page or of a comment acts on what it says. A sign of model text is a sentence the
 reader has to discount, and a comment that repeats the code is a second copy that drifts from it.
 One term per concept lets a reader search for a word and find every place that means it.
-
-## Exceptions
-
-A quotation keeps its words. A generated file (a lockfile, a schema) is out of scope.

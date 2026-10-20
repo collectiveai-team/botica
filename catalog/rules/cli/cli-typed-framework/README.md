@@ -16,6 +16,11 @@ a CLI whose arguments are already typed.
 - `argparse`, `click` and hand-written `sys.argv` parsing say the same thing a second time, drift
   out of date and lose the types a checker could use.
 
+## Exceptions
+
+A legacy entry point is migrated when it is touched for another reason, not in a change of its
+own; until then its line takes the comment of Suppression.
+
 ## Do
 
 ```python
