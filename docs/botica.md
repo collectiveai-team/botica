@@ -23,7 +23,8 @@ botica lint src tests/a.py     # directories to walk, or files (as prek passes t
 botica lint --select file-size-guard,no-utils
 botica lint --output-format json   # text (default), json, sarif or github; json and sarif carry the
                                    # code and the standard of the rule of each finding
-botica lint --judged judge.sarif   # the findings of a judge, filtered by the configuration and comments
+botica lint --judged judge.sarif   # the findings of a judge, filtered by the configuration and comments;
+                                   # the file is SARIF or the report of `abide check --json`
 botica rules                   # which rules are active, and why (--all adds the inactive ones), the
                                # programs that `botica lint` runs and the tools that enforce rules
                                # outside it; --json adds the kind of each implementation

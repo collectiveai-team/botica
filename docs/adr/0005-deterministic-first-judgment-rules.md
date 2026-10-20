@@ -69,7 +69,8 @@ no check at all.
 6. **Botica applies the suppressions of a judgment rule, by file.** A judgment rule judges a
    design, and its finding belongs to a file or to a whole change. Its suppressions are applied
    before the judge runs, in the files botica exports, and again on what the judge reports: a judge
-   reports its findings as SARIF (`botica lint --judged <file>`), and botica filters them with the
+   reports its findings as SARIF or as the report of `abide check --json`
+   (`botica lint --judged <file>`), and botica filters them with the
    same engine, configuration and `overrides` as the findings of its own rules.
 
    | Level | Written as | Applied as |
@@ -150,8 +151,12 @@ no check at all.
      `pull-request` is skipped. The exit code is 0 when every fixture matches, 1 when one does not,
      and 2 when the run fails.
    - In CI, `abide check --json` reports one section per phase. A section of the `edit` phase names
-     one file; the section of the `turn` phase names every file of the change. Botica turns them into
-     SARIF and filters them with `--judged`.
+     one file; the section of the `turn` phase names every file of the change. `--judged` reads the
+     report: a verdict in the band `act` is a finding at the severity of the rule, one in `flag` a
+     finding of severity info, and one in `clear` no finding. A verdict names no line, so its
+     finding is about the file of its section, the `file` of the verdict, or the whole change for
+     a verdict of the `turn` phase with no `file`. `--output-format sarif` writes them as SARIF,
+     and `--fail-on warning` fails the run on them, since a judgment rule reports warnings.
    - abide has two thresholds for all its rules (`act` and `flag`), so the severity of a judgment
      rule does not reach it. The diff goes to the endpoint of the key of the user (TypeSafe or the
      Vercel AI Gateway); botica sends nothing.

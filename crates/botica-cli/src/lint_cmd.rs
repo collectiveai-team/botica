@@ -53,8 +53,9 @@ pub struct LintArgs {
     /// Extension command, e.g. "uv run --script ext.py".
     #[arg(long)]
     ext: Option<String>,
-    /// Report the findings of a judge, read from this SARIF file, instead of linting: the ones of
-    /// the active judgment rules, filtered by the configuration and the `ignore-file` comments.
+    /// Report the findings of a judge, read from this file (SARIF or the report of
+    /// `abide check --json`), instead of linting: the ones of the active judgment rules, filtered
+    /// by the configuration and the `ignore-file` comments.
     #[arg(long, conflicts_with_all = ["paths", "ext", "statistics"])]
     judged: Option<PathBuf>,
     /// Files per `lint/files` request.

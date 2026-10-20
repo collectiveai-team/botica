@@ -47,7 +47,10 @@ fn a_sarif_that_cannot_be_read_or_parsed_fails_the_run() {
 
     for (file, expected) in [
         ("missing.sarif", "cannot read `missing.sarif`"),
-        ("broken.sarif", "the judged findings are not SARIF"),
+        (
+            "broken.sarif",
+            "the judged findings are neither SARIF nor a report of `abide check --json`",
+        ),
     ] {
         let output = botica(&dir, &["--judged", file]);
 
@@ -55,6 +58,41 @@ fn a_sarif_that_cannot_be_read_or_parsed_fails_the_run() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(stderr.contains(expected), "{file}: {stderr}");
     }
+}
+
+const ABIDE: &str = "{\"root\": \".\", \"sections\": [{\"phase\": \"edit\", \"files\": \
+    [\"tests/test_a.py\"], \"modelRules\": 1, \"calls\": 1, \"latencyMs\": 10, \"verdicts\": \
+    [{\"ruleId\": \"test-through-interface\", \"probability\": 0.93, \"band\": \"act\"}]}], \
+    \"spendUsd\": 0.001, \"all\": false}";
+
+#[test]
+fn a_report_of_abide_becomes_sarif_and_fails_the_run_at_the_severity_of_fail_on() {
+    let dir = workdir("abide");
+    fs::write(
+        dir.join("botica.toml"),
+        "preview = true\nselect = [\"test-through-interface\"]\n",
+    )
+    .expect("write the configuration");
+    fs::create_dir_all(dir.join("tests")).expect("create tests/");
+    fs::write(dir.join("tests/test_a.py"), "def test_a():\n    pass\n").expect("write a test");
+    fs::write(dir.join("abide.json"), ABIDE).expect("write the report");
+
+    let sarif = botica(
+        &dir,
+        &["--judged", "abide.json", "--output-format", "sarif"],
+    );
+    let gate = botica(&dir, &["--judged", "abide.json", "--fail-on", "warning"]);
+
+    assert_eq!(sarif.status.code(), Some(0));
+    let document: serde_json::Value =
+        serde_json::from_slice(&sarif.stdout).expect("the output is SARIF");
+    let result = &document["runs"][0]["results"][0];
+    assert_eq!(result["ruleId"], "test-through-interface");
+    assert_eq!(
+        result["locations"][0]["physicalLocation"]["artifactLocation"]["uri"],
+        "tests/test_a.py"
+    );
+    assert_eq!(gate.status.code(), Some(1));
 }
 
 #[test]

@@ -1,16 +1,19 @@
-//! The findings of a judge (`botica lint --judged <sarif>`): botica reads them from SARIF and
-//! filters them with the configuration and the suppression comments of the project, as it
-//! filters the findings of its own rules.
+//! The findings of a judge (`botica lint --judged <file>`): botica reads them from SARIF or from
+//! the report of `abide check --json`, and filters them with the configuration and the
+//! suppression comments of the project, as it filters the findings of its own rules.
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use botica_config::Resolution;
 use botica_core::{Diagnostic, Severity};
 use serde::Deserialize;
+use serde_json::Value;
 
 use crate::project;
+
+mod abide;
 
 #[derive(Deserialize)]
 struct Sarif {
@@ -64,6 +67,20 @@ struct Region {
     end_column: Option<usize>,
 }
 
+/// A finding as the judge wrote it, before botica looks its rule up.
+struct Found {
+    rule_id: String,
+    /// The text of the judge, or `None` for the summary of the rule.
+    message: Option<String>,
+    /// What the judge adds to the message, in parentheses.
+    note: Option<String>,
+    /// The relative path, empty for a finding about a whole change.
+    path: String,
+    region: Option<Region>,
+    /// A finding the judge is unsure of: it is reported as info, whatever the rule's severity.
+    unsure: bool,
+}
+
 /// What botica keeps of a judge's findings, and the `ruleId`s it left out because they name no
 /// judgment rule of the catalog.
 pub struct Judged {
@@ -95,21 +112,55 @@ fn path_of(uri: &str) -> String {
     String::from_utf8_lossy(&decoded).into_owned()
 }
 
-fn diagnostic(result: SarifResult, rule: &str, severity: Severity) -> Diagnostic {
-    let physical = result
-        .locations
+fn from_sarif(document: Value) -> Result<Vec<Found>> {
+    let sarif: Sarif =
+        serde_json::from_value(document).context("the judged findings are not valid SARIF")?;
+    Ok(sarif
+        .runs
         .into_iter()
-        .next()
-        .map(|l| l.physical_location);
-    let path = physical
-        .as_ref()
-        .map_or_else(String::new, |p| path_of(&p.artifact_location.uri));
-    let region = physical.and_then(|p| p.region);
+        .flat_map(|run| run.results)
+        .map(|result| {
+            let physical = result
+                .locations
+                .into_iter()
+                .next()
+                .map(|l| l.physical_location);
+            Found {
+                rule_id: result.rule_id,
+                message: Some(result.message.text),
+                note: None,
+                path: physical
+                    .as_ref()
+                    .map_or_else(String::new, |p| path_of(&p.artifact_location.uri)),
+                region: physical.and_then(|p| p.region),
+                unsure: false,
+            }
+        })
+        .collect())
+}
+
+/// The findings of the file of `--judged`: SARIF when it has `runs`, the report of
+/// `abide check --json` when it has `sections`.
+fn read_findings(text: &str) -> Result<Vec<Found>> {
+    let document: Value = serde_json::from_str(text)
+        .context("the judged findings are neither SARIF nor a report of `abide check --json`")?;
+    if document.get("runs").is_some() {
+        from_sarif(document)
+    } else if document.get("sections").is_some() {
+        abide::findings(document)
+    } else {
+        bail!("the judged findings are neither SARIF nor a report of `abide check --json`")
+    }
+}
+
+fn diagnostic(found: Found, summary: &str, rule: &str, severity: Severity) -> Diagnostic {
+    let region = found.region;
     let (line, column) = region
         .as_ref()
         .map_or((1, 1), |r| (r.start_line, r.start_column.unwrap_or(1)));
+    let text = found.message.unwrap_or_else(|| summary.to_owned());
     Diagnostic {
-        path,
+        path: found.path,
         rule: rule.to_owned(),
         severity,
         start: 0,
@@ -119,43 +170,83 @@ fn diagnostic(result: SarifResult, rule: &str, severity: Severity) -> Diagnostic
         end_line: region.as_ref().and_then(|r| r.end_line).unwrap_or(line),
         end_column: region.as_ref().and_then(|r| r.end_column).unwrap_or(column),
         file_level: region.is_none(),
-        message: result.message.text,
+        message: match found.note {
+            Some(note) => format!("{text} ({note})"),
+            None => text,
+        },
     }
 }
 
-/// Reads the SARIF of a judge and keeps what the project reports: the findings of its active
-/// judgment rules, at the paths and in the languages they apply to, with their severity, minus
-/// what an `ignore-file` comment of the file silences. `read` gives the text of a file.
+/// The findings of one kind, sure or unsure: those of the active judgment rules about a whole
+/// change, then those that the project keeps at their path.
+struct Kept {
+    change: Vec<Diagnostic>,
+    by_path: BTreeMap<String, Vec<Diagnostic>>,
+}
+
+/// Reads the findings of a judge and keeps what the project reports: the findings of its active
+/// judgment rules, at the paths and in the languages they apply to, with their severity (info for
+/// a finding the judge is unsure of), minus what an `ignore-file` comment of the file silences.
+/// `read` gives the text of a file.
 pub fn filter(
     resolution: &Arc<Resolution>,
     prefix: Option<&str>,
-    sarif: &str,
+    text: &str,
     read: impl Fn(&str) -> Option<String>,
 ) -> Result<Judged> {
-    let sarif: Sarif = serde_json::from_str(sarif).context("the judged findings are not SARIF")?;
-    let mut by_path: BTreeMap<String, Vec<Diagnostic>> = BTreeMap::new();
-    let mut change = Vec::new();
+    let mut sure = Kept {
+        change: Vec::new(),
+        by_path: BTreeMap::new(),
+    };
+    let mut unsure = Kept {
+        change: Vec::new(),
+        by_path: BTreeMap::new(),
+    };
     let mut left_out = Vec::new();
-    for result in sarif.runs.into_iter().flat_map(|run| run.results) {
+    for found in read_findings(text)? {
         let Some(entry) = resolution
-            .entry(&result.rule_id)
+            .entry(&found.rule_id)
             .filter(|entry| entry.rule.is_judgment())
         else {
-            left_out.push(result.rule_id);
+            left_out.push(found.rule_id);
             continue;
         };
-        let found = diagnostic(result, &entry.rule.id, Severity::from(entry.severity));
-        if found.path.is_empty() {
+        let kept = if found.unsure { &mut unsure } else { &mut sure };
+        let finding = diagnostic(
+            found,
+            &entry.rule.summary,
+            &entry.rule.id,
+            Severity::from(entry.severity),
+        );
+        if finding.path.is_empty() {
             if entry.active {
-                change.push(found);
+                kept.change.push(finding);
             }
         } else {
-            by_path.entry(found.path.clone()).or_default().push(found);
+            kept.by_path
+                .entry(finding.path.clone())
+                .or_default()
+                .push(finding);
         }
     }
-    let mut diagnostics = project::keep_judged(resolution, prefix, by_path, read);
-    change.extend(diagnostics);
-    diagnostics = change;
+    let mut diagnostics = sure.change;
+    diagnostics.extend(project::keep_judged(
+        resolution,
+        prefix,
+        sure.by_path,
+        &read,
+    ));
+    let mut lowered = unsure.change;
+    lowered.extend(project::keep_judged(
+        resolution,
+        prefix,
+        unsure.by_path,
+        &read,
+    ));
+    for finding in &mut lowered {
+        finding.severity = finding.severity.min(Severity::Info);
+    }
+    diagnostics.extend(lowered);
     Ok(Judged {
         diagnostics,
         left_out,
@@ -163,172 +254,4 @@ pub fn filter(
 }
 
 #[cfg(test)]
-mod tests {
-    use std::path::Path;
-    use std::sync::Arc;
-
-    use super::*;
-    use botica_catalog::{read_files, Catalog, SourceFile};
-    use botica_config::{Config, Resolution};
-
-    const RULE: &str = "id = \"test-foo\"\ncode = \"BTTEST901\"\nsummary = \"s\"\n\
-        status = \"stable\"\ndefault-enabled = true\ndefault-severity = \"warning\"\n\n\
-        [[implementations]]\nkind = \"judgment\"\nlanguages = [\"python\"]\nwhen = \"edit\"\n\
-        why-not-deterministic = \"w\"\n\n\
-        [implementations.question]\ntype = \"boolean\"\ninstructions = \"q\"\n";
-
-    const README: &str = "## Directive\n\nd\n\n## Why\n\nw\n\n## Flag\n\nf\n\n\
-        ## Do not flag\n\nn\n\n## Confirm\n\nc\n\n## Do\n\ndo\n\n## Don't\n\ndont\n\n\
-        ## Suppression\n\ns\n";
-
-    /// The catalog of this checkout with one judgment rule, `test-foo`, under `config`.
-    fn resolution(config: &str) -> Arc<Resolution> {
-        let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../catalog/rules");
-        let mut files = read_files(&rules).expect("the catalog is read");
-        for (name, text) in [("rule.toml", RULE), ("README.md", README)] {
-            files.push(SourceFile {
-                path: format!("testing/test-foo/{name}"),
-                text: text.to_owned(),
-            });
-        }
-        let catalog = Catalog::from_files(&files).unwrap_or_else(|error| panic!("{error}"));
-        let config = Config::from_botica_toml(config).expect("a valid configuration");
-        Arc::new(Resolution::new(&config, &catalog).expect("it resolves"))
-    }
-
-    fn result(rule: &str, location: &str) -> String {
-        format!(
-            "{{\"ruleId\": \"{rule}\", \"message\": {{\"text\": \"the test reaches into a private \
-             helper\"}}, \"locations\": [{location}]}}"
-        )
-    }
-
-    fn at(uri: &str, line: usize) -> String {
-        format!(
-            "{{\"physicalLocation\": {{\"artifactLocation\": {{\"uri\": \"{uri}\"}}, \
-             \"region\": {{\"startLine\": {line}, \"startColumn\": 5, \"endLine\": {line}, \
-             \"endColumn\": 9}}}}}}"
-        )
-    }
-
-    fn sarif(results: &[String]) -> String {
-        format!(
-            "{{\"version\": \"2.1.0\", \"runs\": [{{\"results\": [{}]}}]}}",
-            results.join(",")
-        )
-    }
-
-    fn judge(config: &str, results: &[String], files: &[(&str, &str)]) -> Judged {
-        let read = |path: &str| {
-            files
-                .iter()
-                .find(|(name, _)| *name == path)
-                .map(|(_, text)| (*text).to_owned())
-        };
-        filter(&resolution(config), None, &sarif(results), read).expect("the SARIF is read")
-    }
-
-    fn summary(judged: &Judged) -> Vec<String> {
-        judged
-            .diagnostics
-            .iter()
-            .map(|d| format!("{}@{}:{} {}", d.rule, d.path, d.line, d.severity.as_str()))
-            .collect()
-    }
-
-    #[test]
-    fn a_finding_of_an_active_judgment_rule_is_reported_where_the_judge_puts_it() {
-        let judged = judge("", &[result("BTTEST901", &at("src/a.py", 3))], &[]);
-
-        let finding = &judged.diagnostics[0];
-        assert_eq!(summary(&judged), ["test-foo@src/a.py:3 warning"]);
-        assert_eq!(
-            (finding.column, finding.end_line, finding.end_column),
-            (5, 3, 9)
-        );
-        assert!(!finding.file_level);
-        assert_eq!(finding.message, "the test reaches into a private helper");
-        assert!(judged.left_out.is_empty());
-    }
-
-    #[test]
-    fn the_uri_of_a_finding_is_decoded_into_its_path() {
-        let judged = judge("", &[result("test-foo", &at("src/my%20app/a.py", 1))], &[]);
-
-        assert_eq!(summary(&judged), ["test-foo@src/my app/a.py:1 warning"]);
-    }
-
-    #[test]
-    fn a_finding_about_a_whole_change_has_no_path_and_no_range() {
-        let judged = judge("", &[result("test-foo", "")], &[]);
-
-        assert_eq!(summary(&judged), ["test-foo@:1 warning"]);
-        assert!(judged.diagnostics[0].file_level);
-    }
-
-    #[test]
-    fn an_ignore_file_comment_of_the_file_silences_the_finding() {
-        let judged = judge(
-            "",
-            &[
-                result("test-foo", &at("src/a.py", 3)),
-                result("test-foo", &at("src/b.py", 3)),
-            ],
-            &[(
-                "src/a.py",
-                "# botica: ignore-file[test-foo] -- legacy importer\n",
-            )],
-        );
-
-        assert_eq!(summary(&judged), ["test-foo@src/b.py:3 warning"]);
-    }
-
-    #[test]
-    fn the_configuration_drops_the_rule_its_paths_and_sets_its_severity() {
-        let both = [
-            result("test-foo", &at("legacy/a.py", 1)),
-            result("test-foo", &at("src/a.py", 1)),
-            result("test-foo", ""),
-        ];
-
-        assert!(judge("ignore = [\"test-foo\"]\n", &both, &[])
-            .diagnostics
-            .is_empty());
-        assert_eq!(
-            summary(&judge(
-                "[rules.test-foo]\nseverity = \"error\"\nextend-ignores = [\"legacy/**\"]\n",
-                &both,
-                &[]
-            )),
-            ["test-foo@:1 error", "test-foo@src/a.py:1 error"]
-        );
-    }
-
-    #[test]
-    fn a_file_in_a_language_the_rule_does_not_judge_is_left_out() {
-        assert!(judge("", &[result("test-foo", &at("web/a.ts", 1))], &[])
-            .diagnostics
-            .is_empty());
-    }
-
-    #[test]
-    fn a_result_of_a_rule_that_is_not_judgment_is_left_out_and_named() {
-        let judged = judge(
-            "",
-            &[
-                result("no-utils", &at("src/utils.py", 1)),
-                result("nope", ""),
-            ],
-            &[],
-        );
-
-        assert!(judged.diagnostics.is_empty());
-        assert_eq!(judged.left_out, ["no-utils", "nope"]);
-    }
-
-    #[test]
-    fn a_sarif_that_is_not_json_is_an_error() {
-        let read = |_: &str| None;
-        assert!(filter(&resolution(""), None, "not json", read).is_err());
-    }
-}
+mod tests;
