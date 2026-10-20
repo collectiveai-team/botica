@@ -29,7 +29,7 @@ botica rules                   # which rules are active, and why (--all adds the
 botica server                  # the Language Server Protocol on stdio: the findings for the buffers of an
                                # editor (native and pattern rules), paths from the working directory
 botica server --extensions     # and the extension rules of the catalogs of the project: heavy, and it runs the scripts
-                               # of the project (see "Rules of the project")
+                               # of the project (see "Catalogs of a project")
 botica explain no-notebooks    # what a rule is, how it is built and how it is configured here
 botica ext sync                # create the environments of the Python scripts of the extension rules
 botica rules export --format markdown --output site   # one page per rule of the catalog, and an index;
@@ -507,7 +507,7 @@ Keys: `select`, `extend-select`, `ignore`, `preview`, `languages`, `extend-exclu
 the layout rules. Without it they are detected from `pyproject.toml`, `package.json`,
 `Cargo.toml`, `go.mod` and the like; `botica explain no-notebooks` lists what was found.
 
-## Rules of the project
+## Catalogs of a project
 
 A project adds rules in `.botica/rules/<catalog>/`, under the folder of `botica.toml`. A catalog has
 the layout of `catalog/rules/` with a `catalog.toml` on top:
@@ -702,7 +702,7 @@ UTF-16 code units, or bytes when the editor lists `utf-8` in
 `capabilities.general.positionEncodings`.
 
 The option `{"extensions": true}` of `initialize` runs the extension rules too (see
-[Rules of the project](#rules-of-the-project)).
+[Catalogs of a project](#catalogs-of-a-project)).
 
 Neovim 0.11 or later, in `init.lua`:
 
