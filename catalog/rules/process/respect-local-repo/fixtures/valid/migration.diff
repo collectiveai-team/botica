@@ -1,0 +1,10 @@
+chore(python): move requires-python to 3.14
+
+The last dependency that held the project on 3.12 (pyarrow) ships wheels for 3.14 since 22.0.
+
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -3,3 +3,3 @@
+ name = "orders"
+-requires-python = ">=3.12"
++requires-python = ">=3.14"

@@ -1,0 +1,6 @@
+{
+  "verdicts": [
+    { "file": "valid/migration.diff", "band": "clear" },
+    { "file": "invalid/drive-by.diff", "band": "act" }
+  ]
+}

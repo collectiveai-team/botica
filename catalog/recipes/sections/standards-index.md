@@ -30,9 +30,6 @@ describes one, and the hook reports each finding with its slug and its message.
   `agents-conventional-commits`.
 - **CES-77 · version pin** `[judgment]` — `requires-python` ships as a non-enforced comment
   (house default 3.14); an existing repo's pin wins. → see `pyproject.toml` comment.
-- **CES-30 · respect the local repo** `[judgment]` — existing deliberate choices (pins, config,
-  layout) win over house defaults; adopt standards as explicit migrations, never silent
-  overwrites. Slug: `respect-local-repo`.
 - **CES-64 · test against in-memory adapters** `[judgment]` — drive logic through working
   in-memory fakes of your ports, not mocks or live I/O. Slug: `test-in-memory-adapters`.
 - **CES-65 · test through the interface** `[judgment]` — assert on observable behaviour via the

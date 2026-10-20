@@ -142,9 +142,6 @@ describes one, and the hook reports each finding with its slug and its message.
   `@standards/CES/75-agents-conventional-commits.md`
 - **CES-77 · version pin** `[judgment]` — `requires-python` stays a deliberate local choice;
   house default is 3.14. → `@standards/CES/77-version-pin.md`
-- **CES-30 · respect the local repo** `[judgment]` — existing deliberate choices win over house
-  defaults (`botica recipe install` leaves an existing file as it is for this reason). →
-  `@standards/CES/30-respect-local-repo.md`
 - **CES-64 · test against in-memory adapters** `[judgment]` — fakes over mocks. →
   `@standards/CES/64-test-in-memory-adapters.md`
 - **CES-65 · test through the interface** `[judgment]` — assert behaviour via the public seam

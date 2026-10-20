@@ -1,0 +1,19 @@
+id = "respect-local-repo"
+code = "BTPROC002"
+standard = "CES-30"
+summary = "A change keeps the deliberate choices of the repository"
+status = "preview"
+tags = ["review"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "judgment"
+languages = ["*"]
+when = "pull-request"
+why-not-deterministic = "A diff shows that a pin or a setting changed; whether the old value was a deliberate choice of the repository, and whether the description agrees a migration, needs a reading of the change and its history."
+
+[implementations.question]
+type = "boolean"
+instructions = "Read the title, the description and the diff of the pull request. Does it keep the existing, deliberate choices of the repository (version pins, lint and tool configuration, dependencies, layout), changing one only as a migration that the description names and explains?"
+criteria = { true = "existing choices are kept, or changed as a named migration", false = "an existing choice is overwritten to match a default, with no migration named" }
