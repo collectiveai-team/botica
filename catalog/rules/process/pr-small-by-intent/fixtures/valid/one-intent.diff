@@ -1,0 +1,24 @@
+fix(cache): the key of a file includes the version of the catalog
+
+A new release of botica reused the findings of the old catalog, because the key of the cache was
+the hash of the file alone.
+
+--- a/crates/botica-core/src/cache.rs
++++ b/crates/botica-core/src/cache.rs
+@@ -40,7 +40,8 @@ impl Cache {
+     fn key(&self, path: &str, text: &[u8]) -> blake3::Hash {
+         let mut hasher = blake3::Hasher::new();
++        hasher.update(self.catalog_version.as_bytes());
+         hasher.update(path.as_bytes());
+         hasher.update(text);
+         hasher.finalize()
+     }
+--- a/crates/botica-core/tests/cache_file.rs
++++ b/crates/botica-core/tests/cache_file.rs
+@@ -60,3 +60,12 @@
++#[test]
++fn a_new_catalog_version_misses_the_cache() {
++    let old = Cache::new("0.7.0");
++    let new = Cache::new("0.8.0");
++    assert_ne!(old.key("a.py", b"x"), new.key("a.py", b"x"));
++}

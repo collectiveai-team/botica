@@ -1,0 +1,19 @@
+id = "pr-small-by-intent"
+code = "BTPROC001"
+standard = "CES-122"
+summary = "A pull request carries one intent"
+status = "preview"
+tags = ["review"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "judgment"
+languages = ["*"]
+when = "pull-request"
+why-not-deterministic = "A count of files or lines does not say how many intents a change has: a rename touches a hundred files with one intent, and a ten-line change can fix a bug and reformat a module."
+
+[implementations.question]
+type = "boolean"
+instructions = "Read the title, the description and the diff of the pull request. Does every change in it serve one intent that a sentence with no \"and\" states, with no reformatting sweep, no refactor that the intent does not need and no fix of something unrelated?"
+criteria = { true = "the change carries one intent, and each part of it serves that intent", false = "the change mixes intents: a reformatting sweep, a refactor the intent does not need or an unrelated fix sits next to the intent" }

@@ -1,0 +1,6 @@
+{
+  "verdicts": [
+    { "file": "valid/one-intent.diff", "band": "clear" },
+    { "file": "invalid/two-intents.diff", "band": "act" }
+  ]
+}

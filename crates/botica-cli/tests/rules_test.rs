@@ -50,7 +50,10 @@ fn workdir(name: &str, when: &str, report: &str) -> PathBuf {
         &dir.join("cat"),
     );
     // Without a rule named, `rules test` judges every judgment rule: here only `test-foo`.
-    fs::remove_dir_all(dir.join("cat/writing")).expect("drop the judgment rules of the catalog");
+    for family in ["writing", "process"] {
+        fs::remove_dir_all(dir.join("cat").join(family))
+            .expect("drop the judgment rules of the catalog");
+    }
     let rule = dir.join("cat/testing/test-foo");
     write(&rule.join("rule.toml"), &RULE.replace("WHEN", when));
     write(&rule.join("README.md"), README);
