@@ -2,14 +2,21 @@ A function that crosses a boundary returns a typed structure and not a bare `dic
 
 ## What to read
 
-- `Point` is a `@dataclass`, the shape of an internal boundary. `origin` returns it.
-- `CreateUser` is a pydantic `BaseModel`, the shape where the input or the output is validated.
-  `normalize` takes one and returns one.
-- The comment at the end shows a `dict` return annotation and a `{...}` literal that is returned,
-  which the rules report.
+- `Point` is a frozen `@dataclass`, the shape of a boundary that needs no validation. `origin`
+  returns it.
+- `NewUser` is a pydantic `BaseModel` of the domain, the shape of a boundary whose fields are
+  validated. `normalize` takes one and returns one.
+
+The rules report the two shapes of a bare `dict` at a boundary:
+
+```python
+def origin() -> dict:  # a `dict` return annotation
+    return {"x": 0, "y": 0}  # a returned `{...}` literal
+```
 
 ## What to adapt
 
-- `Point` and `CreateUser` are examples. Name the structure for each boundary of your code.
-- Use a dataclass when no validation is needed and a `BaseModel` where it is, such as the input and
-  the output of an API.
+- `Point` and `NewUser` are examples. Name the structure for each boundary of your code.
+- Use a dataclass when no validation is needed and a `BaseModel` where it is.
+- The input and the output of an API are request and response schemas, with their own names and
+  settings: see the topic `api-schemas`.

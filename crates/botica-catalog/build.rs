@@ -38,6 +38,25 @@ fn push_tree(table: &mut String, root: &Path, dir: &Path) {
     }
 }
 
+/// The code of a topic: every file under `dir` but `__pycache__` and the hidden files and folders,
+/// as `is_code` of `src/dir.rs` reads them.
+fn push_code(table: &mut String, root: &Path, dir: &Path) {
+    for entry in sorted_entries(dir) {
+        let name = entry
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default();
+        if name.starts_with('.') || name == "__pycache__" {
+            continue;
+        }
+        if entry.is_dir() {
+            push_code(table, root, &entry);
+        } else if entry.is_file() {
+            push(table, root, &entry);
+        }
+    }
+}
+
 fn main() {
     let manifest =
         PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("cargo sets CARGO_MANIFEST_DIR"));
@@ -93,6 +112,7 @@ fn main() {
                 push(&mut table, &references_dir, &file);
             }
         }
+        push_code(&mut table, &references_dir, &topic.join("code"));
     }
     table.push_str("];\n");
 

@@ -121,23 +121,28 @@ README with its directive, its reasons and how to silence it.
 
 ## References
 
-A topic points at code and documentation to read. It is a folder with a `topic.toml` and a
-`README.md` that says what to read in each reference and what to adapt. The topics that the built-in
-rules cite are in `catalog/references/` and are compiled into the binary; a project adds its own in
-`references/` at its root, which botica reads from disk.
+A topic points at code and documentation to read. It is a folder with a `topic.toml`, a
+`README.md` that says what to read in each reference and what to adapt, and optionally a `code/`
+folder with code to copy. The topics that the built-in rules cite are in `catalog/references/` and
+are compiled into the binary, their code included; a project adds its own in `references/` at its
+root, which botica reads from disk.
 
 ```toml
 # catalog/references/structured-logging/topic.toml
 title = "Structured logging with structlog"
 
 [[references]]
-repo = "github.com/collectiveai-team/botica"
-rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"   # the full SHA of a commit
-path = "scaffolding/templates/snippets/core/logger.py"
-lines = "72-75"                       # optional: a range or one line; without it, the whole file
+file = "code/core/logger.py"          # a file of the topic, from its folder
+lines = "1-20"                        # optional: a range or one line; without it, the whole file
 anchor = "def get_logger"             # optional: text that the lines hold
-license = "MIT"
 note = "the function that every module imports"
+
+[[references]]
+repo = "github.com/acme/app"
+rev = "3f2a9c1d5e7b4a6c8d0e1f2a3b4c5d6e7f8a9b0c"   # the full SHA of a commit
+path = "src/app/core/logger.py"
+license = "MIT"
+note = "the same module in a project"
 
 [[references]]
 url = "https://www.structlog.org/en/stable/getting-started.html#building-a-context"
@@ -145,12 +150,15 @@ note = "binding context: `bind()` returns a new logger that carries the context"
 quote = "Each logger with its context is immutable."   # optional: the passage, as the page words it
 ```
 
-A reference points at a fragment. It has a `path` or a `url`. A `url` is a page of documentation:
-it ends with the `#fragment` of a section, or has a `quote` of the passage, and `note` says why. A
-reference to a whole file or a whole page loads, and `botica refs check` warns about it. A `path`
-is a file: of the project when the reference has no `repo`, `rev` and `license`, and of another
-repository at a commit when it has the three. `rev` is a full commit SHA, and `repo`
-is `<host>/<path>` with no scheme.
+A reference points at a fragment. It has a `file`, a `path` or a `url`. A `file` is a file under
+`code/` of the topic, written for the topic, so it shows the whole file unless it names `lines`; its
+`lines` and `anchor` are checked when the topic loads, so a built-in topic whose code moved fails
+the tests of botica. CI lints, type-checks and tests that code (`scripts/check_references.sh`). A
+`url` is a page of documentation: it ends with the `#fragment` of a section, or has a `quote` of the
+passage, and `note` says why. A reference to a whole page, or to a whole file through `path`, loads,
+and `botica refs check` warns about it. A `path` is a file: of the project when the reference has no
+`repo`, `rev` and `license`, and of another repository at a commit when it has the three. `rev` is a
+full commit SHA, and `repo` is `<host>/<path>` with no scheme.
 
 A rule cites topics with `references = ["structured-logging"]` in its `rule.toml`, and a standard
 with `references: ["structured-logging"]` in its front matter. The site lists the topics at the end
@@ -170,8 +178,8 @@ lines.
 `botica refs check` exits with 1 when a file of a reference cannot be read, when its `lines` are past
 the end of the file, when its `anchor` is not in them, when a rule or a standard cites a topic that
 does not exist, or when a `topic.toml` does not load. It reads the files of the topics of the
-project only: the references of the built-in topics point at botica, and `check --all` fetches those
-too. The job `test` of `ci.yml` runs `check --all`. A reference to a page is not fetched.
+project only; `check --all` checks the built-in topics too, whose code is in the binary. The job
+`test` of `ci.yml` runs `check --all`. A reference to a page is not fetched.
 
 `botica refs pin <permalink> --topic <topic> --license <spdx> --note <text>` adds a reference to
 `references/<topic>/topic.toml`. The permalink is `https://github.com/<owner>/<repo>/blob/<commit>/<path>`

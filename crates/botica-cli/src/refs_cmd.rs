@@ -232,16 +232,19 @@ fn topic_text(collection: &Collection, topic: &Topic) -> Result<String> {
         topic.readme.trim_end()
     );
     for reference in &topic.references {
-        text.push_str(&reference_text(collection, reference)?);
+        text.push_str(&reference_text(collection, topic, reference)?);
     }
     Ok(text)
 }
 
 /// A page is its address and its note; a file is also the lines it shows. An external file has its
 /// license and, on GitHub, its permalink.
-fn reference_text(collection: &Collection, reference: &Reference) -> Result<String> {
+fn reference_text(collection: &Collection, topic: &Topic, reference: &Reference) -> Result<String> {
     let mut head = format!("## {}\n\n{}\n\n", label(reference), reference.note);
-    let Some(path) = &reference.path else {
+    let Some(file) = collection
+        .reference_text(topic, reference)
+        .map_err(anyhow::Error::msg)?
+    else {
         if let Some(quote) = &reference.quote {
             head.push_str(&block_quote(quote));
             head.push('\n');
@@ -252,16 +255,17 @@ fn reference_text(collection: &Collection, reference: &Reference) -> Result<Stri
     if let Some(license) = &reference.license {
         let _ = writeln!(meta, "license: {license}");
     }
-    if let Some(link) = permalink(reference, path) {
+    if let Some(link) = reference
+        .path
+        .as_deref()
+        .and_then(|path| permalink(reference, path))
+    {
         let _ = writeln!(meta, "{link}");
     }
     if !meta.is_empty() {
         head.push_str(&meta);
         head.push('\n');
     }
-    let file = collection
-        .file_text(reference, path)
-        .map_err(anyhow::Error::msg)?;
     let mut shown = reference.excerpt(&file);
     if !shown.ends_with('\n') {
         shown.push('\n');

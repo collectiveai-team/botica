@@ -2,6 +2,14 @@
 
 **Status:** accepted
 
+Amended on 2026-10-20: a topic may carry its code under `code/`, and a reference may name one of
+those files with `file`, from the folder of the topic. The binary embeds that code with the topic,
+the `lines` and `anchor` of a `file` reference are checked when the topic loads, and CI lints,
+type-checks and tests the code of the built-in topics. The five built-in topics pointed at
+`scaffolding/templates/snippets/` at a commit, and `scaffolding/` was later removed from botica, so
+a fix had no file to go to; their code now lives in their folders. Items 6 and 8 still hold for
+`path` references.
+
 The scaffolder copies five snippets of `scaffolding/templates/snippets/` to `.agents/snippets/` of a
 repository: `core/logger.py` (CES-74), `tests/in_memory_repository.py` (CES-64), `settings.py`,
 `api-schemas.py` and `no-dict-boundary.py`. Each needs adapting before it can be used: the logger

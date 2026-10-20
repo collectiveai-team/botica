@@ -5,10 +5,14 @@ The environment and the flags are read in one module of the package, `settings.p
 ## What to read
 
 - `Settings` reads the variables with the prefix `APP_` and the `.env` file. `case_sensitive=False`
-  binds `DEBUG` and `debug` to the same field, and `extra="ignore"` skips the variables that the
-  class does not declare.
+  binds `APP_DEBUG` and `app_debug` to the same field. `extra="ignore"` ignores the entries of the
+  `.env` file that the class does not declare; the variables of the process that it does not
+  declare are ignored in any case.
 - `get_settings` is cached with `lru_cache`: the settings are built and validated once per process.
-- The comment at the end shows `os.getenv` outside the module, which the rule reports.
+  A test calls `get_settings.cache_clear()` after it changes the environment.
+- An endpoint takes the settings with `Depends(get_settings)`, and a test replaces them with
+  `app.dependency_overrides[get_settings]`. A module that calls `get_settings()` when it is imported
+  keeps the first settings and cannot be overridden.
 
 ## What to adapt
 

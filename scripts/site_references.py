@@ -37,9 +37,10 @@ LANGUAGES = {
 
 @dataclass(frozen=True)
 class Reference:
-    """A file or a page that a topic points at: `url` or `path`, and the lines of a file."""
+    """A file or a page that a topic points at: `url`, `path` or `file`, and the lines of a file."""
 
     note: str
+    file: str = ""
     path: str = ""
     url: str = ""
     lines: str | None = None
@@ -105,6 +106,7 @@ def _front_matter(page: Path) -> FrontMatter:
 def _reference(raw: dict[str, str | None]) -> Reference:
     return Reference(
         note=raw["note"] or "",
+        file=raw.get("file") or "",
         path=raw["path"] or "",
         url=raw["url"] or "",
         lines=raw["lines"],
@@ -193,13 +195,13 @@ def _reference_text(reference: Reference) -> str:
     if reference.url:
         text = f"### <{reference.url}>\n\n{reference.note}\n"
         return f"{text}\n{_block_quote(reference.quote)}" if reference.quote else text
-    place = reference.path + (f":{reference.lines}" if reference.lines else "")
+    place = _place(reference)
     text = f"### `{place}`\n\n{reference.note}\n"
     if reference.repo:
         origin = f"{reference.repo} at {reference.rev} ({reference.license})\n"
         link = _permalink(reference)
         text += f"\n{origin}" + (f"\n<{link}>\n" if link else "")
-    language = LANGUAGES.get(Path(reference.path).suffix, "")
+    language = LANGUAGES.get(Path(reference.file or reference.path).suffix, "")
     fence = _fence(reference.text)
     return f"{text}\n{fence}{language}\n{reference.text.removesuffix(chr(10))}\n{fence}\n"
 
@@ -222,8 +224,12 @@ def _points_at(reference: Reference) -> str:
     """Return what a reference points at: the address of a page, or a file with its lines."""
     if reference.url:
         return reference.url
-    place = reference.path + (f":{reference.lines}" if reference.lines else "")
-    return f"`{place}`" + (f" ({reference.repo})" if reference.repo else "")
+    return f"`{_place(reference)}`" + (f" ({reference.repo})" if reference.repo else "")
+
+
+def _place(reference: Reference) -> str:
+    """Return the file that a reference shows, a file of its topic or a path, with its lines."""
+    return (reference.file or reference.path) + (f":{reference.lines}" if reference.lines else "")
 
 
 def _index_page(topics: list[Topic], citations: list[Citation], index: Path) -> str:

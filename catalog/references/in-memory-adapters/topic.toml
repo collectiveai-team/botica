@@ -1,28 +1,17 @@
 title = "In-memory adapters for tests"
 
 [[references]]
-repo = "github.com/collectiveai-team/botica"
-rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"
-license = "MIT"
-path = "scaffolding/templates/snippets/tests/in_memory_repository.py"
-lines = "23-28"
+file = "code/app/core/users.py"
+lines = "17-30"
 anchor = "class UserRepository(Protocol)"
 note = "the port: the Protocol that the SQL adapter and the fake both implement"
 
 [[references]]
-repo = "github.com/collectiveai-team/botica"
-rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"
-license = "MIT"
-path = "scaffolding/templates/snippets/tests/in_memory_repository.py"
-lines = "31-41"
+file = "code/tests/fakes/users.py"
 anchor = "class InMemoryUserRepository"
-note = "the fake: the same interface as the real repository, with a dict and no I/O"
+note = "the fake: the whole port, kept in a dict, with no I/O"
 
 [[references]]
-repo = "github.com/collectiveai-team/botica"
-rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"
-license = "MIT"
-path = "scaffolding/templates/snippets/tests/in_memory_repository.py"
-lines = "44-50"
-anchor = "def test_register_persists_user"
-note = "a test that injects the fake and asserts through the public interface"
+file = "code/tests/test_users.py"
+anchor = "def test_register_stores_the_user_with_its_email_in_lower_case"
+note = "tests that give the fake to the service and assert through the public interface"

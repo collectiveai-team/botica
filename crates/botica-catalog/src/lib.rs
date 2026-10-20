@@ -15,6 +15,7 @@ mod recipes_resolve;
 mod recipes_steps;
 mod recipes_steps_resolve;
 mod references;
+mod references_check;
 mod references_merge;
 mod sources;
 mod validate;
@@ -43,4 +44,4 @@ pub use recipes_steps::{
 pub use recipes_steps_resolve::{
     ResolvedFile, ResolvedLink, ResolvedSection, ResolvedSkill, ResolvedTool,
 };
-pub use references::{Origin, Reference, References, Topic, REFERENCES_DIR, TOPIC_FILE};
+pub use references::{Origin, Reference, References, Topic, CODE_DIR, REFERENCES_DIR, TOPIC_FILE};

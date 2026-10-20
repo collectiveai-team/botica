@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 use crate::issue::{issue, CatalogError, CatalogIssue};
 use crate::load::SourceFile;
+use crate::references_check::check_reference;
 use crate::validate::is_kebab_case;
 
 /// The folder of the repository that holds the topics, beside `standards/`.
@@ -11,8 +12,11 @@ pub const REFERENCES_DIR: &str = "references";
 pub const TOPIC_FILE: &str = "topic.toml";
 const README_FILE: &str = "README.md";
 
-/// What a topic points at: a file of the repository itself, a file of another repository at a
-/// commit, or a page of the web (`url`).
+/// The folder of a topic that holds its code, the files that a `file` reference shows.
+pub const CODE_DIR: &str = "code";
+
+/// What a topic points at: a file of the code of the topic (`file`), a file of the repository
+/// itself, a file of another repository at a commit, or a page of the web (`url`).
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Reference {
@@ -21,6 +25,8 @@ pub struct Reference {
     /// The commit of an external reference, so that its lines never change.
     pub rev: Option<String>,
     pub license: Option<String>,
+    /// A file of the topic, from the folder of the topic: `code/core/logger.py`.
+    pub file: Option<String>,
     /// The file that the reference shows; absent in a page reference.
     pub path: Option<String>,
     /// The address of the page that a page reference shows; absent in a file reference.
@@ -59,6 +65,15 @@ pub struct Topic {
     pub title: String,
     pub references: Vec<Reference>,
     pub readme: String,
+    /// The files under `code/`, by their path from the folder of the topic.
+    pub files: BTreeMap<String, String>,
+}
+
+impl Topic {
+    /// The text of the file of the topic that a `file` reference names.
+    pub fn file(&self, path: &str) -> Option<&str> {
+        self.files.get(path).map(String::as_str)
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -75,6 +90,11 @@ impl Reference {
         self.url.is_some()
     }
 
+    /// Whether the reference shows a file of the code of its topic.
+    pub fn is_topic_file(&self) -> bool {
+        self.file.is_some()
+    }
+
     /// What the catalog refuses in the reference: the problems that loading a topic reports for it.
     pub fn problems(&self) -> Vec<String> {
         check_reference(self)
@@ -82,8 +102,12 @@ impl Reference {
 
     /// What a reference that points at a whole file or a whole page could name instead: a block of
     /// lines, a `#fragment` of the page or a `quote` of it. It is advice, and the catalog loads
-    /// the reference without it.
+    /// the reference without it. A file of the topic is written for the topic, so the whole file
+    /// is what it shows.
     pub fn suggestion(&self) -> Option<String> {
+        if self.is_topic_file() {
+            return None;
+        }
         if let Some(url) = &self.url {
             let fragment = url
                 .split_once('#')
@@ -144,7 +168,7 @@ impl Reference {
     }
 }
 
-fn parse_lines(raw: &str) -> Option<(usize, usize)> {
+pub(crate) fn parse_lines(raw: &str) -> Option<(usize, usize)> {
     let (first, last) = match raw.split_once('-') {
         Some((first, last)) => (first, last),
         None => (raw, raw),
@@ -157,17 +181,19 @@ fn parse_lines(raw: &str) -> Option<(usize, usize)> {
 struct TopicEntry<'a> {
     toml: Option<&'a SourceFile>,
     readme: Option<&'a SourceFile>,
+    /// The files under `code/`, by their path from the folder of the topic.
+    code: BTreeMap<String, &'a SourceFile>,
 }
 
 impl References {
     /// Loads the topics from the files of `references/`, with paths from that folder:
-    /// `<topic>/topic.toml` and `<topic>/README.md`.
+    /// `<topic>/topic.toml`, `<topic>/README.md` and the files under `<topic>/code/`.
     pub fn from_files(files: &[SourceFile]) -> Result<Self, CatalogError> {
         Self::load(files, Origin::Project)
     }
 
-    /// Loads the topics that a binary carries. They point at external files and pages only: a
-    /// file of the project is not there to read.
+    /// Loads the topics that a binary carries. They point at their own code, external files and
+    /// pages only: a file of the project is not there to read.
     pub fn from_builtin_files(files: &[SourceFile]) -> Result<Self, CatalogError> {
         Self::load(files, Origin::BuiltIn)
     }
@@ -179,9 +205,14 @@ impl References {
             match file.path.split('/').collect::<Vec<_>>().as_slice() {
                 [id, TOPIC_FILE] => entries.entry(id).or_default().toml = Some(file),
                 [id, README_FILE] => entries.entry(id).or_default().readme = Some(file),
+                [id, CODE_DIR, rest @ ..] if !rest.is_empty() => {
+                    let path = format!("{CODE_DIR}/{}", rest.join("/"));
+                    entries.entry(id).or_default().code.insert(path, file);
+                }
                 _ => issues.push(issue(
                     file.path.as_str(),
-                    "unexpected file: expected <topic>/{topic.toml,README.md}",
+                    "unexpected file: expected <topic>/{topic.toml,README.md} or a file under \
+                     <topic>/code/",
                 )),
             }
         }
@@ -232,10 +263,26 @@ fn load_topic(
             return None;
         }
     };
+    let files: BTreeMap<String, String> = entry
+        .code
+        .iter()
+        .map(|(path, file)| (path.clone(), file.text.clone()))
+        .collect();
     for (position, reference) in parsed.references.iter().enumerate() {
         let mut problems = check_reference(reference);
         if origin == Origin::BuiltIn && reference.path.is_some() && !reference.is_external() {
-            problems.push("a built-in topic points at external files and pages only".to_owned());
+            problems.push(
+                "a built-in topic points at its own code, external files and pages only".to_owned(),
+            );
+        }
+        if let Some(file) = &reference.file {
+            match files.get(file) {
+                Some(text) => problems.extend(reference.check(text).err()),
+                None if file.starts_with(&format!("{CODE_DIR}/")) => {
+                    problems.push(format!("`{file}` is not a file of the topic"));
+                }
+                None => {}
+            }
         }
         for message in problems {
             issues.push(issue(
@@ -250,127 +297,6 @@ fn load_topic(
         title: parsed.title,
         references: parsed.references,
         readme: readme.text.clone(),
+        files,
     })
-}
-
-fn check_reference(reference: &Reference) -> Vec<String> {
-    let mut problems = Vec::new();
-    match (&reference.path, &reference.url) {
-        (None, None) => problems.push("needs a `path` or a `url`".to_owned()),
-        (Some(_), Some(_)) => problems.push("`path` and `url` exclude each other".to_owned()),
-        _ => {}
-    }
-    if reference
-        .path
-        .as_deref()
-        .is_some_and(|path| path.trim().is_empty())
-    {
-        problems.push("`path` is empty".to_owned());
-    }
-    if let Some(url) = &reference.url {
-        problems.extend(check_page(reference, url));
-        return problems;
-    }
-    if reference.quote.is_some() {
-        problems
-            .push("`quote` does not apply to a file reference: the lines are its text".to_owned());
-    }
-    if let Some(lines) = &reference.lines {
-        if parse_lines(lines).is_none() {
-            problems.push(format!(
-                "`lines` must be `<first>-<last>` or `<line>`, counted from 1 (got `{lines}`)"
-            ));
-        }
-    }
-    match (&reference.repo, &reference.rev) {
-        (Some(_), None) => {
-            problems.push("`repo` needs a `rev`: the commit that fixes the lines".to_owned())
-        }
-        (None, Some(_)) => problems.push("`rev` needs a `repo`".to_owned()),
-        _ => {}
-    }
-    match (&reference.repo, &reference.license) {
-        (Some(_), None) => problems.push("an external reference needs a `license`".to_owned()),
-        (None, Some(_)) => problems.push("`license` needs a `repo`".to_owned()),
-        _ => {}
-    }
-    if reference
-        .repo
-        .as_deref()
-        .is_some_and(|repo| !is_repo_address(repo))
-    {
-        problems.push(
-            "`repo` must be `<host>/<path>`, with no scheme and no user (`github.com/<owner>/<repo>`)"
-                .to_owned(),
-        );
-    }
-    if reference
-        .rev
-        .as_deref()
-        .is_some_and(|rev| !is_commit_sha(rev))
-    {
-        problems.push(
-            "`rev` must be a full commit SHA: 40 lowercase hex digits (64 in a SHA-256 \
-             repository), not a branch, a tag or an abbreviation"
-                .to_owned(),
-        );
-    }
-    problems
-}
-
-fn check_page(reference: &Reference, url: &str) -> Vec<String> {
-    let mut problems = Vec::new();
-    if !is_http_address(url) {
-        problems.push("`url` must be an `https://` or `http://` address".to_owned());
-    }
-    let present = [
-        ("lines", reference.lines.is_some()),
-        ("anchor", reference.anchor.is_some()),
-        ("repo", reference.repo.is_some()),
-        ("rev", reference.rev.is_some()),
-        ("license", reference.license.is_some()),
-    ];
-    for (field, _) in present.iter().filter(|(_, present)| *present) {
-        problems.push(format!("`{field}` does not apply to a `url` reference"));
-    }
-    if reference
-        .quote
-        .as_deref()
-        .is_some_and(|quote| quote.trim().is_empty())
-    {
-        problems.push("`quote` is empty".to_owned());
-    }
-    problems
-}
-
-fn is_http_address(url: &str) -> bool {
-    url.strip_prefix("https://")
-        .or_else(|| url.strip_prefix("http://"))
-        .is_some_and(|rest| !rest.is_empty() && !rest.contains(char::is_whitespace))
-}
-
-fn is_commit_sha(rev: &str) -> bool {
-    matches!(rev.len(), 40 | 64) && rev.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
-}
-
-/// `<host>/<path>`: a host and at least one segment, with no scheme, no user and no port.
-fn is_repo_address(repo: &str) -> bool {
-    let mut parts = repo.split('/');
-    let host = parts.next().unwrap_or_default();
-    let segments: Vec<&str> = parts.collect();
-    let host_ok = !host.is_empty()
-        && !host.starts_with(['-', '.'])
-        && host
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-'));
-    host_ok && !segments.is_empty() && segments.iter().all(|part| is_path_segment(part))
-}
-
-fn is_path_segment(part: &str) -> bool {
-    !part.is_empty()
-        && !matches!(part, "." | "..")
-        && !part.starts_with('-')
-        && part
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
 }

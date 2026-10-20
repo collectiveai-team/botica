@@ -1,28 +1,22 @@
 title = "Application settings in one module"
 
 [[references]]
-repo = "github.com/collectiveai-team/botica"
-rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"
-license = "MIT"
-path = "scaffolding/templates/snippets/settings.py"
-lines = "22-32"
+file = "code/app/settings.py"
+lines = "11-23"
 anchor = "class Settings(BaseSettings)"
 note = "the settings class: prefix, `.env` file, case-insensitive names and typed fields"
 
 [[references]]
-repo = "github.com/collectiveai-team/botica"
-rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"
-license = "MIT"
-path = "scaffolding/templates/snippets/settings.py"
-lines = "35-38"
+file = "code/app/settings.py"
+lines = "26-29"
 anchor = "def get_settings"
 note = "the function that the rest of the code calls: cached, so the settings are built once"
 
 [[references]]
-repo = "github.com/collectiveai-team/botica"
-rev = "9c225ad2537550a67016e878f662fe7f93d1b3b7"
-license = "MIT"
-path = "scaffolding/templates/snippets/settings.py"
-lines = "41-44"
-anchor = "# Anti-pattern"
-note = "the read of the environment that the rule reports outside the settings module"
+file = "code/app/api/v1/routers/status.py"
+anchor = "Depends(get_settings)"
+note = "an endpoint takes the settings as a dependency, so a test replaces them with `app.dependency_overrides[get_settings]`"
+
+[[references]]
+url = "https://fastapi.tiangolo.com/advanced/settings/#settings-and-testing"
+note = "replacing the settings in a test with `dependency_overrides`"

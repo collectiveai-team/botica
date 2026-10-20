@@ -28,6 +28,7 @@ class Ref:
     """A reference as `botica refs export` prints it: `text` holds the lines of a file."""
 
     note: str = "n"
+    file: str | None = None
     path: str | None = None
     url: str | None = None
     lines: str | None = None

@@ -6,11 +6,9 @@ mod common;
 use std::path::{Path, PathBuf};
 
 use common::builtin::{counts, embedded, fill_cache};
-use common::git_remote::{refs_at, refs_run, Origin, Setup};
+use common::git_remote::{refs_run, Setup};
 use common::refs::{add_topic, failed, ok, refs};
 use common::{project_in, write};
-
-const BOTICA: &str = "github.com/collectiveai-team/botica";
 
 fn cache(name: &str) -> PathBuf {
     let cache = Path::new(env!("CARGO_TARGET_TMPDIR"))
@@ -61,7 +59,7 @@ fn a_rule_of_botica_shows_its_topic_in_a_project_that_has_none() {
     for reference in &topic.references {
         assert!(text.contains(&reference.note), "{}: {text}", reference.note);
     }
-    assert!(text.contains("license: MIT"), "{text}");
+    assert!(text.contains("def get_logger("), "{text}");
 }
 
 #[test]
@@ -143,22 +141,39 @@ fn check_all_resolves_the_references_of_the_built_in_topics_too() {
 }
 
 #[test]
-fn check_all_fails_for_a_built_in_reference_that_cannot_be_fetched() {
-    let dir = project_in("refs-builtin", "check-all-cold", None);
-    let cache = cache("check-all-cold");
-    let origin = Origin::new("refs-builtin-empty");
-    origin.commit(&[("README.md", b"nothing here\n")]);
-    let all = with_cache(&["check", "--all"], &cache);
-    let all: Vec<&str> = all.iter().map(String::as_str).collect();
+fn check_all_reads_the_code_of_the_built_in_topics_from_the_binary_without_git_or_network() {
+    let dir = project_in("refs-builtin", "check-all-offline", None);
+    let empty = cache("check-all-offline");
+    std::fs::create_dir_all(&empty).expect("create the folder");
 
-    let output = refs_at(&dir, &all, BOTICA, &origin);
-
-    let text = failed(&output, 1);
-    assert!(
-        text.contains("references/structured-logging/topic.toml"),
-        "{text}"
+    let output = refs_run(
+        &dir,
+        &["check", "--all"],
+        &Setup {
+            env: vec![("PATH", empty.display().to_string())],
+            removed: vec!["HOME", "XDG_CACHE_HOME", "LOCALAPPDATA"],
+            ..Setup::default()
+        },
     );
-    assert!(text.contains(&format!("cannot fetch {BOTICA}@")), "{text}");
+
+    let (topics, references) = counts();
+    assert_eq!(
+        ok(&output),
+        format!("{topics} topics and {references} references resolve\n")
+    );
+}
+
+#[test]
+fn every_built_in_topic_carries_the_code_it_shows() {
+    for topic in embedded().topics() {
+        for reference in topic.references.iter().filter(|r| !r.is_page()) {
+            let file = reference
+                .file
+                .as_deref()
+                .expect("a built-in file reference is `file`");
+            assert!(topic.file(file).is_some(), "{}: {file}", topic.id);
+        }
+    }
 }
 
 #[test]

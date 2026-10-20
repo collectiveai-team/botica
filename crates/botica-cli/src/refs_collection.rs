@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Component, Path, PathBuf};
 
 use anyhow::{bail, Result};
-use botica_catalog::{read_references, CatalogError, Reference, References, REFERENCES_DIR};
+use botica_catalog::{read_references, CatalogError, Reference, References, Topic, REFERENCES_DIR};
 
 use crate::project::{self, Project, ProjectArgs};
 use crate::refs_remote;
@@ -37,6 +37,25 @@ pub fn open(args: &ProjectArgs, cache_dir: Option<PathBuf>) -> Result<Collection
 }
 
 impl Collection {
+    /// The text of the file that a reference of `topic` shows: a file of the topic, of the
+    /// project, or of its repository at its commit. A page has none.
+    pub fn reference_text(
+        &self,
+        topic: &Topic,
+        reference: &Reference,
+    ) -> Result<Option<String>, String> {
+        if let Some(file) = &reference.file {
+            return topic
+                .file(file)
+                .map(|text| Some(text.to_owned()))
+                .ok_or_else(|| format!("`{file}` is not a file of the topic `{}`", topic.id));
+        }
+        match &reference.path {
+            Some(path) => self.file_text(reference, path).map(Some),
+            None => Ok(None),
+        }
+    }
+
     /// The text of the file at `path` that `reference` points at: of the project, or of its
     /// repository at its commit.
     pub fn file_text(&self, reference: &Reference, path: &str) -> Result<String, String> {
@@ -114,12 +133,13 @@ pub fn read_text(root: &Path, path: &str) -> Result<String, String> {
     fs::read_to_string(&file).map_err(|error| format!("cannot read `{path}`: {error}"))
 }
 
-/// What a reference points at: its path, or its address when it is a page.
+/// What a reference points at: its path, the file of its topic, or its address when it is a page.
 pub fn target(reference: &Reference) -> &str {
     reference
         .url
         .as_deref()
         .or(reference.path.as_deref())
+        .or(reference.file.as_deref())
         .unwrap_or_default()
 }
 

@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use crate::load::{SourceFile, CATALOG_FILE, HISTORY_FILE};
 use crate::recipes::TEMPLATE_DIRS;
-use crate::references::TOPIC_FILE;
+use crate::references::{CODE_DIR, TOPIC_FILE};
 use crate::sources::is_script;
 
 fn sorted(dir: &Path) -> io::Result<Vec<PathBuf>> {
@@ -70,8 +70,9 @@ pub fn read_files(dir: &Path) -> io::Result<Vec<SourceFile>> {
     Ok(files)
 }
 
-/// The files of the topics under `dir`, the `references/` of a repository: the `topic.toml` and
-/// the `README.md` of each folder, with paths from `dir`. A `dir` that does not exist holds none.
+/// The files of the topics under `dir`, the `references/` of a repository: the `topic.toml`, the
+/// `README.md` and every file under `code/` of each folder, with paths from `dir`. A `dir` that
+/// does not exist holds none.
 pub fn read_references(dir: &Path) -> io::Result<Vec<SourceFile>> {
     let mut files = Vec::new();
     if !dir.is_dir() {
@@ -83,8 +84,36 @@ pub fn read_references(dir: &Path) -> io::Result<Vec<SourceFile>> {
                 push(&mut files, dir, &topic.join(name))?;
             }
         }
+        push_code(&mut files, dir, &topic.join(CODE_DIR))?;
     }
     Ok(files)
+}
+
+/// Every file under `folder` but the caches that running the code leaves (`__pycache__`) and the
+/// hidden files and folders.
+fn push_code(files: &mut Vec<SourceFile>, root: &Path, folder: &Path) -> io::Result<()> {
+    if !folder.is_dir() {
+        return Ok(());
+    }
+    for entry in sorted(folder)? {
+        if !is_code(&entry) {
+            continue;
+        }
+        if entry.is_dir() {
+            push_code(files, root, &entry)?;
+        } else if entry.is_file() {
+            push(files, root, &entry)?;
+        }
+    }
+    Ok(())
+}
+
+/// Whether a file or folder under `code/` of a topic belongs to its code. `build.rs` keeps the
+/// same list.
+fn is_code(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| !name.starts_with('.') && name != "__pycache__")
 }
 
 /// The files of the recipes under `dir`, the `recipes/` of a repository: each `<recipe>.toml`

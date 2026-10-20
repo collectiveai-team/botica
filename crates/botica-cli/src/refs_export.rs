@@ -39,19 +39,15 @@ fn topic_json(collection: &Collection, topic: &Topic) -> Result<Value> {
 }
 
 fn reference_json(collection: &Collection, topic: &Topic, reference: &Reference) -> Result<Value> {
-    let text = match &reference.path {
-        Some(path) => {
-            let file = collection.file_text(reference, path).map_err(|reason| {
-                anyhow::anyhow!("topic `{}`, {}: {reason}", topic.id, label(reference))
-            })?;
-            Some(reference.excerpt(&file))
-        }
-        None => None,
-    };
+    let text = collection
+        .reference_text(topic, reference)
+        .map_err(|reason| anyhow::anyhow!("topic `{}`, {}: {reason}", topic.id, label(reference)))?
+        .map(|file| reference.excerpt(&file));
     Ok(json!({
         "repo": reference.repo,
         "rev": reference.rev,
         "license": reference.license,
+        "file": reference.file,
         "path": reference.path,
         "url": reference.url,
         "lines": reference.lines,

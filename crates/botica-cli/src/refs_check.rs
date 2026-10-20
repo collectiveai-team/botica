@@ -77,12 +77,9 @@ fn topic_problems(collection: &Collection, topics: &[&Topic]) -> Vec<Problem> {
     let mut problems = Vec::new();
     for topic in topics {
         for (position, reference) in topic.references.iter().enumerate() {
-            let outcome = match &reference.path {
-                None => Ok(()),
-                Some(path) => collection
-                    .file_text(reference, path)
-                    .and_then(|text| reference.check(&text)),
-            };
+            let outcome = collection
+                .reference_text(topic, reference)
+                .and_then(|text| text.map_or(Ok(()), |text| reference.check(&text)));
             if let Err(message) = outcome {
                 problems.push(topic_problem(topic, position, &message));
             }

@@ -57,7 +57,7 @@ fn a_built_in_topic_cannot_point_at_a_file_of_the_project() {
 
     assert!(message.contains("logging/topic.toml"), "{message}");
     assert!(
-        message.contains("a built-in topic points at external files and pages only"),
+        message.contains("a built-in topic points at its own code, external files and pages only"),
         "{message}"
     );
     assert!(message.contains("references[0]"), "{message}");

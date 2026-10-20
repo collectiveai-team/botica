@@ -39,6 +39,19 @@ dev = [
   "pytest-randomly>=4.1.0",
   "ruff>=0.17.0",
 ]
+# The code of the built-in topics, under `catalog/references/<topic>/code/`, and its tests. The
+# versions are fixed: they are the ones the code is written and tested against, and
+# `scripts/check_references.sh` runs with this group.
+references = [
+  "fastapi==0.153.0",
+  "httpx==0.28.1",
+  "prefect==3.8.8",
+  "pydantic==2.14.1",
+  "pydantic-ai-slim==2.58.0",
+  "pydantic-settings==2.16.1",
+  "pyrefly==1.4.0",
+  "structlog==26.1.0",
+]
 
 # `uv sync` and `uv run` install the `dev` group and leave the Rust package unbuilt; `maturin`
 # builds the wheel.
@@ -47,6 +60,8 @@ package = false
 
 [tool.uv.dependency-groups]
 dev = { requires-python = ">=3.11" }
+# The house version of Python (CES-77).
+references = { requires-python = ">=3.14" }
 
 [tool.ruff]
 line-length = 100
@@ -60,8 +75,9 @@ extend-exclude = [
   "catalog/rules/**/fixtures",
 ]
 force-exclude = true
-# `botica.sdk` ships in the wheel, whose floor is Python 3.9.
-per-file-target-version = { "sdk/python/**" = "py39" }
+# `botica.sdk` ships in the wheel, whose floor is Python 3.9; the code of the topics is written for
+# the house version (CES-77).
+per-file-target-version = { "sdk/python/**" = "py39", "catalog/references/**" = "py314" }
 
 [tool.ruff.lint]
 # The codes of botica in `# noqa` comments.
@@ -134,6 +150,23 @@ convention = "google"
 [tool.ruff.lint.mccabe]
 max-complexity = 10
 
+# `app` is the package of the code of the topics (catalog/references/<topic>/code/app).
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+# FastAPI reads the annotations of an endpoint when the route is declared, so their imports stay
+# out of a `TYPE_CHECKING` block.
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-decorators = [
+  "fastapi.APIRouter.get",
+  "fastapi.APIRouter.post",
+  "fastapi.APIRouter.put",
+  "fastapi.APIRouter.patch",
+  "fastapi.APIRouter.delete",
+  "fastapi.FastAPI.get",
+  "fastapi.FastAPI.post",
+]
+
 # Ban relative imports (e.g. `from .x import ...`); imports are absolute.
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
@@ -145,6 +178,10 @@ ban-relative-imports = "all"
 # botica's Python extension SDK and benchmark scripts run as files, not as a package.
 "sdk/**" = ["INP001"]
 "bench/**" = ["INP001"]
+# The code of a topic is the namespace package `app` (scripts/check_references.sh).
+"catalog/references/**" = ["INP001"]
+"catalog/references/*/tests/**" = ["S101"]
+"catalog/references/*/code/tests/**" = ["S101"]
 
 [tool.botica]
 # The rules of the recipes `base` and `base-python`.
@@ -180,6 +217,11 @@ extend-exclude = ["catalog/rules/**/fixtures/", "skills/"]
 # is what they print.
 [tool.botica.rules.log-no-print]
 extend-ignores = ["scripts/**", "bench/**"]
+
+# The settings of the code of a topic belong to the project that copies it, and its `.env.schema`
+# declares their variables.
+[tool.botica.rules.settings-env-schema]
+extend-ignores = ["catalog/references/**"]
 
 # The benchmarks run with a bare `python` and the standard library only, so they parse their
 # arguments with `sys.argv`.

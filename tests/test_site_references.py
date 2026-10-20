@@ -75,6 +75,16 @@ def test_a_reference_without_lines_shows_the_whole_file(site: Site):
     assert f"```python\n{SOURCE}```\n" in text
 
 
+def test_a_file_of_the_topic_shows_its_path_in_the_topic_and_its_text(site: Site):
+    site.topic(references=[Ref(file="code/core/logger.py", note="the logger", text=SOURCE)])
+
+    site.build()
+
+    text = site.page("structured-logging")
+    assert f"\n### `code/core/logger.py`\n\nthe logger\n\n```python\n{SOURCE}```\n" in text
+    assert "`code/core/logger.py`" in site.page("index")
+
+
 def test_the_language_of_the_block_comes_from_the_extension_of_the_file(site: Site):
     site.topic(
         references=[

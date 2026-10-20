@@ -29,12 +29,15 @@ fn a_reference_needs_a_path_or_a_url_and_not_both() {
         "",
     );
     let message = rejected(vec![topic("structured-logging", &neither)]);
-    assert!(message.contains("needs a `path` or a `url`"), "{message}");
+    assert!(
+        message.contains("needs a `file`, a `path` or a `url`"),
+        "{message}"
+    );
 
     let both = format!("{PAGE}path = \"docs/a.md\"\n");
     let message = rejected(vec![topic("structured-logging", &both)]);
     assert!(
-        message.contains("`path` and `url` exclude each other"),
+        message.contains("`file`, `path` and `url` exclude each other"),
         "{message}"
     );
 }
