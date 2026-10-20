@@ -171,6 +171,9 @@ describes one, and the hook reports each finding with its slug and its message.
   `standards/` exempted (see `prek.toml`). → `@standards/CES/118-code-duplication-jscpd.md`
 - **CES-119 · dependency vulnerability scanning** `[ci]` — `osv-scanner` on `uv.lock`; replaces
   the old `pip-audit.yml`. → `@standards/CES/119-osv-scanner-replace-pip-audit.md`
+- **CES-120 · language, documentation and comments** `[judgment]` — plain text with no signs of
+  model writing, comments only for what the code cannot say, one term per concept (`GLOSSARY.md`).
+  → `@standards/CES/120-language-documentation-comments.md`
 
 ### Excluded here (don't apply to a CLI with no API, database or web layer)
 
@@ -185,25 +188,10 @@ An **info** is ignored.
 
 ## Writing documentation
 
-State what a thing is and what it does, in plain sentences that a file of this repository backs.
-The patterns below are the signs of text written by a model (source: the Wikipedia guide
-`Wikipedia:Signs of AI writing`); none of them goes into a page, a standard, an ADR or a
-commit message.
-
-- **Definition by negation:** "X does not …", "knows nothing about …", "not X but Y", "Y rather
-  than X", "no A, no B, just C". Say what X is.
-- **Purpose or effect clauses:** "so the review judges …", "which keeps …", "ensuring …",
-  "enabling …", "making it …". Say what happens, not what it is for.
-- **Significance words:** key, crucial, pivotal, robust, seamless, powerful, vibrant, enhance,
-  foster, leverage, landscape.
-- **Copula avoidance:** "serves as", "acts as", "features", "offers", "provides". Write "is" and
-  "has".
-- **Rule of three** lists of adjectives or short phrases, "X and Y" headings, and a closing
-  paragraph that repeats the section.
-- **Hedges and vague attribution:** "typically", "usually", "some", "often", "it is worth noting".
-- **Format:** bold lead-ins in list items, bold for emphasis, spaced em dashes, title case in
-  headings, call-to-action buttons.
-- **A claim with no file behind it:** if no file, command output or issue says it, leave it out.
+Text and comments follow CES-120 (`@standards/CES/120-language-documentation-comments.md`): plain
+sentences that a file of this repository backs, none of the signs of model text it lists, comments
+only for what the code cannot say, and the terms of `GLOSSARY.md`. It applies to every page,
+standard, ADR, commit message, message of a rule and comment.
 
 ## Domain docs
 

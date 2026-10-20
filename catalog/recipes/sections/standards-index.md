@@ -67,3 +67,8 @@ describes one, and the hook reports each finding with its slug and its message.
 - **CES-119 · dependency vulnerability scanning** `[ci]` — `osv-scanner` scans `uv.lock` (and any
   other ecosystem lockfile) against the OSV.dev database on every push/PR/weekly schedule;
   replaces `pip-audit.yml`. Slug: `osv-scanner-replace-pip-audit`.
+- **CES-120 · language, documentation and comments** `[judgment]` — documentation, commit
+  messages and comments carry no signs of model writing (inflated words, trailing clauses that
+  judge, definition by negation, bold emphasis, claims with no source); code explains itself and a
+  comment says only what the code cannot; the domain has one term per concept, listed in
+  `GLOSSARY.md`. Slug: `language-documentation-comments`.
