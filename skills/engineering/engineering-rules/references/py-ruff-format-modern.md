@@ -56,7 +56,7 @@ disable-project-excludes-heuristics = true
 # MARK: ruff-format
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "v0.15.22"
+rev = "v0.17.1"
 
 [[repos.hooks]]
 id = "ruff-format"

@@ -27,9 +27,9 @@ each step works" into named units that it calls.
 
 ```python
 def place_order(cmd: PlaceOrder) -> OrderId:
-    order = build_order(cmd)          # logic (pure)
-    validate(order)                   # logic (pure)
-    return orders.save(order)         # I/O (adapter)
+    order = build_order(cmd)  # logic (pure)
+    validate(order)  # logic (pure)
+    return orders.save(order)  # I/O (adapter)
 ```
 
 The orchestrator coordinates, `build_order` and `validate` hold logic, and `orders` is a port.

@@ -38,8 +38,7 @@ myapp/
 
 ```python
 # myapp/core/models.py
-class User(SQLModel, table=True):
-    ...
+class User(SQLModel, table=True): ...
 ```
 
 ## Suppression

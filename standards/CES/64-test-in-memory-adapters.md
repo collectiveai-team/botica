@@ -21,7 +21,7 @@ production uses, so tests exercise real behaviour, fast and deterministically.
 ## Pattern
 
 ```python
-repo = InMemoryUserRepository()      # implements the same Protocol as the SQL adapter
+repo = InMemoryUserRepository()  # implements the same Protocol as the SQL adapter
 service = UserService(repo)
 service.register("a@b.com")
 assert repo.get_by_email("a@b.com") is not None

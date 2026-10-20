@@ -596,9 +596,11 @@ pins the version of `botica` that the project runs (`<version>` below is the out
 # ///
 from botica.sdk import rule, serve
 
+
 @rule("acme/no-blobs", ["python"], severity="error")
 def no_blobs(path, text, options):
     yield (0, 1, "acme/no-blobs: a finding is a start and an end in bytes, and a message")
+
 
 if __name__ == "__main__":
     serve()

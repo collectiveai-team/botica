@@ -25,8 +25,7 @@ app = cyclopts.App()
 
 
 @app.command
-def greet(name: str, *, loud: bool = False) -> None:
-    ...
+def greet(name: str, *, loud: bool = False) -> None: ...
 ```
 
 ## Don't

@@ -50,9 +50,9 @@ jobs:
 
       - name: Install uv
         # Pinned to an exact immutable tag, like the other workflows.
-        uses: astral-sh/setup-uv@v10.0.1
+        uses: astral-sh/setup-uv@v10.3.0
         with:
-          version: "0.11.12"
+          version: "0.13.3"
           enable-cache: false
 
       # `ruff linter` lists the rules the catalog is checked against. Pinned to the version the
@@ -95,9 +95,9 @@ jobs:
           persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.0.1
+        uses: astral-sh/setup-uv@v10.3.0
         with:
-          version: "0.11.12"
+          version: "0.13.3"
           enable-cache: false
 
       - name: Check the contract of the rules and the standards the change touches

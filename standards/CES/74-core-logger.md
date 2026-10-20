@@ -30,7 +30,7 @@ lazily on the first `get_logger` call, so importing the module configures nothin
 from myapp.core.logger import get_logger
 
 log = get_logger(__name__)
-log = log.bind(request_id=rid)          # bind context once
+log = log.bind(request_id=rid)  # bind context once
 log.info("user_created", user_id=u.id)  # emit events as key/value pairs
 ```
 
