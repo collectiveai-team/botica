@@ -47,7 +47,9 @@ its SDKs and its benchmarks). The binary embeds `catalog/rules/`, `catalog/refer
   the upstream catalog of skills that `base` pins; the `skills-drift` workflow runs it. `check_skills.sh`
   runs the skill validator over `skills/`; the `skill-validator` hook of prek runs it.
   `check_rule_change.py` flags a change that adds a botica rule and touches more than that rule
-  needs; the `rule-contract` job of `ci.yml` runs it. `build_site.sh` builds the standards site.
+  needs; the `rule-contract` job of `ci.yml` runs it. `build_site.sh` builds the standards site. `sync_pins.py` copies the pins of the actions and of uv into the
+  templates of the recipes; the weekly `pins` workflow runs it after `prek update` and opens a pull
+  request.
 
 An agent is a recipe chosen by name: `agent-opencode` writes `opencode.jsonc`,
 `agent-claude-code` writes `.claude/settings.json` and links `CLAUDE.md`→`AGENTS.md` and
