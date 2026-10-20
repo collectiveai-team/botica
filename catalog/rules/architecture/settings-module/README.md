@@ -13,7 +13,6 @@ defaults in one place, no validation, no list of what the application reads.
 The rule skips the files where the environment is read on purpose:
 
 - `settings.py` and every file under `settings/`.
-- `config.py` and every file under `config/`.
 - `conftest.py` and every file under `tests/`.
 
 ## Do

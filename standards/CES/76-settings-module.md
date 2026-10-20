@@ -10,7 +10,8 @@ references: ["settings-module"]
 2. It defines a `pydantic_settings.BaseSettings` subclass that is case-insensitive
    (`SettingsConfigDict(case_sensitive=False)`).
 3. It exposes a cached `get_settings()` and nobody builds the settings class directly.
-4. `os.getenv` and `os.environ` are used only inside a settings module.
+4. `os.getenv` and `os.environ` are used only inside a settings module: a `settings.py` or a
+   file of a `settings/` package. A `config.py` is not a settings module.
 5. A higher layer imports the settings of the layers below and stacks them as fields of its own.
 6. In a project with a varlock schema (`.env.schema`), the schema declares each variable that a
    settings class reads, and a settings class reads each variable of the schema. A variable that

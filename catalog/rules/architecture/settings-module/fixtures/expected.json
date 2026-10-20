@@ -1,6 +1,23 @@
 {
   "diagnostics": [
     {
+      "path": "config.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 18,
+          "line": 3,
+          "column": 8
+        },
+        "end": {
+          "offset": 28,
+          "line": 3,
+          "column": 18
+        }
+      },
+      "message": "CES-76 (settings-module): Read env/flags only in the settings module. Move this os.getenv/os.environ access into a pydantic_settings.BaseSettings subclass and read it via get_settings(). See `botica refs show settings-module`."
+    },
+    {
       "path": "service.py",
       "severity": "warning",
       "range": {

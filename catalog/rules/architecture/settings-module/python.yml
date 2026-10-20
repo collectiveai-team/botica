@@ -7,8 +7,6 @@ message: "CES-76 (settings-module): Read env/flags only in the settings module. 
 ignores:
   - "**/settings.py"
   - "**/settings/**"
-  - "**/config.py"
-  - "**/config/**"
   - "**/conftest.py"
   - "**/tests/**"
 rule:
