@@ -73,7 +73,7 @@ pins `mattpocock/skills#vX.Y.Z`. Bump the tag there to take a new upstream relea
 ## Standards
 
 A standard is `standards/<set>/<number>-<slug>.md`, and a rule names it in the `standard` field of
-its `rule.toml`; `docs/engineering-standards.md` has the convention. A pull request touches one
+its `rule.toml`; `standards/CES/index.md` has the convention. A pull request touches one
 standard, and `scripts/check_rule_change.py` fails one that touches two.
 
 ## Botica rules

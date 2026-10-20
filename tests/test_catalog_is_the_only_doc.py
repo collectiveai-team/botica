@@ -18,7 +18,6 @@ ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "catalog" / "rules"
 
 CES_ENTRY = re.compile(r"^- \*\*CES-(\d+) · ", re.M)
-CES_ROW = re.compile(r"^\| \*\*CES-(\d+)\*\* \|", re.M)
 
 
 def _catalog() -> list[tuple[str, int | None]]:
@@ -85,13 +84,6 @@ def test_agents_md_has_the_block_of_the_rules_and_sends_the_agent_to_botica_expl
     assert "uvx botica explain" in text
 
 
-def test_the_table_of_shipped_standards_leaves_the_measured_ones_to_the_catalog():
-    text = (ROOT / "docs" / "engineering-standards.md").read_text(encoding="utf-8")
-    rows = {int(n) for n in CES_ROW.findall(text)}
-
-    assert not rows & MEASURED_CES, f"rows for {sorted(rows & MEASURED_CES)}"
-
-
 AST_GREP = re.compile(r"ast-grep|sgconfig", re.I)
 
 
@@ -108,7 +100,6 @@ def _normative_texts() -> list[Path]:
         *(ROOT / "skills").rglob("*.md"),
         *CATALOG.glob("*/*/README.md"),
         ROOT / "AGENTS.md",
-        ROOT / "docs" / "engineering-standards.md",
     ]
     return sorted(set(paths))
 

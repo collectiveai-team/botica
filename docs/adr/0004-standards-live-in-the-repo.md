@@ -4,7 +4,8 @@
 
 **Amended 2026-10-20:** a standard is written and kept by people, at a higher level than its
 rules, and it may repeat what the README of a rule says: its examples, configuration and migration
-stay in the standard. `docs/standards-migration-pending.md` is removed.
+stay in the standard. `docs/standards-migration-pending.md` is removed, and so is
+`docs/engineering-standards.md`: how a standard is numbered and cited is in `standards/CES/index.md`.
 
 ADR 0002 left open where the text of a standard lives. A standard states what is required; a rule
 is one way to check it. A standard has any number of rules, none included, and a rule names at most
