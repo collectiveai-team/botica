@@ -18,9 +18,9 @@ For an idea that needs to ship:
 2. If a design question needs a runnable answer, use `/handoff` to branch into a fresh `/prototype` session, then `/handoff` the findings back.
 3. For work that fits one session, use `/implement` directly. For multi-session work, use `/to-spec`, then `/to-tickets`, and start a fresh `/implement` session for each unblocked ticket. Use `/implement-spec` instead when the whole ticket graph should run in parallel worktrees and land on one integration branch.
 
-`/implement` drives `/tdd` at agreed seams and closes with `/code-review`. Use `/tdd` or `/code-review` directly when only that focused workflow is needed. Before creating, updating, or marking a PR ready, `/engineering-pr-review` runs the gate on top of that — `botica lint`, `/code-review`, the checks of the diff — and reports what it ran. `/test-smell-review` applies whenever tests are written or edited; reach for it directly to audit an existing suite for tests that pass without protecting anything.
+`/implement` drives `/tdd` at agreed seams and closes with `/code-review`. Use `/tdd` or `/code-review` directly when only that focused workflow is needed. Before creating, updating, or marking a PR ready, `/engineering-pr-review` runs the gate on top of that (`botica lint`, `/code-review`, the checks of the diff) and reports what it ran. `/test-smell-review` applies whenever tests are written or edited; reach for it directly to audit an existing suite for tests that pass without protecting anything.
 
-Keep grilling, specification, and ticketing in one context window when practical, so each step builds on the same thinking. Between independently implementable tickets, clear context — see Phase Boundaries.
+Keep grilling, specification, and ticketing in one context window when practical, so each step builds on the same thinking. Between independently implementable tickets, clear context; see Phase Boundaries.
 
 ## On-Ramps
 
@@ -57,9 +57,9 @@ Every option except Continue replaces the session with a summary of it, which is
 - `/research`: delegate primary-source research and capture cited findings in the repo.
 - `/grilling`: run the interview primitive directly, with no wrapper flow around it.
 - `/teach`: learn a concept over multiple sessions in a stateful workspace.
-- `/writing-for-agents`: guide the writing of documents agents consume — skills, `AGENTS.md`, pointed-at docs.
+- `/writing-for-agents`: guide the writing of documents agents consume: skills, `AGENTS.md`, pointed-at docs.
 - `/to-questionnaire`: turn a decision or interview into a shareable questionnaire.
-- `/wizard`: turn a procedure only a human can perform — provisioning, credentials, CI secrets, clicking through a third-party dashboard, a one-off migration — into an interactive script that walks them through it. Not for steps an agent can perform itself.
+- `/wizard`: turn a procedure only a human can perform (provisioning, credentials, CI secrets, clicking through a third-party dashboard, a one-off migration) into an interactive script that walks them through it. Not for steps an agent can perform itself.
 - `/wait-what`: re-pitch the last message when it did not land. Usable mid-conversation inside any other skill.
 - `/journalist`: record or search session notes under `.journals/`.
 
