@@ -1,0 +1,49 @@
+title = "Workflows with Prefect"
+
+[[references]]
+file = "code/app/flows/documents.py"
+anchor = "async def summarize_documents"
+note = "the flow: `get_run_logger`, independent tasks in an `asyncio.TaskGroup`, and a Markdown artifact with a valid key"
+
+[[references]]
+file = "code/app/core/documents.py"
+anchor = "def summarize"
+note = "the domain code that the task calls: it knows nothing of Prefect and logs with the house `get_logger`"
+
+[[references]]
+file = "code/app/deploy.py"
+anchor = "async def deployments"
+note = "the deployments in Python and the process that serves them with `aserve`"
+
+[[references]]
+file = "code/app/runs.py"
+anchor = "async def wait_or_cancel"
+note = "the API starts a flow run by the name of its deployment, waits for it with a deadline, and cancels it past the deadline"
+
+[[references]]
+file = "code/app/api/v1/routers/documents.py"
+anchor = "async def summarize"
+note = "the endpoint returns the id of the flow run and imports no flow"
+
+[[references]]
+file = "code/app/automations.py"
+anchor = "async def notify_failed_summaries"
+note = "an automation that calls a webhook when a flow run fails or crashes"
+
+[[references]]
+url = "https://docs.prefect.io/v3/advanced/logging-customization"
+note = "`PREFECT_LOGGING_EXTRA_LOGGERS` sends the logs of a library, here the package, to the logs of the run"
+quote = "You can tell Prefect to include logs from these libraries with the PREFECT_LOGGING_EXTRA_LOGGERS setting."
+
+[[references]]
+url = "https://docs.prefect.io/v3/how-to-guides/workflows/state-change-hooks"
+note = "why a notification goes in an automation and not in a state hook of the flow"
+quote = "State change hooks run in the same process as your workflow and execution cannot be guaranteed. For more robust execution of logic in response to state changes, use an Automation."
+
+[[references]]
+url = "https://docs.prefect.io/v3/concepts/automations#templating-with-jinja"
+note = "the variables of the payload of the webhook, such as `flow_run.name` and `flow_run.state.name`"
+
+[[references]]
+url = "https://docs.python.org/3/library/asyncio-task.html#task-groups"
+note = "a task group cancels the other tasks when one fails, which `asyncio.gather` does not"

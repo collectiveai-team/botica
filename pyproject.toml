@@ -154,9 +154,10 @@ max-complexity = 10
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
 
-# FastAPI reads the annotations of an endpoint when the route is declared, so their imports stay
-# out of a `TYPE_CHECKING` block.
+# FastAPI reads the annotations of an endpoint when the route is declared, and pydantic those of a
+# model when the class is built, so their imports stay out of a `TYPE_CHECKING` block.
 [tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = ["pydantic.BaseModel", "pydantic_settings.BaseSettings"]
 runtime-evaluated-decorators = [
   "fastapi.APIRouter.get",
   "fastapi.APIRouter.post",

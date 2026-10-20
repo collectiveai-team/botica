@@ -1,0 +1,28 @@
+title = "Calls to a language model"
+
+[[references]]
+file = "code/app/prompts/extract_parties.md"
+note = "a prompt: a Markdown file of the package, reviewed and versioned like code"
+
+[[references]]
+file = "code/app/core/prompts.py"
+anchor = "def load_prompt"
+note = "the prompt is read with `importlib.resources`, so it is found in an installed wheel too"
+
+[[references]]
+file = "code/app/core/parties.py"
+anchor = "def parties_agent"
+note = "the agent: the prompt as `instructions`, a pydantic model as `output_type`, and the model passed in"
+
+[[references]]
+url = "https://pydantic.dev/docs/ai/core-concepts/output/#structured-output"
+note = "how pydantic-ai turns the output of the model into the `output_type`, and sends a validation error back to it"
+
+[[references]]
+url = "https://pydantic.dev/docs/ai/core-concepts/agent/#instructions"
+note = "`instructions` and not `system_prompt`"
+quote = "In general, we recommend using instructions instead of system_prompt unless you have a specific reason to use system_prompt."
+
+[[references]]
+url = "https://docs.python.org/3/library/importlib.resources.html#importlib.resources.files"
+note = "reading a file of a package, wherever the package is installed"
