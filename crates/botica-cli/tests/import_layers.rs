@@ -96,7 +96,7 @@ fn a_comment_that_names_the_rule_keeps_the_finding_and_is_an_invalid_suppression
     assert!(
         text.contains(
             "src/app/core/models.py:1:41: warning [invalid-suppression] `import-layers` is a rule \
-             of the project and only the configuration silences it"
+             of project scope and only the configuration silences it"
         ),
         "{text}"
     );
