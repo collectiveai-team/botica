@@ -1,0 +1,72 @@
+{
+  "diagnostics": [
+    {
+      "path": "routes.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 242,
+          "line": 12,
+          "column": 1
+        },
+        "end": {
+          "offset": 258,
+          "line": 12,
+          "column": 17
+        }
+      },
+      "message": "The route `list_orders` gets no caller from a dependency that verifies a credential: add one of the `dependencies` of `[rules.route-auth]` to its parameters, to the `dependencies` of its decorator or of its router, or list `list_orders` in `public`"
+    },
+    {
+      "path": "routes.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 338,
+          "line": 17,
+          "column": 1
+        },
+        "end": {
+          "offset": 355,
+          "line": 17,
+          "column": 18
+        }
+      },
+      "message": "The route `create_order` gets no caller from a dependency that verifies a credential: add one of the `dependencies` of `[rules.route-auth]` to its parameters, to the `dependencies` of its decorator or of its router, or list `create_order` in `public`"
+    },
+    {
+      "path": "routes.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 460,
+          "line": 22,
+          "column": 1
+        },
+        "end": {
+          "offset": 510,
+          "line": 22,
+          "column": 51
+        }
+      },
+      "message": "The route `export` gets no caller from a dependency that verifies a credential: add one of the `dependencies` of `[rules.route-auth]` to its parameters, to the `dependencies` of its decorator or of its router, or list `export` in `public`"
+    },
+    {
+      "path": "routes.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 551,
+          "line": 27,
+          "column": 1
+        },
+        "end": {
+          "offset": 574,
+          "line": 27,
+          "column": 24
+        }
+      },
+      "message": "The route `live` gets no caller from a dependency that verifies a credential: add one of the `dependencies` of `[rules.route-auth]` to its parameters, to the `dependencies` of its decorator or of its router, or list `live` in `public`"
+    }
+  ]
+}

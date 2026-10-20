@@ -8,6 +8,7 @@ use crate::external_config::EXTERNAL_CONFIG;
 use crate::import_layers::IMPORT_LAYERS;
 use crate::layout::{CodeDir, NoArtifactsInPackage, NoNotebooks, NoTestsInPackage};
 use crate::native::{FileSizeGuard, NativeRule, NoUtils};
+use crate::route_auth::{RouteAuth, ROUTE_AUTH};
 use crate::suppress::{INVALID, UNUSED};
 
 pub const IO_ERROR: &str = "io-error";
@@ -37,7 +38,7 @@ enum Provider {
     Engine,
 }
 
-const NATIVES: [(&str, Provider); 11] = [
+const NATIVES: [(&str, Provider); 12] = [
     (
         "file-size-guard",
         Provider::Rule {
@@ -71,6 +72,13 @@ const NATIVES: [(&str, Provider); 11] = [
         Provider::Rule {
             make: |_, context| over_code_dirs::<NoArtifactsInPackage>(context),
             reads_code_dirs: true,
+        },
+    ),
+    (
+        ROUTE_AUTH,
+        Provider::Rule {
+            make: route_auth,
+            reads_code_dirs: false,
         },
     ),
     (IO_ERROR, Provider::Engine),
@@ -113,6 +121,26 @@ fn no_utils(_options: &Options, context: &Context) -> Box<dyn NativeRule> {
     Box::new(NoUtils {
         working_prefix: context.working_prefix.clone(),
     })
+}
+
+fn route_auth(options: &Options, _context: &Context) -> Box<dyn NativeRule> {
+    Box::new(RouteAuth {
+        dependencies: strings(options, "dependencies"),
+        public: strings(options, "public"),
+    })
+}
+
+fn strings(options: &Options, name: &str) -> Vec<String> {
+    options
+        .get(name)
+        .and_then(toml::Value::as_array)
+        .map(|values| {
+            values
+                .iter()
+                .filter_map(|value| value.as_str().map(str::to_owned))
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn threshold(options: &Options, name: &str, default: usize) -> usize {

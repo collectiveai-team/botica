@@ -143,6 +143,9 @@ priority = 2
 # `catalog/recipes/files/**` and `catalog/recipes/sections/**` are the templates of the recipes of botica:
 # this repo's own config files are installed from them, and the variants of a workflow for each
 # ecosystem repeat its header, so they are left out too.
+# A YAML rule of ast-grep names one language, so a rule of botica for TypeScript carries its
+# `typescript.yml` again as `tsx.yml` and `javascript.yml`, with only `language:` changed; those two
+# copies are left out.
 # The gate reads the **duplicated-lines** percentage, not the token one. jscpd prints both
 # per language and in the Total row, and they diverge widely — the run that failed this branch
 # reported 34.75% of lines against 67.83% of tokens, and the error text quoted 34.8%. Read the
@@ -155,7 +158,7 @@ priority = 2
 [[repos.hooks]]
 id = "jscpd"
 name = "jscpd (copy-paste duplication)"
-entry = "npx --yes jscpd@5 . --threshold 2.5 --ignore \"catalog/recipes/files/**,catalog/recipes/sections/**,standards/**\""
+entry = "npx --yes jscpd@5 . --threshold 2.5 --ignore \"catalog/recipes/files/**,catalog/recipes/sections/**,standards/**,catalog/rules/**/tsx.yml,catalog/rules/**/javascript.yml\""
 language = "system"
 pass_filenames = false
 priority = 2

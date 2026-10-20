@@ -1,0 +1,19 @@
+id = "route-auth"
+code = "BTSEC001"
+standard = "CES-121"
+summary = "Each route gets its caller from a dependency that verifies a credential"
+status = "preview"
+tags = ["auth", "fastapi"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save"]
+default-enabled = false
+default-severity = "error"
+
+[options]
+dependencies = { type = "strings", default = [] }
+public = { type = "strings", default = [] }
+
+[[implementations]]
+kind = "native"
+languages = ["python"]

@@ -104,10 +104,13 @@ run on its own. `botica rules test --judge abide` runs abide with the environmen
 | `BTFAST004` | [`api-response-schema-name`](../catalog/rules/fastapi/api-response-schema-name/README.md) | CES-17 | Python: a response schema not named `{Name}Response` |
 | `BTLOG001` | [`log-get-logger`](../catalog/rules/logging/log-get-logger/README.md) | CES-45 | Python: `logging.getLogger` called directly |
 | `BTLOG002` | [`log-no-print`](../catalog/rules/logging/log-no-print/README.md) | CES-46 | Python, TypeScript and JavaScript: `print()`, `console.*` and writes to stdout or stderr in library code |
+| `BTSEC001` | [`route-auth`](../catalog/rules/security/route-auth/README.md) | CES-121 | Python: a FastAPI route with none of the `dependencies` of the configuration |
+| `BTSEC002` | [`jwt-verified`](../catalog/rules/security/jwt-verified/README.md) | CES-121 | Python, TypeScript, JavaScript, Go and Rust: a token decoded without its signature or its expiry checked |
+| `BTSEC003` | [`no-token-in-web-storage`](../catalog/rules/security/no-token-in-web-storage/README.md) | CES-121 | TypeScript and JavaScript: a credential written to `localStorage` or `sessionStorage` |
 | `BT001`–`BT003` | `io-error`, `unused-suppression`, `invalid-suppression` | | the run and the suppressions |
 | `BT004` | [`external-config`](../catalog/rules/botica/external-config/README.md) | | the files of configuration that the active external rules name |
 
-`BTCONF002`, `BTCONF003`, `BTDB002`, `BTFAST002`–`BTFAST004` and `BTSTRUC006` have the status `preview` and
+`BTCONF002`, `BTCONF003`, `BTDB002`, `BTFAST002`–`BTFAST004`, `BTSEC001`–`BTSEC003` and `BTSTRUC006` have the status `preview` and
 are off by default: they run only with `preview = true` and when you select them.
 
 Another tool enforces an external rule (`kind = "external"`) through its configuration. The rule

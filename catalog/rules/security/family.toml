@@ -1,0 +1,2 @@
+code = "SEC"
+description = "How code handles credentials: who checks them, how a token is decoded and where the browser keeps it."

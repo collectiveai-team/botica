@@ -11,6 +11,7 @@ mod native;
 pub mod postprocess;
 pub mod registry;
 pub mod report;
+pub mod route_auth;
 pub mod suppress;
 mod timings;
 

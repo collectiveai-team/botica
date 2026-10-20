@@ -214,6 +214,20 @@ fn a_finding_inside_a_multi_line_template_is_silenced_on_its_last_line() {
 }
 
 #[test]
+fn go_and_rust_comments() {
+    assert!(found("a.go", "x := FLAG // botica: ignore[flag-rule]\n").is_empty());
+    assert!(found("a.rs", "let x = FLAG; /* botica: ignore[flag-rule] */\n").is_empty());
+    let text = "s := `FLAG // botica: ignore[flag-rule]`\n";
+    assert_eq!(found("a.go", text), ["flag-rule@1"]);
+    let text = "let s = r#\"FLAG \"// botica: ignore[flag-rule]\"#;\n";
+    assert_eq!(found("a.rs", text), ["flag-rule@1"]);
+    let text = "fn f<'a>(x: &'a str) -> char { let q = '\"'; FLAG } // botica: ignore[flag-rule]\n";
+    assert!(found("a.rs", text).is_empty());
+    let text = "let s = \"\nFLAG\n\"; // botica: ignore[flag-rule]\n";
+    assert!(found("a.rs", text).is_empty());
+}
+
+#[test]
 fn hash_comment_languages() {
     assert!(found("run.sh", "echo FLAG  # botica: ignore[flag-rule]\n").is_empty());
     assert!(found("ci.yaml", "key: FLAG  # botica: ignore[flag-rule]\n").is_empty());
@@ -448,7 +462,7 @@ fn no_input_makes_the_parser_panic() {
         "é",
         "\u{1F980}",
     ];
-    const PATHS: [&str; 7] = [
+    const PATHS: [&str; 9] = [
         "a.py",
         "a.ts",
         "a.js",
@@ -456,6 +470,8 @@ fn no_input_makes_the_parser_panic() {
         "a.md",
         "a.toml",
         "Dockerfile",
+        "a.go",
+        "a.rs",
     ];
     let engine = engine(policy());
     let mut state = 0x9E37_79B9_7F4A_7C15_u64;

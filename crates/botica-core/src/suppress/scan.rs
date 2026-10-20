@@ -15,6 +15,8 @@ pub(crate) enum Syntax {
     Script,
     /// `<!-- -->` comments: HTML and Markdown.
     Markup,
+    /// `//` and `/* */` comments, `"` strings, raw strings and character literals: Go and Rust.
+    CLike,
 }
 
 impl Syntax {
@@ -26,6 +28,7 @@ impl Syntax {
             Some("js" | "jsx" | "mjs" | "cjs" | "ts" | "tsx" | "mts" | "cts") => Some(Self::Script),
             Some("sh" | "bash" | "zsh" | "yml" | "yaml" | "mk" | "dockerfile") => Some(Self::Hash),
             Some("md" | "markdown" | "html" | "htm") => Some(Self::Markup),
+            Some("go" | "rs") => Some(Self::CLike),
             _ if name == "Dockerfile" || name.starts_with("Dockerfile.") || name == "Makefile" => {
                 Some(Self::Hash)
             }
@@ -54,7 +57,115 @@ pub(crate) fn scan(text: &str, syntax: Syntax) -> Scan {
         Syntax::Hash => hash_family(bytes, false, true),
         Syntax::Script => script(bytes),
         Syntax::Markup => markup(text),
+        Syntax::CLike => c_like(bytes),
     }
+}
+
+/// Where a block comment that opens at `at` ends (after its `*/`).
+fn block_comment_end(bytes: &[u8], at: usize) -> usize {
+    bytes[at + 2..]
+        .windows(2)
+        .position(|pair| pair == b"*/")
+        .map_or(bytes.len(), |end| at + 2 + end)
+}
+
+/// Where the string that opens at `at` with `"` ends, newlines included: Go and Rust.
+fn quoted_end(bytes: &[u8], at: usize) -> usize {
+    let mut j = at + 1;
+    while j < bytes.len() {
+        match bytes[j] {
+            b'\\' => j += 2,
+            b'"' => return j + 1,
+            _ => j += 1,
+        }
+    }
+    bytes.len()
+}
+
+/// Where a raw string of Rust that opens at `at` (`r"`, `r#"`, `br##"`…) ends, or `None` when
+/// none opens there.
+fn raw_string_end(bytes: &[u8], at: usize) -> Option<usize> {
+    if at > 0 && is_word(bytes[at - 1]) {
+        return None;
+    }
+    let mut j = at + usize::from(bytes[at] == b'b');
+    if bytes.get(j) != Some(&b'r') {
+        return None;
+    }
+    j += 1;
+    let hashes = bytes[j..].iter().take_while(|&&byte| byte == b'#').count();
+    j += hashes;
+    if bytes.get(j) != Some(&b'"') {
+        return None;
+    }
+    let mut close = vec![b'"'];
+    close.extend(std::iter::repeat_n(b'#', hashes));
+    Some(
+        bytes[j + 1..]
+            .windows(close.len())
+            .position(|window| window == close.as_slice())
+            .map_or(bytes.len(), |end| j + 1 + end + close.len()),
+    )
+}
+
+/// Where a character literal that opens at `at` ends, or `None` for a lifetime of Rust (`'a`).
+fn char_end(bytes: &[u8], at: usize) -> Option<usize> {
+    match bytes.get(at + 1)? {
+        b'\\' => {
+            let close = bytes[at + 2..].iter().position(|&byte| byte == b'\'')?;
+            Some(at + 2 + close + 1)
+        }
+        &first => {
+            let width = match first {
+                0xF0.. => 4,
+                0xE0.. => 3,
+                0xC0.. => 2,
+                _ => 1,
+            };
+            (bytes.get(at + 1 + width) == Some(&b'\'')).then_some(at + 2 + width)
+        }
+    }
+}
+
+fn c_like(bytes: &[u8]) -> Scan {
+    let mut scan = Scan::default();
+    let mut i = 0;
+    while i < bytes.len() {
+        let end = match bytes[i] {
+            b'/' if bytes.get(i + 1) == Some(&b'/') => {
+                let end = line_end(bytes, i);
+                scan.comments.push(i + 2..end);
+                i = end;
+                continue;
+            }
+            b'/' if bytes.get(i + 1) == Some(&b'*') => {
+                let end = block_comment_end(bytes, i);
+                scan.comments.push(i + 2..end);
+                i = (end + 2).min(bytes.len());
+                continue;
+            }
+            b'r' | b'b' => raw_string_end(bytes, i),
+            b'"' => Some(quoted_end(bytes, i)),
+            b'`' => Some(
+                bytes[i + 1..]
+                    .iter()
+                    .position(|&byte| byte == b'`')
+                    .map_or(bytes.len(), |end| i + 1 + end + 1),
+            ),
+            b'\'' => char_end(bytes, i),
+            _ => None,
+        };
+        match end {
+            Some(end) => {
+                if bytes[i..end].contains(&b'\n') {
+                    scan.strings.push(i..end);
+                }
+                i = end.max(i + 1);
+            }
+            None => i += 1,
+        }
+    }
+    scan
 }
 
 fn line_end(bytes: &[u8], from: usize) -> usize {
