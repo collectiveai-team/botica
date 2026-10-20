@@ -1,7 +1,6 @@
 name: Conventional Commits
 
-# CES-75 (agents-conventional-commits): enforce the Conventional Commits format on the PR title,
-# mirroring the local commit-msg prek hook. The title is read from an env var (never interpolated
+# CES-75, on the title of the pull request. The title is read from an env var (never interpolated
 # into the shell) to avoid script injection.
 
 on:
@@ -36,7 +35,7 @@ jobs:
               print(f"PR title OK: {title!r}")
               sys.exit(0)
           print(
-              "::error::CES-75 (agents-conventional-commits): PR title must follow "
+              "::error::PR title must follow "
               f"Conventional Commits (type(scope): description). Got: {title!r}"
           )
           sys.exit(1)

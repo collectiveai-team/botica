@@ -1,8 +1,7 @@
 name: osv-scanner
 
-# CES-119 (osv-scanner-replace-pip-audit): audit dependencies for known vulnerabilities via
-# OSV.dev. osv-scanner reads go.mod natively, so the only difference from the workflow
-# of a Python project is the --lockfile argument.
+# CES-119: osv-scanner checks go.mod against OSV.dev. The workflow of a Python project differs only
+# in the --lockfile argument.
 #
 # Two scans, split by what can cause a finding:
 #

@@ -4,8 +4,8 @@ name: Docker
 #   - push to main  -> :latest and :sha-<short>
 #   - tag vX.Y.Z    -> :X.Y.Z and :latest
 # The image name defaults to ghcr.io/<owner>/<repo>; adjust IMAGE below if you
-# publish under a different name. Add a build matrix (see the aymurai-asr
-# docker.yml) if you need multiple flavours such as cpu/gpu.
+# publish under a different name. Add a build matrix if you
+# need several flavours, such as cpu and gpu.
 
 on:
   push:

@@ -1,9 +1,7 @@
 name: commit-policy
 
-# CES-91 (no-ai-coauthorship): CI is the source of truth for the AI-co-authorship policy — the
-# local commit-msg prek hook helps developers, but can be bypassed with `git commit --no-verify`.
-# Every commit message reachable from the PR/push is checked (never interpolated into the shell:
-# read from a file, matched with a fixed Python pattern).
+# CES-91. The messages are read from a file and matched with a fixed pattern, never interpolated into
+# the shell.
 
 on:
   pull_request:
@@ -56,7 +54,7 @@ jobs:
           match = pattern.search(out.stdout)
           if match:
               print(
-                  "::error::CES-91 (no-ai-coauthorship): commit message must not carry AI "
+                  "::error::commit message must not carry AI "
                   f"co-authorship/attribution trailers. Found: {match.group(0)!r}"
               )
               sys.exit(1)

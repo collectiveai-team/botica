@@ -12,7 +12,7 @@ Every commit subject follows [Conventional Commits](https://www.conventionalcomm
 ```
 
 A local `commit-msg` prek hook validates the message at commit time, and a CI workflow validates
-the title of a pull request. Both embed `CES-75`.
+the title of a pull request.
 
 ## Allowed types
 

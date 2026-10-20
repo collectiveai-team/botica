@@ -1,8 +1,8 @@
 name: Botica release
 
 # Tag-driven: `git tag -a vX.Y.Z && git push origin HEAD vX.Y.Z`, with X.Y.Z equal to the version in
-# Cargo.toml ([workspace.package]) and Cargo.lock in sync. v0.1.0 to v0.6.0 are releases of
-# the removed scaffolding package: botica starts at 0.7.0. The file name is the one the PyPI trusted publisher is registered with.
+# Cargo.toml ([workspace.package]) and Cargo.lock in sync.
+# The file name is the one the PyPI trusted publisher is registered with.
 # Gated on the CI suite and on the repository's own Tests suite. Builds wheels with the binary and `botica.sdk`
 # (maturin, bindings = "bin") per platform, attaches them with a .sha256 each to a GitHub Release,
 # and uploads them to PyPI (trusted publishing) when PUBLISH_TO_PYPI is "true". Then it pushes the
@@ -13,7 +13,7 @@ on:
     tags:
       - "v*.*.*"
 
-# One run per tag, and never cancelled halfway: a release that stops after `publish` is a mess.
+# One run per tag, and never cancelled halfway: a release that stops after `publish` is half-published.
 concurrency:
   group: botica-release-${{ github.ref }}
   cancel-in-progress: false
