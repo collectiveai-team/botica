@@ -28,8 +28,6 @@ describes one, and the hook reports each finding with its slug and its message.
 - **CES-75 · Conventional Commits** `[prek]` — commit subjects follow `type(scope): description`;
   a commit-msg hook checks every commit and a CI workflow checks the PR title. Slug:
   `agents-conventional-commits`.
-- **CES-77 · version pin** `[judgment]` — `requires-python` ships as a non-enforced comment
-  (house default 3.14); an existing repo's pin wins. → see `pyproject.toml` comment.
 - **CES-91 · no AI co-authorship in commits** `[prek]` `[ci]` — commit messages must not carry
   `Co-authored-by:`/`Generated with`/etc AI-attribution trailers; a commit-msg hook gives local
   feedback, `commit-policy.yml` is the CI source of truth. Slug: `no-ai-coauthorship`.

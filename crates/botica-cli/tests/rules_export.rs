@@ -255,6 +255,7 @@ fn the_pages_of_a_family_sort_by_code_when_their_names_are_sorted() {
             "btconf002-settings-base-class.md",
             "btconf003-settings-direct-instantiation.md",
             "btconf004-settings-env-schema.md",
+            "btconf005-version-pin.md",
         ]
     );
 }

@@ -140,8 +140,6 @@ describes one, and the hook reports each finding with its slug and its message.
 - **CES-75 · Conventional Commits** `[prek]` — commit subjects + PR titles follow
   `type(scope): description` (enforced here via the commit-msg hook + CI). →
   `@standards/CES/75-agents-conventional-commits.md`
-- **CES-77 · version pin** `[judgment]` — `requires-python` stays a deliberate local choice;
-  house default is 3.14. → `@standards/CES/77-version-pin.md`
 - **CES-91 · no AI co-authorship in commits** `[prek]` `[ci]` — no `Co-authored-by:`/`Generated
   with`/etc AI-attribution trailers; commit-msg hook + `commit-policy.yml` CI. →
   `@standards/CES/91-no-ai-coauthorship.md`

@@ -1,0 +1,6 @@
+{
+  "verdicts": [
+    { "file": "valid/named-move.diff", "band": "clear" },
+    { "file": "invalid/silent-move.diff", "band": "act" }
+  ]
+}
