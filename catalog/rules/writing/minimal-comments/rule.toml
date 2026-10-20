@@ -4,6 +4,7 @@ standard = "CES-120"
 summary = "A comment says only what the code cannot"
 status = "preview"
 tags = ["writing"]
+files = ["**/*.py", "**/*.pyi", "**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs", "**/*.go", "**/*.rs", "**/*.toml", "**/*.yml", "**/*.yaml"]
 default-enabled = false
 default-severity = "warning"
 

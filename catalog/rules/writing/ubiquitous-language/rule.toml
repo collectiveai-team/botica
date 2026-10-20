@@ -4,6 +4,7 @@ standard = "CES-120"
 summary = "One term per concept of the domain, the one of the glossary"
 status = "preview"
 tags = ["writing"]
+files = ["**/*.py", "**/*.pyi", "**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs", "**/*.go", "**/*.rs", "**/*.md"]
 default-enabled = false
 default-severity = "warning"
 
