@@ -50,9 +50,6 @@ describes one, and the hook reports each finding with its slug and its message.
 - **CES-91 · no AI co-authorship in commits** `[prek]` `[ci]` — commit messages must not carry
   `Co-authored-by:`/`Generated with`/etc AI-attribution trailers; a commit-msg hook gives local
   feedback, `commit-policy.yml` is the CI source of truth. Slug: `no-ai-coauthorship`.
-- **CES-109 · dependency hygiene** `[prek]` — declared `pyproject.toml` dependencies must match
-  the actual import graph (no unused/missing/misplaced deps), via `deptry`. Slug:
-  `dep-hygiene-deptry`.
 - **CES-111 · randomize test order** `[dependency]` — `pytest-randomly` runs every test suite in
   a random, reproducibly-seeded order to catch state-leaking/order-dependent tests; activates
   automatically, no separate hook. Slug: `test-order-randomization-pytest-randomly`.

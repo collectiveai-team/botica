@@ -19,6 +19,7 @@ mod extensions;
 mod external;
 mod import_layers;
 mod judged;
+mod lockfiles;
 mod paths;
 mod project_files;
 mod settings_schema;

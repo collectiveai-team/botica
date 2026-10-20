@@ -8,13 +8,19 @@ use botica_config::Resolution;
 use botica_core::env_schema::SETTINGS_ENV_SCHEMA;
 use botica_core::external_config::EXTERNAL_CONFIG;
 use botica_core::import_layers::IMPORT_LAYERS;
+use botica_core::lockfiles::LOCKFILE_COMMITTED;
 use botica_core::{walk, Diagnostic};
 
-use super::{external, import_layers, settings_schema};
+use super::{external, import_layers, lockfiles, settings_schema};
 use crate::project;
 
 /// The native rules of project scope.
-pub const RULES: [&str; 3] = [EXTERNAL_CONFIG, SETTINGS_ENV_SCHEMA, IMPORT_LAYERS];
+pub const RULES: [&str; 4] = [
+    EXTERNAL_CONFIG,
+    SETTINGS_ENV_SCHEMA,
+    IMPORT_LAYERS,
+    LOCKFILE_COMMITTED,
+];
 
 /// What the native rules of project scope find, once for the whole project at `root`, shown from
 /// the directory `prefix` inside it.
@@ -26,6 +32,7 @@ pub fn findings(
     let mut found = external::findings(resolution, root, prefix);
     found.extend(settings_schema::findings(resolution, root, prefix));
     found.extend(import_layers::findings(resolution, root, prefix));
+    found.extend(lockfiles::findings(resolution, root, prefix));
     found
 }
 

@@ -7,6 +7,7 @@ mod extension_run;
 pub mod external_config;
 pub mod import_layers;
 mod layout;
+pub mod lockfiles;
 mod native;
 pub mod postprocess;
 pub mod registry;

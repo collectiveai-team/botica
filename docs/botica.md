@@ -86,6 +86,7 @@ run on its own. `botica rules test --judge abide` runs abide with the environmen
 | `BTSTRUC004` | [`no-notebooks`](../catalog/rules/structure/no-notebooks/README.md) | CES-32 | notebooks inside the code |
 | `BTSTRUC005` | [`no-tests-in-package`](../catalog/rules/structure/no-tests-in-package/README.md) | CES-32 | Python: tests inside the package |
 | `BTSTRUC006` | [`cognitive-complexity`](../catalog/rules/structure/cognitive-complexity/README.md) | CES-110 | external: complexipy measures it, through its hook in `prek.toml` |
+| `BTSTRUC007` | [`lockfile-committed`](../catalog/rules/structure/lockfile-committed/README.md) | CES-109 | the project: each manifest of Python, Node, Go and Rust has the committed lockfile of one package manager |
 | `BTARCH001` | [`import-layers`](../catalog/rules/architecture/import-layers/README.md) | CES-5 | the project: Python imports against the `layers` of the configuration, direct or through other modules |
 | `BTCLI001` | [`cli-typed-framework`](../catalog/rules/cli/cli-typed-framework/README.md) | CES-67 | Python: `argparse`, `click` and `sys.argv` |
 | `BTCONF001` | [`settings-module`](../catalog/rules/config/settings-module/README.md) | CES-76 | Python: `os.getenv` and `os.environ` outside the settings module |
@@ -110,7 +111,7 @@ run on its own. `botica rules test --judge abide` runs abide with the environmen
 | `BT001`–`BT003` | `io-error`, `unused-suppression`, `invalid-suppression` | | the run and the suppressions |
 | `BT004` | [`external-config`](../catalog/rules/botica/external-config/README.md) | | the files of configuration that the active external rules name |
 
-`BTCONF002`, `BTCONF003`, `BTDB002`, `BTFAST002`–`BTFAST004`, `BTSEC001`–`BTSEC003` and `BTSTRUC006` have the status `preview` and
+`BTCONF002`, `BTCONF003`, `BTDB002`, `BTFAST002`–`BTFAST004`, `BTSEC001`–`BTSEC003`, `BTSTRUC006` and `BTSTRUC007` have the status `preview` and
 are off by default: they run only with `preview = true` and when you select them.
 
 Another tool enforces an external rule (`kind = "external"`) through its configuration. The rule

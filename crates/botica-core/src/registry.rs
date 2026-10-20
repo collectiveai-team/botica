@@ -7,6 +7,7 @@ use crate::env_schema::SETTINGS_ENV_SCHEMA;
 use crate::external_config::EXTERNAL_CONFIG;
 use crate::import_layers::IMPORT_LAYERS;
 use crate::layout::{CodeDir, NoArtifactsInPackage, NoNotebooks, NoTestsInPackage};
+use crate::lockfiles::LOCKFILE_COMMITTED;
 use crate::native::{FileSizeGuard, NativeRule, NoUtils};
 use crate::route_auth::{RouteAuth, ROUTE_AUTH};
 use crate::suppress::{INVALID, UNUSED};
@@ -38,7 +39,7 @@ enum Provider {
     Engine,
 }
 
-const NATIVES: [(&str, Provider); 12] = [
+const NATIVES: [(&str, Provider); 13] = [
     (
         "file-size-guard",
         Provider::Rule {
@@ -87,6 +88,7 @@ const NATIVES: [(&str, Provider); 12] = [
     (EXTERNAL_CONFIG, Provider::Engine),
     (SETTINGS_ENV_SCHEMA, Provider::Engine),
     (IMPORT_LAYERS, Provider::Engine),
+    (LOCKFILE_COMMITTED, Provider::Engine),
 ];
 
 pub fn uses_code_dirs(slug: &str) -> bool {

@@ -1,0 +1,15 @@
+id = "lockfile-committed"
+code = "BTSTRUC007"
+standard = "CES-109"
+summary = "Each manifest has the lockfile of one package manager, committed"
+status = "preview"
+tags = ["dependencies"]
+scope = "project"
+needs = "bytes"
+run-on = ["cli"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "native"
+languages = ["*"]

@@ -24,7 +24,7 @@ fn an_ast_grep_rule_gets_the_next_code_of_its_family_and_a_folder_that_loads() {
     assert_eq!(
         read(&folder.join("rule.toml")),
         "id = \"no-foo\"\n\
-         code = \"BTSTRUC007\"\n\
+         code = \"BTSTRUC008\"\n\
          standard = \"CES-63\"\n\
          summary = \"TODO: what the rule asks, in one line\"\n\
          status = \"preview\"\n\
@@ -61,7 +61,7 @@ fn an_ast_grep_rule_gets_the_next_code_of_its_family_and_a_folder_that_loads() {
     );
 
     let catalog = reload(&dir);
-    let rule = catalog.resolve("BTSTRUC007").expect("the new rule");
+    let rule = catalog.resolve("BTSTRUC008").expect("the new rule");
     assert_eq!(rule.id, "no-foo");
     let titles: Vec<String> = rule
         .sections()
@@ -75,7 +75,7 @@ fn an_ast_grep_rule_gets_the_next_code_of_its_family_and_a_folder_that_loads() {
         .all(|section| section.text.starts_with("TODO: ")));
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
-        stdout.contains("BTSTRUC007") && stdout.contains("structure/no-foo"),
+        stdout.contains("BTSTRUC008") && stdout.contains("structure/no-foo"),
         "{stdout}"
     );
 }

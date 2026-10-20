@@ -10,12 +10,23 @@ The dependencies that `pyproject.toml` declares match the import graph, checked 
 imported dependency that is undeclared (`DEP001`), and no dev dependency imported in production
 code or the reverse (`DEP004`).
 
+In every ecosystem, each manifest that declares dependencies (`pyproject.toml`, `package.json`,
+`go.mod`, `Cargo.toml`) has the lockfile of one package manager, next to it or at the root of its
+workspace, and the lockfile is committed. A folder holds the lockfile of one manager only, and the
+`packageManager` of a `package.json`, when it names one, names the manager of that lockfile. This
+holds for libraries too: uv says that `uv.lock` "should be checked into version control", and
+Cargo suggests committing `Cargo.lock` "as a starting point".
+
 ## Why
 
 `osv-scanner` checks the resolved dependency set for CVEs. It does not check whether the
 declared set matches what is imported. An agent that tries an approach mid-session and reverts
 often leaves dependencies declared and unused, or imports something that came in transitively and
 was never declared. Ruff gives no signal about this.
+
+A lockfile fixes the versions that CI and each machine install, and it is the set that
+`osv-scanner` checks. An agent that runs `npm install` in a repository of pnpm leaves a second
+lockfile, and the two sets of versions drift apart.
 
 ## Scope and false positives
 

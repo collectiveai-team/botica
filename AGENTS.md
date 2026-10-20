@@ -160,9 +160,6 @@ describes one, and the hook reports each finding with its slug and its message.
 - **CES-91 · no AI co-authorship in commits** `[prek]` `[ci]` — no `Co-authored-by:`/`Generated
   with`/etc AI-attribution trailers; commit-msg hook + `commit-policy.yml` CI. →
   `@standards/CES/91-no-ai-coauthorship.md`
-- **CES-109 · dependency hygiene** `[prek]` — declared deps must match the import graph
-  (`deptry`); `lint`/`skills` excluded (the Rust workspace, vendored payload). →
-  `@standards/CES/109-dep-hygiene-deptry.md`
 - **CES-111 · randomize test order** `[dependency]` — `pytest-randomly` runs every suite in a
   random, reproducibly-seeded order. → `@standards/CES/111-test-order-randomization-pytest-randomly.md`
 - **CES-113 · dependency review on PRs** `[ci]` — `dependency-review-action`, summary-only, not a

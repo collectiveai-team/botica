@@ -32,7 +32,7 @@ fn an_external_rule_names_its_tool_and_gets_the_fragment_of_its_configuration() 
     assert_eq!(
         read(&folder.join("rule.toml")),
         "id = \"dep-hygiene\"\n\
-         code = \"BTSTRUC007\"\n\
+         code = \"BTSTRUC008\"\n\
          standard = \"CES-109\"\n\
          summary = \"TODO: what the rule asks, in one line\"\n\
          status = \"preview\"\n\
@@ -54,7 +54,7 @@ fn an_external_rule_names_its_tool_and_gets_the_fragment_of_its_configuration() 
     assert!(!folder.join("fixtures").exists());
 
     let catalog = reload(&dir);
-    let rule = catalog.resolve("BTSTRUC007").expect("the new rule");
+    let rule = catalog.resolve("BTSTRUC008").expect("the new rule");
     assert!(rule.is_external_only());
     assert_eq!(rule.implementations[0].target(), Some("prek.toml"));
     let titles: Vec<String> = rule
