@@ -82,7 +82,7 @@ pub fn write(report: &Report<'_>, format: Format, out: &mut impl Write) -> io::R
                 row.rule
             )
         }),
-        Format::Github | Format::Sarif => Err(io::Error::new(
+        Format::Github | Format::Sarif | Format::Markdown => Err(io::Error::new(
             io::ErrorKind::Unsupported,
             "counts are only available in the text and json formats",
         )),

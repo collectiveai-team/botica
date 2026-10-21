@@ -115,6 +115,32 @@ fn github_annotates_each_diagnostic_and_each_error_escaping_what_the_workflow_co
 }
 
 #[test]
+fn markdown_is_a_table_of_the_findings_then_the_failures_of_the_run() {
+    let change = whole_file("", "pr-small-by-intent", Severity::Warning, "two intents");
+    let diagnostics = [
+        whole_file("big.py", "file-size-guard", Severity::Error, "too large"),
+        in_code("src/a.py", "log-no-print", Severity::Info, "a | b\nc"),
+        change,
+    ];
+
+    let text = rendered(&diagnostics, &[extension_failure()], Format::Markdown);
+
+    assert_eq!(
+        text,
+        concat!(
+            "| Severity | Rule | File | Finding |\n",
+            "|---|---|---|---|\n",
+            "| error | `file-size-guard` (BTSTRUC001) | `big.py` | too large |\n",
+            "| info | `log-no-print` | `src/a.py:2` | a \\| b c |\n",
+            "| warning | `pr-small-by-intent` | (change) | two intents |\n",
+            "\nThe run failed:\n\n",
+            "- extension `uv run --script ext.py`: extension closed its stdout during `lint/files`\n",
+        )
+    );
+    assert_eq!(rendered(&[], &[], Format::Markdown), "No findings.\n");
+}
+
+#[test]
 fn sarif_lists_the_rules_locates_each_result_and_reports_the_errors_as_notifications() {
     let diagnostics = [
         in_code(

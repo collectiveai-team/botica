@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::io::{self, Write};
 
+mod markdown;
 mod sarif;
 pub mod statistics;
 
@@ -20,6 +21,8 @@ pub enum Format {
     Github,
     /// SARIF 2.1.0, with the failures of the run as notifications of the invocation.
     Sarif,
+    /// A Markdown table, one row per diagnostic, for the summary of a job of GitHub Actions.
+    Markdown,
 }
 
 /// What an output format says about a rule of the catalog.
@@ -84,6 +87,7 @@ pub fn write(report: &Report<'_>, format: Format, out: &mut impl Write) -> io::R
         Format::Json => json(report, out),
         Format::Github => github(report, out),
         Format::Sarif => sarif::write(report, out),
+        Format::Markdown => markdown::write(report, out),
     }
 }
 

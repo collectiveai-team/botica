@@ -148,6 +148,7 @@ enum OutputFormat {
     Json,
     Sarif,
     Github,
+    Markdown,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -176,6 +177,7 @@ impl From<OutputFormat> for Format {
             OutputFormat::Json => Format::Json,
             OutputFormat::Sarif => Format::Sarif,
             OutputFormat::Github => Format::Github,
+            OutputFormat::Markdown => Format::Markdown,
         }
     }
 }
