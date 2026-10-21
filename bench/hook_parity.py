@@ -194,6 +194,12 @@ def print_comparison(name: str, rule: str, result: Comparison) -> None:
         print(f"   UNEXPLAINED {item}")
 
 
+def repo_shape_skipped(repo: Path) -> bool:
+    """Return whether the repo-shape hook found no file to check in `repo`."""
+    shape = run(["prek", "run", "repo-shape", "--all-files", "-c", str(TEMPLATE)], repo)
+    return "no files to check" in shape.stdout
+
+
 def real_repo_report(botica: Path, workdir: Path) -> int:
     failures = 0
     for name, repo in pinned_checkouts(workdir):
@@ -201,8 +207,7 @@ def real_repo_report(botica: Path, workdir: Path) -> int:
             result = compare(hook_findings(repo, rule), botica_findings(botica, repo, rule))
             print_comparison(name, rule, result)
             failures += len(result.unexplained)
-        shape = run(["prek", "run", "repo-shape", "--all-files", "-c", str(TEMPLATE)], repo)
-        skipped = "no files to check" in shape.stdout
+        skipped = repo_shape_skipped(repo)
         print(f"== {name} repo-shape hook: {'no files to check' if skipped else 'RAN'}")
         failures += not skipped
     return failures

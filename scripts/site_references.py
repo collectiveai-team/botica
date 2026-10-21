@@ -232,15 +232,29 @@ def _place(reference: Reference) -> str:
     return (reference.file or reference.path) + (f":{reference.lines}" if reference.lines else "")
 
 
+def _cited_by(topic: Topic, citations: list[Citation], page: Path) -> list[str]:
+    """Return the links, from `page`, to the rules and the standards that cite `topic`."""
+    return [
+        citation.link.replace("{page}", _link(citation.page, page))
+        for citation in citations
+        if topic.id in citation.topics
+    ]
+
+
+def _references_section(citation: Citation, titles: dict[str, str], folder: Path) -> str:
+    """Return the `## References` section that lists the topics a page cites."""
+    items = "".join(
+        f"- [{titles[cited]}]({_link(folder / f'{cited}.md', citation.page)})\n"
+        for cited in citation.topics
+    )
+    return f"\n## References\n\n{items}"
+
+
 def _index_page(topics: list[Topic], citations: list[Citation], index: Path) -> str:
     rows = ""
     for topic in topics:
         points = "<br>".join(_points_at(reference) for reference in topic.references)
-        cited = ", ".join(
-            citation.link.replace("{page}", _link(citation.page, index))
-            for citation in citations
-            if topic.id in citation.topics
-        )
+        cited = ", ".join(_cited_by(topic, citations, index))
         title = topic.title.replace("|", "\\|")
         rows += f"| [{topic.id}]({topic.id}.md)<br>{title} | {points} | {cited} |\n"
     return (
@@ -272,22 +286,14 @@ def build(export: Path, docs: Path) -> None:
     folder.mkdir(parents=True, exist_ok=True)
     for topic in topics:
         page = folder / f"{topic.id}.md"
-        cited_by = [
-            citation.link.replace("{page}", _link(citation.page, page))
-            for citation in citations
-            if topic.id in citation.topics
-        ]
-        page.write_text(_topic_page(topic, cited_by), encoding="utf-8")
+        page.write_text(_topic_page(topic, _cited_by(topic, citations, page)), encoding="utf-8")
     index = folder / "index.md"
     index.write_text(_index_page(topics, citations, index), encoding="utf-8")
     titles = {topic.id: topic.title for topic in topics}
     for citation in citations:
-        items = "".join(
-            f"- [{titles[cited]}]({_link(folder / f'{cited}.md', citation.page)})\n"
-            for cited in citation.topics
-        )
         text = citation.page.read_text(encoding="utf-8")
-        citation.page.write_text(f"{text}\n## References\n\n{items}", encoding="utf-8")
+        section = _references_section(citation, titles, folder)
+        citation.page.write_text(text + section, encoding="utf-8")
 
 
 @app.default

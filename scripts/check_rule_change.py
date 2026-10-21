@@ -138,6 +138,43 @@ def parse_name_status(text: str) -> list[Change]:
     return changes
 
 
+def branch_changes(base: str, root: Path) -> list[Change]:
+    """Return the files that `HEAD` changed since it left `base`."""
+    diff = subprocess.run(
+        ["git", "diff", "--name-status", "--no-renames", f"{base}...HEAD"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return parse_name_status(diff.stdout)
+
+
+def verdict(
+    duplicated: Sequence[str],
+    touched: Sequence[str],
+    found: Sequence[str],
+    *,
+    acknowledged: bool,
+) -> tuple[int, list[str]]:
+    """Return the exit code and the report for what the branch changed."""
+    if duplicated:
+        head = "These standards share their number with another standard of the same set:"
+        return 1, [head, *(f"  {standard}" for standard in duplicated)]
+    if len(touched) > 1:
+        head = "This change touches more than one standard; a change touches one:"
+        return 1, [head, *(f"  {standard}" for standard in touched)]
+    if not found:
+        return 0, []
+    lines = [
+        "This change adds a rule and also touches files outside the contract of that rule:",
+        *(f"  {path}" for path in found),
+    ]
+    if acknowledged:
+        return 0, [*lines, "Acknowledged as a contract change."]
+    return 1, [*lines, "Label the change `contract-change` to acknowledge it."]
+
+
 def check_branch(
     base: str,
     root: Path,
@@ -146,37 +183,16 @@ def check_branch(
     acknowledged: bool = False,
 ) -> int:
     """Exit code for the changes of `HEAD` since it left `base`: 1 unless acknowledged."""
-    diff = subprocess.run(
-        ["git", "diff", "--name-status", "--no-renames", f"{base}...HEAD"],
-        cwd=root,
-        capture_output=True,
-        text=True,
-        check=True,
+    changes = branch_changes(base, root)
+    code, lines = verdict(
+        duplicated_standards(root),
+        standards_touched(changes),
+        violations(changes, root, catalogs),
+        acknowledged=acknowledged,
     )
-    changes = parse_name_status(diff.stdout)
-    duplicated = duplicated_standards(root)
-    if duplicated:
-        print("These standards share their number with another standard of the same set:")
-        for standard in duplicated:
-            print(f"  {standard}")
-        return 1
-    touched = standards_touched(changes)
-    if len(touched) > 1:
-        print("This change touches more than one standard; a change touches one:")
-        for standard in touched:
-            print(f"  {standard}")
-        return 1
-    found = violations(changes, root, catalogs)
-    if not found:
-        return 0
-    print("This change adds a rule and also touches files outside the contract of that rule:")
-    for path in found:
-        print(f"  {path}")
-    if acknowledged:
-        print("Acknowledged as a contract change.")
-        return 0
-    print("Label the change `contract-change` to acknowledge it.")
-    return 1
+    for line in lines:
+        print(line)
+    return code
 
 
 @app.default
