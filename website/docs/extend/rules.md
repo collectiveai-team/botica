@@ -129,7 +129,7 @@ criteria = { true = "a test reaches into the internals", false = "the tests call
 
 `botica lint` never runs it. `botica rules export --format agents-md` writes the active judgment
 rules into `AGENTS.md`, and `--format abide` into `.abide/rubric.json`, the rubric of
-[abide](https://github.com/collectiveai-team/abide). abide reads `true` as the violation: the
+[abide](https://www.npmjs.com/package/@coldtea/abide). abide reads `true` as the violation: the
 question asks whether the file breaks the rule. `botica lint --judged <file>` reads what abide
 reports and applies the configuration and the comments to it.
 
