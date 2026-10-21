@@ -18,9 +18,10 @@ when the tag is on `main`, or else the one remote branch that holds the tag.
 5. `publish` makes the release public when every wheel is attached, and the release becomes
    "latest". By hand, `gh release edit vA.B.C --latest` marks another one.
 6. `pypi` uploads the wheels to PyPI when the repository variable `PUBLISH_TO_PYPI` is `true`.
-7. `mirror` waits until PyPI lists the version, and pushes the mirror with its tag (below).
-8. `bump` runs `scripts/bump_mirror_rev.py X.Y.Z` on the branch of the release, runs the hook of
-   botica at the new `rev` (`uvx prek run botica --all-files`) and the tests of the repository
+7. `mirror` waits until uv resolves the version from PyPI (`scripts/wait_for_pypi.sh`), and pushes
+   the mirror with its tag (below).
+8. `bump` runs `scripts/bump_mirror_rev.py X.Y.Z` on the branch of the release, waits again with
+   `scripts/wait_for_pypi.sh`, runs the hook of botica at the new `rev` (`uvx prek run botica --all-files`) and the tests of the repository
    (`uv run pytest`), and pushes the commit
    `chore(release): the hooks of botica point at vX.Y.Z` to that branch, with no pull request. When
    the hook or a test fails, nothing is pushed and the run ends red.
@@ -83,7 +84,11 @@ and pushes a **lightweight** tag `vX.Y.Z`: prek does not install an annotated ta
 The tags of this repository can be annotated. When the mirror has the tag, the job changes nothing.
 
 The tag must come after the wheel is on PyPI, or prek cannot install the hook environment: the
-job waits up to 10 minutes for PyPI to list the version.
+job waits up to 10 minutes for uv to resolve the version. `scripts/wait_for_pypi.sh` asks uv, not
+the JSON API of PyPI, because the JSON API lists an upload before the simple index that uv reads: in
+the release of 0.14.2 the JSON API had the version and `bump` failed to install the hook. The wait
+between checks doubles from 5 seconds up to 160. A failed `bump` is run again with
+`gh run rerun <run> --failed`.
 
 In a project, `rev = "vX.Y.Z"`; `prek update` moves it to the newest tag.
 
