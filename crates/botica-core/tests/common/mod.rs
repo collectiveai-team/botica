@@ -30,6 +30,7 @@ impl NativeRule for Flag {
                 end_line,
                 end_column,
                 file_level: false,
+                measure: None,
                 message: "flagged".to_owned(),
             });
         }
@@ -60,6 +61,7 @@ impl NativeRule for WholeFile {
                 end_line: 1,
                 end_column: 1,
                 file_level: true,
+                measure: None,
                 message: "too big".to_owned(),
             });
         }
@@ -95,6 +97,7 @@ impl NativeRule for Multi {
                 end_line,
                 end_column,
                 file_level: false,
+                measure: None,
                 message: "spans lines".to_owned(),
             });
         }

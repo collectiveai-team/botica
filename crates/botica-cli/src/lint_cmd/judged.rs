@@ -193,6 +193,7 @@ fn diagnostic(found: Found, summary: &str, rule: &str, severity: Severity) -> Di
         end_line: region.as_ref().and_then(|r| r.end_line).unwrap_or(line),
         end_column: region.as_ref().and_then(|r| r.end_column).unwrap_or(column),
         file_level: region.is_none(),
+        measure: None,
         message: match found.note {
             Some(note) => format!("{text} ({note})"),
             None => text,

@@ -46,6 +46,7 @@ fn finding(path: &str, line: usize, end_line: usize) -> Diagnostic {
         end_line,
         end_column: 1,
         file_level: false,
+        measure: None,
         message: String::new(),
     }
 }

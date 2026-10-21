@@ -13,6 +13,7 @@ fn found(path: &str, rule: &str, start: usize) -> Diagnostic {
         end_line: 1,
         end_column: start + 2,
         file_level: false,
+        measure: None,
         message: String::new(),
     }
 }

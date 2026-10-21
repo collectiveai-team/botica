@@ -73,6 +73,7 @@ fn judge_finding(rule: &str) -> Diagnostic {
         end_line: 2,
         end_column: 1,
         file_level: false,
+        measure: None,
         message: "judged".to_owned(),
     }
 }

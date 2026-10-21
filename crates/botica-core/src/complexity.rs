@@ -5,7 +5,7 @@ use std::path::Path;
 
 use ast_grep_language::{Language, SupportLang};
 
-use crate::diagnostic::{Diagnostic, Severity};
+use crate::diagnostic::{Diagnostic, Measure, Severity};
 use crate::document::Document;
 use crate::native::{NativeRule, Needs};
 
@@ -59,6 +59,10 @@ impl NativeRule for CognitiveComplexity {
                      conditions and loops into functions of their own",
                     function.name, function.complexity, self.max
                 ),
+                measure: Some(Measure {
+                    name: function.name,
+                    value: function.complexity,
+                }),
             });
         }
     }

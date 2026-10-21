@@ -42,6 +42,7 @@ fn finding(line: usize, column: usize, end_column: usize, severity: Severity) ->
         end_line: line,
         end_column,
         file_level: false,
+        measure: None,
         message: "BTSTRUC002 (no-utils): no".to_owned(),
     }
 }

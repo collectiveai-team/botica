@@ -122,6 +122,7 @@ pub fn finding(rule: &str, message: &str) -> Diagnostic {
         end_line: 1,
         end_column: 2,
         file_level: false,
+        measure: None,
         message: message.to_owned(),
     }
 }

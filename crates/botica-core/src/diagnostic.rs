@@ -57,6 +57,17 @@ pub struct Diagnostic {
     #[serde(default)]
     pub file_level: bool,
     pub message: String,
+    /// What a rule measured in a function, which the baseline compares with the value it holds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub measure: Option<Measure>,
+}
+
+/// A value that a rule measures in one function, such as its cognitive complexity.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Measure {
+    /// The qualified name of the function: `Order::total`.
+    pub name: String,
+    pub value: u32,
 }
 
 impl Diagnostic {
@@ -74,6 +85,7 @@ impl Diagnostic {
             end_column: 1,
             file_level: true,
             message,
+            measure: None,
         }
     }
 }

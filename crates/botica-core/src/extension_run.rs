@@ -153,6 +153,7 @@ fn diagnostic(wire: WireDiagnostic, texts: &HashMap<&str, &str>) -> Diagnostic {
         end_line,
         end_column,
         file_level: false,
+        measure: None,
         message: wire.message,
     }
 }

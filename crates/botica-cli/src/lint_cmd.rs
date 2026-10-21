@@ -14,6 +14,7 @@ use std::process::ExitCode;
 use std::sync::Arc;
 use std::time::Instant;
 
+mod baseline;
 mod diff;
 mod editor;
 mod extensions;
@@ -87,6 +88,11 @@ pub struct LintArgs {
     #[arg(long, value_name = "TITLE", group = "message",
           conflicts_with_all = ["paths", "judged", "change", "ext"])]
     pr_title: Option<String>,
+    /// Write the findings that carry a measure, such as those of `cognitive-complexity`, to the
+    /// file of `baseline` in the configuration, instead of reporting them, and exit with 0. It
+    /// runs at the root of the project and takes no paths.
+    #[arg(long, conflicts_with_all = ["paths", "judged", "change", "message", "statistics"])]
+    write_baseline: bool,
     /// Files per `lint/files` request.
     #[arg(long, default_value_t = 256)]
     batch: usize,
@@ -146,6 +152,7 @@ impl LintArgs {
             commit_msg: Vec::new(),
             commits: None,
             pr_title: None,
+            write_baseline: false,
             batch: 256,
             no_astgrep: false,
             no_prefilter: false,
@@ -213,12 +220,15 @@ struct Setup {
     project_root: PathBuf,
     /// The extension rules of the catalogs of the project.
     pool: ExtensionPool,
+    /// The file of `baseline` in the configuration, from the root of the project.
+    baseline: Option<PathBuf>,
 }
 
 impl Setup {
     fn build(args: &LintArgs) -> Result<Self> {
         let project = project::load(&args.project)?;
         let project_root = project.loaded.root.clone();
+        let baseline = baseline::path_of(&project_root, project.loaded.config.baseline.as_deref());
         let launcher = Launcher::of(&project);
         let with_astgrep = !args.no_astgrep;
         let io_error_active = project.is_active(IO_ERROR);
@@ -279,6 +289,7 @@ impl Setup {
             has_extensions,
             project_root,
             pool,
+            baseline,
         })
     }
 }
@@ -298,6 +309,7 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     if let Some(sarif) = &args.judged {
         return run_judged(&args, format, &setup, sarif, diff.as_ref());
     }
+    let known = known_findings(&args, &setup)?;
     let root = std::env::current_dir()?;
     let Linted {
         sources,
@@ -329,6 +341,12 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         diagnostics,
         project::verdicts(&setup.resolution, setup.prefix.as_deref()),
     );
+    if args.write_baseline {
+        return write_baseline(&setup, &diagnostics, &errors);
+    }
+    if let Some(known) = &known {
+        known.apply(setup.prefix.as_deref(), &mut diagnostics);
+    }
     if let Some(diff) = &diff {
         diagnostics.retain(|diagnostic| diff.changes.keeps(diagnostic));
     }
@@ -343,6 +361,43 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         );
     }
     Ok(exit_code(&errors, &diagnostics, &args))
+}
+
+/// The baseline that the run leaves the known findings out with: none when the configuration names
+/// none or when the run writes it.
+fn known_findings(args: &LintArgs, setup: &Setup) -> Result<Option<baseline::Baseline>> {
+    if args.write_baseline {
+        if setup.baseline.is_none() {
+            anyhow::bail!("`--write-baseline` needs `baseline = \"<path>\"` in the configuration");
+        }
+        baseline::check_whole_project(setup.prefix.as_deref(), &args.paths)?;
+        return Ok(None);
+    }
+    setup
+        .baseline
+        .as_deref()
+        .map(baseline::Baseline::read)
+        .transpose()
+}
+
+fn write_baseline(
+    setup: &Setup,
+    diagnostics: &[Diagnostic],
+    errors: &[RunError],
+) -> Result<ExitCode> {
+    if !errors.is_empty() {
+        anyhow::bail!("the run failed, so the baseline is not written");
+    }
+    let path = setup
+        .baseline
+        .as_deref()
+        .context("`--write-baseline` needs `baseline` in the configuration")?;
+    let count = baseline::write(path, setup.prefix.as_deref(), diagnostics)?;
+    eprintln!(
+        "botica: {count} known findings written to `{}`",
+        path.display()
+    );
+    Ok(ExitCode::SUCCESS)
 }
 
 fn run_judged(

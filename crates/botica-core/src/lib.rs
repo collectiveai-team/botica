@@ -27,7 +27,7 @@ pub mod walk;
 
 pub use buffer::Buffer;
 pub use coverage::NoCoverageExclusion;
-pub use diagnostic::{Diagnostic, Severity};
+pub use diagnostic::{Diagnostic, Measure, Severity};
 pub use document::Document;
 pub use engine::{Engine, Exclusion, Inclusion, NativePlanner, PathTest, Plan};
 pub use extension_run::{extensions_of, language_of, ExtensionRun};

@@ -14,6 +14,7 @@ fn in_code(path: &str, rule: &str, severity: Severity, message: &str) -> Diagnos
         end_line: 2,
         end_column: 9,
         file_level: false,
+        measure: None,
         message: message.to_owned(),
     }
 }
@@ -30,6 +31,7 @@ fn whole_file(path: &str, rule: &str, severity: Severity, message: &str) -> Diag
         end_line: 1,
         end_column: 1,
         file_level: true,
+        measure: None,
         message: message.to_owned(),
     }
 }

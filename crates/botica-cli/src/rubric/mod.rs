@@ -229,6 +229,7 @@ fn candidate(path: &str, rule: &str) -> Diagnostic {
         end_line: 1,
         end_column: 1,
         file_level: true,
+        measure: None,
         message: String::new(),
     }
 }

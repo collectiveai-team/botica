@@ -53,4 +53,6 @@ A comment on the first line of the function silences it: `# botica: ignore[cogni
 in Python, `// botica: ignore[cognitive-complexity]` in TypeScript, Go and Rust. The comments of
 complexipy, `# complexipy: ignore` and `# noqa: complexipy`, do not. A file whose functions stay
 complex on purpose, such as a generated parser, goes in the `extend-ignores` of
-`[rules.cognitive-complexity]`.
+`[rules.cognitive-complexity]`. A repository with old findings keeps them in a baseline (`baseline`
+in the configuration and `botica lint --write-baseline`), which leaves each one out while its value
+does not grow.

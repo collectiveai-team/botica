@@ -91,6 +91,7 @@ pub fn check(layers: &[String], sources: &[Source<'_>], severity: Severity) -> V
                 end_line,
                 end_column,
                 file_level: false,
+                measure: None,
                 message: message(&module.name, &chain, &breach),
             });
         }

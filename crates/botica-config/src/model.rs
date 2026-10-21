@@ -146,6 +146,10 @@ pub struct Config {
     pub recipes: RecipesConfig,
     #[serde(default)]
     pub extensions: ExtensionsConfig,
+    /// The file of known findings, from the root of the project, that `botica lint
+    /// --write-baseline` writes. A finding it lists is left out while its value does not grow.
+    #[serde(default)]
+    pub baseline: Option<String>,
 }
 
 fn default_select() -> Vec<String> {
@@ -176,6 +180,7 @@ impl Default for Config {
             references: ReferencesConfig::default(),
             recipes: RecipesConfig::default(),
             extensions: ExtensionsConfig::default(),
+            baseline: None,
         }
     }
 }

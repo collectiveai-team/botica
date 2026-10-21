@@ -228,6 +228,7 @@ impl NativeRule for RouteAuth {
                 end_line,
                 end_column,
                 file_level: false,
+                measure: None,
                 message: format!(
                     "The route `{name}` gets no caller from a dependency that verifies a credential: \
                      add one of the `dependencies` of `[rules.route-auth]` to its parameters, to the \

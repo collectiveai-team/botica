@@ -93,6 +93,7 @@ fn finding(doc: &Document<'_>, span: &Range<usize>, message: String) -> Diagnost
         end_line,
         end_column,
         file_level: false,
+        measure: None,
         message,
     }
 }

@@ -4,6 +4,14 @@
   "description": "Settings of `botica lint`: `botica.toml`, or the `[tool.botica]` table of `pyproject.toml`.",
   "type": "object",
   "properties": {
+    "baseline": {
+      "description": "The file of known findings, from the root of the project, that `botica lint\n--write-baseline` writes. A finding it lists is left out while its value does not grow.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
     "catalogs": {
       "type": "object",
       "additionalProperties": {

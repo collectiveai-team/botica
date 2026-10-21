@@ -649,6 +649,32 @@ the configuration, with the path in `extend-ignores` of `[rules.<slug>]` or the 
 comment that names it is `invalid-suppression`. A judgment rule is silenced for a whole file, with a
 reason: `# botica: ignore-file[<slug>] -- <reason>`.
 
+## Known findings
+
+A rule that measures a function, such as `cognitive-complexity`, can keep its old findings in a
+baseline while the new ones fail (ADR 0011). `baseline` in the configuration names the file, from
+the root of the project, and `botica lint --write-baseline`, run at the root with no paths, writes
+it with the findings of the run and exits with 0:
+
+```toml
+baseline = "botica-baseline.toml"
+```
+
+```toml
+[[finding]]
+rule = "cognitive-complexity"
+path = "src/orders.py"
+name = "Order::total"
+value = 23
+```
+
+A finding whose rule, path and function match an entry is left out while its value is at most the
+one of the entry; above it, it is reported with the value of the entry. A function that the file
+does not list is reported. The baseline applies after the comments and the configuration, and
+before the filter of `--diff`. A run fails when the file it names does not exist. `--write-baseline`
+writes the file again from the run, so an entry whose finding is gone leaves it. The editor shows
+every finding.
+
 ## Editor
 
 `botica server` is a language server on stdin and stdout. It takes the paths of the buffers from
