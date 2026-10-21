@@ -7,7 +7,8 @@ use crate::model::{Event, Family, FamilyFile, HistoryFile, Lifecycle, Rule};
 use crate::origin::{Origin, HEADER};
 use crate::readme::check_readme;
 use crate::sources::{attach_configs, attach_scripts, attach_sources, is_script};
-use crate::validate::{check_across, check_family_code, check_history, check_rule, is_kebab_case};
+use crate::validate::{check_family_code, check_history, check_rule, is_kebab_case};
+use crate::validate_across::check_across;
 
 pub const OWN_RULES_DIR: &str = "botica";
 pub const HISTORY_FILE: &str = "history.toml";

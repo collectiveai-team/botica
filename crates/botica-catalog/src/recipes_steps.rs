@@ -179,31 +179,49 @@ fn gitignore_problems(steps: &[GitignoreStep]) -> Vec<String> {
         if step.lines.is_empty() && step.unignore.is_empty() {
             problems.push("a `gitignore` step has no `lines` and no `unignore`".to_owned());
         }
-        for line in &step.lines {
-            if line.trim().is_empty() {
-                problems.push("`gitignore` has an empty line".to_owned());
-            } else if line.contains(['\n', '\r']) {
-                problems.push("a `gitignore` line has a line break".to_owned());
-            } else if UNIGNORE_WHITELIST.contains(&line.trim()) {
-                problems.push(format!("`gitignore` cannot ignore `{}`", line.trim()));
-            } else if !lines.insert(line.as_str()) {
-                problems.push(format!("`gitignore` lists `{line}` twice"));
-            }
-        }
-        for line in &step.unignore {
-            if !UNIGNORE_WHITELIST.contains(&line.as_str()) {
-                problems.push(format!(
-                    "`unignore` can only name {}, not `{line}`",
-                    UNIGNORE_WHITELIST
-                        .map(|name| format!("`{name}`"))
-                        .join(", ")
-                ));
-            } else if !unignored.insert(line.as_str()) {
-                problems.push(format!("`unignore` lists `{line}` twice"));
-            }
-        }
+        problems.extend(
+            step.lines
+                .iter()
+                .filter_map(|line| ignored_line_problem(line, &mut lines)),
+        );
+        problems.extend(
+            step.unignore
+                .iter()
+                .filter_map(|line| unignored_line_problem(line, &mut unignored)),
+        );
     }
     problems
+}
+
+/// What is wrong with a line of `lines` of a `gitignore` step, given the lines `seen` before it.
+fn ignored_line_problem<'a>(line: &'a str, seen: &mut BTreeSet<&'a str>) -> Option<String> {
+    if line.trim().is_empty() {
+        Some("`gitignore` has an empty line".to_owned())
+    } else if line.contains(['\n', '\r']) {
+        Some("a `gitignore` line has a line break".to_owned())
+    } else if UNIGNORE_WHITELIST.contains(&line.trim()) {
+        Some(format!("`gitignore` cannot ignore `{}`", line.trim()))
+    } else if !seen.insert(line) {
+        Some(format!("`gitignore` lists `{line}` twice"))
+    } else {
+        None
+    }
+}
+
+/// What is wrong with a line of `unignore` of a `gitignore` step, given the lines `seen` before it.
+fn unignored_line_problem<'a>(line: &'a str, seen: &mut BTreeSet<&'a str>) -> Option<String> {
+    if !UNIGNORE_WHITELIST.contains(&line) {
+        Some(format!(
+            "`unignore` can only name {}, not `{line}`",
+            UNIGNORE_WHITELIST
+                .map(|name| format!("`{name}`"))
+                .join(", ")
+        ))
+    } else if !seen.insert(line) {
+        Some(format!("`unignore` lists `{line}` twice"))
+    } else {
+        None
+    }
 }
 
 fn skill_problems(skills: &[SkillStep]) -> Vec<String> {

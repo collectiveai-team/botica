@@ -19,6 +19,7 @@ mod references_check;
 mod references_merge;
 mod sources;
 mod validate;
+mod validate_across;
 
 pub use validate::is_kebab_case;
 

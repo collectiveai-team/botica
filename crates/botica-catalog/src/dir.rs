@@ -38,36 +38,55 @@ pub fn read_files(dir: &Path) -> io::Result<Vec<SourceFile>> {
         push(&mut files, dir, &history)?;
     }
     for family in sorted(dir)?.into_iter().filter(|path| path.is_dir()) {
-        let family_toml = family.join("family.toml");
-        if family_toml.is_file() {
-            push(&mut files, dir, &family_toml)?;
-        }
-        for rule in sorted(&family)?.into_iter().filter(|path| path.is_dir()) {
-            for name in ["rule.toml", "README.md"] {
-                if rule.join(name).is_file() {
-                    push(&mut files, dir, &rule.join(name))?;
-                }
-            }
-            for file in sorted(&rule)? {
-                let name = file.file_name().map(|name| name.to_string_lossy());
-                let wanted = name
-                    .as_deref()
-                    .is_some_and(|name| name.ends_with(".yml") || is_script(name));
-                if file.is_file() && wanted {
-                    push(&mut files, dir, &file)?;
-                }
-            }
-            let config = rule.join("config");
-            if config.is_dir() {
-                for file in sorted(&config)? {
-                    if file.is_file() && file.extension().is_some_and(|ext| ext == "toml") {
-                        push(&mut files, dir, &file)?;
-                    }
-                }
-            }
-        }
+        push_family(&mut files, dir, &family)?;
     }
     Ok(files)
+}
+
+fn push_family(files: &mut Vec<SourceFile>, root: &Path, family: &Path) -> io::Result<()> {
+    let family_toml = family.join("family.toml");
+    if family_toml.is_file() {
+        push(files, root, &family_toml)?;
+    }
+    for rule in sorted(family)?.into_iter().filter(|path| path.is_dir()) {
+        push_rule(files, root, &rule)?;
+    }
+    Ok(())
+}
+
+fn push_rule(files: &mut Vec<SourceFile>, root: &Path, rule: &Path) -> io::Result<()> {
+    for name in ["rule.toml", "README.md"] {
+        if rule.join(name).is_file() {
+            push(files, root, &rule.join(name))?;
+        }
+    }
+    for file in sorted(rule)? {
+        if file.is_file() && is_implementation_file(&file) {
+            push(files, root, &file)?;
+        }
+    }
+    let config = rule.join("config");
+    if !config.is_dir() {
+        return Ok(());
+    }
+    for file in sorted(&config)? {
+        if is_toml_file(&file) {
+            push(files, root, &file)?;
+        }
+    }
+    Ok(())
+}
+
+/// Whether a file of a rule folder is the YAML or the script of an implementation.
+fn is_implementation_file(file: &Path) -> bool {
+    file.file_name()
+        .map(|name| name.to_string_lossy())
+        .as_deref()
+        .is_some_and(|name| name.ends_with(".yml") || is_script(name))
+}
+
+fn is_toml_file(file: &Path) -> bool {
+    file.is_file() && file.extension().is_some_and(|ext| ext == "toml")
 }
 
 /// The files of the topics under `dir`, the `references/` of a repository: the `topic.toml`, the
@@ -125,7 +144,7 @@ pub fn read_recipes(dir: &Path) -> io::Result<Vec<SourceFile>> {
         return Ok(files);
     }
     for file in sorted(dir)? {
-        if file.is_file() && file.extension().is_some_and(|ext| ext == "toml") {
+        if is_toml_file(&file) {
             push(&mut files, dir, &file)?;
         }
     }

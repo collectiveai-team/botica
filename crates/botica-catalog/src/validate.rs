@@ -191,19 +191,8 @@ pub(crate) fn check_rule(
     if !is_kebab_case(folder_slug) {
         add(format!("folder `{folder_slug}` must be a kebab-case slug"));
     }
-    let expected = origin.id_of(folder_slug);
-    if rule.id != expected {
-        add(if origin.is_built_in() {
-            format!(
-                "id `{}` must equal its folder name `{folder_slug}`",
-                rule.id
-            )
-        } else {
-            format!(
-                "id `{}` must equal `{expected}`: the name of its catalog and its folder name",
-                rule.id
-            )
-        });
+    if let Some(message) = check_id(&rule.id, folder_slug, origin) {
+        add(message);
     }
     if let Some(message) = check_rule_code(&rule.code, origin.header(), family) {
         add(message);
@@ -222,15 +211,7 @@ pub(crate) fn check_rule(
             ));
         }
     }
-    for name in rule.options.keys() {
-        if RESERVED_OPTION_NAMES.contains(&name.as_str()) {
-            add(format!(
-                "option `{name}` is a key every rule has in the configuration: pick another name"
-            ));
-        } else if !is_kebab_case(name) {
-            add(format!("option `{name}` must be kebab-case"));
-        }
-    }
+    check_options(rule, &mut add);
     if rule.implementations.is_empty() {
         add("a rule needs at least one implementation".to_owned());
     }
@@ -240,27 +221,63 @@ pub(crate) fn check_rule(
         check_deterministic(rule, &mut add);
     }
     for (index, implementation) in rule.implementations.iter().enumerate() {
-        if implementation.languages.is_empty() {
-            add(format!(
-                "implementation {index}: languages is required and cannot be empty"
-            ));
-        }
-        let is_extension = implementation.kind == Kind::Extension;
-        if is_extension && implementation.runtime.is_none() {
-            add(format!(
-                "implementation {index}: an extension needs a runtime"
-            ));
-        }
-        if !is_extension && implementation.runtime.is_some() {
-            add(format!(
-                "implementation {index}: runtime only applies to extensions"
-            ));
-        }
-        check_external(index, implementation, &mut add);
-        check_extension(index, implementation, &mut add);
-        check_origin(index, rule, implementation, origin, &mut add);
+        check_implementation(index, rule, implementation, origin, &mut add);
     }
     found
+}
+
+/// The id a rule must have: the name of its folder, prefixed with its catalog outside the
+/// built-in one.
+fn check_id(id: &str, folder_slug: &str, origin: Origin<'_>) -> Option<String> {
+    let expected = origin.id_of(folder_slug);
+    if id == expected {
+        return None;
+    }
+    Some(if origin.is_built_in() {
+        format!("id `{id}` must equal its folder name `{folder_slug}`")
+    } else {
+        format!("id `{id}` must equal `{expected}`: the name of its catalog and its folder name")
+    })
+}
+
+fn check_options(rule: &Rule, add: &mut impl FnMut(String)) {
+    for name in rule.options.keys() {
+        if RESERVED_OPTION_NAMES.contains(&name.as_str()) {
+            add(format!(
+                "option `{name}` is a key every rule has in the configuration: pick another name"
+            ));
+        } else if !is_kebab_case(name) {
+            add(format!("option `{name}` must be kebab-case"));
+        }
+    }
+}
+
+fn check_implementation(
+    index: usize,
+    rule: &Rule,
+    implementation: &Implementation,
+    origin: Origin<'_>,
+    add: &mut impl FnMut(String),
+) {
+    if implementation.languages.is_empty() {
+        add(format!(
+            "implementation {index}: languages is required and cannot be empty"
+        ));
+    }
+    let is_extension = implementation.kind == Kind::Extension;
+    if is_extension && implementation.runtime.is_none() {
+        add(format!(
+            "implementation {index}: an extension needs a runtime"
+        ));
+    }
+    if !is_extension && implementation.runtime.is_some() {
+        add(format!(
+            "implementation {index}: runtime only applies to extensions"
+        ));
+    }
+    check_external(index, implementation, add);
+    check_extension(index, implementation, add);
+    check_origin(index, rule, implementation, origin, add);
 }
 
 /// What an external implementation needs, and the fields that only it may have.
@@ -293,106 +310,6 @@ fn check_external(index: usize, implementation: &Implementation, add: &mut impl 
             add(format!(
                 "config `{config}` must be `config/<file>.toml`, the file of the project it goes into"
             ));
-        }
-    }
-}
-
-pub(crate) fn check_across(
-    families: &[Family],
-    rules: &[(String, Rule)],
-    outer: &[Rule],
-    origin: Origin<'_>,
-    found: &mut Vec<CatalogIssue>,
-) {
-    let mut family_codes: BTreeMap<&str, &str> = BTreeMap::new();
-    for family in families {
-        if let Some(first) = family_codes.insert(&family.code, &family.name) {
-            found.push(issue(
-                format!("{}/family.toml", family.name),
-                format!("family code `{}` is already used by `{first}`", family.code),
-            ));
-        }
-    }
-
-    for short in families {
-        for long in families {
-            if short.code != long.code && long.code.starts_with(&short.code) {
-                found.push(issue(
-                    format!("{}/family.toml", short.name),
-                    format!(
-                        "family code `{}` is a text prefix of `{}` (`{}`): selecting `{}{}` would be ambiguous",
-                        short.code,
-                        long.code,
-                        long.name,
-                        origin.header(),
-                        short.code
-                    ),
-                ));
-            }
-        }
-    }
-
-    let mut slugs: BTreeMap<&str, &str> = BTreeMap::new();
-    let mut codes: BTreeMap<&str, &str> = BTreeMap::new();
-    for (path, rule) in rules {
-        if let Some(first) = slugs.insert(&rule.id, path) {
-            found.push(issue(
-                path.as_str(),
-                format!(
-                    "slug `{}` is declared in more than one place (also `{first}`)",
-                    rule.id
-                ),
-            ));
-        }
-        if let Some(first) = codes.insert(&rule.code, &rule.id) {
-            found.push(issue(
-                path.as_str(),
-                format!("code `{}` is already used by `{first}`", rule.code),
-            ));
-        }
-    }
-
-    let mut aliases: BTreeMap<&str, &str> = BTreeMap::new();
-    for (path, rule) in rules {
-        for alias in &rule.aliases {
-            if slugs.contains_key(alias.as_str()) || codes.contains_key(alias.as_str()) {
-                found.push(issue(
-                    path.as_str(),
-                    format!("alias `{alias}` collides with the slug or code of a rule"),
-                ));
-            } else if let Some(first) = aliases.insert(alias, &rule.id) {
-                found.push(issue(
-                    path.as_str(),
-                    format!("alias `{alias}` is already an alias of `{first}`"),
-                ));
-            }
-        }
-    }
-    check_covered_by(rules, outer, found);
-}
-
-/// `covered-by` names the deterministic rules that check part of a judgment rule: those of its
-/// catalog and, for a catalog of a project, those of the catalogs loaded before it (`outer`).
-fn check_covered_by(rules: &[(String, Rule)], outer: &[Rule], found: &mut Vec<CatalogIssue>) {
-    for (path, rule) in rules {
-        let covered = rule
-            .implementations
-            .iter()
-            .flat_map(|implementation| &implementation.covered_by);
-        for slug in covered {
-            let named = rules
-                .iter()
-                .map(|(_, other)| other)
-                .chain(outer)
-                .find(|other| other.id == *slug);
-            let message = match named {
-                None => format!("covered-by `{slug}` is not a rule of the catalog"),
-                Some(other) if other.is_judgment() => {
-                    format!("covered-by `{slug}` is a judgment rule")
-                }
-                Some(_) => continue,
-            };
-            found.push(issue(path.as_str(), message));
         }
     }
 }
