@@ -35,11 +35,7 @@ pub fn variables(text: &str) -> Vec<Variable> {
         if trimmed.is_empty() {
             ignored_above = false;
         } else if let Some(comment) = trimmed.strip_prefix('#') {
-            if comment.trim_start().starts_with("---") {
-                ignored_above = false;
-            } else {
-                ignored_above |= has_audit_ignore(comment);
-            }
+            ignored_above = ignored_after_comment(comment, ignored_above);
         } else if let Some((key_at, key, value)) = item(line) {
             found.push(Variable {
                 name: key.to_owned(),
@@ -54,6 +50,15 @@ pub fn variables(text: &str) -> Vec<Variable> {
         }
     }
     found
+}
+
+/// Whether the next variable carries `@auditIgnore` from the comment lines above it, after the
+/// comment line `comment`: the `# ---` line that ends the header clears it.
+fn ignored_after_comment(comment: &str, ignored_above: bool) -> bool {
+    if comment.trim_start().starts_with("---") {
+        return false;
+    }
+    ignored_above || has_audit_ignore(comment)
 }
 
 /// The offset of the key, the key and the value of an item line (`KEY=…`, `export KEY=…`).

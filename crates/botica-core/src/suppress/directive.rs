@@ -196,6 +196,15 @@ fn is_code(token: &str) -> bool {
     letters > 0 && letters < token.len() && token[letters..].bytes().all(|b| b.is_ascii_digit())
 }
 
+/// Where the run of separators (`separators`) or of other bytes that starts at `from` ends.
+fn run_end(bytes: &[u8], from: usize, separators: bool) -> usize {
+    let mut i = from;
+    while i < bytes.len() && is_separator(bytes[i]) == separators {
+        i += 1;
+    }
+    i
+}
+
 /// Parses `noqa: A1, BTX001 -- reason`. Codes that do not start with one of `prefixes` (`BT`, the
 /// codes of the catalogs of the project) belong to other tools.
 fn noqa(
@@ -215,16 +224,12 @@ fn noqa(
     let mut end = colon + 1;
     let mut i = colon + 1;
     loop {
-        while i < bytes.len() && is_separator(bytes[i]) {
-            i += 1;
-        }
+        i = run_end(bytes, i, true);
         if i >= bytes.len() {
             break;
         }
         let token_start = i;
-        while i < bytes.len() && !is_separator(bytes[i]) {
-            i += 1;
-        }
+        i = run_end(bytes, i, false);
         let token = &body[token_start..i];
         if token.starts_with("--") {
             i = bytes.len();

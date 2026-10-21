@@ -3,16 +3,13 @@
 
 mod directive;
 mod message;
+mod report;
 mod scan;
 
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::document::Document;
 use aho_corasick::AhoCorasick;
 use directive::{Channels, Directive, Malformed, Scope};
-use message::{
-    judgment_on_a_line, judgment_without_reason, malformed_message,
-    project_scope_rule_in_a_comment, unused_message,
-};
 use scan::{allows_noqa, scan, Syntax};
 use std::collections::{HashMap, HashSet};
 use std::ops::Range;
@@ -268,32 +265,6 @@ impl Policy {
         (found, malformed)
     }
 
-    fn about(
-        &self,
-        doc: &Document<'_>,
-        rule: &str,
-        severity: Severity,
-        span: &Range<usize>,
-        message: String,
-    ) -> Diagnostic {
-        let (line, column) = doc.position(span.start);
-        let (end_line, end_column) = doc.position(span.end);
-        Diagnostic {
-            path: doc.path.to_owned(),
-            rule: rule.to_owned(),
-            severity,
-            start: span.start,
-            end: span.end,
-            line,
-            column,
-            end_line,
-            end_column,
-            file_level: false,
-            measure: None,
-            message,
-        }
-    }
-
     /// Drops from `found` what the comments of the file at `path` silence: the findings of a
     /// judge, which botica reads apart from the rules it runs. It adds no finding about the
     /// comments.
@@ -325,43 +296,9 @@ impl Policy {
         self.filter(doc, &Pass::Walk(is_active), found);
     }
 
-    /// Whether a token that silenced nothing is reported in this pass, and how.
-    fn unused_kind(&self, slug: &str, pass: &Pass<'_>) -> Option<Unused> {
-        if slug == UNUSED
-            || slug == INVALID
-            || self.judgment.contains(slug)
-            || self.project.contains(slug)
-        {
-            return None;
-        }
-        let extension = self.extension.get(slug).copied();
-        match (pass, extension) {
-            (Pass::Silence, _)
-            | (Pass::Walk(_), Some(true))
-            | (Pass::Extensions(_), None | Some(false)) => None,
-            (Pass::Walk(_), Some(false)) => Some(Unused::Disabled),
-            (Pass::Walk(is_active), None) => Some(if is_active(slug) {
-                Unused::Unused
-            } else {
-                Unused::Disabled
-            }),
-            (Pass::Extensions(ran), Some(true)) => ran(slug).map(|read| {
-                if read {
-                    Unused::Unused
-                } else {
-                    Unused::Disabled
-                }
-            }),
-        }
-    }
-
     fn filter(&self, doc: &Document<'_>, pass: &Pass<'_>, found: &mut Vec<Diagnostic>) {
         let Some(syntax) = Syntax::of(doc.path) else {
             return;
-        };
-        let channels = Channels {
-            noqa: allows_noqa(doc.path),
-            prefixes: &self.code_prefixes,
         };
         let Some(text) = doc.text() else {
             return;
@@ -370,8 +307,40 @@ impl Policy {
             return;
         }
         let scanned = scan(text, syntax);
+        let directives = self.directives(doc.path, text, &scanned.comments);
+        if directives.is_empty() {
+            return;
+        }
+        let (mut directives, malformed) = self.resolve(directives, doc);
+        let (mut kept, file_level) = Self::unsilenced(
+            std::mem::take(found),
+            &mut directives,
+            &scanned.strings,
+            doc,
+        );
+
+        let mut about = Vec::new();
+        if let Some(severity) = self.invalid.filter(|_| matches!(pass, Pass::Walk(_))) {
+            about.extend(self.invalid_findings(doc, severity, &directives, &malformed));
+        }
+        if let Some(severity) = self.unused.filter(|_| !matches!(pass, Pass::Silence)) {
+            about.extend(directives.iter().filter_map(|directive| {
+                self.unused_finding(doc, severity, directive, pass, &file_level)
+            }));
+        }
+        let (about, _) = Self::unsilenced(about, &mut directives, &scanned.strings, doc);
+        kept.extend(about);
+        *found = kept;
+    }
+
+    /// The directives in the comments of the file at `path`.
+    fn directives(&self, path: &str, text: &str, comments: &[Range<usize>]) -> Vec<Directive> {
+        let channels = Channels {
+            noqa: allows_noqa(path),
+            prefixes: &self.code_prefixes,
+        };
         let mut directives = Vec::new();
-        for comment in &scanned.comments {
+        for comment in comments {
             directive::parse(
                 &text[comment.clone()],
                 comment.start,
@@ -379,16 +348,22 @@ impl Policy {
                 &mut directives,
             );
         }
-        if directives.is_empty() {
-            return;
-        }
-        let (mut directives, malformed) = self.resolve(directives, doc);
+        directives
+    }
 
+    /// The findings that no directive silences, marking the tokens that silence the others, and
+    /// the rules of the kept findings about a whole file.
+    fn unsilenced(
+        found: Vec<Diagnostic>,
+        directives: &mut [Found],
+        strings: &[Range<usize>],
+        doc: &Document<'_>,
+    ) -> (Vec<Diagnostic>, HashSet<String>) {
         let mut kept = Vec::with_capacity(found.len());
-        let mut file_level: HashSet<String> = HashSet::new();
-        for diagnostic in found.drain(..) {
-            let line = Self::effective_line(&diagnostic, &scanned.strings, doc);
-            if Self::silenced(&mut directives, &diagnostic, line) {
+        let mut file_level = HashSet::new();
+        for diagnostic in found {
+            let line = Self::effective_line(&diagnostic, strings, doc);
+            if Self::silenced(directives, &diagnostic, line) {
                 continue;
             }
             if diagnostic.file_level {
@@ -396,91 +371,7 @@ impl Policy {
             }
             kept.push(diagnostic);
         }
-
-        let mut about = Vec::new();
-        let walk = matches!(pass, Pass::Walk(_));
-        if let Some(severity) = self.invalid.filter(|_| walk) {
-            for directive in &directives {
-                for token in directive
-                    .tokens
-                    .iter()
-                    .filter(|t| t.slug.is_none() && !t.external)
-                {
-                    about.push(self.about(
-                        doc,
-                        INVALID,
-                        severity,
-                        &token.span,
-                        format!("Unknown rule `{}` in a suppression", token.name),
-                    ));
-                }
-            }
-            for (span, reason) in &malformed {
-                about.push(self.about(doc, INVALID, severity, span, malformed_message(reason)));
-            }
-            for directive in &directives {
-                for (token, message) in self.kind_problems(directive) {
-                    about.push(self.about(doc, INVALID, severity, &token.span, message));
-                }
-            }
-        }
-        if let Some(severity) = self.unused.filter(|_| !matches!(pass, Pass::Silence)) {
-            for directive in &directives {
-                let mut unused = Vec::new();
-                let mut disabled = Vec::new();
-                let mut file_hint = Vec::new();
-                for token in &directive.tokens {
-                    let Some(slug) = token.slug.as_deref().filter(|_| !token.used) else {
-                        continue;
-                    };
-                    match self.unused_kind(slug, pass) {
-                        None => {}
-                        Some(Unused::Disabled) => disabled.push(token.name.as_str()),
-                        Some(Unused::Unused) => {
-                            unused.push(token.name.as_str());
-                            if directive.scope == Scope::Line && file_level.contains(slug) {
-                                file_hint.push(token.name.as_str());
-                            }
-                        }
-                    }
-                }
-                if let Some(message) = unused_message(&unused, &disabled, &file_hint) {
-                    about.push(self.about(doc, UNUSED, severity, &directive.span, message));
-                }
-            }
-        }
-        for diagnostic in about {
-            let line = Self::effective_line(&diagnostic, &scanned.strings, doc);
-            if !Self::silenced(&mut directives, &diagnostic, line) {
-                kept.push(diagnostic);
-            }
-        }
-        *found = kept;
-    }
-
-    /// What is wrong with how a directive suppresses the judgment rules and the rules of project
-    /// scope it names.
-    fn kind_problems<'a>(&self, directive: &'a Found) -> Vec<(&'a Token, String)> {
-        directive
-            .tokens
-            .iter()
-            .filter_map(|token| {
-                let slug = token.slug.as_deref()?;
-                if self.project.contains(slug) {
-                    return Some((token, project_scope_rule_in_a_comment(&token.name, slug)));
-                }
-                if !self.judgment.contains(slug) {
-                    return None;
-                }
-                if directive.scope == Scope::Line {
-                    Some((token, judgment_on_a_line(&token.name, slug)))
-                } else if !directive.reason {
-                    Some((token, judgment_without_reason(&token.name)))
-                } else {
-                    None
-                }
-            })
-            .collect()
+        (kept, file_level)
     }
 }
 
@@ -494,10 +385,4 @@ enum Pass<'a> {
     /// After the extensions: it reports the comments that name an active extension rule; the
     /// function says whether the rule read the file, `None` when its process failed.
     Extensions(&'a dyn Fn(&str) -> Option<bool>),
-}
-
-/// Why a token that silenced nothing is reported: its rule ran on the file, or did not.
-enum Unused {
-    Unused,
-    Disabled,
 }

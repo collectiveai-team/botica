@@ -53,28 +53,39 @@ pub fn discover(dir: &Path, root: &Path, engine: &Engine) -> Discovered {
                 found: Discovered::default(),
                 into: &found,
             };
-            Box::new(move |entry| {
-                match entry {
-                    Ok(entry) => {
-                        if pruned(engine, root, &entry) {
-                            return ignore::WalkState::Skip;
-                        }
-                        if entry.file_type().is_some_and(|t| t.is_file()) {
-                            let path = relative_path(root, entry.path());
-                            if engine.plan(&path).is_some() {
-                                if engine.is_asked_for(&path) {
-                                    mine.found.asked_for.push(path);
-                                }
-                                mine.found.paths.push(entry.into_path());
-                            }
-                        }
-                    }
-                    Err(error) => mine.found.unreadable.extend(failure_of(root, &error)),
+            Box::new(move |entry| match entry {
+                Ok(entry) => visit(engine, root, entry, &mut mine.found),
+                Err(error) => {
+                    mine.found.unreadable.extend(failure_of(root, &error));
+                    ignore::WalkState::Continue
                 }
-                ignore::WalkState::Continue
             })
         });
     sorted(found)
+}
+
+/// Keeps `entry` in `found` when it is a file some rule applies to, and says whether the walk of
+/// [`discover`] enters it.
+fn visit(
+    engine: &Engine,
+    root: &Path,
+    entry: ignore::DirEntry,
+    found: &mut Discovered,
+) -> ignore::WalkState {
+    if pruned(engine, root, &entry) {
+        return ignore::WalkState::Skip;
+    }
+    if !entry.file_type().is_some_and(|t| t.is_file()) {
+        return ignore::WalkState::Continue;
+    }
+    let path = relative_path(root, entry.path());
+    if engine.plan(&path).is_some() {
+        if engine.is_asked_for(&path) {
+            found.asked_for.push(path);
+        }
+        found.paths.push(entry.into_path());
+    }
+    ignore::WalkState::Continue
 }
 
 /// What a walk that only lists brings back.

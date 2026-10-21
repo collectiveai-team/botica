@@ -139,47 +139,65 @@ fn reverse(path: &str, hunks: &[Hunk], text: &str) -> Result<String, Mismatch> {
     let mut base = String::with_capacity(text.len());
     let mut next = 0;
     for hunk in hunks {
-        let starts_at = if hunk
-            .lines
-            .iter()
-            .any(|line| !matches!(line, HunkLine::Removed(..)))
-        {
-            hunk.new_start.saturating_sub(1)
-        } else {
-            hunk.new_start
-        };
-        let mismatch = |index: usize| Mismatch {
+        next = reverse_hunk(&lines, hunk, next, &mut base).map_err(|index| Mismatch {
             path: path.to_owned(),
             line: index + 1,
-        };
-        if starts_at < next || starts_at > lines.len() {
-            return Err(mismatch(starts_at.min(lines.len())));
-        }
-        base.extend(lines[next..starts_at].iter().copied());
-        next = starts_at;
-        for line in &hunk.lines {
-            match line {
-                HunkLine::Context(expected) | HunkLine::Added(expected) => {
-                    let actual = lines.get(next).ok_or_else(|| mismatch(next))?;
-                    if actual.strip_suffix('\n').unwrap_or(actual) != expected {
-                        return Err(mismatch(next));
-                    }
-                    if matches!(line, HunkLine::Context(_)) {
-                        base.push_str(actual);
-                    }
-                    next += 1;
+        })?;
+    }
+    base.extend(lines[next..].iter().copied());
+    Ok(base)
+}
+
+/// Writes to `base` the lines of the new side from `next` up to `hunk`, then the hunk as it was
+/// before the change. Returns the index of the line after the hunk, or of the line that differs.
+fn reverse_hunk(
+    lines: &[&str],
+    hunk: &Hunk,
+    next: usize,
+    base: &mut String,
+) -> Result<usize, usize> {
+    let starts_at = hunk.start_index();
+    if starts_at < next || starts_at > lines.len() {
+        return Err(starts_at.min(lines.len()));
+    }
+    base.extend(lines[next..starts_at].iter().copied());
+    let mut next = starts_at;
+    for line in &hunk.lines {
+        match line {
+            HunkLine::Context(expected) | HunkLine::Added(expected) => {
+                let actual = lines.get(next).ok_or(next)?;
+                if actual.strip_suffix('\n').unwrap_or(actual) != expected {
+                    return Err(next);
                 }
-                HunkLine::Removed(removed, newline) => {
-                    base.push_str(removed);
-                    if *newline {
-                        base.push('\n');
-                    }
+                if matches!(line, HunkLine::Context(_)) {
+                    base.push_str(actual);
+                }
+                next += 1;
+            }
+            HunkLine::Removed(removed, newline) => {
+                base.push_str(removed);
+                if *newline {
+                    base.push('\n');
                 }
             }
         }
     }
-    base.extend(lines[next..].iter().copied());
-    Ok(base)
+    Ok(next)
+}
+
+impl Hunk {
+    /// The index of its first line among the lines of the new side.
+    fn start_index(&self) -> usize {
+        if self
+            .lines
+            .iter()
+            .any(|line| !matches!(line, HunkLine::Removed(..)))
+        {
+            self.new_start.saturating_sub(1)
+        } else {
+            self.new_start
+        }
+    }
 }
 
 #[derive(Default)]

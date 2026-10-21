@@ -246,37 +246,54 @@ pub fn declarations(classes: &[Class]) -> (Vec<Declaration<'_>>, bool) {
             .iter()
             .fold(Config::default(), |config, link| config.under(&link.config));
         for owner in &chain {
-            for field in &owner.fields {
-                if field
-                    .type_names
-                    .iter()
-                    .any(|name| settings.contains(&name.as_str()))
-                {
-                    continue;
-                }
-                let read = read(&config, field);
-                match found
-                    .iter_mut()
-                    .find(|known| std::ptr::eq(known.field, field))
-                {
-                    Some(known) => {
-                        known.determined &= read.determined;
-                        known.patterns.extend(read.patterns);
-                        if std::ptr::eq(*owner, class) {
-                            known.expected = read.expected;
-                        }
-                    }
-                    None => found.push(Declaration {
-                        path: &owner.path,
-                        class: &owner.name,
-                        field,
-                        expected: read.expected,
-                        determined: read.determined,
-                        patterns: read.patterns,
-                    }),
-                }
+            let own = std::ptr::eq(*owner, class);
+            for field in owner
+                .fields
+                .iter()
+                .filter(|field| !has_settings_type(field, &settings))
+            {
+                record(&mut found, owner, field, read(&config, field), own);
             }
         }
     }
     (found, !settings.is_empty())
+}
+
+/// Whether one of the types of `field` is a settings class.
+fn has_settings_type(field: &Field, settings: &[&str]) -> bool {
+    field
+        .type_names
+        .iter()
+        .any(|name| settings.contains(&name.as_str()))
+}
+
+/// Adds to `found` what `field`, declared in `owner`, reads: to its declaration when there is one
+/// already, and then `own` says whether `owner` is the class being read, whose name wins.
+fn record<'a>(
+    found: &mut Vec<Declaration<'a>>,
+    owner: &'a Class,
+    field: &'a Field,
+    read: Read,
+    own: bool,
+) {
+    match found
+        .iter_mut()
+        .find(|known| std::ptr::eq(known.field, field))
+    {
+        Some(known) => {
+            known.determined &= read.determined;
+            known.patterns.extend(read.patterns);
+            if own {
+                known.expected = read.expected;
+            }
+        }
+        None => found.push(Declaration {
+            path: &owner.path,
+            class: &owner.name,
+            field,
+            expected: read.expected,
+            determined: read.determined,
+            patterns: read.patterns,
+        }),
+    }
 }
