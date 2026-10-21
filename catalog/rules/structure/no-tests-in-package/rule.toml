@@ -1,0 +1,15 @@
+id = "no-tests-in-package"
+code = "BTSTRUC005"
+standard = "CES-32"
+summary = "Keep tests beside the package, not in it"
+status = "stable"
+tags = ["layout"]
+scope = "file"
+needs = "path"
+run-on = ["cli", "save"]
+default-enabled = true
+default-severity = "error"
+
+[[implementations]]
+kind = "native"
+languages = ["python"]

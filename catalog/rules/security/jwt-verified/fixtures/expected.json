@@ -1,0 +1,259 @@
+{
+  "diagnostics": [
+    {
+      "path": "auth.go",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 121,
+          "line": 6,
+          "column": 19
+        },
+        "end": {
+          "offset": 174,
+          "line": 6,
+          "column": 72
+        }
+      },
+      "message": "A token is decoded without checking its signature or its claims: parse it with `jwt.Parse` or `jwt.ParseWithClaims` and a key function, keep the validation of the claims and do not allow `none`. A token that the code already trusts takes a suppression that says why."
+    },
+    {
+      "path": "auth.go",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 299,
+          "line": 11,
+          "column": 33
+        },
+        "end": {
+          "offset": 328,
+          "line": 11,
+          "column": 62
+        }
+      },
+      "message": "A token is decoded without checking its signature or its claims: parse it with `jwt.Parse` or `jwt.ParseWithClaims` and a key function, keep the validation of the claims and do not allow `none`. A token that the code already trusts takes a suppression that says why."
+    },
+    {
+      "path": "auth.go",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 445,
+          "line": 16,
+          "column": 10
+        },
+        "end": {
+          "offset": 477,
+          "line": 16,
+          "column": 42
+        }
+      },
+      "message": "A token is decoded without checking its signature or its claims: parse it with `jwt.Parse` or `jwt.ParseWithClaims` and a key function, keep the validation of the claims and do not allow `none`. A token that the code already trusts takes a suppression that says why."
+    },
+    {
+      "path": "auth.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 99,
+          "line": 5,
+          "column": 39
+        },
+        "end": {
+          "offset": 124,
+          "line": 5,
+          "column": 64
+        }
+      },
+      "message": "A token is decoded without checking its signature or its expiry: leave `verify_signature` and `verify_exp` on and pass the key and `algorithms` to `jwt.decode`. A token that the code already trusts takes a suppression that says why."
+    },
+    {
+      "path": "auth.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 264,
+          "line": 9,
+          "column": 70
+        },
+        "end": {
+          "offset": 280,
+          "line": 9,
+          "column": 86
+        }
+      },
+      "message": "A token is decoded without checking its signature or its expiry: leave `verify_signature` and `verify_exp` on and pass the key and `algorithms` to `jwt.decode`. A token that the code already trusts takes a suppression that says why."
+    },
+    {
+      "path": "auth.rs",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 132,
+          "line": 4,
+          "column": 5
+        },
+        "end": {
+          "offset": 175,
+          "line": 4,
+          "column": 48
+        }
+      },
+      "message": "A token is decoded without checking its signature or its expiry: call `jsonwebtoken::decode` with the key and a `Validation` that keeps `validate_exp`. A token that the code already trusts takes a suppression that says why."
+    },
+    {
+      "path": "auth.rs",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 300,
+          "line": 9,
+          "column": 5
+        },
+        "end": {
+          "offset": 350,
+          "line": 9,
+          "column": 55
+        }
+      },
+      "message": "A token is decoded without checking its signature or its expiry: call `jsonwebtoken::decode` with the key and a `Validation` that keeps `validate_exp`. A token that the code already trusts takes a suppression that says why."
+    },
+    {
+      "path": "auth.rs",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 356,
+          "line": 10,
+          "column": 5
+        },
+        "end": {
+          "offset": 387,
+          "line": 10,
+          "column": 36
+        }
+      },
+      "message": "A token is decoded without checking its signature or its expiry: call `jsonwebtoken::decode` with the key and a `Validation` that keeps `validate_exp`. A token that the code already trusts takes a suppression that says why."
+    },
+    {
+      "path": "auth.rs",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 465,
+          "line": 16,
+          "column": 9
+        },
+        "end": {
+          "offset": 484,
+          "line": 16,
+          "column": 28
+        }
+      },
+      "message": "A token is decoded without checking its signature or its expiry: call `jsonwebtoken::decode` with the key and a `Validation` that keeps `validate_exp`. A token that the code already trusts takes a suppression that says why."
+    },
+    {
+      "path": "auth.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 118,
+          "line": 5,
+          "column": 10
+        },
+        "end": {
+          "offset": 135,
+          "line": 5,
+          "column": 27
+        }
+      },
+      "message": "A token is decoded without checking its signature or its expiry: call `jwt.verify` (jsonwebtoken) or `jwtVerify` (jose) with the key, keep the expiry check and leave `none` out of `algorithms`. A token that the code already trusts takes a suppression that says why."
+    },
+    {
+      "path": "auth.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 233,
+          "line": 9,
+          "column": 35
+        },
+        "end": {
+          "offset": 255,
+          "line": 9,
+          "column": 57
+        }
+      },
+      "message": "A token is decoded without checking its signature or its expiry: call `jwt.verify` (jsonwebtoken) or `jwtVerify` (jose) with the key, keep the expiry check and leave `none` out of `algorithms`. A token that the code already trusts takes a suppression that says why."
+    },
+    {
+      "path": "auth.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 346,
+          "line": 13,
+          "column": 34
+        },
+        "end": {
+          "offset": 366,
+          "line": 13,
+          "column": 54
+        }
+      },
+      "message": "A token is decoded without checking its signature or its expiry: call `jwt.verify` (jsonwebtoken) or `jwtVerify` (jose) with the key, keep the expiry check and leave `none` out of `algorithms`. A token that the code already trusts takes a suppression that says why."
+    },
+    {
+      "path": "auth.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 429,
+          "line": 17,
+          "column": 10
+        },
+        "end": {
+          "offset": 445,
+          "line": 17,
+          "column": 26
+        }
+      },
+      "message": "A token is decoded without checking its signature or its expiry: call `jwt.verify` (jsonwebtoken) or `jwtVerify` (jose) with the key, keep the expiry check and leave `none` out of `algorithms`. A token that the code already trusts takes a suppression that says why."
+    },
+    {
+      "path": "legacy.js",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 84,
+          "line": 3,
+          "column": 38
+        },
+        "end": {
+          "offset": 110,
+          "line": 3,
+          "column": 64
+        }
+      },
+      "message": "A token is decoded without checking its signature or its expiry: call `jwt.verify` (jsonwebtoken) or `jwtVerify` (jose) with the key, keep the expiry check and leave `none` out of `algorithms`. A token that the code already trusts takes a suppression that says why."
+    },
+    {
+      "path": "session.tsx",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 103,
+          "line": 4,
+          "column": 18
+        },
+        "end": {
+          "offset": 120,
+          "line": 4,
+          "column": 35
+        }
+      },
+      "message": "A token is decoded without checking its signature or its expiry: call `jwt.verify` (jsonwebtoken) or `jwtVerify` (jose) with the key, keep the expiry check and leave `none` out of `algorithms`. A token that the code already trusts takes a suppression that says why."
+    }
+  ]
+}

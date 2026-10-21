@@ -1,0 +1,11 @@
+[package]
+name = "botica-lsp"
+description = "The Language Server Protocol front-end of botica: the findings of the rules, for the buffers of an editor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+botica-core = { path = "../botica-core" }
+serde_json.workspace = true

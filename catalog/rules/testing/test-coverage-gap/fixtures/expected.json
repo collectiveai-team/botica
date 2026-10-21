@@ -1,0 +1,6 @@
+{
+  "verdicts": [
+    { "file": "valid/test-added.diff", "band": "clear" },
+    { "file": "invalid/test-runs-lines.diff", "band": "act" }
+  ]
+}

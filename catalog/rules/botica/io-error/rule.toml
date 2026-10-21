@@ -1,0 +1,13 @@
+id = "io-error"
+code = "BT001"
+summary = "A path given on the command line cannot be read"
+status = "stable"
+scope = "file"
+needs = "path"
+run-on = ["cli"]
+default-enabled = true
+default-severity = "error"
+
+[[implementations]]
+kind = "native"
+languages = ["*"]

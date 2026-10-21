@@ -1,0 +1,28 @@
+id: log-no-print
+language: tsx
+severity: warning
+message: "Libraries log, they don't print: use the logger of the project instead of console.* or process.stdout/stderr.write in library code. `cli.*`, `cli/`, `bin/`, the tests and `if (import.meta.main)` or `if (require.main === module)` blocks are exempt; another entry point goes in `extend-ignores`."
+ignores:
+  - "**/cli.*"
+  - "**/cli/**"
+  - "**/bin/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/__tests__/**"
+  - "**/tests/**"
+rule:
+  any:
+    - pattern: console.$METHOD($$$ARGS)
+    - pattern: process.stdout.write($$$ARGS)
+    - pattern: process.stderr.write($$$ARGS)
+  not:
+    inside:
+      stopBy: end
+      any:
+        - pattern: |
+            if (import.meta.main) { $$$BODY }
+        - pattern: |
+            if (require.main === module) { $$$BODY }
+constraints:
+  METHOD:
+    regex: "^(log|info|debug|warn|error|trace|dir|table)$"

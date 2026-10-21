@@ -1,20 +1,20 @@
 # Domain Docs
 
-How the engineering skills should consume this repo's domain documentation when exploring the codebase.
+How the engineering skills read the domain documentation of this repo when they explore the code.
 
-Layout: **single-context** — one `GLOSSARY.md` + `docs/adr/` at the repo root (created lazily).
+Layout: single-context, one `GLOSSARY.md` and `docs/adr/` at the repo root.
 
-## Before exploring, read these
+## What the skills read before exploring
 
-- **`GLOSSARY.md`** at the repo root, or
-- **`GLOSSARY-MAP.md`** at the repo root if it exists — it points at one `GLOSSARY.md` per context. Read each one relevant to the topic.
-- **`docs/adr/`** — read ADRs that touch the area you're about to work in. In multi-context repos, also check `src/<context>/docs/adr/` for context-scoped decisions.
+- `GLOSSARY.md` at the repo root, or
+- `GLOSSARY-MAP.md` at the repo root if it exists; it points at one `GLOSSARY.md` per context, and each one that the topic touches is read.
+- `docs/adr/`: the ADRs that touch the area of the task. A multi-context repo also has `src/<context>/docs/adr/` for the decisions of one context.
 
-If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
+A missing file is skipped without a mention, and nothing suggests creating it. The `/domain-modeling` skill (reached through `/grill-with-docs` and `/improve-codebase-architecture`) creates these files when terms or decisions are resolved.
 
 ## File structure
 
-Single-context repo (most repos):
+Single-context repo:
 
 ```
 /
@@ -25,7 +25,7 @@ Single-context repo (most repos):
 └── src/
 ```
 
-Multi-context repo (presence of `GLOSSARY-MAP.md` at the root):
+Multi-context repo (`GLOSSARY-MAP.md` at the root):
 
 ```
 /
@@ -40,14 +40,14 @@ Multi-context repo (presence of `GLOSSARY-MAP.md` at the root):
         └── docs/adr/
 ```
 
-## Use the glossary's vocabulary
+## The vocabulary of the glossary
 
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `GLOSSARY.md`. Don't drift to synonyms the glossary explicitly avoids.
+An output that names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name) uses the term of `GLOSSARY.md`, and none of the synonyms that the glossary lists to avoid.
 
-If the concept you need isn't in the glossary yet, that's a signal — either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
+A concept that is not in the glossary is either a new term the project does not use or a gap to note for `/domain-modeling`.
 
-## Flag ADR conflicts
+## A conflict with an ADR
 
-If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
+An output that contradicts an existing ADR names it:
 
-> _Contradicts ADR-0007 (event-sourced orders) — but worth reopening because…_
+> _Contradicts ADR-0007 (event-sourced orders); worth reopening because…_

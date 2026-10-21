@@ -1,0 +1,91 @@
+[data-md-color-scheme="default"] img[src$="#only-dark"],
+[data-md-color-scheme="slate"] img[src$="#only-light"] {
+  display: none;
+}
+
+/* The header shows the wordlogo alone. The title block stays, empty, because it is what pushes the
+   search and the repository to the right. */
+.md-header__button.md-logo img.botica-wordlogo {
+  width: auto;
+  height: 1.25rem;
+}
+
+.md-header__title .md-header__ellipsis {
+  display: none;
+}
+
+/* The sidebar names a rule by its slug and a standard by its title, with the code or the id under
+   it, smaller and grey. */
+.md-nav__link .md-ellipsis small {
+  display: block;
+  font-size: 0.85em;
+  color: var(--md-default-fg-color--light);
+}
+
+/* The home page shows the logo and the wordlogo side by side at one scale, as in the original SVG:
+   the wordlogo is 114.28 / 255 of the height of the logo, and the gap between them 85 / 255. */
+.botica-brand {
+  --botica-height: min(8rem, 24vw);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--botica-height) * 0.33);
+}
+
+.botica-brand img.botica-icon {
+  width: auto;
+  height: var(--botica-height);
+}
+
+.botica-brand img.botica-wordlogo {
+  width: auto;
+  height: calc(var(--botica-height) * 0.448);
+}
+
+.botica-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1.5rem 0 2rem;
+  text-align: center;
+}
+
+.botica-hero h1 {
+  margin: 0;
+  line-height: 0;
+}
+
+.botica-hero p {
+  margin: 0.8rem 0 0;
+}
+
+.botica-hero .botica-tagline {
+  font-size: 1.05rem;
+}
+
+/* The field that filters the tables of an index page (docs/javascripts/filter.js). */
+.botica-filter {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 32rem;
+  margin: 1rem 0 0.25rem;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+  border: 1px solid var(--md-default-fg-color--lighter);
+  border-radius: 0.2rem;
+}
+
+.botica-filter:focus {
+  outline: 2px solid var(--md-accent-fg-color);
+}
+
+.botica-filter-count {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.md-typeset [hidden] {
+  display: none !important;
+}

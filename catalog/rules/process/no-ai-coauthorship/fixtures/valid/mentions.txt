@@ -1,0 +1,3 @@
+docs: say how Claude Code reads AGENTS.md
+
+The text was generated from the catalog.

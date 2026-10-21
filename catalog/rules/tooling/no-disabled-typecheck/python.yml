@@ -1,0 +1,7 @@
+id: no-disabled-typecheck
+language: python
+severity: error
+message: "This turns off the type checker for the whole file: remove the directive and fix the type errors, or silence one line with `# pyrefly: ignore[<code>]` and its reason."
+rule:
+  kind: comment
+  regex: "^#\\s*(pyrefly:\\s*ignore-errors|mypy:\\s*ignore-errors|pyre-ignore-all-errors)\\s*$"

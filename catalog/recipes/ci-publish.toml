@@ -1,0 +1,9 @@
+description = "GitHub Actions: release and publish to PyPI"
+
+[[files]]
+path = ".github/workflows/release.yml"
+template = "files/github/workflows/release.yml"
+
+[[files]]
+path = ".github/workflows/pypi.yml"
+template = "files/github/workflows/pypi.yml"

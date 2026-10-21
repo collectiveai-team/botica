@@ -1,0 +1,36 @@
+id: jwt-verified
+language: rust
+severity: error
+message: "A token is decoded without checking its signature or its expiry: call `jsonwebtoken::decode` with the key and a `Validation` that keeps `validate_exp`. A token that the code already trusts takes a suppression that says why."
+rule:
+  any:
+    - kind: call_expression
+      has:
+        field: function
+        regex: "(^|::)(insecure_decode|insecure_decode_claims|dangerous_insecure_decode)(::<.*>)?$"
+    - kind: call_expression
+      has:
+        field: function
+        kind: field_expression
+        has:
+          field: field
+          regex: "^insecure_disable_signature_validation$"
+    - kind: assignment_expression
+      all:
+        - has:
+            field: left
+            kind: field_expression
+            has:
+              field: field
+              regex: "^validate_exp$"
+        - has:
+            field: right
+            regex: "^false$"
+    - kind: field_initializer
+      all:
+        - has:
+            field: field
+            regex: "^validate_exp$"
+        - has:
+            field: value
+            regex: "^false$"

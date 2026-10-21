@@ -1,0 +1,38 @@
+{
+  "diagnostics": [
+    {
+      "path": ".env.schema",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 44,
+          "line": 5,
+          "column": 1
+        },
+        "end": {
+          "offset": 54,
+          "line": 5,
+          "column": 11
+        }
+      },
+      "message": ".env.schema declares `STRIPE_KEY`, and no settings class of the project reads it: add a field that reads it, remove it, or mark it `# @auditIgnore` when another program reads it"
+    },
+    {
+      "path": "app/settings.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 179,
+          "line": 8,
+          "column": 5
+        },
+        "end": {
+          "offset": 184,
+          "line": 8,
+          "column": 10
+        }
+      },
+      "message": "the field `debug` of `Settings` reads `APP_DEBUG`, which .env.schema does not declare: add `APP_DEBUG` to .env.schema"
+    }
+  ]
+}

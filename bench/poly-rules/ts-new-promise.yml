@@ -1,0 +1,7 @@
+id: ts-new-promise
+language: typescript
+rule:
+  pattern: new Promise($$$A)
+  inside:
+    stopBy: end
+    kind: function_declaration

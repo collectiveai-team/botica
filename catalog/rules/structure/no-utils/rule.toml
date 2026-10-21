@@ -1,0 +1,15 @@
+id = "no-utils"
+code = "BTSTRUC002"
+standard = "CES-63"
+summary = "No catch-all modules"
+status = "stable"
+tags = ["naming"]
+scope = "file"
+needs = "path"
+run-on = ["cli", "save"]
+default-enabled = true
+default-severity = "error"
+
+[[implementations]]
+kind = "native"
+languages = ["python"]

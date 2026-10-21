@@ -1,0 +1,52 @@
+{% set giscus = config.extra.giscus %}
+{% if page.meta and (page.meta.rule or page.meta.id) %}
+  {% set family = (page.meta.family or "botica") if page.meta.rule else "standards" %}
+  {% if family in giscus.categories %}
+    {% set category = family %}
+    {% set category_id = giscus.categories[family] %}
+  {% else %}
+    {% set category = giscus.fallback.name %}
+    {% set category_id = giscus.fallback.id %}
+  {% endif %}
+  <h2 id="__comments">Discussion</h2>
+  <script
+    src="https://giscus.app/client.js"
+    data-repo="{{ giscus.repo }}"
+    data-repo-id="{{ giscus.repo_id }}"
+    data-category="{{ category }}"
+    data-category-id="{{ category_id }}"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="bottom"
+    data-theme="light"
+    data-lang="en"
+    crossorigin="anonymous"
+    async
+  >
+  </script>
+
+  <script>
+    var giscus = document.querySelector("script[src*=giscus]")
+
+    function giscusTheme() {
+      var scheme = document.body.getAttribute("data-md-color-scheme")
+      return scheme === "slate" ? "transparent_dark" : "light"
+    }
+
+    giscus.setAttribute("data-theme", giscusTheme())
+
+    new MutationObserver(function() {
+      var theme = giscusTheme()
+      giscus.setAttribute("data-theme", theme)
+      var frame = document.querySelector(".giscus-frame")
+      if (frame) {
+        frame.contentWindow.postMessage(
+          { giscus: { setConfig: { theme } } },
+          "https://giscus.app"
+        )
+      }
+    }).observe(document.body, { attributes: true, attributeFilter: ["data-md-color-scheme"] })
+  </script>
+{% endif %}

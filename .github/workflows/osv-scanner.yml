@@ -1,9 +1,6 @@
 name: osv-scanner
 
-# CES-119 (osv-scanner-replace-pip-audit): audit dependencies for known vulnerabilities via
-# OSV.dev. Replaces pip-audit.yml — osv-scanner reads uv.lock natively (no export step) and,
-# unlike pip-audit, already understands npm/Go/Rust/Java/Ruby/.NET/etc lockfiles, so the same
-# workflow scales to non-Python `impl/*` templates without adding a second scanner later.
+# CES-119: osv-scanner checks the lockfile against OSV.dev.
 
 on:
   push:

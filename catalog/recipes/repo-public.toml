@@ -1,0 +1,2 @@
+description = "A public repository: ci, the dependency review and the Docker workflow (needs a Dockerfile)"
+extends = ["ci", "ci-dependency-review", "ci-docker"]

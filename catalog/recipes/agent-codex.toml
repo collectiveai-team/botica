@@ -1,0 +1,2 @@
+description = "Codex: the skills for codex, which reads AGENTS.md and .agents/skills and has no deny-list in the repository"
+agents = ["codex"]

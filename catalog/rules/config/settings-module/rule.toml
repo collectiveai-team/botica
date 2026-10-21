@@ -1,0 +1,17 @@
+id = "settings-module"
+code = "BTCONF001"
+standard = "CES-76"
+references = ["settings-module"]
+summary = "Environment is read only in the settings module"
+status = "stable"
+tags = ["config"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = true
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

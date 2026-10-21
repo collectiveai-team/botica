@@ -1,0 +1,13 @@
+id = "acme/complexity"
+code = "ACMECHK001"
+summary = "A Python function has a cognitive complexity of at most 15"
+status = "preview"
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["python"]
+tool = "complexipy"
+docs = "https://github.com/rohaquinlop/complexipy"
+config = "config/prek.toml"

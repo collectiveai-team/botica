@@ -1,0 +1,19 @@
+id: jwt-verified
+language: go
+severity: error
+message: "A token is decoded without checking its signature or its claims: parse it with `jwt.Parse` or `jwt.ParseWithClaims` and a key function, keep the validation of the claims and do not allow `none`. A token that the code already trusts takes a suppression that says why."
+rule:
+  any:
+    - kind: call_expression
+      has:
+        field: function
+        kind: selector_expression
+        has:
+          field: field
+          regex: "^ParseUnverified$"
+    - kind: call_expression
+      has:
+        field: function
+        regex: "^jwt\\.WithoutClaimsValidation$"
+    - kind: selector_expression
+      regex: "^jwt\\.UnsafeAllowNoneSignatureType$"

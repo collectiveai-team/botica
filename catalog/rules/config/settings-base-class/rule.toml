@@ -1,0 +1,16 @@
+id = "settings-base-class"
+code = "BTCONF002"
+standard = "CES-76"
+summary = "A settings class extends BaseSettings, not BaseModel"
+status = "preview"
+tags = ["config"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

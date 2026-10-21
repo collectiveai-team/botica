@@ -1,0 +1,29 @@
+id: jwt-verified
+language: javascript
+severity: error
+message: "A token is decoded without checking its signature or its expiry: call `jwt.verify` (jsonwebtoken) or `jwtVerify` (jose) with the key, keep the expiry check and leave `none` out of `algorithms`. A token that the code already trusts takes a suppression that says why."
+rule:
+  any:
+    - kind: call_expression
+      has:
+        field: function
+        regex: "^((jwt|jsonwebtoken)\\.decode|(jose\\.)?decodeJwt)$"
+    - kind: pair
+      all:
+        - has:
+            field: key
+            regex: "^[\"']?ignoreExpiration[\"']?$"
+        - has:
+            field: value
+            kind: "true"
+    - kind: pair
+      all:
+        - has:
+            field: key
+            regex: "^[\"']?algorithms[\"']?$"
+        - has:
+            field: value
+            kind: array
+            has:
+              kind: string
+              regex: "^[\"'`]none[\"'`]$"

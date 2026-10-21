@@ -1,0 +1,5 @@
+[run]
+omit = lib/vendor/*, lib/compat.py
+
+[report]
+fail_under = 80

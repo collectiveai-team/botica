@@ -1,0 +1,13 @@
+id = "invalid-suppression"
+code = "BT003"
+summary = "A suppression comment that names an unknown rule or is malformed"
+status = "stable"
+scope = "file"
+needs = "bytes"
+run-on = ["cli", "save", "type"]
+default-enabled = true
+default-severity = "warning"
+
+[[implementations]]
+kind = "native"
+languages = ["*"]

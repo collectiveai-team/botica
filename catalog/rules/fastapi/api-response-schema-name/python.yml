@@ -1,0 +1,17 @@
+id: api-response-schema-name
+language: python
+severity: warning
+message: "A response schema is named {Name}Response. Rename the class so that its name ends with `Response`."
+files:
+  - "**/api/**/schemas/responses/**/*.py"
+rule:
+  kind: class_definition
+  all:
+    - has:
+        field: superclasses
+        stopBy: end
+        regex: "BaseModel"
+    - not:
+        has:
+          field: name
+          regex: "Response$"

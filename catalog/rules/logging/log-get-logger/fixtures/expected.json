@@ -1,0 +1,38 @@
+{
+  "diagnostics": [
+    {
+      "path": "service.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 52,
+          "line": 4,
+          "column": 7
+        },
+        "end": {
+          "offset": 79,
+          "line": 4,
+          "column": 34
+        }
+      },
+      "message": "Don't call logging.getLogger directly — use the house get_logger (structlog: JSON in prod, colored console in dev, level from LOG_LEVEL). Copy the house logger (`botica refs show structured-logging`) and `from <pkg>.core.logger import get_logger`."
+    },
+    {
+      "path": "service.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 88,
+          "line": 5,
+          "column": 9
+        },
+        "end": {
+          "offset": 107,
+          "line": 5,
+          "column": 28
+        }
+      },
+      "message": "Don't call logging.getLogger directly — use the house get_logger (structlog: JSON in prod, colored console in dev, level from LOG_LEVEL). Copy the house logger (`botica refs show structured-logging`) and `from <pkg>.core.logger import get_logger`."
+    }
+  ]
+}

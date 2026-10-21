@@ -1,0 +1,55 @@
+{
+  "diagnostics": [
+    {
+      "path": "core/models.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 94,
+          "line": 5,
+          "column": 1
+        },
+        "end": {
+          "offset": 165,
+          "line": 6,
+          "column": 38
+        }
+      },
+      "message": "Relational persistence belongs in its own `database` package (SQLModel tables, repositories, migrations, connection setup) — not under persistence/, meta/, or core/. Move this into the database unit."
+    },
+    {
+      "path": "core/models.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 177,
+          "line": 9,
+          "column": 10
+        },
+        "end": {
+          "offset": 203,
+          "line": 9,
+          "column": 36
+        }
+      },
+      "message": "Relational persistence belongs in its own `database` package (SQLModel tables, repositories, migrations, connection setup) — not under persistence/, meta/, or core/. Move this into the database unit."
+    },
+    {
+      "path": "core/models.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 214,
+          "line": 10,
+          "column": 11
+        },
+        "end": {
+          "offset": 234,
+          "line": 10,
+          "column": 31
+        }
+      },
+      "message": "Relational persistence belongs in its own `database` package (SQLModel tables, repositories, migrations, connection setup) — not under persistence/, meta/, or core/. Move this into the database unit."
+    }
+  ]
+}

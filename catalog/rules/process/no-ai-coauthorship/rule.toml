@@ -1,0 +1,18 @@
+id = "no-ai-coauthorship"
+code = "BTPROC004"
+standard = "CES-91"
+summary = "A commit message names no AI tool as a co-author or as the author of the change"
+status = "preview"
+tags = ["commits"]
+scope = "commit"
+needs = "bytes"
+run-on = ["cli"]
+default-enabled = false
+default-severity = "error"
+
+[options]
+tools = { type = "strings", default = ["claude", "anthropic", "copilot", "chatgpt", "openai", "codex", "cursor", "windsurf", "aider", "gemini", "devin", "opencode"] }
+
+[[implementations]]
+kind = "native"
+languages = ["*"]

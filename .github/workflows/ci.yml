@@ -1,0 +1,134 @@
+name: CI
+
+# Check the Rust workspace that builds the `botica` binary, with all of its subcommands:
+# format, clippy and tests. Add the checks of new subcommands here, not in a workflow of their own.
+# Two switches turn tests that skip themselves into failures, so a runner that cannot
+# exercise them does not pass silently:
+#   BOTICA_REQUIRE_RUFF         the rule catalog is checked against `ruff linter`
+#   BOTICA_REQUIRE_READ_ERRORS  unreadable files must really be unreadable (not run as root)
+#   BOTICA_REQUIRE_NODE         the tests of the Node scripts and of the SDK need a real `node`
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "crates/**"
+      - "catalog/**"
+      - "schema/**"
+      - "sdk/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "standards/**"
+      - "scripts/check_rule_change.py"
+      - "scripts/check_references.sh"
+      - ".github/workflows/ci.yml"
+  # Allow other workflows (e.g. a wheel release) to gate on this suite.
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  BOTICA_REQUIRE_RUFF: "1"
+  BOTICA_REQUIRE_READ_ERRORS: "1"
+  BOTICA_REQUIRE_NODE: "1"
+
+jobs:
+  test:
+    name: fmt, clippy & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        # An exact tag: setup-uv publishes no major tag since v8.0.0.
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: "0.13.3"
+          enable-cache: false
+
+      # `ruff linter` lists the rules the catalog is checked against. Pinned to the version the
+      # suite was verified with; bump it on purpose, since a new ruff can add or rename rules.
+      - name: Install ruff
+        run: uv tool install ruff==0.16.3
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace --locked --no-fail-fast
+
+      # --all checks the built-in topics of catalog/references/ too: their code is in the binary,
+      # and a `path` reference to another repository is fetched with git over the network.
+      - name: Check the references
+        run: cargo run --quiet --locked -p botica-cli -- refs check --all
+
+      # The hooks of the mirror run 0.13.0, which lacks the rule; from the next release `select`
+      # of `[tool.botica]` lists it and the `botica` job of prek checks it.
+      - name: Cognitive complexity
+        run: cargo run --quiet --locked -p botica-cli -- lint --select cognitive-complexity
+
+      - name: Test the Go SDK
+        working-directory: sdk/go
+        run: go vet ./... && go test ./...
+
+  # The code of the built-in topics, with the versions of the `references` group of pyproject.toml.
+  references:
+    name: code of the topics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: "0.13.3"
+          enable-cache: false
+
+      - name: Type-check and test the code of each topic
+        run: scripts/check_references.sh
+
+  # A change that adds a rule may only touch what that kind of rule needs (scripts/check_rule_change.py).
+  # Anything else is a contract change: label the pull request `contract-change` to accept it.
+  # A change touches at most one standard, and no label accepts more.
+  rule-contract:
+    name: rule contract
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: "0.13.3"
+          enable-cache: false
+
+      - name: Check the contract of the rules and the standards the change touches
+        env:
+          BASE: origin/${{ github.base_ref }}
+          ACKNOWLEDGED: ${{ contains(github.event.pull_request.labels.*.name, 'contract-change') }}
+        run: |
+          if [ "$ACKNOWLEDGED" = "true" ]; then set -- --acknowledged; else set --; fi
+          uv run --locked python scripts/check_rule_change.py "$BASE" "$@"

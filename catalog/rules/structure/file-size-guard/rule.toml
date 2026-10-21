@@ -1,0 +1,40 @@
+id = "file-size-guard"
+code = "BTSTRUC001"
+standard = "CES-71"
+summary = "Keep source files small"
+status = "stable"
+tags = ["size"]
+ignores = [
+    "*.lock",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "npm-shrinkwrap.json",
+    "*.snap",
+    "*.ambr",
+    "*.pysnap",
+    "*.po",
+    "*.pot",
+    "*.min.js",
+    "*.min.css",
+    "*.map",
+    "*.svg",
+    "*.rst",
+    "*.md",
+    "*.mdx",
+    "**/fixtures/**/*.json",
+    ".abide/rubric.json",
+]
+scope = "file"
+needs = "bytes"
+run-on = ["cli", "save", "type"]
+default-enabled = true
+default-severity = "error"
+
+[options]
+warn = { type = "int", default = 400, min = 1 }
+max = { type = "int", default = 700, min = 1 }
+
+[[implementations]]
+kind = "native"
+languages = ["*"]

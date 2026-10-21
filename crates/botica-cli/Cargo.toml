@@ -1,0 +1,29 @@
+[package]
+name = "botica-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "botica"
+path = "src/main.rs"
+
+[features]
+# Every grammar ast-grep ships; the default build carries the base set only.
+all-languages = ["botica-astgrep/all-languages"]
+
+[dependencies]
+anyhow.workspace = true
+blake3 = "1"
+botica-astgrep = { path = "../botica-astgrep" }
+botica-catalog = { path = "../botica-catalog" }
+botica-config = { path = "../botica-config" }
+botica-conformance = { path = "../botica-conformance" }
+botica-core = { path = "../botica-core", features = ["fs"] }
+botica-ext = { path = "../botica-ext" }
+botica-lsp = { path = "../botica-lsp" }
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true

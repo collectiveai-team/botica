@@ -1,0 +1,13 @@
+description = "Claude Code: .claude/settings.json and the links to AGENTS.md and .agents/skills, where the skills are"
+
+[[files]]
+path = ".claude/settings.json"
+template = "files/claude-settings.json"
+
+[[links]]
+path = "CLAUDE.md"
+target = "AGENTS.md"
+
+[[links]]
+path = ".claude/skills"
+target = "../.agents/skills"

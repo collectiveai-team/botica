@@ -1,0 +1,307 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Config",
+  "description": "Settings of `botica lint`: `botica.toml`, or the `[tool.botica]` table of `pyproject.toml`.",
+  "type": "object",
+  "properties": {
+    "baseline": {
+      "description": "The file of known findings, from the root of the project, that `botica lint\n--write-baseline` writes. A finding it lists is left out while its value does not grow.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    "catalogs": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/CatalogSource"
+      }
+    },
+    "code-dirs": {
+      "description": "Where the code of the project lives, as directories from its root grouped by ecosystem\n(`python`, `js`, `rust`, `go`, `jvm`), for the rules about layout. When absent they are\ndetected; an empty table says there are none.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "default": null
+    },
+    "extend-exclude": {
+      "description": "Globs of paths to skip, in addition to what `.gitignore` already skips.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "extend-include": {
+      "description": "Globs of paths to lint although `.gitignore` or the list of directories of tools (`.venv`,\n`.mypy_cache`…) would leave them out. `extend-exclude` wins over it.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "extend-select": {
+      "description": "Added to `select`.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "extensions": {
+      "$ref": "#/$defs/ExtensionsConfig"
+    },
+    "external": {
+      "description": "Globs of rule IDs that suppressions may name without a warning even when they are unknown.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "ignore": {
+      "description": "Rules to switch off. Same syntax as `select`.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "languages": {
+      "description": "Restrict the run to these languages (empty means every language).",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "overrides": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Override"
+      }
+    },
+    "preview": {
+      "description": "Also run the rules whose status is `preview`.",
+      "type": "boolean",
+      "default": false
+    },
+    "recipes": {
+      "$ref": "#/$defs/RecipesConfig"
+    },
+    "references": {
+      "$ref": "#/$defs/ReferencesConfig"
+    },
+    "replace": {
+      "description": "Rule to replace -> rule that replaces it.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {}
+    },
+    "rule-dirs": {
+      "description": "Directories with the project's own rules.",
+      "type": "array",
+      "default": [
+        ".botica/rules"
+      ],
+      "items": {
+        "type": "string"
+      }
+    },
+    "rules": {
+      "description": "Settings per rule, keyed by slug, code or alias.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/RuleConfig"
+      }
+    },
+    "select": {
+      "description": "Rules to run: `default`, `all`, a family (`BTSTRUC`), a code prefix (`BTSTRUC0`), a code, a slug or `tag:<tag>`.",
+      "type": "array",
+      "default": [
+        "default"
+      ],
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "CatalogSource": {
+      "description": "A catalog of rules that lives on disk.",
+      "type": "object",
+      "properties": {
+        "path": {
+          "description": "Directory of the catalog, relative to the directory of this file.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    },
+    "ExtensionsConfig": {
+      "description": "Settings of the extension rules.",
+      "type": "object",
+      "properties": {
+        "on-timeout": {
+          "$ref": "#/$defs/OnTimeout"
+        },
+        "python": {
+          "description": "The Python of the scripts of the runtime `python`: `project` (the version of\n`.python-version`, of `.venv` or of `requires-python`, else 3.13), `system` (a Python of\nthe system) or a version for uv, as `3.12`. A free-threaded Python is refused.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timeout": {
+          "description": "Seconds that a process has to answer each request. `BOTICA_EXTENSION_TIMEOUT` wins over it.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "OnTimeout": {
+      "description": "What `botica lint` does when the process of an extension rule does not answer in time.",
+      "oneOf": [
+        {
+          "description": "The run fails with exit code 2.",
+          "type": "string",
+          "const": "fail"
+        },
+        {
+          "description": "A warning on stderr; the run goes on without the findings of that rule.",
+          "type": "string",
+          "const": "warn"
+        }
+      ]
+    },
+    "Override": {
+      "description": "Changes for the files that match `files`, applied in order.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ignore": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        },
+        "severity": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/RuleSeverity"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "files"
+      ]
+    },
+    "RecipesConfig": {
+      "description": "Settings of `botica recipe`.",
+      "type": "object",
+      "properties": {
+        "replace": {
+          "description": "Ids of the built-in recipes that a recipe of `recipes/` replaces. A recipe of the project\nwith the id of a built-in one is an error unless the id is listed here.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ReferencesConfig": {
+      "description": "Settings of `botica refs`.",
+      "type": "object",
+      "properties": {
+        "replace": {
+          "description": "Ids of the built-in topics that a topic of `references/` replaces. A topic of the project\nwith the id of a built-in one is an error unless the id is listed here.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RuleConfig": {
+      "description": "Settings of one rule. Any other key is an option declared by that rule.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "extend-ignores": {
+          "description": "Added to the `ignores` that apply.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        },
+        "ignores": {
+          "description": "Replaces the default `ignores` of the rule (`[]` clears them).",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "severity": {
+          "description": "`off` is the same as `enabled = false`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSeverity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "RuleSeverity": {
+      "type": "string",
+      "enum": [
+        "error",
+        "warning",
+        "info",
+        "off"
+      ]
+    }
+  }
+}

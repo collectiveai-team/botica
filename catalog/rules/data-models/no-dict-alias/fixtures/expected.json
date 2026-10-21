@@ -1,0 +1,72 @@
+{
+  "diagnostics": [
+    {
+      "path": "types.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 30,
+          "line": 3,
+          "column": 1
+        },
+        "end": {
+          "offset": 44,
+          "line": 3,
+          "column": 15
+        }
+      },
+      "message": "A public type alias at module level points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
+    },
+    {
+      "path": "types.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 45,
+          "line": 4,
+          "column": 1
+        },
+        "end": {
+          "offset": 68,
+          "line": 4,
+          "column": 24
+        }
+      },
+      "message": "A public type alias at module level points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
+    },
+    {
+      "path": "types.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 69,
+          "line": 5,
+          "column": 1
+        },
+        "end": {
+          "offset": 105,
+          "line": 5,
+          "column": 37
+        }
+      },
+      "message": "A public type alias at module level points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
+    },
+    {
+      "path": "types.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 106,
+          "line": 6,
+          "column": 1
+        },
+        "end": {
+          "offset": 131,
+          "line": 6,
+          "column": 26
+        }
+      },
+      "message": "A public type alias at module level points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
+    }
+  ]
+}

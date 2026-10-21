@@ -1,0 +1,19 @@
+id: settings-direct-instantiation
+language: python
+severity: warning
+message: "A settings class is built where it is used. Read it through the cached get_settings() so that the environment is read once and tests can override it."
+ignores:
+  - "**/conftest.py"
+  - "**/tests/**"
+rule:
+  pattern: $CLASS($$$ARGS)
+  not:
+    inside:
+      stopBy: end
+      kind: function_definition
+      has:
+        field: name
+        regex: "^get_settings$"
+constraints:
+  CLASS:
+    regex: "Settings$"

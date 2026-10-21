@@ -1,0 +1,18 @@
+id: api-schemas-extra-forbid
+language: python
+severity: warning
+message: "API request/response schema omits model_config = ConfigDict(extra='forbid'). Reject unknown fields at the API boundary so a typo'd or stale payload fails loudly instead of being silently dropped. See `botica refs show api-schemas`."
+files:
+  - "**/api/**/schemas/requests/**/*.py"
+  - "**/api/**/schemas/responses/**/*.py"
+rule:
+  kind: class_definition
+  all:
+    - has:
+        field: superclasses
+        stopBy: end
+        regex: "BaseModel"
+    - not:
+        has:
+          stopBy: end
+          regex: "extra\\s*=\\s*[\"']forbid[\"']"

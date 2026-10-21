@@ -1,0 +1,34 @@
+version: 2
+updates:
+  # The workflows pin actions to version tags rather than commit hashes (see
+  # .github/zizmor.yml); this block is what advances those tags.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    # Wait a few days after a release before opening update PRs, to dodge
+    # freshly published (and sometimes yanked or compromised) versions.
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Node dependencies. The `npm` ecosystem is the one for pnpm: Dependabot reads
+  # pnpm-lock.yaml and respects the `packageManager` field of package.json.
+  # Grouped by risk: patch and minor updates land as two PRs, and each major
+  # comes alone so that every breaking change is reviewed on its own.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      dev-minor-patch:
+        dependency-type: development
+        update-types: ["minor", "patch"]
+      prod-minor-patch:
+        dependency-type: production
+        update-types: ["minor", "patch"]

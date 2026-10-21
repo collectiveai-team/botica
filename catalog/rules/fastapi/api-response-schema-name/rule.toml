@@ -1,0 +1,16 @@
+id = "api-response-schema-name"
+code = "BTFAST004"
+standard = "CES-17"
+summary = "Response schemas are named {Name}Response"
+status = "preview"
+tags = ["typing"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

@@ -1,0 +1,16 @@
+id = "api-request-schema-name"
+code = "BTFAST003"
+standard = "CES-17"
+summary = "Request schemas are named {Name}Request"
+status = "preview"
+tags = ["typing"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

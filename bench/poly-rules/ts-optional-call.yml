@@ -1,0 +1,6 @@
+id: ts-optional-call
+language: typescript
+rule:
+  any:
+    - pattern: $A?.length
+    - pattern: $A?.map($$$B)

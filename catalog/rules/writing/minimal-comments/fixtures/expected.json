@@ -1,0 +1,12 @@
+{
+  "verdicts": [
+    {
+      "file": "valid/pages.py",
+      "band": "clear"
+    },
+    {
+      "file": "invalid/pages.py",
+      "band": "act"
+    }
+  ]
+}

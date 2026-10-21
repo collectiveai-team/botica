@@ -1,0 +1,306 @@
+"""Write the pages of the topics and list each topic on the pages that cite it.
+
+`scripts/build_site.sh` runs it after `scripts/site_standards.py`, with the output of
+`botica refs export`: every topic, with the text of the lines that each file reference shows. Each
+topic becomes the page `references/<topic>.md` of the site, with its README, each reference (the
+address of a page, or the lines of a file in a block of code) and the rules and standards that cite
+it. The page of a rule or a standard that cites topics, by the `references` field of its front
+matter, gets the list of them at the end.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import cyclopts
+
+app = cyclopts.App(name="site-references", help=__doc__)
+
+FRONT_MATTER_END = "\n---\n"
+LANGUAGES = {
+    ".py": "python",
+    ".rs": "rust",
+    ".toml": "toml",
+    ".md": "markdown",
+    ".sh": "bash",
+    ".js": "javascript",
+    ".ts": "typescript",
+    ".json": "json",
+    ".yml": "yaml",
+    ".yaml": "yaml",
+}
+
+
+@dataclass(frozen=True)
+class Reference:
+    """A file or a page that a topic points at: `url`, `path` or `file`, and the lines of a file."""
+
+    note: str
+    file: str = ""
+    path: str = ""
+    url: str = ""
+    lines: str | None = None
+    anchor: str | None = None
+    quote: str = ""
+    repo: str | None = None
+    rev: str | None = None
+    license: str | None = None
+    text: str = ""
+
+
+@dataclass(frozen=True)
+class Topic:
+    id: str
+    title: str
+    readme: str
+    references: list[Reference] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class Citation:
+    """A page of a rule or a standard that cites topics."""
+
+    page: Path
+    name: str
+    topics: list[str]
+    link: str
+    sort: tuple[int, str, int]
+
+
+def _split(text: str) -> tuple[list[str], str]:
+    """Return the lines of the front matter of a page, and what follows it."""
+    head, _, body = text.removeprefix("---\n").partition(FRONT_MATTER_END)
+    return head.splitlines(), body
+
+
+def _value(raw: str) -> object:
+    return json.loads(raw) if raw.startswith(('"', "[")) else raw
+
+
+@dataclass(frozen=True)
+class FrontMatter:
+    """The fields of the front matter of a page that the citations read; a missing one is empty."""
+
+    rule: str = ""
+    code: str = ""
+    id: str = ""
+    references: list[str] = field(default_factory=list)
+
+
+def _front_matter(page: Path) -> FrontMatter:
+    lines, _ = _split(page.read_text(encoding="utf-8"))
+    values = {key: _value(raw) for key, _, raw in (line.partition(": ") for line in lines) if raw}
+    references = values.get("references", [])
+    return FrontMatter(
+        rule=str(values.get("rule", "")),
+        code=str(values.get("code", "")),
+        id=str(values.get("id", "")),
+        references=[str(item) for item in references] if isinstance(references, list) else [],
+    )
+
+
+def _reference(raw: dict[str, str | None]) -> Reference:
+    return Reference(
+        note=raw["note"] or "",
+        file=raw.get("file") or "",
+        path=raw["path"] or "",
+        url=raw["url"] or "",
+        lines=raw["lines"],
+        anchor=raw["anchor"],
+        quote=(raw["quote"] or "").strip(),
+        repo=raw["repo"],
+        rev=raw["rev"],
+        license=raw["license"],
+        text=raw["text"] or "",
+    )
+
+
+def _topics(export: Path) -> list[Topic]:
+    """Return the topics of the output of `botica refs export`, by id."""
+    parsed = json.loads(export.read_text(encoding="utf-8"))
+    return [
+        Topic(
+            id=raw["id"],
+            title=raw["title"],
+            readme=raw["readme"],
+            references=[_reference(reference) for reference in raw["references"]],
+        )
+        for raw in sorted(parsed["topics"], key=lambda raw: raw["id"])
+    ]
+
+
+def _link(target: Path, origin: Path) -> str:
+    return Path(os.path.relpath(target, origin.parent)).as_posix()
+
+
+def _citations(docs: Path) -> list[Citation]:
+    """Return the rules and the standards that cite topics: rules by code, then standards."""
+    found = []
+    for page in sorted((docs / "rules").glob("*/*.md")):
+        front = _front_matter(page)
+        if front.references:
+            found.append(
+                Citation(
+                    page=page,
+                    name=f"`{front.rule}` ({front.code})",
+                    topics=front.references,
+                    link=f"[`{front.rule}`]({{page}}) ({front.code})",
+                    sort=(0, front.code, 0),
+                )
+            )
+    for page in sorted((docs / "standards").glob("*/*.md")):
+        front = _front_matter(page)
+        if front.references:
+            prefix, _, number = front.id.rpartition("-")
+            found.append(
+                Citation(
+                    page=page,
+                    name=front.id,
+                    topics=front.references,
+                    link=f"[{front.id}]({{page}})",
+                    sort=(1, prefix, int(number)),
+                )
+            )
+    return sorted(found, key=lambda citation: citation.sort)
+
+
+def _fence(text: str) -> str:
+    """Return a fence of backticks longer than any run of them in `text`, and of three at least."""
+    longest = max((len(run) for run in re.findall(r"`+", text)), default=0)
+    return "`" * (max(longest, 2) + 1)
+
+
+def _permalink(reference: Reference) -> str:
+    """Return the address of the lines of a file of GitHub at its commit, or "" off GitHub."""
+    repo = reference.repo or ""
+    if not repo.startswith("github.com/"):
+        return ""
+    first, _, last = (reference.lines or "").partition("-")
+    anchor = ""
+    if first:
+        anchor = f"#L{first}-L{last}" if last else f"#L{first}"
+    return f"https://{repo}/blob/{reference.rev}/{reference.path}{anchor}"
+
+
+def _block_quote(text: str) -> str:
+    """Return `text` as a Markdown block quote, a line at a time."""
+    return "".join(f"> {line}\n" if line else ">\n" for line in text.splitlines())
+
+
+def _reference_text(reference: Reference) -> str:
+    if reference.url:
+        text = f"### <{reference.url}>\n\n{reference.note}\n"
+        return f"{text}\n{_block_quote(reference.quote)}" if reference.quote else text
+    place = _place(reference)
+    text = f"### `{place}`\n\n{reference.note}\n"
+    if reference.repo:
+        origin = f"{reference.repo} at {reference.rev} ({reference.license})\n"
+        link = _permalink(reference)
+        text += f"\n{origin}" + (f"\n<{link}>\n" if link else "")
+    language = LANGUAGES.get(Path(reference.file or reference.path).suffix, "")
+    fence = _fence(reference.text)
+    return f"{text}\n{fence}{language}\n{reference.text.removesuffix(chr(10))}\n{fence}\n"
+
+
+def _topic_page(topic: Topic, cited_by: list[str]) -> str:
+    text = (
+        f"---\ntitle: {json.dumps(topic.title)}\nsubtitle: {json.dumps(topic.id)}\n---\n\n"
+        f"# {topic.title}\n\n{topic.readme.rstrip()}\n"
+    )
+    if topic.references:
+        text += "\n## References\n\n" + "\n".join(
+            _reference_text(reference) for reference in topic.references
+        )
+    if cited_by:
+        text += "\n## Cited by\n\n" + "".join(f"- {item}\n" for item in cited_by)
+    return text
+
+
+def _points_at(reference: Reference) -> str:
+    """Return what a reference points at: the address of a page, or a file with its lines."""
+    if reference.url:
+        return reference.url
+    return f"`{_place(reference)}`" + (f" ({reference.repo})" if reference.repo else "")
+
+
+def _place(reference: Reference) -> str:
+    """Return the file that a reference shows, a file of its topic or a path, with its lines."""
+    return (reference.file or reference.path) + (f":{reference.lines}" if reference.lines else "")
+
+
+def _cited_by(topic: Topic, citations: list[Citation], page: Path) -> list[str]:
+    """Return the links, from `page`, to the rules and the standards that cite `topic`."""
+    return [
+        citation.link.replace("{page}", _link(citation.page, page))
+        for citation in citations
+        if topic.id in citation.topics
+    ]
+
+
+def _references_section(citation: Citation, titles: dict[str, str], folder: Path) -> str:
+    """Return the `## References` section that lists the topics a page cites."""
+    items = "".join(
+        f"- [{titles[cited]}]({_link(folder / f'{cited}.md', citation.page)})\n"
+        for cited in citation.topics
+    )
+    return f"\n## References\n\n{items}"
+
+
+def _index_page(topics: list[Topic], citations: list[Citation], index: Path) -> str:
+    rows = ""
+    for topic in topics:
+        points = "<br>".join(_points_at(reference) for reference in topic.references)
+        cited = ", ".join(_cited_by(topic, citations, index))
+        title = topic.title.replace("|", "\\|")
+        rows += f"| [{topic.id}]({topic.id}.md)<br>{title} | {points} | {cited} |\n"
+    return (
+        "---\ntitle: References\n---\n\n# References\n\n"
+        "A topic collects the code and the documentation that rules and standards point at. "
+        "`botica refs show <topic, rule or standard>` prints it.\n\n"
+        "| Topic | Points at | Cited by |\n|---|---|---|\n" + rows
+    )
+
+
+def _check(citations: list[Citation], topics: list[Topic], docs: Path) -> None:
+    known = {topic.id for topic in topics}
+    for citation in citations:
+        for cited in citation.topics:
+            if cited not in known:
+                relative = citation.page.relative_to(docs).as_posix()
+                message = f"{relative} cites the topic `{cited}`, which is not in references/"
+                raise ValueError(message)
+
+
+def build(export: Path, docs: Path) -> None:
+    """Write the topic pages of EXPORT under DOCS and list them where they are cited."""
+    topics = _topics(export)
+    if not topics:
+        return
+    citations = _citations(docs)
+    _check(citations, topics, docs)
+    folder = docs / "references"
+    folder.mkdir(parents=True, exist_ok=True)
+    for topic in topics:
+        page = folder / f"{topic.id}.md"
+        page.write_text(_topic_page(topic, _cited_by(topic, citations, page)), encoding="utf-8")
+    index = folder / "index.md"
+    index.write_text(_index_page(topics, citations, index), encoding="utf-8")
+    titles = {topic.id: topic.title for topic in topics}
+    for citation in citations:
+        text = citation.page.read_text(encoding="utf-8")
+        section = _references_section(citation, titles, folder)
+        citation.page.write_text(text + section, encoding="utf-8")
+
+
+@app.default
+def main(export: Path, docs: Path) -> None:
+    """Write the topic pages of EXPORT under DOCS and list them where they are cited."""
+    build(export, docs)
+
+
+if __name__ == "__main__":
+    app()

@@ -1,0 +1,123 @@
+{
+  "diagnostics": [
+    {
+      "path": "legacy.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 21,
+          "line": 1,
+          "column": 22
+        }
+      },
+      "message": "This turns off the type checker for the whole file: remove the directive and fix the type errors, or silence one line with `# pyrefly: ignore[<code>]` and its reason."
+    },
+    {
+      "path": "next.config.mjs",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 74,
+          "line": 3,
+          "column": 17
+        },
+        "end": {
+          "offset": 97,
+          "line": 3,
+          "column": 40
+        }
+      },
+      "message": "This turns off the type checker for a whole file or build: remove `// @ts-nocheck` or `ignoreBuildErrors: true` and fix the type errors, or silence one line with `// @ts-expect-error` and its reason."
+    },
+    {
+      "path": "service.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 24,
+          "line": 1,
+          "column": 25
+        }
+      },
+      "message": "This turns off the type checker for the whole file: remove the directive and fix the type errors, or silence one line with `# pyrefly: ignore[<code>]` and its reason."
+    },
+    {
+      "path": "service.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 14,
+          "line": 1,
+          "column": 15
+        }
+      },
+      "message": "This turns off the type checker for a whole file or build: remove `// @ts-nocheck` or `ignoreBuildErrors: true` and fix the type errors, or silence one line with `// @ts-expect-error` and its reason."
+    },
+    {
+      "path": "tsconfig.build.json",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 57,
+          "line": 3,
+          "column": 24
+        },
+        "end": {
+          "offset": 72,
+          "line": 3,
+          "column": 39
+        }
+      },
+      "message": "This turns off a strict check of TypeScript for the whole project: remove the option set to `false` so that `\"strict\": true` covers it, and fix the type errors it reports."
+    },
+    {
+      "path": "tsconfig.json",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 49,
+          "line": 4,
+          "column": 5
+        },
+        "end": {
+          "offset": 74,
+          "line": 4,
+          "column": 30
+        }
+      },
+      "message": "This turns off a strict check of TypeScript for the whole project: remove the option set to `false` so that `\"strict\": true` covers it, and fix the type errors it reports."
+    },
+    {
+      "path": "view.tsx",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 14,
+          "line": 1,
+          "column": 15
+        }
+      },
+      "message": "This turns off the type checker for a whole file or build: remove `// @ts-nocheck` or `ignoreBuildErrors: true` and fix the type errors, or silence one line with `// @ts-expect-error` and its reason."
+    }
+  ]
+}

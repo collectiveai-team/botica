@@ -1,0 +1,14 @@
+description = "GitHub Actions for a Python project: tests, dependabot and osv-scanner"
+extends = ["ci"]
+
+[[files]]
+path = ".github/workflows/tests.yml"
+template = "files/github/workflows/tests.yml"
+
+[[files]]
+path = ".github/dependabot.yml"
+template = "files/github/dependabot.yml"
+
+[[files]]
+path = ".github/workflows/osv-scanner.yml"
+template = "files/github/workflows/osv-scanner.yml"

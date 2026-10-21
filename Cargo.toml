@@ -1,0 +1,57 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/botica-astgrep",
+    "crates/botica-catalog",
+    "crates/botica-complexity",
+    "crates/botica-config",
+    "crates/botica-conformance",
+    "crates/botica-ext",
+    "crates/botica-core",
+    "crates/botica-lsp",
+    "crates/botica-cli",
+    "sdk/rust",
+]
+
+[workspace.package]
+version = "0.13.0"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[workspace.dependencies]
+anyhow = "1"
+ast-grep-core = "=0.45.3"
+ast-grep-config = "=0.45.3"
+# Base grammars only; the rest are opt-in `lang-*` features of botica-astgrep (see its Cargo.toml).
+ast-grep-language = { version = "=0.45.3", default-features = false, features = [
+    "tree-sitter-bash",
+    "tree-sitter-c",
+    "tree-sitter-css",
+    "tree-sitter-go",
+    "tree-sitter-hcl",
+    "tree-sitter-html",
+    "tree-sitter-java",
+    "tree-sitter-javascript",
+    "tree-sitter-json",
+    "tree-sitter-lua",
+    "tree-sitter-python",
+    "tree-sitter-rust",
+    "tree-sitter-typescript",
+    "tree-sitter-yaml",
+] }
+clap = { version = "4", features = ["derive"] }
+criterion = { version = "0.5", default-features = false }
+globset = "0.4"
+ignore = "0.4"
+rayon = "1"
+schemars = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = { version = "0.9", features = ["preserve_order"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = true

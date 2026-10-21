@@ -1,0 +1,59 @@
+name: Publish to PyPI
+
+# Last stage of the tag-driven release: release.yml starts this workflow with
+# workflow_dispatch (`ref` is the tag) after it creates the GitHub Release. The
+# `release: published` trigger covers a Release that a person or a token other
+# than GITHUB_TOKEN publishes; GITHUB_TOKEN events start no workflow. Kept
+# separate so a PyPI misconfiguration fails in isolation without affecting the
+# Release. Re-run manually via the Actions tab (workflow_dispatch) once Trusted
+# Publishing is configured.
+#
+# Setup required (one-time, on PyPI) — replace <PYPI_PROJECT_NAME> below:
+#   pypi.org -> project `<PYPI_PROJECT_NAME>` -> Publishing -> Add a Trusted
+#   Publisher:
+#     Owner: <GITHUB_OWNER>      Repository: <GITHUB_REPO>
+#     Workflow: pypi.yml         Environment: pypi
+# No API token/secret is needed once Trusted Publishing is set up.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag to build and publish (e.g. v0.2.0)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  pypi:
+    name: build & publish
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/<PYPI_PROJECT_NAME>
+    permissions:
+      id-token: write # OIDC for Trusted Publishing
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+          fetch-depth: 0 # hatch-vcs needs tags/history
+          persist-credentials: false
+
+      - name: Install uv
+        # An exact tag: setup-uv publishes no major tag since v8.0.0.
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: "0.13.3"
+          # Cache disabled in the publish job: it runs with id-token: write
+          # (OIDC Trusted Publishing), so a poisoned cache could taint it.
+          enable-cache: false
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Publish to PyPI (Trusted Publishing)
+        uses: pypa/gh-action-pypi-publish@v1.14.2

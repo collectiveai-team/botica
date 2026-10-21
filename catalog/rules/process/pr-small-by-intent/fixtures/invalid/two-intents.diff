@@ -1,0 +1,26 @@
+fix(cache): the key of a file includes the version of the catalog
+
+Also reformats the module and renames `Cache::get` to `Cache::lookup` while here.
+
+--- a/crates/botica-core/src/cache.rs
++++ b/crates/botica-core/src/cache.rs
+@@ -12,20 +12,18 @@
+-pub fn get(&self, key: &blake3::Hash) -> Option<Vec<Diagnostic>> {
+-    self.entries.get(key).cloned()
+-}
++pub fn lookup(&self, key: &blake3::Hash) -> Option<Vec<Diagnostic>> { self.entries.get(key).cloned() }
+@@ -40,7 +38,8 @@ impl Cache {
+     fn key(&self, path: &str, text: &[u8]) -> blake3::Hash {
+         let mut hasher = blake3::Hasher::new();
++        hasher.update(self.catalog_version.as_bytes());
+         hasher.update(path.as_bytes());
+--- a/crates/botica-cli/src/lint_cmd.rs
++++ b/crates/botica-cli/src/lint_cmd.rs
+@@ -201,7 +201,7 @@
+-        if let Some(found) = cache.get(&key) {
++        if let Some(found) = cache.lookup(&key) {
+--- a/crates/botica-core/src/walk/mod.rs
++++ b/crates/botica-core/src/walk/mod.rs
+@@ -319,4 +319,4 @@
+-pub fn files(root: &Path, exclusion: Option<&Exclusion>) -> Vec<String> {
++pub fn files( root: &Path, exclusion: Option<&Exclusion> ) -> Vec<String> {

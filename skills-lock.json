@@ -90,8 +90,9 @@
       "computedHash": "317d40618f06261d034fccd3a92fbdccc07e9f79684f71e4caa82112fc008d64"
     },
     "pr": {
-      "source": ".",
-      "sourceType": "local",
+      "source": "collectiveai-team/botica",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/pr/SKILL.md",
       "computedHash": "71d6ecc80af4cfb5938d366401d2dd4b080aa18da4e5050f38df39ee0e0d7e92"
     },
     "prototype": {

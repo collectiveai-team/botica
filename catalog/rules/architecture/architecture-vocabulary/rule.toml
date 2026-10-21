@@ -1,0 +1,20 @@
+id = "architecture-vocabulary"
+code = "BTARCH003"
+standard = "CES-16"
+summary = "Units are named with the architectural vocabulary of the house"
+status = "preview"
+tags = ["naming"]
+files = ["**/*.py", "**/*.ts", "**/*.tsx", "**/*.js"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "judgment"
+languages = ["python", "typescript", "javascript"]
+when = "edit"
+why-not-deterministic = "A list of banned words finds `manager` or `helper`, but whether a name is a synonym of a unit that already has a name, or a new concept, needs the meaning of the code."
+
+[implementations.question]
+type = "boolean"
+instructions = "Read the names of the modules, packages, classes and functions that the file defines or imports from the project. Answer true only when one of those units is named with a synonym of a term of the house vocabulary (layers entrypoints, api, database, impl, core; ports and adapters), such as manager, handler, helper, processor, common, shared, persistence or dal. These do not count: a word inside a string or in data, a local variable, a name imported from a library (`APILogHandler`, structlog `Processor`), a name of the domain, and folders inside a layer such as routers, schemas, requests, responses, tests or fakes."
+criteria = { true = "a unit is named with a synonym of a term the vocabulary already has", false = "no unit is named with a synonym of the vocabulary" }

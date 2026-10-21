@@ -1,0 +1,5 @@
+description = "GitHub Actions: dependency review of the pull requests (free on a public repository)"
+
+[[files]]
+path = ".github/workflows/dependency-review.yml"
+template = "files/github/workflows/dependency-review.yml"

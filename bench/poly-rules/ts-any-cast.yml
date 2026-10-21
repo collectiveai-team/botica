@@ -1,0 +1,6 @@
+id: ts-any-cast
+language: typescript
+rule:
+  any:
+    - pattern: $A as any
+    - pattern: "let $A: any = $B"

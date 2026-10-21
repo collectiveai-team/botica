@@ -1,0 +1,17 @@
+id = "api-schemas-extra-forbid"
+code = "BTFAST001"
+standard = "CES-4"
+references = ["api-schemas"]
+summary = "Request and response schemas reject unknown fields"
+status = "stable"
+tags = ["typing"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = true
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

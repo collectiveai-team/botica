@@ -1,0 +1,19 @@
+{
+  "name": "@botica/sdk",
+  "version": "0.9.0",
+  "description": "SDK to write a botica lint rule as an extension in Node",
+  "type": "module",
+  "license": "MIT",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "files": ["src"],
+  "engines": { "node": ">=18" },
+  "peerDependencies": { "@ast-grep/napi": "*" },
+  "peerDependenciesMeta": { "@ast-grep/napi": { "optional": true } }
+}

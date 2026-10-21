@@ -1,0 +1,13 @@
+title = "Typed values at the boundaries"
+
+[[references]]
+file = "code/app/core/models.py"
+lines = "10-20"
+anchor = "class Point"
+note = "a boundary that needs no validation: a dataclass that a function returns"
+
+[[references]]
+file = "code/app/core/models.py"
+lines = "23-32"
+anchor = "class NewUser(BaseModel)"
+note = "a boundary whose fields are validated: a pydantic model of the domain"

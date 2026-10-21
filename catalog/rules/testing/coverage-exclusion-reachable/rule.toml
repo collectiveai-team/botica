@@ -1,0 +1,20 @@
+id = "coverage-exclusion-reachable"
+code = "BTTEST006"
+standard = "CES-66"
+summary = "Coverage leaves out only code that no test can reach"
+status = "preview"
+tags = ["tests", "coverage"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "judgment"
+languages = ["*"]
+when = "pull-request"
+covered-by = ["no-coverage-pragma", "no-coverage-exclusion"]
+why-not-deterministic = "A `# pragma: no cover` or an `omit` is visible in the diff, but whether it hides a branch that a test should reach or marks code that cannot run under test needs the code around it."
+
+[implementations.question]
+type = "boolean"
+instructions = "Read the title, the description and the diff of the pull request. Does it leave code out of coverage (a new `pragma: no cover`, an `omit` or `exclude_lines` of coverage, a lower threshold) that a test could reach? Code that cannot run under test, such as an `if __name__ == \"__main__\":` block, a branch for another platform or generated code, and a change that does not touch coverage, do not break the rule."
+criteria = { true = "the change leaves out of coverage code that a test could reach", false = "the change leaves out only code that cannot run under test, or does not touch coverage" }

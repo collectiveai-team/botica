@@ -1,0 +1,21 @@
+{
+  "diagnostics": [
+    {
+      "path": "service.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 20,
+          "line": 2,
+          "column": 5
+        },
+        "end": {
+          "offset": 43,
+          "line": 2,
+          "column": 28
+        }
+      },
+      "message": "A boundary function (public, not nested) returns dict(...). Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
+    }
+  ]
+}

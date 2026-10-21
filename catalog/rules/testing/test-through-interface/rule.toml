@@ -1,0 +1,20 @@
+id = "test-through-interface"
+code = "BTTEST002"
+standard = "CES-65"
+summary = "Tests assert on behaviour through the public interface"
+status = "preview"
+tags = ["tests"]
+files = ["**/tests/**/*.py", "**/test_*.py", "**/*_test.py", "**/*.test.*", "**/*.spec.*", "**/__tests__/**"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "judgment"
+languages = ["python", "typescript", "javascript"]
+when = "edit"
+why-not-deterministic = "An underscore marks a private name, but whether a test reaches into the internals of the unit under test or uses a helper of its own needs the code of both."
+
+[implementations.question]
+type = "boolean"
+instructions = "Read the tests of the file. Does a test read a private attribute of the unit under test, call one of its underscore-prefixed members, or assert on its internal state instead of on what its public interface returns or does? A name with an underscore that the test file defines itself, and loading the module under test from its path, do not break the rule."
+criteria = { true = "a test reaches into private attributes, private methods or internal state of the unit under test", false = "the tests call the public interface and assert on observable behaviour" }

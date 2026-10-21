@@ -1,0 +1,7 @@
+--commit-msg
+scoped.txt
+breaking.txt
+scope-chars.txt
+merge.txt
+fixup.txt
+comments.txt

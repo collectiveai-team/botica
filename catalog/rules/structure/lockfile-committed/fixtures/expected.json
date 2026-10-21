@@ -1,0 +1,34 @@
+{
+  "diagnostics": [
+    {
+      "path": "api/go.mod",
+      "severity": "error",
+      "range": null,
+      "message": "No lockfile pins the dependencies of `api/go.mod`: commit the `go.sum` that its package manager writes, next to it or at the root of its workspace, and take it out of `.gitignore` if it is there"
+    },
+    {
+      "path": "app/package.json",
+      "severity": "error",
+      "range": null,
+      "message": "`app/package.json` names `pnpm` in `packageManager`, and its lockfile is `yarn.lock`: install with `pnpm` and delete the lockfile of the other manager, or change `packageManager`"
+    },
+    {
+      "path": "svc/pyproject.toml",
+      "severity": "error",
+      "range": null,
+      "message": "No lockfile pins the dependencies of `svc/pyproject.toml`: commit the `uv.lock` that its package manager writes, next to it or at the root of its workspace, and take it out of `.gitignore` if it is there"
+    },
+    {
+      "path": "tool/Cargo.toml",
+      "severity": "error",
+      "range": null,
+      "message": "No lockfile pins the dependencies of `tool/Cargo.toml`: commit the `Cargo.lock` that its package manager writes, next to it or at the root of its workspace, and take it out of `.gitignore` if it is there"
+    },
+    {
+      "path": "web/package.json",
+      "severity": "error",
+      "range": null,
+      "message": "`web/package.json` has the lockfiles of 2 package managers (`pnpm-lock.yaml`, `package-lock.json`): keep the one of the manager the project uses and delete the others"
+    }
+  ]
+}

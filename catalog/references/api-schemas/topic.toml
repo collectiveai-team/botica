@@ -1,0 +1,20 @@
+title = "API schemas that forbid extra fields"
+
+[[references]]
+file = "code/app/api/v1/schemas/requests/users.py"
+anchor = "class CreateUserRequest(BaseModel)"
+note = "an inbound model: `extra=forbid` rejects a key that the model does not declare with a 422"
+
+[[references]]
+file = "code/app/api/v1/schemas/responses/users.py"
+anchor = "class UserResponse(BaseModel)"
+note = "an outbound model with the same setting"
+
+[[references]]
+file = "code/app/api/v1/routers/users.py"
+anchor = "def create_user"
+note = "the router imports the schemas and builds the response field by field"
+
+[[references]]
+url = "https://fastapi.tiangolo.com/tutorial/response-model/#return-type-and-data-filtering"
+note = "FastAPI already limits the output to the fields of the response model"

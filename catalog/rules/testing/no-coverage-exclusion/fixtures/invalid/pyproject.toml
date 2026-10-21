@@ -1,0 +1,8 @@
+[project]
+name = "orders"
+
+[tool.coverage.run]
+omit = ["src/orders/legacy/*", "src/orders/cli.py"]
+
+[tool.coverage.report]
+exclude_also = ["def __repr__", "raise NotImplementedError"]

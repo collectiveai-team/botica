@@ -1,0 +1,2 @@
+code = "CONF"
+description = "How a program reads its configuration: the settings module, its class and the schema of the environment."

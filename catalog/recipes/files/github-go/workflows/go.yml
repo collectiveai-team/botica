@@ -1,0 +1,62 @@
+name: Go
+
+# gofmt, build, vet and test on every push to main and every PR.
+#
+# No branch filter on pull_request: a repository that lands work as stacks has
+# PRs whose base is another feature branch, and a gate that only runs against
+# main leaves every intermediate PR of a stack unverified.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Allow other workflows (e.g. a release) to gate on this suite.
+  workflow_call:
+
+concurrency:
+  group: go-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: gofmt, build, vet, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # The Go version is the one of go.mod.
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # gofmt runs first and prints the diff, not just the file list: a bare
+      # list tells a contributor a file is wrong without telling them what to
+      # change.
+      - name: gofmt
+        run: |
+          set -euo pipefail
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "not gofmt-clean:"
+            echo "$unformatted"
+            echo
+            gofmt -d $unformatted
+            exit 1
+          fi
+
+      - name: build
+        run: go build ./...
+
+      - name: vet
+        run: go vet ./...
+
+      # -race costs time on a large suite; it is the only automated guard over
+      # concurrent code. Drop it if the module has none.
+      - name: test
+        run: go test ./... -count=1 -race

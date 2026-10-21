@@ -1,0 +1,2 @@
+description = "A private repository: ci, without the workflows that bill or need a paid plan"
+extends = ["ci"]

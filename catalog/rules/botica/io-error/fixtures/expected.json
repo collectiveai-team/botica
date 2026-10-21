@@ -1,0 +1,10 @@
+{
+  "diagnostics": [
+    {
+      "path": "does-not-exist.py",
+      "severity": "error",
+      "range": null,
+      "message": "No such file or directory (os error 2)"
+    }
+  ]
+}

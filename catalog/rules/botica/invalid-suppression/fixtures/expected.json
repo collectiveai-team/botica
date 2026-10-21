@@ -1,0 +1,22 @@
+{
+  "diagnostics": [
+    {
+      "path": "unknown_id.py",
+      "severity": "warning",
+      "range": {
+        "start": { "offset": 31, "line": 1, "column": 32 },
+        "end": { "offset": 39, "line": 1, "column": 40 }
+      },
+      "message": "Unknown rule `no-utilz` in a suppression"
+    },
+    {
+      "path": "unknown_id.py",
+      "severity": "warning",
+      "range": {
+        "start": { "offset": 56, "line": 2, "column": 16 },
+        "end": { "offset": 70, "line": 2, "column": 30 }
+      },
+      "message": "Malformed suppression: name the rules, as in `botica: ignore[rule-id]`"
+    }
+  ]
+}

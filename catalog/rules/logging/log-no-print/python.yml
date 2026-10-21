@@ -1,0 +1,25 @@
+id: log-no-print
+language: python
+severity: warning
+message: "Libraries log, they don't print: use the house get_logger (`botica refs show structured-logging`) instead of print() or sys.stdout/stderr.write in library code. `__main__.py`, `cli.py`, `cli/`, the tests and `if __name__ == \"__main__\":` blocks are exempt; another entry point goes in `extend-ignores`."
+ignores:
+  - "**/__main__.py"
+  - "**/cli.py"
+  - "**/cli/**"
+  - "**/conftest.py"
+  - "**/tests/**"
+rule:
+  any:
+    - pattern: print($$$ARGS)
+    - pattern: sys.stdout.write($$$ARGS)
+    - pattern: sys.stderr.write($$$ARGS)
+  not:
+    inside:
+      stopBy: end
+      any:
+        - pattern: |
+            if __name__ == "__main__":
+                $$$BODY
+        - pattern: |
+            if __name__ == '__main__':
+                $$$BODY

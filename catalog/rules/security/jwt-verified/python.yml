@@ -1,0 +1,22 @@
+id: jwt-verified
+language: python
+severity: error
+message: "A token is decoded without checking its signature or its expiry: leave `verify_signature` and `verify_exp` on and pass the key and `algorithms` to `jwt.decode`. A token that the code already trusts takes a suppression that says why."
+rule:
+  any:
+    - kind: pair
+      all:
+        - has:
+            field: key
+            regex: "^[\"'](verify_signature|verify_exp)[\"']$"
+        - has:
+            field: value
+            kind: "false"
+    - kind: keyword_argument
+      all:
+        - has:
+            field: name
+            regex: "^(verify_signature|verify_exp)$"
+        - has:
+            field: value
+            kind: "false"

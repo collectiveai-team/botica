@@ -1,17 +1,6 @@
 ---
 name: pr
 description: "Use when writing a PR body. Follow the repository's .github/pull_request_template.md."
-metadata:
-  credits:
-    - author: Matt Pocock
-      skill: pr
-      url: "https://github.com/mattpocock/skills/blob/v1.3.1/skills/engineering/pr/SKILL.md"
-      contribution: PR writing guidance and examples; local template reference replaces the embedded template.
-    - author: Dex Horthy
-      organisation: Humanlayer
-      skill: show-me
-      url: "https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
-      contribution: Summary visuals and placement guidance.
 ---
 
 Read and use `.github/pull_request_template.md` from the repository the PR targets.
@@ -146,12 +135,14 @@ You may use one of these, you may use several, it is unlikely you will use all o
 
 Concrete evidence that the change works. Show a before and after.
 
-Screenshots are S-tier - when the environment is set up for it and the change is visual.
+Screenshots are the strongest evidence when the environment is set up for it and the change is visual.
 
-Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode.
+Execution-based evidence comes next: test results, console output. Show the exact test that now fails and passes, using pseudocode.
 
 ### Merge Danger
 
 Describe whether it's a one-way or two-way door. You can walk back through two-way doors, but not one-way doors. A PR that is cheap to roll back is lower risk. Changes that involve destructive actions or hard-to-reverse decisions are one-way doors.
 
-The blast radius is the potential impact or scope of the changes introduced by this PR. Consider all possibilities. Examples are layout shift, breakages for consumers, mobile responsiveness, etc.
+The blast radius is the potential impact or scope of the changes introduced by this PR. Examples are layout shift, breakages for consumers, mobile responsiveness, etc.
+
+Credits and sources: [`references/CREDITS.md`](references/CREDITS.md).

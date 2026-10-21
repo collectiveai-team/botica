@@ -1,0 +1,174 @@
+{
+  "diagnostics": [
+    {
+      "path": "app/setup.cfg",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 26,
+          "line": 3,
+          "column": 5
+        },
+        "end": {
+          "offset": 39,
+          "line": 3,
+          "column": 18
+        }
+      },
+      "message": "`omit` leaves `app/legacy.py` out of the coverage report: cover that code with a test, or delete it if nothing calls it. For code that cannot run under test, keep the entry and silence it with the reason."
+    },
+    {
+      "path": "app/setup.cfg",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 45,
+          "line": 4,
+          "column": 5
+        },
+        "end": {
+          "offset": 56,
+          "line": 4,
+          "column": 16
+        }
+      },
+      "message": "`omit` leaves `app/admin/*` out of the coverage report: cover that code with a test, or delete it if nothing calls it. For code that cannot run under test, keep the entry and silence it with the reason."
+    },
+    {
+      "path": "app/setup.cfg",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 96,
+          "line": 8,
+          "column": 5
+        },
+        "end": {
+          "offset": 112,
+          "line": 8,
+          "column": 21
+        }
+      },
+      "message": "`exclude_lines` leaves `pragma: no cover` out of the coverage report: cover that code with a test, or delete it if nothing calls it. For code that cannot run under test, keep the entry and silence it with the reason."
+    },
+    {
+      "path": "app/setup.cfg",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 117,
+          "line": 9,
+          "column": 5
+        },
+        "end": {
+          "offset": 134,
+          "line": 9,
+          "column": 22
+        }
+      },
+      "message": "`exclude_lines` leaves `if TYPE_CHECKING:` out of the coverage report: cover that code with a test, or delete it if nothing calls it. For code that cannot run under test, keep the entry and silence it with the reason."
+    },
+    {
+      "path": "lib/.coveragerc",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 13,
+          "line": 2,
+          "column": 8
+        },
+        "end": {
+          "offset": 25,
+          "line": 2,
+          "column": 20
+        }
+      },
+      "message": "`omit` leaves `lib/vendor/*` out of the coverage report: cover that code with a test, or delete it if nothing calls it. For code that cannot run under test, keep the entry and silence it with the reason."
+    },
+    {
+      "path": "lib/.coveragerc",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 27,
+          "line": 2,
+          "column": 22
+        },
+        "end": {
+          "offset": 40,
+          "line": 2,
+          "column": 35
+        }
+      },
+      "message": "`omit` leaves `lib/compat.py` out of the coverage report: cover that code with a test, or delete it if nothing calls it. For code that cannot run under test, keep the entry and silence it with the reason."
+    },
+    {
+      "path": "pyproject.toml",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 55,
+          "line": 5,
+          "column": 9
+        },
+        "end": {
+          "offset": 76,
+          "line": 5,
+          "column": 30
+        }
+      },
+      "message": "`omit` leaves `src/orders/legacy/*` out of the coverage report: cover that code with a test, or delete it if nothing calls it. For code that cannot run under test, keep the entry and silence it with the reason."
+    },
+    {
+      "path": "pyproject.toml",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 78,
+          "line": 5,
+          "column": 32
+        },
+        "end": {
+          "offset": 97,
+          "line": 5,
+          "column": 51
+        }
+      },
+      "message": "`omit` leaves `src/orders/cli.py` out of the coverage report: cover that code with a test, or delete it if nothing calls it. For code that cannot run under test, keep the entry and silence it with the reason."
+    },
+    {
+      "path": "pyproject.toml",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 139,
+          "line": 8,
+          "column": 17
+        },
+        "end": {
+          "offset": 153,
+          "line": 8,
+          "column": 31
+        }
+      },
+      "message": "`exclude_also` leaves `def __repr__` out of the coverage report: cover that code with a test, or delete it if nothing calls it. For code that cannot run under test, keep the entry and silence it with the reason."
+    },
+    {
+      "path": "pyproject.toml",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 155,
+          "line": 8,
+          "column": 33
+        },
+        "end": {
+          "offset": 182,
+          "line": 8,
+          "column": 60
+        }
+      },
+      "message": "`exclude_also` leaves `raise NotImplementedError` out of the coverage report: cover that code with a test, or delete it if nothing calls it. For code that cannot run under test, keep the entry and silence it with the reason."
+    }
+  ]
+}

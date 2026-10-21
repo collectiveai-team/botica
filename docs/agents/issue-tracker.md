@@ -2,11 +2,6 @@
 
 Issues and specs for this repo live as markdown files in `.scratch/`.
 
-This is the default for this workspace (solo / agent-driven repos). It can be
-switched to GitHub, GitLab, or another tracker later by re-running the
-`setup-matt-pocock-skills` skill — this repo does have a GitHub remote
-(`collectiveai-team/botica`), so GitHub is a valid alternative if you want it.
-
 ## Conventions
 
 - One feature per directory: `.scratch/<feature-slug>/`

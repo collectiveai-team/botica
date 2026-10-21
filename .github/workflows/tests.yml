@@ -1,6 +1,5 @@
 name: Tests
 
-# Lint, type-check and test on every push to main and every PR.
 # Runs the same prek hooks as locally (ruff-format, ruff, pyrefly, hygiene)
 # plus the pytest suite, all through uv so versions match uv.lock.
 
@@ -8,7 +7,7 @@ on:
   push:
     branches: [main]
   pull_request:
-  # Allow other workflows (e.g. release.yml) to gate on this suite.
+  # Allow other workflows (e.g. botica-release.yml) to gate on this suite.
   workflow_call:
 
 concurrency:
@@ -28,11 +27,10 @@ jobs:
           persist-credentials: false
 
       - name: Install uv
-        # Pinned to an exact immutable tag, not a major tag: setup-uv stopped
-        # publishing @v8 / @v8.x from v8.0.0 on, as supply-chain hardening.
+        # An exact tag: setup-uv publishes no major tag since v8.0.0.
         uses: astral-sh/setup-uv@v10.3.0
         with:
-          version: "0.11.12"
+          version: "0.13.3"
           enable-cache: true
 
       # Uses the version pinned by .python-version / pyproject.toml.
@@ -44,7 +42,11 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
+      # botica-rubric runs `cargo build`, and this job installs no Rust toolchain; the workflow
+      # `abide` checks the rubric.
       - name: Lint, format & type check (prek)
+        env:
+          SKIP: botica-rubric
         run: uvx prek run --all-files --show-diff-on-failure
 
       - name: Run tests

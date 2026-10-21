@@ -1,0 +1,13 @@
+id = "unused-suppression"
+code = "BT002"
+summary = "A suppression comment that silences nothing"
+status = "stable"
+scope = "file"
+needs = "bytes"
+run-on = ["cli", "save", "type"]
+default-enabled = true
+default-severity = "warning"
+
+[[implementations]]
+kind = "native"
+languages = ["*"]

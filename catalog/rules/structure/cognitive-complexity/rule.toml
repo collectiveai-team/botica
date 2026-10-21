@@ -1,0 +1,18 @@
+id = "cognitive-complexity"
+code = "BTSTRUC006"
+standard = "CES-110"
+summary = "A function has a cognitive complexity of at most 15"
+status = "preview"
+tags = ["complexity"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save"]
+default-enabled = false
+default-severity = "error"
+
+[options]
+max = { type = "int", default = 15, min = 1 }
+
+[[implementations]]
+kind = "native"
+languages = ["python", "typescript", "tsx", "go", "rust"]

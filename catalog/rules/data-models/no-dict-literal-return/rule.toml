@@ -1,0 +1,18 @@
+id = "no-dict-literal-return"
+code = "BTDM003"
+standard = "CES-79"
+references = ["typed-boundaries"]
+summary = "No function returning a dict literal"
+status = "stable"
+tags = ["typing"]
+prefilter = '(?-u)\breturn[\s\\]*\{'
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = true
+default-severity = "error"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

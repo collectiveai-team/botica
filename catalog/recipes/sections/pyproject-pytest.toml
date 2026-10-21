@@ -1,0 +1,9 @@
+# MARK: Pytest
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+  "unit: fast isolated tests, no external deps",
+  "integration: tests requiring external services or multi-component interaction",
+  "e2e: end-to-end smoke tests",
+]

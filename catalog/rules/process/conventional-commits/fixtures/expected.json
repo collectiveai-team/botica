@@ -1,0 +1,72 @@
+{
+  "diagnostics": [
+    {
+      "path": "no-type.txt",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 26,
+          "line": 1,
+          "column": 27
+        }
+      },
+      "message": "The subject `Add the endpoint of orders` is not `<type>(<scope>): <description>`: start it with one of feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert, an optional lowercase scope in parentheses, `: ` and the description."
+    },
+    {
+      "path": "unknown-type.txt",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 40,
+          "line": 1,
+          "column": 41
+        }
+      },
+      "message": "The subject `feature(api): add the endpoint of orders` is not `<type>(<scope>): <description>`: start it with one of feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert, an optional lowercase scope in parentheses, `: ` and the description."
+    },
+    {
+      "path": "upper-scope.txt",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 37,
+          "line": 1,
+          "column": 38
+        }
+      },
+      "message": "The subject `feat(API): add the endpoint of orders` is not `<type>(<scope>): <description>`: start it with one of feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert, an optional lowercase scope in parentheses, `: ` and the description."
+    },
+    {
+      "path": "no-space.txt",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 31,
+          "line": 1,
+          "column": 32
+        }
+      },
+      "message": "The subject `feat:add the endpoint of orders` is not `<type>(<scope>): <description>`: start it with one of feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert, an optional lowercase scope in parentheses, `: ` and the description."
+    }
+  ]
+}

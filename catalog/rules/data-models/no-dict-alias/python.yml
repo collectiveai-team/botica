@@ -1,0 +1,28 @@
+id: no-dict-alias
+language: python
+severity: error
+message: "A public type alias at module level points at a raw dict, hiding a raw-dict boundary behind a name. Prefer a @dataclass for internal boundaries, or a pydantic BaseModel where validation is needed (e.g. FastAPI endpoints). A lookup table (keys that are data) takes an alias whose name ends in `Table`; a private (`_name`) or nested function is not a boundary."
+rule:
+  all:
+    - any:
+        - pattern: "$NAME = dict"
+        - pattern: "$NAME = dict[$$$ARGS]"
+        - pattern: "$NAME: $ANN = dict"
+        - pattern: "$NAME: $ANN = dict[$$$ARGS]"
+        # PEP 695: type X = dict[...]
+        - pattern: "type $NAME = dict"
+        - pattern: "type $NAME = dict[$$$ARGS]"
+    # An assignment inside a function is a local variable, not an alias.
+    - not:
+        inside:
+          kind: function_definition
+          stopBy: end
+# A name that ends in `Table` declares a lookup table: its keys are data, and a dict is its type. A
+# name that starts with `_` is private to its module.
+constraints:
+  NAME:
+    all:
+      - not:
+          regex: "Table$"
+      - not:
+          regex: "^_"

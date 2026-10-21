@@ -1,0 +1,109 @@
+description = "Any repository, in any language: the rules about any file, the rules of botica itself, the skills, .gitignore, the prek hooks, the workflow of abide and the sections of AGENTS.md"
+rules = [
+  "file-size-guard",
+  "no-notebooks",
+  "no-artifacts-in-package",
+  "io-error",
+  "unused-suppression",
+  "invalid-suppression",
+  "external-config",
+  "conventional-commits",
+  "no-ai-coauthorship",
+]
+judgment = [
+  "separate-orchestration",
+  "architecture-vocabulary",
+  "pr-small-by-intent",
+  "respect-local-repo",
+  "test-in-memory-adapters",
+  "test-through-interface",
+  "test-coverage-gap",
+  "coverage-exclusion-reachable",
+  "plain-writing",
+  "minimal-comments",
+  "ubiquitous-language",
+]
+exports = ["agents-md", "abide"]
+
+[[skills]]
+source = "mattpocock/skills#v1.3.1"
+names = [
+  "grill-with-docs",
+  "triage",
+  "improve-codebase-architecture",
+  "setup-matt-pocock-skills",
+  "to-spec",
+  "to-tickets",
+  "implement",
+  "implement-spec",
+  "retro",
+  "wayfinder",
+  "prototype",
+  "diagnosing-bugs",
+  "research",
+  "tdd",
+  "domain-modeling",
+  "codebase-design",
+  "code-review",
+  "wizard",
+  "grill-me",
+  "teach",
+  "writing-for-agents",
+  "grilling",
+  "wait-what",
+  "to-questionnaire",
+]
+
+[[skills]]
+source = "collectiveai-team/botica"
+names = [
+  "ask-user",
+  "journalist",
+  "handoff",
+  "test-smell-review",
+  "engineering-pr-review",
+  "engineering-refactor",
+  "pr",
+]
+
+[[gitignore]]
+lines = [
+  ".env",
+  "!.env.schema",
+  ".tmp/",
+  ".scratch/",
+  ".worktrees/",
+  ".journals/",
+  ".agents/skills/",
+]
+unignore = ["skills-lock.json"]
+
+[[files]]
+path = "prek.toml"
+template = "files/prek-base.toml"
+
+[[files]]
+path = ".github/workflows/abide.yml"
+template = "files/github/workflows/abide.yml"
+
+[[files]]
+path = ".github/pull_request_template.md"
+template = "files/github/pull_request_template.md"
+
+[[files]]
+path = ".github/ISSUE_TEMPLATE/bug_report.md"
+template = "files/github/ISSUE_TEMPLATE/bug_report.md"
+
+[[files]]
+path = ".github/ISSUE_TEMPLATE/feature_proposal.md"
+template = "files/github/ISSUE_TEMPLATE/feature_proposal.md"
+
+[[sections]]
+path = "AGENTS.md"
+marker = "## Repo Workspace Defaults"
+template = "sections/agents-workspace-defaults.md"
+
+[[sections]]
+path = "AGENTS.md"
+marker = "## Botica rules"
+template = "sections/botica-rules.md"

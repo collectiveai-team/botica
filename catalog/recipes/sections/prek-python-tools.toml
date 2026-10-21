@@ -1,0 +1,23 @@
+# MARK: pyrefly
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "pyrefly"
+name = "pyrefly"
+entry = "uvx pyrefly check --config pyproject.toml"
+language = "system"
+types = ["python"]
+pass_filenames = false
+priority = 2
+
+# MARK: deptry
+# CES-109.
+[[repos.hooks]]
+id = "deptry"
+name = "deptry (unused/missing/misplaced dependencies)"
+entry = "uvx deptry ."
+language = "system"
+types = ["python"]
+pass_filenames = false
+priority = 2

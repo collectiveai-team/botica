@@ -1,0 +1,10 @@
+{
+  "diagnostics": [
+    {
+      "path": "backend/amarc/analysis.ipynb",
+      "severity": "error",
+      "range": null,
+      "message": "backend/amarc/analysis.ipynb is a notebook inside the code of the project — keep notebooks outside it."
+    }
+  ]
+}

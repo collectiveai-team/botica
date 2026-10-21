@@ -1,0 +1,106 @@
+{
+  "diagnostics": [
+    {
+      "path": "legacy.js",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 38,
+          "line": 2,
+          "column": 3
+        },
+        "end": {
+          "offset": 79,
+          "line": 2,
+          "column": 44
+        }
+      },
+      "message": "A credential is written to web storage, which every script of the origin can read: let the server set the session in an `HttpOnly`, `Secure` and `SameSite` cookie and drop the token from `localStorage` and `sessionStorage`."
+    },
+    {
+      "path": "login.tsx",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 115,
+          "line": 3,
+          "column": 5
+        },
+        "end": {
+          "offset": 153,
+          "line": 3,
+          "column": 43
+        }
+      },
+      "message": "A credential is written to web storage, which every script of the origin can read: let the server set the session in an `HttpOnly`, `Secure` and `SameSite` cookie and drop the token from `localStorage` and `sessionStorage`."
+    },
+    {
+      "path": "session.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 63,
+          "line": 2,
+          "column": 3
+        },
+        "end": {
+          "offset": 105,
+          "line": 2,
+          "column": 45
+        }
+      },
+      "message": "A credential is written to web storage, which every script of the origin can read: let the server set the session in an `HttpOnly`, `Secure` and `SameSite` cookie and drop the token from `localStorage` and `sessionStorage`."
+    },
+    {
+      "path": "session.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 109,
+          "line": 3,
+          "column": 3
+        },
+        "end": {
+          "offset": 164,
+          "line": 3,
+          "column": 58
+        }
+      },
+      "message": "A credential is written to web storage, which every script of the origin can read: let the server set the session in an `HttpOnly`, `Secure` and `SameSite` cookie and drop the token from `localStorage` and `sessionStorage`."
+    },
+    {
+      "path": "session.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 168,
+          "line": 4,
+          "column": 3
+        },
+        "end": {
+          "offset": 200,
+          "line": 4,
+          "column": 35
+        }
+      },
+      "message": "A credential is written to web storage, which every script of the origin can read: let the server set the session in an `HttpOnly`, `Secure` and `SameSite` cookie and drop the token from `localStorage` and `sessionStorage`."
+    },
+    {
+      "path": "session.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 204,
+          "line": 5,
+          "column": 3
+        },
+        "end": {
+          "offset": 242,
+          "line": 5,
+          "column": 41
+        }
+      },
+      "message": "A credential is written to web storage, which every script of the origin can read: let the server set the session in an `HttpOnly`, `Secure` and `SameSite` cookie and drop the token from `localStorage` and `sessionStorage`."
+    }
+  ]
+}

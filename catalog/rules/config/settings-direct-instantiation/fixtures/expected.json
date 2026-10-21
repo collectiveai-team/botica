@@ -1,0 +1,38 @@
+{
+  "diagnostics": [
+    {
+      "path": "app.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 61,
+          "line": 3,
+          "column": 12
+        },
+        "end": {
+          "offset": 71,
+          "line": 3,
+          "column": 22
+        }
+      },
+      "message": "A settings class is built where it is used. Read it through the cached get_settings() so that the environment is read once and tests can override it."
+    },
+    {
+      "path": "app.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 80,
+          "line": 4,
+          "column": 9
+        },
+        "end": {
+          "offset": 103,
+          "line": 4,
+          "column": 32
+        }
+      },
+      "message": "A settings class is built where it is used. Read it through the cached get_settings() so that the environment is read once and tests can override it."
+    }
+  ]
+}

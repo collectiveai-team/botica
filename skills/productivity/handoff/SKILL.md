@@ -3,12 +3,6 @@ name: handoff
 description: Compact the current conversation and workspace state into a handoff document for a fresh agent session.
 argument-hint: "What will the next session be used for?"
 disable-model-invocation: true
-metadata:
-  credits:
-    - author: Matt Pocock
-      skill: handoff
-      url: "https://github.com/mattpocock/skills/blob/v1.3.1/skills/productivity/handoff/SKILL.md"
-      contribution: Handoff workflow adapted with workspace state and local artifact storage.
 ---
 
 Write a handoff document summarising the current conversation and workspace state so a fresh agent can continue the work. Save it under the workspace's `.tmp/handoff/` directory and name it with the current timestamp and a slugified topic (for example, `2024-01-01T12-00-00-fix-login-bug.md`).
@@ -30,3 +24,5 @@ Redact any sensitive information, such as API keys, passwords, or personally ide
 When `$ARGUMENTS` is non-empty, treat it as the next session's focus and tailor the document accordingly.
 
 After writing the file, respond with a short restart prompt that references the handoff path, states the immediate objective, and tells the next agent to inspect the referenced artifacts and current git state before editing. Do not reproduce the full handoff in chat.
+
+Credits and sources: [`references/CREDITS.md`](references/CREDITS.md).

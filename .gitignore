@@ -1,15 +1,6 @@
-.journals
-.tmp
-.worktrees
 .env
-.scratch
 .agents/*
-# Curated CES rule docs are authored content referenced by the tracked AGENTS.md index — keep
-# them versioned even though installed agent skills under .agents/ stay ignored.
-!.agents/rules/
-# skills-lock.json is deliberately NOT ignored: it is the tracked skills manifest
-# (CES-107). The derived tree stays ignored — spelled out rather than left to the
-# `.agents/*` glob above, because it is the entry the shipped standard names.
+# CES-107: skills-lock.json is tracked; the installed skills are not.
 .agents/skills/
 
 # python / build
@@ -29,3 +20,15 @@ __pycache__/
 *.svg
 !assets/botica-light.svg
 !assets/botica-dark.svg
+!website/docs/assets/*.svg
+
+# rust (botica lint)
+target/
+
+# standards site: the rule pages are exported from the catalog and the standards are copied from
+# standards/, the site is built from them
+website/docs/rules/
+website/docs/standards/
+website/docs/references/
+website/zensical.build.toml
+website/site/

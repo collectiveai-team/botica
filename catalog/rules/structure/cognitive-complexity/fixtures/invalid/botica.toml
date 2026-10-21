@@ -1,0 +1,2 @@
+[rules.cognitive-complexity]
+max = 3

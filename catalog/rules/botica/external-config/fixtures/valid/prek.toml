@@ -1,0 +1,9 @@
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "complexipy"
+name = "complexipy (cognitive complexity)"
+entry = "uvx complexipy --max-complexity-allowed 15"
+language = "system"
+types = ["python"]

@@ -1,0 +1,15 @@
+id = "no-artifacts-in-package"
+code = "BTSTRUC003"
+standard = "CES-32"
+summary = "Keep data, models and reports outside the code"
+status = "stable"
+tags = ["layout"]
+scope = "file"
+needs = "path"
+run-on = ["cli", "save"]
+default-enabled = true
+default-severity = "error"
+
+[[implementations]]
+kind = "native"
+languages = ["*"]

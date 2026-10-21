@@ -1,0 +1,22 @@
+{
+  "diagnostics": [
+    {
+      "path": "silences_nothing.py",
+      "severity": "warning",
+      "range": {
+        "start": { "offset": 16, "line": 1, "column": 17 },
+        "end": { "offset": 40, "line": 1, "column": 41 }
+      },
+      "message": "Unused suppression (unused: `no-utils`)"
+    },
+    {
+      "path": "silences_nothing.py",
+      "severity": "warning",
+      "range": {
+        "start": { "offset": 56, "line": 2, "column": 16 },
+        "end": { "offset": 72, "line": 2, "column": 32 }
+      },
+      "message": "Unused suppression (unused: `BTSTRUC002`)"
+    }
+  ]
+}

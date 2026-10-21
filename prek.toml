@@ -1,7 +1,7 @@
 # MARK: uv-lock
 [[repos]]
 repo = "https://github.com/astral-sh/uv-pre-commit"
-rev = "0.10.7"
+rev = "0.13.3"
 hooks = [{ id = "uv-lock", priority = 0 }]
 
 # MARK: pre-commit-hooks
@@ -48,37 +48,34 @@ priority = 0
 # keeps any matched secret out of the output.
 [[repos]]
 repo = "https://github.com/betterleaks/betterleaks"
-rev = "v1.5.0"
+rev = "v1.9.0"
 hooks = [{ id = "betterleaks", priority = 0 }]
 
 # MARK: agents-conventional-commits
-# CES-75: the commit subject must follow Conventional Commits (type(scope): description).
-# Runs at the commit-msg stage on the message file; merge/revert/fixup subjects are exempt.
+# CES-75. Merge, revert and fixup subjects are exempt.
 [[repos]]
 repo = "local"
 
 [[repos.hooks]]
 id = "agents-conventional-commits"
 name = "agents-conventional-commits (commit-msg)"
-entry = "python -c \"import re,sys; msg=open(sys.argv[1],encoding='utf-8').readline().strip(); ok=bool(re.match(r'^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\\([a-z0-9._-]+\\))?!?: .+', msg)) or msg.startswith(('Merge ','Revert ','fixup! ')); sys.exit(0 if ok else not print(f'Error: CES-75 (agents-conventional-commits): commit subject must follow Conventional Commits (type(scope): description). Got: {msg!r}'))\""
+entry = "cargo run --quiet --locked -p botica-cli -- lint --select conventional-commits --commit-msg"
 language = "system"
 stages = ["commit-msg"]
 
 # MARK: no-ai-coauthorship
-# CES-91: commit metadata stays human-accountable — no AI co-authorship/attribution trailers
-# (`Co-authored-by: Claude <...>`, `Generated with Claude Code`, etc). Local feedback only; a
-# local hook can be bypassed with `--no-verify`, so CI (commit-policy.yml) is the source of truth.
+# CES-91. `--no-verify` skips this hook; `commit-policy.yml` checks the commits again in CI.
 [[repos.hooks]]
 id = "no-ai-coauthorship"
 name = "no-ai-coauthorship (commit-msg)"
-entry = "python -c \"import re,sys; msg=open(sys.argv[1],encoding='utf-8').read(); tools='claude|anthropic|copilot|github copilot|chatgpt|openai|codex|cursor|windsurf|aider|gemini|devin|opencode'; pat=re.compile(r'(?im)^\\s*(co-authored-by:.*(' + tools + r')|generated[\\s-]+(with|by):?.*(' + tools + r')|ai-generated-by:?.*(' + tools + r')|assisted-by:?.*(' + tools + r'))'); m=pat.search(msg); sys.exit(0 if not m else not print(f'Error: CES-91 (no-ai-coauthorship): commit message must not carry AI co-authorship/attribution trailers. Found: {m.group(0)!r}'))\""
+entry = "cargo run --quiet --locked -p botica-cli -- lint --select no-ai-coauthorship --commit-msg"
 language = "system"
 stages = ["commit-msg"]
 
 # MARK: validate-pyproject
 [[repos]]
 repo = "https://github.com/abravalheri/validate-pyproject"
-rev = "v0.25"
+rev = "0.26"
 hooks = [
   { id = "validate-pyproject", files = "^pyproject\\.toml$", priority = 0 }
 ]
@@ -86,7 +83,7 @@ hooks = [
 # MARK: ruff-format
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "v0.15.22"
+rev = "v0.17.1"
 
 [[repos.hooks]]
 id = "ruff-format"
@@ -113,27 +110,8 @@ types = ["python"]
 pass_filenames = false
 priority = 2
 
-# MARK: ast-grep
-[[repos.hooks]]
-id = "ast-grep"
-name = "ast-grep"
-entry = "uvx --from ast-grep-cli ast-grep scan"
-language = "system"
-types = ["python"]
-pass_filenames = false
-priority = 2
-
-# MARK: file-size-guard
-[[repos.hooks]]
-id = "file-size-guard"
-name = "file-size-guard (400 large / 700 enormous)"
-entry = "python -c \"import sys; sys.exit(max([0] + [1 for f in sys.argv[1:] for n in [sum(1 for _ in open(f, errors='ignore'))] if (n >= 700 and not print(f'Error: {f} is too large ({n} lines, limit is 700)')) or (n >= 400 and not print(f'Warning: {f} is large ({n} lines, recommended limit is 400)') and False)]))\""
-language = "system"
-types = ["python"]
-priority = 2
-
 # MARK: deptry
-# CES-109: declared pyproject.toml dependencies must match the actual import graph.
+# CES-109.
 [[repos.hooks]]
 id = "deptry"
 name = "deptry (unused/missing/misplaced dependencies)"
@@ -143,43 +121,92 @@ types = ["python"]
 pass_filenames = false
 priority = 2
 
-# MARK: complexipy
-# CES-110: cognitive-complexity ceiling per function, complementing ruff's cyclomatic C90 check.
+# MARK: cognitive-complexity
+# The botica of the checkout, since the hooks of the mirror run 0.13.0, which lacks the rule. From
+# the next release, `select` of `[tool.botica]` lists it and this hook goes.
 [[repos.hooks]]
-id = "complexipy"
-name = "complexipy (cognitive complexity)"
-entry = "uvx complexipy --max-complexity-allowed 15"
+id = "botica-cognitive-complexity"
+name = "botica (cognitive-complexity)"
+entry = "cargo run --quiet --locked -p botica-cli -- lint --force-exclude --select cognitive-complexity"
 language = "system"
-types = ["python"]
+types_or = ["python", "rust", "go", "ts", "tsx"]
 priority = 2
 
 # MARK: jscpd
-# CES-118: copy-pasted (near-verbatim) code blocks above a token threshold. Three deliberate
-# exemptions, not accidental duplication: `guide.md` mirrors README.md's bootstrap instructions
-# for the agentic-install flow (see AGENTS.md repo-layout notes), and `scaffolding/templates/**`
-# is the source-of-truth template payload this repo's own dogfooded config/docs are copied
-# *from* — comparing the two is comparing a template to its own intended output, same rationale
-# already used for the ruff/pyrefly/deptry excludes on that path. The third,
-# `skills/engineering/engineering-rules/AGENTS.md`, is that same shape: it is the compiled
-# concatenation of that skill's own `rules/*.md`, so every clone it reports is the artifact
-# matching its source. It is the *only* engineering-skill file exempted — the rules themselves
-# are scanned, which is what caught the two skills shipping byte-identical bundles.
-# The gate reads the **duplicated-lines** percentage, not the token one. jscpd prints both
-# per language and in the Total row, and they diverge widely — the run that failed this branch
-# reported 34.75% of lines against 67.83% of tokens, and the error text quoted 34.8%. Read the
-# lines column when judging headroom, or the margin looks several times tighter than it is.
-# Threshold calibrated to this repo's baseline (~1.9%, mostly tests/test_engine.py fixture-style
-# repetition); tighten as that gets refactored, per the "flag, don't silently exempt" posture in
-# CES-71. The 70 rule files under engineering-rules share a rigid Prefer/Avoid/Reference
-# skeleton, but it does not clone: the headers sit under jscpd's minimum clone size, so markdown
-# contributes 0.51% of lines. Growing the ruleset adds far more unique lines than duplicated
-# ones, so it dilutes the ratio rather than raising it — the "tighten over time" posture holds.
-# `--threshold` alone is the gate; jscpd v5's separate `--exit-code` flag fails on ANY clone
-# regardless of threshold — do not combine the two or the threshold becomes inert.
+# CES-118. `catalog/recipes/files/**` and `catalog/recipes/sections/**` are the templates that this
+# repository installs its own configuration from, and the variant of a workflow for each ecosystem
+# repeats its header. A rule of botica for TypeScript carries its `typescript.yml` again as
+# `tsx.yml` and `javascript.yml`, with only `language:` changed.
+# The gate is the duplicated-lines percentage, set just above the baseline of the repository; do not
+# add `--exit-code`, which fails on any clone.
 [[repos.hooks]]
 id = "jscpd"
 name = "jscpd (copy-paste duplication)"
-entry = "npx --yes jscpd@5 . --threshold 2.5 --ignore \"guide.md,scaffolding/templates/**,skills/engineering/engineering-rules/AGENTS.md\""
+entry = "npx --yes jscpd@5 . --threshold 2.5 --ignore \"catalog/recipes/files/**,catalog/recipes/sections/**,catalog/rules/**/tsx.yml,catalog/rules/**/javascript.yml\""
 language = "system"
 pass_filenames = false
+priority = 2
+
+# MARK: skill-validator
+# Spec, links, token counts and content checks of the skills under `skills/`, by
+# agent-ecosystem/skill-validator. Warnings fail like errors (`--strict`). The flags are in
+# `scripts/check_skills.sh`. Needs Go on the PATH.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "skill-validator"
+name = "skill-validator"
+entry = "sh scripts/check_skills.sh"
+language = "system"
+files = "^skills/"
+pass_filenames = false
+priority = 2
+
+# MARK: agnix
+# Lints the files that agents read: AGENTS.md, SKILL.md, opencode.jsonc, the Claude settings and the
+# like. The mirror passes `--strict`, which fails the hook on a warning; `args = []` removes it, so
+# an error fails the hook and a warning does not. `uvx agnix .` lists the warnings.
+[[repos]]
+repo = "https://github.com/agent-sh/agnix"
+rev = "v0.59.0"
+hooks = [{ id = "agnix", args = [], priority = 2 }]
+
+# MARK: botica
+# Selection and exclusions: `[tool.botica]` of `pyproject.toml`.
+[[repos]]
+repo = "https://github.com/collectiveai-team/botica-pre-commit"
+rev = "v0.13.0"
+
+[[repos.hooks]]
+id = "botica"
+priority = 2
+
+[[repos.hooks]]
+id = "botica-project"
+priority = 2
+
+# The block of AGENTS.md and the rubric of abide match the catalog and the configuration. Local
+# until the mirror has the hooks `botica-agents-md` and `botica-rubric`.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "botica-agents-md"
+name = "botica (block of the judgment rules in AGENTS.md)"
+entry = "uvx botica@0.13.0 rules export --format agents-md --output AGENTS.md --check"
+language = "system"
+pass_filenames = false
+always_run = true
+priority = 2
+
+# 0.13.0 writes a scope that covers the files of `extend-exclude`; the botica of the checkout
+# does not. `tests.yml` skips this hook: the workflow `abide` checks the rubric with that botica.
+[[repos.hooks]]
+id = "botica-rubric"
+name = "botica (rubric of abide)"
+entry = "cargo run --quiet --locked -p botica-cli -- rules export --format abide --check"
+language = "system"
+pass_filenames = false
+always_run = true
 priority = 2

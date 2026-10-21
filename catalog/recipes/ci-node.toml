@@ -1,0 +1,10 @@
+description = "GitHub Actions for a Node project that uses pnpm: dependabot and osv-scanner"
+extends = ["ci"]
+
+[[files]]
+path = ".github/dependabot.yml"
+template = "files/github-node/dependabot.yml"
+
+[[files]]
+path = ".github/workflows/osv-scanner.yml"
+template = "files/github-node/workflows/osv-scanner.yml"

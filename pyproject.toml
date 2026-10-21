@@ -1,53 +1,88 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
-build-backend = "hatchling.build"
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
 
+# Wheels of `botica` with the binary and the module `botica.sdk`, built from the Rust workspace of
+# this repository. The version comes from `[workspace.package]` in Cargo.toml.
 [project]
 name = "botica"
-dynamic = ["version"]
-description = "Recipes and standards for projects: deterministic rules, templates, and design decisions."
-readme = "README.md"
+description = "Deterministic linter: the rules of its catalog and of a project"
+requires-python = ">=3.9"
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.11"
-dependencies = [
-  "cyclopts>=5.2.0",
-  "questionary>=2.0",
-  "pydantic>=2.14.1",
-  "pydantic-settings>=2.15.0",
-  "rich>=13.0",
+dynamic = ["version"]
+classifiers = [
+    "Environment :: Console",
+    "Programming Language :: Rust",
+    "Topic :: Software Development :: Quality Assurance",
 ]
 
-[project.scripts]
-scaffolding = "scaffolding.cli:app"
+# `botica[sdk]` is what an extension script declares to write its rule with `botica.sdk` and to
+# parse with ast-grep.
+[project.optional-dependencies]
+sdk = ["ast-grep-py"]
 
+[tool.maturin]
+bindings = "bin"
+manifest-path = "crates/botica-cli/Cargo.toml"
+python-source = "sdk/python"
+strip = true
+
+# The maintainer scripts under `scripts/` and their tests. They are not part of the wheel: their
+# dependencies are the `dev` group, which needs Python 3.11.
 [dependency-groups]
 dev = [
+  "cyclopts>=5.2.0",
   "pytest>=8.0",
-  # CES-111 (test-order-randomization-pytest-randomly): random, reproducibly-seeded test
-  # order on every run — catches state-leaking/order-dependent tests for free.
+  # CES-111
   "pytest-randomly>=4.1.0",
   "ruff>=0.17.0",
 ]
+# The code of the built-in topics, under `catalog/references/<topic>/code/`, and its tests. The
+# versions are fixed: they are the ones the code is written and tested against, and
+# `scripts/check_references.sh` runs with this group.
+references = [
+  "fastapi==0.153.0",
+  "httpx==0.28.1",
+  "prefect==3.8.8",
+  "pydantic==2.14.1",
+  "pydantic-ai-slim==2.58.0",
+  "pydantic-settings==2.16.1",
+  "pyrefly==1.4.0",
+  "structlog==26.1.0",
+]
 
-# Version derived from git tags (vX.Y.Z) by hatch-vcs.
-[tool.hatch.version]
-source = "vcs"
+# `uv sync` and `uv run` install the `dev` group and leave the Rust package unbuilt; `maturin`
+# builds the wheel.
+[tool.uv]
+package = false
 
-[tool.hatch.build.targets.wheel]
-packages = ["scaffolding"]
-
-[tool.hatch.build.targets.sdist]
-include = ["scaffolding", "README.md", "guide.md"]
+[tool.uv.dependency-groups]
+dev = { requires-python = ">=3.11" }
+# The house version of Python (CES-77).
+references = { requires-python = ">=3.14" }
 
 [tool.ruff]
 line-length = 100
-# Vendored skill scripts and bundled template payload (snippets/ drop-ins shipped
-# verbatim into target repos) are independent artifacts; lint only the tool's code.
-extend-exclude = ["skills", "scaffolding/templates"]
+# The scripts need 3.11 (the `dev` group); `requires-python` is the floor of the wheel.
+target-version = "py311"
+# Vendored skill scripts are independent artifacts; lint only the maintainer code.
+# The botica lint rule fixtures are deliberately bad code (and carry `# noqa: BT…` codes ruff
+# would otherwise strip), so ruff leaves them alone. The fixtures of botica-complexity are copied
+# from complexipy as they are.
+extend-exclude = [
+  "skills",
+  "catalog/rules/**/fixtures",
+  "crates/botica-complexity/tests/fixtures",
+]
 force-exclude = true
+# `botica.sdk` ships in the wheel, whose floor is Python 3.9; the code of the topics is written for
+# the house version (CES-77).
+per-file-target-version = { "sdk/python/**" = "py39", "catalog/references/**" = "py314" }
 
 [tool.ruff.lint]
+# The codes of botica in `# noqa` comments.
+external = ["BT"]
 select = [
   "E",
   "F",
@@ -101,9 +136,8 @@ select = [
   "PERF",
 ]
 
-# This is a CLI orchestrator: shelling out to known tools (git, uv, npx,
-# varlock, gh) by name is intentional, so the subprocess-audit rules that flag
-# that pattern are disabled. The rest of the security ruleset stays on.
+# The maintainer scripts shell out to known tools (git, uv, npx, gh) by name, so
+# the subprocess-audit rules that flag that pattern are disabled.
 ignore = ["S603", "S607"]
 task-tags = ["TODO", "FIXME", "XXX", "MARK"]
 
@@ -116,8 +150,24 @@ convention = "google"
 [tool.ruff.lint.mccabe]
 max-complexity = 10
 
-# Ban relative imports (e.g. `from .plan import ...`) — use absolute
-# `from scaffolding.plan import ...` so modules are unambiguous and movable.
+# `app` is the package of the code of the topics (catalog/references/<topic>/code/app).
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+# FastAPI reads the annotations of an endpoint when the route is declared, and pydantic those of a
+# model when the class is built, so their imports stay out of a `TYPE_CHECKING` block.
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = ["pydantic.BaseModel", "pydantic_settings.BaseSettings"]
+runtime-evaluated-decorators = [
+  "fastapi.APIRouter.get",
+  "fastapi.APIRouter.post",
+  "fastapi.APIRouter.put",
+  "fastapi.APIRouter.patch",
+  "fastapi.APIRouter.delete",
+  "fastapi.FastAPI.get",
+  "fastapi.FastAPI.post",
+]
+
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 
@@ -125,18 +175,98 @@ ban-relative-imports = "all"
 "tests/**" = ["S101", "INP001"]
 # Maintainer scripts run as files, not as an importable package.
 "scripts/**" = ["INP001"]
+# botica's Python extension SDK and benchmark scripts run as files, not as a package.
+"sdk/**" = ["INP001"]
+"bench/**" = ["INP001"]
+# The code of a topic is the namespace package `app` (scripts/check_references.sh).
+"catalog/references/**" = ["INP001"]
+"catalog/references/*/tests/**" = ["S101"]
+"catalog/references/*/code/tests/**" = ["S101"]
+
+[tool.botica]
+# The rules of the recipes `base` and `base-python`.
+select = [
+  "file-size-guard",
+  "no-notebooks",
+  "no-artifacts-in-package",
+  "io-error",
+  "unused-suppression",
+  "invalid-suppression",
+  "external-config",
+  "no-utils",
+  "no-tests-in-package",
+  "no-dict-alias",
+  "no-dict-call-return",
+  "no-dict-literal-return",
+  "no-dict-return-annotation",
+  "api-schemas-extra-forbid",
+  "log-get-logger",
+  "log-no-print",
+  "settings-module",
+  "cli-typed-framework",
+  "database-package",
+  "import-layers",
+  "settings-env-schema",
+  "separate-orchestration",
+  "architecture-vocabulary",
+  "pr-small-by-intent",
+  "respect-local-repo",
+  "test-in-memory-adapters",
+  "test-through-interface",
+  "test-coverage-gap",
+  "plain-writing",
+  "minimal-comments",
+  "ubiquitous-language",
+]
+preview = true
+# The fixtures of the rules are wrong on purpose, those of botica-complexity are copied from
+# complexipy, and the skills are authored skills, checked by skill-validator (ruff leaves them out
+# for the same reasons).
+extend-exclude = [
+  "catalog/rules/**/fixtures/",
+  "crates/botica-complexity/tests/fixtures/",
+  "skills/",
+]
+
+# The maintainer scripts and the benchmarks are command-line programs run as files: their output
+# is what they print.
+[tool.botica.rules.log-no-print]
+extend-ignores = ["scripts/**", "bench/**"]
+
+# The settings of the code of a topic belong to the project that copies it, and its `.env.schema`
+# declares their variables.
+[tool.botica.rules.settings-env-schema]
+extend-ignores = ["catalog/references/**"]
+
+# The benchmarks run with a bare `python` and the standard library only, so they parse their
+# arguments with `sys.argv`.
+[tool.botica.rules.cli-typed-framework]
+extend-ignores = ["bench/**"]
+
+# The rubric is written by `botica rules export --format abide`. The `ignores` of the rule leave it
+# out from the release after 0.13.0; remove this table then.
+[tool.botica.rules.file-size-guard]
+extend-ignores = [".abide/rubric.json"]
 
 [tool.pyrefly]
+python-version = "3.11"
+search-path = [".", "tests"]  # the tests import the support module of the site tests
 project-excludes = [
   "**/node_modules",
   "**/__pycache__",
   "**/.venv/**/*",
   "**/.worktrees/**/*",
+  "**/.tmp/**/*",    # local scratch (spike corpora, benchmarks); gitignored
+  "**/.botica/**/*",  # the fixtures that `botica rules test --judge` and `rules conform` lay out
   "skills/**/*",
-  "review/**/*",     # separate distribution with its own env/import-root
-  # Bundled template payload: snippets/ drop-ins are shipped verbatim into target
-  # repos and reference their deps (structlog, pydantic, …), not this tool's env.
-  "scaffolding/templates/**/*",
+  # The Rust workspace and what its build reads; the Python SDK needs `botica[sdk]`, outside
+  # the `dev` group, and the benchmarks run with a bare `python`.
+  "crates/**/*",
+  "target/**/*",
+  "catalog/**/*",
+  "distribution/**/*",
+  "sdk/**/*",
+  "bench/**/*",
 ]
 use-ignore-files = false
 disable-project-excludes-heuristics = true
@@ -144,9 +274,15 @@ disable-project-excludes-heuristics = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
-# CES-109 (dep-hygiene-deptry): declared deps must match the actual import graph. `review/` is
-# a separate distribution with its own pyproject/deps and `scaffolding/templates`/`skills` are
-# bundled/vendored payload shipped verbatim into target repos (same rationale as the ruff and
-# pyrefly excludes above) — none of the three belong to this tool's own import graph.
+# CES-109. The Rust workspace, what its build reads, its SDKs and its benchmarks are outside the
+# import graph of the scripts, and `skills` holds authored skills, checked by skill-validator.
 [tool.deptry]
-extend_exclude = ["review", "scaffolding/templates", "skills"]
+extend_exclude = [
+  "crates", "target", "catalog", "distribution", "sdk", "bench", "skills",
+]
+
+# `[project]` is the wheel of botica. `ast-grep-py` is its `sdk` extra, which the extension scripts
+# of a project import; the maintainer scripts import `cyclopts` from the `dev` group.
+[tool.deptry.per_rule_ignores]
+DEP002 = ["ast-grep-py"]
+DEP004 = ["cyclopts"]

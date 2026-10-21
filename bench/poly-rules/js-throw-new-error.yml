@@ -1,0 +1,8 @@
+id: js-throw-new-error
+language: javascript
+rule:
+  pattern: throw new Error($$$A)
+  not:
+    inside:
+      stopBy: end
+      kind: try_statement

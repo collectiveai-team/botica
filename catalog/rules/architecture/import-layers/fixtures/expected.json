@@ -1,0 +1,38 @@
+{
+  "diagnostics": [
+    {
+      "path": "app/core/models.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 33,
+          "line": 1,
+          "column": 34
+        }
+      },
+      "message": "`app.core.models` imports `app.api.routes`, and `app.api` is a layer above `app.core`: move what it needs to `app.core` or below, or invert the dependency"
+    },
+    {
+      "path": "app/core/models.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 34,
+          "line": 2,
+          "column": 1
+        },
+        "end": {
+          "offset": 62,
+          "line": 2,
+          "column": 29
+        }
+      },
+      "message": "`app.core.models` reaches `app.api.routes` through app.core.models -> app.shared.money -> app.api.routes, and `app.api` is a layer above `app.core`: move what it needs to `app.core` or below, or invert the dependency"
+    }
+  ]
+}

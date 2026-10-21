@@ -1,0 +1,18 @@
+# name  url  commit  ecosystem    (used by layout_survey.sh; the commits are the ones the numbers were taken on)
+# The repositories of Collective come first, then references of each ecosystem. A repository that
+# cannot be cloned (a private one) is skipped.
+amarc                  https://github.com/collectiveai-team/amarc.git                c7b6b77ff22518845c8ea197f3f5733f15abd5bf  python
+botica                 https://github.com/collectiveai-team/botica.git               7cd5c31afe0916bfee85b26f4b92bc40fbfbfb07  python
+pomodoro               https://github.com/collectiveai-team/pomodoro.git             ca717c2c204f9d40aecc0f05da0c128172cc713d  python
+coro                   https://github.com/collectiveai-team/coro.git                 73c901ed1a66525431f04bd2d38f95b4f9e0a665  python
+ai-experiments         https://github.com/collectiveai-team/ai-experiments.git       e178e1b76b18cd263226ef999da40e290a6a60e9  python
+fastapi                https://github.com/tiangolo/fastapi.git                       f5c6e9b4f9cadc1bf0f9a1fd672e621206b63007  python
+flask                  https://github.com/pallets/flask.git                          d086db856be187255b8ec61ef409357393020f32  python
+pydantic               https://github.com/pydantic/pydantic.git                      68a839f0712c367f17be497b6850ebcb6825d76c  python
+scikit-learn           https://github.com/scikit-learn/scikit-learn.git              102e5daf66759cf896beeee229d1bf7c80ab2ba4  python
+swr                    https://github.com/vercel/swr.git                             9ed1240a4cf799e316a793c22c6800cc6482d389  js
+trpc                   https://github.com/trpc/trpc.git                              796700d8653b3832409fff997e6f5789519b9ea7  js
+ripgrep                https://github.com/BurntSushi/ripgrep.git                     3fce3b5bb0236da2df6d99672afb8a719642eca7  rust
+bat                    https://github.com/sharkdp/bat.git                            d9559c69f541873f8c47ac8ad81d985f4441edf6  rust
+gh-cli                 https://github.com/cli/cli.git                                ec5b512045db67e5a2a4ff4a1b02660b2fb24390  go
+spring-petclinic       https://github.com/spring-projects/spring-petclinic.git       500158f732419217507c7656904b8e6aa1bcc0d6  jvm

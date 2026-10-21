@@ -1,0 +1,36 @@
+id = "no-disabled-typecheck"
+code = "BTTOOL001"
+standard = "CES-58"
+summary = "The type checker stays on for the whole build and every file"
+status = "preview"
+tags = ["types"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["typescript"]
+file = "typescript.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["tsx"]
+file = "tsx.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["javascript"]
+file = "javascript.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["json"]
+file = "json.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

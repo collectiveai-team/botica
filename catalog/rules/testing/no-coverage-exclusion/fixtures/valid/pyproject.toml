@@ -1,0 +1,11 @@
+[project]
+name = "orders"
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+omit = ["src/orders/_version.py"]  # botica: ignore[no-coverage-exclusion] -- written by setuptools-scm

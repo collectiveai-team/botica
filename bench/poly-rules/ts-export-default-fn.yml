@@ -1,0 +1,4 @@
+id: ts-export-default-fn
+language: typescript
+rule:
+  pattern: export default function $F($$$A) { $$$B }

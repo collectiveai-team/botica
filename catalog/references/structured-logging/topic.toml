@@ -1,0 +1,28 @@
+title = "Structured logging with structlog"
+
+[[references]]
+file = "code/app/core/logger.py"
+lines = "28-49"
+anchor = "def _configure"
+note = "the configuration: JSON in production, a console in development, applied once"
+
+[[references]]
+file = "code/app/core/logger.py"
+lines = "52-55"
+anchor = "def get_logger"
+note = "the function that every module imports"
+
+[[references]]
+url = "https://www.structlog.org/en/stable/getting-started.html#building-a-context"
+note = "binding context: a logger is immutable, and `bind()` returns a new one that carries the context"
+quote = "Each logger with its context is immutable. You manipulate the context by creating new loggers using bind() and unbind()."
+
+[[references]]
+url = "https://www.structlog.org/en/stable/getting-started.html#rendering"
+note = "the renderer is the last processor, and `JSONRenderer` is the one for production"
+quote = "So assuming you want to follow best practices and render your event dictionary to JSON that is picked up by a log aggregation system like ELK or Graylog, structlog comes with batteries included - you just have to tell it to use its JSONRenderer."
+
+[[references]]
+url = "https://www.structlog.org/en/stable/api.html#structlog.dev.ConsoleRenderer"
+note = "the console renderer formats exceptions itself, so the processor that turns them into data goes only before `JSONRenderer`"
+quote = "Changed in version 21.2.0: ConsoleRenderer now handles the exc_info event dict key itself. Do not use the structlog.processors.format_exc_info processor together with ConsoleRenderer anymore!"

@@ -13,275 +13,149 @@
 
 <p align="center">
   <a href="https://github.com/collectiveai-team/botica/releases"><img alt="Release" src="https://img.shields.io/github/v/release/collectiveai-team/botica?logo=github" /></a>
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white" alt="Python 3.11+"></a>
+  <a href="https://pypi.org/project/botica/"><img alt="PyPI" src="https://img.shields.io/pypi/v/botica?logo=pypi&logoColor=white" /></a>
   <a href="https://opencode.ai/"><img src="https://img.shields.io/badge/Agents-opencode%20%C2%B7%20claude--code%20%C2%B7%20codex-1d1d1d?logo=anthropic&logoColor=white" alt="opencode · claude-code · codex"></a>
-  <a href="https://docs.astral.sh/uv/"><img src="https://img.shields.io/badge/Install-uvx%20%C2%B7%20curl-261230?logo=astral&logoColor=white" alt="Install via uvx or curl" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </p>
 
 ---
 
+**Documentation**: [https://collectiveai-team.github.io/botica/](https://collectiveai-team.github.io/botica/)
+
 **Source Code**: [https://github.com/collectiveai-team/botica](https://github.com/collectiveai-team/botica)
 
 ---
 
-**botica** is a set of recipes and standards for projects, built for agents
-(opencode / claude-code / codex) and the people working with them:
+Botica is a linter and a set of recipes for the repositories of a team.
 
-- **Deterministic rules:** the Collective Engineering Standards (CES), enforced
-  by ast-grep and prek hooks rather than left to judgment.
-- **Templates:** workspace defaults (gitignore, per-agent config, `AGENTS.md`
-  guidance, prek hooks, ast-grep, CI, Varlock secrets) dropped into a repo by a
-  small, clean-adds-only CLI. It runs once per repo, as an *agentic install* or
-  directly. Target one or more agents with `--agent` (repeatable /
-  comma-separated; default `opencode`).
-- **Design decisions:** the reasoning behind the defaults, captured as rule
-  detail files, ADRs, and recurring skills you install once and reuse.
+- **`botica lint`** runs rules over the files of a project: the built-in catalog, and the rules
+  that the project writes in `.botica/rules/`. Each rule checks a written
+  [standard](https://collectiveai-team.github.io/botica/standards/). It never calls a model or the
+  network, and it runs as a command, a hook of prek, a job of CI and a language server.
+- **`botica recipe install`** sets up a repository of some kind: the selection of rules in
+  `botica.toml`, the hooks of prek, the workflows of GitHub Actions, the agent skills and the
+  lines of `.gitignore`. It adds what is missing, and a file that exists is not replaced.
+- **Judgment rules** cover what no deterministic check can express. Botica exports them to
+  `AGENTS.md` and to the rubric of [abide](https://www.npmjs.com/package/@coldtea/abide), the judge,
+  and filters what the judge reports with the same configuration and comments.
 
-Most engineering workflow skills I use come from Matt Pocock's
-[`skills`](https://github.com/mattpocock/skills). This repo intentionally does
-not vendor those; it only contains my own additions.
+Most rules read Python, TypeScript and JavaScript, a few read Go and Rust, and the rest read the
+files of any project: their names, their size, the layout of the folders, the commit messages.
 
-## Bootstrap a repo
+## Install
 
-Run this from the root of the repo you want to set up.
-
-**Existing working repo (recommended): let an agent do it.** The bootstrap needs
-judgment — new-vs-existing detection, additive JSONC/`AGENTS.md` merges, Python
-detection, and per-item conflict resolution. The CLI does the deterministic
-clean-adds; the agent drives it and handles merges. Point your agent at the guide:
-
-> Set up this repo by following the instructions here:
-> `https://raw.githubusercontent.com/collectiveai-team/botica/main/guide.md`
-> Don't summarize it — follow every step.
-
-**New / empty repo (fast path): run the CLI directly.** It does clean adds only
-and refuses to touch existing files, deferring any merge to the agent.
-
-Straight from git via `uvx` (no PyPI):
+Botica is one binary, published on PyPI as the wheel `botica`. It runs without Python.
 
 ```bash
-uvx --from git+https://github.com/collectiveai-team/botica scaffolding install
+uvx botica lint            # run it once, without installing
+uv tool install botica     # or keep it installed
 ```
 
-Or via the bootstrap shim (also installs `uv` if missing — preserves the classic
-one-liner):
+From a checkout: `cargo build --release -p botica-cli`, and the binary is `target/release/botica`.
+
+## Use
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/collectiveai-team/botica/main/install.sh | bash
+botica lint                    # the active rules over the current directory
+botica lint --diff origin/main # only the findings on the lines that a branch adds
+botica rules --all             # every rule, whether it is active, and why
+botica explain no-utils        # what a rule asks, and how it is configured here
 ```
 
-The installer is idempotent — safe to re-run. Existing files are never edited or
-overwritten; they are reported as `[defer]` for the agent to merge.
+`botica lint` exits with 1 when a finding is an error and with 2 when the run fails. A
+configuration is `botica.toml`, or `[tool.botica]` in `pyproject.toml`:
 
-### GitHub PR and issue templates
+```toml
+select = ["file-size-guard", "no-utils", "log-no-print"]
 
-The default-on `github-templates` component adds `.github/pull_request_template.md`
-and bug report / feature proposal templates under `.github/ISSUE_TEMPLATE/`.
-The internal `/pr` skill reads `.github/pull_request_template.md` from the target
-repo and uses its sections without keeping a second format in the skill. Issue templates adapt
-[collectiveai-web](https://github.com/collectiveai-team/collectiveai-web/tree/main/.github/ISSUE_TEMPLATE)
-for any repo: reproducible evidence, scoped impact, options, and verifiable criteria.
-Existing targets are deferred, never overwritten. Install just these with
-`scaffolding install github-templates`, or opt out with `--skip github-templates`.
-
-### Commands
-
-```
-scaffolding install [components…]   # clean-adds (all default-on, or just the named ones)
-scaffolding install --yes           # non-interactive / CI (conservative defaults)
-scaffolding install --dry-run       # render the plan, write nothing
-scaffolding plan --json             # machine-readable plan for the agent path
-scaffolding list                    # available components (gate / default / what they add)
-scaffolding check                   # verify bootstrap completeness (nonzero exit on failure)
-scaffolding doctor                  # diagnose environment + tools
+[rules.file-size-guard]
+warn = 500
+max = 900
 ```
 
-Components: `gitignore agent-config prek ast-grep pyproject ci github-templates agents standards
-skills varlock` (all default-on except `ci`, which is opt-in). Scope with
-positional names or `--skip a,b`. Useful flags: `--agent` (repeatable:
-`opencode`/`claude-code`/`codex`), `--ci/--no-ci`, `--ci-parts`,
-`--name`, `--description`, `--varlock/--no-varlock`, `--no-deps`. Legacy env vars
-(`AGENT`, `SKIP_SKILLS`, `SKIP_VARLOCK`, `WITH_CI`/`SKIP_CI`, `ASSUME_YES`) are
-honored.
+A comment silences one finding, with its reason:
 
-There is no `uninstall`: the installer requires a git repo, so `git status` /
-`git checkout` / `git clean` are the undo mechanism.
+```python
+print(report)  # noqa: BTLOG002 -- the output of the command
+```
 
-## Installed skills
+The [guide](https://collectiveai-team.github.io/botica/guide/lint/) has every command and key,
+the [baseline](https://collectiveai-team.github.io/botica/guide/findings/#known-findings) of known
+findings, the [editor](https://collectiveai-team.github.io/botica/guide/editor/) (Neovim, Helix,
+Emacs) and the [hooks and CI](https://collectiveai-team.github.io/botica/guide/prek-and-ci/).
 
-These are real skills you install once and use repeatedly. They land in the
-shared `.agents/skills` standard (read by opencode + codex); selecting
-`claude-code` bridges them via the `.claude/skills` → `.agents/skills` symlink.
+## Set up a repository
 
-Which skills a repo uses is declared in **`skills-lock.json`, the tracked skills
-manifest** (CES-107). `.agents/skills/` is derived from it and stays gitignored.
-`scaffolding install` restores from the manifest rather than re-fetching a
-hardcoded list:
+From the root of the repository, with `uv` and `npx` on the `PATH`:
 
 ```bash
-npx skills experimental_install
+uvx botica recipe install base base-python agent-claude-code ci-python repo-public
 ```
 
-Think `pyproject.toml` / `uv.lock`: the baseline below is the declared intent,
-`skills-lock.json` is the resolved set, `.agents/skills/` is the `.venv`. The
-analogy stops at the guarantee. Entries carry a `ref` only when the source was
-pinned (`owner/repo#v1.3.1`), tags are mutable, and the `computedHash` that is
-written is never verified on restore. So it reproduces *which skills, from where,
-at what ref* — not bytes. It is a manifest, not a lock.
+| Recipe | What it adds |
+|---|---|
+| `base` | any repository: the rules about any file, the skills, `.gitignore`, the hooks of prek, the workflow of abide, the sections of `AGENTS.md` |
+| `base-python` | a Python project: the rules about Python code and `pyproject.toml`, the Python hooks and the dev tools |
+| `agent-claude-code`, `agent-codex`, `agent-opencode` | the configuration and the skills of an agent |
+| `ci`, `ci-python`, `ci-node`, `ci-go` | the workflows of GitHub Actions for commits and for an ecosystem |
+| `repo-public`, `repo-private` | the workflows that fit the visibility of the repository |
+| `ci-publish`, `ci-docker`, `ci-dependency-review`, `ci-automerge-public`, `ci-automerge-private`, `secrets-varlock` | one workflow or tool each |
 
-The `skills` CLI owns the file; botica reads it and never writes it. Adding a
-skill is `npx skills add`, which records the source, ref and hash actually used.
+`botica recipe list` prints them with their steps, and `botica recipe check` says how the
+repository differs from them. A file that exists is left as it is and reported `pending`. Commit
+`skills-lock.json` afterwards: `npx skills experimental_install` restores `.agents/skills/` from
+it. [Recipes](https://collectiveai-team.github.io/botica/guide/recipes/) describes each step, and
+a project adds its own recipes in `recipes/`.
 
-Two states, and one refusal. A repo **with** a manifest restores from it — it is
-the source of truth, and is never topped up towards the house baseline, so a skill
-you removed stays removed. A repo **without** one gets the baseline seeded, which
-creates it. A manifest that exists but does not parse is deferred, never
-overwritten. If the manifest is gitignored, install offers to un-ignore it — the
-one consent this asks for, since it is the one file the repo owns that botica
-edits.
+## Extend
 
-The baseline it seeds is the curated upstream set from Matt Pocock, pinned to a
-release tag, plus this repo's local skills and varlock — the exact commands are
-below under [seeding by hand](#seeding-by-hand). The catalog and the tag live in
-`scaffolding/skills.py`; the `skills-drift` workflow reports renames, removals
-and newer tags.
-
-Skills install once into `.agents/skills`; claude-code reaches them via the
-`.claude/skills` symlink created by the bootstrap, so there is no need to re-run
-the installer with `--agent claude-code` / `--agent codex`.
-
-### Working with skills
-
-| Situation | What to run |
-| --- | --- |
-| New repo | `scaffolding install`, then commit `skills-lock.json` |
-| Existing repo, first adoption | `scaffolding install`, accept the un-ignore prompt, commit |
-| Fresh clone / CI | `scaffolding install` (or `npx skills experimental_install`) |
-| Add a skill | `npx skills add <source> --agent opencode --yes --skill <name>`, commit |
-| Remove a skill | delete the directory **and** the manifest entry, `scaffolding check`, commit |
-| Skills installed, no manifest | `scaffolding install`, then read the warnings — see below |
-
-`skills.py` is not part of any of these. It is the baseline for repos that have
-no manifest yet; changing a repo's skill set is always `npx skills`, and the CLI
-records the source, ref and hash it used.
-
-#### Skills installed, but no manifest
-
-The common migration case. Provenance is **not recoverable from disk**: an
-installed skill directory holds only `SKILL.md`, and with no manifest
-`skills list --json` reports `source: null`. So nothing is adopted or guessed —
-the baseline is seeded and install warns about both hazards before it runs:
-
-```
-[warn] skills-lock.json: our-private-skill
-       installed but not in the house baseline, and its source cannot be
-       recovered from disk — run `npx skills add <source> --skill our-private-skill`
-[warn] .agents/skills/tdd
-       already on disk and will be replaced by the seed — if it was edited by
-       hand, copy it out first; the derived tree is gitignored, so there is no
-       diff to recover it from
-```
-
-Afterwards `scaffolding check` names exactly what is left:
-
-```
-FAIL  installed skills declared  in .agents/skills but not in skills-lock.json:
-                                 our-private-skill
-```
-
-Declare it with its real source, or delete the directory. Either way the manifest
-and the tree end up agreeing, which is what the check enforces.
-
-#### Removing a skill
-
-`npx skills remove` **does not work** for projects using `.agents/skills/`. That
-directory is shared by ~15 agents, and the CLI keeps both the files and the
-manifest entry while any other detected agent still references the skill
-(`src/remove.ts:262-302`), so the command reports success and changes nothing.
-`--agent '*'` is documented but rejected at runtime. Until that is fixed upstream,
-remove by hand:
+A project writes its rules in `.botica/rules/<catalog>/`, and `botica rules new` writes the folder
+of one:
 
 ```bash
-rm -rf .agents/skills/<name>
-# delete the "<name>" entry from skills-lock.json
-scaffolding check    # fails if you did only one of the two
-git add -A && git commit
+botica rules new structure/no-eval --kind ast-grep --language python --catalog .botica/rules/acme
+botica rules conform .botica/rules/acme   # the rule over its fixtures
 ```
 
-`scaffolding check` compares the manifest and the tree in both directions
-precisely so a half-finished removal cannot pass silently. Because the baseline is
-never re-applied, a removed skill stays removed.
+- A **pattern rule** is a YAML pattern over the syntax tree of a file.
+- An **extension** is a program that answers the protocol of botica over stdin and stdout. The
+  SDKs are [Python](sdk/python/README.md) (`botica.sdk`, in the wheel), [Node](sdk/node/README.md),
+  [Go](sdk/go/README.md) and [Rust](sdk/rust/README.md).
+- An **external rule** is enforced by another tool, and botica checks that its configuration is
+  there.
+- A **judgment rule** is a question for abide, calibrated with `botica rules test --judge abide`.
 
-#### Seeding by hand
+[Extend](https://collectiveai-team.github.io/botica/extend/catalogs/) has a first rule, its
+fixtures, the protocol and the SDKs.
 
-Instead of running the CLI:
+## This repository
 
-```bash
-npx skills add 'mattpocock/skills#v1.3.1' --agent opencode --yes --skill grill-with-docs triage improve-codebase-architecture setup-matt-pocock-skills to-spec to-tickets implement implement-spec retro wayfinder prototype diagnosing-bugs research tdd domain-modeling codebase-design code-review wizard grill-me teach writing-for-agents grilling wait-what to-questionnaire
-npx skills add collectiveai-team/botica --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor pr
-npx skills add dmno-dev/varlock --agent opencode --yes
-```
+| Folder | What it holds |
+|---|---|
+| `crates/` | the Rust workspace of `botica` |
+| `catalog/` | what the binary embeds: the built-in rules, the topics of `botica refs`, the recipes |
+| `standards/` | the text of each standard, `standards/<set>/<number>-<slug>.md`; the CES are the standards of Collective |
+| `sdk/` | the SDKs of the extension protocol |
+| `skills/` | the agent skills that the recipe `base` installs |
+| `website/` | the site: the manual, the standards, the rules and the references |
+| `distribution/` | the mirror `botica-pre-commit` for prek |
+| `docs/adr/` | the design decisions |
 
-The `#<tag>` fragment is the only pin the `skills` CLI accepts — `owner/repo@tag`
-is silently parsed as a skill-name filter, and an unpinned install tracks the
-upstream default branch. Bump the tag in `scaffolding/skills.py`, never here.
+A change to a standard is a pull request with the file of the standard and the folders of its
+rules; the steps are in
+[Propose or change a standard](https://collectiveai-team.github.io/botica/standards/#propose-or-change-a-standard).
+[`docs/develop.md`](docs/develop.md) has the commands to build and test botica, and
+[`docs/botica-release.md`](docs/botica-release.md) the release.
 
-From a local checkout, install local skills with
-`npx skills add . --agent opencode --yes --skill ask-user journalist handoff test-smell-review engineering-rules engineering-pr-review engineering-refactor pr --full-depth`.
+## The skills of this repository
 
-## Upstream skills from Matt Pocock
+The recipe `base` installs them with `npx skills add collectiveai-team/botica`, beside the
+skills of Matt Pocock that its `[[skills]]` step pins to a tag. The skills are under `skills/`, and
+the `[[skills]]` steps of `catalog/recipes/base.toml` list the ones it installs.
 
-User-invoked engineering workflows:
+`npx skills add` and `skills update` overwrite the installed copies in place, so local edits go
+in this repository's `skills/`, not in `.agents/skills`.
 
-- `grill-with-docs`, `triage`, `improve-codebase-architecture`, `setup-matt-pocock-skills`.
-- `to-spec`, `to-tickets`, `implement`, `implement-spec`, `retro`, `wayfinder`.
+## License
 
-Model-invoked engineering workflows:
-
-- `prototype`, `diagnosing-bugs`, `research`, `tdd`.
-- `domain-modeling`, `codebase-design`, `code-review`.
-- `wizard` — generates an interactive bash script for the steps only a human can
-  take (provisioning, credentials, CI secrets, dashboard clicks).
-
-Productivity workflows:
-
-- User-invoked: `grill-me`, `teach`, `wait-what`, `to-questionnaire`.
-- Model-invoked: `grilling`, `writing-for-agents`.
-
-These land as editable files you own, but `npx skills add` / `skills update`
-overwrite them in place without a diff or a prompt, so keep local edits in this
-repo's own `skills/`, not in `.agents/skills`.
-
-Since v1.3.1, upstream uses `GLOSSARY.md` / `GLOSSARY-MAP.md` instead of
-`CONTEXT.md` / `CONTEXT-MAP.md`. In existing repos, review and rename the old
-domain docs before using the updated workflows. resolving-merge-conflicts
-was removed upstream; conflict resolution no longer needs a dedicated skill.
-
-## What's in this repo
-
-- `scaffolding/` — the bootstrap CLI (Cyclopts + Questionary + pydantic-settings
-  + Rich). `cli.py`, `engine.py`/`plan.py`, `components.py`, and `templates/`
-  (per-agent config — opencode.jsonc / .claude settings, prek hooks, pyproject,
-  ast-grep rules, CI workflows, AGENTS.md section).
-- `install.sh` — thin bootstrap shim (ensure `uv`, then run the CLI from git).
-- `guide.md` — the agentic-install guide (judgment layer).
-- `skills/productivity/journalist` — local daily session journals under `.journals/`.
-- `skills/productivity/handoff` — compact the current session into a temp-dir handoff for another agent.
-- `skills/productivity/ask-user` — route a situation to the smallest suitable installed workflow.
-- `skills/quality/test-smell-review` — review tests for false-green smells (pass without
-  protecting anything) using an in-context judgment protocol, adapted from
-  `falsegreen-skill` without its external LLM-CLI dependency.
-- `skills/engineering/engineering-rules` — the house engineering ruleset itself: 70 rules
-  under `rules/`, indexed by `rules/_sections.md` and compiled into `AGENTS.md`. Owns the
-  rules; the two workflows below invoke it rather than carrying a copy.
-- `skills/engineering/engineering-pr-review` — the house PR gate: the shared rules, the
-  deep-module check, and the large-file/spaghetti check, run before a PR is opened.
-- `skills/engineering/pr` — write the PR body using the target repo's
-  `.github/pull_request_template.md`; replaces the upstream skill of the same name.
-- `skills/engineering/engineering-refactor` — move an existing repo toward the house
-  standard (toolchain, layout, tests, architecture) without bulldozing its local
-  contracts.
-- `docs/engineering-standards.md` — **CES (Collective Engineering Standard)**: how house
-  rules are coded, cited (`CES-<issue#>` + slug), and shipped. Single source of truth,
-  referenced by `AGENTS.md`.
+MIT, in [`LICENSE`](LICENSE).

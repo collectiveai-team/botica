@@ -1,0 +1,32 @@
+id: no-token-in-web-storage
+language: javascript
+severity: error
+message: "A credential is written to web storage, which every script of the origin can read: let the server set the session in an `HttpOnly`, `Secure` and `SameSite` cookie and drop the token from `localStorage` and `sessionStorage`."
+rule:
+  any:
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            regex: "^(window\\.|globalThis\\.)?(localStorage|sessionStorage)\\.setItem$"
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              kind: string
+              regex: "(?i)(token|jwt|auth|session|secret|credential|password)"
+    - kind: assignment_expression
+      has:
+        field: left
+        any:
+          - kind: member_expression
+            regex: "^(window\\.|globalThis\\.)?(localStorage|sessionStorage)\\."
+            has:
+              field: property
+              regex: "(?i)(token|jwt|auth|session|secret|credential|password)"
+          - kind: subscript_expression
+            regex: "^(window\\.|globalThis\\.)?(localStorage|sessionStorage)\\["
+            has:
+              field: index
+              kind: string
+              regex: "(?i)(token|jwt|auth|session|secret|credential|password)"

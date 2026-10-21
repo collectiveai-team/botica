@@ -1,0 +1,41 @@
+id = "jwt-verified"
+code = "BTSEC002"
+standard = "CES-121"
+summary = "A decoded token has its signature and its expiry checked"
+status = "preview"
+tags = ["auth", "jwt"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["typescript"]
+file = "typescript.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["tsx"]
+file = "tsx.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["javascript"]
+file = "javascript.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["go"]
+file = "go.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["rust"]
+file = "rust.yml"

@@ -1,0 +1,4 @@
+id: js-for-of
+language: javascript
+rule:
+  pattern: for (const $X of $Y) { $$$B }

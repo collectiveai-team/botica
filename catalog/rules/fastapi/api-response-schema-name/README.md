@@ -1,0 +1,31 @@
+## Directive
+
+A Pydantic model under `api/**/schemas/responses/` is named `{Name}Response`. A warning by default.
+
+## Why
+
+The suffix says at the call site which side of the boundary a model is on, and keeps a table
+class from being returned by mistake.
+
+## Do
+
+```python
+class ContractResponse(BaseModel):
+    id: str
+```
+
+## Don't
+
+```python
+class Contract(BaseModel):
+    id: str
+```
+
+## Suppression
+
+A comment on the `class` line silences the finding.
+
+```python
+class Contract(BaseModel):  # botica: ignore[api-response-schema-name]
+class Contract(BaseModel):  # noqa: BTFAST004 -- reason
+```

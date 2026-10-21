@@ -1,0 +1,5 @@
+# name  url  commit    (used by parity_real.sh; the commits are the ones the parity numbers were taken on)
+amarc           https://github.com/collectiveai-team/amarc.git   c7b6b77ff22518845c8ea197f3f5733f15abd5bf
+airflow         https://github.com/apache/airflow.git            ddb905f0ee09b423d0b09ef79e62c282de9eb14c
+sentry          https://github.com/getsentry/sentry.git          99b4c2b0764fca496f7314a7bcf68aa480516b56
+home-assistant  https://github.com/home-assistant/core.git       044de9195bc90e43e0027928e1eccd80b37f1635

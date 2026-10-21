@@ -1,0 +1,82 @@
+name: pins
+
+# Dependabot moves the actions of .github/workflows/ and the packages of uv.lock. It reads the hooks
+# of .pre-commit-config.yaml only, so the `rev` of each hook of prek.toml and of the templates of
+# the recipes, the actions of the templates and the version of uv that setup-uv installs are moved
+# here: `prek update` with the same cooldown as dependabot.yml and no prerelease, then
+# scripts/sync_pins.py, then one pull request on the branch `chore/pins`.
+#
+# The mirror of botica is left out: the release moves it (botica-release.yml, job `bump`).
+#
+# The push and the pull request use the secret PINS_TOKEN (a fine-grained token of this repository
+# with write access to contents, pull requests and workflows; `scripts/sync_pins.py` edits the files
+# of `.github/workflows/`, and GitHub rejects that push without the last one): what the token of the
+# workflow pushes or opens runs no workflow, so the checks would not run on the pull request.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: pins
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    name: update the pins
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: "0.13.3"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Update the hooks of prek.toml and of the templates
+        run: |
+          for config in prek.toml catalog/recipes/files/prek-base.toml catalog/recipes/sections/prek-*.toml; do
+            if grep -q '^rev = ' "$config"; then
+              uvx prek update --config "$config" --cooldown-days 7 \
+                --exclude-tag '*-rc*' --exclude-tag '*-beta*' --exclude-tag '*-alpha*' \
+                --exclude-repo https://github.com/collectiveai-team/botica-pre-commit
+            fi
+          done
+
+      - name: Copy the pins into the templates
+        run: uv run python scripts/sync_pins.py
+
+      - name: Open or update the pull request
+        env:
+          GH_TOKEN: ${{ secrets.PINS_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "The secret PINS_TOKEN is missing." >&2
+            exit 1
+          fi
+          if git diff --quiet; then
+            echo "Every pin is current." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c chore/pins
+          git commit -am "chore: pins to the current releases"
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${REPOSITORY}.git" chore/pins
+          if ! gh pr view chore/pins --json state --jq .state | grep -q OPEN; then
+            gh pr create --head chore/pins --title "chore: pins to the current releases" \
+              --body "Opened by the workflow \`pins\`: \`prek update\` and \`scripts/sync_pins.py\`."
+          fi

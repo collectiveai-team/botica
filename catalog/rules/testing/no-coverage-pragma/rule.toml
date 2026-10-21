@@ -1,0 +1,16 @@
+id = "no-coverage-pragma"
+code = "BTTEST004"
+standard = "CES-66"
+summary = "No `# pragma: no cover` hides code from the coverage report"
+status = "preview"
+tags = ["tests", "coverage"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

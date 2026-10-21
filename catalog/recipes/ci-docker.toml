@@ -1,0 +1,5 @@
+description = "GitHub Actions: build and push an image to GHCR (needs a Dockerfile; bills a private repository)"
+
+[[files]]
+path = ".github/workflows/docker.yml"
+template = "files/github/workflows/docker.yml"

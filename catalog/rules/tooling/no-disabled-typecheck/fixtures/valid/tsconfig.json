@@ -1,0 +1,8 @@
+{
+  // the strict family stays on
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": false
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "name": "web",
+  "devDependencies": { "vite": "7.1.0" }
+}

@@ -1,0 +1,22 @@
+{
+  "diagnostics": [
+    {
+      "path": "large.txt",
+      "severity": "error",
+      "range": null,
+      "message": "large.txt is too large (701 lines, limit is 700)"
+    },
+    {
+      "path": "latin1.txt",
+      "severity": "error",
+      "range": null,
+      "message": "latin1.txt is too large (700 lines, limit is 700)"
+    },
+    {
+      "path": "warning.txt",
+      "severity": "warning",
+      "range": null,
+      "message": "warning.txt has 400 lines (warns at 400, fails at 700)"
+    }
+  ]
+}

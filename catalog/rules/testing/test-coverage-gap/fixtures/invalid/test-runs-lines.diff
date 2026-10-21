@@ -1,0 +1,14 @@
+test(orders): cover the pricing module
+
+--- a/tests/test_pricing.py
++++ b/tests/test_pricing.py
+@@ -0,0 +1,9 @@
++from app.core.pricing import discount, total
++
++
++def test_total_runs():
++    total(Order(items=[Item(price=3)]))
++
++
++def test_discount_does_not_fail():
++    assert discount(Order(items=[]), code="SUMMER") is not None

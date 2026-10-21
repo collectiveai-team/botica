@@ -1,0 +1,17 @@
+id: settings-base-class
+language: python
+severity: warning
+message: "A settings class extends pydantic_settings.BaseSettings, not BaseModel. Change the base class so that the environment is read and validated."
+ignores:
+  - "**/conftest.py"
+  - "**/tests/**"
+rule:
+  kind: class_definition
+  all:
+    - has:
+        field: name
+        regex: "Settings$"
+    - has:
+        field: superclasses
+        stopBy: end
+        regex: "\\bBaseModel\\b"

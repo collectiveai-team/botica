@@ -1,0 +1,16 @@
+id = "settings-direct-instantiation"
+code = "BTCONF003"
+standard = "CES-76"
+summary = "Settings are read through get_settings(), never built where they are used"
+status = "preview"
+tags = ["config"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"
