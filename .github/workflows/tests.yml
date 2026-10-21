@@ -42,11 +42,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
-      # botica-rubric runs `cargo build`, and this job installs no Rust toolchain; the workflow
-      # `abide` checks the rubric.
       - name: Lint, format & type check (prek)
-        env:
-          SKIP: botica-rubric
         run: uvx prek run --all-files --show-diff-on-failure
 
       - name: Run tests

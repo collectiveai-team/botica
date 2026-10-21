@@ -97,7 +97,8 @@ Before writing code that a rule covers, run `uvx botica explain <slug>` and
 
 - BTTEST001 `test-in-memory-adapters`: Tests drive the logic through in-memory adapters of the ports of the project: working fakes that implement the same interface as the production adapter. → https://collectiveai-team.github.io/botica/rules/testing/bttest001-test-in-memory-adapters/
 - BTTEST002 `test-through-interface`: Tests call the unit under test through the public interface that production code calls, and assert on observable behaviour. → https://collectiveai-team.github.io/botica/rules/testing/bttest002-test-through-interface/
-- BTTEST003 `test-coverage-gap`: A change closes a coverage gap with a test through the interface or by deleting dead code. → https://collectiveai-team.github.io/botica/rules/testing/bttest003-test-coverage-gap/
+- BTTEST003 `test-coverage-gap`: A change closes a coverage gap with a test that asserts a behaviour, or by deleting dead code. → https://collectiveai-team.github.io/botica/rules/testing/bttest003-test-coverage-gap/
+- BTTEST006 `coverage-exclusion-reachable`: A change leaves out of coverage only code that no test can reach. → https://collectiveai-team.github.io/botica/rules/testing/bttest006-coverage-exclusion-reachable/
 
 ### writing
 

@@ -121,17 +121,6 @@ types = ["python"]
 pass_filenames = false
 priority = 2
 
-# MARK: cognitive-complexity
-# The botica of the checkout, since the hooks of the mirror run 0.13.0, which lacks the rule. From
-# the next release, `select` of `[tool.botica]` lists it and this hook goes.
-[[repos.hooks]]
-id = "botica-cognitive-complexity"
-name = "botica (cognitive-complexity)"
-entry = "cargo run --quiet --locked -p botica-cli -- lint --force-exclude --select cognitive-complexity"
-language = "system"
-types_or = ["python", "rust", "go", "ts", "tsx"]
-priority = 2
-
 # MARK: jscpd
 # CES-118. `catalog/recipes/files/**` and `catalog/recipes/sections/**` are the templates that this
 # repository installs its own configuration from, and the variant of a workflow for each ecosystem
@@ -186,27 +175,11 @@ priority = 2
 id = "botica-project"
 priority = 2
 
-# The block of AGENTS.md and the rubric of abide match the catalog and the configuration. Local
-# until the mirror has the hooks `botica-agents-md` and `botica-rubric`.
-[[repos]]
-repo = "local"
-
+# The block of AGENTS.md and the rubric of abide match the catalog and the configuration.
 [[repos.hooks]]
 id = "botica-agents-md"
-name = "botica (block of the judgment rules in AGENTS.md)"
-entry = "uvx botica@0.13.0 rules export --format agents-md --output AGENTS.md --check"
-language = "system"
-pass_filenames = false
-always_run = true
 priority = 2
 
-# 0.13.0 writes a scope that covers the files of `extend-exclude`; the botica of the checkout
-# does not. `tests.yml` skips this hook: the workflow `abide` checks the rubric with that botica.
 [[repos.hooks]]
 id = "botica-rubric"
-name = "botica (rubric of abide)"
-entry = "cargo run --quiet --locked -p botica-cli -- rules export --format abide --check"
-language = "system"
-pass_filenames = false
-always_run = true
 priority = 2

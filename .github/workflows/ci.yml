@@ -79,11 +79,6 @@ jobs:
       - name: Check the references
         run: cargo run --quiet --locked -p botica-cli -- refs check --all
 
-      # The hooks of the mirror run 0.13.0, which lacks the rule; from the next release `select`
-      # of `[tool.botica]` lists it and the `botica` job of prek checks it.
-      - name: Cognitive complexity
-        run: cargo run --quiet --locked -p botica-cli -- lint --select cognitive-complexity
-
       - name: Test the Go SDK
         working-directory: sdk/go
         run: go vet ./... && go test ./...

@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-21T06:06:56Z",
-  "compiledBy": "botica 0.13.0",
+  "compiledAt": "2026-10-21T13:26:20Z",
+  "compiledBy": "botica 0.14.0",
   "manual": true,
   "sources": [
     {
@@ -368,7 +368,7 @@
       "text": "Prose says what a thing is and what it does, in plain sentences that a file, a command or an issue of the repository backs, with no inflated words, hedges, trailing judgments, bold emphasis or claims without a source.",
       "source": {
         "path": "AGENTS.md",
-        "line": 104
+        "line": 105
       },
       "scope": [
         "AGENTS.md",
@@ -471,7 +471,7 @@
       "text": "A comment says only what the code cannot say through its names and its structure: the reason for a choice that looks wrong, an invariant, a workaround with the link to its cause, or the docstring of a public interface.",
       "source": {
         "path": "AGENTS.md",
-        "line": 105
+        "line": 106
       },
       "scope": [
         "Cargo.toml",
@@ -695,7 +695,7 @@
       "text": "Each concept of the domain has one term, the one that `GLOSSARY.md` defines, in the code and in the documentation. `GLOSSARY.md` lists each term with its definition and the words to avoid for it, and the code and the documentation use the term.",
       "source": {
         "path": "AGENTS.md",
-        "line": 106
+        "line": 107
       },
       "scope": [
         "AGENTS.md",
