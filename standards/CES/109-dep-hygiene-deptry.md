@@ -20,8 +20,8 @@ Cargo suggests committing `Cargo.lock` "as a starting point".
 ## Why
 
 `osv-scanner` checks the resolved dependency set for CVEs. It does not check whether the
-declared set matches what is imported. An agent that tries an approach mid-session and reverts
-often leaves dependencies declared and unused, or imports something that came in transitively and
+declared set matches what is imported. An agent that tries an approach mid-session and reverts it
+can leave a dependency declared and unused, or import something that came in transitively and
 was never declared. Ruff gives no signal about this.
 
 A lockfile fixes the versions that CI and each machine install, and it is the set that

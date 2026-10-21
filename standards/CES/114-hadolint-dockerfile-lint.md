@@ -29,8 +29,8 @@ source of the repo.
 
 Run the hook once on an existing Dockerfile. Fix the findings, or ignore them explicitly with
 `# hadolint ignore=DLxxxx`. The posture is the one of `file-size-guard` (CES-71): flag, and do not
-exempt silently. Some default rules, such as the one that requires a specific `HEALTHCHECK`, are
-opinionated enough that the first rollout may need an ignore list.
+exempt silently. The first rollout can add a default rule, such as the one that requires a
+`HEALTHCHECK`, to the ignore list of `.hadolint.yaml`.
 
 ## Suppression
 

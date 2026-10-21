@@ -11,11 +11,10 @@ methods or assert on internal state. What is not part of the contract is not tes
 
 ## Why
 
-- Tests bound to internals break on every refactor even when behaviour is unchanged, which trains
-  people to delete tests instead of trusting them. Interface tests survive refactors and protect
+- Tests bound to internals break on a refactor that leaves behaviour unchanged. Interface tests survive refactors and protect
   the contract.
 - Testing through the public surface is also pressure on the design: if something is hard to test
-  without poking internals, the interface is probably wrong.
+  without poking internals, the interface is missing a public query.
 
 ## Do and don't
 

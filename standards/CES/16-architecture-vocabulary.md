@@ -15,7 +15,7 @@ implementations are adapters. A concept that already has a name does not get a s
 - A shared vocabulary makes the structure greppable and predictable: `core` always means the same
   thing, so a reader or an agent can navigate an unfamiliar repo by name alone.
 - Synonym drift is how two modules end up doing the same job under different names. Agreeing on the
-  words is the cheapest way to keep the design legible.
+  words keeps two modules from doing the same job under different names.
 
 ## Do and don't
 

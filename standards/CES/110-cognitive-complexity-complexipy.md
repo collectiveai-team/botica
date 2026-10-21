@@ -27,7 +27,7 @@ first (see Migration) and does not fix everything at once.
 
 1. Find the nesting and branching that drive the score: deep `if`/`elif`/`try` chains, nested
    loops, chains of boolean operators.
-2. Extract the inner logic into a named helper. This usually makes the function easier to test too
+2. Extract the inner logic into a named helper. The helper can then be tested on its own
    (CES-65).
 3. Run the hook again to confirm that the function is under 15.
 

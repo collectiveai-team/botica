@@ -14,8 +14,7 @@ code (`_test.go`) and Rust in the file it tests (`#[cfg(test)]`); there the test
 
 ## Why
 
-Notebooks and datasets bloat the wheel, break reproducible imports and trip the check for large
-files.
+Notebooks and datasets make the wheel larger and trip the check for large files.
 
 ## Exceptions
 

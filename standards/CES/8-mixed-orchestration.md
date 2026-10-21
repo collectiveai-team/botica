@@ -13,7 +13,7 @@ each step works" into named units that it calls.
 
 - A function that fetches, branches, computes, logs and writes all at once has no testable seam:
   the logic cannot be exercised without the I/O, and the flow cannot be followed without reading
-  the details. That is the spaghetti.
+  the details.
 - Separating the layers makes the orchestration read like a table of contents and lets each step
   be tested in isolation, through its interface (CES-65).
 

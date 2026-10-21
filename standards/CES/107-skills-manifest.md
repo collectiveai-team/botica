@@ -30,8 +30,7 @@ where and at which ref. It is called a manifest and not a lock for that reason.
 ## Why
 
 Without a tracked manifest the skill set of a repo cannot be reproduced and its drift is invisible.
-A fresh clone gets whatever the installer's list says that week, and nobody can tell what the repo
-is meant to have. Committing the declaration makes the skill set reviewable in a diff, like any
+A fresh clone gets whatever the installer's list says at that time. Committing the declaration makes the skill set reviewable in a diff, like any
 other dependency.
 
 ## Drift

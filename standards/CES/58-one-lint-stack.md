@@ -20,8 +20,7 @@ type error that cannot be fixed yet is silenced on its line, with the reason.
 - ruff covers black, isort, flake8, pyupgrade and most of pylint in one fast tool with one config.
   Stacking the old tools on top means overlapping, conflicting passes and a config spread across
   five files.
-- One toolchain is one source of truth for what clean code looks like, a faster CI and no fights
-  between formatters.
+- One toolchain means one configuration and one formatter.
 - A checker that is off for a file reports nothing there, and the errors it would report stay in
   the code. An agent whose build fails on types can turn the checker off instead of fixing them.
 

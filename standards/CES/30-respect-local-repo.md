@@ -14,8 +14,8 @@ migration and not a silent rewrite.
 
 - A tool that bootstraps a repo adds what is missing and defers to what is already there. The same
   restraint applies to people and agents working in the repo.
-- A repo's config often encodes hard-won, intentional decisions. Overwriting them to match a
-  default destroys context and breaks builds.
+- The configuration of a repository records decisions that its team made. Overwriting it to match
+  a default can break the build.
 
 ## In practice
 

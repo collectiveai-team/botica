@@ -11,7 +11,7 @@ duplication percentage for the whole repo (`--threshold`), and the hook fails wh
 
 ## Why
 
-Copy-pasted logic is a common failure of AI agents. An agent asked to add a similar feature copies
+An agent asked to add a similar feature copies
 the nearest block and does not extract a shared helper, so a later fix to one copy does not reach
 the other. Ruff and botica do not detect this: a rule of botica matches one declared
 pattern and cannot match "this block looks like that other block". `jscpd` is polyglot, so it also

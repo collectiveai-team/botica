@@ -11,9 +11,9 @@ group and activates as a pytest plugin on every `pytest` run: local, prek and CI
 
 ## Why
 
-Tests that depend on order or leak state are a classic latent bug. They become more likely as
-independent AI-agent sessions add tests to the same suite: each session sees only its own context
-and cannot see the shared fixtures or module state that the tests of another session leave dirty.
+Tests that depend on order or leak state pass or fail depending on the order they run in.
+Independent agent sessions add tests to the same suite, and a session does not see the shared
+fixtures or module state that the tests of another session leave.
 `pytest-randomly` finds them.
 
 ## When a test fails under randomization
