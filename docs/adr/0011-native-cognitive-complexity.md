@@ -37,7 +37,7 @@ uses (`ruff_python_parser`) is not either.
    each `break` or `continue` with a label, each `goto` and each direct recursive call adds one.
    Python follows `crates/complexipy-core/src/cognitive_complexity.rs` of complexipy 8.1.0
    where the paper leaves a choice open, such as comprehensions and the arms of a `match`.
-5. **Parity with complexipy.** The 24 files of `tests/src` of complexipy 8.1.0 and the values that
+5. **Parity with complexipy.** The files of `tests/src` of complexipy 8.1.0 and the values that
    its `tests/main.py` expects become fixtures of the crate, with the MIT license of complexipy next
    to them, and the README of the crate credits complexipy. A value that differs fails the test. A
    difference kept on purpose is listed in that README with its reason, and its test expects the
