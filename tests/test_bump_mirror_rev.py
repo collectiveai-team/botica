@@ -68,9 +68,9 @@ def test_only_the_rev_of_the_mirror_moves(tmp_path: Path):
 
 def test_a_file_that_no_longer_names_the_mirror_fails_the_release(tmp_path: Path):
     root = copy_of_the_repository(tmp_path)
-    (root / "docs/botica.md").write_text("# botica\n", encoding="utf-8")
+    (root / "website/docs/guide/prek-and-ci.md").write_text("# prek\n", encoding="utf-8")
 
-    with pytest.raises(SystemExit, match=r"docs/botica\.md"):
+    with pytest.raises(SystemExit, match=r"prek-and-ci\.md"):
         bmr.bump(root, "9.8.7")
 
 

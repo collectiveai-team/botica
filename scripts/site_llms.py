@@ -1,4 +1,4 @@
-"""Write the llms.txt of the site from the pages of the rules, the standards and the topics.
+"""Write the llms.txt of the site from the manual and the pages of the rules, standards and topics.
 
 `scripts/build_site.sh` runs it after Zensical has built the site. The name, the description and
 the address of the site come from the `[project]` table of the configuration.
@@ -67,6 +67,18 @@ def _standards(site: str, docs: Path) -> str:
     return "\n## Standards\n\n" + "".join(items)
 
 
+def _manual(site: str, docs: Path) -> str:
+    pages = [
+        *sorted(docs.glob("start.md")),
+        *sorted(docs.glob("guide/*.md")),
+        *sorted(docs.glob("extend/*.md")),
+    ]
+    if not pages:
+        return ""
+    items = [f"- [{_front_matter(page).title}]({_address(site, docs, page)})\n" for page in pages]
+    return "\n## Manual\n\n" + "".join(items)
+
+
 def _references(site: str, docs: Path) -> str:
     pages = sorted(page for page in (docs / "references").glob("*.md") if page.name != "index.md")
     if not pages:
@@ -83,7 +95,8 @@ def write(config: Path, docs: Path, output: Path) -> None:
     project = tomllib.loads(config.read_text(encoding="utf-8"))["project"]
     text = f"# {project['site_name']}\n\n> {project['site_description']}\n"
     site = project["site_url"]
-    text += _rules(site, docs) + _standards(site, docs) + _references(site, docs)
+    text += _manual(site, docs) + _rules(site, docs) + _standards(site, docs)
+    text += _references(site, docs)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(text, encoding="utf-8")
 

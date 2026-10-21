@@ -32,3 +32,6 @@ serve();
 - `serve()` returns after `shutdown`, and the process ends when stdin is closed.
 
 `@ast-grep/napi` is an optional peer dependency, for a rule that parses its text with ast-grep.
+
+The manual of extensions, with the protocol and the other SDKs, is
+[Extensions](https://collectiveai-team.github.io/botica/extend/extensions/).

@@ -107,7 +107,7 @@ def _normative_texts() -> list[Path]:
 def test_no_normative_text_describes_the_stack_or_a_rule_with_ast_grep():
     """Botica is the tool; ast-grep is how some of its rules are written, and nobody has to know.
 
-    That an `ast-grep-ignore` comment suppresses nothing is said once, in `docs/botica.md`.
+    That an `ast-grep-ignore` comment suppresses nothing is said once, in ADR 0003.
     """
     found = {
         str(path.relative_to(ROOT)): sorted({m.lower() for m in AST_GREP.findall(text)})

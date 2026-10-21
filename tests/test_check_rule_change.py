@@ -30,7 +30,8 @@ NATIVE_ZONE = [
 INDEXES = [
     "crates/botica-cli/tests/conformance.rs",
     "crates/botica-config/tests/resolve_shipped_catalog.rs",
-    "docs/botica.md",
+    "website/docs/guide/findings.md",
+    "website/docs/extend/rules.md",
 ]
 
 
@@ -92,7 +93,7 @@ def test_a_rule_moved_to_another_family_is_not_a_new_rule(tmp_path: Path):
     moved = [
         crc.Change("D", "catalog/rules/data-models/no-foo/rule.toml"),
         added("catalog/rules/fastapi/no-foo/rule.toml"),
-        modified("docs/botica.md"),
+        modified("website/docs/guide/lint.md"),
         modified("crates/botica-core/benches/lint_source.rs"),
     ]
 

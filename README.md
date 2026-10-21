@@ -29,7 +29,7 @@ This repository has:
 - `standards/` — the text of each house standard, `CES-<number>` (see
   [`standards/CES/index.md`](standards/CES/index.md)).
 - `crates/` and `catalog/` — `botica`, published on PyPI: `botica lint` measures the rules of the catalog, and
-  `botica recipe` installs the recipes. Its manual is [`docs/botica.md`](docs/botica.md).
+  `botica recipe` installs the recipes. Its manual is the [site](https://collectiveai-team.github.io/botica/start/).
 - `skills/` — the agent skills of the house.
 - `website/` — the site of the standards and the rules.
 

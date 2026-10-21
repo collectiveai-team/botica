@@ -11,7 +11,8 @@ its SDKs and its benchmarks). The binary embeds `catalog/rules/`, `catalog/refer
   `refs`, `recipe`, `server`, `ext`). The `[project]` of the root `pyproject.toml` is its wheel
   (maturin, Python 3.9 or newer, with the binary and the Python module `botica.sdk`), published to
   PyPI as `botica` and used by prek through the `botica-pre-commit` mirror (`distribution/`). Its
-  manual is `docs/botica.md`, its release runbook `docs/botica-release.md` and its design
+  manual is the site (`website/docs/start.md`, `guide/` and `extend/`, ADR 0012), its notes for
+  maintainers `docs/develop.md`, its release runbook `docs/botica-release.md` and its design
   `docs/adr/0003-botica-lint-architecture.md`. Pyrefly and deptry skip it; ruff checks its Python.
   `ci.yml` runs its fmt, clippy and tests, and `botica-release.yml` builds and publishes it.
 - `catalog/` — what the binary embeds: the built-in rules (`rules/`), the topics of `botica refs`
@@ -25,8 +26,8 @@ its SDKs and its benchmarks). The binary embeds `catalog/rules/`, `catalog/refer
   is (`pending`). Do not remove the `unignore` step of the recipes as a violation (ADR 0006).
 - `website/` — the standards site, built with Zensical (`zensical.toml`; the version is pinned in
   `requirements.txt`). `website/docs/rules/` is exported from the catalog by `scripts/build_site.sh`
-  (`botica rules export`) and is gitignored; `website/docs/index.md` and `website/docs/use.md`
-  are written by hand.
+  (`botica rules export`) and is gitignored; `website/docs/index.md`, `start.md`, `guide/`
+  and `extend/` are written by hand: they are the manual of botica (ADR 0012).
   `.github/workflows/site.yml` builds it on a pull request and publishes it from `main`.
 - `standards/` — the text of each standard, `standards/<set>/<number>-<slug>.md`, written by hand
   and apart from the rules; `scripts/build_site.sh` copies it into the site (ADR 0004).

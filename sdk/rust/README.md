@@ -43,3 +43,6 @@ fn main() -> std::io::Result<()> {
 - `serve` returns after `shutdown`; `serve_on(rules, input, output)` serves any reader and writer.
 
 `examples/no_leading_x.rs` is a complete extension.
+
+The manual of extensions, with the protocol and the other SDKs, is
+[Extensions](https://collectiveai-team.github.io/botica/extend/extensions/).
