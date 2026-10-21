@@ -1,8 +1,8 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-dark.svg" />
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-light.svg" />
-    <img src="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-light.svg" alt="Botica: recetas, alquimia y artilugios" width="600" style="max-width:100%; height:auto;" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-dark.png" />
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-light.png" />
+    <img src="https://raw.githubusercontent.com/collectiveai-team/botica/main/assets/botica-light.png" alt="Botica: recetas, alquimia y artilugios" width="600" style="max-width:100%; height:auto;" />
   </picture>
 </p>
 
@@ -15,7 +15,7 @@
   <a href="https://github.com/collectiveai-team/botica/releases"><img alt="Release" src="https://img.shields.io/github/v/release/collectiveai-team/botica?logo=github" /></a>
   <a href="https://pypi.org/project/botica/"><img alt="PyPI" src="https://img.shields.io/pypi/v/botica?logo=pypi&logoColor=white" /></a>
   <a href="https://opencode.ai/"><img src="https://img.shields.io/badge/Agents-opencode%20%C2%B7%20claude--code%20%C2%B7%20codex-1d1d1d?logo=anthropic&logoColor=white" alt="opencode · claude-code · codex"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://github.com/collectiveai-team/botica/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </p>
 
 ---
@@ -119,8 +119,8 @@ botica rules conform .botica/rules/acme   # the rule over its fixtures
 
 - A **pattern rule** is a YAML pattern over the syntax tree of a file.
 - An **extension** is a program that answers the protocol of botica over stdin and stdout. The
-  SDKs are [Python](sdk/python/README.md) (`botica.sdk`, in the wheel), [Node](sdk/node/README.md),
-  [Go](sdk/go/README.md) and [Rust](sdk/rust/README.md).
+  SDKs are [Python](https://github.com/collectiveai-team/botica/blob/main/sdk/python/README.md) (`botica.sdk`, in the wheel), [Node](https://github.com/collectiveai-team/botica/blob/main/sdk/node/README.md),
+  [Go](https://github.com/collectiveai-team/botica/blob/main/sdk/go/README.md) and [Rust](https://github.com/collectiveai-team/botica/blob/main/sdk/rust/README.md).
 - An **external rule** is enforced by another tool, and botica checks that its configuration is
   there.
 - A **judgment rule** is a question for abide, calibrated with `botica rules test --judge abide`.
@@ -144,8 +144,8 @@ fixtures, the protocol and the SDKs.
 A change to a standard is a pull request with the file of the standard and the folders of its
 rules; the steps are in
 [Propose or change a standard](https://collectiveai-team.github.io/botica/standards/#propose-or-change-a-standard).
-[`docs/develop.md`](docs/develop.md) has the commands to build and test botica, and
-[`docs/botica-release.md`](docs/botica-release.md) the release.
+[`docs/develop.md`](https://github.com/collectiveai-team/botica/blob/main/docs/develop.md) has the commands to build and test botica, and
+[`docs/botica-release.md`](https://github.com/collectiveai-team/botica/blob/main/docs/botica-release.md) the release.
 
 ## The skills of this repository
 
@@ -158,4 +158,4 @@ in this repository's `skills/`, not in `.agents/skills`.
 
 ## License
 
-MIT, in [`LICENSE`](LICENSE).
+MIT, in [`LICENSE`](https://github.com/collectiveai-team/botica/blob/main/LICENSE).
