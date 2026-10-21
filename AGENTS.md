@@ -50,7 +50,7 @@ its SDKs and its benchmarks). The binary embeds `catalog/rules/`, `catalog/refer
   templates of the recipes; the weekly `pins` workflow runs it after `prek update` and opens a pull
   request.
 
-`AGENTS.md` is the shared brain; skills install once into `.agents/skills`.
+Every agent reads `AGENTS.md`; skills install once into `.agents/skills`.
 
 ## Skill Development
 
@@ -108,9 +108,9 @@ Before writing code that a rule covers, run `uvx botica explain <slug>` and
 
 ## Reading linter output
 
-Act on a finding by its severity. An **error** is fixed before committing. A **warning** is fixed
+Act on a finding by its severity. An error is fixed before committing. A warning is fixed
 only if your change introduced it; a warning that was already there is neither fixed nor reported.
-An **info** is ignored.
+An info is ignored.
 
 ## Writing documentation
 

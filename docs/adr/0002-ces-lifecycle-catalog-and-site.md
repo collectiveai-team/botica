@@ -18,7 +18,7 @@ open.
 
 A CES was born as a GitHub issue. The issue number is the CES number and the issue body is the
 standard's text. Its review state used to be a set of labels that a bot rewrote from slash commands
-in the comments, which proved confusing for contributors and expensive to maintain:
+in the comments:
 
 - **The number belongs to the tracker, not the standard.** Gaps are unavoidable and a CES can only
   exist if an issue exists, so as-built rules need retroactive issues.
@@ -59,7 +59,7 @@ would recreate the problem.
    documentation of Ruff, flake8 or the PEPs: it documents the rules, the catalogs and the CES. It
    is in English, published from CI to GitHub Pages. A pre-build step
    (`botica rules export --format markdown --output <dir>`) renders one page per rule and an
-   index, so the site does not depend on Zensical's module/plugin system. Pages offer "edit this page" (opens a pull request) and a giscus thread.
+   index, so the site does not depend on Zensical's module/plugin system. Each page has an "edit this page" link (opens a pull request) and a giscus thread.
 
 ## Not decided
 
@@ -72,7 +72,7 @@ lifecycle of a CES (its statuses and transitions) is still open.
   outside the repo.
 - **Discourse or another forum.** Rejected for now: a separate account and host for a community
   that already lives on GitHub. Discussions can be exported later if the community outgrows it.
-- **Astro Starlight.** Strong option (schema-validated content, built-in search, i18n), rejected
+- **Astro Starlight.** It has schema-validated content, built-in search and i18n. Rejected
   only to keep the toolchain in the Python ecosystem. **Material for MkDocs** is in maintenance
   mode with end of life in May 2027, so it is not an option for a new site.
 

@@ -170,8 +170,8 @@ no check at all.
    abide sends its calls to `<base URL>/systemone` instead of `https://api.typesafe.ai/v1`. The
    endpoint receives the model, the state (the diff, the file, the task) and one question per rule,
    and answers each question as a `choice` or a `score` with its probabilities, or as a boolean
-   probability (`noul`). The server of llama.cpp and other servers of a local model serve the
-   same API; which one a project uses is its own choice, and botica only passes the environment.
+   probability (`noul`). The server of llama.cpp serves the same API; the
+   server a project uses is its own choice, and botica only passes the environment.
 
 ## Not decided
 

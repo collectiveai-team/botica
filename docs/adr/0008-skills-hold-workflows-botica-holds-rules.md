@@ -3,9 +3,9 @@
 **Status:** accepted
 
 The skill `engineering-rules` carried 67 rule files. An audit on 2026-10-20
-(`.tmp/audit/triage-v2-{A,B,C}.md`, outside git) found 8 of them copied from a standard, 7 copied
-from a skill that the recipe `base` installs, 4 copied from a recipe, and others with deprecated
-APIs or code that fails when it runs. A copy drifts from its source, and an agent that reads both
+(`.tmp/audit/triage-v2-{A,B,C}.md`, outside git) found rule files copied from a standard, from a
+skill that the recipe `base` installs or from a recipe, and rule files with deprecated APIs or
+code that fails when it runs. A copy drifts from its source, and an agent that reads both
 gets two answers.
 
 ## Decision

@@ -47,13 +47,12 @@ restore, so it reproduces which skills from where at what ref — not bytes.
 _Avoid_: lockfile, skills lock, skill list
 
 **Derived skills tree**:
-`.agents/skills/` — the installed skill files. Rebuilt from the manifest, gitignored, and never
-the source of truth.
+`.agents/skills/` — the installed skill files. Rebuilt from the manifest and gitignored.
 _Avoid_: installed skills, skills directory
 
 **House baseline**:
-The skill set that the `[[skills]]` steps of the recipe `base` install. A starting point, not a
-set the repo is held to: the manifest records what the repo uses.
+The skill set that the `[[skills]]` steps of the recipe `base` install; the manifest records
+what the repo uses.
 _Avoid_: default skills, curated catalog, required skills
 
 **Authored skill**:

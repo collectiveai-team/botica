@@ -59,8 +59,8 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
    file has a `path`: the documentation of a library, with its note. A reference to a file names
    the `lines` of a block, and one block is one reference; a reference to a page ends its `url` with
    the `#fragment` of a section, or carries a `quote`, the passage that matters as the page words
-   it. The repository, the commit and the site are the context of the fragment. The fragment is a
-   strong suggestion: the catalog loads a whole file or a whole page, and `botica refs check` warns.
+   it. The repository, the commit and the site are the context of the fragment. The fragment is
+   optional: the catalog loads a whole file or a whole page, and `botica refs check` warns.
 5. **A reference is code to read and adapt.** Botica does not copy a reference into a repository,
    and the snippets of the scaffolder become references to the code they came from.
 6. **`botica refs` reads the collection,** apart from `botica lint`:

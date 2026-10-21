@@ -189,7 +189,7 @@ The `scaffolding` Python package was removed on 2026-10-18, when the recipes of 
 ## Considered options
 
 - **Python implementation.** Faster to start and closer to the rest of the repo. Rejected: it
-  costs 20–40 ms of startup before any work, parallelism is limited, and the LSP is slower. A
+  adds the startup of an interpreter before any work, parallelism is limited, and the LSP is slower. A
   later port would mean rewriting the engine, while the declarative rules and fixtures carry over
   either way.
 - **Embedding Python with pyo3.** Faster calls into extensions. Rejected: it ties the binary to
@@ -199,7 +199,8 @@ The `scaffolding` Python package was removed on 2026-10-18, when the recipes of 
   would have to be built with botica's exact compiler, and loading one is `unsafe`.
   Out-of-process `command` extensions, and WASM later, cover the same need.
 - **Tree-sitter directly instead of ast-grep.** More control, but more code to own. ast-grep
-  reuses the existing YAML rules, covers about 20 languages, and has bindings the SDKs can share.
+  reuses the existing YAML rules, supports the languages of its
+  [documentation](https://ast-grep.github.io/reference/languages.html), and has bindings the SDKs can share.
 - **Model-based ("LLM") rules inside lint.** Rejected: they break determinism and the exit-code
   contract. Judgment stays with an external judge (abide), fed by
   `botica rules export`. A model may help *author* a deterministic rule (the `botica-rule-author`
@@ -228,8 +229,7 @@ The `scaffolding` Python package was removed on 2026-10-18, when the recipes of 
   `no-tests-in-package`) that find the code of each ecosystem on their own, or from `code-dirs`,
   instead of relying on a placeholder.
 - **Botica maintains a protocol, four SDKs (Python, Node, Go and Rust), and a per-platform release
-  matrix.** These are real,
-  ongoing costs.
+  matrix.**
 - **Later, not now:** `--diff <base>` rules, autofix with safety levels, catalogs
   distributed via PyPI or npm, an MCP server, a VS Code client, and architecture-conformance
   rules that read a declared model (e.g. LikeC4) and check real imports against it.
