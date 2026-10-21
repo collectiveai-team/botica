@@ -251,9 +251,8 @@ concerns several standards and rules at once (CES-45, CES-46, CES-74, `log-get-l
 - `.agents/snippets/` and `scaffolding/templates/snippets/` are gone: the `standards` component
   of the scaffolder appended the index to `AGENTS.md` and wrote no snippet, as the recipe `base`
   does since `scaffolding` was removed. The five topics point at
-  the snippets at the commit `9c225ad`, which is on `feat/botica-lint` and not on `main`; the
-  references resolve as long as that commit stays in the history, so the branch is merged without
-  squashing.
+  the snippets at the commit `9c225ad`; the references resolve as long as that commit stays in the
+  history of `main`, so `feat/botica-lint` was merged into `main` without squashing.
 - The skill tells an agent to run `botica refs show <rule>` before it writes code that the rule
   covers.
 - The page of a standard or a rule on the site lists its topics and links them.
