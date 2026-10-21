@@ -1,0 +1,182 @@
+[
+  {
+    "path": "exclude_dir/test_exclude1.py",
+    "function": "f",
+    "complexity": 3
+  },
+  {
+    "path": "exclude_dir/test_exclude2.py",
+    "function": "f",
+    "complexity": 3
+  },
+  {
+    "path": "test.py",
+    "function": "k8s_check_host_pid",
+    "complexity": 9
+  },
+  {
+    "path": "test_break_continue.py",
+    "function": "function",
+    "complexity": 3
+  },
+  {
+    "path": "test_class.py",
+    "function": "TestClass::total_emails",
+    "complexity": 1
+  },
+  {
+    "path": "test_complexipy_ignore.py",
+    "function": "not_ignored_function",
+    "complexity": 0
+  },
+  {
+    "path": "test_complexipy_ignore.py",
+    "function": "ignored_complex_function",
+    "complexity": 6
+  },
+  {
+    "path": "test_complexipy_ignore_decorator.py",
+    "function": "simple_function",
+    "complexity": 0
+  },
+  {
+    "path": "test_complexipy_ignore_decorator.py",
+    "function": "ignored_decorated_function",
+    "complexity": 6
+  },
+  {
+    "path": "test_decorator.py",
+    "function": "a_decorator",
+    "complexity": 0
+  },
+  {
+    "path": "test_decorator.py",
+    "function": "b_decorator",
+    "complexity": 1
+  },
+  {
+    "path": "test_for.py",
+    "function": "sum_values",
+    "complexity": 1
+  },
+  {
+    "path": "test_for.py",
+    "function": "sum_values_with_if",
+    "complexity": 4
+  },
+  {
+    "path": "test_for_assign.py",
+    "function": "test_for",
+    "complexity": 2
+  },
+  {
+    "path": "test_if.py",
+    "function": "if_function",
+    "complexity": 3
+  },
+  {
+    "path": "test_main.py",
+    "function": "new_print",
+    "complexity": 0
+  },
+  {
+    "path": "test_match.py",
+    "function": "function",
+    "complexity": 1
+  },
+  {
+    "path": "test_multiple_func.py",
+    "function": "_print",
+    "complexity": 0
+  },
+  {
+    "path": "test_multiple_func.py",
+    "function": "test_print",
+    "complexity": 0
+  },
+  {
+    "path": "test_nested_func.py",
+    "function": "hello_world",
+    "complexity": 2
+  },
+  {
+    "path": "test_noqa_complex.py",
+    "function": "not_ignored_function",
+    "complexity": 0
+  },
+  {
+    "path": "test_noqa_complex.py",
+    "function": "ignored_complex_function",
+    "complexity": 6
+  },
+  {
+    "path": "test_noqa_decorator.py",
+    "function": "simple_function",
+    "complexity": 0
+  },
+  {
+    "path": "test_noqa_decorator.py",
+    "function": "ignored_decorated_function",
+    "complexity": 6
+  },
+  {
+    "path": "test_recursive.py",
+    "function": "recursive",
+    "complexity": 1
+  },
+  {
+    "path": "test_script_mixed.py",
+    "function": "simple_func",
+    "complexity": 1
+  },
+  {
+    "path": "test_ternary_op.py",
+    "function": "test_ternary_op",
+    "complexity": 1
+  },
+  {
+    "path": "test_try.py",
+    "function": "test_try",
+    "complexity": 3
+  },
+  {
+    "path": "test_try_nested.py",
+    "function": "test_try",
+    "complexity": 10
+  },
+  {
+    "path": "test_utf8_comment.py",
+    "function": "accent_before",
+    "complexity": 3
+  },
+  {
+    "path": "test_utf8_comment.py",
+    "function": "mixed_case_ignore",
+    "complexity": 3
+  },
+  {
+    "path": "test_utf8_comment.py",
+    "function": "multi_byte_before_marker",
+    "complexity": 3
+  },
+  {
+    "path": "test_utf8_comment.py",
+    "function": "uppercase_variants",
+    "complexity": 3
+  },
+  {
+    "path": "test_utf8_comment.py",
+    "function": "emoji_comment",
+    "complexity": 5
+  },
+  {
+    "path": "test_utf8_comment.py",
+    "function": "not_ignored_normal",
+    "complexity": 5
+  },
+  {
+    "path": "test_utf8_comment.py",
+    "function": "mixed_comment_marker",
+    "complexity": 7
+  }
+]

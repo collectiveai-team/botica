@@ -68,10 +68,12 @@ line-length = 100
 target-version = "py311"
 # Vendored skill scripts are independent artifacts; lint only the maintainer code.
 # The botica lint rule fixtures are deliberately bad code (and carry `# noqa: BT…` codes ruff
-# would otherwise strip), so ruff leaves them alone.
+# would otherwise strip), so ruff leaves them alone. The fixtures of botica-complexity are copied
+# from complexipy as they are.
 extend-exclude = [
   "skills",
   "catalog/rules/**/fixtures",
+  "crates/botica-complexity/tests/fixtures",
 ]
 force-exclude = true
 # `botica.sdk` ships in the wheel, whose floor is Python 3.9; the code of the topics is written for
@@ -217,9 +219,14 @@ select = [
   "ubiquitous-language",
 ]
 preview = true
-# The fixtures of the rules are wrong on purpose, and the skills are authored skills, checked by
-# skill-validator (ruff leaves them out for the same reason).
-extend-exclude = ["catalog/rules/**/fixtures/", "skills/"]
+# The fixtures of the rules are wrong on purpose, those of botica-complexity are copied from
+# complexipy, and the skills are authored skills, checked by skill-validator (ruff leaves them out
+# for the same reasons).
+extend-exclude = [
+  "catalog/rules/**/fixtures/",
+  "crates/botica-complexity/tests/fixtures/",
+  "skills/",
+]
 
 # The maintainer scripts and the benchmarks are command-line programs run as files: their output
 # is what they print.

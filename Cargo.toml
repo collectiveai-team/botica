@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "crates/botica-astgrep",
     "crates/botica-catalog",
+    "crates/botica-complexity",
     "crates/botica-config",
     "crates/botica-conformance",
     "crates/botica-ext",

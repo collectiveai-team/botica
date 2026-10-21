@@ -257,6 +257,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "botica-complexity"
+version = "0.13.0"
+dependencies = [
+ "ast-grep-core",
+ "ast-grep-language",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "botica-config"
 version = "0.13.0"
 dependencies = [
