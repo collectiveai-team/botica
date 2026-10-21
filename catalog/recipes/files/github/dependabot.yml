@@ -1,6 +1,5 @@
 version: 2
 updates:
-  # Keep pinned GitHub Actions up to date, grouped into a single weekly PR.
   - package-ecosystem: github-actions
     directory: "/"
     schedule:

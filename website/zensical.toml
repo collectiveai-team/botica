@@ -8,8 +8,8 @@ extra_javascript = ["javascripts/filter.js"]
 
 # Where "edit this page" opens: a page of `docs_dir` at `edit_uri`, a rule page at `catalog_uri`,
 # because it is written in the README of its rule, which the export names in `readme`, relative to
-# the catalog (`partials/actions.html` joins them). Until `feat/botica-lint` is merged the files
-# only exist on that branch: replace it with `main` in both when it is.
+# the catalog (`partials/actions.html` joins them). The files are on `feat/botica-lint` until it is
+# merged.
 edit_uri = "edit/feat/botica-lint/website/docs/"
 
 [project.extra.edit]

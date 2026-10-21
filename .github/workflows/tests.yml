@@ -1,6 +1,5 @@
 name: Tests
 
-# Lint, type-check and test on every push to main and every PR.
 # Runs the same prek hooks as locally (ruff-format, ruff, pyrefly, hygiene)
 # plus the pytest suite, all through uv so versions match uv.lock.
 
@@ -43,7 +42,8 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
-      # botica-rubric builds botica from the checkout; the workflow `abide` runs that check.
+      # botica-rubric runs `cargo build`, and this job installs no Rust toolchain; the workflow
+      # `abide` checks the rubric.
       - name: Lint, format & type check (prek)
         env:
           SKIP: botica-rubric

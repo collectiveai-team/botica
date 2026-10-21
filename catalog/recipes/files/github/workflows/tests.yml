@@ -1,6 +1,5 @@
 name: Tests
 
-# Lint, type-check and test on every push to main and every PR.
 # Runs the same prek hooks as locally (ruff-format, ruff, pyrefly, hygiene)
 # plus the pytest suite, all through uv so versions match uv.lock.
 

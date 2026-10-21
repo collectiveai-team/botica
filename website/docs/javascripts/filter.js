@@ -10,7 +10,6 @@
     return query.toLowerCase().split(/\s+/).filter(Boolean);
   }
 
-  /* The sections of the page that hold rows: the elements from a level-2 heading to the next one. */
   function sectionsOf(article, rows) {
     var sections = [];
     article.querySelectorAll("h2").forEach(function (heading) {
