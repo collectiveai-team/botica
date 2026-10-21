@@ -24,14 +24,15 @@ attribution agent in the metadata of a Git commit.
 
 ## Two layers
 
-1. The `no-ai-coauthorship` prek hook, at the `commit-msg` stage, gives immediate feedback and
-   `git commit --no-verify` bypasses it.
-2. The CI workflow `commit-policy.yml` is the source of truth. It walks every commit in the range
-   of the pull request or push (`git log --format=%B <base>..<head>`) and fails when a line of a
-   subject or body matches the trailer pattern.
+1. The `no-ai-coauthorship` prek hook, at the `commit-msg` stage, gives immediate feedback
+   (`botica lint --commit-msg`) and `git commit --no-verify` bypasses it.
+2. The CI workflow `commit-policy.yml` is the source of truth. It reads every commit in the range
+   of the pull request or push (`botica lint --commits <base>..<head>`) and fails when a line of a
+   subject or body is a trailer that names an AI tool.
 
-Both use one fixed Python regex that is never interpolated into a shell command, and the pattern
-is written once so the two layers cannot drift.
+Both run the rule `no-ai-coauthorship` of botica, so the pattern is written once and the two
+layers cannot drift. botica reads the messages from git, never from text interpolated into a
+shell command, and the option `tools` of the rule holds the names of the tools.
 
 ## Disallowed and allowed
 
