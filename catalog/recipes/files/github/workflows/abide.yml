@@ -3,7 +3,7 @@ name: abide
 # The judgment rules of botica on the diff of a pull request. abide judges the diff with the rubric
 # `.abide/rubric.json`, which `botica rules export --format abide` writes; botica keeps the verdicts
 # that the configuration and the `ignore-file` comments keep, and a finding of severity warning or
-# higher fails the job. The rubric, the report of abide and the findings as SARIF are an artifact.
+# higher fails the job. The summary of the job has a table of the findings.
 #
 # TYPESAFE_AI_API_KEY is a secret of the repository and TYPESAFE_AI_BASE_URL a variable
 # (https://api.typesafe.ai/v1, or the address of a server with the same API). A pull request from a
@@ -50,7 +50,6 @@ jobs:
       - name: Judge the diff
         run: |
           mkdir -p "$RUNNER_TEMP/abide"
-          cp .abide/rubric.json "$RUNNER_TEMP/abide/"
           if [ -z "$TYPESAFE_AI_API_KEY" ]; then
             echo "::error::the secret TYPESAFE_AI_API_KEY is not set"
             exit 2
@@ -74,18 +73,14 @@ jobs:
             exit "$status"
           fi
 
-      - name: Findings as SARIF
+      - name: Table of the findings
         run: |
-          uvx botica@0.13.0 lint --judged "$RUNNER_TEMP/abide/abide.json" --output-format sarif \
-            --exit-zero > "$RUNNER_TEMP/abide/judged.sarif"
-
-      - name: Upload the rubric and the verdicts
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: abide
-          path: ${{ runner.temp }}/abide/
-          if-no-files-found: ignore
+          {
+            echo "## Judgment rules"
+            echo
+            uvx botica@0.13.0 lint --judged "$RUNNER_TEMP/abide/abide.json" --output-format markdown \
+              --exit-zero
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail on the findings
         run: |

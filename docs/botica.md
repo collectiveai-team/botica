@@ -83,8 +83,9 @@ its calls to another server with the same API instead, such as the server of lla
 run on its own. `botica rules test --judge abide` runs abide with the environment as it is.
 
 The workflow `.github/workflows/abide.yml`, which the recipe `base` installs, judges the diff of
-each pull request: `abide check --json --diff`, then `botica lint --judged` with `--fail-on
-warning`, and an artifact `abide` with the rubric, the report of abide and the findings as SARIF.
+each pull request: `abide check --json --diff`, judged a second time when the first run has a
+finding or fails, then `botica lint --judged` with `--fail-on warning`, and a table of the findings
+(`--output-format markdown`) in the summary of the job.
 It reads the secret `TYPESAFE_AI_API_KEY` and the variable `TYPESAFE_AI_BASE_URL` of the
 repository; a pull request from a fork gets no secret, and the job fails.
 
