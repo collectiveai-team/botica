@@ -215,3 +215,28 @@ status = "preview"
 version = "0.13.0"
 rule = "ubiquitous-language"
 status = "preview"
+
+[[event]]
+version = "0.14.0"
+rule = "conventional-commits"
+status = "preview"
+
+[[event]]
+version = "0.14.0"
+rule = "coverage-exclusion-reachable"
+status = "preview"
+
+[[event]]
+version = "0.14.0"
+rule = "no-ai-coauthorship"
+status = "preview"
+
+[[event]]
+version = "0.14.0"
+rule = "no-coverage-exclusion"
+status = "preview"
+
+[[event]]
+version = "0.14.0"
+rule = "no-coverage-pragma"
+status = "preview"
