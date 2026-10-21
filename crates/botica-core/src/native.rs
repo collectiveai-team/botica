@@ -20,6 +20,12 @@ pub trait NativeRule: Send + Sync {
         Needs::Text
     }
 
+    /// Whether the rule reads `Document::base`, the text of the file before the change, so the run
+    /// fetches it for the files of the rule.
+    fn reads_base(&self) -> bool {
+        false
+    }
+
     fn check(&self, doc: &Document<'_>, out: &mut Vec<Diagnostic>);
 }
 

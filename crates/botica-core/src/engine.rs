@@ -5,6 +5,7 @@ use crate::native::{NativeRule, Needs};
 use crate::suppress::Policy;
 use crate::timings::{RuleTime, TimedKind, Timings};
 use botica_astgrep::{AstGrepSet, Buffer as Tree};
+use std::collections::HashMap;
 
 /// For a path relative to the project root: the indexes of the native rules that apply to it.
 pub type NativePlanner = Box<dyn Fn(&str) -> Vec<usize> + Send + Sync>;
@@ -55,6 +56,8 @@ pub struct Engine {
     inclusion: Option<Inclusion>,
     extensions: Option<PathTest>,
     timings: Option<Timings>,
+    /// The text before the change of the files whose base a native rule reads, by path.
+    bases: HashMap<String, String>,
 }
 
 impl Engine {
@@ -69,7 +72,27 @@ impl Engine {
             inclusion: None,
             extensions: None,
             timings: None,
+            bases: HashMap::new(),
         }
+    }
+
+    /// Gives the native rules that read it the text of each file before the change, by path; a
+    /// file with no entry has none (`Document::base` is `None`).
+    pub fn set_bases(&mut self, bases: HashMap<String, String>) {
+        self.bases = bases;
+    }
+
+    /// Whether a native rule that applies to `path` reads the text of the file before the change.
+    pub fn reads_base(&self, path: &str) -> bool {
+        self.plan(path).is_some_and(|plan| {
+            plan.native
+                .iter()
+                .any(|&index| self.native[index].reads_base())
+        })
+    }
+
+    fn base_of(&self, path: &str) -> Option<&str> {
+        self.bases.get(path).map(String::as_str)
     }
 
     /// Tells which paths an extension rule reads. The engine runs none of them, and the paths are
@@ -222,7 +245,11 @@ impl Engine {
     /// Lints text the caller already holds. Does no I/O.
     pub fn lint_source(&self, path: &str, text: &str) -> Vec<Diagnostic> {
         match self.plan(path) {
-            Some(plan) => self.lint_document(&Document::new(path, text), &plan, None),
+            Some(plan) => self.lint_document(
+                &Document::new(path, text).with_base(self.base_of(path)),
+                &plan,
+                None,
+            ),
             None => Vec::new(),
         }
     }
@@ -241,7 +268,7 @@ impl Engine {
     pub fn lint_buffer(&self, buffer: &Buffer) -> Vec<Diagnostic> {
         match self.plan(&buffer.path) {
             Some(plan) => self.lint_document(
-                &Document::new(&buffer.path, buffer.text()),
+                &Document::new(&buffer.path, buffer.text()).with_base(self.base_of(&buffer.path)),
                 &plan,
                 buffer.tree.as_ref(),
             ),
@@ -262,7 +289,11 @@ impl Engine {
     /// A file that is not UTF-8 gets only the native rules that do not need its text: ast-grep
     /// cannot parse it and the suppression comments cannot be read.
     pub fn lint_bytes_planned(&self, path: &str, bytes: &[u8], plan: &Plan) -> Vec<Diagnostic> {
-        self.lint_document(&Document::from_bytes(path, bytes), plan, None)
+        self.lint_document(
+            &Document::from_bytes(path, bytes).with_base(self.base_of(path)),
+            plan,
+            None,
+        )
     }
 
     /// What the rules that go by the name alone find in a file that looks binary and is not read.

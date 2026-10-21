@@ -1,5 +1,6 @@
 mod buffer;
 mod diagnostic;
+pub mod diff;
 mod document;
 mod engine;
 pub mod env_schema;

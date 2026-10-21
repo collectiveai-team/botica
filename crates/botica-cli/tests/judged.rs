@@ -96,6 +96,34 @@ fn a_report_of_abide_becomes_sarif_and_fails_the_run_at_the_severity_of_fail_on(
 }
 
 #[test]
+fn with_a_diff_a_judged_finding_stays_only_when_the_diff_changes_its_file() {
+    let dir = workdir("diff");
+    fs::write(
+        dir.join("botica.toml"),
+        "preview = true\nselect = [\"test-through-interface\"]\n",
+    )
+    .expect("write the configuration");
+    fs::create_dir_all(dir.join("tests")).expect("create tests/");
+    fs::write(dir.join("tests/test_a.py"), "def test_a():\n    pass\n").expect("write a test");
+    fs::write(dir.join("abide.json"), ABIDE).expect("write the report");
+    let patch = |path: &str| format!("--- a/{path}\n+++ b/{path}\n@@ -1 +1 @@\n-x\n+y\n");
+    fs::write(dir.join("touches.diff"), patch("tests/test_a.py")).expect("write a patch");
+    fs::write(dir.join("other.diff"), patch("tests/test_b.py")).expect("write a patch");
+
+    let touched = botica(
+        &dir,
+        &["--judged", "abide.json", "--diff-file", "touches.diff"],
+    );
+    let other = botica(
+        &dir,
+        &["--judged", "abide.json", "--diff-file", "other.diff"],
+    );
+
+    assert!(String::from_utf8_lossy(&touched.stdout).contains("tests/test_a.py"));
+    assert_eq!(String::from_utf8_lossy(&other.stdout), "");
+}
+
+#[test]
 fn judged_findings_take_no_paths_and_no_extension() {
     let dir = workdir("conflicts");
     fs::write(dir.join("judge.sarif"), NO_UTILS).expect("write the SARIF");

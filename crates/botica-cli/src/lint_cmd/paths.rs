@@ -1,4 +1,4 @@
-use super::{LintArgs, Setup};
+use super::{Diff, LintArgs, Setup};
 use crate::rules;
 use anyhow::Result;
 use botica_core::cache::{lint_files_cached, Cache};
@@ -84,7 +84,15 @@ fn cache_location(args: &LintArgs, project_root: &Path) -> Option<PathBuf> {
     }
 }
 
-pub(super) fn lint_paths(args: &LintArgs, setup: &Setup, root: &Path) -> Result<Linted> {
+pub(super) fn lint_paths(
+    args: &LintArgs,
+    setup: &mut Setup,
+    root: &Path,
+    diff: Option<&Diff>,
+) -> Result<Linted> {
+    if let Some(diff) = diff {
+        return lint_diff(args, setup, root, diff);
+    }
     let cache_dir = cache_location(args, &setup.project_root);
     let overlapped = cache_dir.is_none() && args.ext.is_none() && !setup.has_extensions;
     let reached = reach(args, setup, root, overlapped);
@@ -140,6 +148,46 @@ pub(super) fn lint_paths(args: &LintArgs, setup: &Setup, root: &Path) -> Result<
             files_read: 0,
         })
     }
+}
+
+/// Lints the files of the diff that `extend-exclude` and the directories of tools leave in, with
+/// the text before the change for the native rules that read it, and no cache.
+fn lint_diff(args: &LintArgs, setup: &mut Setup, root: &Path, diff: &Diff) -> Result<Linted> {
+    let files: Vec<String> = diff
+        .files(&args.paths, root)
+        .into_iter()
+        .filter(|path| !named_and_excluded(&setup.engine, root, Path::new(path)))
+        .collect();
+    let bases = diff.bases(&setup.engine, &files)?;
+    setup.engine.set_bases(bases);
+    let engine = &setup.engine;
+    if diff.is_staged() {
+        let sources = Diff::staged(&files);
+        let diagnostics = sources
+            .iter()
+            .flat_map(|file| engine.lint_bytes(&file.path, &file.bytes))
+            .collect();
+        return Ok(Linted {
+            files_read: sources.len(),
+            sources,
+            diagnostics,
+            io_errors: Vec::new(),
+            unreadable: Vec::new(),
+        });
+    }
+    let named: Vec<PathBuf> = files
+        .iter()
+        .map(PathBuf::from)
+        .filter(|path| root.join(path).is_file())
+        .collect();
+    let (sources, walked) = walk::read_and_lint(engine, root, &named);
+    Ok(Linted {
+        sources,
+        diagnostics: walked.diagnostics,
+        io_errors: Vec::new(),
+        unreadable: walked.unreadable,
+        files_read: named.len(),
+    })
 }
 
 /// Both lists, sorted by path.

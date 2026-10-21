@@ -25,6 +25,10 @@ botica lint --output-format json   # text (default), json, sarif or github; json
                                    # code and the standard of the rule of each finding
 botica lint --judged judge.sarif   # the findings of a judge, filtered by the configuration and comments;
                                    # the file is SARIF or the report of `abide check --json`
+botica lint --diff origin/main     # the files changed since the merge base, and only the findings on
+                                   # the lines the change adds (ADR 0009); no result cache
+botica lint --staged               # the same for the changes staged against HEAD, read from the index
+botica lint --diff-file pr.diff    # the same for the changes of a unified diff
 botica rules                   # which rules are active, and why (--all adds the inactive ones), the
                                # programs that `botica lint` runs and the tools that enforce rules
                                # outside it; --json adds the kind of each implementation

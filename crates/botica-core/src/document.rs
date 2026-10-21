@@ -4,6 +4,7 @@ pub struct Document<'a> {
     pub path: &'a str,
     bytes: &'a [u8],
     text: Option<&'a str>,
+    base: Option<&'a str>,
     line_starts: OnceLock<Vec<usize>>,
 }
 
@@ -13,6 +14,7 @@ impl<'a> Document<'a> {
             path,
             bytes: text.as_bytes(),
             text: Some(text),
+            base: None,
             line_starts: OnceLock::new(),
         }
     }
@@ -23,8 +25,21 @@ impl<'a> Document<'a> {
             path,
             bytes,
             text: std::str::from_utf8(bytes).ok(),
+            base: None,
             line_starts: OnceLock::new(),
         }
+    }
+
+    /// The same file, with its text before the change that `botica lint` reads a diff of.
+    pub fn with_base(mut self, base: Option<&'a str>) -> Self {
+        self.base = base;
+        self
+    }
+
+    /// The text of the file before the change: `None` without a diff and for a file that the diff
+    /// adds. Only the native rules whose `reads_base` is true get it.
+    pub fn base(&self) -> Option<&'a str> {
+        self.base
     }
 
     pub fn bytes(&self) -> &'a [u8] {

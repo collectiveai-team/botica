@@ -14,9 +14,11 @@ use std::process::ExitCode;
 use std::sync::Arc;
 use std::time::Instant;
 
+mod diff;
 mod editor;
 mod extensions;
 mod external;
+mod git;
 mod import_layers;
 mod judged;
 mod lockfiles;
@@ -24,6 +26,7 @@ mod paths;
 mod project_files;
 mod settings_schema;
 
+use diff::Diff;
 pub use editor::{when_of, Editor};
 use paths::{lint_paths, Linted};
 
@@ -58,6 +61,18 @@ pub struct LintArgs {
     /// by the configuration and the `ignore-file` comments.
     #[arg(long, conflicts_with_all = ["paths", "ext", "statistics"])]
     judged: Option<PathBuf>,
+    /// Lint the files that changed since the merge base of this revision and `HEAD`, the changes
+    /// not committed and the files git does not track included, and keep only the findings on the
+    /// lines the change adds. The result cache is off.
+    #[arg(long, value_name = "REV", group = "change")]
+    diff: Option<String>,
+    /// Like `--diff`, for the changes staged against `HEAD`: the files are read as they are staged.
+    #[arg(long, group = "change")]
+    staged: bool,
+    /// Like `--diff`, for the changes of a unified diff, as `git diff` writes it, with paths
+    /// relative to the working directory.
+    #[arg(long, value_name = "PATCH", group = "change")]
+    diff_file: Option<PathBuf>,
     /// Files per `lint/files` request.
     #[arg(long, default_value_t = 256)]
     batch: usize,
@@ -111,6 +126,9 @@ impl LintArgs {
             fail_on: FailOn::Error,
             ext: None,
             judged: None,
+            diff: None,
+            staged: false,
+            diff_file: None,
             batch: 256,
             no_astgrep: false,
             no_prefilter: false,
@@ -251,9 +269,10 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     check_statistics_format(&args, format)?;
     let total = Instant::now();
 
-    let setup = Setup::build(&args)?;
+    let mut setup = Setup::build(&args)?;
+    let diff = Diff::read(&args)?;
     if let Some(sarif) = &args.judged {
-        return run_judged(&args, format, &setup, sarif);
+        return run_judged(&args, format, &setup, sarif, diff.as_ref());
     }
     let root = std::env::current_dir()?;
     let Linted {
@@ -262,7 +281,7 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         io_errors,
         unreadable,
         files_read,
-    } = lint_paths(&args, &setup, &root)?;
+    } = lint_paths(&args, &mut setup, &root, diff.as_ref())?;
     if args.timings {
         print_prefilter_stats(&setup.engine);
     }
@@ -282,10 +301,13 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         &setup.project_root,
         setup.prefix.as_deref(),
     ));
-    let diagnostics = postprocess::apply(
+    let mut diagnostics = postprocess::apply(
         diagnostics,
         project::verdicts(&setup.resolution, setup.prefix.as_deref()),
     );
+    if let Some(diff) = &diff {
+        diagnostics.retain(|diagnostic| diff.changes.keeps(diagnostic));
+    }
     write_report(&args, format, &setup, &diagnostics, &errors)?;
     if args.timings {
         timings::print_rules(setup.engine.rule_times());
@@ -304,12 +326,18 @@ fn run_judged(
     format: Format,
     setup: &Setup,
     sarif: &std::path::Path,
+    diff: Option<&Diff>,
 ) -> Result<ExitCode> {
     let text = std::fs::read_to_string(sarif)
         .with_context(|| format!("cannot read `{}`", sarif.display()))?;
-    let judged = judged::filter(&setup.resolution, setup.prefix.as_deref(), &text, |path| {
+    let mut judged = judged::filter(&setup.resolution, setup.prefix.as_deref(), &text, |path| {
         std::fs::read_to_string(path).ok()
     })?;
+    if let Some(diff) = diff {
+        judged
+            .diagnostics
+            .retain(|diagnostic| diff.changes.keeps(diagnostic));
+    }
     for rule in &judged.left_out {
         eprintln!(
             "botica: `{rule}` is not a judgment rule of the catalog: its finding is left out"
