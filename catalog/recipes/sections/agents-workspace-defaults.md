@@ -14,7 +14,7 @@ Run computationally expensive commands (heavy builds, full test suites, data job
 - Cap CPU with `CPUQuota` (e.g. `400%` = up to 4 cores).
 - Use a transient user scope (no root needed). If `systemd-run` is unavailable, fall back to `ulimit -v` for a memory cap.
 
-Measure and log wall time and peak memory with `/usr/bin/time -v`, appending to `.tmp/logs/<command>/<date>_wall-stats.log`. Read the latest log before re-running to estimate limits instead of guessing:
+Measure and log wall time and peak memory with `/usr/bin/time -v`, appending to `.tmp/logs/<command>/<date>_wall-stats.log`. The latest log gives the limits of the next run:
 
 ```bash
 cmd=build; ts=$(date +%Y-%m-%dT%H-%M-%S)
@@ -31,6 +31,6 @@ Run long commands in the background with a saved PID so they are not tied to the
 echo $! > ".tmp/logs/$cmd/${ts}.pid"
 ```
 
-Scripts we write ourselves must emit periodic progress to the output log (current step, counts, percent, or heartbeat with a timestamp) so the monitor can tell what they are doing. Flush each line (e.g. Python `print(..., flush=True)` or `PYTHONUNBUFFERED=1`) so progress appears live. The monitor always `tail`s the latest lines of the `.out` log and does not read the full log.
+A script of the project emits periodic progress to the output log (current step, counts, percent, or heartbeat with a timestamp) so the monitor can tell what they are doing. Flush each line (e.g. Python `print(..., flush=True)` or `PYTHONUNBUFFERED=1`) so progress appears live. The monitor always `tail`s the latest lines of the `.out` log and does not read the full log.
 
-Flag a step that keeps exceeding its limits: the code needs optimization.
+A step that keeps exceeding its limits is reported, with the stats log that shows it.

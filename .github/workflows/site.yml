@@ -1,12 +1,9 @@
 name: Site
 
-# Build the standards site with scripts/build_site.sh and publish it to GitHub Pages from `main`.
-# Any other branch, and a pull request, only builds it, so a broken link or a rule page that does
-# not render is caught before the merge. GitHub Pages must be set to publish from GitHub Actions
-# (Settings -> Pages -> Source). Until `feat/botica-lint` is merged it publishes too: when it is
-# merged, remove the branch from the three places that name it here and from the branch policies
-# of the `github-pages` environment (Settings -> Environments), and replace it with `main` in the
-# two addresses of "edit this page" (`edit_uri` and `catalog_uri` of website/zensical.toml).
+# A pull request only builds the site, so a broken link or a rule page that does not render fails
+# before the merge. Publishing needs GitHub Pages set to publish from GitHub Actions
+# (Settings -> Pages -> Source).
+# `feat/botica-lint` publishes the site until it is merged into `main`.
 
 on:
   push:
