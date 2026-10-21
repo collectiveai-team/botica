@@ -1,8 +1,5 @@
 name: Tests
 
-# Runs the same prek hooks as locally (ruff-format, ruff, pyrefly, hygiene)
-# plus the pytest suite, all through uv so versions match uv.lock.
-
 on:
   push:
     branches: [main]
@@ -33,7 +30,6 @@ jobs:
           version: "0.13.3"
           enable-cache: true
 
-      # Uses the version pinned by .python-version / pyproject.toml.
       - name: Set up Python
         run: uv python install
 
