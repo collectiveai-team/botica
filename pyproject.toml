@@ -250,6 +250,7 @@ project-excludes = [
   "**/.venv/**/*",
   "**/.worktrees/**/*",
   "**/.tmp/**/*",    # local scratch (spike corpora, benchmarks); gitignored
+  "**/.botica/**/*",  # the fixtures that `botica rules test --judge` lays out to be read
   "skills/**/*",
   # The Rust workspace and what its build reads; the Python SDK needs `botica[sdk]`, outside
   # the `dev` group, and the benchmarks run with a bare `python`.
