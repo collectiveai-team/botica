@@ -64,5 +64,6 @@ each pull request: `abide check --json --diff`, judged a second time when the fi
 finding or fails, then `botica lint --judged` with `--fail-on warning`, and a table of the findings
 (`--output-format markdown`) in the summary of the job.
 It reads the secret `TYPESAFE_AI_API_KEY` and the variable `TYPESAFE_AI_BASE_URL` of the
-repository; a pull request from a fork gets no secret, and the job fails.
+repository; a pull request from a fork gets no secret, and the job fails. A pull request of
+Dependabot gets no secret of Actions either, and the job is skipped.
 [Judgment rules](../extend/rules.md#judgment-rules) says what abide judges.
