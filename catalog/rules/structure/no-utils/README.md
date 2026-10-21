@@ -5,11 +5,9 @@ Don't create catch-all modules. A file named `utils.py`, `helpers.py`, `aux.py`,
 
 ## Why
 
-- `utils.py` is where cohesion goes to die: unrelated functions accumulate because there is no
-  named home that says "this doesn't belong here". The grab-bag grows, gets imported everywhere
-  and becomes an undeletable dependency hub.
-- A precise name (`text_wrapping.py`, `retry.py`, `iso_dates.py`) forces you to decide what the
-  module is about, which keeps responsibilities sharp.
+- Unrelated functions collect in `utils.py` because its name rejects none of them. Many modules
+  import it, so it cannot be deleted.
+- A precise name (`text_wrapping.py`, `retry.py`, `iso_dates.py`) states what the module holds.
 
 ## Do
 

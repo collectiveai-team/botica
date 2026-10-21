@@ -4,7 +4,7 @@ A change keeps the existing, deliberate choices of the repository: its version p
 
 ## Why
 
-The configuration of a repository often records a decision that cost something to reach. Overwriting it to match a default loses that context and can break the build, and nobody reviews a rewrite that the description does not mention.
+A pin or a setting of the configuration records a decision, and the history of the file gives its reason. Overwriting it to match a default loses that context and can break the build. A reviewer reads a change against its description, so a rewrite that the description does not mention goes unreviewed.
 
 ## Flag
 

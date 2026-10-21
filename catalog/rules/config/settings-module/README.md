@@ -5,8 +5,9 @@ anywhere else are reported. A warning by default.
 
 ## Why
 
-Scattered `os.getenv` calls are an invisible, untyped and undocumented configuration surface: no
-defaults in one place, no validation, no list of what the application reads.
+Scattered `os.getenv` calls leave the configuration with no type and no documentation. Its
+defaults are spread across files, nothing validates it, and nothing lists the variables the
+application reads.
 
 ## Exceptions
 

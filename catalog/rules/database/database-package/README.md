@@ -20,8 +20,8 @@ alone.
 
 - One `database` package gives persistence a boundary: a single place owns the schema, the engine
   and the queries, and the rest of the application depends on an explicit seam.
-- `core/` and `meta/` are cross-cutting homes. Tables and engines that leak into them erode the
-  direction in which layers depend on each other.
+- `core/` and `meta/` are cross-cutting homes. A table or an engine in them makes `core/`
+  depend on the database layer.
 
 ## Do
 

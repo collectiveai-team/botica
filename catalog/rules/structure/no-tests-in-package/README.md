@@ -7,14 +7,12 @@ ships inside the package, say) is not.
 
 The package is a directory of code of the project (see the `code-dirs` setting): for Python, a
 directory with an `__init__.py` inside the project or inside its `src/`. The rule covers Python: Go
-and Rust put their tests with the code by design, and TypeScript projects are split.
+and Rust put their tests with the code by design.
 
 ## Why
 
 - It is the layout `pytest` recommends for applications ("tests outside application code"): the
   tests run against the installed package, and a `src/` layout avoids accidental imports.
-- It is what Collective's repositories do: 69 of the 75 that have a Python package keep their tests
-  outside it. The ones that mix them in are the exception this rule points at.
 - Projects that ship their tests with the package on purpose (numpy, scipy, scikit-learn do) are
   libraries; exclude them with `ignores`.
 

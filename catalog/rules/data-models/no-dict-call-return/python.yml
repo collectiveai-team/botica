@@ -21,7 +21,6 @@ utils:
 rule:
   all:
     - pattern: return dict($$$ARGS)
-    # A return in a function that is not a boundary.
     - not:
         inside:
           stopBy: end

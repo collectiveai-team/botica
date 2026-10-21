@@ -11,9 +11,9 @@ The code of a project is its `code-dirs` (see `no-notebooks`).
 
 Datasets, generated reports and static assets cannot be imported. In the package they go into the
 wheel and into each install, and the library mixes with the workspace around it. It is the layout of `cookiecutter-data-science` and
-Kedro, which Collective's repositories follow.
+Kedro.
 
-The name of a directory is not enough: `data/` and `reports/` are often code (a `data/` package
+The name of a directory is not enough: `data/` and `reports/` can be code (a `data/` package
 with an `__init__.py`). That is why the rule looks at the kind of file, and for the three
 names only at files that are not code.
 

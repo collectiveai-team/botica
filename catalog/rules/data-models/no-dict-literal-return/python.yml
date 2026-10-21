@@ -23,7 +23,6 @@ rule:
     - kind: dictionary
     - inside:
         kind: return_statement
-    # A return in a function that is not a boundary.
     - not:
         inside:
           stopBy: end

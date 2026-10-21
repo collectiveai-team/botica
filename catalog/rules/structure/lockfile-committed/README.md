@@ -25,7 +25,7 @@ A lockfile that `.gitignore` leaves out counts as missing, because the walk of b
 
 Without a lockfile each install resolves the versions again, so CI and each machine can run
 different code, and `osv-scanner` has no resolved set to check. Two lockfiles in one folder mean
-two managers installed the project, often an agent that ran `npm install` in a repository of pnpm,
+two managers installed the project, such as `npm install` run in a repository of pnpm,
 and the two sets of versions drift apart. A library commits its lockfile too: uv says that
 `uv.lock` "should be checked into version control", and Cargo suggests committing `Cargo.lock` "as
 a starting point".

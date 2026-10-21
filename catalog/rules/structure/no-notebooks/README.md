@@ -10,9 +10,8 @@ Scala: `src/main/java`, `kotlin` and `scala`. `botica explain no-notebooks` list
 
 ## Why
 
-A notebook is exploration, not importable code, and it ships with its saved outputs and cell
-metadata, which bloat an install and its diffs. In the 129 repositories studied, none keeps a
-notebook inside its package.
+A notebook cannot be imported, and it carries its saved outputs and cell metadata, which bloat
+an install and its diffs.
 
 ## Exceptions
 

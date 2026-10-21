@@ -15,10 +15,9 @@ in `Table` (`StatusTable = dict[str, str]`); the rule accepts it.
 
 ## Why
 
-- A `dict[str, Any]` boundary is an untyped contract: callers guess keys, a refactor breaks them
-  silently and the type checker cannot help.
-- A `@dataclass` or `BaseModel` makes the shape explicit, searchable and checkable, and gives
-  validation one obvious place to live.
+- The type checker cannot check the keys of a `dict[str, Any]`, so a renamed key breaks its
+  callers at run time.
+- A `@dataclass` or `BaseModel` declares the fields, and the type checker checks them.
 
 ## Do
 

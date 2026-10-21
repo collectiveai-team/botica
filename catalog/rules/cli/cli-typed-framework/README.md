@@ -13,8 +13,8 @@ a CLI whose arguments are already typed.
 
 - A typed framework derives the parser from the signatures and type hints of the functions, so
   arguments, options, help and validation stay in step with the code.
-- `argparse`, `click` and hand-written `sys.argv` parsing say the same thing a second time, drift
-  out of date and lose the types a checker could use.
+- `argparse`, `click` and hand-written `sys.argv` parsing declare the arguments a second time,
+  with no types.
 
 ## Exceptions
 

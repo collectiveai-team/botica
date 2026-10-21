@@ -5,10 +5,8 @@ message: "A public type alias at module level points at a raw dict, hiding a raw
 rule:
   all:
     - any:
-        # X = dict / X = dict[...]
         - pattern: "$NAME = dict"
         - pattern: "$NAME = dict[$$$ARGS]"
-        # X: TypeAlias = dict / X: TypeAlias = dict[...]
         - pattern: "$NAME: $ANN = dict"
         - pattern: "$NAME: $ANN = dict[$$$ARGS]"
         # PEP 695: type X = dict[...]

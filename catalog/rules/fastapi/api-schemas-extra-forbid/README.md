@@ -8,9 +8,9 @@ Every Pydantic request or response model at the API boundary sets
 ## Why
 
 - Without `extra="forbid"` Pydantic silently drops unknown fields: a client that typos `emial`
-  or sends a stale field gets a 200 and the value is ignored, a data loss no test catches.
-- Forbidding extras makes the schema a strict contract: the accepted shape is exactly the
-  declared fields, and a mismatch fails loudly with a 422.
+  or sends a stale field gets a 200, and the value is ignored.
+- With `extra="forbid"` the schema accepts only its declared fields, and an unknown field gets a
+  422.
 
 ## Exceptions
 
