@@ -1,6 +1,6 @@
 # botica lint reads commit messages
 
-**Status:** proposed
+**Status:** accepted
 
 CES-75 (Conventional Commits) and CES-91 (no AI co-authorship) are checked by Python regular
 expressions written four times: in the `commit-msg` hooks of `prek.toml` and of
