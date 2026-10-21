@@ -62,9 +62,10 @@ uses (`ruff_python_parser`) is not either.
    `--diff`.
 9. **The hook of complexipy leaves.** `config/prek.toml` of the rule and the section `# MARK:
    complexipy` of `prek-python-tools.toml` are removed, and the recipe `base-python` selects
-   `cognitive-complexity`. This repository keeps its hook `complexipy` in `prek.toml` until a
-   release of botica ships the rule, since the hooks of the mirror run 0.13.0; then its `select`
-   lists the rule and the hook goes.
+   `cognitive-complexity`. This repository passes the rule with no baseline and no exclusion. Its
+   hook `complexipy` goes now: a hook of prek and a step of `ci.yml` run the botica of the checkout
+   with `--select cognitive-complexity`, since the hooks of the mirror run 0.13.0. From the next
+   release, its `select` lists the rule and that hook goes.
 
 ## Considered options
 
