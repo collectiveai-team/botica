@@ -3,6 +3,7 @@ use crate::chains;
 use crate::language::parse_reusing;
 use crate::prefilter;
 use crate::regions;
+use crate::rule::AstGrepRule;
 use ast_grep_core::tree_sitter::StrDoc;
 use ast_grep_core::AstGrep;
 use ast_grep_language::SupportLang;
@@ -32,11 +33,7 @@ impl AstGrepSet {
     ) -> Option<Candidates> {
         let chain_count = group.chains.as_ref().map_or(0, chains::LangChains::len);
         let mut wanted = vec![false; chain_count];
-        let mut occurrences = vec![0usize; chain_count];
-        for &(chain, _) in chain_at {
-            occurrences[chain] += 1;
-        }
-        let mut found: HashMap<&str, Vec<usize>> = HashMap::new();
+        let mut counts = AtomCounts::new(self, bytes, chain_count, chain_at);
         let mut positions = Vec::new();
         let mut members = true;
         let mut anchored = true;
@@ -50,64 +47,11 @@ impl AstGrepSet {
             }
             members &= !rule.inspects_descendants;
             anchored &= !rule.looks_at_ancestors;
-            let mut unknown = false;
-            let mut count = |atom: &prefilter::Req| -> usize {
-                match atom {
-                    prefilter::Req::Chain(i) => occurrences[*i],
-                    prefilter::Req::Lit(literal) => match self.literals.get_key_value(literal) {
-                        Some((key, finder)) => found
-                            .entry(key.as_str())
-                            .or_insert_with(|| finder.find_iter(bytes).collect())
-                            .len(),
-                        None => {
-                            unknown = true;
-                            0
-                        }
-                    },
-                    prefilter::Req::Re(pattern) => match self.regexes.get_key_value(pattern) {
-                        Some((key, re)) => found
-                            .entry(key.as_str())
-                            .or_insert_with(|| re.find_iter(bytes).map(|m| m.start()).collect())
-                            .len(),
-                        None => {
-                            unknown = true;
-                            0
-                        }
-                    },
-                    _ => {
-                        unknown = true;
-                        0
-                    }
-                }
-            };
-            let mut atoms = Vec::new();
-            // An `inside` part lies in an ancestor, maybe in another class member than the
-            // match: every part must then mark its member.
-            if rule.looks_at_ancestors {
-                rule.requirement.each_atom(&mut |atom| {
-                    count(atom);
-                    atoms.push(atom.clone());
-                });
-            } else {
-                let mut rarest = Vec::new();
-                rule.requirement.rarest_atoms(&mut count, &mut rarest);
-                atoms.extend(rarest.into_iter().cloned());
-            }
-            if unknown {
+            let atoms = locating_atoms(rule, &mut counts);
+            if counts.unknown {
                 return None;
             }
-            for atom in &atoms {
-                match atom {
-                    prefilter::Req::Chain(i) => wanted[*i] = true,
-                    prefilter::Req::Lit(key) => positions.extend_from_slice(&found[key.as_str()]),
-                    // A hand-written regex may start before the node it stands for.
-                    prefilter::Req::Re(key) => {
-                        anchored = false;
-                        positions.extend_from_slice(&found[key.as_str()]);
-                    }
-                    _ => {}
-                }
-            }
+            anchored &= mark_atoms(&atoms, &counts.found, &mut wanted, &mut positions);
         }
         positions.extend(
             chain_at
@@ -176,4 +120,110 @@ impl AstGrepSet {
         self.parsed_bytes.fetch_add(picked_bytes, Ordering::Relaxed);
         Some(grep)
     }
+}
+
+/// The occurrences of the prefilter atoms in one file, each searched once, on first use.
+struct AtomCounts<'a> {
+    set: &'a AstGrepSet,
+    bytes: &'a [u8],
+    /// Verified occurrences per chain.
+    occurrences: Vec<usize>,
+    /// Offsets of each literal or regex searched so far.
+    found: HashMap<&'a str, Vec<usize>>,
+    /// Some atom counted is not known to the set.
+    unknown: bool,
+}
+
+impl<'a> AtomCounts<'a> {
+    fn new(
+        set: &'a AstGrepSet,
+        bytes: &'a [u8],
+        chain_count: usize,
+        chain_at: &[(usize, usize)],
+    ) -> Self {
+        let mut occurrences = vec![0usize; chain_count];
+        for &(chain, _) in chain_at {
+            occurrences[chain] += 1;
+        }
+        Self {
+            set,
+            bytes,
+            occurrences,
+            found: HashMap::new(),
+            unknown: false,
+        }
+    }
+
+    fn count(&mut self, atom: &prefilter::Req) -> usize {
+        let set = self.set;
+        let bytes = self.bytes;
+        match atom {
+            prefilter::Req::Chain(i) => self.occurrences[*i],
+            prefilter::Req::Lit(literal) => match set.literals.get_key_value(literal) {
+                Some((key, finder)) => self
+                    .found
+                    .entry(key.as_str())
+                    .or_insert_with(|| finder.find_iter(bytes).collect())
+                    .len(),
+                None => self.mark_unknown(),
+            },
+            prefilter::Req::Re(pattern) => match set.regexes.get_key_value(pattern) {
+                Some((key, re)) => self
+                    .found
+                    .entry(key.as_str())
+                    .or_insert_with(|| re.find_iter(bytes).map(|m| m.start()).collect())
+                    .len(),
+                None => self.mark_unknown(),
+            },
+            _ => self.mark_unknown(),
+        }
+    }
+
+    fn mark_unknown(&mut self) -> usize {
+        self.unknown = true;
+        0
+    }
+}
+
+/// The atoms of `rule` whose occurrences locate its matches, counted into `counts`.
+fn locating_atoms(rule: &AstGrepRule, counts: &mut AtomCounts) -> Vec<prefilter::Req> {
+    let mut atoms = Vec::new();
+    // An `inside` part lies in an ancestor, maybe in another class member than the
+    // match: every part must then mark its member.
+    if rule.looks_at_ancestors {
+        rule.requirement.each_atom(&mut |atom| {
+            counts.count(atom);
+            atoms.push(atom.clone());
+        });
+    } else {
+        let mut rarest = Vec::new();
+        rule.requirement
+            .rarest_atoms(&mut |atom| counts.count(atom), &mut rarest);
+        atoms.extend(rarest.into_iter().cloned());
+    }
+    atoms
+}
+
+/// Marks the chains of `atoms` as wanted and adds the offsets of their literals and regexes to
+/// `positions`. Returns whether the positions stay anchored to the matched nodes.
+fn mark_atoms(
+    atoms: &[prefilter::Req],
+    found: &HashMap<&str, Vec<usize>>,
+    wanted: &mut [bool],
+    positions: &mut Vec<usize>,
+) -> bool {
+    let mut anchored = true;
+    for atom in atoms {
+        match atom {
+            prefilter::Req::Chain(i) => wanted[*i] = true,
+            prefilter::Req::Lit(key) => positions.extend_from_slice(&found[key.as_str()]),
+            // A hand-written regex may start before the node it stands for.
+            prefilter::Req::Re(key) => {
+                anchored = false;
+                positions.extend_from_slice(&found[key.as_str()]);
+            }
+            _ => {}
+        }
+    }
+    anchored
 }

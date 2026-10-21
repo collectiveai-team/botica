@@ -301,33 +301,36 @@ impl LangChains {
             if head.ends_with(token) && bounded(text, at - token.len(), at) {
                 return Some(at - token.len());
             }
-            let mut back = |len: usize| {
-                if len > 0 {
-                    pending.push(at - len);
-                }
-            };
-            back(
-                head.iter()
-                    .rev()
-                    .take_while(|b| b.is_ascii_whitespace())
-                    .count(),
-            );
-            if head.ends_with(b"\\\n") || head.ends_with(b"\\\r\n") {
-                back(if head.ends_with(b"\r\n") { 3 } else { 2 });
-            }
-            if let Some(&last) = head.last() {
-                for literal in &self.anonymous_by_last[last as usize] {
-                    if head.ends_with(literal) {
-                        back(literal.len());
-                    }
-                }
-            }
-            let mut starts = Vec::new();
-            let at_line_end = text.get(at).is_none_or(|&b| b == b'\n' || b == b'\r');
-            self.comment_starts(head, at_line_end, &mut starts);
-            pending.extend(starts.into_iter().filter(|&start| start < at));
+            self.skips_ending_at(text, at, &mut pending);
         }
         None
+    }
+
+    /// Pushes onto `pending` the start of every single skip that ends at `at`.
+    fn skips_ending_at(&self, text: &[u8], at: usize, pending: &mut Vec<usize>) {
+        let head = &text[..at];
+        let mut back = |len: usize| {
+            if len > 0 {
+                pending.push(at - len);
+            }
+        };
+        back(
+            head.iter()
+                .rev()
+                .take_while(|b| b.is_ascii_whitespace())
+                .count(),
+        );
+        back(continuation_len_before(head));
+        let literals = head.last().map_or(&[][..], |&last| {
+            self.anonymous_by_last[last as usize].as_slice()
+        });
+        for literal in literals.iter().filter(|literal| head.ends_with(literal)) {
+            back(literal.len());
+        }
+        let mut starts = Vec::new();
+        let at_line_end = text.get(at).is_none_or(|&b| b == b'\n' || b == b'\r');
+        self.comment_starts(head, at_line_end, &mut starts);
+        pending.extend(starts.into_iter().filter(|&start| start < at));
     }
 
     fn rest_follows(&self, tokens: &[Vec<u8>], text: &[u8], mut position: usize) -> bool {
@@ -375,25 +378,28 @@ impl LangChains {
             if rest.starts_with(token) && bounded(text, at, at + token.len()) {
                 return Some(at + token.len());
             }
-            let mut next = |len: usize| {
-                if len > 0 {
-                    pending.push(at + len);
-                }
-            };
-            next(rest.iter().take_while(|b| b.is_ascii_whitespace()).count());
-            if rest.starts_with(b"\\\n") || rest.starts_with(b"\\\r\n") {
-                next(if rest[1] == b'\r' { 3 } else { 2 });
-            }
-            next(self.comment_len(rest));
-            if let Some(&first) = rest.first() {
-                for literal in &self.anonymous_by_byte[first as usize] {
-                    if rest.starts_with(literal) {
-                        next(literal.len());
-                    }
-                }
-            }
+            self.skips_starting_at(text, at, &mut pending);
         }
         None
+    }
+
+    /// Pushes onto `pending` the end of every single skip that starts at `at`.
+    fn skips_starting_at(&self, text: &[u8], at: usize, pending: &mut Vec<usize>) {
+        let rest = &text[at..];
+        let mut next = |len: usize| {
+            if len > 0 {
+                pending.push(at + len);
+            }
+        };
+        next(rest.iter().take_while(|b| b.is_ascii_whitespace()).count());
+        next(continuation_len_after(rest));
+        next(self.comment_len(rest));
+        let literals = rest.first().map_or(&[][..], |&first| {
+            self.anonymous_by_byte[first as usize].as_slice()
+        });
+        for literal in literals.iter().filter(|literal| rest.starts_with(literal)) {
+            next(literal.len());
+        }
     }
 
     fn comment_len(&self, rest: &[u8]) -> usize {
@@ -441,6 +447,28 @@ impl LangChains {
 
 fn is_word(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || byte == b'_' || byte >= 0x80
+}
+
+/// The length of a line continuation (`\` and a newline) that `head` ends with, or 0.
+fn continuation_len_before(head: &[u8]) -> usize {
+    if head.ends_with(b"\\\r\n") {
+        3
+    } else if head.ends_with(b"\\\n") {
+        2
+    } else {
+        0
+    }
+}
+
+/// The length of a line continuation (`\` and a newline) that `rest` starts with, or 0.
+fn continuation_len_after(rest: &[u8]) -> usize {
+    if rest.starts_with(b"\\\r\n") {
+        3
+    } else if rest.starts_with(b"\\\n") {
+        2
+    } else {
+        0
+    }
 }
 
 /// A token that starts or ends with a word character must not continue a longer word.

@@ -24,6 +24,87 @@ struct LanguageGroup {
     chains: Option<chains::LangChains>,
 }
 
+impl LanguageGroup {
+    fn new(language: SupportLang) -> Self {
+        Self {
+            language,
+            rules: Vec::new(),
+            by_kind: Vec::new(),
+            chains: None,
+        }
+    }
+
+    fn add(&mut self, index: usize, rule: &AstGrepRule) {
+        self.rules.push(index);
+        let Some(kinds) = rule.config.matcher.potential_kinds() else {
+            return;
+        };
+        for kind in kinds.iter() {
+            if self.by_kind.len() <= kind {
+                self.by_kind.resize(kind + 1, Vec::new());
+            }
+            self.by_kind[kind].push(index);
+        }
+    }
+
+    /// Sets the prefilter of each rule of the group, declared or derived, and builds the token
+    /// chains the derived ones look for.
+    fn derive_requirements(&mut self, rules: &mut [AstGrepRule]) {
+        let mut table = chains::LangChains::new(self.language);
+        for &index in &self.rules {
+            let rule = &mut rules[index];
+            rule.requirement = match &rule.declared {
+                Some(declared) => declared.clone(),
+                None => table.requirement(&rule.rule_json),
+            };
+        }
+        table.finish();
+        self.chains = (!table.is_empty()).then_some(table);
+    }
+}
+
+fn group_by_language(rules: &[AstGrepRule]) -> Vec<LanguageGroup> {
+    let mut groups: Vec<LanguageGroup> = Vec::new();
+    for (index, rule) in rules.iter().enumerate() {
+        let language = rule.language();
+        let position = match groups.iter().position(|g| g.language == language) {
+            Some(position) => position,
+            None => {
+                groups.push(LanguageGroup::new(language));
+                groups.len() - 1
+            }
+        };
+        groups[position].add(index, rule);
+    }
+    groups
+}
+
+type Literals = HashMap<String, Finder<'static>>;
+type Regexes = HashMap<String, regex::bytes::Regex>;
+
+/// The searchers of every literal and regex the prefilters of `rules` look for.
+fn prefilter_searchers(rules: &[AstGrepRule]) -> (Literals, Regexes) {
+    let mut literals = Literals::new();
+    let mut regexes = Regexes::new();
+    for rule in rules {
+        let mut needed = Vec::new();
+        rule.requirement.literals(&mut needed);
+        for literal in needed {
+            literals
+                .entry(literal.to_owned())
+                .or_insert_with(|| Finder::new(literal.as_bytes()).into_owned());
+        }
+        let mut patterns = Vec::new();
+        rule.requirement.regexes(&mut patterns);
+        for pattern in patterns {
+            regexes.entry(pattern.to_owned()).or_insert_with(|| {
+                regex::bytes::Regex::new(pattern).expect("valid prefilter regex")
+            });
+        }
+    }
+    (literals, regexes)
+}
+
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct PrefilterStats {
     pub parsed: usize,
@@ -65,8 +146,8 @@ impl Default for Tuning {
 pub struct AstGrepSet {
     rules: Vec<AstGrepRule>,
     groups: Vec<LanguageGroup>,
-    literals: HashMap<String, Finder<'static>>,
-    regexes: HashMap<String, regex::bytes::Regex>,
+    literals: Literals,
+    regexes: Regexes,
     prefilter: bool,
     regions: bool,
     skip_subtrees: bool,
@@ -97,62 +178,11 @@ impl AstGrepSet {
     /// Regions and subtree skipping both read the prefilter's candidate positions, so they go
     /// off with it.
     pub fn with_tuning(mut rules: Vec<AstGrepRule>, tuning: Tuning) -> Self {
-        let mut groups: Vec<LanguageGroup> = Vec::new();
-        for (index, rule) in rules.iter().enumerate() {
-            let language = rule.language();
-            let position = groups.iter().position(|g| g.language == language);
-            let group = match position {
-                Some(position) => &mut groups[position],
-                None => {
-                    groups.push(LanguageGroup {
-                        language,
-                        rules: Vec::new(),
-                        by_kind: Vec::new(),
-                        chains: None,
-                    });
-                    groups.last_mut().expect("just pushed")
-                }
-            };
-            group.rules.push(index);
-            if let Some(kinds) = rule.config.matcher.potential_kinds() {
-                for kind in kinds.iter() {
-                    if group.by_kind.len() <= kind {
-                        group.by_kind.resize(kind + 1, Vec::new());
-                    }
-                    group.by_kind[kind].push(index);
-                }
-            }
-        }
+        let mut groups = group_by_language(&rules);
         for group in &mut groups {
-            let mut table = chains::LangChains::new(group.language);
-            for &index in &group.rules {
-                let rule = &mut rules[index];
-                rule.requirement = match &rule.declared {
-                    Some(declared) => declared.clone(),
-                    None => table.requirement(&rule.rule_json),
-                };
-            }
-            table.finish();
-            group.chains = (!table.is_empty()).then_some(table);
+            group.derive_requirements(&mut rules);
         }
-        let mut literals: HashMap<String, Finder<'static>> = HashMap::new();
-        let mut regexes: HashMap<String, regex::bytes::Regex> = HashMap::new();
-        for rule in &rules {
-            let mut needed = Vec::new();
-            rule.requirement.literals(&mut needed);
-            for literal in needed {
-                literals
-                    .entry(literal.to_owned())
-                    .or_insert_with(|| Finder::new(literal.as_bytes()).into_owned());
-            }
-            let mut patterns = Vec::new();
-            rule.requirement.regexes(&mut patterns);
-            for pattern in patterns {
-                regexes.entry(pattern.to_owned()).or_insert_with(|| {
-                    regex::bytes::Regex::new(pattern).expect("valid prefilter regex")
-                });
-            }
-        }
+        let (literals, regexes) = prefilter_searchers(&rules);
         Self {
             rules,
             groups,
