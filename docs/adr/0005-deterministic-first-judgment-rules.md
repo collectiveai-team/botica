@@ -13,7 +13,7 @@ Amended 2026-10-20, again: ADR 0008 removed the skill `engineering-rules`, so de
 the block of `AGENTS.md` and the files of each judge only. The classification that "Not decided"
 lists is done: the standards marked `[judgment]` have judgment rules, `import-layers` or
 `no-disabled-typecheck`. An `extension` rule of the catalog of a project runs in `botica lint`
-(docs/botica.md, "Catalogs of a project").
+(`website/docs/extend/extensions.md`).
 
 ADR 0003 lists `judgment` as a fourth kind of implementation, run by no part of `botica lint` and
 catalogued for the judges and the site. ADR 0002 makes a standard with nothing to run a `judgment`

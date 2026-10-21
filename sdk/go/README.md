@@ -44,3 +44,6 @@ if err := botica.Serve(rules); err != nil {
 - `Serve` returns after `shutdown`; `ServeOn(rules, in, out)` serves any reader and writer.
 
 `examples/no_leading_x` is a complete extension. The tests run with `go test ./...`.
+
+The manual of extensions, with the protocol and the other SDKs, is
+[Extensions](https://collectiveai-team.github.io/botica/extend/extensions/).

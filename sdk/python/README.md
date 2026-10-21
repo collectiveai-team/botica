@@ -35,3 +35,6 @@ serve()
 - The SDK knows the languages of the extensions `.py` (`python`), `.ts` and `.tsx` (`typescript`)
   and `.js` (`javascript`).
 - `serve()` returns after `shutdown` or when stdin is closed.
+
+The manual of extensions, with the protocol and the other SDKs, is
+[Extensions](https://collectiveai-team.github.io/botica/extend/extensions/).

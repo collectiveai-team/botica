@@ -161,6 +161,30 @@ def test_the_index_of_the_references_is_not_listed(tmp_path: Path):
     assert "references/index/" not in llms(tmp_path, config, docs)
 
 
+def add_manual_page(docs: Path, relative: str, title: str) -> None:
+    page = docs / relative
+    page.parent.mkdir(parents=True, exist_ok=True)
+    page.write_text(f"---\ntitle: {title}\n---\n\n# {title}\n", encoding="utf-8")
+
+
+def test_the_manual_comes_first_with_the_start_then_the_guide_then_extend(tmp_path: Path):
+    config, docs = site(tmp_path)
+    add_manual_page(docs, "extend/catalogs.md", "Catalogs of a project")
+    add_manual_page(docs, "guide/lint.md", "Lint")
+    add_manual_page(docs, "start.md", "Start")
+    add_rule(docs, "structure", "no-utils", "BTSTRUC002", "No catch-all modules")
+
+    text = llms(tmp_path, config, docs)
+
+    assert (
+        "\n## Manual\n\n"
+        "- [Start](https://example.org/botica/start/)\n"
+        "- [Lint](https://example.org/botica/guide/lint/)\n"
+        "- [Catalogs of a project](https://example.org/botica/extend/catalogs/)\n"
+    ) in text
+    assert text.index("## Manual") < text.index("## Rules")
+
+
 def test_a_site_without_topics_has_no_section_of_references(tmp_path: Path):
     config, docs = site(tmp_path)
 

@@ -4,8 +4,8 @@ Zensical orders the pages of a folder by name, which puts `references` and `rule
 `standards`, and its `nav` takes pages and not folders. The pages of the rules, of the standards and
 of the topics of references are made by `scripts/build_site.sh`, so the list is made here, from
 what the folders hold, and added to the configuration that the build reads. The topics of references
-are not listed: the index of references links each one. The titles of the pages are left to
-Zensical.
+are not listed: the index of references links each one. The pages of the manual are written by
+hand, and `MANUAL` holds their order. The titles of the pages are left to Zensical.
 """
 
 from __future__ import annotations
@@ -24,6 +24,15 @@ app = cyclopts.App(name="site-nav", help=__doc__)
 
 NAMES = {"fastapi": "FastAPI", "botica": "Botica"}
 LEADING_NUMBER = re.compile(r"^(\d+)-")
+# The sections of the manual (ADR 0012) and the order in which its pages are read; a page that is
+# not listed comes after the listed ones, by name.
+MANUAL = {
+    "Guide": (
+        "guide",
+        ["lint", "configuration", "findings", "recipes", "refs", "editor", "prek-and-ci"],
+    ),
+    "Extend": ("extend", ["catalogs", "rules", "extensions"]),
+}
 
 # An entry of the nav of zensical.toml: the title of a section and its pages.
 SectionTable = dict[str, object]
@@ -54,11 +63,22 @@ def _folders(root: Path) -> list[Path]:
     return sorted(path for path in root.iterdir() if path.is_dir())
 
 
+def _manual(docs: Path, folder: str, order: Sequence[str]) -> list[str]:
+    def rank(page: Path) -> tuple[int, str]:
+        return (order.index(page.stem) if page.stem in order else len(order), page.name)
+
+    pages = sorted((docs / folder).glob("*.md"), key=rank)
+    return [page.relative_to(docs).as_posix() for page in pages]
+
+
 def navigation(docs: Path) -> list[object]:
-    """Return the `nav` of the site: the home, the standards, the rules and the references."""
+    """Return the `nav` of the site: the home, the manual, the standards, the rules, the topics."""
     nav: list[object] = [{"Botica": "index.md"}]
-    if (docs / "use.md").is_file():
-        nav.append({"Use": "use.md"})
+    if (docs / "start.md").is_file():
+        nav.append({"Start": "start.md"})
+    for title, (folder, order) in MANUAL.items():
+        if pages := _manual(docs, folder, order):
+            nav.append(_section(title, pages))
     standards = docs / "standards"
     if standards.is_dir():
         sets = [_section(path.name, _pages(path, docs)) for path in _folders(standards)]

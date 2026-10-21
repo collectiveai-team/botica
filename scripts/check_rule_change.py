@@ -41,8 +41,9 @@ STANDARD_FILE = re.compile(r"^standards/(?P<set>[^/]+)/(?P<number>\d+)-[^/]+\.md
 INDEX_FILES = (
     "crates/botica-cli/tests/conformance.rs",
     "crates/botica-config/tests/resolve_shipped_catalog.rs",
-    "docs/botica.md",
 )
+# The manual names rules in its examples and lists (ADR 0012).
+MANUAL = ("website/docs/guide/", "website/docs/extend/")
 
 
 @dataclass(frozen=True)
@@ -85,7 +86,9 @@ def _in_native_zone(path: str) -> bool:
 
 def _open_to_any_rule(path: str, *, builtin: bool) -> bool:
     """Tell whether a rule may touch the path: its standard, or an index of the built-in catalog."""
-    return path.startswith(STANDARDS) or (builtin and path in INDEX_FILES)
+    return path.startswith(STANDARDS) or (
+        builtin and (path in INDEX_FILES or path.startswith(MANUAL))
+    )
 
 
 def duplicated_standards(root: Path) -> list[str]:

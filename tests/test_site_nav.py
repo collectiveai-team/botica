@@ -43,6 +43,33 @@ def test_the_references_come_last_as_their_index_alone_and_the_topics_are_left_o
     assert [next(iter(entry)) for entry in nav] == ["Botica", "Standards", "Rules", "References"]
 
 
+def test_the_manual_comes_before_the_standards_with_its_pages_in_the_order_of_reading(
+    tmp_path: Path,
+):
+    for relative in (
+        "index.md",
+        "start.md",
+        "guide/refs.md",
+        "guide/lint.md",
+        "guide/zebra.md",
+        "guide/configuration.md",
+        "extend/extensions.md",
+        "extend/catalogs.md",
+        "standards/index.md",
+    ):
+        page(tmp_path, relative)
+
+    nav = sn.navigation(tmp_path)
+
+    assert nav[:4] == [
+        {"Botica": "index.md"},
+        {"Start": "start.md"},
+        {"Guide": ["guide/lint.md", "guide/configuration.md", "guide/refs.md", "guide/zebra.md"]},
+        {"Extend": ["extend/catalogs.md", "extend/extensions.md"]},
+    ]
+    assert next(iter(nav[4])) == "Standards"
+
+
 def test_a_site_without_topics_has_no_references_in_its_navigation(tmp_path: Path):
     page(tmp_path, "index.md")
     page(tmp_path, "rules/index.md")

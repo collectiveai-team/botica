@@ -99,8 +99,8 @@ secret `MIRROR_DEPLOY_KEY` of this repository.
 
 ## Files that name the mirror's `rev`
 
-- `catalog/recipes/files/prek-base.toml`, this repository's own `prek.toml`, the examples of
-  `docs/botica.md` and the mirror's README name the mirror and its `rev`.
+- `catalog/recipes/files/prek-base.toml`, this repository's own `prek.toml`, the example of
+  `website/docs/guide/prek-and-ci.md` and the mirror's README name the mirror and its `rev`.
   The job `bump` moves them all; `scripts/bump_mirror_rev.py` fails the release when one of them
   no longer names the mirror on the line above its `rev`. The binary is built before `bump`, so
   the template it embeds names the release before; `botica recipe install` writes the `rev` of

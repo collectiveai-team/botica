@@ -21,7 +21,10 @@
     uvx botica explain <rule>  # one rule, as it is configured here
     ```
 
-- [Use](use.md): install, run, configure, silence a finding, run on every commit.
+- [Start](start.md): what botica is, install it, run it, set up a repository.
+- [Guide](guide/lint.md): lint, configure, silence a finding, recipes, references, the editor,
+  prek and CI.
+- [Extend](extend/catalogs.md): the rules of a project, a rule that is a program, the SDKs.
 - [Standards](standards/index.md): the requirements, in sets.
 - [Rules](rules/index.md): the checks of `botica lint`, by family.
 
