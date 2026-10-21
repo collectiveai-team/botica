@@ -89,7 +89,7 @@ priority = 2
 # installs botica from PyPI at the release `rev` names.
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
-rev = "v0.13.0"
+rev = "v0.14.0"
 
 # The rules that look at one file, run on the files of the commit.
 [[repos.hooks]]
