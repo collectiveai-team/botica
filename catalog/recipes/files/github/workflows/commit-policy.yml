@@ -1,7 +1,7 @@
 name: commit-policy
 
-# CES-91. The messages are read from a file and matched with a fixed pattern, never interpolated into
-# the shell.
+# CES-91 on every commit of the pull request or of the push, which `git commit --no-verify` does
+# not skip.
 
 on:
   pull_request:
@@ -25,38 +25,20 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: "0.13.3"
+          enable-cache: false
+
       - name: Check commit messages
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
-          python3 - <<'PY'
-          import os, re, subprocess, sys
-
-          base = os.environ["BASE_SHA"]
-          head = os.environ["HEAD_SHA"]
-          rev_range = head if not base or set(base) == {"0"} else f"{base}..{head}"
-          out = subprocess.run(
-              ["git", "log", "--format=%B", rev_range],
-              capture_output=True, text=True, check=True,
-          )
-
-          tools = (
-              "claude|anthropic|copilot|github copilot|chatgpt|openai|codex|cursor|"
-              "windsurf|aider|gemini|devin|opencode"
-          )
-          pattern = re.compile(
-              r"(?im)^\s*(co-authored-by:.*(" + tools + r")"
-              r"|generated[\s-]+(with|by):?.*(" + tools + r")"
-              r"|ai-generated-by:?.*(" + tools + r")"
-              r"|assisted-by:?.*(" + tools + r"))"
-          )
-          match = pattern.search(out.stdout)
-          if match:
-              print(
-                  "::error::commit message must not carry AI "
-                  f"co-authorship/attribution trailers. Found: {match.group(0)!r}"
-              )
-              sys.exit(1)
-          print("No AI co-authorship trailers found.")
-          PY
+          # A push that creates the branch has no commit before it: its range is the whole history.
+          range="$BASE_SHA..$HEAD_SHA"
+          if [ -z "${BASE_SHA//0/}" ]; then
+            range="$HEAD_SHA"
+          fi
+          uvx botica@0.13.0 lint --select no-ai-coauthorship --commits "$range"

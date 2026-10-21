@@ -7,6 +7,8 @@ rules = [
   "unused-suppression",
   "invalid-suppression",
   "external-config",
+  "conventional-commits",
+  "no-ai-coauthorship",
 ]
 judgment = [
   "separate-orchestration",

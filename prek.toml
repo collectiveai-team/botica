@@ -59,7 +59,7 @@ repo = "local"
 [[repos.hooks]]
 id = "agents-conventional-commits"
 name = "agents-conventional-commits (commit-msg)"
-entry = "python -c \"import re,sys; msg=open(sys.argv[1],encoding='utf-8').readline().strip(); ok=bool(re.match(r'^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\\([a-z0-9._-]+\\))?!?: .+', msg)) or msg.startswith(('Merge ','Revert ','fixup! ')); sys.exit(0 if ok else not print(f'Error: commit subject must follow Conventional Commits (type(scope): description). Got: {msg!r}'))\""
+entry = "cargo run --quiet --locked -p botica-cli -- lint --select conventional-commits --commit-msg"
 language = "system"
 stages = ["commit-msg"]
 
@@ -68,7 +68,7 @@ stages = ["commit-msg"]
 [[repos.hooks]]
 id = "no-ai-coauthorship"
 name = "no-ai-coauthorship (commit-msg)"
-entry = "python -c \"import re,sys; msg=open(sys.argv[1],encoding='utf-8').read(); tools='claude|anthropic|copilot|github copilot|chatgpt|openai|codex|cursor|windsurf|aider|gemini|devin|opencode'; pat=re.compile(r'(?im)^\\s*(co-authored-by:.*(' + tools + r')|generated[\\s-]+(with|by):?.*(' + tools + r')|ai-generated-by:?.*(' + tools + r')|assisted-by:?.*(' + tools + r'))'); m=pat.search(msg); sys.exit(0 if not m else not print(f'Error: commit message must not carry AI co-authorship/attribution trailers. Found: {m.group(0)!r}'))\""
+entry = "cargo run --quiet --locked -p botica-cli -- lint --select no-ai-coauthorship --commit-msg"
 language = "system"
 stages = ["commit-msg"]
 
