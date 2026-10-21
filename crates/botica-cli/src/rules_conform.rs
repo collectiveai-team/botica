@@ -1,15 +1,17 @@
 //! `botica rules conform`: runs each rule of a catalog over its fixtures, with and without each
 //! optimisation, through this same binary.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use anyhow::{Context, Result};
 use botica_catalog::CATALOG_FILE;
 use botica_conformance::{Outcome, Runner};
+use botica_core::cache::ensure_directory;
 use clap::Args;
 
-/// Where the projects of the fixtures go, from where botica runs.
+/// Where the projects of the fixtures go, from where botica runs; created with a `.gitignore` of
+/// `*` when it is new.
 const SCRATCH_DIR: &str = ".botica/conformance";
 
 #[derive(Args)]
@@ -21,6 +23,7 @@ pub struct ConformArgs {
 
 pub fn run(args: &ConformArgs) -> Result<ExitCode> {
     let binary = std::env::current_exe().context("cannot find the botica binary")?;
+    ensure_directory(Path::new(SCRATCH_DIR))?;
     let runner = Runner::new(binary, SCRATCH_DIR);
     let outcomes = if args.catalog.join(CATALOG_FILE).is_file() {
         runner.check_project_catalog(&args.catalog)?

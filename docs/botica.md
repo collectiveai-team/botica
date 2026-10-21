@@ -64,7 +64,8 @@ botica recipe install base base-python # adds the files and sections of the reci
 botica rules test --judge abide [test-through-interface]
                                # abide judges the fixtures of each judgment rule; compared with expected.json
 botica rules conform catalog/rules   # each rule over its fixtures, with and without each optimisation;
-                               # .botica/rules/<name> for a catalog of a project (it has a catalog.toml)
+                               # .botica/rules/<name> for a catalog of a project (it has a catalog.toml);
+                               # the projects of the fixtures go to .botica/conformance, which ignores itself
 botica rules new structure/no-foo --kind ast-grep --language python --standard CES-63
                                # the folder of a new rule (ast-grep, judgment or external) in catalog/rules
 botica rules new structure/no-blobs --kind extension --runtime python --language python \

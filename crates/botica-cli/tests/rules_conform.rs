@@ -28,6 +28,20 @@ fn a_catalog_of_a_project_whose_rules_conform_exits_zero_and_names_each_rule() {
 }
 
 #[test]
+fn the_projects_of_the_fixtures_ignore_themselves() {
+    let acme = catalog("rules-conform", "ignored", "bad.py");
+
+    let output = conform(&acme);
+
+    assert!(output.status.success(), "{}", stderr(&output));
+    let scratch = acme.parent().expect("a folder").join(".botica/conformance");
+    assert_eq!(
+        std::fs::read_to_string(scratch.join(".gitignore")).expect("ignored"),
+        "*\n"
+    );
+}
+
+#[test]
 fn the_built_in_catalog_conforms_by_the_slug_of_each_rule() {
     let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../catalog/rules");
     let work = Path::new(env!("CARGO_TARGET_TMPDIR")).join("rules-conform-built-in");
