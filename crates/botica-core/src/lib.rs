@@ -1,4 +1,5 @@
 mod buffer;
+mod coverage;
 mod diagnostic;
 pub mod diff;
 mod document;
@@ -23,6 +24,7 @@ pub mod cache;
 pub mod walk;
 
 pub use buffer::Buffer;
+pub use coverage::NoCoverageExclusion;
 pub use diagnostic::{Diagnostic, Severity};
 pub use document::Document;
 pub use engine::{Engine, Exclusion, Inclusion, NativePlanner, PathTest, Plan};

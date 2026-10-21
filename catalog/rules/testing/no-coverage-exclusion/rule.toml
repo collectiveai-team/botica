@@ -1,0 +1,15 @@
+id = "no-coverage-exclusion"
+code = "BTTEST005"
+standard = "CES-66"
+summary = "The configuration of coverage leaves no code out of the report and keeps its threshold"
+status = "preview"
+tags = ["tests", "coverage"]
+scope = "file"
+needs = "bytes"
+run-on = ["cli", "save"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "native"
+languages = ["*"]

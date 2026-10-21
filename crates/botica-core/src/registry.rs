@@ -3,6 +3,7 @@ use std::fmt;
 
 use botica_catalog::{Catalog, Kind};
 
+use crate::coverage::{NoCoverageExclusion, NO_COVERAGE_EXCLUSION};
 use crate::env_schema::SETTINGS_ENV_SCHEMA;
 use crate::external_config::EXTERNAL_CONFIG;
 use crate::import_layers::IMPORT_LAYERS;
@@ -39,7 +40,7 @@ enum Provider {
     Engine,
 }
 
-const NATIVES: [(&str, Provider); 13] = [
+const NATIVES: [(&str, Provider); 14] = [
     (
         "file-size-guard",
         Provider::Rule {
@@ -79,6 +80,13 @@ const NATIVES: [(&str, Provider); 13] = [
         ROUTE_AUTH,
         Provider::Rule {
             make: route_auth,
+            reads_code_dirs: false,
+        },
+    ),
+    (
+        NO_COVERAGE_EXCLUSION,
+        Provider::Rule {
+            make: |_, _| Box::new(NoCoverageExclusion),
             reads_code_dirs: false,
         },
     ),

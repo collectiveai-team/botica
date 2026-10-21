@@ -26,7 +26,9 @@ impl Syntax {
         match extension {
             Some("py" | "pyi" | "toml") => Some(Self::PyLike),
             Some("js" | "jsx" | "mjs" | "cjs" | "ts" | "tsx" | "mts" | "cts") => Some(Self::Script),
-            Some("sh" | "bash" | "zsh" | "yml" | "yaml" | "mk" | "dockerfile") => Some(Self::Hash),
+            Some(
+                "sh" | "bash" | "zsh" | "yml" | "yaml" | "mk" | "dockerfile" | "cfg" | "coveragerc",
+            ) => Some(Self::Hash),
             Some("md" | "markdown" | "html" | "htm") => Some(Self::Markup),
             Some("go" | "rs") => Some(Self::CLike),
             _ if name == "Dockerfile" || name.starts_with("Dockerfile.") || name == "Makefile" => {

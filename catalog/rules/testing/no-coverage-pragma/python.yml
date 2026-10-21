@@ -1,0 +1,7 @@
+id: no-coverage-pragma
+language: python
+severity: warning
+message: "`# pragma: no cover` leaves this code out of the coverage report: cover it with a test or delete it if nothing calls it. For code that cannot run under test, keep the pragma and silence this line with the reason."
+rule:
+  kind: comment
+  regex: "(?i)#\\s*pragma[:\\s]?\\s*no\\s*cover"

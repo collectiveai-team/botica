@@ -1,0 +1,38 @@
+{
+  "diagnostics": [
+    {
+      "path": "orders.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 43,
+          "line": 2,
+          "column": 26
+        },
+        "end": {
+          "offset": 61,
+          "line": 2,
+          "column": 44
+        }
+      },
+      "message": "`# pragma: no cover` leaves this code out of the coverage report: cover it with a test or delete it if nothing calls it. For code that cannot run under test, keep the pragma and silence this line with the reason."
+    },
+    {
+      "path": "orders.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 147,
+          "line": 7,
+          "column": 16
+        },
+        "end": {
+          "offset": 163,
+          "line": 7,
+          "column": 32
+        }
+      },
+      "message": "`# pragma: no cover` leaves this code out of the coverage report: cover it with a test or delete it if nothing calls it. For code that cannot run under test, keep the pragma and silence this line with the reason."
+    }
+  ]
+}

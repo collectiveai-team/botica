@@ -102,6 +102,77 @@ fn a_diff_file_gives_the_changes_of_a_patch() {
     );
 }
 
+const COVERAGE: &str = "preview = true\nselect = [\"no-coverage-exclusion\"]\n";
+
+#[test]
+fn a_native_rule_reads_the_file_before_the_change_from_git_or_from_the_patch() {
+    let dir = repository(
+        "base",
+        &[
+            ("botica.toml", COVERAGE),
+            (
+                "pyproject.toml",
+                "[tool.coverage.report]\nfail_under = 90\nomit = [\"a.py\"]\n",
+            ),
+        ],
+    );
+    write(
+        &dir,
+        "pyproject.toml",
+        "[tool.coverage.report]\nfail_under = 80\nomit = [\"a.py\", \"b.py\"]\n",
+    );
+    write(
+        &dir,
+        "change.diff",
+        "--- a/pyproject.toml\n+++ b/pyproject.toml\n@@ -2,2 +2,2 @@\n\
+         -fail_under = 90\n-omit = [\"a.py\"]\n+fail_under = 80\n+omit = [\"a.py\", \"b.py\"]\n",
+    );
+    let expected = [
+        "pyproject.toml:2 [no-coverage-exclusion]",
+        "pyproject.toml:3 [no-coverage-exclusion]",
+        "pyproject.toml:3 [no-coverage-exclusion]",
+    ];
+
+    assert_eq!(reported(&dir, &["--diff", "HEAD"]), expected);
+    assert_eq!(reported(&dir, &["--staged"]), Vec::<String>::new());
+    assert_eq!(reported(&dir, &["--diff-file", "change.diff"]), expected);
+    assert_eq!(
+        reported(&dir, &[]),
+        [
+            "pyproject.toml:3 [no-coverage-exclusion]",
+            "pyproject.toml:3 [no-coverage-exclusion]"
+        ]
+    );
+}
+
+#[test]
+fn a_patch_that_does_not_describe_the_tree_fails_the_run() {
+    let dir = repository(
+        "mismatch",
+        &[
+            ("botica.toml", COVERAGE),
+            (
+                "pyproject.toml",
+                "[tool.coverage.report]\nfail_under = 70\n",
+            ),
+        ],
+    );
+    write(
+        &dir,
+        "change.diff",
+        "--- a/pyproject.toml\n+++ b/pyproject.toml\n@@ -2 +2 @@\n-fail_under = 90\n+fail_under = 80\n",
+    );
+
+    let output = command(&dir, &["lint", "--diff-file", "change.diff"]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        stderr(&output).contains("the diff does not apply to `pyproject.toml`: line 2 differs"),
+        "{}",
+        stderr(&output)
+    );
+}
+
 #[test]
 fn the_three_inputs_exclude_each_other_and_a_revision_git_does_not_know_fails_the_run() {
     let dir = repository("errors", &[("app.py", "x = 1\n")]);

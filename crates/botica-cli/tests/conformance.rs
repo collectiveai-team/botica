@@ -31,6 +31,8 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
             "log-get-logger",
             "log-no-print",
             "no-artifacts-in-package",
+            "no-coverage-exclusion",
+            "no-coverage-pragma",
             "no-dict-alias",
             "no-dict-call-return",
             "no-dict-literal-return",
