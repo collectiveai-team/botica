@@ -60,6 +60,16 @@ pub(super) fn untracked() -> Result<Vec<String>> {
         .collect())
 }
 
+/// The short sha and the message of each commit of `git log <range>`, newest first.
+pub(super) fn commits(range: &str) -> Result<Vec<(String, String)>> {
+    let listed = text(&["log", "--format=%h%x00%B%x1e", range, "--"])?;
+    Ok(listed
+        .split('\x1e')
+        .filter_map(|entry| entry.trim_start_matches('\n').split_once('\0'))
+        .map(|(sha, message)| (sha.to_owned(), message.to_owned()))
+        .collect())
+}
+
 /// The bytes of `path` at `rev`, or in the index when `rev` is empty; `None` when it is not
 /// there.
 pub(super) fn show(rev: &str, path: &str) -> Option<Vec<u8>> {

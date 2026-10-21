@@ -1,0 +1,1 @@
+build(deps.dev-group_1): bump ruff

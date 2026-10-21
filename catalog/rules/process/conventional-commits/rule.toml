@@ -1,0 +1,19 @@
+id = "conventional-commits"
+code = "BTPROC003"
+standard = "CES-75"
+summary = "Every commit subject follows Conventional Commits"
+status = "preview"
+tags = ["commits"]
+scope = "commit"
+needs = "bytes"
+run-on = ["cli"]
+default-enabled = false
+default-severity = "error"
+
+[options]
+types = { type = "strings", default = ["feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore", "revert"] }
+exempt = { type = "strings", default = ["Merge ", "Revert ", "fixup! "] }
+
+[[implementations]]
+kind = "native"
+languages = ["*"]

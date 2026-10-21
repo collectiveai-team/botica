@@ -3,6 +3,9 @@ use std::fmt;
 
 use botica_catalog::{Catalog, Kind};
 
+use crate::commit::{
+    ConventionalCommits, MessageRule, NoAiCoauthorship, CONVENTIONAL_COMMITS, NO_AI_COAUTHORSHIP,
+};
 use crate::coverage::{NoCoverageExclusion, NO_COVERAGE_EXCLUSION};
 use crate::env_schema::SETTINGS_ENV_SCHEMA;
 use crate::external_config::EXTERNAL_CONFIG;
@@ -38,9 +41,34 @@ enum Provider {
     /// the run once for the whole project (`external-config`, `settings-env-schema`,
     /// `import-layers`).
     Engine,
+    /// A rule of scope `commit`, which reads a commit message.
+    Message {
+        make: fn(&Options) -> Box<dyn MessageRule>,
+    },
 }
 
-const NATIVES: [(&str, Provider); 14] = [
+const NATIVES: [(&str, Provider); 16] = [
+    (
+        CONVENTIONAL_COMMITS,
+        Provider::Message {
+            make: |options| {
+                Box::new(ConventionalCommits {
+                    types: strings(options, "types"),
+                    exempt: strings(options, "exempt"),
+                })
+            },
+        },
+    ),
+    (
+        NO_AI_COAUTHORSHIP,
+        Provider::Message {
+            make: |options| {
+                Box::new(NoAiCoauthorship {
+                    tools: strings(options, "tools"),
+                })
+            },
+        },
+    ),
     (
         "file-size-guard",
         Provider::Rule {
@@ -166,6 +194,14 @@ fn threshold(options: &Options, name: &str, default: usize) -> usize {
 pub fn build(slug: &str, options: &Options, context: &Context) -> Option<Box<dyn NativeRule>> {
     NATIVES.iter().find_map(|(name, provider)| match provider {
         Provider::Rule { make, .. } if *name == slug => Some(make(options, context)),
+        _ => None,
+    })
+}
+
+/// The rule of scope `commit` that `slug` names, set up with `options`; `None` for any other rule.
+pub fn build_message(slug: &str, options: &Options) -> Option<Box<dyn MessageRule>> {
+    NATIVES.iter().find_map(|(name, provider)| match provider {
+        Provider::Message { make } if *name == slug => Some(make(options)),
         _ => None,
     })
 }

@@ -1,0 +1,3 @@
+--commit-msg
+coauthor.txt
+attribution.txt

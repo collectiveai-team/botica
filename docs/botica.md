@@ -29,6 +29,9 @@ botica lint --diff origin/main     # the files changed since the merge base, and
                                    # the lines the change adds (ADR 0009); no result cache
 botica lint --staged               # the same for the changes staged against HEAD, read from the index
 botica lint --diff-file pr.diff    # the same for the changes of a unified diff
+botica lint --commit-msg "$1"      # the rules of scope commit over a commit message, and no file
+botica lint --commits origin/main..HEAD   # over each commit of the range (ADR 0010)
+botica lint --pr-title="$PR_TITLE" # over the title of a pull request
 botica rules                   # which rules are active, and why (--all adds the inactive ones), the
                                # programs that `botica lint` runs and the tools that enforce rules
                                # outside it; --json adds the kind of each implementation

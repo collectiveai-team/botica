@@ -132,6 +132,7 @@ impl Resolution {
         let name = match scope {
             Scope::File => "file",
             Scope::Project => "project",
+            Scope::Commit => "commit",
         };
         for entry in self.entries.iter_mut().filter(|entry| entry.active) {
             if entry.rule.scope.is_some_and(|own| own != scope) {

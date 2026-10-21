@@ -26,6 +26,8 @@ pub enum Severity {
 pub enum Scope {
     File,
     Project,
+    /// A commit message, never a file (ADR 0010).
+    Commit,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]

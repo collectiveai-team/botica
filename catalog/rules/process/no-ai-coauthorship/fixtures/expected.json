@@ -1,0 +1,89 @@
+{
+  "diagnostics": [
+    {
+      "path": "coauthor.txt",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 39,
+          "line": 3,
+          "column": 1
+        },
+        "end": {
+          "offset": 85,
+          "line": 3,
+          "column": 47
+        }
+      },
+      "message": "`Co-authored-by: Claude <noreply@anthropic.com>` names an AI tool as a co-author or as the author of the change: remove the line, since the commit names the person who submits it."
+    },
+    {
+      "path": "attribution.txt",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 22,
+          "line": 3,
+          "column": 3
+        },
+        "end": {
+          "offset": 82,
+          "line": 3,
+          "column": 63
+        }
+      },
+      "message": "`Generated with [Claude Code](https://claude.com/claude-code)` names an AI tool as a co-author or as the author of the change: remove the line, since the commit names the person who submits it."
+    },
+    {
+      "path": "attribution.txt",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 83,
+          "line": 4,
+          "column": 1
+        },
+        "end": {
+          "offset": 106,
+          "line": 4,
+          "column": 24
+        }
+      },
+      "message": "`AI-Generated-By: Cursor` names an AI tool as a co-author or as the author of the change: remove the line, since the commit names the person who submits it."
+    },
+    {
+      "path": "attribution.txt",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 107,
+          "line": 5,
+          "column": 1
+        },
+        "end": {
+          "offset": 132,
+          "line": 5,
+          "column": 26
+        }
+      },
+      "message": "`Assisted-by: OpenAI Codex` names an AI tool as a co-author or as the author of the change: remove the line, since the commit names the person who submits it."
+    },
+    {
+      "path": "attribution.txt",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 133,
+          "line": 6,
+          "column": 1
+        },
+        "end": {
+          "offset": 161,
+          "line": 6,
+          "column": 29
+        }
+      },
+      "message": "`generated-by: GitHub Copilot` names an AI tool as a co-author or as the author of the change: remove the line, since the commit names the person who submits it."
+    }
+  ]
+}

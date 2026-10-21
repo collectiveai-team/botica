@@ -23,7 +23,7 @@ pub fn suppression_policy(resolution: &Arc<Resolution>) -> Policy {
             policy.with_judgment_rule(&entry.rule.id, &spellings)
         } else if entry.rule.has_extension() {
             policy.with_extension_rule(&entry.rule.id, &spellings, entry.active)
-        } else if entry.rule.scope == Some(Scope::Project) {
+        } else if matches!(entry.rule.scope, Some(Scope::Project | Scope::Commit)) {
             policy.with_project_rule(&entry.rule.id, &spellings)
         } else {
             policy.with_rule(&entry.rule.id, &spellings)

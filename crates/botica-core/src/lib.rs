@@ -1,4 +1,5 @@
 mod buffer;
+pub mod commit;
 mod coverage;
 mod diagnostic;
 pub mod diff;

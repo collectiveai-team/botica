@@ -22,6 +22,7 @@ mod git;
 mod import_layers;
 mod judged;
 mod lockfiles;
+mod messages;
 mod paths;
 mod project_files;
 mod settings_schema;
@@ -73,6 +74,19 @@ pub struct LintArgs {
     /// relative to the working directory.
     #[arg(long, value_name = "PATCH", group = "change")]
     diff_file: Option<PathBuf>,
+    /// Check the commit messages in these files, as git gives one to a `commit-msg` hook, with the
+    /// rules of scope `commit` instead of linting files.
+    #[arg(long, value_name = "FILE", num_args = 1.., group = "message",
+          conflicts_with_all = ["paths", "judged", "change", "ext"])]
+    commit_msg: Vec<PathBuf>,
+    /// Like `--commit-msg`, for the message of each commit of `git log <RANGE>`.
+    #[arg(long, value_name = "RANGE", group = "message",
+          conflicts_with_all = ["paths", "judged", "change", "ext"])]
+    commits: Option<String>,
+    /// Like `--commit-msg`, for the title of a pull request: `--pr-title="$PR_TITLE"`.
+    #[arg(long, value_name = "TITLE", group = "message",
+          conflicts_with_all = ["paths", "judged", "change", "ext"])]
+    pr_title: Option<String>,
     /// Files per `lint/files` request.
     #[arg(long, default_value_t = 256)]
     batch: usize,
@@ -129,6 +143,9 @@ impl LintArgs {
             diff: None,
             staged: false,
             diff_file: None,
+            commit_msg: Vec::new(),
+            commits: None,
+            pr_title: None,
             batch: 256,
             no_astgrep: false,
             no_prefilter: false,
@@ -272,6 +289,11 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     let total = Instant::now();
 
     let mut setup = Setup::build(&args)?;
+    if messages::asked(&args) {
+        let diagnostics = messages::findings(&args, &setup.resolution)?;
+        write_report(&args, format, &setup, &diagnostics, &[])?;
+        return Ok(exit_code(&[], &diagnostics, &args));
+    }
     let diff = Diff::read(&args)?;
     if let Some(sarif) = &args.judged {
         return run_judged(&args, format, &setup, sarif, diff.as_ref());

@@ -1,0 +1,5 @@
+--commit-msg
+no-type.txt
+unknown-type.txt
+upper-scope.txt
+no-space.txt
