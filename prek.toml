@@ -121,14 +121,15 @@ types = ["python"]
 pass_filenames = false
 priority = 2
 
-# MARK: complexipy
-# CES-110.
+# MARK: cognitive-complexity
+# The botica of the checkout, since the hooks of the mirror run 0.13.0, which lacks the rule. From
+# the next release, `select` of `[tool.botica]` lists it and this hook goes.
 [[repos.hooks]]
-id = "complexipy"
-name = "complexipy (cognitive complexity)"
-entry = "uvx complexipy --max-complexity-allowed 15"
+id = "botica-cognitive-complexity"
+name = "botica (cognitive-complexity)"
+entry = "cargo run --quiet --locked -p botica-cli -- lint --force-exclude --select cognitive-complexity"
 language = "system"
-types = ["python"]
+types_or = ["python", "rust", "go", "ts", "tsx"]
 priority = 2
 
 # MARK: jscpd
