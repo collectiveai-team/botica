@@ -20,6 +20,8 @@ __pycache__/
 *.svg
 !assets/botica-light.svg
 !assets/botica-dark.svg
+!assets/botica-light.png
+!assets/botica-dark.png
 !website/docs/assets/*.svg
 
 # rust (botica lint)

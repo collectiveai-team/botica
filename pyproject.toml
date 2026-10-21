@@ -7,15 +7,28 @@ build-backend = "maturin"
 [project]
 name = "botica"
 description = "Deterministic linter: the rules of its catalog and of a project"
+readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
 license-files = ["LICENSE"]
+authors = [{ name = "Lionel Chamorro" }, { name = "Raúl Barriga Rubio" }]
+keywords = ["linter", "standards", "pre-commit", "recipes", "ai-agents"]
 dynamic = ["version"]
 classifiers = [
     "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
     "Programming Language :: Rust",
     "Topic :: Software Development :: Quality Assurance",
 ]
+
+[project.urls]
+Homepage = "https://collectiveai-team.github.io/botica/"
+Documentation = "https://collectiveai-team.github.io/botica/"
+Repository = "https://github.com/collectiveai-team/botica"
+Issues = "https://github.com/collectiveai-team/botica/issues"
+Changelog = "https://github.com/collectiveai-team/botica/releases"
 
 # `botica[sdk]` is what an extension script declares to write its rule with `botica.sdk` and to
 # parse with ast-grep.
