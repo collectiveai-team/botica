@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-20T23:56:14Z",
+  "compiledAt": "2026-10-21T00:47:10Z",
   "compiledBy": "botica 0.13.0",
   "manual": true,
   "sources": [
@@ -133,7 +133,7 @@
         "type": "model",
         "question": {
           "type": "boolean",
-          "instructions": "Read each function of the file. Is there a function that decides the order of the steps of a task (calls, control flow) and also computes a rule of the domain and does the I/O of those steps itself? A function that only orders calls, one that carries out one step, and a file with no function or with only classes that declare data do not break the rule.",
+          "instructions": "Read each function of the file. Is there a function that decides the order of the steps of a task (calls, control flow) and also computes a rule of the domain and does the I/O of those steps itself? A function that only orders calls, one that carries out one step, and a file with no function or with only classes that declare data do not break the rule. A log call is not I/O. An entry point that reads its arguments, calls the steps, prints a summary and returns an exit code, and the loop of a transport that reads a message, dispatches it and writes the reply, only order calls.",
           "criteria": {
             "true": "a function mixes the order of the steps with the logic and the I/O of those steps",
             "false": "orchestration and the steps it calls live in separate functions, or the file declares data only"
@@ -215,7 +215,7 @@
         "type": "model",
         "question": {
           "type": "boolean",
-          "instructions": "Read the names of the modules, packages, classes and functions that the file defines or imports. Is one of them a synonym of a term of the house vocabulary (layers entrypoints, api, database, impl, core; ports and adapters), such as manager, handler, helper, processor, common, shared, persistence or dal? Names of the domain, of a library, and folders inside a layer such as routers, schemas, requests, responses, tests or fakes are not synonyms.",
+          "instructions": "Read the names of the modules, packages, classes and functions that the file defines or imports from the project. Answer true only when one of those units is named with a synonym of a term of the house vocabulary (layers entrypoints, api, database, impl, core; ports and adapters), such as manager, handler, helper, processor, common, shared, persistence or dal. These do not count: a word inside a string or in data, a local variable, a name imported from a library (`APILogHandler`, structlog `Processor`), a name of the domain, and folders inside a layer such as routers, schemas, requests, responses, tests or fakes.",
           "criteria": {
             "true": "a unit is named with a synonym of a term the vocabulary already has",
             "false": "no unit is named with a synonym of the vocabulary"
@@ -450,7 +450,7 @@
         "type": "model",
         "question": {
           "type": "boolean",
-          "instructions": "Read the prose of the file. Does it carry a sign of model writing: inflated significance, a trailing clause that judges, words that avoid is and has, definition by negation, a sentence that strings three items for rhythm, hedges and vague attribution, bold for emphasis, text addressed to the reader, or a claim with no source? Commands, code, lists of names and a bulleted list of cases are not prose.",
+          "instructions": "Read the prose of the file. Does it carry a sign of model writing: inflated significance, a trailing clause that judges, words that avoid is and has, definition by negation, a sentence that strings three items for rhythm, hedges and vague attribution, bold for emphasis, text addressed to the reader, or a claim with no source? Commands, code, lists of names and a bulleted list of cases are not prose, and the bold label at the start of each decision or option of an ADR is not bold for emphasis.",
           "criteria": {
             "true": "the prose carries one or more of the signs",
             "false": "the prose is plain and carries none of the signs"
@@ -657,7 +657,7 @@
         "type": "model",
         "question": {
           "type": "boolean",
-          "instructions": "Read the comments of the file and the code next to them. Leave out first the comments that never break the rule: a comment whose text starts with `MARK:`, which botica and editors read as the start of a section; a suppression; a docstring of a public interface or of a module; and an option of a template left commented out under a comment that says how to turn it on. Of the comments left, does one repeat what the next lines say, name a section of the file, keep code commented out or tell the history of a change? A comment that gives the reason for a choice, an invariant the types do not show or a workaround with the link to its cause does not break the rule. Attributes such as `#[test]` are not comments. A file with no comment left does not break the rule.",
+          "instructions": "Read the comments of the file and the code next to them. Leave out first the comments that never break the rule: a comment whose text starts with `MARK:`, which botica and editors read as the start of a section; a header that describes the whole file; a doc comment or docstring of any item; the code of a standard cited alone; a directive that a tool reads (a suppression, `zizmor: ignore`, `noqa`); and an option of a template left commented out under a comment that says how to turn it on. Of the comments left, does one repeat what the next lines say, name a section of the file, keep code commented out or tell the history of a change? A comment that gives the reason for a choice that looks wrong, an invariant the types do not show or a workaround with the link to its cause does not break the rule, however many such comments the file has. Attributes such as `#[test]` are not comments. A file with no comment left does not break the rule.",
           "criteria": {
             "true": "a comment repeats the code, names a section, keeps old code or tells the history of a change",
             "false": "every comment says something the code cannot, or the file has none"
@@ -809,7 +809,7 @@
         "type": "model",
         "question": {
           "type": "boolean",
-          "instructions": "Read the names and the prose of the file. Does it give one concept of the domain two or more names, such as a parameter `client` of type `Customer` next to an `account` of the same type, or a name that the glossary of the project (GLOSSARY.md) says to avoid, when the glossary is in view? Terms of programming and names of a library are not terms of the domain.",
+          "instructions": "Read the names and the prose of the file. Does it give one concept of the domain two or more names, such as a parameter `client` of type `Customer` next to an `account` of the same type, or a name that the glossary of the project (GLOSSARY.md) says to avoid, when the glossary is in view? Terms of programming and names of a library are not terms of the domain. A document that shows a violation as an example, such as the `Don't` section of a rule, does not commit it.",
           "criteria": {
             "true": "a concept has two names, or a name the glossary says to avoid",
             "false": "each concept has one term, the one of the glossary"

@@ -16,5 +16,5 @@ why-not-deterministic = "Whether two words name the same concept of the domain d
 
 [implementations.question]
 type = "boolean"
-instructions = "Read the names and the prose of the file. Does it give one concept of the domain two or more names, such as a parameter `client` of type `Customer` next to an `account` of the same type, or a name that the glossary of the project (GLOSSARY.md) says to avoid, when the glossary is in view? Terms of programming and names of a library are not terms of the domain."
+instructions = "Read the names and the prose of the file. Does it give one concept of the domain two or more names, such as a parameter `client` of type `Customer` next to an `account` of the same type, or a name that the glossary of the project (GLOSSARY.md) says to avoid, when the glossary is in view? Terms of programming and names of a library are not terms of the domain. A document that shows a violation as an example, such as the `Don't` section of a rule, does not commit it."
 criteria = { true = "a concept has two names, or a name the glossary says to avoid", false = "each concept has one term, the one of the glossary" }

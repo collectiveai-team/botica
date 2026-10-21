@@ -18,6 +18,7 @@ With one word for each concept, a reader or an agent finds a unit by its name, a
 - A name that a framework or a library imposes, such as an exception handler of FastAPI.
 - A concept that is new to the vocabulary and is added to it.
 - The tests and their fixtures.
+- A word inside a string or in data, and a local variable.
 
 ## Confirm
 

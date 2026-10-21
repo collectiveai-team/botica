@@ -17,5 +17,5 @@ why-not-deterministic = "Nesting depth and length are measured elsewhere; whethe
 
 [implementations.question]
 type = "boolean"
-instructions = "Read each function of the file. Is there a function that decides the order of the steps of a task (calls, control flow) and also computes a rule of the domain and does the I/O of those steps itself? A function that only orders calls, one that carries out one step, and a file with no function or with only classes that declare data do not break the rule."
+instructions = "Read each function of the file. Is there a function that decides the order of the steps of a task (calls, control flow) and also computes a rule of the domain and does the I/O of those steps itself? A function that only orders calls, one that carries out one step, and a file with no function or with only classes that declare data do not break the rule. A log call is not I/O. An entry point that reads its arguments, calls the steps, prints a summary and returns an exit code, and the loop of a transport that reads a message, dispatches it and writes the reply, only order calls."
 criteria = { true = "a function mixes the order of the steps with the logic and the I/O of those steps", false = "orchestration and the steps it calls live in separate functions, or the file declares data only" }

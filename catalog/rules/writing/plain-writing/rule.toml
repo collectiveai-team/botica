@@ -16,5 +16,5 @@ why-not-deterministic = "A word list finds the vocabulary, but whether a clause 
 
 [implementations.question]
 type = "boolean"
-instructions = "Read the prose of the file. Does it carry a sign of model writing: inflated significance, a trailing clause that judges, words that avoid is and has, definition by negation, a sentence that strings three items for rhythm, hedges and vague attribution, bold for emphasis, text addressed to the reader, or a claim with no source? Commands, code, lists of names and a bulleted list of cases are not prose."
+instructions = "Read the prose of the file. Does it carry a sign of model writing: inflated significance, a trailing clause that judges, words that avoid is and has, definition by negation, a sentence that strings three items for rhythm, hedges and vague attribution, bold for emphasis, text addressed to the reader, or a claim with no source? Commands, code, lists of names and a bulleted list of cases are not prose, and the bold label at the start of each decision or option of an ADR is not bold for emphasis."
 criteria = { true = "the prose carries one or more of the signs", false = "the prose is plain and carries none of the signs" }

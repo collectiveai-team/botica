@@ -16,7 +16,10 @@ A function that fetches, branches, computes and writes at once has no seam for a
 
 - A short function that calls one adapter and returns its result.
 - A pure function that computes one thing, however many branches it has.
-- An entry point that parses its arguments and calls one orchestrator.
+- An entry point that parses its arguments and calls one orchestrator, or calls the steps, prints
+  a summary and returns an exit code.
+- The loop of a transport that reads a message, dispatches it and writes the reply.
+- A log call, which is not the I/O of a step.
 
 ## Confirm
 

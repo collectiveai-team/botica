@@ -22,7 +22,11 @@ A reader acts on what a page says. A sentence that inflates, hedges or claims wi
 
 - A quotation, which keeps its words.
 - A negation that states a fact a reader needs: "the hook does not run on merge commits".
-- Bold in a table header or a term defined in a glossary.
+- Bold in a table header or a term defined in a glossary, and the bold label at the start of each
+  decision or option of an ADR.
+- A list of named, distinct things (tools, features, steps), and reasoning about cause and effect.
+- A claim that names its source: a tool, a standard, a file or a link.
+- An instruction to an agent, a command, and the bad example under `Don't`.
 - A generated file, such as a lockfile or a schema.
 
 ## Confirm
