@@ -16,6 +16,7 @@ judgment = [
   "test-in-memory-adapters",
   "test-through-interface",
   "test-coverage-gap",
+  "coverage-exclusion-reachable",
   "plain-writing",
   "minimal-comments",
   "ubiquitous-language",

@@ -1,7 +1,7 @@
 id = "test-coverage-gap"
 code = "BTTEST003"
 standard = "CES-66"
-summary = "A coverage gap is closed with a test or a deletion, not hidden"
+summary = "A coverage gap is closed with a test that asserts a behaviour"
 status = "preview"
 tags = ["tests", "coverage"]
 default-enabled = false
@@ -11,9 +11,9 @@ default-severity = "warning"
 kind = "judgment"
 languages = ["*"]
 when = "pull-request"
-why-not-deterministic = "A `# pragma: no cover` or an `omit` is visible in the diff, but whether it hides a branch that a test should reach or marks code that cannot run under test needs the code around it."
+why-not-deterministic = "A test with no `assert` is visible, but whether a test asserts the behaviour of the code it runs, through a helper, a fixture or a check of what it raises, needs the code of the test and of what it calls."
 
 [implementations.question]
 type = "boolean"
-instructions = "Read the title, the description and the diff of the pull request. Does it hide a coverage gap (a new `pragma: no cover`, an `omit` or `exclude_lines` of coverage, a lower threshold) or add a test that runs lines without asserting a behaviour, instead of closing the gap with a test or by deleting dead code? A change that does not touch coverage does not break the rule."
-criteria = { true = "the change hides a gap or adds a test that runs lines without asserting a behaviour", false = "the change closes coverage gaps with tests or deletions, or does not touch coverage" }
+instructions = "Read the title, the description and the diff of the pull request. Does it add or change a test that runs code without asserting a behaviour: no assertion, or only that no exception was raised or that the result is not `None`? A test that asserts on what the code returns, raises, writes or sends, and a change that does not touch tests, do not break the rule."
+criteria = { true = "the change adds a test that runs code without asserting a behaviour", false = "every test the change adds asserts a behaviour, or the change does not touch tests" }

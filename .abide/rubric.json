@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-21T02:52:29Z",
+  "compiledAt": "2026-10-21T02:54:39Z",
   "compiledBy": "botica 0.13.0",
   "manual": true,
   "sources": [
@@ -427,6 +427,7 @@
         "catalog/rules/structure/no-notebooks/README.md",
         "catalog/rules/structure/no-tests-in-package/README.md",
         "catalog/rules/structure/no-utils/README.md",
+        "catalog/rules/testing/coverage-exclusion-reachable/README.md",
         "catalog/rules/testing/no-coverage-exclusion/README.md",
         "catalog/rules/testing/no-coverage-pragma/README.md",
         "catalog/rules/testing/test-coverage-gap/README.md",
@@ -613,6 +614,7 @@
         "catalog/rules/structure/no-tests-in-package/rule.toml",
         "catalog/rules/structure/no-utils/rule.toml",
         "catalog/rules/testing/family.toml",
+        "catalog/rules/testing/coverage-exclusion-reachable/rule.toml",
         "catalog/rules/testing/no-coverage-exclusion/rule.toml",
         "catalog/rules/testing/no-coverage-pragma/python.yml",
         "catalog/rules/testing/no-coverage-pragma/rule.toml",
@@ -754,6 +756,7 @@
         "catalog/rules/structure/no-notebooks/README.md",
         "catalog/rules/structure/no-tests-in-package/README.md",
         "catalog/rules/structure/no-utils/README.md",
+        "catalog/rules/testing/coverage-exclusion-reachable/README.md",
         "catalog/rules/testing/no-coverage-exclusion/README.md",
         "catalog/rules/testing/no-coverage-pragma/README.md",
         "catalog/rules/testing/test-coverage-gap/README.md",

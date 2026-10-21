@@ -1,0 +1,8 @@
+build(cli): run the importer as a script
+
+--- a/app/importer.py
++++ b/app/importer.py
+@@ -20,0 +21,3 @@
++
++if __name__ == "__main__":  # pragma: no cover
++    main(sys.argv[1:])

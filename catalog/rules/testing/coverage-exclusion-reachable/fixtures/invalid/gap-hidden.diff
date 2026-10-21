@@ -9,6 +9,6 @@ chore(coverage): reach 90%
          return 0
 --- a/pyproject.toml
 +++ b/pyproject.toml
-@@ -40,2 +40,3 @@
+@@ -40,1 +40,2 @@
  [tool.coverage.run]
 +omit = ["app/core/pricing.py"]

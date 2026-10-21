@@ -1,27 +1,25 @@
 ## Directive
 
-A change closes a coverage gap with a test through the interface or by deleting dead code. It does not hide the gap with `# pragma: no cover`, an `omit` of coverage or a lower threshold, and adds no test that runs the lines without asserting a behaviour.
+A change closes a coverage gap with a test that asserts a behaviour, or by deleting dead code. It adds no test that runs the lines without asserting what they do.
 
 ## Why
 
-A percentage is easy to raise without testing anything, and it says little. The uncovered line is where a bug hides, so the gap is the signal: it leads to a real test or to the deletion of code that should not exist.
+A percentage is easy to raise without testing anything, and it says little. A test that calls code and asserts nothing marks its lines as covered, and a bug on them stays unseen: the gap is still there, and the report no longer shows it.
 
 ## Flag
 
-- A `# pragma: no cover` on a branch that a test could reach.
-- A file added to `omit` or a pattern to `exclude_lines` of coverage, with no reason given.
-- A test that calls code and asserts nothing, or asserts only that no exception was raised.
-- A lower `fail_under`.
+- A test that calls code and asserts nothing.
+- A test whose only assertion is that no exception was raised, or that the result is not `None`.
 
 ## Do not flag
 
-- `# pragma: no cover` on code that cannot run under test, such as an `if __name__ == "__main__":` block or a branch for another platform.
-- Generated code left out of coverage.
-- A change that deletes dead code and the coverage it had.
+- A test that asserts on what the code returns, raises, writes or sends.
+- A test of a function whose behaviour is to raise or to return nothing, that asserts on that.
+- A change that does not add or change tests.
 
 ## Confirm
 
-Before reporting, check whether a test through the public interface could reach the excluded code.
+Before reporting, check that no assertion of the test, its fixtures or a helper it calls reads the result of the code under test.
 
 ## Do
 
@@ -33,10 +31,8 @@ def test_an_empty_order_costs_nothing():
 ## Don't
 
 ```python
-def total(order):
-    if not order.items:  # pragma: no cover
-        return 0
-    return sum(item.price for item in order.items)
+def test_total_runs():
+    total(Order(items=[]))
 ```
 
 ## Suppression
