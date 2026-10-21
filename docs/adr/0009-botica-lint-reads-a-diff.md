@@ -1,6 +1,6 @@
 # botica lint reads a diff
 
-**Status:** proposed
+**Status:** accepted
 
 `botica lint` reads the files as they are. Two rules of the plan need what changed: CES-66 reports
 a `# pragma: no cover` or an exclusion of coverage that a change adds and a `fail_under` that a
