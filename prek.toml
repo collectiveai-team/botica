@@ -165,7 +165,7 @@ hooks = [{ id = "agnix", args = [], priority = 2 }]
 # Selection and exclusions: `[tool.botica]` of `pyproject.toml`.
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
-rev = "v0.14.1"
+rev = "v0.14.2"
 
 [[repos.hooks]]
 id = "botica"
