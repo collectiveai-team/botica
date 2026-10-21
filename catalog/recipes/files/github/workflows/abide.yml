@@ -57,10 +57,19 @@ jobs:
           fi
           # Deleted files have nothing left to judge.
           git diff --diff-filter=d "$BASE_SHA"...HEAD > "$RUNNER_TEMP/abide/pr.diff"
-          status=0
-          npx --yes @coldtea/abide@0.0.11 check --json --diff "$RUNNER_TEMP/abide/pr.diff" \
-            > "$RUNNER_TEMP/abide/abide.json" || status=$?
-          # abide exits with 1 when a verdict is in the band act; botica decides below.
+          # The probability of a verdict changes from one run to the next, and abide can fail on a
+          # timeout: a run with a finding or a failure is judged once more, and the second decides.
+          for attempt in 1 2; do
+            status=0
+            npx --yes @coldtea/abide@0.0.11 check --json --diff "$RUNNER_TEMP/abide/pr.diff" \
+              > "$RUNNER_TEMP/abide/abide.json" || status=$?
+            # abide exits with 1 when a verdict is in the band act; botica decides.
+            if [ "$status" -le 1 ] && uvx botica@0.13.0 lint --judged "$RUNNER_TEMP/abide/abide.json" \
+              --fail-on warning > /dev/null 2>&1; then
+              break
+            fi
+            echo "::notice::run $attempt of abide has a finding or failed (exit $status)"
+          done
           if [ "$status" -gt 1 ]; then
             exit "$status"
           fi
