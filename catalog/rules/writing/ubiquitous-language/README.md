@@ -28,7 +28,7 @@ Before reporting a synonym, read the glossary entry and check that both words na
 def invoice_for(customer: Customer) -> Invoice: ...
 ```
 
-with `GLOSSARY.md` listing **Customer** and `client, buyer` as words to avoid.
+with `GLOSSARY.md` listing `Customer` and `client, buyer` as words to avoid.
 
 ## Don't
 

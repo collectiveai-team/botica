@@ -1,6 +1,6 @@
 ## Directive
 
-Tests live in a `tests/` directory **beside** the package, not in it. Inside a Python package, a
+Tests live in a `tests/` directory beside the package, not in it. Inside a Python package, a
 Python file under a `tests/` or `test/` directory, a `test_*.py` or `*_test.py` file and a
 `conftest.py` are errors. A non-Python file under `tests/` (the end-to-end tests of a web app that
 ships inside the package, say) is not.

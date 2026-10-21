@@ -4,7 +4,7 @@ Tests call the unit under test through the public interface that production code
 
 ## Why
 
-A test bound to internals breaks on each refactor that keeps the behaviour, and people learn to delete tests instead of trusting them. A test through the interface survives the refactor and protects the contract. When a behaviour cannot be seen without the internals, the interface is missing a query.
+A test bound to internals fails on each refactor that keeps the behaviour, and a test that fails with no change of behaviour gets deleted. A test through the interface passes after the refactor and checks the contract. When a behaviour cannot be seen without the internals, the interface is missing a query.
 
 ## Flag
 

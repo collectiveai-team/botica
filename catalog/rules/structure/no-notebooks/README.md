@@ -1,6 +1,6 @@
 ## Directive
 
-A Jupyter notebook (`*.ipynb`) inside the **code of a project** is an error. Keep notebooks beside
+A Jupyter notebook (`*.ipynb`) inside the code of a project is an error. Keep notebooks beside
 the code, in a `notebooks/` directory of their own.
 
 The code of a project is its `code-dirs`: the `code-dirs` setting, or else what is detected from

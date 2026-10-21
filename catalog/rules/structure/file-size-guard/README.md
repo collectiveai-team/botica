@@ -1,14 +1,14 @@
 ## Directive
 
-Keep source files small. A file with **400 lines or more** gets a warning; **700 or more** is an
+Keep source files small. A file with 400 lines or more gets a warning; 700 or more is an
 error. Split a module along a real seam before it crosses the hard limit.
 
 ## Why
 
-- File length is a cheap proxy for too many responsibilities. A 700-line module almost always
-  hides several modules that want to be separate.
-- A persistently oversized file is a design smell. The fix is to extract a cohesive unit, not to
-  raise the threshold.
+- The length of a file is a cheap measure of how many responsibilities its module holds. A
+  700-line module holds several units that can each be a module.
+- An oversized file is fixed by extracting a cohesive unit. Raising the threshold leaves the
+  module as it was.
 
 ## Exceptions
 
