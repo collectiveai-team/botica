@@ -1,9 +1,10 @@
 //! `botica recipe check`: how the project differs from a recipe.
 
+use std::path::Path;
 use std::process::ExitCode;
 
 use anyhow::Result;
-use botica_catalog::Kind;
+use botica_catalog::{Kind, ResolvedRecipe};
 
 use crate::project::ProjectArgs;
 use crate::recipes_check_fragments as fragments;
@@ -45,78 +46,97 @@ pub fn run(collection: &Collection, names: &[String], project: &ProjectArgs) -> 
     }
     let root = collection.project.loaded.root.as_path();
     let mut report = Report::default();
-    for item in &resolved.rules {
-        report.add("rule", &item.id, rule_problem(collection, &item.id, false));
-    }
-    for item in &resolved.judgment {
-        report.add(
-            "judgment rule",
-            &item.id,
-            rule_problem(collection, &item.id, true),
-        );
-    }
-    for item in &resolved.rules {
-        for (id, problem) in fragments::of_rule(collection, &item.id, root) {
-            report.add("fragment", &id, problem);
+    report.check_rules(collection, &resolved, project, root);
+    report.check_steps(&resolved, root);
+    Ok(report.print(&resolved.id))
+}
+
+impl Report {
+    /// Checks the rules, the judgment rules, the fragments of the external rules and the exports.
+    fn check_rules(
+        &mut self,
+        collection: &Collection,
+        resolved: &ResolvedRecipe,
+        project: &ProjectArgs,
+        root: &Path,
+    ) {
+        for item in &resolved.rules {
+            self.add("rule", &item.id, rule_problem(collection, &item.id, false));
+        }
+        for item in &resolved.judgment {
+            self.add(
+                "judgment rule",
+                &item.id,
+                rule_problem(collection, &item.id, true),
+            );
+        }
+        for item in &resolved.rules {
+            for (id, problem) in fragments::of_rule(collection, &item.id, root) {
+                self.add("fragment", &id, problem);
+            }
+        }
+        for item in &resolved.exports {
+            let problem = rules_export::check_export(&item.id, project)
+                .err()
+                .map(|error| error.to_string());
+            self.add("export", &item.id, problem);
         }
     }
-    for item in &resolved.exports {
-        let problem = rules_export::check_export(&item.id, project)
-            .err()
-            .map(|error| error.to_string());
-        report.add("export", &item.id, problem);
-    }
-    for item in &resolved.files {
-        report.add("file", &item.path, steps::file(root, &item.path));
-    }
-    for item in &resolved.sections {
-        let id = format!("{} `{}`", item.path, item.marker);
-        report.add(
-            "section",
-            &id,
-            steps::section(root, &item.path, &item.marker),
-        );
-    }
-    for item in &resolved.links {
-        report.add(
-            "link",
-            &item.path,
-            steps::link(root, &item.path, &item.target),
-        );
-    }
-    for item in &resolved.gitignore {
-        report.add("gitignore", &item.id, steps::gitignore_line(root, &item.id));
-    }
-    for item in &resolved.unignore {
-        report.add("unignore", &item.id, steps::unignored(root, &item.id));
-    }
-    if !resolved.tools.is_empty() {
-        let pyproject = Pyproject::read(root);
-        for item in &resolved.tools {
-            report.add("tool", &item.package, pyproject.problem(&item.package));
+
+    /// Checks the files, sections, links, lines of `.gitignore`, tools and skills.
+    fn check_steps(&mut self, resolved: &ResolvedRecipe, root: &Path) {
+        for item in &resolved.files {
+            self.add("file", &item.path, steps::file(root, &item.path));
+        }
+        for item in &resolved.sections {
+            let id = format!("{} `{}`", item.path, item.marker);
+            self.add(
+                "section",
+                &id,
+                steps::section(root, &item.path, &item.marker),
+            );
+        }
+        for item in &resolved.links {
+            self.add(
+                "link",
+                &item.path,
+                steps::link(root, &item.path, &item.target),
+            );
+        }
+        for item in &resolved.gitignore {
+            self.add("gitignore", &item.id, steps::gitignore_line(root, &item.id));
+        }
+        for item in &resolved.unignore {
+            self.add("unignore", &item.id, steps::unignored(root, &item.id));
+        }
+        if !resolved.tools.is_empty() {
+            let pyproject = Pyproject::read(root);
+            for item in &resolved.tools {
+                self.add("tool", &item.package, pyproject.problem(&item.package));
+            }
+        }
+        if !resolved.skills.is_empty() {
+            let lock = steps::Lock::read(root);
+            for item in &resolved.skills {
+                self.add("skill", &item.name, steps::skill(root, &lock, &item.name));
+            }
         }
     }
-    if !resolved.skills.is_empty() {
-        let lock = steps::Lock::read(root);
-        for item in &resolved.skills {
-            report.add("skill", &item.name, steps::skill(root, &lock, &item.name));
+
+    /// Prints the lines and the summary of the recipe `id`: the command fails when a line differs.
+    fn print(&self, id: &str) -> ExitCode {
+        for line in &self.lines {
+            println!("{line}");
+        }
+        let differ = self.differ;
+        let verb = if differ == 1 { "differs" } else { "differ" };
+        println!("{id}: {} checked, {differ} {verb}", self.lines.len());
+        if differ == 0 {
+            ExitCode::SUCCESS
+        } else {
+            ExitCode::from(1)
         }
     }
-    for line in &report.lines {
-        println!("{line}");
-    }
-    let differ = report.differ;
-    let verb = if differ == 1 { "differs" } else { "differ" };
-    println!(
-        "{}: {} checked, {differ} {verb}",
-        resolved.id,
-        report.lines.len()
-    );
-    Ok(if differ == 0 {
-        ExitCode::SUCCESS
-    } else {
-        ExitCode::from(1)
-    })
 }
 
 /// Why the project does not run the rule `key` as the recipe lists it, if it does not.

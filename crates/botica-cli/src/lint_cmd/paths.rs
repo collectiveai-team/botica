@@ -43,35 +43,48 @@ fn reach(args: &LintArgs, setup: &Setup, root: &Path, overlapped: bool) -> Reach
         if args.force_exclude && named_and_excluded(&setup.engine, root, path) {
             continue;
         }
-        if !path.is_dir() {
-            match std::fs::File::open(path) {
-                Ok(_) => reached.named.push(path.clone()),
-                Err(error) if setup.io_error_active => {
-                    reached.io_errors.push(io_error(&named(root, path), &error))
-                }
-                Err(_) => {}
-            }
+        if path.is_dir() {
+            reached.add_dir(setup, root, path, overlapped);
         } else {
-            let asked_for = if overlapped {
-                let walked = walk::walk_and_lint(&setup.engine, root, path);
-                reached.walked.read += walked.read;
-                reached.walked.diagnostics.extend(walked.diagnostics);
-                reached.walked.unreadable.extend(walked.unreadable);
-                walked.asked_for
-            } else {
-                let listed = walk::discover(path, root, &setup.engine);
-                reached.named.extend(listed.paths);
-                reached.walked.unreadable.extend(listed.unreadable);
-                listed.asked_for
-            };
-            if setup.engine.has_inclusion() {
-                let more = walk::walk_asked_for(path, root, &setup.engine, &asked_for);
-                reached.named.extend(more.paths);
-                reached.walked.unreadable.extend(more.unreadable);
-            }
+            reached.add_file(setup, root, path);
         }
     }
     reached
+}
+
+impl Reached {
+    /// Keeps the file `path` to be linted, or the error of opening it.
+    fn add_file(&mut self, setup: &Setup, root: &Path, path: &Path) {
+        match std::fs::File::open(path) {
+            Ok(_) => self.named.push(path.to_path_buf()),
+            Err(error) if setup.io_error_active => {
+                self.io_errors.push(io_error(&named(root, path), &error))
+            }
+            Err(_) => {}
+        }
+    }
+
+    /// Walks the directory `path`: lints it in the same pass when `overlapped`, else lists its
+    /// files; then adds the files that the inclusions ask for.
+    fn add_dir(&mut self, setup: &Setup, root: &Path, path: &Path, overlapped: bool) {
+        let asked_for = if overlapped {
+            let walked = walk::walk_and_lint(&setup.engine, root, path);
+            self.walked.read += walked.read;
+            self.walked.diagnostics.extend(walked.diagnostics);
+            self.walked.unreadable.extend(walked.unreadable);
+            walked.asked_for
+        } else {
+            let listed = walk::discover(path, root, &setup.engine);
+            self.named.extend(listed.paths);
+            self.walked.unreadable.extend(listed.unreadable);
+            listed.asked_for
+        };
+        if setup.engine.has_inclusion() {
+            let more = walk::walk_asked_for(path, root, &setup.engine, &asked_for);
+            self.named.extend(more.paths);
+            self.walked.unreadable.extend(more.unreadable);
+        }
+    }
 }
 
 /// Where the result cache lives, if there is one: the directory asked for, or `.botica/cache`

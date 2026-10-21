@@ -46,6 +46,28 @@ fn add(root: &Path, group: &str, packages: &[&str]) -> (String, Option<String>) 
     (label, reason)
 }
 
+/// Runs `uv add` for each group of the `missing` tools, and again for each package when a call for
+/// several packages fails: the label and the failure of the call that settled each package.
+fn add_missing<'a>(
+    root: &Path,
+    missing: &[&'a ResolvedTool],
+) -> BTreeMap<(&'a str, &'a str), (String, Option<String>)> {
+    let mut attempts = BTreeMap::new();
+    for (group, packages) in calls(missing) {
+        let (label, reason) = add(root, group, &packages);
+        if reason.is_some() && packages.len() > 1 {
+            for package in &packages {
+                attempts.insert((group, *package), add(root, group, &[package]));
+            }
+        } else {
+            for package in &packages {
+                attempts.insert((group, *package), (label.clone(), reason.clone()));
+            }
+        }
+    }
+    attempts
+}
+
 /// Adds the packages that are missing and says, for each package in order, whether it was there,
 /// was added, or is still missing after the call. A call that fails for a group of several packages
 /// is made again for each package, so that one that does not exist does not fail the others.
@@ -67,19 +89,7 @@ pub fn install(root: &Path, tools: &[ResolvedTool]) -> Vec<Outcome> {
         .filter(|(_, problem)| problem.is_some())
         .map(|(tool, _)| tool)
         .collect();
-    let mut attempts: BTreeMap<(&str, &str), (String, Option<String>)> = BTreeMap::new();
-    for (group, packages) in calls(&missing) {
-        let (label, reason) = add(root, group, &packages);
-        if reason.is_some() && packages.len() > 1 {
-            for package in &packages {
-                attempts.insert((group, package), add(root, group, &[package]));
-            }
-        } else {
-            for package in &packages {
-                attempts.insert((group, package), (label.clone(), reason.clone()));
-            }
-        }
-    }
+    let attempts = add_missing(root, &missing);
     let after = Pyproject::read(root);
     tools
         .iter()

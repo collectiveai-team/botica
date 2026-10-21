@@ -33,79 +33,52 @@ pub fn count_line(recipe: &Recipe) -> Option<String> {
 /// The sections of `botica recipe show` for the steps, each one when the recipe has any.
 pub fn steps_text(resolved: &ResolvedRecipe) -> String {
     let mut text = String::new();
-    if !resolved.agents.is_empty() {
-        text.push_str("## Agents\n\n");
-        for agent in &resolved.agents {
-            let _ = writeln!(text, "- {} (from {})", agent.id, agent.from);
-        }
-        text.push('\n');
-    }
-    if !resolved.skills.is_empty() {
-        text.push_str("## Skills\n\n");
-        for skill in &resolved.skills {
-            let _ = writeln!(
-                text,
-                "- {} ({}, from {})",
-                skill.name, skill.source, skill.from
-            );
-        }
-        text.push('\n');
-    }
-    if !resolved.files.is_empty() {
-        text.push_str("## Files\n\n");
-        for file in &resolved.files {
-            let _ = writeln!(
-                text,
-                "- {} (template {}, from {})",
-                file.path, file.template, file.from
-            );
-        }
-        text.push('\n');
-    }
-    if !resolved.sections.is_empty() {
-        text.push_str("## Sections\n\n");
-        for section in &resolved.sections {
-            let _ = writeln!(
-                text,
-                "- {}, `{}` (template {}, from {})",
-                section.path, section.marker, section.template, section.from
-            );
-        }
-        text.push('\n');
-    }
-    if !resolved.links.is_empty() {
-        text.push_str("## Links\n\n");
-        for link in &resolved.links {
-            let _ = writeln!(
-                text,
-                "- {} -> {} (from {})",
-                link.path, link.target, link.from
-            );
-        }
-        text.push('\n');
-    }
+    push_section(&mut text, "Agents", &resolved.agents, |agent| {
+        format!("{} (from {})", agent.id, agent.from)
+    });
+    push_section(&mut text, "Skills", &resolved.skills, |skill| {
+        format!("{} ({}, from {})", skill.name, skill.source, skill.from)
+    });
+    push_section(&mut text, "Files", &resolved.files, |file| {
+        format!(
+            "{} (template {}, from {})",
+            file.path, file.template, file.from
+        )
+    });
+    push_section(&mut text, "Sections", &resolved.sections, |section| {
+        format!(
+            "{}, `{}` (template {}, from {})",
+            section.path, section.marker, section.template, section.from
+        )
+    });
+    push_section(&mut text, "Links", &resolved.links, |link| {
+        format!("{} -> {} (from {})", link.path, link.target, link.from)
+    });
     for (title, items) in [
         ("Gitignore", &resolved.gitignore),
         ("Unignore", &resolved.unignore),
     ] {
-        if !items.is_empty() {
-            let _ = writeln!(text, "## {title}\n");
-            for item in items {
-                let _ = writeln!(text, "- {} (from {})", item.id, item.from);
-            }
-            text.push('\n');
-        }
+        push_section(&mut text, title, items, |item| {
+            format!("{} (from {})", item.id, item.from)
+        });
     }
-    if !resolved.tools.is_empty() {
-        text.push_str("## Tools\n\n");
-        for tool in &resolved.tools {
-            let _ = writeln!(
-                text,
-                "- {} ({}, group {}, from {})",
-                tool.package, tool.manager, tool.group, tool.from
-            );
-        }
-        text.push('\n');
-    }
+    push_section(&mut text, "Tools", &resolved.tools, |tool| {
+        format!(
+            "{} ({}, group {}, from {})",
+            tool.package, tool.manager, tool.group, tool.from
+        )
+    });
     text
+}
+
+/// Appends the section `title` with one line for each item, or nothing when there is no item.
+fn push_section<T>(text: &mut String, title: &str, items: &[T], line: impl Fn(&T) -> String) {
+    if items.is_empty() {
+        return;
+    }
+    let _ = writeln!(text, "## {title}\n");
+    for item in items {
+        let _ = writeln!(text, "- {}", line(item));
+    }
+    text.push('\n');
 }
