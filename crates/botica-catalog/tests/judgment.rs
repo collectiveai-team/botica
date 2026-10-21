@@ -2,7 +2,7 @@
 
 mod common;
 
-use botica_catalog::{Question, When};
+use botica_catalog::{Probability, Question, When};
 use common::{
     catalog, family, issues, judgment, judgment_implementation, rule, rule_with, BOOLEAN_QUESTION,
     JUDGMENT_FIELDS, NATIVE_ALL,
@@ -131,6 +131,7 @@ fn the_fields_of_a_judgment_belong_to_a_judgment_implementation_only() {
         "question = { type = \"boolean\", instructions = \"i\" }",
         "covered-by = [\"other\"]",
         "why-not-deterministic = \"x\"",
+        "act-at = 0.9",
     ] {
         let field = line.split(' ').next().expect("a field");
         let message = issues(vec![
@@ -149,6 +150,27 @@ fn the_fields_of_a_judgment_belong_to_a_judgment_implementation_only() {
                 "implementation 0: `{field}` applies to a judgment implementation only"
             )),
             "{field}: {message}"
+        );
+    }
+}
+
+#[test]
+fn act_at_is_a_probability_above_0_and_at_most_1() {
+    let with = |value: &str| {
+        judgment(
+            "",
+            &format!("{JUDGMENT_FIELDS}act-at = {value}\n{BOOLEAN_QUESTION}"),
+        )
+    };
+
+    let loaded = catalog(vec![with("0.85")]).unwrap_or_else(|error| panic!("{error}"));
+    let rule = loaded.resolve("test-through-interface").expect("the rule");
+    assert_eq!(rule.implementations[0].act_at, Some(Probability(0.85)));
+    for value in ["0", "1.5"] {
+        let message = issues(vec![with(value)]);
+        assert!(
+            message.contains("`act-at` is a probability above 0 and at most 1"),
+            "{value}: {message}"
         );
     }
 }

@@ -108,6 +108,10 @@ pub struct Implementation {
     #[serde(default)]
     pub covered_by: Vec<String>,
     pub why_not_deterministic: Option<String>,
+    /// The lowest probability of a verdict in the band `act` that `botica lint --judged` reports
+    /// with the severity of the rule; under it the verdict is reported as one the judge is unsure
+    /// of. abide sets one band for every rule, and a judge can be less sure of one rule.
+    pub act_at: Option<Probability>,
     /// The fields of an external implementation: the tool that enforces the rule, the address of
     /// its documentation, its codes, and the fragment of configuration it needs,
     /// `config/<file>.toml`.
@@ -120,6 +124,27 @@ pub struct Implementation {
     /// `rule.toml`).
     #[serde(skip)]
     pub source: Option<String>,
+}
+
+/// A probability of a judge, above 0 and at most 1.
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+#[serde(try_from = "f64")]
+pub struct Probability(pub f64);
+
+impl Eq for Probability {}
+
+impl TryFrom<f64> for Probability {
+    type Error = String;
+
+    fn try_from(value: f64) -> Result<Self, Self::Error> {
+        if value > 0.0 && value <= 1.0 {
+            Ok(Self(value))
+        } else {
+            Err(format!(
+                "`act-at` is a probability above 0 and at most 1, not {value}"
+            ))
+        }
+    }
 }
 
 /// The folder of a rule that holds the fragments of configuration of its external

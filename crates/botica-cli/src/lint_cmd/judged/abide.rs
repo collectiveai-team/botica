@@ -91,6 +91,7 @@ pub(super) fn findings(document: Value) -> Result<Vec<Found>> {
                 path: verdict.file.or_else(|| file.clone()).unwrap_or_default(),
                 region: None,
                 unsure: verdict.band == Band::Flag,
+                probability: Some(verdict.probability),
             });
         }
     }

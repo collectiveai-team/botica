@@ -128,6 +128,7 @@ fn check_deterministic(rule: &Rule, add: &mut impl FnMut(String)) {
                 "why-not-deterministic",
                 implementation.why_not_deterministic.is_some(),
             ),
+            ("act-at", implementation.act_at.is_some()),
         ];
         for (field, _) in judgment_fields.into_iter().filter(|(_, set)| *set) {
             add(format!(

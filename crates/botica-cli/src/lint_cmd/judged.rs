@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
+use botica_catalog::Probability;
 use botica_config::Resolution;
 use botica_core::{Diagnostic, Severity};
 use serde::Deserialize;
@@ -79,6 +80,27 @@ struct Found {
     region: Option<Region>,
     /// A finding the judge is unsure of: it is reported as info, whatever the rule's severity.
     unsure: bool,
+    /// The probability the judge gives the violation, when it gives one.
+    probability: Option<f64>,
+}
+
+impl Found {
+    /// A sure finding whose probability is under the `act-at` of its rule becomes one the judge is
+    /// unsure of.
+    fn under(mut self, act_at: Option<Probability>) -> Self {
+        if let (false, Some(probability), Some(Probability(act_at))) =
+            (self.unsure, self.probability, act_at)
+        {
+            if probability < act_at {
+                self.unsure = true;
+                self.note = Some(format!(
+                    "abide sees the change break it with probability {probability:.2}, under the \
+                     {act_at:.2} that the rule reports at"
+                ));
+            }
+        }
+        self
+    }
 }
 
 /// What botica keeps of a judge's findings, and the `ruleId`s it left out because they name no
@@ -134,6 +156,7 @@ fn from_sarif(document: Value) -> Result<Vec<Found>> {
                     .map_or_else(String::new, |p| path_of(&p.artifact_location.uri)),
                 region: physical.and_then(|p| p.region),
                 unsure: false,
+                probability: None,
             }
         })
         .collect())
@@ -211,6 +234,12 @@ pub fn filter(
             left_out.push(found.rule_id);
             continue;
         };
+        let act_at = entry
+            .rule
+            .implementations
+            .iter()
+            .find_map(|implementation| implementation.act_at);
+        let found = found.under(act_at);
         let kept = if found.unsure { &mut unsure } else { &mut sure };
         let finding = diagnostic(
             found,

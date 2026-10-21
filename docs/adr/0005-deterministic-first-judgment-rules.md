@@ -46,7 +46,7 @@ no check at all.
 
    | | Deterministic (`native`, `ast-grep`, `extension`) | `judgment` |
    |---|---|---|
-   | `rule.toml` | `scope`, `needs`, `run-on`, `options` | `files` and `ignores` (globs); on the implementation, `when` (`edit`, `turn` or `pull-request`), `question` (`boolean`, `choice` or `score`), `covered-by`, `why-not-deterministic` |
+   | `rule.toml` | `scope`, `needs`, `run-on`, `options` | `files` and `ignores` (globs); on the implementation, `when` (`edit`, `turn` or `pull-request`), `question` (`boolean`, `choice` or `score`), `covered-by`, `why-not-deterministic`, `act-at` |
    | README | Directive, Why, Exceptions (optional), Do, Don't, Options (optional), Suppression | Directive, Why, Flag, Do not flag, Confirm, Do, Don't, Suppression |
    | Implementation | `python.yml`, `typescript.yml` or code in the core | none |
    | `fixtures/` | `valid/`, `invalid/` and `expected.json` with the range of each finding | `valid/`, `invalid/` and `expected.json` with the verdict of each file |
@@ -159,7 +159,10 @@ no check at all.
    - In CI, `abide check --json` reports one section per phase. A section of the `edit` phase names
      one file; the section of the `turn` phase names every file of the change. `--judged` reads the
      report: a verdict in the band `act` is a finding at the severity of the rule, one in `flag` a
-     finding of severity info, and one in `clear` no finding. A verdict names no line, so its
+     finding of severity info, and one in `clear` no finding. A verdict in `act` with a probability
+     under the `act-at` of the judgment implementation, when it has one, is a finding of severity
+     info too: `minimal-comments` has `act-at = 0.85`, since abide gives some files a probability
+     near 0.8 on one run and under it on the next. A verdict names no line, so its
      finding is about the file of its section, the `file` of the verdict, or the whole change for
      a verdict of the `turn` phase with no `file`. `--output-format sarif` writes them as SARIF,
      and `--fail-on warning` fails the run on them, since a judgment rule reports warnings.

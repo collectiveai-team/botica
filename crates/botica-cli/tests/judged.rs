@@ -123,6 +123,39 @@ fn with_a_diff_a_judged_finding_stays_only_when_the_diff_changes_its_file() {
     assert_eq!(String::from_utf8_lossy(&other.stdout), "");
 }
 
+fn minimal_comments(probability: &str) -> String {
+    format!(
+        "{{\"root\": \".\", \"sections\": [{{\"phase\": \"edit\", \"files\": [\"a.py\"], \
+         \"verdicts\": [{{\"ruleId\": \"minimal-comments\", \"probability\": {probability}, \
+         \"band\": \"act\"}}]}}], \"spendUsd\": 0, \"all\": false}}"
+    )
+}
+
+#[test]
+fn a_verdict_in_the_band_act_under_the_act_at_of_its_rule_is_reported_as_info() {
+    let dir = workdir("act-at");
+    fs::write(
+        dir.join("botica.toml"),
+        "preview = true\nselect = [\"minimal-comments\"]\n",
+    )
+    .expect("write the configuration");
+    fs::write(dir.join("a.py"), "# x is one\nx = 1\n").expect("write a file");
+    fs::write(dir.join("low.json"), minimal_comments("0.81")).expect("write the report");
+    fs::write(dir.join("high.json"), minimal_comments("0.9")).expect("write the report");
+
+    let low = botica(&dir, &["--judged", "low.json", "--fail-on", "warning"]);
+    let high = botica(&dir, &["--judged", "high.json", "--fail-on", "warning"]);
+
+    let text = String::from_utf8_lossy(&low.stdout);
+    assert_eq!(low.status.code(), Some(0), "{text}");
+    assert!(
+        text.contains("a.py:1:1: info [minimal-comments]")
+            && text.contains("probability 0.81, under the 0.85 that the rule reports at"),
+        "{text}"
+    );
+    assert_eq!(high.status.code(), Some(1));
+}
+
 #[test]
 fn judged_findings_take_no_paths_and_no_extension() {
     let dir = workdir("conflicts");

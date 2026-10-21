@@ -13,6 +13,7 @@ kind = "judgment"
 languages = ["*"]
 when = "edit"
 why-not-deterministic = "Whether a comment repeats the code or explains a choice the code cannot show depends on what the code says, which needs a reading of both."
+act-at = 0.85
 
 [implementations.question]
 type = "boolean"
