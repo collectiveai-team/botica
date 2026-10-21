@@ -208,23 +208,28 @@ func answerWith(reply object, run func([]Rule, params) ([]object, error), rules 
 	reply["result"] = object{"diagnostics": diagnostics}
 }
 
+func serveLine(rules []Rule, encoder *json.Encoder, line []byte) (bool, error) {
+	if len(strings.TrimSpace(string(line))) == 0 {
+		return false, nil
+	}
+	var req request
+	if err := json.Unmarshal(line, &req); err != nil {
+		return true, err
+	}
+	if err := encoder.Encode(answer(rules, req)); err != nil {
+		return true, err
+	}
+	return req.Method == "shutdown", nil
+}
+
 // ServeOn answers the requests of in, one reply on out for each, until shutdown or the end of in.
 func ServeOn(rules []Rule, in io.Reader, out io.Writer) error {
 	reader := bufio.NewReader(in)
 	encoder := json.NewEncoder(out)
 	for {
 		line, readErr := reader.ReadBytes('\n')
-		if len(strings.TrimSpace(string(line))) > 0 {
-			var req request
-			if err := json.Unmarshal(line, &req); err != nil {
-				return err
-			}
-			if err := encoder.Encode(answer(rules, req)); err != nil {
-				return err
-			}
-			if req.Method == "shutdown" {
-				return nil
-			}
+		if done, err := serveLine(rules, encoder, line); done || err != nil {
+			return err
 		}
 		if readErr == io.EOF {
 			return nil
