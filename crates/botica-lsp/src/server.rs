@@ -85,23 +85,7 @@ pub struct Server<'scope, 'env, W: Write> {
 
 impl<'scope, 'env, W: Write> Server<'scope, 'env, W> {
     pub fn run(&mut self, inbox: &Receiver<Event>) -> io::Result<()> {
-        loop {
-            let event = match self.next_due() {
-                Some(due) => {
-                    match inbox.recv_timeout(due.saturating_duration_since(Instant::now())) {
-                        Ok(event) => event,
-                        Err(RecvTimeoutError::Timeout) => {
-                            self.hand_over_due();
-                            continue;
-                        }
-                        Err(RecvTimeoutError::Disconnected) => return Ok(()),
-                    }
-                }
-                None => match inbox.recv() {
-                    Ok(event) => event,
-                    Err(_) => return Ok(()),
-                },
-            };
+        while let Some(event) = self.next_event(inbox) {
             match event {
                 Event::Input(Ok(Some(message))) => {
                     if self.handle(&message)? {
@@ -122,6 +106,22 @@ impl<'scope, 'env, W: Write> Server<'scope, 'env, W> {
                         self.show_project(found)?;
                     }
                 }
+            }
+        }
+        Ok(())
+    }
+
+    /// The next event, or `None` when the inbox is closed; hands the due documents over while
+    /// it waits.
+    fn next_event(&mut self, inbox: &Receiver<Event>) -> Option<Event> {
+        loop {
+            let Some(due) = self.next_due() else {
+                return inbox.recv().ok();
+            };
+            match inbox.recv_timeout(due.saturating_duration_since(Instant::now())) {
+                Ok(event) => return Some(event),
+                Err(RecvTimeoutError::Timeout) => self.hand_over_due(),
+                Err(RecvTimeoutError::Disconnected) => return None,
             }
         }
     }
