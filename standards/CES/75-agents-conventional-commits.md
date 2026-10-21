@@ -11,8 +11,9 @@ Every commit subject follows [Conventional Commits](https://www.conventionalcomm
 <type>(<optional scope>)<optional !>: <description>
 ```
 
-A local `commit-msg` prek hook validates the message at commit time, and a CI workflow validates
-the title of a pull request.
+The rule `conventional-commits` of botica checks the subject: a local `commit-msg` prek hook runs
+it on the message at commit time (`botica lint --commit-msg`), and a CI workflow runs it on the
+title of a pull request (`botica lint --pr-title`).
 
 ## Allowed types
 
@@ -32,7 +33,8 @@ the title of a pull request.
 
 - The scope is optional, lowercase, in parentheses: `feat(api): …`.
 - A breaking change appends `!` before the colon (`feat!: …`), a `BREAKING CHANGE:` footer, or both.
-- `Merge …`, `Revert …` and `fixup! …` subjects are exempt from the hook.
+- `Merge …`, `Revert …` and `fixup! …` subjects are exempt. The options `types` and `exempt` of
+  the rule hold the two lists.
 
 ## Why
 
@@ -51,5 +53,5 @@ docs: explain the slug and the code of a standard
 
 ## Suppression
 
-The hook reads the subject line only and exempts merge, revert and fixup commits. Any other
+The rule reads the subject line only and exempts merge, revert and fixup commits. Any other
 subject is fixed and not exempted.
