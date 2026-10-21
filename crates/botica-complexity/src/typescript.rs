@@ -126,40 +126,42 @@ fn collect<'r>(declaration: &SyntaxNode<'r>, units: &mut Vec<Unit<'r>>) {
                 .children()
                 .filter(|child| child.kind() == "variable_declarator")
             {
-                if let Some(value) = declarator
-                    .field("value")
-                    .filter(|value| VALUES.contains(&&*value.kind()))
-                {
+                if let Some(value) = function_value(&declarator) {
                     let name = text_of(declarator.field("name"));
                     units.push(unit(name.clone(), name, &declarator, &value));
                 }
             }
         }
         "class_declaration" | "abstract_class_declaration" | "class" => {
-            let class = text_of(declaration.field("name"));
-            let Some(body) = declaration.field("body") else {
-                return;
-            };
-            for member in body.children() {
-                let short = text_of(member.field("name"));
-                match &*member.kind() {
-                    "method_definition" => {
-                        units.push(unit(format!("{class}::{short}"), short, &member, &member));
-                    }
-                    "public_field_definition" => {
-                        if let Some(value) = member
-                            .field("value")
-                            .filter(|value| VALUES.contains(&&*value.kind()))
-                        {
-                            units.push(unit(format!("{class}::{short}"), short, &member, &value));
-                        }
-                    }
-                    _ => {}
-                }
-            }
+            collect_methods(declaration, units);
         }
         _ => {}
     }
+}
+
+/// The methods of a class, and its fields whose value is a function.
+fn collect_methods<'r>(class: &SyntaxNode<'r>, units: &mut Vec<Unit<'r>>) {
+    let name = text_of(class.field("name"));
+    let Some(body) = class.field("body") else {
+        return;
+    };
+    for member in body.children() {
+        let function = match &*member.kind() {
+            "method_definition" => Some(member.clone()),
+            "public_field_definition" => function_value(&member),
+            _ => None,
+        };
+        if let Some(function) = function {
+            let short = text_of(member.field("name"));
+            units.push(unit(format!("{name}::{short}"), short, &member, &function));
+        }
+    }
+}
+
+/// The `value` of a declarator or a field, when it is a function.
+fn function_value<'r>(node: &SyntaxNode<'r>) -> Option<SyntaxNode<'r>> {
+    node.field("value")
+        .filter(|value| VALUES.contains(&&*value.kind()))
 }
 
 fn unit<'r>(
