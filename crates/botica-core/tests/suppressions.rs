@@ -74,8 +74,6 @@ fn a_file_level_finding_is_silenced_only_by_ignore_file() {
     assert!(found("a.py", file).is_empty());
 }
 
-// --- noqa -----------------------------------------------------------------------------------
-
 #[test]
 fn noqa_with_a_botica_code_silences_the_rule() {
     assert!(found("a.py", "x = FLAG  # noqa: BTFLG001\n").is_empty());
@@ -131,8 +129,6 @@ fn a_noqa_after_another_comment_marker_still_counts() {
     assert!(found("a.py", "x = FLAG  # type: ignore # noqa: BTFLG001\n").is_empty());
 }
 
-// --- comments, not strings --------------------------------------------------------------------
-
 #[test]
 fn text_inside_a_string_is_not_a_comment() {
     let text = "s = 'FLAG # botica: ignore[flag-rule]'\n";
@@ -166,8 +162,6 @@ fn prose_that_only_mentions_botica_is_left_alone() {
     assert_eq!(found("a.py", text), ["flag-rule@1"]);
 }
 
-// --- multi-line strings -------------------------------------------------------------------------
-
 #[test]
 fn a_finding_inside_a_multi_line_string_is_silenced_on_the_last_line_of_the_string() {
     let text = "s = \"\"\"\nFLAG\nend\"\"\"  # botica: ignore[flag-rule]\n";
@@ -186,8 +180,6 @@ fn a_finding_after_a_multi_line_string_counts_on_its_own_line() {
     let text = "s = \"\"\"\nabc\n\"\"\"; y = FLAG  # botica: ignore[flag-rule]\n";
     assert!(found("a.py", text).is_empty());
 }
-
-// --- other languages ----------------------------------------------------------------------------
 
 #[test]
 fn javascript_comments_and_template_literals() {
@@ -263,8 +255,6 @@ fn languages_without_a_comment_scanner_are_not_read() {
         ["flag-rule@1"]
     );
 }
-
-// --- unused-suppression ---------------------------------------------------------------------------
 
 fn messages_of(rule: &str, path: &str, text: &str) -> Vec<String> {
     engine(policy())
@@ -345,8 +335,6 @@ fn nothing_is_reported_when_the_rule_is_not_active() {
     assert!(found.is_empty(), "{found:?}");
 }
 
-// --- invalid-suppression --------------------------------------------------------------------------
-
 #[test]
 fn an_unknown_id_is_reported_on_that_id() {
     let text = "x = FLAG  # botica: ignore[flag-rule, no-such-rule]\n";
@@ -404,8 +392,6 @@ fn invalid_suppression_can_silence_itself() {
     assert!(found("a.py", text).is_empty());
 }
 
-// --- ast-grep-ignore ----------------------------------------------------------------------------
-
 #[test]
 fn an_ast_grep_ignore_comment_is_a_plain_comment() {
     assert_eq!(
@@ -421,8 +407,6 @@ fn an_ast_grep_ignore_comment_is_a_plain_comment() {
         Vec::<String>::new()
     );
 }
-
-// --- robustness ------------------------------------------------------------------------------------
 
 /// xorshift: a fixed seed keeps the run reproducible without a dependency.
 fn next(state: &mut u64) -> u64 {
