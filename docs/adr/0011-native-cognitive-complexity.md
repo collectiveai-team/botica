@@ -1,6 +1,6 @@
 # botica measures cognitive complexity
 
-**Status:** proposed
+**Status:** accepted
 
 `cognitive-complexity` (BTSTRUC006, CES-110) is an external rule: the hook `complexipy` of
 `prek.toml` and of `catalog/recipes/sections/prek-python-tools.toml` measures it, and botica only
