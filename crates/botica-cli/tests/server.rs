@@ -3,6 +3,7 @@
 
 mod common;
 
+use common::external_rule::{complexity_rule, SELECTS_COMPLEXITY, WITHOUT_THE_HOOK};
 use common::lsp::{initialize, open, Session};
 use common::{project_in, write};
 use serde_json::{json, Value};
@@ -208,16 +209,9 @@ fn a_configuration_that_does_not_load_is_reported_and_the_rules_stay() {
 
 #[test]
 fn a_save_runs_the_rules_of_project_scope_and_publishes_for_the_file_they_name() {
-    let dir = acme_project(
-        "project-scope",
-        "preview = true\nextend-select = [\"cognitive-complexity\"]\n",
-        ALWAYS,
-    );
-    write(
-        &dir,
-        "prek.toml",
-        "[[repos]]\nrepo = \"local\"\n\n[[repos.hooks]]\nid = \"deptry\"\n",
-    );
+    let dir = acme_project("project-scope", SELECTS_COMPLEXITY, ALWAYS);
+    complexity_rule(&dir);
+    write(&dir, "prek.toml", WITHOUT_THE_HOOK);
     let a_py = uri(&dir, "a.py");
 
     let mut editor = Session::start(&dir, &["server"]);

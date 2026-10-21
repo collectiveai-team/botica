@@ -298,6 +298,7 @@ dependencies = [
  "blake3",
  "botica-astgrep",
  "botica-catalog",
+ "botica-complexity",
  "botica-ext",
  "criterion",
  "ignore",

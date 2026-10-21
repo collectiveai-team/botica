@@ -102,7 +102,7 @@ Another tool enforces an external rule (`kind = "external"`) through its configu
 names the tool, the address of its documentation and, in `config/<file>.toml` of its folder,
 the fragment of configuration that goes into `<file>.toml` at the root of the project;
 [`external-config`](../catalog/rules/botica/external-config/README.md) reports a fragment that is
-missing.
+missing. The built-in catalog has no external rule; a catalog of a project declares them.
 
 ## References
 
@@ -336,8 +336,8 @@ files, sections, links, `gitignore`, `unignore`, tools and skills:
 ```text
 rule file-size-guard: ok
 rule no-notebooks: differs: not selected
-rule cognitive-complexity: ok
-fragment prek.toml `cognitive-complexity`: differs: prek.toml lacks the configuration of complexipy that `cognitive-complexity` (CES-110) needs: `botica explain cognitive-complexity` shows it
+rule acme/deptry: ok
+fragment prek.toml `acme/deptry`: differs: prek.toml lacks the configuration of deptry that `acme/deptry` needs: `botica explain acme/deptry` shows it
 export agents-md: differs: cannot read `AGENTS.md`
 file prek.toml: differs: does not exist
 section AGENTS.md `## Botica rules`: differs: marker not in the file
@@ -352,7 +352,7 @@ base: 12 checked, 10 differ
 A rule differs when it is not in the catalog, is not active (the reason is the one that `botica
 rules --all` gives), is a judgment rule listed under `rules` or is not one listed under
 `judgment`. A fragment is a line for each configuration that an external implementation of a rule
-under `rules` declares (the hook of prek of `cognitive-complexity`, for one); it differs when the
+under `rules` declares; it differs when the
 file it names does not exist, is not TOML or lacks the fragment, as `external-config` decides, and
 a rule that is not active has its fragment checked too. A rule that is not in the catalog has none.
 An export differs when `botica rules export --check` fails for it with its default file:

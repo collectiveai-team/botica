@@ -1,5 +1,6 @@
 mod buffer;
 pub mod commit;
+mod complexity;
 mod coverage;
 mod diagnostic;
 pub mod diff;

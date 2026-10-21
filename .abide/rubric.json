@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-21T04:50:25Z",
+  "compiledAt": "2026-10-21T05:07:15Z",
   "compiledBy": "botica 0.13.0",
   "manual": true,
   "sources": [
@@ -611,7 +611,6 @@
         "catalog/rules/security/route-auth/rule.toml",
         "catalog/rules/structure/family.toml",
         "catalog/rules/structure/cognitive-complexity/rule.toml",
-        "catalog/rules/structure/cognitive-complexity/config/**",
         "catalog/rules/structure/file-size-guard/rule.toml",
         "catalog/rules/structure/lockfile-committed/rule.toml",
         "catalog/rules/structure/no-artifacts-in-package/rule.toml",

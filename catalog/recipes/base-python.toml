@@ -15,6 +15,7 @@ rules = [
   "database-package",
   "import-layers",
   "settings-env-schema",
+  "cognitive-complexity",
 ]
 
 [[files]]

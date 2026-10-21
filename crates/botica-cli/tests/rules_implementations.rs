@@ -3,9 +3,10 @@
 
 mod common;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use common::extension::{add_rule, folder, implementation, project, rule_toml, README};
+use common::extension::{add_rule, folder, implementation, rule_toml, README};
+use common::external_rule::{complexity_rule, SELECTS_COMPLEXITY};
 use common::{command, stderr, stdout, write};
 
 /// Adds `acme/py-rule`, whose Python script is `check.py`.
@@ -40,11 +41,16 @@ fn rule<'a>(document: &'a serde_json::Value, slug: &str) -> &'a serde_json::Valu
         .unwrap_or_else(|| panic!("no {slug} in {document}"))
 }
 
-const EXTERNAL: &str = "preview = true\nextend-select = [\"cognitive-complexity\"]\n";
+/// A project of extension rules whose catalog `acme` also holds the external rule `acme/complexity`.
+fn project(name: &str, config: &str) -> PathBuf {
+    let dir = common::extension::project(name, config);
+    complexity_rule(&dir);
+    dir
+}
 
 #[test]
 fn json_lists_each_implementation_with_its_kind_and_what_it_runs() {
-    let dir = project("json-implementations", EXTERNAL);
+    let dir = project("json-implementations", SELECTS_COMPLEXITY);
     add_rule(&dir, "by-sh", "ACMESTRUC001", "", "acme/by-sh");
     add_python_rule(&dir);
 
@@ -57,7 +63,7 @@ fn json_lists_each_implementation_with_its_kind_and_what_it_runs() {
             "runtime": null, "runs": null, "tool": null}])
     );
     assert_eq!(
-        rule(&document, "cognitive-complexity")["implementations"],
+        rule(&document, "acme/complexity")["implementations"],
         serde_json::json!([{"kind": "external", "languages": ["python"], "status": "preview",
             "runtime": null, "runs": null, "tool": "complexipy"}])
     );
@@ -79,7 +85,7 @@ fn json_lists_each_implementation_with_its_kind_and_what_it_runs() {
 
 #[test]
 fn the_listing_names_the_programs_lint_runs_and_the_tools_outside_it() {
-    let dir = project("programs", EXTERNAL);
+    let dir = project("programs", SELECTS_COMPLEXITY);
     add_rule(&dir, "by-sh", "ACMESTRUC001", "", "acme/by-sh");
     add_python_rule(&dir);
 
@@ -94,7 +100,7 @@ fn the_listing_names_the_programs_lint_runs_and_the_tools_outside_it() {
     assert!(text.contains(&runs), "{text}");
     assert!(
         text.contains(
-            "tools that enforce rules outside `botica lint`:\n  cognitive-complexity  complexipy\n"
+            "tools that enforce rules outside `botica lint`:\n  acme/complexity  complexipy\n"
         ),
         "{text}"
     );
@@ -113,7 +119,7 @@ fn the_listing_names_no_program_of_a_rule_that_is_not_active() {
 
 #[test]
 fn explain_says_the_kind_of_each_implementation_and_what_it_runs() {
-    let dir = project("explain-implementations", EXTERNAL);
+    let dir = project("explain-implementations", SELECTS_COMPLEXITY);
     add_rule(&dir, "by-sh", "ACMESTRUC001", "", "acme/by-sh");
 
     let kinds = |slug: &str| -> Vec<String> {
@@ -126,7 +132,7 @@ fn explain_says_the_kind_of_each_implementation_and_what_it_runs() {
 
     assert_eq!(kinds("file-size-guard"), ["kind:      native (*)"]);
     assert_eq!(
-        kinds("cognitive-complexity"),
+        kinds("acme/complexity"),
         ["kind:      external (python), tool complexipy"]
     );
     assert_eq!(

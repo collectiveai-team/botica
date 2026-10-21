@@ -21,13 +21,3 @@ language = "system"
 types = ["python"]
 pass_filenames = false
 priority = 2
-
-# MARK: complexipy
-# CES-110.
-[[repos.hooks]]
-id = "complexipy"
-name = "complexipy (cognitive complexity)"
-entry = "uvx complexipy --max-complexity-allowed 15"
-language = "system"
-types = ["python"]
-priority = 2

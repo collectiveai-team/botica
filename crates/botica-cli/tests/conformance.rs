@@ -19,6 +19,7 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
             "api-schema-in-route-module",
             "api-schemas-extra-forbid",
             "cli-typed-framework",
+            "cognitive-complexity",
             "conventional-commits",
             "database-package",
             "db-no-create-all",

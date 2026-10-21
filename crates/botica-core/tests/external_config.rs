@@ -3,11 +3,25 @@
 
 use std::collections::HashMap;
 
-use botica_catalog::Catalog;
+use botica_catalog::{Catalog, SourceFile};
 use botica_core::external_config::{check, Requirement, EXTERNAL_CONFIG};
 use botica_core::Severity;
 
 const HOOK: &str = "[[repos]]\n[[repos.hooks]]\nid = \"complexipy\"\n";
+
+const NATIVE_README: &str =
+    "## Directive\n\nd\n\n## Why\n\nw\n\n## Do\n\ndo\n\n## Don't\n\ndont\n\n## Suppression\n\ns\n";
+
+const EXTERNAL_README: &str =
+    "## Directive\n\nd\n\n## Why\n\nw\n\n## Tool\n\nt\n\n## Configuration\n\nc\n\n\
+## Do\n\ndo\n\n## Don't\n\ndont\n\n## Suppression\n\ns\n";
+
+fn file(path: &str, text: &str) -> SourceFile {
+    SourceFile {
+        path: path.to_owned(),
+        text: text.to_owned(),
+    }
+}
 
 fn requirement(fragment: &str) -> Requirement<'_> {
     Requirement {
@@ -139,14 +153,37 @@ fn each_rule_that_lacks_its_configuration_has_a_finding_of_its_own() {
 
 #[test]
 fn the_requirements_of_a_rule_are_the_fragments_of_its_external_implementations() {
-    let catalog = Catalog::embedded().expect("the catalog loads");
-    let rule = catalog.resolve("cognitive-complexity").expect("the rule");
+    let catalog = Catalog::from_files(&[
+        file(
+            "structure/family.toml",
+            "code = \"STRUC\"\ndescription = \"A family used by the tests\"\n",
+        ),
+        file(
+            "structure/complexity/rule.toml",
+            "id = \"complexity\"\ncode = \"BTSTRUC900\"\nsummary = \"s\"\nstatus = \"preview\"\n\
+             default-enabled = false\ndefault-severity = \"error\"\n\n[[implementations]]\n\
+             kind = \"external\"\nlanguages = [\"python\"]\ntool = \"complexipy\"\n\
+             docs = \"https://github.com/rohaquinlop/complexipy\"\nconfig = \"config/prek.toml\"\n",
+        ),
+        file("structure/complexity/README.md", EXTERNAL_README),
+        file("structure/complexity/config/prek.toml", HOOK),
+        file(
+            "structure/no-utils/rule.toml",
+            "id = \"no-utils\"\ncode = \"BTSTRUC901\"\nsummary = \"s\"\nstatus = \"stable\"\n\
+             scope = \"file\"\nneeds = \"bytes\"\nrun-on = [\"cli\"]\ndefault-enabled = true\n\
+             default-severity = \"error\"\n\n[[implementations]]\nkind = \"native\"\n\
+             languages = [\"*\"]\n",
+        ),
+        file("structure/no-utils/README.md", NATIVE_README),
+    ])
+    .expect("the catalog loads");
+    let rule = catalog.resolve("complexity").expect("the rule");
 
     let requirements = Requirement::of(rule);
 
     assert_eq!(requirements.len(), 1);
     let requirement = &requirements[0];
-    assert_eq!(requirement.rule, "cognitive-complexity");
+    assert_eq!(requirement.rule, "complexity");
     assert_eq!(requirement.tool, "complexipy");
     assert_eq!(requirement.target, "prek.toml");
     assert_eq!(requirement.fragment, HOOK);

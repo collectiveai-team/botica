@@ -2,6 +2,7 @@
 
 pub mod builtin;
 pub mod external;
+pub mod external_rule;
 pub mod fresh_rule;
 pub mod git_remote;
 pub mod judgment;

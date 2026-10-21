@@ -6,6 +6,7 @@ use botica_catalog::{Catalog, Kind};
 use crate::commit::{
     ConventionalCommits, MessageRule, NoAiCoauthorship, CONVENTIONAL_COMMITS, NO_AI_COAUTHORSHIP,
 };
+use crate::complexity::{CognitiveComplexity, COGNITIVE_COMPLEXITY};
 use crate::coverage::{NoCoverageExclusion, NO_COVERAGE_EXCLUSION};
 use crate::env_schema::SETTINGS_ENV_SCHEMA;
 use crate::external_config::EXTERNAL_CONFIG;
@@ -47,7 +48,7 @@ enum Provider {
     },
 }
 
-const NATIVES: [(&str, Provider); 16] = [
+const NATIVES: [(&str, Provider); 17] = [
     (
         CONVENTIONAL_COMMITS,
         Provider::Message {
@@ -118,6 +119,13 @@ const NATIVES: [(&str, Provider); 16] = [
             reads_code_dirs: false,
         },
     ),
+    (
+        COGNITIVE_COMPLEXITY,
+        Provider::Rule {
+            make: cognitive_complexity,
+            reads_code_dirs: false,
+        },
+    ),
     (IO_ERROR, Provider::Engine),
     (UNUSED, Provider::Engine),
     (INVALID, Provider::Engine),
@@ -165,6 +173,13 @@ fn route_auth(options: &Options, _context: &Context) -> Box<dyn NativeRule> {
     Box::new(RouteAuth {
         dependencies: strings(options, "dependencies"),
         public: strings(options, "public"),
+    })
+}
+
+fn cognitive_complexity(options: &Options, _context: &Context) -> Box<dyn NativeRule> {
+    let default = CognitiveComplexity::default().max as usize;
+    Box::new(CognitiveComplexity {
+        max: u32::try_from(threshold(options, "max", default)).unwrap_or(u32::MAX),
     })
 }
 

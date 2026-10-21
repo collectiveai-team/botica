@@ -1,3 +1,5 @@
+mod common;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -19,10 +21,13 @@ fn run(name: &str, args: &[&str]) -> (PathBuf, Output) {
 }
 
 fn catalog(name: &str) -> Value {
-    let (dir, output) = run(
-        name,
-        &["rules", "export", "--format", "json", "--output", "out"],
-    );
+    let (dir, output) = run(name, EXPORT);
+    read_export(&dir, &output)
+}
+
+const EXPORT: &[&str] = &["rules", "export", "--format", "json", "--output", "out"];
+
+fn read_export(dir: &Path, output: &Output) -> Value {
     assert!(
         output.status.success(),
         "{}",
@@ -127,17 +132,16 @@ fn a_rule_carries_every_field_of_its_rule_toml_its_releases_and_the_path_of_its_
 
 #[test]
 fn an_external_rule_carries_its_tool_its_documentation_and_its_configuration() {
-    let document = catalog("external");
+    let dir = common::project_in("rules-export-json", "external", Some(""));
+    common::external_rule::complexity_rule(&dir);
+    let document = read_export(&dir, &common::command(&dir, EXPORT));
 
-    let external = rule(&document, "cognitive-complexity");
+    let external = rule(&document, "acme/complexity");
     assert_eq!(external["scope"], Value::Null);
     let implementation = &external["implementations"][0];
     assert_eq!(implementation["kind"], "external");
     assert_eq!(implementation["tool"], "complexipy");
-    assert_eq!(
-        implementation["docs"],
-        "https://rohaquinlop.github.io/complexipy/"
-    );
+    assert_eq!(implementation["docs"], common::external_rule::DOCS);
     assert_eq!(implementation["codes"], json!([]));
     assert_eq!(implementation["config"], "config/prek.toml");
 }

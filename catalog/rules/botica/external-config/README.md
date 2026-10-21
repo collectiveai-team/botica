@@ -14,7 +14,7 @@ external rule.
 ## Why
 
 A standard enforced by a tool holds only while the tool is set up: a repository that drops the hook
-of complexipy from `prek.toml` stops measuring cognitive complexity, and no check fails.
+of the tool from `prek.toml` stops running the check, and no check fails.
 
 ## Suppression
 

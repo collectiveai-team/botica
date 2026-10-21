@@ -17,6 +17,7 @@ ast-grep-language.workspace = true
 botica-astgrep = { path = "../botica-astgrep" }
 blake3 = { version = "1", optional = true }
 botica-catalog = { path = "../botica-catalog" }
+botica-complexity = { path = "../botica-complexity" }
 botica-ext = { path = "../botica-ext" }
 ignore = { workspace = true, optional = true }
 rayon = { workspace = true, optional = true }

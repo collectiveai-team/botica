@@ -159,14 +159,16 @@ fn a_rule_of_botica_itself_has_no_family_and_a_rule_without_a_standard_has_no_ce
 
 #[test]
 fn the_page_of_an_external_rule_names_its_tool_with_the_address_of_its_documentation() {
-    let site = exported(&workdir("external"));
+    let dir = common::project_in("rules-export", "external", Some(""));
+    common::external_rule::complexity_rule(&dir);
+    let site = exported(&dir);
 
-    let text = page(&site, "structure/btstruc006-cognitive-complexity.md");
+    let text = page(&site, "acme/acmechk001-complexity.md");
 
     assert!(
         text.contains(
-            "\nFamily: structure · Standard: CES-110 · Languages: python · \
-             Tool: [complexipy](https://rohaquinlop.github.io/complexipy/)\n"
+            "\nFamily: checks · Catalog: acme · Languages: python · \
+             Tool: [complexipy](https://github.com/rohaquinlop/complexipy)\n"
         ),
         "{text}"
     );

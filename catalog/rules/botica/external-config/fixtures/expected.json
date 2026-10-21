@@ -4,7 +4,7 @@
       "path": "prek.toml",
       "severity": "error",
       "range": null,
-      "message": "prek.toml lacks the configuration of complexipy that `cognitive-complexity` needs: `botica explain cognitive-complexity` shows it"
+      "message": "prek.toml lacks the configuration of complexipy that `acme/complexity` needs: `botica explain acme/complexity` shows it"
     }
   ]
 }

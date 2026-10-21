@@ -1,2 +1,2 @@
 preview = true
-extend-select = ["cognitive-complexity"]
+extend-select = ["acme/complexity"]
