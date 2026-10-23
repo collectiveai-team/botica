@@ -44,6 +44,11 @@ template = "sections/prek-python-tools.toml"
 
 [[sections]]
 path = "pyproject.toml"
+marker = "# MARK: uv"
+template = "sections/pyproject-uv.toml"
+
+[[sections]]
+path = "pyproject.toml"
 marker = "# MARK: Ruff"
 template = "sections/pyproject-ruff.toml"
 
@@ -78,3 +83,7 @@ default = ""
 description = "The version of deptry that the hook of prek runs with uvx (empty: the newest)"
 kind = "version"
 default = ""
+[params.cooldown-days]
+description = "The days that a new release of a dependency waits before a package manager or dependabot takes it"
+default = 7
+kind = "days"

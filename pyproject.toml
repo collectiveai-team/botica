@@ -73,6 +73,11 @@ references = [
 # builds the wheel.
 [tool.uv]
 package = false
+# CES-128: uv resolves only what was uploaded 7 days ago or earlier.
+exclude-newer = "7 days"
+# The group `references` pins these releases, uploaded less than 7 days before 2026-10-22, and
+# certifi 2026.10.19 fixes PYSEC-2026-4320. Remove on 2026-10-29.
+exclude-newer-package = { certifi = "2026-10-22T00:00:00Z", fastapi = "2026-10-22T00:00:00Z", hypothesis = "2026-10-22T00:00:00Z", pydantic-ai-slim = "2026-10-22T00:00:00Z", pydantic-graph = "2026-10-22T00:00:00Z", pydantic-settings = "2026-10-22T00:00:00Z" }
 
 [tool.uv.dependency-groups]
 dev = { requires-python = ">=3.11" }
