@@ -13,6 +13,12 @@
       "message": "`app/package.json` names `pnpm` in `packageManager`, and its lockfile is `yarn.lock`: install with `pnpm` and delete the lockfile of the other manager, or change `packageManager`"
     },
     {
+      "path": "infra/live/main.tf",
+      "severity": "error",
+      "range": null,
+      "message": "No `.terraform.lock.hcl` pins the providers of the root module `infra/live`: run `terraform init` or `tofu init` in that folder, commit the lockfile it writes, and take it out of `.gitignore` if it is there"
+    },
+    {
       "path": "svc/pyproject.toml",
       "severity": "error",
       "range": null,

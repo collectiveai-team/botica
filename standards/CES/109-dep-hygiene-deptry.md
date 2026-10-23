@@ -17,6 +17,13 @@ workspace, and the lockfile is committed. A folder holds the lockfile of one man
 holds for libraries too: uv says that `uv.lock` "should be checked into version control", and
 Cargo suggests committing `Cargo.lock` "as a starting point".
 
+Each root module of Terraform or OpenTofu, the folder where `terraform init` runs, has its
+`.terraform.lock.hcl` in that folder, committed. Terraform says to include the file in version
+control, and creates it in the folder of the root module because it "belongs to the configuration
+as a whole" (https://developer.hashicorp.com/terraform/language/files/dependency-lock). A module
+that other modules call carries no `provider` block and needs no lockfile: the lockfile of the root
+module pins its providers too.
+
 ## Why
 
 `osv-scanner` checks the resolved dependency set for CVEs. It does not check whether the
@@ -26,7 +33,8 @@ was never declared. Ruff gives no signal about this.
 
 A lockfile fixes the versions that CI and each machine install, and it is the set that
 `osv-scanner` checks. An agent that runs `npm install` in a repository of pnpm leaves a second
-lockfile, and the two sets of versions drift apart.
+lockfile, and the two sets of versions drift apart. The checksums in `.terraform.lock.hcl` make
+`terraform init` fail when a provider package changes under the same version.
 
 ## Scope and false positives
 

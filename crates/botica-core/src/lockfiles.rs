@@ -1,8 +1,9 @@
 //! `lockfile-committed`: each manifest that declares dependencies has the lockfile of one package
-//! manager next to it or in a folder above it (the root of its workspace), and the walk of the
-//! project reaches that lockfile, so `.gitignore` does not leave it out.
+//! manager next to it or in a folder above it (the root of its workspace), each root module of
+//! Terraform has its `.terraform.lock.hcl` in its own folder, and the walk of the project reaches
+//! that lockfile, so `.gitignore` does not leave it out.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::diagnostic::{Diagnostic, Severity};
 
@@ -107,12 +108,182 @@ fn join(dir: &str, name: &str) -> String {
     }
 }
 
-/// Whether the rule reads the text of `path`: a manifest of an ecosystem.
+/// Whether the rule reads the text of `path`: a manifest of an ecosystem or a file of Terraform.
 pub fn reads(path: &str) -> bool {
     let name = name_of(path);
-    ECOSYSTEMS
+    is_terraform(name)
+        || ECOSYSTEMS
+            .iter()
+            .any(|ecosystem| ecosystem.manifest == name)
+}
+
+const TERRAFORM_LOCKFILE: &str = ".terraform.lock.hcl";
+
+/// A file of the Terraform language: OpenTofu reads `.tofu` files too.
+fn is_terraform(name: &str) -> bool {
+    name.ends_with(".tf") || name.ends_with(".tofu")
+}
+
+/// What the files of one folder of Terraform hold.
+#[derive(Default)]
+struct Module<'a> {
+    /// The first file that makes the folder a root module: it has a `provider`, a `backend` or a
+    /// `cloud` block, which only a root module carries.
+    root: Option<&'a str>,
+    /// Whether a file has a `provider` or a `required_providers` block, so `init` locks providers.
+    providers: bool,
+}
+
+/// The first word of `line`, and whether a block or an attribute follows it.
+fn keyword(line: &str) -> Option<&str> {
+    let end = line
+        .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+        .unwrap_or(line.len());
+    let rest = line[end..].trim_start();
+    (end > 0 && rest.starts_with(['"', '{', '='])).then(|| &line[..end])
+}
+
+/// The braces that `line` opens and closes, outside its strings and its comment.
+fn braces(line: &str) -> (usize, usize) {
+    let (mut opened, mut closed, mut quoted, mut escaped) = (0, 0, false, false);
+    let mut chars = line.chars().peekable();
+    while let Some(c) = chars.next() {
+        if quoted {
+            match (escaped, c) {
+                (false, '\\') => escaped = true,
+                (false, '"') => quoted = false,
+                _ => escaped = false,
+            }
+            continue;
+        }
+        match c {
+            '"' => quoted = true,
+            '#' => break,
+            '/' if chars.peek() == Some(&'/') => break,
+            '{' => opened += 1,
+            '}' => closed += 1,
+            _ => {}
+        }
+    }
+    (opened, closed)
+}
+
+/// The terminator of the heredoc that `line` opens (`<<EOT` or `<<-EOT`).
+fn heredoc(line: &str) -> Option<String> {
+    let (_, rest) = line.split_once("<<")?;
+    let rest = rest.strip_prefix('-').unwrap_or(rest);
+    let name: String = rest
+        .chars()
+        .take_while(|c| c.is_ascii_alphanumeric() || *c == '_')
+        .collect();
+    (!name.is_empty()).then_some(name)
+}
+
+/// The folder that a local `source` of a `module` block names, from the root of the project.
+fn local_module(dir: &str, value: &str) -> Option<String> {
+    let value = value.trim().strip_prefix('"')?.split('"').next()?;
+    if !(value.starts_with("./") || value.starts_with("../")) {
+        return None;
+    }
+    let mut parts: Vec<&str> = dir.split('/').filter(|part| !part.is_empty()).collect();
+    for part in value.split('/') {
+        match part {
+            "" | "." => {}
+            ".." => {
+                parts.pop()?;
+            }
+            _ => parts.push(part),
+        }
+    }
+    Some(parts.join("/"))
+}
+
+/// The local folder that the `source = "..."` attribute `line` names.
+fn source_of(dir: &str, line: &str) -> Option<String> {
+    let (_, value) = line.split_once('=')?;
+    local_module(dir, value)
+}
+
+/// Reads one file of Terraform into the module of its folder, and adds to `called` the folders
+/// that its `module` blocks name in a local `source`.
+fn scan<'a>(source: &Source<'a>, module: &mut Module<'a>, called: &mut BTreeSet<String>) {
+    let dir = dir_of(source.path);
+    let (mut depth, mut block, mut until) = (0_usize, "", None::<String>);
+    for line in source.text.lines() {
+        let line = line.trim();
+        if let Some(end) = &until {
+            if line == end {
+                until = None;
+            }
+            continue;
+        }
+        match (depth, block, keyword(line)) {
+            (0, _, Some("provider")) => {
+                module.root.get_or_insert(source.path);
+                module.providers = true;
+            }
+            (1, "terraform", Some("required_providers")) => module.providers = true,
+            (1, "terraform", Some("backend" | "cloud")) => {
+                module.root.get_or_insert(source.path);
+            }
+            (1, "module", Some("source")) => called.extend(source_of(dir, line)),
+            (0, _, Some("module")) => {
+                let body = line
+                    .split_once('{')
+                    .map_or("", |(_, body)| body.trim_start());
+                if keyword(body) == Some("source") {
+                    called.extend(source_of(dir, body));
+                }
+            }
+            _ => {}
+        }
+        let (opened, closed) = braces(line);
+        if depth == 0 && opened > closed {
+            block = keyword(line).unwrap_or("");
+        }
+        depth = (depth + opened).saturating_sub(closed);
+        until = heredoc(line);
+    }
+}
+
+/// The root modules of Terraform with providers and no `.terraform.lock.hcl` in their folder. A
+/// folder that a `module` block of the project calls is a child module: its providers are locked
+/// by the root module that calls it.
+fn terraform(
+    paths: &BTreeSet<&str>,
+    sources: &[Source<'_>],
+    severity: Severity,
+) -> Vec<Diagnostic> {
+    let mut modules: BTreeMap<&str, Module<'_>> = BTreeMap::new();
+    let mut called = BTreeSet::new();
+    for source in sources
         .iter()
-        .any(|ecosystem| ecosystem.manifest == name)
+        .filter(|source| is_terraform(name_of(source.path)))
+    {
+        let module = modules.entry(dir_of(source.path)).or_default();
+        scan(source, module, &mut called);
+    }
+    modules
+        .into_iter()
+        .filter(|(dir, module)| {
+            module.providers
+                && !called.contains(*dir)
+                && !paths.contains(join(dir, TERRAFORM_LOCKFILE).as_str())
+        })
+        .filter_map(|(dir, module)| {
+            let folder = if dir.is_empty() { "." } else { dir };
+            Some(Diagnostic::file_level(
+                module.root?,
+                LOCKFILE_COMMITTED,
+                severity,
+                format!(
+                    "No `{TERRAFORM_LOCKFILE}` pins the providers of the root module `{folder}`: \
+                     run `terraform init` or `tofu init` in that folder, commit the lockfile it \
+                     writes, and take it out of `.gitignore` if it is there"
+                ),
+            ))
+        })
+        .collect()
 }
 
 /// The package manager that `packageManager` of a `package.json` names (`pnpm@9.1.0` is `pnpm`).
@@ -201,7 +372,8 @@ fn problem(ecosystem: &Ecosystem, source: &Source<'_>, paths: &BTreeSet<&str>) -
 }
 
 /// The manifests of `sources` whose lockfile is missing, or that have the lockfiles of two
-/// managers. `paths` are every file a walk of the project reaches.
+/// managers, and the root modules of Terraform with no lockfile. `paths` are every file a walk of
+/// the project reaches.
 pub fn check(paths: &[String], sources: &[Source<'_>], severity: Severity) -> Vec<Diagnostic> {
     let paths: BTreeSet<&str> = paths.iter().map(String::as_str).collect();
     let mut found: Vec<Diagnostic> = sources
@@ -221,6 +393,7 @@ pub fn check(paths: &[String], sources: &[Source<'_>], severity: Severity) -> Ve
             ))
         })
         .collect();
+    found.extend(terraform(&paths, sources, severity));
     found.sort_by(|a, b| a.path.cmp(&b.path));
     found
 }
