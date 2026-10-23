@@ -1,0 +1,2 @@
+[tool.ruff.lint]
+select = ["ASYNC", "A", "BLE", "SLOT", "PLR0124", "PLR0133"]

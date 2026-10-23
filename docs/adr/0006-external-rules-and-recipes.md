@@ -170,8 +170,8 @@ scaffolder writes the configuration of a repository from its own components, apa
    - a rule is in the catalog and active in the project (a judgment rule under `judgment`, any
      other rule under `rules`);
    - the file that an external implementation of a rule under `rules` names holds its fragment,
-     as `external-config` decides, whether or not the rule is active (the hook of prek of
-     `cognitive-complexity`, for one);
+     as `external-config` decides, whether or not the rule is active (the families of ruff of
+     `ruff-selection` in `pyproject.toml`, for one);
    - an export is current, as `botica rules export --check` decides;
    - a file exists;
    - a section's marker is in its file;
@@ -264,18 +264,11 @@ scaffolder writes the configuration of a repository from its own components, apa
    `varlock` of `dmno-dev/varlock`; a person or an agent runs `varlock init --agent`, which writes
    the draft of `.env.schema` from `.env.example` or from the variables that the code reads.
 
-## Not built yet
-
-- A recipe that lists an external rule. `botica recipe check` reports the fragment of each one
-  (the hooks of prek are the fragments whose file is `prek.toml`), and `BT004` checks them when
-  `botica lint` runs; no built-in recipe lists one yet, because `cognitive-complexity` is the only
-  external rule and the standards of the other tools are not rules yet.
-
 ## Not decided
 
 - Whether a fragment holds the whole configuration that `botica recipe install` writes or the
-  least that `external-config` checks. The fragment of `cognitive-complexity` is a hook of prek
-  with the id `complexipy`.
+  least that `external-config` checks. The fragment of `ruff-selection` is the families and codes
+  of ruff that CES-58 names, not the whole section of ruff that `base-python` writes.
 
 ## Considered options
 

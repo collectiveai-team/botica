@@ -1,0 +1,16 @@
+id = "ruff-selection"
+code = "BTTOOL002"
+standard = "CES-58"
+summary = "ruff checks async code, shadowed builtins, broad except clauses, subclasses without __slots__ and comparisons whose result is fixed"
+status = "preview"
+tags = ["ruff"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["python"]
+tool = "ruff"
+docs = "https://docs.astral.sh/ruff/rules/"
+codes = ["ASYNC", "A", "BLE", "SLOT", "PLR0124", "PLR0133"]
+config = "config/pyproject.toml"

@@ -132,7 +132,9 @@ applies-when = ["pnpm-lock.yaml"]
 `Dockerfile` and `deploy/Dockerfile`. A language whose files botica does not know, such as
 `dockerfile`, needs `applies-when`, or the rule counts as used in every project.
 
-The built-in catalog has no external rule; a catalog of a project declares them.
+In the built-in catalog, [`ruff-selection`](../rules/tooling/bttool002-ruff-selection.md) is one:
+ruff enforces it, and its fragment goes into `pyproject.toml`. A catalog of a project declares its
+own.
 
 ## Judgment rules
 

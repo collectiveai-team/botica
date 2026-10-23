@@ -12,7 +12,7 @@ from prefect.client.schemas.objects import StateType
 
 from app.api.v1.routers.documents import router
 from app.deploy import deployments
-from app.runs import SUMMARIZE_DOCUMENTS, wait_or_cancel
+from app.runs import SUMMARIZE_DOCUMENTS, cancel, wait
 
 
 def register() -> None:
@@ -60,6 +60,13 @@ def test_a_flow_run_that_does_not_finish_in_time_is_cancelled():
     )
     flow_run_id = UUID(response.json()["flow_run_id"])
 
-    state = asyncio.run(wait_or_cancel(flow_run_id, timeout=1))
+    async def wait_or_cancel() -> StateType | None:
+        try:
+            async with asyncio.timeout(1):
+                return await wait(flow_run_id)
+        except TimeoutError:
+            return await cancel(flow_run_id)
+
+    state = asyncio.run(wait_or_cancel())
 
     assert state in {StateType.CANCELLING, StateType.CANCELLED}
