@@ -1,0 +1,109 @@
+title = "Short-lived access tokens and refresh tokens"
+
+[[references]]
+file = "code/app/impl/settings.py"
+anchor = "class AuthSettings(BaseSettings)"
+note = "Python: the lifetimes are settings in seconds, 900 for the access token when the environment names none"
+
+[[references]]
+file = "code/app/impl/access_tokens.py"
+anchor = "def issue_access_token"
+note = "Python: PyJWT signs the access token and checks its algorithm, issuer, audience and expiry"
+
+[[references]]
+file = "code/app/impl/access_tokens.py"
+anchor = "def verify_provider_token"
+note = "Python: a token of the identity provider, checked with the keys it publishes"
+
+[[references]]
+file = "code/app/core/sessions.py"
+anchor = "class Sessions"
+note = "Python: refresh tokens stored as a hash, replaced at each use, and a reused one ends the session"
+
+[[references]]
+file = "code/app/api/dependencies.py"
+anchor = "def get_current_user"
+note = "Python: the dependency that gives a route its caller, and the alias `CurrentUser`"
+
+[[references]]
+file = "code/app/api/v1/routers/auth.py"
+anchor = "def refresh"
+note = "Python: the access token in the body, and the refresh cookie, `HttpOnly`, `Secure`, `SameSite=Strict` and with the path of the session"
+
+[[references]]
+file = "code/app/api/v1/routers/browser_session.py"
+anchor = "def _set_cookies"
+note = "Python: both tokens in `HttpOnly` cookies, for a browser"
+
+[[references]]
+file = "code/app/database/repositories/refresh_tokens.py"
+anchor = "def mark_used"
+note = "Python: the refresh tokens in the database, marked used by one conditional `UPDATE`"
+
+[[references]]
+file = "code/web/lib/auth/settings.ts"
+anchor = "export function loadSettings"
+note = "TypeScript: the settings module, with the lifetimes in seconds"
+
+[[references]]
+file = "code/web/lib/auth/tokens.ts"
+anchor = "export async function verifyAccessToken"
+note = "TypeScript: `jose` checks the algorithm, the issuer, the audience and the expiry"
+
+[[references]]
+file = "code/web/lib/auth/http.ts"
+anchor = "export async function sessionCookies"
+note = "TypeScript: both tokens in `HttpOnly` cookies, so no script of the page reads them"
+
+[[references]]
+file = "code/web/app/api/auth/refresh/route.ts"
+anchor = "export async function POST"
+note = "Next.js: the route handler that replaces the refresh token"
+
+[[references]]
+file = "code/go/auth/settings.go"
+anchor = "func LoadSettings"
+note = "Go: the settings, with the lifetimes in seconds"
+
+[[references]]
+file = "code/go/auth/tokens.go"
+anchor = "func VerifyAccessToken"
+note = "Go: `golang-jwt` with `WithValidMethods`, `WithIssuer`, `WithAudience` and `WithExpirationRequired`"
+
+[[references]]
+file = "code/go/auth/sessions.go"
+anchor = "func (s Sessions) Rotate"
+note = "Go: the rotation of the refresh token"
+
+[[references]]
+file = "code/rust/src/tokens.rs"
+anchor = "pub fn verify_access_token"
+note = "Rust: `jsonwebtoken` with the algorithm, the issuer, the audience and the required claims"
+
+[[references]]
+file = "code/rust/src/sessions.rs"
+anchor = "pub fn rotate"
+note = "Rust: the rotation of the refresh token"
+
+[[references]]
+url = "https://www.rfc-editor.org/rfc/rfc9700.html#section-4.14.2"
+note = "RFC 9700: refresh token rotation, and what the server does with a reused token"
+quote = "If a refresh token is compromised and subsequently used by both the attacker and the legitimate client, one of them will present an invalidated refresh token, which will inform the authorization server of the breach."
+
+[[references]]
+url = "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html#jwt-denylist"
+note = "a short expiry in place of a denylist of tokens"
+quote = "Token reuse can be mitigated by using short expiration time in the JWT."
+
+[[references]]
+url = "https://www.rfc-editor.org/rfc/rfc10017.html#section-6.1"
+note = "RFC 10017: a backend for the frontend keeps the tokens in a cookie-based session"
+quote = "The BFF manages OAuth access and refresh tokens in the context of a cookie-based session, avoiding the direct exposure of any tokens to the browser-based application."
+
+[[references]]
+url = "https://pyjwt.readthedocs.io/en/stable/usage.html#retrieve-rsa-signing-keys-from-a-jwks-endpoint"
+note = "PyJWT: the keys of a provider from its JWKS endpoint, with `PyJWKClient`"
+
+[[references]]
+url = "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie#cookie_prefixes"
+note = "the prefixes `__Host-` and `__Secure-` of a cookie"

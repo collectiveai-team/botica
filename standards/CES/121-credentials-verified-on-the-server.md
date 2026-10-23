@@ -1,6 +1,7 @@
 ---
 id: CES-121
 title: Credentials are verified on the server and expire soon
+references: ["auth"]
 ---
 
 ## Directive

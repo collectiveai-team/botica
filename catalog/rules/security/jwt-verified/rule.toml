@@ -1,6 +1,7 @@
 id = "jwt-verified"
 code = "BTSEC002"
 standard = "CES-121"
+references = ["auth"]
 summary = "A decoded token has its signature and its expiry checked"
 status = "preview"
 tags = ["auth", "jwt"]

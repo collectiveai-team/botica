@@ -1,6 +1,7 @@
 id = "no-token-in-web-storage"
 code = "BTSEC003"
 standard = "CES-121"
+references = ["auth"]
 summary = "The browser keeps no credential in web storage"
 status = "preview"
 tags = ["auth", "browser"]

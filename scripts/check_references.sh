@@ -11,6 +11,12 @@
 # have no wheels for the free-threaded build. The tests run with the network blocked by
 # pytest-socket (CES-64): a test marked `integration` or `e2e` gets it back through the hook of its
 # `conftest.py`. Run by the job `references` of ci.yml.
+#
+# A topic with no Python file skips pyrefly and pytest. A topic may also carry a Go module in
+# `code/go/`, a Node package in `code/web/` and a Cargo package in `code/rust/`. The binary embeds
+# every file of `code/`, so nothing is built inside it: `go vet` and `go test` leave their output
+# in the cache of Go, `npm ci`, `npm test` and `npm run typecheck` run in a copy of the package
+# under `.tmp/references-node/`, and cargo writes to `.tmp/references-rust/`.
 set -u
 
 export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-.tmp/references-venv}"
@@ -25,9 +31,14 @@ run() {
     uv run --quiet --locked --group references --python 3.14+gil "$@"
 }
 
+has_python() {
+    [ -n "$(find "$1" -name '*.py' -print -quit)" ]
+}
+
 status=0
 for code in catalog/references/*/code; do
     topic=${code%/code}
+    has_python "$topic" || continue
     echo "== ${topic#catalog/references/}"
     tests=""
     [ -d "$topic/tests" ] && tests="$topic/tests"
@@ -36,5 +47,30 @@ for code in catalog/references/*/code; do
         "$code" $tests || status=1
     run pytest -q -p no:cacheprovider --disable-socket --allow-unix-socket "$topic" \
         -o "pythonpath=$code $logger" || status=1
+done
+for module in catalog/references/*/code/go; do
+    [ -f "$module/go.mod" ] || continue
+    echo "== ${module#catalog/references/}"
+    (cd "$module" && go vet ./... && go test ./...) || status=1
+done
+for package in catalog/references/*/code/web; do
+    [ -f "$package/package.json" ] || continue
+    topic=${package#catalog/references/}
+    copy=.tmp/references-node/${topic%%/*}
+    echo "== $topic"
+    rm -rf "$copy" && mkdir -p "$copy" && cp -R "$package"/. "$copy" &&
+        (cd "$copy" && npm ci --no-audit --no-fund && npm test && npm run typecheck) || status=1
+done
+for crate in catalog/references/*/code/rust; do
+    [ -f "$crate/Cargo.toml" ] || continue
+    topic=${crate#catalog/references/}
+    echo "== $topic"
+    target=$PWD/.tmp/references-rust/${topic%%/*}
+    (
+        cd "$crate" &&
+            cargo fmt --check &&
+            cargo clippy --locked --all-targets --target-dir "$target" -- -D warnings &&
+            cargo test --locked --target-dir "$target"
+    ) || status=1
 done
 exit "$status"
