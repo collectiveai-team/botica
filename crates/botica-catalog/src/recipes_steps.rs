@@ -57,6 +57,7 @@ pub struct ToolStep {
     pub manager: String,
     /// The group of dependencies the packages go to; `DEFAULT_TOOL_GROUP` when absent.
     pub group: Option<String>,
+    /// Requirements: a name, optionally with extras, version specifiers and a marker.
     pub packages: Vec<String>,
 }
 
@@ -103,6 +104,45 @@ fn is_name(name: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
 }
 
+/// The name at the start of a requirement, and the rest: its extras, versions and marker.
+fn split_requirement(requirement: &str) -> (&str, &str) {
+    let end = requirement
+        .find(|c: char| !(c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-')))
+        .unwrap_or(requirement.len());
+    requirement.split_at(end)
+}
+
+/// Whether `requirement` is a package name, optionally followed by extras, version specifiers and
+/// a marker, as `blockbuster>=1.5,<1.6` or `pytest-memray ; sys_platform != 'win32'`. A direct
+/// reference (`name @ url`) is not one: the packages of a recipe come from the index. `uv add`
+/// checks the rest.
+fn is_requirement(requirement: &str) -> bool {
+    let (name, rest) = split_requirement(requirement);
+    let rest = rest.trim_start();
+    requirement == requirement.trim()
+        && is_name(name)
+        && !rest.contains(['@', '\n', '\r'])
+        && (rest.is_empty() || rest.starts_with(['[', '<', '>', '=', '!', '~', ';']))
+}
+
+/// The normalized name of the package of a requirement: `my-pkg` for `My_Pkg>=1`.
+pub fn requirement_package(requirement: &str) -> String {
+    normalized_package(split_requirement(requirement.trim_start()).0)
+}
+
+/// Whether two requirements ask for the same: the same package, and the same extras, versions and
+/// marker once the white space is dropped. `ruff` and `ruff>=0.5` are different requirements.
+pub(crate) fn same_requirement(a: &str, b: &str) -> bool {
+    let rest = |requirement: &str| -> String {
+        split_requirement(requirement.trim_start())
+            .1
+            .chars()
+            .filter(|c| !c.is_whitespace())
+            .collect()
+    };
+    requirement_package(a) == requirement_package(b) && rest(a) == rest(b)
+}
+
 /// A package name as the managers compare it: lower case, with each run of `.`, `_` and `-` as `-`.
 pub fn normalized_package(name: &str) -> String {
     let mut normalized = String::with_capacity(name.len());
@@ -136,11 +176,11 @@ fn tool_problems(steps: &[ToolStep]) -> Vec<String> {
             problems.push("a `tools` step has no packages".to_owned());
         }
         for package in &step.packages {
-            if !is_name(package) {
+            if !is_requirement(package) {
                 problems.push(format!(
-                    "the `tools` package `{package}` is not a package name"
+                    "the `tools` package `{package}` is not a requirement"
                 ));
-            } else if !seen.insert(normalized_package(package)) {
+            } else if !seen.insert(requirement_package(package)) {
                 problems.push(format!("`tools` lists `{package}` twice"));
             }
         }

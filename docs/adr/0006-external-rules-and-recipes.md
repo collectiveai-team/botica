@@ -115,8 +115,11 @@ scaffolder writes the configuration of a repository from its own components, apa
    `template`. `[[sections]]` has `path`, `marker` and `template`. A `template` is a file under the
    folder of the recipe (`files/`, `sections/`). `[[links]]` has `path` and `target`, the text
    of the link, relative to the folder of the link. `[[tools]]` has `manager` (`uv`), `packages` and
-   optionally `group` (`dev` when absent). `[[gitignore]]` has `lines` and `unignore`, and needs one
-   of them. A line is one line of text, and a recipe lists it once across its steps.
+   optionally `group` (`dev` when absent); a package is a requirement without a URL, a name with
+   optional extras, versions and marker, and the name is what `check` looks for; two recipes that
+   ask for a package with different requirements do not resolve. `[[gitignore]]` has `lines` and
+   `unignore`, and needs one of them. A line is one line of text, and a recipe lists it once across
+   its steps.
    `unignore` accepts only `skills-lock.json`, and `lines` does not accept it (CES-107).
    `unignore` is the one step that deletes text from a file that the repository has: CES-107
    tracks `skills-lock.json`, and a repository that already ignores it would keep the manifest

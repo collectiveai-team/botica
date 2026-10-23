@@ -2,7 +2,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::recipes::Recipe;
 use crate::recipes_resolve::RecipeItem;
-use crate::recipes_steps::{GitignoreStep, DEFAULT_TOOL_GROUP};
+use crate::recipes_steps::{
+    requirement_package, same_requirement, GitignoreStep, DEFAULT_TOOL_GROUP,
+};
 
 /// A skill to install and the recipe whose file lists it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -166,26 +168,38 @@ pub(crate) fn resolve_links(chain: &[&Recipe]) -> Vec<ResolvedLink> {
 }
 
 /// The packages of the `tools` steps of the recipes in `chain`, one entry for each manager, group
-/// and package, where it is first.
-pub(crate) fn resolve_tools(chain: &[&Recipe]) -> Vec<ResolvedTool> {
+/// and package, where it is first. Two recipes of the chain that ask for the same package with
+/// different requirements are an error: which one wins would depend on the order of `extends`.
+pub(crate) fn resolve_tools(chain: &[&Recipe]) -> Result<Vec<ResolvedTool>, String> {
     let mut tools: Vec<ResolvedTool> = Vec::new();
     for recipe in chain {
         for step in &recipe.tools {
             let group = step.group.as_deref().unwrap_or(DEFAULT_TOOL_GROUP);
             for package in &step.packages {
-                let listed = tools.iter().any(|t| {
-                    t.manager == step.manager && t.group == group && t.package == *package
+                let name = requirement_package(package);
+                let listed = tools.iter().find(|t| {
+                    t.manager == step.manager
+                        && t.group == group
+                        && requirement_package(&t.package) == name
                 });
-                if !listed {
-                    tools.push(ResolvedTool {
+                match listed {
+                    Some(first) if !same_requirement(&first.package, package) => {
+                        return Err(format!(
+                            "`{}` asks for `{package}` and `{}` for `{}`: a package has one \
+                             requirement across the recipes",
+                            recipe.id, first.from, first.package
+                        ));
+                    }
+                    Some(_) => {}
+                    None => tools.push(ResolvedTool {
                         manager: step.manager.clone(),
                         group: group.to_owned(),
                         package: package.clone(),
                         from: recipe.id.clone(),
-                    });
+                    }),
                 }
             }
         }
     }
-    tools
+    Ok(tools)
 }

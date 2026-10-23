@@ -87,8 +87,14 @@ empty, does not start with `/` and has no empty part or `\`. A recipe names a li
 
 A `[[tools]]` step has a `manager` (`uv`), the packages to add, and optionally a `group`, `dev`
 when it is absent. A package is a name that starts with a letter or a digit and has letters,
-digits, `.`, `_` and `-`; a recipe names it once, and `My_Pkg` and `my-pkg` are the same name. A
-group has the same form.
+digits, `.`, `_` and `-`, and may go on with extras, version specifiers and a marker:
+`blockbuster>=1.5,<1.6` or `pytest-memray ; sys_platform != 'win32'`. A URL (`name @ url`) is not
+accepted. A recipe names a package once, and `My_Pkg` and `my-pkg>=1` are the same package. A
+group is a name. Two recipes of a chain, or two recipes named together, that ask for the same
+package ask for it with the same requirement, or `show`, `check` and `install` fail with 2 before
+anything is written: `ruff` and `ruff>=0.14` are different requirements. `install` passes the
+requirement to `uv add` as it is written; `check` and `install` count a package as present when
+`pyproject.toml` declares its name, with any versions or marker.
 
 A `[[gitignore]]` step has `lines` and `unignore`, and needs one of them. A line is one line of text
 that is not empty, and a recipe lists it once, across its steps. `unignore` names lines to remove

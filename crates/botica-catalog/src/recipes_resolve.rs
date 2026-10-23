@@ -48,7 +48,8 @@ impl Recipes {
     /// The recipes `ids` as one: the chain has each recipe once, the ones a name extends before it,
     /// the names in the order given, and an entry that several recipes list stays where it is
     /// first. A skill that a later recipe takes from another source replaces the earlier one,
-    /// with a warning. A name that is not a recipe fails before anything is resolved.
+    /// with a warning. A name that is not a recipe fails before anything is resolved, and two
+    /// recipes that ask for a package of a tool with different requirements fail.
     pub fn resolve_many<S: AsRef<str>>(&self, ids: &[S]) -> Result<ResolvedRecipe, String> {
         if ids.is_empty() {
             return Err("name at least one recipe".to_owned());
@@ -93,7 +94,7 @@ impl Recipes {
             files: resolve_files(&recipes),
             sections: resolve_sections(&recipes),
             links: resolve_links(&recipes),
-            tools: resolve_tools(&recipes),
+            tools: resolve_tools(&recipes)?,
             gitignore: resolve_gitignore(&recipes, |step| &step.lines),
             unignore: resolve_gitignore(&recipes, |step| &step.unignore),
             chain,
