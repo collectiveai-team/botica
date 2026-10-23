@@ -1,0 +1,16 @@
+[package]
+name = "orders-auth"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+publish = false
+
+# Its own workspace: the code of a topic is not a member of the workspace of botica.
+[workspace]
+
+[dependencies]
+base64 = "0.23"
+jsonwebtoken = { version = "11.1", default-features = false, features = ["rust_crypto"] }
+rand = "0.10"
+serde = { version = "1", features = ["derive"] }
+sha2 = "0.11"

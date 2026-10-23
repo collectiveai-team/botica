@@ -98,6 +98,15 @@ jobs:
           version: "0.13.3"
           enable-cache: false
 
+      # The topics with a Node package run its tests with the type stripping of Node 24.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      # The topics with a Cargo package run its fmt, clippy and tests. Go is on the runner already.
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+
       - name: Type-check and test the code of each topic
         run: scripts/check_references.sh
 

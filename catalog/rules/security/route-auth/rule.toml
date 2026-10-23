@@ -1,6 +1,7 @@
 id = "route-auth"
 code = "BTSEC001"
 standard = "CES-121"
+references = ["auth"]
 summary = "Each route gets its caller from a dependency that verifies a credential"
 status = "preview"
 tags = ["auth", "fastapi"]

@@ -285,6 +285,7 @@ dev = [
     { name = "ruff", marker = "python_full_version >= '3.11'" },
 ]
 references = [
+    { name = "alembic", marker = "python_full_version >= '3.14'" },
     { name = "blockbuster", marker = "python_full_version >= '3.14'" },
     { name = "fastapi", marker = "python_full_version >= '3.14'" },
     { name = "httpx", marker = "python_full_version >= '3.14'" },
@@ -293,8 +294,10 @@ references = [
     { name = "pydantic", marker = "python_full_version >= '3.14'" },
     { name = "pydantic-ai-slim", marker = "python_full_version >= '3.14'" },
     { name = "pydantic-settings", marker = "python_full_version >= '3.14'" },
+    { name = "pyjwt", extra = ["crypto"], marker = "python_full_version >= '3.14'" },
     { name = "pyrefly", marker = "python_full_version >= '3.14'" },
     { name = "pytest-socket", marker = "python_full_version >= '3.14'" },
+    { name = "sqlmodel", marker = "python_full_version >= '3.14'" },
     { name = "structlog", marker = "python_full_version >= '3.14'" },
 ]
 
@@ -314,6 +317,7 @@ dev = [
     { name = "ruff", marker = "python_full_version >= '3.11'", specifier = ">=0.17.0" },
 ]
 references = [
+    { name = "alembic", marker = "python_full_version >= '3.14'", specifier = "==1.20.0" },
     { name = "blockbuster", marker = "python_full_version >= '3.14'", specifier = "==1.5.29" },
     { name = "fastapi", marker = "python_full_version >= '3.14'", specifier = "==0.153.0" },
     { name = "httpx", marker = "python_full_version >= '3.14'", specifier = "==0.28.1" },
@@ -322,8 +326,10 @@ references = [
     { name = "pydantic", marker = "python_full_version >= '3.14'", specifier = "==2.14.1" },
     { name = "pydantic-ai-slim", marker = "python_full_version >= '3.14'", specifier = "==2.58.0" },
     { name = "pydantic-settings", marker = "python_full_version >= '3.14'", specifier = "==2.16.1" },
+    { name = "pyjwt", extras = ["crypto"], marker = "python_full_version >= '3.14'", specifier = "==2.15.1" },
     { name = "pyrefly", marker = "python_full_version >= '3.14'", specifier = "==1.4.0" },
     { name = "pytest-socket", marker = "python_full_version >= '3.14'", specifier = "==0.8.1" },
+    { name = "sqlmodel", marker = "python_full_version >= '3.14'", specifier = "==0.0.48" },
     { name = "structlog", marker = "python_full_version >= '3.14'", specifier = "==26.1.0" },
 ]
 
@@ -1986,6 +1992,20 @@ wheels = [
 ]
 
 [[package]]
+name = "pyjwt"
+version = "2.15.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/43/ea/5194e52748b0da83d71e082d75496eaec6e58f419f5e184786ded517e6a9/pyjwt-2.15.1.tar.gz", hash = "sha256:4f259e80cdfb6b3fc18a7de51fd1ef9ec79652f25019bae68975ca2468a34df8", size = 121252, upload-time = "2026-09-28T18:40:42.598Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/50/ca/44de4e75f8aadc457f0634be3b542815078ded46dca30efb960edeecad6e/pyjwt-2.15.1-py3-none-any.whl", hash = "sha256:42d59d631f7768a1028a64c7ff581a9bf7519804daf91fc5b6c56e30eec5e193", size = 33860, upload-time = "2026-09-28T18:40:41.429Z" },
+]
+
+[package.optional-dependencies]
+crypto = [
+    { name = "cryptography" },
+]
+
+[[package]]
 name = "pyrefly"
 version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2797,6 +2817,20 @@ wheels = [
 [package.optional-dependencies]
 asyncio = [
     { name = "greenlet" },
+]
+
+[[package]]
+name = "sqlmodel"
+version = "0.0.48"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "sqlalchemy" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/dd/67/b2c0b771c89c023262dd8fb6ba2cdc6a004e5ff75dd5763051b38ccd133a/sqlmodel-0.0.48.tar.gz", hash = "sha256:5582e87e845e23bb1179a7d8b11a4f5e441b4494528a41ee2fe1d129ffe91543", size = 99329, upload-time = "2026-10-06T21:44:36.391Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4b/76/6f8221eda15f28471c3887e5a75a62cd7338d20ac03e1e78a110a127d61e/sqlmodel-0.0.48-py3-none-any.whl", hash = "sha256:8d389bf735b03a17508e93e888c13a30ef1ddca22dd8e57add12317401e4112e", size = 31468, upload-time = "2026-10-06T21:44:35.326Z" },
 ]
 
 [[package]]
