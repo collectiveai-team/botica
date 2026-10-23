@@ -48,8 +48,9 @@ fn list_of_a_project_without_topics_has_the_built_in_ones() {
 
     let text = ok(&refs(&dir, &["list"]));
 
-    assert!(text.starts_with("api-schemas: "), "{text}");
+    assert!(text.starts_with("ai: "), "{text}");
     for id in [
+        "api-schemas",
         "in-memory-adapters",
         "settings-module",
         "structured-logging",

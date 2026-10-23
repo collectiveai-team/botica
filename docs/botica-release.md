@@ -77,6 +77,30 @@ wheels: a wheel built on your machine needs `--compatibility manylinux_2_28` (an
    tag and start again. Once `publish` has run, treat the version as final: when `mirror-check`
    fails, fix the cause and release X.Y.Z+1. Do not move the tag of the mirror: prek keeps the clone
    of a `rev` it has installed.
+6. When the release carries a change that breaks a project, add it to the notes:
+   `gh release edit vX.Y.Z --notes-file notes.md`, with a section `## Breaking changes` above the
+   notes that GitHub wrote.
+
+## Changes that break a project
+
+A change breaks a project when a project that worked with the release before fails with this one
+and no change of its own: a rule, topic or recipe renamed or removed, a key of `botica.toml` that
+means something else, a command or an option removed. Such a change has a `!` in the title of its
+pull request (`refactor(references)!: rename the llm topic to ai`, ADR 0010), and the release that
+carries it raises the minor version while botica is below 1.0.
+
+`--generate-notes` lists the pull requests by title and says nothing more, so the section
+`## Breaking changes` of the notes, written by hand, names each break, what fails and what the
+project changes. For a renamed topic:
+
+```markdown
+## Breaking changes
+
+- The topic `llm` is now `ai`, with no alias. `botica refs show llm` fails with "no topic, rule or
+  standard `llm`", and `[references] replace = ["llm"]` in `botica.toml` fails to load: write
+  `ai`. A rule or standard of the project with `references = ["llm"]` fails `botica refs check`.
+  The page of the topic moved from `references/llm/` to `references/ai/` on the site.
+```
 
 ## The mirror repository
 

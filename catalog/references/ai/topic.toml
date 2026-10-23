@@ -1,4 +1,4 @@
-title = "Calls to a language model"
+title = "Calls to an AI model"
 
 [[references]]
 file = "code/app/prompts/extract_parties.md"
