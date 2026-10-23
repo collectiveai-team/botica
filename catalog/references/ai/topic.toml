@@ -15,8 +15,42 @@ anchor = "def parties_agent"
 note = "the agent: the prompt as `instructions`, a pydantic model as `output_type`, and the model passed in"
 
 [[references]]
+file = "code/app/core/summaries.py"
+anchor = "def summary_agent"
+note = "a call that returns free text: the same `Agent`, with `output_type=str`"
+
+[[references]]
+file = "code/app/core/summaries.py"
+anchor = "async def stream_summary"
+note = "the text as it streams: `run_stream` and `stream_text(delta=True)`"
+
+[[references]]
+file = "code/app/core/embeddings.py"
+anchor = "async def embed_passages"
+note = "embeddings: an `Embedder`, with `embed_documents` for the passages and `embed_query` for the question"
+
+[[references]]
 url = "https://pydantic.dev/docs/ai/core-concepts/output/#structured-output"
 note = "how pydantic-ai turns the output of the model into the `output_type`, and sends a validation error back to it"
+
+[[references]]
+url = "https://pydantic.dev/docs/ai/core-concepts/output/#structured-output-data"
+note = "with `str` as the output type, a text answer of the model is the output"
+quote = "When no output type is specified, or when `str` is among the output types, any plain text response from the model will be used as the output data."
+
+[[references]]
+url = "https://pydantic.dev/docs/ai/core-concepts/output/#streaming-text"
+note = "`run_stream` and `stream_text`, and what `debounce_by` does"
+
+[[references]]
+url = "https://pydantic.dev/docs/ai/guides/embeddings/#quick-start"
+note = "`Embedder`, `embed_query` and `embed_documents`"
+quote = "Use embed_query() for search queries and embed_documents() for content you're indexing."
+
+[[references]]
+url = "https://pydantic.dev/docs/ai/core-concepts/direct/"
+note = "a request to a model without an `Agent`, when the call needs neither tools nor validation of the output"
+quote = "These methods are thin wrappers around the Model implementations, offering a simpler interface when you don't need the full functionality of an Agent."
 
 [[references]]
 url = "https://pydantic.dev/docs/ai/core-concepts/agent/#instructions"
