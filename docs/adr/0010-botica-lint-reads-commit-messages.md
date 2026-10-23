@@ -2,6 +2,11 @@
 
 **Status:** accepted
 
+Amended 2026-10-23: ADR 0013 replaces the second item of decision 6 on the hooks of botica. The
+four hooks of botica in `prek.toml` run the checkout too, and `prek.toml` no longer names the
+mirror. The `--select` of the hooks of commit-msg and of the two workflows stays, because they copy
+the templates, where each one checks one rule; the release of 0.13.0 is no longer its reason.
+
 CES-75 (Conventional Commits) and CES-91 (no AI co-authorship) are checked by Python regular
 expressions written four times: in the `commit-msg` hooks of `prek.toml` and of
 `catalog/recipes/files/prek-base.toml`, and in the workflows `conventional-commits.yml` and

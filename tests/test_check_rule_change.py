@@ -315,3 +315,174 @@ def test_a_branch_may_touch_one_standard_and_its_documentation(tmp_path: Path):
     )
 
     assert crc.check_branch("main", tmp_path) == 0
+
+
+class MemoryTexts:
+    """The texts of a branch held in two dicts, as `GitTexts` reads them from git."""
+
+    def __init__(self, before: dict[str, str], after: dict[str, str]) -> None:
+        self._before = before
+        self._after = after
+
+    def before(self, path: str) -> str:
+        return self._before[path]
+
+    def after(self, path: str) -> str:
+        return self._after[path]
+
+
+RULE = added("catalog/rules/testing/no-foo/rule.toml")
+
+PYPROJECT_BEFORE = """\
+[project]
+name = "x"
+
+[tool.botica]
+# The rules of the recipes.
+select = [
+  "no-utils",
+  "plain-writing",
+]
+"""
+
+PYPROJECT_AFTER = """\
+[project]
+name = "x"
+
+[tool.botica]
+# The rules of the recipes.
+select = [
+  "no-utils",
+  "no-foo",
+  "plain-writing",
+]
+"""
+
+
+def adopt(tmp_path: Path, path: str, before: str, after: str) -> list[str]:
+    add_rule(tmp_path, BUILTIN, "testing", "no-foo", "ast-grep")
+    texts = MemoryTexts({path: before}, {path: after})
+    return crc.violations([RULE, modified(path)], tmp_path, texts=texts)
+
+
+def test_a_new_rule_may_add_its_line_to_the_select_of_the_repository(tmp_path: Path):
+    assert adopt(tmp_path, "pyproject.toml", PYPROJECT_BEFORE, PYPROJECT_AFTER) == []
+
+
+def test_a_new_rule_may_be_the_last_line_of_the_select(tmp_path: Path):
+    after = PYPROJECT_BEFORE.replace('"plain-writing",\n', '"plain-writing",\n  "no-foo"\n')
+
+    assert adopt(tmp_path, "pyproject.toml", PYPROJECT_BEFORE, after) == []
+
+
+def test_the_select_may_only_gain_the_new_rule(tmp_path: Path):
+    after = PYPROJECT_AFTER.replace('"no-foo",', '"no-foo",\n  "no-bar",')
+
+    assert adopt(tmp_path, "pyproject.toml", PYPROJECT_BEFORE, after) == ["pyproject.toml"]
+
+
+def test_the_new_rule_in_another_list_of_the_configuration_is_outside_the_contract(
+    tmp_path: Path,
+):
+    after = PYPROJECT_BEFORE + 'ignore = [\n  "no-foo",\n]\n'
+
+    assert adopt(tmp_path, "pyproject.toml", PYPROJECT_BEFORE, after) == ["pyproject.toml"]
+
+
+def test_any_other_edit_of_the_configuration_is_outside_the_contract(tmp_path: Path):
+    after = PYPROJECT_AFTER.replace('name = "x"', 'name = "y"')
+    comment = PYPROJECT_AFTER.replace("# The rules of the recipes.", "# Other text.")
+
+    assert adopt(tmp_path, "pyproject.toml", PYPROJECT_BEFORE, after) == ["pyproject.toml"]
+    assert adopt(tmp_path / "c", "pyproject.toml", PYPROJECT_BEFORE, comment) == ["pyproject.toml"]
+
+
+def test_a_new_rule_may_be_silenced_on_a_line_of_any_file(tmp_path: Path):
+    before = "import os\n\nx = os.getenv('A')\n"
+    after = "import os\n\nx = os.getenv('A')  # botica: ignore[no-foo]\n"
+
+    assert adopt(tmp_path, "src/app/main.py", before, after) == []
+
+
+def test_a_new_rule_may_join_the_suppression_of_another_rule(tmp_path: Path):
+    before = "let x = 1; // botica: ignore[no-utils]\n"
+    after = "let x = 1; // botica: ignore[no-utils, no-foo]\n"
+
+    assert adopt(tmp_path, "src/lib.rs", before, after) == []
+
+
+def test_a_new_rule_may_be_silenced_for_a_whole_file_with_a_reason(tmp_path: Path):
+    before = "def f():\n    return 1\n"
+    after = "# botica: ignore-file[no-foo] -- the test checks the tool itself\n" + before
+
+    assert adopt(tmp_path, "tests/test_tool.py", before, after) == []
+
+
+def test_a_suppression_comes_with_no_other_edit(tmp_path: Path):
+    before = "x = 1\n"
+    after = "x = 2  # botica: ignore[no-foo]\n"
+
+    assert adopt(tmp_path, "src/app/main.py", before, after) == ["src/app/main.py"]
+
+
+def test_a_suppression_of_another_rule_is_outside_the_contract(tmp_path: Path):
+    before = "x = 1\n"
+    after = "x = 1  # botica: ignore[no-utils]\n"
+
+    assert adopt(tmp_path, "src/app/main.py", before, after) == ["src/app/main.py"]
+
+
+def test_the_rules_that_botica_exports_may_change_in_the_agents_file(tmp_path: Path):
+    before = "# Notes\n\n<!-- botica:rules -->\n- a\n<!-- /botica:rules -->\n\nEnd.\n"
+    after = before.replace("- a\n", "- a\n- no-foo\n")
+    prose = after.replace("End.", "The end.")
+
+    assert adopt(tmp_path, "AGENTS.md", before, after) == []
+    assert adopt(tmp_path / "p", "AGENTS.md", before, prose) == ["AGENTS.md"]
+
+
+def test_the_rubric_may_change(tmp_path: Path):
+    assert adopt(tmp_path, ".abide/rubric.json", "{}", '{"a": 1}') == []
+
+
+def test_a_new_file_is_not_an_adoption_even_if_it_only_silences(tmp_path: Path):
+    add_rule(tmp_path, BUILTIN, "testing", "no-foo", "ast-grep")
+    path = "src/app/new.py"
+    texts = MemoryTexts({}, {path: "x = 1  # botica: ignore[no-foo]\n"})
+
+    assert crc.violations([RULE, added(path)], tmp_path, texts=texts) == [path]
+
+
+def test_a_change_that_adds_no_rule_adopts_nothing(tmp_path: Path):
+    texts = MemoryTexts({}, {})
+
+    assert crc.violations([modified("pyproject.toml")], tmp_path, texts=texts) == []
+
+
+def branch_that_adds_a_rule_and_adopts_it(root: Path, line: str) -> None:
+    git(root, "init", "-q", "-b", "main")
+    (root / "pyproject.toml").write_text(PYPROJECT_BEFORE, encoding="utf-8")
+    (root / "main.py").write_text("x = 1\n", encoding="utf-8")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "base")
+    git(root, "checkout", "-q", "-b", "feature")
+    add_rule(root, BUILTIN, "testing", "no-foo", "ast-grep")
+    (root / "pyproject.toml").write_text(PYPROJECT_AFTER, encoding="utf-8")
+    (root / "main.py").write_text(line, encoding="utf-8")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "feature")
+
+
+def test_a_branch_that_adds_a_rule_and_adopts_it_passes(tmp_path: Path):
+    branch_that_adds_a_rule_and_adopts_it(tmp_path, "x = 1  # botica: ignore[no-foo]\n")
+
+    assert crc.check_branch("main", tmp_path) == 0
+
+
+def test_a_branch_that_adopts_a_rule_and_edits_code_fails(tmp_path: Path, capsys):
+    branch_that_adds_a_rule_and_adopts_it(tmp_path, "x = 2  # botica: ignore[no-foo]\n")
+
+    assert crc.check_branch("main", tmp_path) == 1
+    out = capsys.readouterr().out
+    assert "main.py" in out
+    assert "pyproject.toml" not in out

@@ -19,11 +19,16 @@ when the tag is on `main`, or else the one remote branch that holds the tag.
    "latest". By hand, `gh release edit vA.B.C --latest` marks another one.
 6. `pypi` uploads the wheels to PyPI when the repository variable `PUBLISH_TO_PYPI` is `true`.
 7. `mirror` waits until PyPI lists the version, and pushes the mirror with its tag (below).
-8. `bump` runs `scripts/bump_mirror_rev.py X.Y.Z` on the branch of the release, runs the hook of
-   botica at the new `rev` (`uvx prek run botica --all-files`) and the tests of the repository
-   (`uv run pytest`), and pushes the commit
-   `chore(release): the hooks of botica point at vX.Y.Z` to that branch, with no pull request. When
-   the hook or a test fails, nothing is pushed and the run ends red.
+8. `mirror-check` runs the hooks of the mirror at the new tag on the commit of the tag
+   (`uvx prek try-repo https://github.com/collectiveai-team/botica-pre-commit --rev vX.Y.Z
+   --all-files`): prek installs the wheel from PyPI and runs `botica`, `botica-project`,
+   `botica-agents-md` and `botica-rubric`. The hooks of this repository run the botica of its
+   checkout (ADR 0013), so this is the job that runs the published botica here. When it fails,
+   `bump` does not run; the version is published, and the fix is a patch release.
+9. `bump` runs `scripts/bump_mirror_rev.py X.Y.Z` on the branch of the release and the tests of the
+   repository (`uv run pytest`), and pushes the commit
+   `chore(release): the template and the docs name the mirror at vX.Y.Z` to that branch, with no
+   pull request. When a test fails, nothing is pushed and the run ends red.
 
 The Linux jobs build in a container that owns `dist/`, so the checksums are written to `sums/`
 instead. The two calls to reusable workflows use GitHub's self-repository syntax
@@ -31,10 +36,9 @@ instead. The two calls to reusable workflows use GitHub's self-repository syntax
 (rhysd/actionlint issue 711) and reports it; until it does, run it with
 `-ignore 'reusable workflow call "\$/.+" at "uses" is not following the format'`.
 
-Checked by hand after each release: `uvx botica@X.Y.Z --version` installs the wheel from PyPI and
-runs it (Linux x64; PyPI's index can take a minute to list a new version), and prek installs the
-mirror repository at `vX.Y.Z` and runs the hook against that wheel. Not checked: that the wheels for
-musl, arm64, macOS and Windows run (they build and are published, nothing more).
+`mirror-check` installs the wheel of Linux x64 from PyPI through the mirror and runs it. Not
+checked: that the wheels for musl, arm64, macOS and Windows run (they build and are published,
+nothing more).
 
 ## PyPI and who may release
 
@@ -70,7 +74,9 @@ wheels: a wheel built on your machine needs `--compatibility manylinux_2_28` (an
 4. Tag and push the branch with the tag:
    `git tag -a vX.Y.Z -m "botica X.Y.Z" && git push origin HEAD vX.Y.Z`.
 5. Watch the run. If a platform fails, fix it and move the tag, or delete the draft release and the
-   tag and start again. Once `publish` has run, treat the version as final.
+   tag and start again. Once `publish` has run, treat the version as final: when `mirror-check`
+   fails, fix the cause and release X.Y.Z+1. Do not move the tag of the mirror: prek keeps the clone
+   of a `rev` it has installed.
 
 ## The mirror repository
 
@@ -99,9 +105,9 @@ secret `MIRROR_DEPLOY_KEY` of this repository.
 
 ## Files that name the mirror's `rev`
 
-- `catalog/recipes/files/prek-base.toml`, this repository's own `prek.toml`, the example of
-  `website/docs/guide/prek-and-ci.md` and the mirror's README name the mirror and its `rev`.
-  The job `bump` moves them all; `scripts/bump_mirror_rev.py` fails the release when one of them
+- `catalog/recipes/files/prek-base.toml`, the example of `website/docs/guide/prek-and-ci.md` and
+  the mirror's README name the mirror and its `rev`. This repository's own `prek.toml` does not: its
+  hooks of botica run the checkout (ADR 0013). The job `bump` moves them all; `scripts/bump_mirror_rev.py` fails the release when one of them
   no longer names the mirror on the line above its `rev`. The binary is built before `bump`, so
   the template it embeds names the release before; `botica recipe install` writes the `rev` of
   the release of the binary instead, whose tag the mirror has once the binary is published.

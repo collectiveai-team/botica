@@ -2,6 +2,11 @@
 
 **Status:** accepted
 
+Amended 2026-10-23: the hook and the step of `ci.yml` with `--select cognitive-complexity` of
+decision 9 are gone, and the `select` of `pyproject.toml` lists the rule. Under ADR 0013 the hooks
+of botica run the checkout, so a new rule enters the `select` in the pull request that adds it, with
+no such hook.
+
 `cognitive-complexity` (BTSTRUC006, CES-110) is an external rule: the hook `complexipy` of
 `prek.toml` and of `catalog/recipes/sections/prek-python-tools.toml` measures it, and botica only
 checks that the hook is there (`external-config`). The rule covers Python alone, `botica lint` does
