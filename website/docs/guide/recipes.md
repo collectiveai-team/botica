@@ -176,7 +176,11 @@ The built-in recipes are in `catalog/recipes/` and are compiled into the binary;
 list` prints each with its description, and `botica recipe show <name>` its steps. `base` also adds
 the section `## Repo Workspace Defaults` to `AGENTS.md`, before `## Botica rules`, whose block
 `install` fills with the judgment rules (the exports `agents-md` and `abide`); a new `AGENTS.md`
-starts with that section. An agent is a recipe chosen by name, beside the others
+starts with that section. `base` selects rules in preview, among them `conventional-commits` and
+`lockfile-committed`, so the `botica.toml` that `install` writes has `preview = true`; a
+configuration that exists without it is `pending`. `lockfile-committed` comes from `base`, so it
+reads the manifests of every ecosystem that it knows, also in a repository that names no `base-*`.
+An agent is a recipe chosen by name, beside the others
 (`botica recipe install base base-python agent-claude-code`). `agent-claude-code` names no agent
 for the skills: `npx skills add --agent claude-code` writes in `.claude/skills/<name>`, which the
 link `.claude/skills` makes a path inside `.agents/skills`, and fails with `ENOTDIR`.

@@ -38,14 +38,7 @@ fn the_recipe_extends_base_and_selects_the_rules_that_read_rust() {
     let rust = recipes.recipe("base-rust").expect("base-rust");
 
     assert_eq!(rust.extends, ["base"]);
-    assert_eq!(
-        rust.rules,
-        [
-            "cognitive-complexity",
-            "lockfile-committed",
-            "cargo-cooldown"
-        ]
-    );
+    assert_eq!(rust.rules, ["cognitive-complexity", "cargo-cooldown"]);
     assert_eq!(rust.gitignore[0].lines, ["target/"]);
     let markers: Vec<String> = sections().into_iter().map(|s| s.0).collect();
     assert_eq!(markers, ["# MARK: cargo-fmt", "# MARK: cargo-shear"]);

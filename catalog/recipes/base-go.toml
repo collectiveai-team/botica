@@ -2,7 +2,6 @@ description = "A Go module: the rules of any repository and the ones about Go co
 extends = ["base"]
 rules = [
   "cognitive-complexity",
-  "lockfile-committed",
 ]
 
 [[files]]

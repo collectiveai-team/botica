@@ -4,7 +4,6 @@ rules = [
   "log-no-print",
   "no-disabled-typecheck",
   "cognitive-complexity",
-  "lockfile-committed",
   "docstring-matches-signature",
   "pnpm-cooldown",
   "npm-cooldown",
