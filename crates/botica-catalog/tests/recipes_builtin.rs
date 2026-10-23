@@ -83,7 +83,7 @@ fn base_python_resolves_to_the_rules_of_base_first() {
         first,
         ["file-size-guard", "no-notebooks", "no-artifacts-in-package"]
     );
-    assert_eq!(resolved.rules.len(), 32);
+    assert_eq!(resolved.rules.len(), 33);
 }
 
 #[test]
@@ -101,6 +101,23 @@ fn no_utils_comes_from_base_for_every_language() {
         .find(|item| item.id == "no-utils")
         .expect("selected");
     assert_eq!(no_utils.from, "base");
+}
+
+#[test]
+fn lockfile_committed_comes_from_base_and_no_other_recipe_lists_it() {
+    let recipes = embedded();
+
+    for recipe in recipes.recipes() {
+        let lists = recipe.rules.iter().any(|rule| rule == "lockfile-committed");
+        assert_eq!(lists, recipe.id == "base", "recipe {}", recipe.id);
+    }
+    let resolved = recipes.resolve("base-python").expect("resolves");
+    let lockfile = resolved
+        .rules
+        .iter()
+        .find(|item| item.id == "lockfile-committed")
+        .expect("selected");
+    assert_eq!(lockfile.from, "base");
 }
 
 #[test]

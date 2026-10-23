@@ -2,7 +2,6 @@ description = "A Rust crate or workspace: the rules of any repository and the on
 extends = ["base"]
 rules = [
   "cognitive-complexity",
-  "lockfile-committed",
   "cargo-cooldown",
 ]
 

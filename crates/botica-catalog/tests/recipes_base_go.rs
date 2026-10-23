@@ -22,7 +22,7 @@ fn the_recipe_extends_base_and_selects_the_rules_that_read_go() {
     let go = recipes.recipe("base-go").expect("base-go");
 
     assert_eq!(go.extends, ["base"]);
-    assert_eq!(go.rules, ["cognitive-complexity", "lockfile-committed"]);
+    assert_eq!(go.rules, ["cognitive-complexity"]);
     let paths: Vec<&str> = go.files.iter().map(|f| f.path.as_str()).collect();
     assert_eq!(paths, [".golangci.yml"]);
     assert_eq!(

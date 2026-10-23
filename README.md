@@ -94,7 +94,7 @@ uvx botica recipe install base base-python agent-claude-code ci-python repo-publ
 
 | Recipe | What it adds |
 |---|---|
-| `base` | any repository: the rules about any file, the skills, `.gitignore`, the hooks of prek, the workflow of abide, the sections of `AGENTS.md` |
+| `base` | any repository: the rules about any file and about lockfiles, the skills, `.gitignore`, the hooks of prek, the workflow of abide, the sections of `AGENTS.md` |
 | `base-python` | a Python project: the rules about Python code and `pyproject.toml`, the Python hooks and the dev tools |
 | `full-python` | `base-python` and `ci-python` |
 | `base-go` | a Go module: the rules about Go code, `.golangci.yml`, golangci-lint and `go mod tidy` in prek, and govulncheck in the manual stage of prek |

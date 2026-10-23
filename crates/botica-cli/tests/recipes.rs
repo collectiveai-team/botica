@@ -13,10 +13,10 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
 
     assert!(
         text.contains(
-            "\nbase: Any repository, in any language: the rules about any file, the rules of \
-             botica itself, the skills, .gitignore, the prek hooks, the workflow of abide and the \
-             sections of AGENTS.md\n  \
-             rules: 12, judgment: 11, exports: 2\n  \
+            "\nbase: Any repository, in any language: the rules about any file and about \
+             lockfiles, the rules of botica itself, the skills, .gitignore, the prek hooks, the \
+             workflow of abide and the sections of AGENTS.md\n  \
+             rules: 13, judgment: 11, exports: 2\n  \
              skills: 31, files: 5, sections: 2, gitignore: 10, params: 2\n  from: built-in\n"
         ),
         "{text}"
@@ -155,7 +155,7 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
         .lines()
         .filter(|line| line.starts_with("- "))
         .collect();
-    assert_eq!(lines.len(), 32, "{text}");
+    assert_eq!(lines.len(), 33, "{text}");
     assert!(
         lines[0].starts_with("- file-size-guard (BT"),
         "{}",
@@ -163,12 +163,17 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
     );
     assert!(lines[0].contains(", from base): "), "{}", lines[0]);
     assert!(
-        lines[7].starts_with("- external-config (BT004, from base): "),
+        lines[8].starts_with("- external-config (BT004, from base): "),
         "{}",
-        lines[7]
+        lines[8]
     );
     assert!(lines[3].starts_with("- no-utils (BT"), "{}", lines[3]);
     assert!(lines[3].contains(", from base): "), "{}", lines[3]);
+    assert!(
+        lines[4].starts_with("- lockfile-committed (BTSTRUC007, from base): "),
+        "{}",
+        lines[4]
+    );
     assert!(
         text.contains("\n## Judgment rules\n\n- separate-orchestration (BTARCH002, from base): "),
         "{text}"
