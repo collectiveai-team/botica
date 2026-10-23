@@ -1,0 +1,2 @@
+description = "A Python project with its CI: base-python and ci-python"
+extends = ["base-python", "ci-python"]

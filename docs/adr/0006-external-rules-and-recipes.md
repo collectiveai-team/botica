@@ -254,7 +254,8 @@ scaffolder writes the configuration of a repository from its own components, apa
    `npx skills add --agent claude-code` writes in `.claude/skills/<name>` and fails through that link.
    `install` takes one or more names (`botica recipe install base base-python agent-claude-code`),
    and a step does not carry a condition. A parameter changes a value inside a template, never
-   whether a step runs.
+   whether a step runs. A recipe `full-<language>` extends the `base-*` and the
+   `ci-*` of a language and has no step of its own: one name for the whole package of a language.
 
    The components of `scaffolding` are recipes: `gitignore`, `agents`, `standards` and `skills` in
    `base`, `prek` and `pyproject` in `base-python`, `agent-config` in `agent-opencode`,
