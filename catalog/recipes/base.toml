@@ -75,6 +75,8 @@ lines = [
   ".worktrees/",
   ".journals/",
   ".agents/skills/",
+  "node_modules/",
+  "target/",
 ]
 unignore = ["skills-lock.json"]
 

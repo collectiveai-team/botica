@@ -5,7 +5,7 @@ use std::path::Path;
 use std::process::ExitCode;
 
 use anyhow::Result;
-use botica_catalog::{Kind, Recipes, ResolvedRecipe};
+use botica_catalog::{is_node_manager, Kind, Recipes, ResolvedRecipe};
 use botica_core::{recipe_conflict, walk};
 
 use crate::lint_cmd::recipe_conflict::conflicts;
@@ -13,6 +13,7 @@ use crate::project::ProjectArgs;
 use crate::recipes_check_fragments as fragments;
 use crate::recipes_check_steps as steps;
 use crate::recipes_collection::Collection;
+use crate::recipes_package_json::PackageJson;
 use crate::recipes_pyproject::Pyproject;
 use crate::rules_export;
 
@@ -118,8 +119,14 @@ impl Report {
         }
         if !resolved.tools.is_empty() {
             let pyproject = Pyproject::read(root);
+            let package_json = PackageJson::read(root);
             for item in &resolved.tools {
-                self.add("tool", &item.package, pyproject.problem(&item.package));
+                let problem = if is_node_manager(&item.manager) {
+                    package_json.problem(&item.manager, &item.package)
+                } else {
+                    pyproject.problem(&item.package)
+                };
+                self.add("tool", &item.package, problem);
             }
         }
         if !resolved.skills.is_empty() {

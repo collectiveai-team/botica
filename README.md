@@ -101,6 +101,8 @@ uvx botica recipe install base base-python agent-claude-code ci-python repo-publ
 | `full-go` | `base-go` and `ci-go` |
 | `base-rust` | a Rust crate or workspace: the rules about Rust code, the cooldown of Cargo, and cargo fmt, clippy and cargo-shear in prek |
 | `full-rust` | `base-rust` and `ci-rust` |
+| `base-node` | a TypeScript or JavaScript project: the rules about its code, Biome, ESLint for JSDoc, tsc and knip in prek, the cooldown of pnpm, and those packages in `package.json` |
+| `full-node` | `base-node` and `ci-node` |
 | `agent-claude-code`, `agent-codex`, `agent-opencode` | the configuration and the skills of an agent |
 | `ci`, `ci-python`, `ci-node`, `ci-go`, `ci-rust` | the workflows of GitHub Actions for commits and for an ecosystem |
 | `repo-public`, `repo-private` | the workflows that fit the visibility of the repository |

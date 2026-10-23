@@ -1,0 +1,14 @@
+# MARK: eslint-jsdoc
+# CES-123. Biome has no rule that reads the tags of a JSDoc comment, so ESLint runs the three
+# rules of eslint-plugin-jsdoc in eslint.config.js and no other. It runs after Biome, which
+# rewrites files, and uses the eslint of the project, as for tsc and knip.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "eslint-jsdoc"
+name = "eslint (JSDoc only)"
+entry = "npx --no -- eslint --no-warn-ignored"
+language = "system"
+types_or = ["javascript", "jsx", "ts", "tsx"]
+priority = 1

@@ -23,6 +23,7 @@ mod recipes_install_selection;
 mod recipes_install_skills;
 mod recipes_install_steps;
 mod recipes_install_tools;
+mod recipes_package_json;
 mod recipes_pyproject;
 mod recipes_steps_text;
 mod refs_check;

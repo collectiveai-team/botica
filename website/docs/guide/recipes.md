@@ -54,7 +54,7 @@ template = "sections/botica-rules.md"
 path = "CLAUDE.md"
 target = "AGENTS.md"
 
-[[tools]]                   # packages to add to pyproject.toml with `uv add --dev`
+[[tools]]                   # packages to add with `uv add --dev`, `pnpm add -D` or `npm install -D`
 manager = "uv"
 packages = ["ruff", "pytest"]
 
@@ -88,16 +88,21 @@ A `[[links]]` step has the `path` of the link and its `target`, which is the tex
 relative to the folder of the link, so `../.agents/skills` for `.claude/skills`. A target is not
 empty, does not start with `/` and has no empty part or `\`. A recipe names a link path once.
 
-A `[[tools]]` step has a `manager` (`uv`), the packages to add, and optionally a `group`, `dev`
-when it is absent. A package is a name that starts with a letter or a digit and has letters,
-digits, `.`, `_` and `-`, and may go on with extras, version specifiers and a marker:
-`blockbuster>=1.5,<1.6` or `pytest-memray ; sys_platform != 'win32'`. A URL (`name @ url`) is not
-accepted. A recipe names a package once, and `My_Pkg` and `my-pkg>=1` are the same package. A
+A `[[tools]]` step has a `manager` (`uv`, `pnpm` or `npm`), the packages to add, and optionally a
+`group`, `dev` when it is absent. For uv a package is a name that starts with a letter or a digit
+and has letters, digits, `.`, `_` and `-`, and may go on with extras, version specifiers and a
+marker: `blockbuster>=1.5,<1.6` or `pytest-memray ; sys_platform != 'win32'`. A URL
+(`name @ url`) is not accepted. A recipe names a package once, and `My_Pkg` and `my-pkg>=1` are the same package. A
 group is a name. Two recipes of a chain, or two recipes named together, that ask for the same
 package ask for it with the same requirement, or `show`, `check` and `install` fail with 2 before
 anything is written: `ruff` and `ruff>=0.14` are different requirements. `install` passes the
 requirement to `uv add` as it is written; `check` and `install` count a package as present when
 `pyproject.toml` declares its name, with any versions or marker.
+
+For `pnpm` and `npm` a package is a name of the npm registry, optionally with a scope, and
+optionally followed by `@` and a range: `knip`, `@biomejs/biome`, `typescript@^6`. A tag, a URL, a
+path or an alias (`npm:`) is not accepted. The group is `dev`, the `devDependencies` of
+`package.json`, and no other.
 
 A `[[gitignore]]` step has `lines` and `unignore`, and needs one of them. A line is one line of text
 that is not empty, and a recipe lists it once, across its steps. `unignore` names lines to remove
@@ -250,6 +255,25 @@ What the recipes cannot say about themselves:
   ignores.
 - `ci-rust` runs `cargo doc` with `-D rustdoc::broken_intra_doc_links`, which the hooks do not run,
   so a broken link of a doc comment fails in CI and not in the commit.
+- `base-node` formats and lints with Biome, which replaces ESLint and Prettier (CES-58), and keeps
+  ESLint for the three rules of `eslint-plugin-jsdoc` in `eslint.config.js` (CES-123). `install`
+  leaves an existing configuration as it is, so a repository that runs ESLint and Prettier moves in
+  the pull request that installs `base-node`: `biome migrate eslint --write` and
+  `biome migrate prettier --write` carry their settings to `biome.json`, then Prettier and every
+  rule of ESLint but the three of JSDoc are removed. The hooks of Biome, ESLint, `tsc` and `knip`
+  run the packages of the project (`npx --no`), which the `tools` step adds to `package.json`.
+  `knip.json` tells knip that `@biomejs/biome` is used, because only `prek.toml` runs it; a project
+  with another configuration of knip (`knip.ts`) moves that line there and deletes `knip.json`,
+  which knip would read first.
+- `@typescript-eslint/parser`, which ESLint needs to read TypeScript, does not run with
+  TypeScript 7, which ships no API, so the `tools` step asks for `typescript@^6`. A project already
+  on TypeScript 7 keeps it as its `tsc` and installs the API of 6 beside it, as the release notes of
+  TypeScript 7 give: `"typescript": "npm:@typescript/typescript6@^6.0.2"` and
+  `"@typescript/native": "npm:typescript@^7.0.2"` in `devDependencies`.
+- `base-node` writes `minimumReleaseAge` to `pnpm-workspace.yaml` (the cooldown of pnpm) and
+  selects the rules of the cooldown of pnpm, npm and Yarn; each applies only to a project with the
+  lockfile of its manager. A project of npm or Yarn writes `min-release-age` to `.npmrc` or
+  `npmMinimalAgeGate` to `.yarnrc.yml` as the rule asks, and can delete `pnpm-workspace.yaml`.
 
 ## Recipes of a project
 
@@ -321,9 +345,12 @@ An export differs when `botica rules export --check` fails for it with its defau
 `AGENTS.md` for `agents-md` and `.abide/rubric.json` for `abide`. A file differs when its path is
 not a file of the project. A section differs when its path is not a file, cannot be read, or its
 text does not contain the marker. A link differs when its path does not exist, is not a symbolic
-link, or is a link whose text is not the target. A tool differs when `pyproject.toml` does not exist or does not declare the package. It declares it
-in `project.dependencies`, `project.optional-dependencies`, `dependency-groups` or
-`tool.uv.dev-dependencies`, under any group, and the names are compared as `uv` does. A line of `gitignore` differs when `.gitignore` does not exist, is
+link, or is a link whose text is not the target. A tool of uv differs when `pyproject.toml` does not
+exist or does not declare the package. It declares it in `project.dependencies`,
+`project.optional-dependencies`, `dependency-groups` or `tool.uv.dev-dependencies`, under any
+group, and the names are compared as `uv` does. A tool of pnpm or npm differs when `package.json`
+does not exist or does not declare the package in `dependencies`, `devDependencies`,
+`optionalDependencies` or `peerDependencies`, with any range. A line of `gitignore` differs when `.gitignore` does not exist, is
 not a file, cannot be read, or has no line equal to it once the white space at its end is dropped. An
 `unignore` line differs when `.gitignore` is not a file, cannot be read, or has a line equal to it
 between white space; without a `.gitignore` it is `ok`. A skill differs when its name is not a key of `skills`
@@ -389,6 +416,14 @@ one. A call that fails for several packages is made again for each package, beca
 none when one of them does not exist; the package that is still not declared is `failed`, with the
 reason, as for the skills. The reason is the last line of stderr that starts with `cause:`, or its
 last line, leaving out the lines that start with `hint:`.
+
+A Node package that `package.json` declares is `ok`. For the ones that it does not, `install` runs
+one `pnpm add --save-dev <package>...` or `npm install --save-dev <package>...` in the root of the
+project, with the manager that the project uses: the one of its lockfile (`pnpm-lock.yaml`,
+`package-lock.json`), else the one of the field `packageManager` of `package.json`, else the one
+that the step names. Running another manager would write a second lockfile. A project of yarn or
+bun leaves each missing package `pending`, and a project without `package.json` leaves each package
+`pending`. A failed call is made again for each package, as for uv.
 
 A skill is `ok` when `.agents/skills/<name>/SKILL.md` is a file. For the skills that are not,
 `install` runs `npx skills add <source> --agent <agents> --yes --json --skill <name>...` in the root of the

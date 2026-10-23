@@ -1,0 +1,16 @@
+# MARK: tsc
+# CES-58. The type checker is the `typescript` of the project, which the `tools` step of base-node
+# adds, so the version is the one of its lockfile. `npx --no` fails when the package is not
+# installed instead of downloading the unrelated package `tsc`. A project of references uses
+# `tsc --build --noEmit`.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "tsc"
+name = "tsc --noEmit"
+entry = "npx --no -- tsc --noEmit"
+language = "system"
+types_or = ["ts", "tsx"]
+pass_filenames = false
+priority = 2

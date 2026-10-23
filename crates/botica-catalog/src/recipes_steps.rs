@@ -43,13 +43,16 @@ pub struct LinkStep {
 }
 
 /// The package managers that a `tools` step can name.
-pub const TOOL_MANAGERS: [&str; 1] = ["uv"];
+pub const TOOL_MANAGERS: [&str; 3] = ["uv", "pnpm", "npm"];
+
+/// The managers of Node packages, whose packages `package.json` declares.
+pub const NODE_MANAGERS: [&str; 2] = ["pnpm", "npm"];
 
 /// The group that a `tools` step adds to when it names none.
 pub const DEFAULT_TOOL_GROUP: &str = "dev";
 
 /// `[[tools]]`: packages that `botica recipe install` adds to the project with a package manager
-/// when `pyproject.toml` does not declare them.
+/// when `pyproject.toml` (uv) or `package.json` (pnpm, npm) does not declare them.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ToolStep {
@@ -57,7 +60,8 @@ pub struct ToolStep {
     pub manager: String,
     /// The group of dependencies the packages go to; `DEFAULT_TOOL_GROUP` when absent.
     pub group: Option<String>,
-    /// Requirements: a name, optionally with extras, version specifiers and a marker.
+    /// Requirements: for uv a name, optionally with extras, version specifiers and a marker; for
+    /// pnpm and npm a name, optionally scoped, and optionally `@` and a range.
     pub packages: Vec<String>,
 }
 
@@ -130,9 +134,13 @@ pub fn requirement_package(requirement: &str) -> String {
     normalized_package(split_requirement(requirement.trim_start()).0)
 }
 
-/// Whether two requirements ask for the same: the same package, and the same extras, versions and
-/// marker once the white space is dropped. `ruff` and `ruff>=0.5` are different requirements.
-pub(crate) fn same_requirement(a: &str, b: &str) -> bool {
+/// Whether two requirements of `manager` ask for the same: the same package, and the same extras,
+/// versions and marker once the white space is dropped. `ruff` and `ruff>=0.5` are different
+/// requirements, and so are `knip` and `knip@^6`.
+pub(crate) fn same_requirement(manager: &str, a: &str, b: &str) -> bool {
+    if is_node_manager(manager) {
+        return a == b;
+    }
     let rest = |requirement: &str| -> String {
         split_requirement(requirement.trim_start())
             .1
@@ -141,6 +149,64 @@ pub(crate) fn same_requirement(a: &str, b: &str) -> bool {
             .collect()
     };
     requirement_package(a) == requirement_package(b) && rest(a) == rest(b)
+}
+
+/// Whether `manager` installs Node packages.
+pub fn is_node_manager(manager: &str) -> bool {
+    NODE_MANAGERS.contains(&manager)
+}
+
+/// The name of a Node requirement and the rest, which starts with the `@` of its range:
+/// `@biomejs/biome` and `@^2` for `@biomejs/biome@^2`.
+fn split_node_requirement(requirement: &str) -> (&str, &str) {
+    let scope = usize::from(requirement.starts_with('@'));
+    match requirement[scope..].find('@') {
+        Some(at) => requirement.split_at(scope + at),
+        None => (requirement, ""),
+    }
+}
+
+/// Whether `part` is a part of a name of the npm registry: lower case letters, digits, `.`, `_`,
+/// `~` and `-`, starting with a letter or a digit.
+fn is_node_name_part(part: &str) -> bool {
+    part.chars()
+        .next()
+        .is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+        && part.chars().all(|c| {
+            c.is_ascii_lowercase() || c.is_ascii_digit() || matches!(c, '.' | '_' | '~' | '-')
+        })
+}
+
+/// Whether `requirement` is a name of the npm registry, optionally scoped (`@biomejs/biome`) and
+/// optionally followed by `@` and a range (`knip@^6`). A tag, a URL, a path or an alias
+/// (`npm:`) is not one: the range has no `:` and no `/`.
+fn is_node_requirement(requirement: &str) -> bool {
+    let (name, rest) = split_node_requirement(requirement);
+    let name_ok = match name.strip_prefix('@') {
+        Some(scoped) => scoped
+            .split_once('/')
+            .is_some_and(|(scope, bare)| is_node_name_part(scope) && is_node_name_part(bare)),
+        None => is_node_name_part(name),
+    };
+    let range = rest.strip_prefix('@');
+    name_ok
+        && name.len() <= 214
+        && (rest.is_empty()
+            || range.is_some_and(|range| {
+                !range.trim().is_empty()
+                    && range == range.trim()
+                    && !range.contains([':', '/', '\n', '\r'])
+            }))
+}
+
+/// The package of a requirement of `manager`, as the manager compares it: `my-pkg` for `My_Pkg>=1`
+/// with uv, `@biomejs/biome` for `@biomejs/biome@^2` with pnpm or npm.
+pub fn tool_package(manager: &str, requirement: &str) -> String {
+    if is_node_manager(manager) {
+        split_node_requirement(requirement).0.to_owned()
+    } else {
+        requirement_package(requirement)
+    }
 }
 
 /// A package name as the managers compare it: lower case, with each run of `.`, `_` and `-` as `-`.
@@ -169,20 +235,45 @@ fn tool_problems(steps: &[ToolStep]) -> Vec<String> {
                 TOOL_MANAGERS.join(", ")
             ));
         }
-        if let Some(group) = step.group.as_deref().filter(|group| !is_name(group)) {
-            problems.push(format!("the `tools` group `{group}` is not a name"));
-        }
+        problems.extend(group_problem(step));
         if step.packages.is_empty() {
             problems.push("a `tools` step has no packages".to_owned());
         }
-        for package in &step.packages {
-            if !is_requirement(package) {
-                problems.push(format!(
-                    "the `tools` package `{package}` is not a requirement"
-                ));
-            } else if !seen.insert(requirement_package(package)) {
-                problems.push(format!("`tools` lists `{package}` twice"));
-            }
+        problems.extend(package_problems(step, &mut seen));
+    }
+    problems
+}
+
+/// A group that is not a name, or, for pnpm and npm, a group other than `dev`.
+fn group_problem(step: &ToolStep) -> Option<String> {
+    let group = step.group.as_deref()?;
+    if !is_name(group) {
+        return Some(format!("the `tools` group `{group}` is not a name"));
+    }
+    (is_node_manager(&step.manager) && group != DEFAULT_TOOL_GROUP).then(|| {
+        format!(
+            "the `tools` group of `{}` is `{DEFAULT_TOOL_GROUP}` (devDependencies), not `{group}`",
+            step.manager
+        )
+    })
+}
+
+/// The packages of `step` that are not requirements of its manager, or that `seen` already has.
+fn package_problems(step: &ToolStep, seen: &mut BTreeSet<(bool, String)>) -> Vec<String> {
+    let node = is_node_manager(&step.manager);
+    let mut problems = Vec::new();
+    for package in &step.packages {
+        let valid = if node {
+            is_node_requirement(package)
+        } else {
+            is_requirement(package)
+        };
+        if !valid {
+            problems.push(format!(
+                "the `tools` package `{package}` is not a requirement"
+            ));
+        } else if !seen.insert((node, tool_package(&step.manager, package))) {
+            problems.push(format!("`tools` lists `{package}` twice"));
         }
     }
     problems
