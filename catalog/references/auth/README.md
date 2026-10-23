@@ -20,8 +20,8 @@ shown four times: an API of FastAPI with PyJWT in `code/app/`, route handlers of
   `Validation::new(Algorithm::HS256)` with `set_issuer`, `set_audience` and
   `set_required_spec_claims`.
 - `Sessions` keeps the refresh tokens behind the port `RefreshTokenStore`. It stores the SHA-256
-  of each token and never the token. `rotate` marks the token as used and returns a new one of the
-  same session; a token that comes back after it was used deletes every token of its session, since
+  of each token and never the token. `rotate` checks that the token is live (`is_live`), marks it
+  as used through the `mark_used` step of the port, and returns a new one of the same session; a token that comes back after it was used deletes every token of its session, since
   the caller or a thief holds a copy. `close` ends the session at sign-out.
 - Python has two adapters of the port. `InMemoryRefreshTokenStore` keeps the tokens in a dict, for
   one process and for the tests. `SqlRefreshTokenStore` keeps them in the table `refresh_tokens`,
@@ -74,8 +74,8 @@ The Python API shows both, and `get_current_user` takes the token from either: t
 - Keep one of the two routers of Python when the project has one kind of client.
 - `InMemoryRefreshTokenStore` in Python and in TypeScript, `MemoryStore` in Go and in Rust hold
   the tokens of one process. With several processes, use `SqlRefreshTokenStore`, or implement the
-  port over the database of the project in the other languages, with the step that marks a token
-  used as one conditional update. Add the table to the migrations of the project (topic
+  port over the database of the project in the other languages, with `markUsed`, `MarkUsed` or
+  `mark_used` as one conditional update. Add the table to the migrations of the project (topic
   `database`).
 - HS256 with one key fits a service that signs and verifies its own tokens. When other services
   verify them, sign with a private key (RS256 or ES256) and publish the public one.

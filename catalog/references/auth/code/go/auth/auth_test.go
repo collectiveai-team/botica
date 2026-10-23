@@ -129,6 +129,15 @@ func TestARefreshReplacesTheCookieAndAReplayedCookieEndsTheSession(t *testing.T)
 	}
 }
 
+func TestATokenIsMarkedUsedOnce(t *testing.T) {
+	store := auth.NewMemoryStore()
+	store.Save("hash", auth.StoredRefreshToken{UserID: "ana", Family: "family", ExpiresAt: time.Now()})
+
+	if first, second := store.MarkUsed("hash"), store.MarkUsed("hash"); !first || second {
+		t.Fatalf("marked: %v, %v", first, second)
+	}
+}
+
 func TestSigningOutEndsTheSession(t *testing.T) {
 	srv, h := server(t)
 	token := h.Sessions.Open("ana", time.Now())

@@ -11,6 +11,12 @@ export interface StoredRefreshToken {
 export interface RefreshTokenStore {
   save(tokenHash: string, stored: StoredRefreshToken): Promise<void>;
   get(tokenHash: string): Promise<StoredRefreshToken | undefined>;
+  /**
+   * Mark the token as used, and return false when it was used already or is not stored.
+   *
+   * One step, so that two requests with the same token cannot both see it unused.
+   */
+  markUsed(tokenHash: string): Promise<boolean>;
   deleteFamily(family: string): Promise<void>;
 }
 
@@ -26,6 +32,15 @@ export class InMemoryRefreshTokenStore implements RefreshTokenStore {
     return this.byHash.get(tokenHash);
   }
 
+  async markUsed(tokenHash: string): Promise<boolean> {
+    const stored = this.byHash.get(tokenHash);
+    if (stored === undefined || stored.used) {
+      return false;
+    }
+    this.byHash.set(tokenHash, { ...stored, used: true });
+    return true;
+  }
+
   async deleteFamily(family: string): Promise<void> {
     for (const [tokenHash, stored] of this.byHash) {
       if (stored.family === family) {
@@ -37,6 +52,11 @@ export class InMemoryRefreshTokenStore implements RefreshTokenStore {
 
 function hash(token: string): string {
   return createHash("sha256").update(token).digest("hex");
+}
+
+/** Whether a stored refresh token exists and has not expired at `now`. */
+export function isLive(stored: StoredRefreshToken | undefined, now: number): stored is StoredRefreshToken {
+  return stored !== undefined && stored.expiresAt > now;
 }
 
 /** Opens sessions, rotates their refresh tokens and ends them. */
@@ -58,14 +78,13 @@ export class Sessions {
   async rotate(token: string, now: number): Promise<{ userId: string; token: string } | null> {
     const tokenHash = hash(token);
     const stored = await this.store.get(tokenHash);
-    if (stored === undefined || stored.expiresAt <= now) {
+    if (!isLive(stored, now)) {
       return null;
     }
-    if (stored.used) {
+    if (!(await this.store.markUsed(tokenHash))) {
       await this.store.deleteFamily(stored.family);
       return null;
     }
-    await this.store.save(tokenHash, { ...stored, used: true });
     return { userId: stored.userId, token: await this.issue(stored.userId, stored.family, now) };
   }
 
