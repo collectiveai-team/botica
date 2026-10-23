@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 
+import pytest
 from prefect.automations import Automation
 from prefect.blocks.webhook import Webhook
 from prefect.events.actions import CallWebhook
@@ -11,6 +12,8 @@ from prefect.events.schemas.automations import EventTrigger
 from prefect.events.schemas.events import ResourceSpecification
 
 from app.automations import notify_failed_summaries
+
+pytestmark = pytest.mark.integration
 
 
 def test_the_automation_calls_the_webhook_when_a_run_of_the_summaries_fails_or_crashes():

@@ -26,7 +26,9 @@ deployment and imports no flow, and a notification of a failed run is an automat
 - `notify_failed_summaries` creates an automation whose trigger is a failed or crashed run of the
   flow and whose action calls a webhook block. The server runs it, so it fires even when the
   process of the run dies, which a state hook (`on_failure`, `on_crashed`) cannot promise.
-- The tests run on a temporary server (`prefect_test_harness`).
+- The tests run on a temporary server (`prefect_test_harness`). They are marked `integration`, and
+  the hook of `tests/conftest.py` gives them the network that `--disable-socket` blocks for the
+  other tests (`botica explain test-no-network`).
 
 ## What to adapt
 

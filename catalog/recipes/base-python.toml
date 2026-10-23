@@ -19,6 +19,8 @@ rules = [
   "ruff-selection",
   "docstring-matches-signature",
   "pytest-strict",
+  "test-no-subprocess",
+  "test-no-network",
 ]
 
 [[files]]
@@ -64,6 +66,7 @@ packages = [
   "pytest-asyncio",
   "pytest-timeout",
   "pytest-randomly",
+  "pytest-socket",
 ]
 
 [params.pyrefly-version]

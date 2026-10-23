@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from uuid import UUID
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from prefect.client.orchestration import get_client
@@ -13,6 +14,8 @@ from prefect.client.schemas.objects import StateType
 from app.api.v1.routers.documents import router
 from app.deploy import deployments
 from app.runs import SUMMARIZE_DOCUMENTS, cancel, wait
+
+pytestmark = pytest.mark.integration
 
 
 def register() -> None:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 
+import pytest
 from prefect.client.orchestration import get_client
 from prefect.client.schemas.filters import (
     FlowRunFilter,
@@ -16,6 +17,8 @@ from prefect.logging.handlers import APILogHandler
 
 from app.core.documents import Document, Summary
 from app.flows.documents import ARTIFACT_KEY, summarize_documents
+
+pytestmark = pytest.mark.integration
 
 DOCUMENTS = [
     Document(id="a", text="The lease starts in May. It lasts a year."),

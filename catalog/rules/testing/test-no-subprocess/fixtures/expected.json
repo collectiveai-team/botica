@@ -1,0 +1,327 @@
+{
+  "diagnostics": [
+    {
+      "path": "conftest.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 80,
+          "line": 8,
+          "column": 14
+        },
+        "end": {
+          "offset": 124,
+          "line": 8,
+          "column": 58
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, mark the test `integration` and silence this line with the reason."
+    },
+    {
+      "path": "src/__tests__/deploy.ts",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 46,
+          "line": 1,
+          "column": 47
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, silence this line with the reason."
+    },
+    {
+      "path": "src/release.test.ts",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 36,
+          "line": 1,
+          "column": 37
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, silence this line with the reason."
+    },
+    {
+      "path": "src/release.test.ts",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 76,
+          "line": 3,
+          "column": 1
+        },
+        "end": {
+          "offset": 106,
+          "line": 3,
+          "column": 31
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, silence this line with the reason."
+    },
+    {
+      "path": "src/runtime.test.ts",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 107,
+          "line": 4,
+          "column": 17
+        },
+        "end": {
+          "offset": 146,
+          "line": 4,
+          "column": 56
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, silence this line with the reason."
+    },
+    {
+      "path": "src/runtime.test.ts",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 201,
+          "line": 6,
+          "column": 16
+        },
+        "end": {
+          "offset": 226,
+          "line": 6,
+          "column": 41
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, silence this line with the reason."
+    },
+    {
+      "path": "src/runtime.test.ts",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 323,
+          "line": 10,
+          "column": 24
+        },
+        "end": {
+          "offset": 368,
+          "line": 10,
+          "column": 69
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, silence this line with the reason."
+    },
+    {
+      "path": "src/scripts.test.mjs",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 23,
+          "line": 1,
+          "column": 24
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, silence this line with the reason."
+    },
+    {
+      "path": "src/scripts.test.mjs",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 24,
+          "line": 2,
+          "column": 1
+        },
+        "end": {
+          "offset": 56,
+          "line": 2,
+          "column": 33
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, silence this line with the reason."
+    },
+    {
+      "path": "src/server.spec.js",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 17,
+          "line": 1,
+          "column": 18
+        },
+        "end": {
+          "offset": 46,
+          "line": 1,
+          "column": 47
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, silence this line with the reason."
+    },
+    {
+      "path": "src/server.spec.js",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 182,
+          "line": 6,
+          "column": 20
+        },
+        "end": {
+          "offset": 205,
+          "line": 6,
+          "column": 43
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, silence this line with the reason."
+    },
+    {
+      "path": "src/view.test.tsx",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 42,
+          "line": 1,
+          "column": 43
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, silence this line with the reason."
+    },
+    {
+      "path": "test/helpers.ts",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 0,
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "offset": 46,
+          "line": 1,
+          "column": 47
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, silence this line with the reason."
+    },
+    {
+      "path": "tests/global-setup.js",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 22,
+          "line": 1,
+          "column": 23
+        },
+        "end": {
+          "offset": 46,
+          "line": 1,
+          "column": 47
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, silence this line with the reason."
+    },
+    {
+      "path": "tests/test_from_import.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 81,
+          "line": 5,
+          "column": 12
+        },
+        "end": {
+          "offset": 134,
+          "line": 5,
+          "column": 65
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, mark the test `integration` and silence this line with the reason."
+    },
+    {
+      "path": "tests/test_sync.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 80,
+          "line": 7,
+          "column": 5
+        },
+        "end": {
+          "offset": 166,
+          "line": 7,
+          "column": 91
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, mark the test `integration` and silence this line with the reason."
+    },
+    {
+      "path": "tests/test_sync.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 208,
+          "line": 11,
+          "column": 12
+        },
+        "end": {
+          "offset": 252,
+          "line": 11,
+          "column": 56
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, mark the test `integration` and silence this line with the reason."
+    },
+    {
+      "path": "tests/test_sync.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 301,
+          "line": 15,
+          "column": 5
+        },
+        "end": {
+          "offset": 328,
+          "line": 15,
+          "column": 32
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, mark the test `integration` and silence this line with the reason."
+    },
+    {
+      "path": "tests/test_sync.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 388,
+          "line": 19,
+          "column": 21
+        },
+        "end": {
+          "offset": 458,
+          "line": 19,
+          "column": 91
+        }
+      },
+      "message": "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, mark the test `integration` and silence this line with the reason."
+    }
+  ]
+}
