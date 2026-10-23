@@ -1,0 +1,4 @@
+# CES-128: Cargo resolves only what was published 7 days ago or earlier. Cargo before 1.100
+# ignores the key.
+[registry]
+global-min-publish-age = "7 days"

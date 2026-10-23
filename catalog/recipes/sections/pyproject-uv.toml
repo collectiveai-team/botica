@@ -1,0 +1,5 @@
+# MARK: uv
+# CES-128: uv resolves only the files that were uploaded to the index at least
+# {{ param.cooldown-days }} days ago.
+[tool.uv]
+exclude-newer = "{{ param.cooldown-days }} days"

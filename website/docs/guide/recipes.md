@@ -228,6 +228,11 @@ What the recipes cannot say about themselves:
   (a private one on the Free plan).
 - The template of `pyproject.toml` of `base-python` has `readme = "README.md"`, so `uv add` fails
   to build a project that has no `README.md`.
+- `base-python` appends `[tool.uv]` with `exclude-newer = "7 days"` to `pyproject.toml` (CES-128).
+  A `pyproject.toml` that already has `[tool.uv]` would hold the table twice, so the step is
+  `pending` and the setting is added by hand to the table that is there. The days are the parameter
+  `cooldown-days` (7 by default), which the recipes of CI also write into
+  `.github/dependabot.yml`.
 
 ## Recipes of a project
 

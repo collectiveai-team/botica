@@ -158,6 +158,7 @@ fn base_python_adds_pyproject_the_python_hooks_and_the_dev_tools_to_what_base_do
             "prek.toml # MARK: validate-pyproject",
             "prek.toml # MARK: ruff-format",
             "prek.toml # MARK: pyrefly",
+            "pyproject.toml # MARK: uv",
             "pyproject.toml # MARK: Ruff",
             "pyproject.toml # MARK: Pyrefly",
             "pyproject.toml # MARK: Pytest",
@@ -169,7 +170,7 @@ fn base_python_adds_pyproject_the_python_hooks_and_the_dev_tools_to_what_base_do
     let resolved = recipes.resolve("base-python").expect("resolves");
     assert!(resolved.skills.iter().all(|skill| skill.from == "base"));
     assert_eq!(resolved.files.len(), 6);
-    assert_eq!(resolved.sections.len(), 8);
+    assert_eq!(resolved.sections.len(), 9);
     assert!(resolved.warnings.is_empty());
 }
 

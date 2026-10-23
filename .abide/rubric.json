@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-23T05:36:45Z",
+  "compiledAt": "2026-10-23T05:46:41Z",
   "compiledBy": "botica 0.14.2",
   "manual": true,
   "sources": [
@@ -534,6 +534,7 @@
         "Cargo.toml",
         "prek.toml",
         "pyproject.toml",
+        ".cargo/**",
         ".github/dependabot.yml",
         ".github/zizmor.yml",
         ".github/workflows/**",
@@ -586,6 +587,7 @@
         "catalog/recipes/sections/pyproject-pyrefly.toml",
         "catalog/recipes/sections/pyproject-pytest.toml",
         "catalog/recipes/sections/pyproject-ruff.toml",
+        "catalog/recipes/sections/pyproject-uv.toml",
         "catalog/references/api-schemas/topic.toml",
         "catalog/references/api-schemas/code/**",
         "catalog/references/api-schemas/tests/**",
