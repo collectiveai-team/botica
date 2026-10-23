@@ -28,10 +28,11 @@ alone.
 ```text
 myapp/
   database/
-    models.py        # SQLModel tables
-    engine.py        # create_engine, sessionmaker
-    repositories.py
-    migrations/
+    models/          # SQLModel tables
+    repositories/    # adapters of the ports of core
+    migrations/      # alembic
+    services/        # create_engine, sessionmaker
+    settings.py      # the settings of the package
 ```
 
 ## Don't
