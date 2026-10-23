@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-23T06:42:11Z",
+  "compiledAt": "2026-10-23T06:48:56Z",
   "compiledBy": "botica 0.14.2",
   "manual": true,
   "sources": [
@@ -664,12 +664,15 @@
         "catalog/recipes/base-python.toml",
         "catalog/recipes/base-rust.toml",
         "catalog/recipes/base.toml",
+        "catalog/recipes/ci-api-compat-python.toml",
+        "catalog/recipes/ci-asyncapi-compat.toml",
         "catalog/recipes/ci-automerge-private.toml",
         "catalog/recipes/ci-automerge-public.toml",
         "catalog/recipes/ci-dependency-review.toml",
         "catalog/recipes/ci-docker.toml",
         "catalog/recipes/ci-go.toml",
         "catalog/recipes/ci-node.toml",
+        "catalog/recipes/ci-openapi-compat.toml",
         "catalog/recipes/ci-publish.toml",
         "catalog/recipes/ci-python.toml",
         "catalog/recipes/ci-rust.toml",

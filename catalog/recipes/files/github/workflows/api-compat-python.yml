@@ -1,0 +1,98 @@
+name: api-compat-python
+
+# CES-131: a pull request that breaks the public API of the package carries the label
+# `breaking-change`.
+#
+# griffe compares the public API of the package (the names without a leading `_`) at the head of
+# the pull request with the one at its base, without importing the code, and fails on a removed
+# object, a removed or renamed parameter, or a new parameter with no default. It does not compare
+# return types.
+#
+# With the label `breaking-change` on the pull request, a failure is reported as a warning and the
+# job passes. Adding or removing the label runs the check again. A repository creates the label
+# once: `gh label create breaking-change --description "Breaks a published interface"`.
+#
+# Replace `replace_me` in PACKAGE with the import name of the package, and list in SEARCH_PATHS the
+# folders that hold it; the job fails while PACKAGE is `replace_me`. The job passes without
+# comparing when the base has no such package, as in the pull request that creates it.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+concurrency:
+  group: api-compat-python-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PACKAGE: replace_me
+  SEARCH_PATHS: src .
+  LABEL: breaking-change
+
+jobs:
+  griffe:
+    name: public API of the package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # griffe reads the base from git history.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Look for the package at the base
+        id: base
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [[ "$PACKAGE" == replace_me ]]; then
+            echo "::error::Replace replace_me in PACKAGE with the import name of the package."
+            exit 1
+          fi
+          present=false
+          for dir in $SEARCH_PATHS; do
+            for path in "$dir/$PACKAGE" "$dir/$PACKAGE.py"; do
+              if git cat-file -e "$BASE_SHA:${path#./}" 2>/dev/null; then
+                present=true
+              fi
+            done
+          done
+          echo "present=$present" >> "$GITHUB_OUTPUT"
+          if [[ "$present" == false ]]; then
+            echo "::notice::The base has no package $PACKAGE in $SEARCH_PATHS; nothing to compare."
+          fi
+
+      - name: Install uv
+        if: steps.base.outputs.present == 'true'
+        # An exact tag: setup-uv publishes no major tag since v8.0.0.
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: "0.13.3"
+          enable-cache: false
+
+      - name: Compare the public API with the base
+        id: compare
+        if: steps.base.outputs.present == 'true'
+        continue-on-error: ${{ contains(github.event.pull_request.labels.*.name, env.LABEL) }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          search=()
+          for dir in $SEARCH_PATHS; do
+            search+=(--search "$dir")
+          done
+          uvx griffe{{ param.griffe-version.at }} check "$PACKAGE" "${search[@]}" --against "$BASE_SHA" --format github
+
+      - name: Report a breaking change
+        if: always() && steps.compare.outcome == 'failure'
+        env:
+          DECLARED: ${{ contains(github.event.pull_request.labels.*.name, env.LABEL) }}
+        run: |
+          if [[ "$DECLARED" == true ]]; then
+            echo "::warning::The public API of $PACKAGE breaks, and the label $LABEL declares it."
+          else
+            echo "::error::The public API of $PACKAGE breaks. If the break is on purpose, add the label $LABEL to the pull request."
+          fi

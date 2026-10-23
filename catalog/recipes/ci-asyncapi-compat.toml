@@ -1,0 +1,14 @@
+description = "GitHub Actions: asyncapi diff fails a pull request that breaks the AsyncAPI document of an app, unless the pull request has the label breaking-change"
+
+[[files]]
+path = ".github/workflows/asyncapi-compat.yml"
+template = "files/github/workflows/asyncapi-compat.yml"
+
+[[files]]
+path = ".github/asyncapi-diff-overrides.json"
+template = "files/github/asyncapi-diff-overrides.json"
+
+[params.asyncapi-cli-version]
+description = "The version of @asyncapi/cli that asyncapi-compat.yml runs with npx (empty: the newest)"
+kind = "version"
+default = "6.2.1"
