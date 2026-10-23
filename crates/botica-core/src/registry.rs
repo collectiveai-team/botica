@@ -8,6 +8,7 @@ use crate::commit::{
 };
 use crate::complexity::{CognitiveComplexity, COGNITIVE_COMPLEXITY};
 use crate::coverage::{NoCoverageExclusion, NO_COVERAGE_EXCLUSION};
+use crate::eager_test::{EagerTest, EAGER_TEST};
 use crate::env_schema::SETTINGS_ENV_SCHEMA;
 use crate::external_config::EXTERNAL_CONFIG;
 use crate::external_weakened::EXTERNAL_CONFIG_WEAKENED;
@@ -50,7 +51,7 @@ enum Provider {
     },
 }
 
-const NATIVES: [(&str, Provider); 19] = [
+const NATIVES: [(&str, Provider); 20] = [
     (
         CONVENTIONAL_COMMITS,
         Provider::Message {
@@ -128,6 +129,13 @@ const NATIVES: [(&str, Provider); 19] = [
             reads_code_dirs: false,
         },
     ),
+    (
+        EAGER_TEST,
+        Provider::Rule {
+            make: eager_test,
+            reads_code_dirs: false,
+        },
+    ),
     (IO_ERROR, Provider::Engine),
     (UNUSED, Provider::Engine),
     (INVALID, Provider::Engine),
@@ -191,6 +199,12 @@ fn cognitive_complexity(options: &Options, _context: &Context) -> Box<dyn Native
     let default = CognitiveComplexity::default().max as usize;
     Box::new(CognitiveComplexity {
         max: u32::try_from(threshold(options, "max", default)).unwrap_or(u32::MAX),
+    })
+}
+
+fn eager_test(options: &Options, _context: &Context) -> Box<dyn NativeRule> {
+    Box::new(EagerTest {
+        max: threshold(options, "max", EagerTest::default().max),
     })
 }
 

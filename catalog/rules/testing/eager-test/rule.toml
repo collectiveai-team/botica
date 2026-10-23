@@ -1,0 +1,19 @@
+id = "eager-test"
+code = "BTTEST011"
+standard = "CES-126"
+summary = "A test calls at most 5 distinct functions of the code under test"
+status = "preview"
+tags = ["tests"]
+ignores = ["tests/integration/**", "tests/e2e/**"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save"]
+default-enabled = false
+default-severity = "warning"
+
+[options]
+max = { type = "int", default = 5, min = 1 }
+
+[[implementations]]
+kind = "native"
+languages = ["python", "typescript", "tsx", "javascript", "go", "rust"]

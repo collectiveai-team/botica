@@ -5,6 +5,7 @@ mod coverage;
 mod diagnostic;
 pub mod diff;
 mod document;
+pub mod eager_test;
 mod engine;
 pub mod env_schema;
 mod extension_run;
