@@ -1,0 +1,7 @@
+[tool.pytest.ini_options]
+strict_config = true
+strict_markers = true
+strict_xfail = true
+strict_parametrization_ids = true
+empty_parameter_set_mark = "fail_at_collect"
+required_plugins = ["pytest-timeout"]

@@ -1,0 +1,15 @@
+id = "pytest-strict"
+code = "BTTEST008"
+standard = "CES-125"
+summary = "pytest fails a run on an unknown marker or setting, a passing xfail, an empty parametrize, a repeated parameter id or a missing plugin"
+status = "preview"
+tags = ["tests"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["python"]
+tool = "pytest"
+docs = "https://docs.pytest.org/en/stable/reference/reference.html#configuration-options"
+config = "config/pyproject.toml"

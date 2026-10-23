@@ -1,7 +1,21 @@
 # MARK: Pytest
 [tool.pytest.ini_options]
+# CES-125. pytest 9.0 ignores --strict-markers and --strict-config in addopts (pytest#14442), and
+# pytest 8 does not know the strict_* keys: minversion stops it instead.
+minversion = "9.0"
 asyncio_mode = "auto"
 testpaths = ["tests"]
+addopts = ["-ra"]
+strict_config = true
+strict_markers = true
+strict_xfail = true
+strict_parametrization_ids = true
+empty_parameter_set_mark = "fail_at_collect"
+required_plugins = ["pytest-asyncio", "pytest-timeout"]
+# Seconds for each test; a slower test takes @pytest.mark.timeout(N).
+timeout = 60
+# Seconds for the whole run. pytest-timeout checks it after each test and stops the run there.
+session_timeout = 900
 markers = [
   "unit: fast isolated tests, no external deps",
   "integration: tests requiring external services or multi-component interaction",

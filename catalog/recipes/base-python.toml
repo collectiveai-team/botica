@@ -18,6 +18,7 @@ rules = [
   "cognitive-complexity",
   "ruff-selection",
   "docstring-matches-signature",
+  "pytest-strict",
 ]
 
 [[files]]
