@@ -1,0 +1,72 @@
+{
+  "diagnostics": [
+    {
+      "path": "shop/checkout_test.go",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 32,
+          "line": 5,
+          "column": 1
+        },
+        "end": {
+          "offset": 232,
+          "line": 15,
+          "column": 2
+        }
+      },
+      "message": "`TestCheckout` calls 7 functions of the code under test (`Add`, `ApplyCoupon`, `Checkout`, `NewCart`, `Remove`, `SendReceipt`, `Total`; the limit is 5): split it into tests that each check one behaviour"
+    },
+    {
+      "path": "src/checkout.rs",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 89,
+          "line": 6,
+          "column": 5
+        },
+        "end": {
+          "offset": 343,
+          "line": 15,
+          "column": 6
+        }
+      },
+      "message": "`checkout_flow` calls 6 functions of the code under test (`add`, `apply_coupon`, `checkout`, `pay`, `remove`, `send_receipt`; the limit is 5): split it into tests that each check one behaviour"
+    },
+    {
+      "path": "tests/test_checkout.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 48,
+          "line": 4,
+          "column": 1
+        },
+        "end": {
+          "offset": 219,
+          "line": 11,
+          "column": 29
+        }
+      },
+      "message": "`test_checkout` calls 6 functions of the code under test (`add`, `apply_coupon`, `checkout`, `remove`, `send_receipt`, `total`; the limit is 5): split it into tests that each check one behaviour"
+    },
+    {
+      "path": "web/checkout.test.ts",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 61,
+          "line": 3,
+          "column": 1
+        },
+        "end": {
+          "offset": 246,
+          "line": 11,
+          "column": 3
+        }
+      },
+      "message": "`checkout` calls 7 functions of the code under test (`add`, `applyCoupon`, `checkout`, `createCart`, `remove`, `sendReceipt`, `total`; the limit is 5): split it into tests that each check one behaviour"
+    }
+  ]
+}
