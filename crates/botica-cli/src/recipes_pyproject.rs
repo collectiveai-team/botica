@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
-use botica_catalog::normalized_package;
+use botica_catalog::{normalized_package, requirement_package};
 
 const FILE: &str = "pyproject.toml";
 
@@ -34,14 +34,14 @@ impl Pyproject {
         }
     }
 
-    /// Why the package is not declared, when it is not.
-    pub fn problem(&self, package: &str) -> Option<String> {
+    /// Why the package of a requirement is not declared, when it is not. A package declared with
+    /// other versions or another marker is declared: the project keeps its own (CES-30).
+    pub fn problem(&self, requirement: &str) -> Option<String> {
         match self {
             Self::Missing => Some(format!("no {FILE}")),
             Self::Unusable(reason) => Some(reason.clone()),
-            Self::Declared(names) => {
-                (!names.contains(&normalized_package(package))).then(|| format!("not in {FILE}"))
-            }
+            Self::Declared(names) => (!names.contains(&requirement_package(requirement)))
+                .then(|| format!("not in {FILE}")),
         }
     }
 }
@@ -146,6 +146,25 @@ mod tests {
         assert_eq!(pyproject.problem("My_Pkg"), None);
         assert_eq!(
             pyproject.problem("other").as_deref(),
+            Some("not in pyproject.toml")
+        );
+    }
+
+    #[test]
+    fn a_requirement_is_found_by_its_package_whatever_its_versions_and_marker() {
+        let dir = root("requirement");
+        fs::write(
+            dir.join(FILE),
+            "[dependency-groups]\ndev = [\"my-pkg>=2\"]\n",
+        )
+        .expect("write");
+
+        let pyproject = Pyproject::read(&dir);
+
+        assert_eq!(pyproject.problem("my-pkg>=1.5,<1.6"), None);
+        assert_eq!(pyproject.problem("My_Pkg ; sys_platform != 'win32'"), None);
+        assert_eq!(
+            pyproject.problem("other>=1").as_deref(),
             Some("not in pyproject.toml")
         );
     }

@@ -41,8 +41,8 @@ pub use readme::Section;
 pub use recipes::{Recipe, Recipes, AGENTS, EXPORTS, RECIPES_DIR};
 pub use recipes_resolve::{RecipeItem, ResolvedRecipe};
 pub use recipes_steps::{
-    normalized_package, FileStep, GitignoreStep, LinkStep, SectionStep, SkillStep, ToolStep,
-    DEFAULT_TOOL_GROUP, TOOL_MANAGERS, UNIGNORE_WHITELIST,
+    normalized_package, requirement_package, FileStep, GitignoreStep, LinkStep, SectionStep,
+    SkillStep, ToolStep, DEFAULT_TOOL_GROUP, TOOL_MANAGERS, UNIGNORE_WHITELIST,
 };
 pub use recipes_steps_resolve::{
     ResolvedFile, ResolvedLink, ResolvedSection, ResolvedSkill, ResolvedTool,

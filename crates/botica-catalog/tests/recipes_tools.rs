@@ -57,23 +57,43 @@ fn only_a_known_manager_is_accepted() {
 }
 
 #[test]
-fn a_step_needs_packages_that_are_names() {
+fn a_step_needs_packages_that_are_requirements() {
     let none = rejected("[[tools]]\nmanager = \"uv\"\npackages = []\n");
     assert!(none.contains("a `tools` step has no packages"), "{none}");
 
-    for name in ["", " ", "a b", "a>=1", "-a", "a/b"] {
+    for name in [
+        "",
+        " ",
+        " a",
+        "a ",
+        "a b",
+        "-a",
+        "a/b",
+        ">=1",
+        "a @ https://example.com/a.whl",
+        "a>=1 ; extra == '@'",
+    ] {
         let message = rejected(&format!(
             "[[tools]]\nmanager = \"uv\"\npackages = [\"{name}\"]\n"
         ));
 
         assert!(
             message.contains(&format!(
-                "the `tools` package `{name}` is not a package name"
+                "the `tools` package `{name}` is not a requirement"
             )),
             "{name:?}: {message}"
         );
     }
-    for name in ["a", "9lives", "Zope.Interface", "a_b-c.d9"] {
+    for name in [
+        "a",
+        "9lives",
+        "Zope.Interface",
+        "a_b-c.d9",
+        "a>=1",
+        "blockbuster>=1.5,<1.6",
+        "a[x]==1",
+        "pytest-memray ; sys_platform != 'win32'",
+    ] {
         project(vec![recipe(
             "x",
             &format!("[[tools]]\nmanager = \"uv\"\npackages = [\"{name}\"]\n"),
@@ -175,4 +195,90 @@ fn the_same_package_in_another_group_is_another_entry() {
 
     assert_eq!(tools.len(), 4);
     assert_eq!(tools[3], "uv docs ruff from other");
+}
+
+#[test]
+fn a_package_is_listed_once_in_a_recipe_whatever_its_versions() {
+    let message = rejected(
+        "[[tools]]\nmanager = \"uv\"\npackages = [\"blockbuster>=1.5,<1.6\", \"blockbuster\"]\n",
+    );
+
+    assert!(
+        message.contains("`tools` lists `blockbuster` twice"),
+        "{message}"
+    );
+}
+
+#[test]
+fn a_package_that_two_recipes_ask_for_with_the_same_requirement_is_listed_once() {
+    let loaded = project(vec![
+        recipe(
+            "base",
+            "[[tools]]\nmanager = \"uv\"\npackages = [\"blockbuster>=1.5,<1.6\"]\n",
+        ),
+        recipe(
+            "child",
+            "extends = [\"base\"]\n\n[[tools]]\nmanager = \"uv\"\npackages = [\"Blockbuster >= 1.5, < 1.6\"]\n",
+        ),
+    ])
+    .expect("loads");
+
+    assert_eq!(
+        resolved(&loaded, "child"),
+        ["uv dev blockbuster>=1.5,<1.6 from base"]
+    );
+}
+
+#[test]
+fn a_package_that_two_recipes_ask_for_with_different_requirements_does_not_resolve() {
+    let loaded = project(vec![
+        recipe(
+            "base",
+            "[[tools]]\nmanager = \"uv\"\npackages = [\"blockbuster>=1.5,<1.6\"]\n",
+        ),
+        recipe(
+            "child",
+            "extends = [\"base\"]\n\n[[tools]]\nmanager = \"uv\"\npackages = [\"blockbuster\"]\n",
+        ),
+    ])
+    .expect("loads");
+
+    let error = loaded.resolve("child").expect_err("does not resolve");
+
+    assert_eq!(
+        error,
+        "`child` asks for `blockbuster` and `base` for `blockbuster>=1.5,<1.6`: a package has one \
+         requirement across the recipes"
+    );
+}
+
+#[test]
+fn two_names_that_ask_for_a_package_with_different_requirements_do_not_resolve() {
+    let loaded = project(vec![
+        recipe(
+            "one",
+            "[[tools]]\nmanager = \"uv\"\npackages = [\"ruff>=0.14\"]\n",
+        ),
+        recipe(
+            "two",
+            "[[tools]]\nmanager = \"uv\"\npackages = [\"ruff\"]\n",
+        ),
+    ])
+    .expect("loads");
+
+    assert!(loaded.resolve_many(&["one", "two"]).is_err());
+}
+
+#[test]
+fn each_built_in_recipe_resolves() {
+    let recipes = botica_catalog::Recipes::embedded().expect("the built-in recipes load");
+
+    for recipe in recipes.recipes() {
+        assert!(
+            recipes.resolve(&recipe.id).is_ok(),
+            "{}: {:?}",
+            recipe.id,
+            recipes.resolve(&recipe.id).err()
+        );
+    }
 }
