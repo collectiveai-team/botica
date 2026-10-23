@@ -27,11 +27,13 @@ mod lockfiles;
 mod messages;
 mod paths;
 mod project_files;
+pub(crate) mod recipe_conflict;
 mod settings_schema;
 
 use diff::Diff;
 pub use editor::{when_of, Editor};
 use paths::{lint_paths, Linted};
+use recipe_conflict::ProjectRecipes;
 
 #[derive(Args)]
 pub struct LintArgs {
@@ -223,6 +225,8 @@ struct Setup {
     pool: ExtensionPool,
     /// The file of `baseline` in the configuration, from the root of the project.
     baseline: Option<PathBuf>,
+    /// What the configuration says of the recipes, for `recipe-conflict`.
+    recipes: ProjectRecipes,
 }
 
 impl Setup {
@@ -236,6 +240,7 @@ impl Setup {
         let prefix = project.working_prefix();
         let config_key = project.fingerprint();
         let natives = project::natives(&project);
+        let recipes = ProjectRecipes::of(&project);
         let resolution = Arc::new(project.resolution);
         let pool = ExtensionPool::new(
             Arc::clone(&resolution),
@@ -291,6 +296,7 @@ impl Setup {
             project_root,
             pool,
             baseline,
+            recipes,
         })
     }
 }
@@ -335,6 +341,7 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     diagnostics.extend(io_errors);
     diagnostics.extend(project_files::findings(
         &setup.resolution,
+        &setup.recipes,
         &setup.project_root,
         setup.prefix.as_deref(),
     ));

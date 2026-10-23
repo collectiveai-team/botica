@@ -4,7 +4,8 @@ use crate::issue::{issue, CatalogIssue};
 use crate::recipes::{recipe_path, Recipe, Recipes};
 use crate::recipes_steps_resolve::{
     resolve_files, resolve_gitignore, resolve_links, resolve_sections, resolve_skills,
-    resolve_tools, ResolvedFile, ResolvedLink, ResolvedSection, ResolvedSkill, ResolvedTool,
+    resolve_tools, tool_conflicts, ResolvedFile, ResolvedLink, ResolvedSection, ResolvedSkill,
+    ResolvedTool, ToolConflict,
 };
 
 /// An entry of a resolved recipe and the recipe whose file lists it.
@@ -54,17 +55,7 @@ impl Recipes {
         if ids.is_empty() {
             return Err("name at least one recipe".to_owned());
         }
-        for id in ids.iter().map(AsRef::as_ref) {
-            if self.recipe(id).is_none() {
-                return Err(format!(
-                    "no recipe `{id}` (`botica recipe list` lists them)"
-                ));
-            }
-        }
-        let mut chain = Vec::new();
-        for id in ids {
-            self.visit(id.as_ref(), &mut Vec::new(), &mut chain)?;
-        }
+        let chain = self.chain(ids)?;
         let contribute = |list: fn(&Recipe) -> &Vec<String>| {
             let mut seen = BTreeSet::new();
             let mut items = Vec::new();
@@ -99,6 +90,31 @@ impl Recipes {
             unignore: resolve_gitignore(&recipes, |step| &step.unignore),
             chain,
         })
+    }
+
+    /// The packages of a tool that two recipes of `ids`, or of the recipes they extend, ask for
+    /// with different requirements, in the order of the chain that `resolve_many` builds. A name
+    /// that is not a recipe fails, as in `resolve_many`; no name has no conflict.
+    pub fn tool_conflicts<S: AsRef<str>>(&self, ids: &[S]) -> Result<Vec<ToolConflict>, String> {
+        let chain = self.chain(ids)?;
+        let recipes: Vec<&Recipe> = chain.iter().filter_map(|id| self.recipe(id)).collect();
+        Ok(tool_conflicts(&recipes))
+    }
+
+    /// The ids of the recipes `ids` and of what they extend, each once and after what it extends.
+    fn chain<S: AsRef<str>>(&self, ids: &[S]) -> Result<Vec<String>, String> {
+        for id in ids.iter().map(AsRef::as_ref) {
+            if self.recipe(id).is_none() {
+                return Err(format!(
+                    "no recipe `{id}` (`botica recipe list` lists them)"
+                ));
+            }
+        }
+        let mut chain = Vec::new();
+        for id in ids {
+            self.visit(id.as_ref(), &mut Vec::new(), &mut chain)?;
+        }
+        Ok(chain)
     }
 
     fn visit(

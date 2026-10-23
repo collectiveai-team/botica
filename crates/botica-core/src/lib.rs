@@ -15,6 +15,7 @@ mod layout;
 pub mod lockfiles;
 mod native;
 pub mod postprocess;
+pub mod recipe_conflict;
 pub mod registry;
 pub mod report;
 pub mod route_auth;

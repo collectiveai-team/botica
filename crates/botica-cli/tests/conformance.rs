@@ -46,6 +46,7 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
             "no-tests-in-package",
             "no-token-in-web-storage",
             "no-utils",
+            "recipe-conflict",
             "route-auth",
             "settings-base-class",
             "settings-direct-instantiation",

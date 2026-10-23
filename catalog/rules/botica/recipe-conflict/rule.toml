@@ -1,0 +1,13 @@
+id = "recipe-conflict"
+code = "BT006"
+summary = "The recipes that a project uses ask for each package of a tool with one requirement"
+status = "preview"
+scope = "project"
+needs = "bytes"
+run-on = ["cli"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "native"
+languages = ["*"]

@@ -4,9 +4,10 @@ use std::path::Path;
 use std::process::ExitCode;
 
 use anyhow::Result;
-use botica_catalog::{Kind, ResolvedRecipe};
-use botica_core::walk;
+use botica_catalog::{Kind, Recipes, ResolvedRecipe};
+use botica_core::{recipe_conflict, walk};
 
+use crate::lint_cmd::recipe_conflict::conflicts;
 use crate::project::ProjectArgs;
 use crate::recipes_check_fragments as fragments;
 use crate::recipes_check_steps as steps;
@@ -34,14 +35,14 @@ impl Report {
 }
 
 /// One line for each rule, judgment rule, fragment of an external rule, export, file, section,
-/// link, line of `.gitignore`, tool and skill of the recipes in `names`, in that order, then a
-/// summary. The command fails when a rule is not active, a fragment or an export is not current,
-/// or a step is not in the project. The paths of the steps are from the root of the project.
+/// link, line of `.gitignore`, tool and skill of the recipes in `names`, in that order, then one
+/// for each package that they and the recipes the project uses ask for with different
+/// requirements, then a summary. The command fails when a rule is not active, a fragment or an
+/// export is not current, a step is not in the project, or two recipes conflict. The paths of the
+/// steps are from the root of the project.
 pub fn run(collection: &Collection, names: &[String], project: &ProjectArgs) -> Result<ExitCode> {
-    let resolved = collection
-        .loaded()?
-        .resolve_many(names)
-        .map_err(anyhow::Error::msg)?;
+    let recipes = collection.loaded()?;
+    let resolved = recipes.resolve_many(names).map_err(anyhow::Error::msg)?;
     for warning in &resolved.warnings {
         eprintln!("warning: {warning}");
     }
@@ -49,6 +50,7 @@ pub fn run(collection: &Collection, names: &[String], project: &ProjectArgs) -> 
     let mut report = Report::default();
     report.check_rules(collection, &resolved, project, root);
     report.check_steps(&resolved, root);
+    report.check_conflicts(collection, recipes, names);
     Ok(report.print(&resolved.id))
 }
 
@@ -122,6 +124,32 @@ impl Report {
             for item in &resolved.skills {
                 self.add("skill", &item.name, steps::skill(root, &lock, &item.name));
             }
+        }
+    }
+
+    /// Checks `names` together with the recipes that the project installed and those of
+    /// `recipes/`, as `recipe-conflict` does: `names` alone resolve, so a conflict involves one of
+    /// the others.
+    fn check_conflicts(&mut self, collection: &Collection, recipes: &Recipes, names: &[String]) {
+        let mut first = names.to_vec();
+        first.extend(
+            collection
+                .project
+                .loaded
+                .config
+                .recipes
+                .installed
+                .iter()
+                .cloned(),
+        );
+        match conflicts(recipes, &first) {
+            Ok(found) => {
+                for conflict in &found {
+                    let message = recipe_conflict::message(conflict);
+                    self.add("conflict", &conflict.package, Some(message));
+                }
+            }
+            Err(problem) => self.add("conflict", "[recipes] installed", Some(problem)),
         }
     }
 

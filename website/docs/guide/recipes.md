@@ -78,8 +78,10 @@ adds the files, the sections, the links, the lines of `.gitignore`, the tools an
 The selection is the `rules` and `judgment` lists of the recipes. In a project with no configuration
 of botica, `install` writes them to the `select` of a new `botica.toml` (the line `selection
 botica.toml: added`); `botica lint`, the hooks of `prek.toml` and the editor read that list, and the
-hooks pass no `--select`. A `botica.toml` or a `[tool.botica]` of `pyproject.toml` that exists is left
-as it is: `ok` when its `select` lists every rule, `pending` with the rules it lacks otherwise.
+hooks pass no `--select`. The new `botica.toml` lists the names of the recipes in `installed` of
+`[recipes]`. A `botica.toml` or a `[tool.botica]` of `pyproject.toml` that exists is left as it is:
+`ok` when its `select` lists every rule, `pending` with the rules it lacks otherwise; `installed` is
+added to it by hand.
 
 A `[[links]]` step has the `path` of the link and its `target`, which is the text of the link:
 relative to the folder of the link, so `../.agents/skills` for `.claude/skills`. A target is not
@@ -144,6 +146,16 @@ lists the id:
 replace = ["base-python"]
 ```
 
+The recipes that a project uses are the ones that `installed` of `[recipes]` names, the ones of
+`recipes/` and the recipes that these extend. The rule `recipe-conflict` (preview) resolves them
+together in `botica lint --scope project` and reports two of them that ask for one package of a
+`[[tools]]` step with different requirements, before `install` fails on them:
+
+```toml
+[recipes]
+installed = ["base-python", "team"]
+```
+
 ## List and show
 
 `botica recipe list` prints each recipe with what it extends and how many rules, judgment rules and
@@ -161,7 +173,9 @@ recipe: each step once, the warnings of the resolution on stderr and the names i
 takes the options of `botica lint` that select rules (`--select`, `--ignore`, `--config`). It prints
 one line for each rule, fragment, export, file, section, link, line of `.gitignore`, unignored line,
 tool and skill of the recipes, in that order, rules first, then judgment rules, fragments, exports,
-files, sections, links, `gitignore`, `unignore`, tools and skills:
+files, sections, links, `gitignore`, `unignore`, tools and skills, and last one `conflict` line for
+each package that the recipes and the ones the project uses (`installed` and `recipes/`) ask for
+with different requirements, as `recipe-conflict` reports it:
 
 ```text
 rule file-size-guard: ok
@@ -176,7 +190,8 @@ gitignore .tmp/: differs: not in .gitignore
 unignore skills-lock.json: differs: .gitignore still has the line
 tool ruff: differs: not in pyproject.toml
 skill tdd: differs: not in `skills-lock.json` and not in `.agents/skills/`
-base: 12 checked, 10 differ
+conflict ruff: differs: The recipes `team` and `base` ask for the package `ruff` as `ruff>=0.15` and as `ruff`: a package has one requirement across the recipes, and `botica recipe install` stops on them
+base: 13 checked, 11 differ
 ```
 
 A rule differs when it is not in the catalog, is not active (the reason is the one that `botica

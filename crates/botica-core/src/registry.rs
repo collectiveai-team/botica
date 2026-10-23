@@ -15,6 +15,7 @@ use crate::import_layers::IMPORT_LAYERS;
 use crate::layout::{CodeDir, NoArtifactsInPackage, NoNotebooks, NoTestsInPackage};
 use crate::lockfiles::LOCKFILE_COMMITTED;
 use crate::native::{FileSizeGuard, NativeRule, NoUtils};
+use crate::recipe_conflict::RECIPE_CONFLICT;
 use crate::route_auth::{RouteAuth, ROUTE_AUTH};
 use crate::suppress::{INVALID, UNUSED};
 
@@ -41,7 +42,7 @@ enum Provider {
     },
     /// The engine reports these itself while it lints (suppression comments, unreadable files), or
     /// the run once for the whole project (`external-config`, `external-config-weakened`,
-    /// `settings-env-schema`, `import-layers`).
+    /// `settings-env-schema`, `import-layers`, `recipe-conflict`).
     Engine,
     /// A rule of scope `commit`, which reads a commit message.
     Message {
@@ -49,7 +50,7 @@ enum Provider {
     },
 }
 
-const NATIVES: [(&str, Provider); 18] = [
+const NATIVES: [(&str, Provider); 19] = [
     (
         CONVENTIONAL_COMMITS,
         Provider::Message {
@@ -135,6 +136,7 @@ const NATIVES: [(&str, Provider); 18] = [
     (SETTINGS_ENV_SCHEMA, Provider::Engine),
     (IMPORT_LAYERS, Provider::Engine),
     (LOCKFILE_COMMITTED, Provider::Engine),
+    (RECIPE_CONFLICT, Provider::Engine),
 ];
 
 pub fn uses_code_dirs(slug: &str) -> bool {

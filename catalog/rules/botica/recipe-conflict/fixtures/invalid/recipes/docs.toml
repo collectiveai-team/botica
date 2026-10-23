@@ -1,0 +1,5 @@
+description = "The tools that build the documentation"
+
+[[tools]]
+manager = "uv"
+packages = ["pytest>=9", "zensical"]

@@ -62,6 +62,10 @@ pub struct ReferencesConfig {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct RecipesConfig {
+    /// Ids of the recipes that the project installed, which `botica recipe install` writes in a
+    /// new `botica.toml`. `recipe-conflict` resolves them with the recipes of `recipes/`.
+    #[serde(default)]
+    pub installed: Vec<String>,
     /// Ids of the built-in recipes that a recipe of `recipes/` replaces. A recipe of the project
     /// with the id of a built-in one is an error unless the id is listed here.
     #[serde(default)]

@@ -39,6 +39,19 @@ fn replace_is_a_list_of_ids() {
 }
 
 #[test]
+fn the_table_lists_the_recipes_that_the_project_installed() {
+    let config = Config::from_botica_toml("[recipes]\ninstalled = [\"base-python\", \"team\"]\n")
+        .expect("parses");
+
+    assert_eq!(config.recipes.installed, ["base-python", "team"]);
+    assert!(Config::from_botica_toml("")
+        .expect("parses")
+        .recipes
+        .installed
+        .is_empty());
+}
+
+#[test]
 fn the_table_works_in_the_tool_table_of_pyproject() {
     let config = Config::from_pyproject("[tool.botica.recipes]\nreplace = [\"generic\"]\n")
         .expect("parses")

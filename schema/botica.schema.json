@@ -226,6 +226,14 @@
       "description": "Settings of `botica recipe`.",
       "type": "object",
       "properties": {
+        "installed": {
+          "description": "Ids of the recipes that the project installed, which `botica recipe install` writes in a\nnew `botica.toml`. `recipe-conflict` resolves them with the recipes of `recipes/`.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        },
         "replace": {
           "description": "Ids of the built-in recipes that a recipe of `recipes/` replaces. A recipe of the project\nwith the id of a built-in one is an error unless the id is listed here.",
           "type": "array",
