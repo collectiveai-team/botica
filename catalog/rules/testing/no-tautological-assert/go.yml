@@ -1,0 +1,28 @@
+id: no-tautological-assert
+language: go
+severity: error
+message: "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+rule:
+  any:
+    - kind: call_expression
+      pattern: $P.$M($T, $A, $A)
+      has:
+        field: function
+        all:
+          - has:
+              field: operand
+              regex: "^(assert|require)$"
+          - has:
+              field: field
+              regex: "^(Equal|EqualValues|Exactly|Same)$"
+    - kind: call_expression
+      pattern: $P.$M($T, true)
+      has:
+        field: function
+        all:
+          - has:
+              field: operand
+              regex: "^(assert|require)$"
+          - has:
+              field: field
+              regex: "^True$"

@@ -11,7 +11,7 @@ fn the_binary_carries_its_recipes_with_a_description_and_the_origin_built_in() {
     let recipes = embedded();
 
     let ids: Vec<&str> = recipes.recipes().iter().map(|r| r.id.as_str()).collect();
-    assert_eq!(ids.len(), 19);
+    assert_eq!(ids.len(), 20);
     for recipe in recipes.recipes() {
         assert_eq!(recipe.origin, Origin::BuiltIn);
         assert!(
@@ -196,6 +196,7 @@ fn the_binary_carries_a_recipe_for_each_agent_and_each_piece_of_ci() {
             "ci-python",
             "full-python",
             "python-strict-types",
+            "python-test-smells",
             "repo-private",
             "repo-public",
             "secrets-varlock"

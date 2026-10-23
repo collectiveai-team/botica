@@ -68,6 +68,7 @@ fn list_adds_the_recipes_of_the_project_in_the_order_of_their_ids() {
             "full-python",
             "mine",
             "python-strict-types",
+            "python-test-smells",
             "repo-private",
             "repo-public",
             "secrets-varlock"

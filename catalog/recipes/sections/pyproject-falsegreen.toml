@@ -1,0 +1,10 @@
+# MARK: Falsegreen
+# CES-124. A code set to "info" is reported and never fails the hook: D1 several asserts without a
+# message, D3 the same assert twice, D5 a long setup before the first assert, D6 print() in a test,
+# M2 a test longer than `long_test_threshold`.
+[tool.falsegreen.severity]
+D1 = "info"
+D3 = "info"
+D5 = "info"
+D6 = "info"
+M2 = "info"

@@ -1,0 +1,41 @@
+id = "no-tautological-assert"
+code = "BTTEST007"
+standard = "CES-124"
+summary = "An assertion does not compare a value with itself or assert a constant"
+status = "preview"
+tags = ["tests"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["typescript"]
+file = "typescript.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["tsx"]
+file = "tsx.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["javascript"]
+file = "javascript.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["go"]
+file = "go.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["rust"]
+file = "rust.yml"

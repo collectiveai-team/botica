@@ -251,7 +251,7 @@ fn a_judgment_rule_has_the_fields_of_a_judge_and_the_readme_of_its_kind() {
     assert_eq!(
         read(&folder.join("rule.toml")),
         "id = \"test-foo\"\n\
-         code = \"BTTEST007\"\n\
+         code = \"BTTEST008\"\n\
          standard = \"CES-65\"\n\
          summary = \"TODO: what the rule asks, in one line\"\n\
          status = \"preview\"\n\
@@ -276,7 +276,7 @@ fn a_judgment_rule_has_the_fields_of_a_judge_and_the_readme_of_its_kind() {
          { \"file\": \"invalid/example.py\", \"band\": \"act\" }\n  ]\n}\n"
     );
     let catalog = reload(&dir);
-    let rule = catalog.resolve("BTTEST007").expect("the new rule");
+    let rule = catalog.resolve("BTTEST008").expect("the new rule");
     assert!(rule.is_judgment());
     let titles: Vec<String> = rule
         .sections()

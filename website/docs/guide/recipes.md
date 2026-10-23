@@ -161,6 +161,7 @@ template ran before:
 | `prek-version` | `ci-python` | `tests.yml` | empty (`uvx prek`) |
 | `pyrefly-version` | `base-python` | `prek.toml` | empty (`uvx pyrefly`) |
 | `deptry-version` | `base-python` | `prek.toml` | empty (`uvx deptry`) |
+| `falsegreen-version` | `python-test-smells` | `prek.toml` | `0.9.2` |
 
 A hook with a `rev` has no parameter: `prek update` moves it.
 
@@ -194,6 +195,15 @@ two rules in preview. It writes no file: the `[tool.pyrefly]` of `base-python` i
 `pyproject.toml`, and `botica recipe check` reports the fragment of `pyrefly-strict` until the
 repository adds `preset = "strict"` and `explicit-any = true` to it
 (`botica explain pyrefly-strict` shows them).
+`python-test-smells` selects `no-tautological-assert` and adds the hook `falsegreen` to `prek.toml`
+and `[tool.falsegreen.severity]` to `pyproject.toml` (CES-124). The hook runs
+`uvx falsegreen@0.9.2 --staged --baseline` before each commit and fails on a finding of high
+confidence only. `D1`, `D3`, `D5`, `D6` and `M2` are set to `"info"`: they are printed and never
+fail the hook. A
+repository with tests already reported writes `.falsegreen-baseline.json` once with
+`uvx falsegreen@0.9.2 tests/ --write-baseline` and commits it. falsegreen reads the test files
+that git stages, fixtures of tests that are wrong on purpose included: list them in `exclude` of
+`[tool.falsegreen]`.
 
 What the recipes cannot say about themselves:
 

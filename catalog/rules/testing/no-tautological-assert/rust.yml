@@ -1,0 +1,10 @@
+id: no-tautological-assert
+language: rust
+severity: error
+message: "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+rule:
+  kind: macro_invocation
+  any:
+    - pattern: assert_eq!($A, $A)
+    - pattern: assert_eq!($A, $A, $$$MSG)
+    - pattern: debug_assert_eq!($A, $A)
