@@ -84,8 +84,8 @@ fn push_rule(table: &mut String, rules_dir: &Path, rule: &Path) {
     push_named(table, rules_dir, rule, ["rule.toml", "README.md"]);
     // The YAML of the implementations (`file` in `rule.toml`).
     push_with_extension(table, rules_dir, rule, "yml");
-    // The fragments of configuration of the external implementations (`config`), at any depth:
-    // `config/.cargo/config.toml`.
+    // The fragments of configuration of the external implementations (`config` in `rule.toml`).
+    // A fragment can sit in a hidden folder, as `config/.cargo/config.toml`, which `push_code` skips.
     push_tree(table, rules_dir, &rule.join("config"));
 }
 

@@ -7,9 +7,10 @@ A warning by default.
 
 ## Why
 
-Without `cooldown`, Dependabot waits 3 days after a release before it opens a pull request for it.
-A malicious release is often found and taken down within days, and the project waits for 7 of them
-before it takes a release. The cooldown does not hold back a security update.
+Without `cooldown`, Dependabot waits 3 days after a release before it opens a pull request for it
+([GitHub changelog](https://github.blog/changelog/2026-07-14-dependabot-version-updates-introduce-default-package-cooldown/)).
+The rule asks for 7, the default of the parameter `cooldown-days` of the recipes. The cooldown does
+not hold back a security update.
 
 ## Do
 

@@ -11,8 +11,8 @@ in `ruff.toml`, or that added a family with `extend-select`, was reported for a 
 ruff applies. A repository that switched off a family on purpose with `ignore` was reported too.
 pyrefly reads `pyrefly.toml` before `pyproject.toml`, and its preset `all` checks what `strict`
 checks (<https://pyrefly.org/en/docs/configuration/#preset>). pytest 9 reads `pytest.toml`,
-`pytest.ini` and four other files, the first that matches
-(<https://docs.pytest.org/en/stable/reference/customize.html>). The package managers keep their
+`.pytest.toml`, `pytest.ini`, `.pytest.ini`, `pyproject.toml`, `tox.ini` and `setup.cfg`, the first
+that matches (<https://docs.pytest.org/en/stable/reference/customize.html>). The package managers keep their
 cooldown in YAML (`pnpm-workspace.yaml`, `.yarnrc.yml`), in INI (`.npmrc`) or in a folder
 (`.cargo/config.toml`), and each writes a time span its own way. An active external rule was also
 checked in a project that does not use its tool: a rule of a Python linter in a repository of Go,
@@ -76,8 +76,7 @@ the cooldown of pnpm in a repository that installs with npm.
 - **botica asks the tool** (`ruff check --show-settings`, `npm config get`). Rejected. The tool
   becomes a dependency of every `botica lint`: a repository runs ruff through `uvx` in a hook of prek
   and may not have it on the `PATH`, and a run without network fails. `ruff check --show-settings`
-  takes 0.5 s with `uvx ruff@0.17.1` once ruff is in the cache, and its output is not a stable
-  interface: ruff "does not yet have a stable API". pyrefly has no command that prints the severity
+  starts ruff on every run of `botica lint`, and its output is not a stable interface: ruff "does not yet have a stable API". pyrefly has no command that prints the severity
   of each kind of error (`pyrefly dump-config` prints the files and the paths of import). Asking
   pytest for its settings imports `conftest.py`, which runs code of the repository. ADR 0003 left
   running the tools to prek.

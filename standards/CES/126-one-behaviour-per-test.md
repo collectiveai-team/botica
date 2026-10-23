@@ -16,7 +16,8 @@ lives in `tests/integration/` or `tests/e2e/`, where the limit of `eager-test` d
   fails, the reader has to find which one it was.
 - A test bound to many functions breaks on a change to any of them, and the change that broke it
   may be unrelated to what the test is named for.
-- A model that writes the tests of a feature at once tends to put the whole feature in one test.
+- `eager-test` reports a test that calls more than 5 distinct functions of the code under test,
+  its limit by default.
 
 ## Examples
 
