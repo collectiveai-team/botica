@@ -7,16 +7,18 @@ use std::sync::Arc;
 use botica_config::Resolution;
 use botica_core::env_schema::SETTINGS_ENV_SCHEMA;
 use botica_core::external_config::EXTERNAL_CONFIG;
+use botica_core::external_weakened::EXTERNAL_CONFIG_WEAKENED;
 use botica_core::import_layers::IMPORT_LAYERS;
 use botica_core::lockfiles::LOCKFILE_COMMITTED;
 use botica_core::{walk, Diagnostic};
 
-use super::{external, import_layers, lockfiles, settings_schema};
+use super::{external, external_weakened, import_layers, lockfiles, settings_schema};
 use crate::project;
 
 /// The native rules of project scope.
-pub const RULES: [&str; 4] = [
+pub const RULES: [&str; 5] = [
     EXTERNAL_CONFIG,
+    EXTERNAL_CONFIG_WEAKENED,
     SETTINGS_ENV_SCHEMA,
     IMPORT_LAYERS,
     LOCKFILE_COMMITTED,
@@ -30,6 +32,7 @@ pub fn findings(
     prefix: Option<&str>,
 ) -> Vec<Diagnostic> {
     let mut found = external::findings(resolution, root, prefix);
+    found.extend(external_weakened::findings(resolution, root, prefix));
     found.extend(settings_schema::findings(resolution, root, prefix));
     found.extend(import_layers::findings(resolution, root, prefix));
     found.extend(lockfiles::findings(resolution, root, prefix));

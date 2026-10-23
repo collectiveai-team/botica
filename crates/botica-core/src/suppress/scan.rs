@@ -10,7 +10,7 @@ use std::ops::Range;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Syntax {
-    /// `#` comments and `'`, `"`, `'''`, `"""` strings: Python and TOML.
+    /// `#` comments and `'`, `"`, `'''`, `"""` strings: Python and TOML, `.cargo/config` too.
     PyLike,
     /// `#` comments after a blank, and one-line `'` and `"` strings: shell, YAML, Dockerfile, Makefile.
     Hash,
@@ -20,6 +20,12 @@ pub(crate) enum Syntax {
     Markup,
     /// `//` and `/* */` comments, `"` strings, raw strings and character literals: Go and Rust.
     CLike,
+    /// `#` and `;` comments on a line of their own: INI files as pytest reads them, where a `#`
+    /// after a value is part of the value.
+    Ini,
+    /// `#` and `;` comments on a line of their own or after a value that is not quoted: `.npmrc`,
+    /// as npm reads it.
+    Npmrc,
 }
 
 impl Syntax {
@@ -34,6 +40,9 @@ impl Syntax {
             ) => Some(Self::Hash),
             Some("md" | "markdown" | "html" | "htm") => Some(Self::Markup),
             Some("go" | "rs") => Some(Self::CLike),
+            Some("ini") => Some(Self::Ini),
+            _ if name == ".npmrc" => Some(Self::Npmrc),
+            _ if path == ".cargo/config" || path.ends_with("/.cargo/config") => Some(Self::PyLike),
             _ if name == "Dockerfile" || name.starts_with("Dockerfile.") || name == "Makefile" => {
                 Some(Self::Hash)
             }
@@ -63,7 +72,54 @@ pub(crate) fn scan(text: &str, syntax: Syntax) -> Scan {
         Syntax::Script => script(bytes),
         Syntax::Markup => markup(text),
         Syntax::CLike => c_like(bytes),
+        Syntax::Ini => ini(text, false),
+        Syntax::Npmrc => ini(text, true),
     }
+}
+
+/// The comments of an INI file: a line whose first character that is not blank is `#` or `;`,
+/// and with `after_values`, what follows the first `#` or `;` of a value that is not quoted, as
+/// npm reads `.npmrc`.
+fn ini(text: &str, after_values: bool) -> Scan {
+    let mut scan = Scan::default();
+    let mut start = 0;
+    for line in text.split_inclusive('\n') {
+        let body = line.trim_end_matches(['\n', '\r']);
+        let lead = body.len() - body.trim_start().len();
+        let at = match body.as_bytes().get(lead) {
+            Some(b'#' | b';') => Some(lead),
+            _ if after_values => npmrc_comment(body),
+            _ => None,
+        };
+        if let Some(at) = at {
+            scan.comments.push(start + at + 1..start + body.len());
+        }
+        start += line.len();
+    }
+    scan
+}
+
+/// Where the comment of a line of `.npmrc` starts: npm cuts a value that is not quoted at its
+/// first `#` or `;` that a `\` does not escape.
+fn npmrc_comment(line: &str) -> Option<usize> {
+    let from = line.find('=').map_or(0, |at| at + 1);
+    let value = line[from..].trim();
+    let quoted = value.len() > 1
+        && ((value.starts_with('"') && value.ends_with('"'))
+            || (value.starts_with('\'') && value.ends_with('\'')));
+    if quoted {
+        return None;
+    }
+    let bytes = line.as_bytes();
+    let mut i = from;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'\\' => i += 2,
+            b'#' | b';' => return Some(i),
+            _ => i += 1,
+        }
+    }
+    None
 }
 
 /// Where a block comment that opens at `at` ends (after its `*/`).

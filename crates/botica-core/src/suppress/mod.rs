@@ -31,6 +31,9 @@ pub struct Policy {
     /// Rules of project scope: the configuration silences them, and a comment that names one is
     /// invalid.
     project: HashSet<String>,
+    /// Rules of project scope whose findings sit on a line of a file: a comment with a reason
+    /// silences them, and [`Policy::report_project`] reports the ones that silence nothing.
+    project_lines: HashSet<String>,
     /// Rules that an extension runs after the walk, each with whether it is active. The walk
     /// reports a comment that names an inactive one; [`Policy::report_extensions`] reports the
     /// others once the extensions have run.
@@ -59,6 +62,7 @@ impl Policy {
             astgrep: HashSet::new(),
             judgment: HashSet::new(),
             project: HashSet::new(),
+            project_lines: HashSet::new(),
             extension: HashMap::new(),
             external: None,
             code_prefixes: vec!["BT".to_owned()],
@@ -90,6 +94,14 @@ impl Policy {
     /// configuration silences them.
     pub fn with_project_rule(mut self, slug: &str, spellings: &[&str]) -> Self {
         self.project.insert(slug.to_owned());
+        self.with_rule(slug, spellings)
+    }
+
+    /// A rule of project scope whose findings sit on a line of a file a suppression may name: a
+    /// comment on that line, or an `ignore-file` comment of the file, silences it when it gives
+    /// a reason.
+    pub fn with_line_project_rule(mut self, slug: &str, spellings: &[&str]) -> Self {
+        self.project_lines.insert(slug.to_owned());
         self.with_rule(slug, spellings)
     }
 
@@ -286,6 +298,13 @@ impl Policy {
         self.filter(&Document::new(path, text), &Pass::Extensions(ran), found);
     }
 
+    /// Drops from `found`, the findings of the rules of project scope in the file at `path` that
+    /// a comment may silence, what its comments silence, and adds a finding about each comment
+    /// that names one of those rules and silences nothing.
+    pub fn report_project(&self, path: &str, text: &str, found: &mut Vec<Diagnostic>) {
+        self.filter(&Document::new(path, text), &Pass::Project, found);
+    }
+
     /// Drops what the comments of the file silence and adds the findings about the comments.
     pub(crate) fn apply(
         &self,
@@ -385,4 +404,7 @@ enum Pass<'a> {
     /// After the extensions: it reports the comments that name an active extension rule; the
     /// function says whether the rule read the file, `None` when its process failed.
     Extensions(&'a dyn Fn(&str) -> Option<bool>),
+    /// After the rules of project scope: it reports the comments that name one whose findings
+    /// sit on a line.
+    Project,
 }

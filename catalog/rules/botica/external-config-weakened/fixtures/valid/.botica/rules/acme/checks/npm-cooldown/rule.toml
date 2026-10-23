@@ -1,0 +1,14 @@
+id = "acme/npm-cooldown"
+code = "ACMECHK003"
+summary = "npm installs only packages released at least seven days ago"
+status = "preview"
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["*"]
+tool = "npm"
+docs = "https://docs.npmjs.com/cli/v11/using-npm/config#min-release-age"
+config = "config/.npmrc"
+applies-when = ["package-lock.json"]

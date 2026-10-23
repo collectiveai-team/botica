@@ -10,6 +10,7 @@ use crate::complexity::{CognitiveComplexity, COGNITIVE_COMPLEXITY};
 use crate::coverage::{NoCoverageExclusion, NO_COVERAGE_EXCLUSION};
 use crate::env_schema::SETTINGS_ENV_SCHEMA;
 use crate::external_config::EXTERNAL_CONFIG;
+use crate::external_weakened::EXTERNAL_CONFIG_WEAKENED;
 use crate::import_layers::IMPORT_LAYERS;
 use crate::layout::{CodeDir, NoArtifactsInPackage, NoNotebooks, NoTestsInPackage};
 use crate::lockfiles::LOCKFILE_COMMITTED;
@@ -39,8 +40,8 @@ enum Provider {
         reads_code_dirs: bool,
     },
     /// The engine reports these itself while it lints (suppression comments, unreadable files), or
-    /// the run once for the whole project (`external-config`, `settings-env-schema`,
-    /// `import-layers`).
+    /// the run once for the whole project (`external-config`, `external-config-weakened`,
+    /// `settings-env-schema`, `import-layers`).
     Engine,
     /// A rule of scope `commit`, which reads a commit message.
     Message {
@@ -48,7 +49,7 @@ enum Provider {
     },
 }
 
-const NATIVES: [(&str, Provider); 17] = [
+const NATIVES: [(&str, Provider); 18] = [
     (
         CONVENTIONAL_COMMITS,
         Provider::Message {
@@ -130,6 +131,7 @@ const NATIVES: [(&str, Provider); 17] = [
     (UNUSED, Provider::Engine),
     (INVALID, Provider::Engine),
     (EXTERNAL_CONFIG, Provider::Engine),
+    (EXTERNAL_CONFIG_WEAKENED, Provider::Engine),
     (SETTINGS_ENV_SCHEMA, Provider::Engine),
     (IMPORT_LAYERS, Provider::Engine),
     (LOCKFILE_COMMITTED, Provider::Engine),
@@ -146,6 +148,13 @@ pub fn uses_code_dirs(slug: &str) -> bool {
                 }
             )
     })
+}
+
+/// Whether a comment on the line of a finding of `slug`, a rule of project scope, silences it.
+/// The findings of the other rules of project scope are about a file or the project, and only the
+/// configuration silences them.
+pub fn silenced_on_its_line(slug: &str) -> bool {
+    slug == EXTERNAL_CONFIG_WEAKENED
 }
 
 fn over_code_dirs<R>(context: &Context) -> Box<dyn NativeRule>

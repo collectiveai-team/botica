@@ -2,7 +2,7 @@
 
 use super::directive::{Malformed, Scope};
 use super::message::{
-    judgment_on_a_line, judgment_without_reason, malformed_message,
+    judgment_on_a_line, judgment_without_reason, malformed_message, project_rule_without_reason,
     project_scope_rule_in_a_comment, unused_message,
 };
 use super::{Found, Pass, Policy, Token, INVALID, UNUSED};
@@ -113,9 +113,13 @@ impl Policy {
         {
             return None;
         }
+        let on_a_line = self.project_lines.contains(slug);
+        if on_a_line || matches!(pass, Pass::Project) {
+            return (on_a_line && matches!(pass, Pass::Project)).then_some(Unused::Unused);
+        }
         let extension = self.extension.get(slug).copied();
         match (pass, extension) {
-            (Pass::Silence, _)
+            (Pass::Silence | Pass::Project, _)
             | (Pass::Walk(_), Some(true))
             | (Pass::Extensions(_), None | Some(false)) => None,
             (Pass::Walk(_), Some(false)) => Some(Unused::Disabled),
@@ -135,13 +139,17 @@ impl Policy {
     }
 
     /// What is wrong with how a directive suppresses the judgment rules and the rules of project
-    /// scope it names.
+    /// scope it names: a rule of project scope whose findings sit on a line needs a reason.
     fn kind_problems<'a>(&self, directive: &'a Found) -> Vec<(&'a Token, String)> {
         directive
             .tokens
             .iter()
             .filter_map(|token| {
                 let slug = token.slug.as_deref()?;
+                if self.project_lines.contains(slug) {
+                    return (!directive.reason)
+                        .then(|| (token, project_rule_without_reason(&token.name)));
+                }
                 if self.project.contains(slug) {
                     return Some((token, project_scope_rule_in_a_comment(&token.name, slug)));
                 }

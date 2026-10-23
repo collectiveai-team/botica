@@ -19,8 +19,11 @@ configuration so it does not report `RUF102` for `BT` codes (the section `# MARK
 
 A rule of project scope (`external-config`, `import-layers`, `settings-env-schema`) is silenced in
 the configuration, with the path in `extend-ignores` of `[rules.<slug>]` or the rule in `ignore`; a
-comment that names it is `invalid-suppression`. A judgment rule is silenced for a whole file, with a
-reason: `# botica: ignore-file[<slug>] -- <reason>`.
+comment that names it is `invalid-suppression`. `external-config-weakened` is the exception: its
+finding sits on a line of a file of settings (TOML, YAML, `.npmrc`), and a comment with a reason on
+that line silences it, `# botica: ignore[external-config-weakened] -- <reason>`. In the INI files of
+pytest the comment goes on a line of its own, as `ignore-file`. A judgment rule is silenced for a
+whole file, with a reason: `# botica: ignore-file[<slug>] -- <reason>`.
 
 The README of each rule, on its page under [Rules](../rules/index.md), shows the comment of each
 language it reads.
