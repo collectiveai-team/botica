@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-23T05:18:24Z",
+  "compiledAt": "2026-10-23T05:22:51Z",
   "compiledBy": "botica 0.14.2",
   "manual": true,
   "sources": [
@@ -436,6 +436,7 @@
         "catalog/rules/testing/no-coverage-exclusion/README.md",
         "catalog/rules/testing/no-coverage-pragma/README.md",
         "catalog/rules/testing/no-tautological-assert/README.md",
+        "catalog/rules/testing/pytest-strict/README.md",
         "catalog/rules/testing/test-coverage-gap/README.md",
         "catalog/rules/testing/test-in-memory-adapters/README.md",
         "catalog/rules/testing/test-through-interface/README.md",
@@ -648,6 +649,8 @@
         "catalog/rules/testing/no-tautological-assert/rust.yml",
         "catalog/rules/testing/no-tautological-assert/tsx.yml",
         "catalog/rules/testing/no-tautological-assert/typescript.yml",
+        "catalog/rules/testing/pytest-strict/rule.toml",
+        "catalog/rules/testing/pytest-strict/config/**",
         "catalog/rules/testing/test-coverage-gap/rule.toml",
         "catalog/rules/testing/test-in-memory-adapters/rule.toml",
         "catalog/rules/testing/test-through-interface/rule.toml",
@@ -847,6 +850,7 @@
         "catalog/rules/testing/no-coverage-exclusion/README.md",
         "catalog/rules/testing/no-coverage-pragma/README.md",
         "catalog/rules/testing/no-tautological-assert/README.md",
+        "catalog/rules/testing/pytest-strict/README.md",
         "catalog/rules/testing/test-coverage-gap/README.md",
         "catalog/rules/testing/test-in-memory-adapters/README.md",
         "catalog/rules/testing/test-through-interface/README.md",
