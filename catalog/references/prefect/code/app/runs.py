@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 
 from prefect.client.orchestration import get_client
 from prefect.deployments import arun_deployment
-from prefect.exceptions import FlowRunWaitTimeout
 from prefect.flow_runs import wait_for_flow_run
 from prefect.states import Cancelling
 
@@ -35,12 +34,19 @@ async def start_summaries(documents: list[Document]) -> UUID:
     return flow_run.id
 
 
-async def wait_or_cancel(flow_run_id: UUID, timeout: int) -> StateType | None:
-    """Wait for a flow run up to `timeout` seconds; past it, cancel the run."""
-    try:
-        flow_run = await wait_for_flow_run(flow_run_id, timeout=timeout)
-    except FlowRunWaitTimeout:
-        async with get_client() as client:
-            await client.set_flow_run_state(flow_run_id, state=Cancelling(), force=True)
-            flow_run = await client.read_flow_run(flow_run_id)
+async def wait(flow_run_id: UUID) -> StateType | None:
+    """Wait for a flow run to end and return its state.
+
+    The wait has no deadline of its own. The caller sets one with `asyncio.timeout` and, past it,
+    calls `cancel`.
+    """
+    flow_run = await wait_for_flow_run(flow_run_id, timeout=None)
+    return flow_run.state_type
+
+
+async def cancel(flow_run_id: UUID) -> StateType | None:
+    """Set a flow run to `Cancelling`, so that its process stops it, and return its state."""
+    async with get_client() as client:
+        await client.set_flow_run_state(flow_run_id, state=Cancelling(), force=True)
+        flow_run = await client.read_flow_run(flow_run_id)
     return flow_run.state_type

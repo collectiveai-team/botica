@@ -16,6 +16,7 @@ rules = [
   "import-layers",
   "settings-env-schema",
   "cognitive-complexity",
+  "ruff-selection",
 ]
 
 [[files]]

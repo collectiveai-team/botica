@@ -17,8 +17,8 @@ note = "the deployments in Python and the process that serves them with `aserve`
 
 [[references]]
 file = "code/app/runs.py"
-anchor = "async def wait_or_cancel"
-note = "the API starts a flow run by the name of its deployment, waits for it with a deadline, and cancels it past the deadline"
+anchor = "async def wait"
+note = "the API starts a flow run by the name of its deployment, waits for it under the deadline that the caller sets with `asyncio.timeout`, and cancels it past the deadline"
 
 [[references]]
 file = "code/app/api/v1/routers/documents.py"

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-23T04:59:59Z",
+  "compiledAt": "2026-10-23T05:02:55Z",
   "compiledBy": "botica 0.14.2",
   "manual": true,
   "sources": [
@@ -438,6 +438,7 @@
         "catalog/rules/testing/test-in-memory-adapters/README.md",
         "catalog/rules/testing/test-through-interface/README.md",
         "catalog/rules/tooling/no-disabled-typecheck/README.md",
+        "catalog/rules/tooling/ruff-selection/README.md",
         "catalog/rules/writing/minimal-comments/README.md",
         "catalog/rules/writing/plain-writing/README.md",
         "catalog/rules/writing/ubiquitous-language/README.md",
@@ -639,6 +640,8 @@
         "catalog/rules/tooling/no-disabled-typecheck/rule.toml",
         "catalog/rules/tooling/no-disabled-typecheck/tsx.yml",
         "catalog/rules/tooling/no-disabled-typecheck/typescript.yml",
+        "catalog/rules/tooling/ruff-selection/rule.toml",
+        "catalog/rules/tooling/ruff-selection/config/**",
         "catalog/rules/writing/family.toml",
         "catalog/rules/writing/minimal-comments/rule.toml",
         "catalog/rules/writing/plain-writing/rule.toml",
@@ -822,6 +825,7 @@
         "catalog/rules/testing/test-in-memory-adapters/README.md",
         "catalog/rules/testing/test-through-interface/README.md",
         "catalog/rules/tooling/no-disabled-typecheck/README.md",
+        "catalog/rules/tooling/ruff-selection/README.md",
         "catalog/rules/writing/minimal-comments/README.md",
         "catalog/rules/writing/plain-writing/README.md",
         "catalog/rules/writing/ubiquitous-language/README.md",

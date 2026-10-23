@@ -19,8 +19,9 @@ deployment and imports no flow, and a notification of a failed run is an automat
   `flow.deploy()` with a work pool and a worker instead. A repository uses one of the two, and does
   not also keep a `prefect.yaml`.
 - `runs.py` is what the API uses. `start_summaries` calls `arun_deployment(..., timeout=0)`, which
-  creates the flow run and returns at once. `wait_or_cancel` waits with `wait_for_flow_run` and, past
-  the deadline, sets the run to `Cancelling()` so that the process that runs it stops it. The module
+  creates the flow run and returns at once. `wait` waits with `wait_for_flow_run` and no deadline of
+  its own: the caller sets one with `asyncio.timeout` and, past it, `cancel` sets the run to
+  `Cancelling()` so that the process that runs it stops it. The module
   names the deployment and imports no flow, so the API does not load the code of the flows.
 - `notify_failed_summaries` creates an automation whose trigger is a failed or crashed run of the
   flow and whose action calls a webhook block. The server runs it, so it fires even when the
