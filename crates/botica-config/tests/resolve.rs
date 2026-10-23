@@ -216,9 +216,11 @@ fn severity_and_options_are_the_rules_unless_the_config_changes_them() {
 fn a_rule_runs_only_on_the_languages_of_its_implementations() {
     let catalog = embedded();
     let resolution = resolve(&catalog, "");
-    assert!(files_for(&resolution, "pkg/utils.py", Some("python")).contains(&"no-utils".to_owned()));
-    assert!(!files_for(&resolution, "web/utils.ts", Some("typescript"))
-        .contains(&"no-utils".to_owned()));
+    assert!(
+        files_for(&resolution, "pkg/a.py", Some("python")).contains(&"log-get-logger".to_owned())
+    );
+    assert!(!files_for(&resolution, "web/a.ts", Some("typescript"))
+        .contains(&"log-get-logger".to_owned()));
     assert!(files_for(&resolution, "web/a.ts", Some("typescript"))
         .contains(&"file-size-guard".to_owned()));
     assert!(files_for(&resolution, "notes.txt", None).contains(&"file-size-guard".to_owned()));

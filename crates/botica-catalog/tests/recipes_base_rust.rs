@@ -41,7 +41,6 @@ fn the_recipe_extends_base_and_selects_the_rules_that_read_rust() {
     assert_eq!(
         rust.rules,
         [
-            "no-utils",
             "cognitive-complexity",
             "lockfile-committed",
             "cargo-cooldown"

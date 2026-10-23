@@ -37,16 +37,52 @@ fn file_size_guard_covers_every_language_and_skips_its_default_ignores() {
 }
 
 #[test]
-fn no_utils_only_applies_to_python() {
+fn no_utils_applies_to_the_modules_of_each_language() {
     let dir = project("utils", None);
     write(&dir, "pkg/utils.py", "");
     write(&dir, "web/utils.ts", "");
+    write(&dir, "svc/helpers.go", "package svc\n");
+    write(&dir, "src/common.rs", "");
+    write(&dir, "src/misc/mod.rs", "");
+    write(&dir, "web/shared.ts", "");
+    write(&dir, "docs/utils.md", "");
     let text = stdout(&botica(&dir, &["."]));
+    for path in [
+        "pkg/utils.py",
+        "web/utils.ts",
+        "svc/helpers.go",
+        "src/common.rs",
+    ] {
+        assert!(
+            text.contains(&format!("{path}:1:1: error [no-utils]")),
+            "{path}: {text}"
+        );
+    }
     assert!(
-        text.contains("pkg/utils.py") && text.contains("[no-utils]"),
+        text.contains("web/shared.ts:1:1: warning [no-utils]"),
         "{text}"
     );
-    assert!(!text.contains("web/utils.ts"), "{text}");
+    assert!(!text.contains("docs/utils.md"), "{text}");
+    assert!(!text.contains("src/misc/mod.rs"), "{text}");
+}
+
+#[test]
+fn a_severity_named_for_no_utils_replaces_both_of_its_own() {
+    let dir = project(
+        "utils-severity",
+        Some("[rules.no-utils]\nseverity = \"warning\"\n"),
+    );
+    write(&dir, "pkg/utils.py", "");
+    write(&dir, "web/shared.ts", "");
+    let text = stdout(&botica(&dir, &["."]));
+    assert!(
+        text.contains("pkg/utils.py:1:1: warning [no-utils]"),
+        "{text}"
+    );
+    assert!(
+        text.contains("web/shared.ts:1:1: warning [no-utils]"),
+        "{text}"
+    );
 }
 
 #[test]

@@ -1,6 +1,30 @@
 {
   "diagnostics": [
     {
+      "path": "common.go",
+      "severity": "error",
+      "range": null,
+      "message": "common.go is a catch-all module — name modules for what they hold, not utils/helpers/aux/misc/common."
+    },
+    {
+      "path": "helpers.ts",
+      "severity": "error",
+      "range": null,
+      "message": "helpers.ts is a catch-all module — name modules for what they hold, not utils/helpers/aux/misc/common."
+    },
+    {
+      "path": "misc.rs",
+      "severity": "error",
+      "range": null,
+      "message": "misc.rs is a catch-all module — name modules for what they hold, not utils/helpers/aux/misc/common."
+    },
+    {
+      "path": "shared.ts",
+      "severity": "warning",
+      "range": null,
+      "message": "shared.ts has a vague name — name modules for what they hold, not util/shared/lib."
+    },
+    {
       "path": "utils.py",
       "severity": "error",
       "range": null,

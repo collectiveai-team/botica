@@ -87,6 +87,23 @@ fn base_python_resolves_to_the_rules_of_base_first() {
 }
 
 #[test]
+fn no_utils_comes_from_base_for_every_language() {
+    let recipes = embedded();
+    let base = recipes.recipe("base").expect("base");
+    let python = recipes.recipe("base-python").expect("base-python");
+
+    assert!(base.rules.iter().any(|rule| rule == "no-utils"));
+    assert!(!python.rules.iter().any(|rule| rule == "no-utils"));
+    let resolved = recipes.resolve("base-python").expect("resolves");
+    let no_utils = resolved
+        .rules
+        .iter()
+        .find(|item| item.id == "no-utils")
+        .expect("selected");
+    assert_eq!(no_utils.from, "base");
+}
+
+#[test]
 fn base_installs_the_skills_and_adds_prek_and_the_standards_index_from_its_templates() {
     let recipes = embedded();
     let base = recipes.recipe("base").expect("base");

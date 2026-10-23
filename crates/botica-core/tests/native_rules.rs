@@ -52,12 +52,52 @@ fn an_unterminated_last_line_counts_like_python() {
 #[test]
 fn no_utils_flags_catch_all_modules_outside_tests() {
     let engine = native_engine();
-    assert_eq!(engine.lint_source("pkg/utils.py", "").len(), 1);
-    assert!(engine.lint_source("helpers.ts", "").is_empty());
-    assert!(engine.lint_source("common.js", "").is_empty());
+    for path in [
+        "pkg/utils.py",
+        "web/helpers.ts",
+        "web/misc.tsx",
+        "web/common.js",
+        "web/utils.mjs",
+        "internal/server/utils.go",
+        "src/helpers.rs",
+        "src/utils.rs",
+    ] {
+        let found = engine.lint_source(path, "");
+        assert_eq!(found.len(), 1, "{path}");
+        assert_eq!(found[0].severity, Severity::Error, "{path}");
+    }
+    assert!(engine.lint_source("web/utils.test.ts", "").is_empty());
+    assert!(engine
+        .lint_source("internal/server/utils_test.go", "")
+        .is_empty());
+    assert!(engine.lint_source("web/utils/index.ts", "").is_empty());
+    assert!(engine.lint_source("pkg/utils/__init__.py", "").is_empty());
+    assert!(engine.lint_source("src/utils/text.rs", "").is_empty());
+    assert!(engine.lint_source("src/utils/mod.rs", "").is_empty());
+    assert!(engine.lint_source("tests/common.rs", "").is_empty());
     assert!(engine.lint_source("tests/utils.py", "").is_empty());
     assert!(engine.lint_source("pkg/utils_extra.py", "").is_empty());
     assert!(engine.lint_source("pkg/utils.md", "").is_empty());
+}
+
+#[test]
+fn no_utils_warns_on_vague_names_only_in_javascript_and_typescript() {
+    let engine = native_engine();
+    for path in ["web/shared.ts", "web/lib.js", "web/util.tsx"] {
+        let found = engine.lint_source(path, "");
+        assert_eq!(found.len(), 1, "{path}");
+        assert_eq!(found[0].severity, Severity::Warning, "{path}");
+        assert_eq!(
+            found[0].message,
+            format!(
+                "{path} has a vague name — name modules for what they hold, not util/shared/lib."
+            )
+        );
+    }
+    assert!(engine.lint_source("src/lib.rs", "").is_empty());
+    assert!(engine.lint_source("pkg/shared.py", "").is_empty());
+    assert!(engine.lint_source("internal/lib.go", "").is_empty());
+    assert!(engine.lint_source("web/lib/index.ts", "").is_empty());
 }
 
 #[test]

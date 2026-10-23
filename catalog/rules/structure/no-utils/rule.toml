@@ -12,4 +12,4 @@ default-severity = "error"
 
 [[implementations]]
 kind = "native"
-languages = ["python"]
+languages = ["python", "typescript", "javascript", "go", "rust"]
