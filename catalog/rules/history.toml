@@ -240,3 +240,108 @@ status = "preview"
 version = "0.14.0"
 rule = "no-coverage-pragma"
 status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "cargo-cooldown"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "compose-config"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "dependabot-cooldown"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "dockerfile-lint"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "docstring-matches-signature"
+status = "stable"
+
+[[event]]
+version = "0.15.0"
+rule = "eager-test"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "external-config-weakened"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "no-tautological-assert"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "no-type-cast"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "npm-cooldown"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "pnpm-cooldown"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "pyrefly-strict"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "pytest-strict"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "recipe-conflict"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "ruff-selection"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "short-lived-access-token"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "terraform-lint"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "test-no-network"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "test-no-subprocess"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "uv-cooldown"
+status = "preview"
+
+[[event]]
+version = "0.15.0"
+rule = "yarn-cooldown"
+status = "preview"
