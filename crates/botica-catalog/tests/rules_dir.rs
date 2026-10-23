@@ -64,7 +64,7 @@ fn the_families_are_the_ones_the_spec_lists() {
     codes.sort_unstable();
     let mut expected = [
         "STRUC", "ARCH", "CONF", "DB", "CLI", "LOG", "DM", "FAST", "PROC", "SEC", "TEST", "TOOL",
-        "WRIT", "DOCS",
+        "WRIT", "DOCS", "INFRA",
     ];
     expected.sort_unstable();
     assert_eq!(codes, expected);

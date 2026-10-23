@@ -137,7 +137,10 @@ ruff enforces it, and its fragment goes into `pyproject.toml`.
 [`docstring-matches-signature`](../rules/docs/btdocs001-docstring-matches-signature.md) has two
 external implementations: ruff for Python, with its fragment in `pyproject.toml`, and ESLint for
 TypeScript and JavaScript, with the hook that runs it in `prek.toml`. `pyrefly-strict`,
-`pytest-strict` and `test-no-network` put their fragments in `pyproject.toml` too. A catalog of a
+`pytest-strict` and `test-no-network` put their fragments in `pyproject.toml` too.
+[`dockerfile-lint`](../rules/infrastructure/btinfra001-dockerfile-lint.md) and
+[`compose-config`](../rules/infrastructure/btinfra002-compose-config.md) are two more: hadolint and
+`docker compose config` enforce them, and their fragments go into `prek.toml`. A catalog of a
 project declares its own.
 
 ## Judgment rules

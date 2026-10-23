@@ -1,0 +1,16 @@
+id = "compose-config"
+code = "BTINFRA002"
+standard = "CES-114"
+summary = "Each Compose file of the repository passes `docker compose config`, as a hook of prek that needs no `.env` and no daemon"
+status = "preview"
+tags = ["docker"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["yaml"]
+tool = "docker-compose"
+docs = "https://docs.docker.com/reference/cli/docker/compose/config/"
+config = "config/prek.toml"
+applies-when = ["**/compose*.y*ml", "**/docker-compose*.y*ml"]
