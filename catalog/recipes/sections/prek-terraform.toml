@@ -1,0 +1,39 @@
+# MARK: terraform
+# CES-129. `--tool-version` makes each hook download that release of its tool into
+# ~/.cache/pre-commit-terraform on first use, so the tools need not be on the PATH; bash, curl and
+# unzip must be. A repository of OpenTofu adds `--hook-config=--tf-path=opentofu` to the first two
+# hooks, with a version of OpenTofu. trivy uses the checks built into its release and reads only
+# Terraform: hadolint lints the Dockerfiles. tflint and trivy run inside each folder, so the paths
+# of .tflint.hcl and .trivyignore start at the root of the repository.
+[[repos]]
+repo = "https://github.com/antonbabenko/pre-commit-terraform"
+rev = "v1.109.3"
+
+[[repos.hooks]]
+id = "terraform_fmt"
+args = ["--hook-config=--tool-version={{ param.terraform-version }}"]
+priority = 0
+
+[[repos.hooks]]
+id = "terraform_validate"
+args = ["--hook-config=--tool-version={{ param.terraform-version }}"]
+priority = 1
+
+[[repos.hooks]]
+id = "terraform_tflint"
+args = [
+  "--hook-config=--tool-version={{ param.tflint-version }}",
+  "--args=--config=__GIT_WORKING_DIR__/.tflint.hcl",
+]
+priority = 2
+
+[[repos.hooks]]
+id = "terraform_trivy"
+args = [
+  "--hook-config=--tool-version={{ param.trivy-version }}",
+  "--args=--skip-check-update",
+  "--args=--misconfig-scanners=terraform",
+  "--args=--severity=HIGH,CRITICAL",
+  "--args=--ignorefile=__GIT_WORKING_DIR__/.trivyignore",
+]
+priority = 2

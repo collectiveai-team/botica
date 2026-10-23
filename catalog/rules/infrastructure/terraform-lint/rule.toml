@@ -1,0 +1,16 @@
+id = "terraform-lint"
+code = "BTINFRA003"
+standard = "CES-129"
+summary = "Terraform code passes terraform fmt, terraform validate, tflint and trivy, as hooks of prek"
+status = "preview"
+tags = ["terraform"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["terraform"]
+tool = "pre-commit-terraform"
+docs = "https://github.com/antonbabenko/pre-commit-terraform#available-hooks"
+config = "config/prek.toml"
+applies-when = ["**/*.tf"]

@@ -1,0 +1,65 @@
+name: Terraform
+
+# CES-129: the hooks of `# MARK: terraform` in prek.toml, and checkov. Each hook downloads the
+# version of its tool that its `--tool-version` names; GITHUB_TOKEN lifts the rate limit of the API
+# of GitHub that the download of tflint and trivy queries. checkov runs only here, with the settings
+# of .checkov.yaml, and fails on a check that fails and is not in .checkov.baseline.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: terraform-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: fmt, validate, tflint & trivy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: "0.13.3"
+          enable-cache: true
+
+      - name: Terraform hooks (prek)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/terraform-plugins
+        run: |
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          uvx prek{{ param.prek-version.at }} run --all-files --show-diff-on-failure \
+            terraform_fmt terraform_validate terraform_tflint terraform_trivy
+
+  checkov:
+    name: checkov
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: "0.13.3"
+          enable-cache: true
+
+      # orjson, a dependency of checkov, has no wheel for a free-threaded Python, which uv may pick
+      # when the version is not set: https://pypi.org/project/orjson/#files
+      - name: checkov
+        env:
+          UV_PYTHON: "3.12"
+        run: >-
+          uvx checkov@{{ param.checkov-version }}
+          --directory . --baseline .checkov.baseline --quiet --compact

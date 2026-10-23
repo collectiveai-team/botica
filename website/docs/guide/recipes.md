@@ -220,6 +220,17 @@ only for a project that runs asyncio.
 has no other step. The topic `property-based-testing` (`botica refs show property-based-testing`)
 has the tests to copy.
 
+`iac-terraform` is for a repository with Terraform or OpenTofu code (CES-129). It adds the hooks
+`terraform_fmt`, `terraform_validate`, `terraform_tflint` and `terraform_trivy` of
+pre-commit-terraform to `prek.toml`, writes `.tflint.hcl`, `.trivyignore`, `.checkov.yaml`, an
+empty `.checkov.baseline` and `.github/workflows/terraform.yml`, and ignores the state and the
+folders `.terraform`. Each hook downloads the version of its tool that its `--tool-version` names,
+so the tools need not be installed; the parameters `terraform-version`, `tflint-version`,
+`trivy-version` and `checkov-version` set the versions, and `prek-version` the version of prek
+that `terraform.yml` runs with uvx. checkov runs only in `terraform.yml`, and
+fails on a check that fails and is not in `.checkov.baseline`: in a repository with Terraform code,
+run checkov once with `--create-baseline` and commit the file it writes (CES-129, Migration).
+
 What the recipes cannot say about themselves:
 
 - A recipe has no condition, so `ci-docker` and `repo-public` add `docker.yml` also to a
@@ -274,6 +285,10 @@ What the recipes cannot say about themselves:
   selects the rules of the cooldown of pnpm, npm and Yarn; each applies only to a project with the
   lockfile of its manager. A project of npm or Yarn writes `min-release-age` to `.npmrc` or
   `npmMinimalAgeGate` to `.yarnrc.yml` as the rule asks, and can delete `pnpm-workspace.yaml`.
+- `tests.yml` of `ci-python`, `ci-node` and `ci-go` runs `prek run --all-files`, so in a
+  repository that also names `iac-terraform` the hooks of Terraform run there and in
+  `terraform.yml`. `SKIP: terraform_fmt,terraform_validate,terraform_tflint,terraform_trivy` in the
+  `env` of the step of prek of `tests.yml` runs them once.
 
 ## Recipes of a project
 
