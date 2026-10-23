@@ -1,0 +1,66 @@
+description = "A TypeScript or JavaScript project: the rules of any repository and the ones about its code, the cooldown of pnpm, Biome, ESLint for JSDoc, tsc and knip in prek from the packages of the project, and those packages"
+extends = ["base"]
+rules = [
+  "no-utils",
+  "log-no-print",
+  "no-disabled-typecheck",
+  "cognitive-complexity",
+  "lockfile-committed",
+  "docstring-matches-signature",
+  "pnpm-cooldown",
+  "npm-cooldown",
+  "yarn-cooldown",
+]
+
+[[files]]
+path = "biome.json"
+template = "files/biome.json"
+
+[[files]]
+path = "eslint.config.js"
+template = "files/eslint.config.js"
+
+[[files]]
+path = "knip.json"
+template = "files/knip.json"
+
+[[sections]]
+path = "pnpm-workspace.yaml"
+marker = "# MARK: cooldown"
+template = "sections/pnpm-workspace-cooldown.yaml"
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: biome"
+template = "sections/prek-biome.toml"
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: eslint-jsdoc"
+template = "sections/prek-eslint-jsdoc.toml"
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: tsc"
+template = "sections/prek-tsc.toml"
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: knip"
+template = "sections/prek-knip.toml"
+
+[[tools]]
+manager = "pnpm"
+packages = [
+  "@biomejs/biome",
+  "eslint",
+  "eslint-plugin-jsdoc",
+  "@typescript-eslint/parser",
+  "typescript@^6",
+  "knip",
+]
+
+[params.cooldown-days]
+description = "The days that a new release of a dependency waits before a package manager or dependabot takes it"
+kind = "days"
+default = 7

@@ -43,8 +43,9 @@ pub use recipes::{Recipe, Recipes, AGENTS, EXPORTS, RECIPES_DIR};
 pub use recipes_params::{render, ParamKind, ParamSpec, ResolvedParam};
 pub use recipes_resolve::{RecipeItem, ResolvedRecipe};
 pub use recipes_steps::{
-    normalized_package, requirement_package, FileStep, GitignoreStep, LinkStep, SectionStep,
-    SkillStep, ToolStep, DEFAULT_TOOL_GROUP, TOOL_MANAGERS, UNIGNORE_WHITELIST,
+    is_node_manager, normalized_package, requirement_package, tool_package, FileStep,
+    GitignoreStep, LinkStep, SectionStep, SkillStep, ToolStep, DEFAULT_TOOL_GROUP, NODE_MANAGERS,
+    TOOL_MANAGERS, UNIGNORE_WHITELIST,
 };
 pub use recipes_steps_resolve::{
     ResolvedFile, ResolvedLink, ResolvedSection, ResolvedSkill, ResolvedTool, ToolConflict,

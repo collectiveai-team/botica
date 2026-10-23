@@ -1,0 +1,16 @@
+# MARK: knip
+# CES-109. knip reports the dependencies of package.json that no file imports, the imported ones
+# that it does not declare, and the files and exports that nothing uses. It is a dev dependency of
+# the project, which the `tools` step of base-node adds, and reads its node_modules, so it runs
+# after the install.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "knip"
+name = "knip (unused dependencies, files and exports)"
+entry = "npx --no -- knip"
+language = "system"
+files = "(^|/)package\\.json$|\\.[cm]?[jt]sx?$"
+pass_filenames = false
+priority = 2

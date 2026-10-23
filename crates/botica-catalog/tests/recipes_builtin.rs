@@ -11,7 +11,7 @@ fn the_binary_carries_its_recipes_with_a_description_and_the_origin_built_in() {
     let recipes = embedded();
 
     let ids: Vec<&str> = recipes.recipes().iter().map(|r| r.id.as_str()).collect();
-    assert_eq!(ids.len(), 27);
+    assert_eq!(ids.len(), 29);
     for recipe in recipes.recipes() {
         assert_eq!(recipe.origin, Origin::BuiltIn);
         assert!(
@@ -136,6 +136,10 @@ fn base_ignores_the_workspace_folders_and_lets_the_manifest_of_skills_out() {
         .lines
         .contains(&".agents/skills/".to_owned()));
     assert!(base.gitignore[0].lines.contains(&".tmp/".to_owned()));
+    assert!(base.gitignore[0]
+        .lines
+        .contains(&"node_modules/".to_owned()));
+    assert!(base.gitignore[0].lines.contains(&"target/".to_owned()));
     assert_eq!(base.gitignore[0].unignore, ["skills-lock.json"]);
 }
 
@@ -186,6 +190,7 @@ fn the_binary_carries_a_recipe_for_each_agent_and_each_piece_of_ci() {
             "agent-opencode",
             "base",
             "base-go",
+            "base-node",
             "base-python",
             "base-rust",
             "ci",
@@ -199,6 +204,7 @@ fn the_binary_carries_a_recipe_for_each_agent_and_each_piece_of_ci() {
             "ci-python",
             "ci-rust",
             "full-go",
+            "full-node",
             "full-python",
             "full-rust",
             "python-strict-types",

@@ -3,9 +3,7 @@ use std::fmt;
 
 use crate::recipes::Recipe;
 use crate::recipes_resolve::RecipeItem;
-use crate::recipes_steps::{
-    requirement_package, same_requirement, GitignoreStep, DEFAULT_TOOL_GROUP,
-};
+use crate::recipes_steps::{same_requirement, tool_package, GitignoreStep, DEFAULT_TOOL_GROUP};
 
 /// A skill to install and the recipe whose file lists it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -216,14 +214,14 @@ fn gather_tools(chain: &[&Recipe]) -> (Vec<ResolvedTool>, Vec<ToolConflict>) {
         for step in &recipe.tools {
             let group = step.group.as_deref().unwrap_or(DEFAULT_TOOL_GROUP);
             for package in &step.packages {
-                let name = requirement_package(package);
+                let name = tool_package(&step.manager, package);
                 let listed = tools.iter().find(|t| {
                     t.manager == step.manager
                         && t.group == group
-                        && requirement_package(&t.package) == name
+                        && tool_package(&t.manager, &t.package) == name
                 });
                 match listed {
-                    Some(first) if !same_requirement(&first.package, package) => {
+                    Some(first) if !same_requirement(&step.manager, &first.package, package) => {
                         conflicts.push(ToolConflict {
                             manager: step.manager.clone(),
                             group: group.to_owned(),

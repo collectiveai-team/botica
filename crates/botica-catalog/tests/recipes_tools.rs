@@ -51,7 +51,7 @@ fn only_a_known_manager_is_accepted() {
     let message = rejected("[[tools]]\nmanager = \"pip\"\npackages = [\"a\"]\n");
 
     assert!(
-        message.contains("the `tools` manager `pip` is not one of: uv"),
+        message.contains("the `tools` manager `pip` is not one of: uv, pnpm, npm"),
         "{message}"
     );
 }
@@ -281,4 +281,88 @@ fn each_built_in_recipe_resolves() {
             recipes.resolve(&recipe.id).err()
         );
     }
+}
+
+#[test]
+fn pnpm_and_npm_take_names_of_the_npm_registry_with_an_optional_range() {
+    for manager in ["pnpm", "npm"] {
+        for name in [
+            "knip",
+            "@biomejs/biome",
+            "@biomejs/biome@^2.6",
+            "typescript@7.0.2",
+            "a.b_c~d",
+        ] {
+            project(vec![recipe(
+                "x",
+                &format!("[[tools]]\nmanager = \"{manager}\"\npackages = [\"{name}\"]\n"),
+            )])
+            .unwrap_or_else(|error| panic!("{manager} {name}: {error}"));
+        }
+        for name in [
+            "Knip",
+            "@biomejs",
+            "@/biome",
+            "knip@",
+            "knip@ ^6",
+            "knip@npm:other",
+            "knip@github:webpro/knip",
+            "knip@file:../knip",
+            "my_pkg>=1",
+        ] {
+            let message = rejected(&format!(
+                "[[tools]]\nmanager = \"{manager}\"\npackages = [\"{name}\"]\n"
+            ));
+
+            assert!(
+                message.contains(&format!(
+                    "the `tools` package `{name}` is not a requirement"
+                )),
+                "{manager} {name:?}: {message}"
+            );
+        }
+    }
+}
+
+#[test]
+fn pnpm_and_npm_add_only_to_the_dev_dependencies() {
+    let message =
+        rejected("[[tools]]\nmanager = \"pnpm\"\ngroup = \"docs\"\npackages = [\"knip\"]\n");
+
+    assert!(
+        message.contains("the `tools` group of `pnpm` is `dev` (devDependencies), not `docs`"),
+        "{message}"
+    );
+}
+
+#[test]
+fn a_node_package_and_a_python_package_of_the_same_name_are_two_entries() {
+    let loaded = project(vec![recipe(
+        "x",
+        "[[tools]]\nmanager = \"uv\"\npackages = [\"knip\"]\n\n\
+         [[tools]]\nmanager = \"pnpm\"\npackages = [\"knip\"]\n",
+    )])
+    .expect("loads");
+
+    assert_eq!(
+        resolved(&loaded, "x"),
+        ["uv dev knip from x", "pnpm dev knip from x"]
+    );
+}
+
+#[test]
+fn a_node_package_that_two_recipes_ask_for_with_different_ranges_does_not_resolve() {
+    let loaded = project(vec![
+        recipe(
+            "base",
+            "[[tools]]\nmanager = \"pnpm\"\npackages = [\"knip@^6\"]\n",
+        ),
+        recipe(
+            "child",
+            "extends = [\"base\"]\n\n[[tools]]\nmanager = \"pnpm\"\npackages = [\"knip\"]\n",
+        ),
+    ])
+    .expect("loads");
+
+    assert!(loaded.resolve("child").is_err());
 }

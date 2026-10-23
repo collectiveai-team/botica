@@ -1,0 +1,15 @@
+# MARK: biome
+# CES-58. Biome formats and lints TypeScript, JavaScript and JSON in place of ESLint and Prettier:
+# `biome check --write` formats, sorts the imports, lints and applies the safe fixes. It is the
+# `@biomejs/biome` of the project, so the version is the one of its lockfile, as for tsc and knip.
+# A warning does not fail the hook; an error does.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "biome"
+name = "biome check --write"
+entry = "npx --no -- biome check --write --no-errors-on-unmatched --files-ignore-unknown=true"
+language = "system"
+types_or = ["javascript", "jsx", "ts", "tsx", "json"]
+priority = 0

@@ -30,6 +30,14 @@ clippy with `-D warnings` and the lints `missing_errors_doc` and `missing_panics
 both from the toolchain of the repository. `clippy::cognitive_complexity` stays off: botica
 measures complexity (CES-110).
 
+TypeScript and JavaScript code is type-checked by the `tsc` of the project (`tsc --noEmit`), and
+formatted and linted by Biome (`biome check`), which replaces ESLint and Prettier. ESLint stays
+only for the rules of `eslint-plugin-jsdoc` that compare a JSDoc comment with its code (CES-123),
+which Biome does not have; its configuration enables those rules and no other. A repository that
+runs ESLint and Prettier moves to Biome in the pull request that adds it: `biome migrate eslint
+--write` and `biome migrate prettier --write` carry their settings to `biome.json`, and Prettier and
+the other rules of ESLint are removed there.
+
 The type checker stays on. No setting or directive turns it off for a whole file, a project or a
 build: `# pyrefly: ignore-errors`, `// @ts-nocheck`, `"strict": false` or an option of the strict
 family set to `false` in `tsconfig.json`, and `typescript.ignoreBuildErrors` in `next.config`. A
@@ -67,11 +75,12 @@ unknown type is narrowed with `isinstance`, a `TypeIs` function or a schema.
 | `pyupgrade` | `ruff` (`UP`) |
 | `pylint` | `ruff` + `pyrefly` |
 | mypy (as the only checker) | `pyrefly` |
+| ESLint, Prettier (TypeScript, JavaScript) | `biome check`; ESLint only with `eslint-plugin-jsdoc` |
 
 ## When a legacy tool appears
 
-A legacy tool in `pyproject.toml` or `prek.toml` is removed, and its intent is expressed through
-this stack.
+A legacy tool in `pyproject.toml`, `package.json` or `prek.toml` is removed, and its intent is
+expressed through this stack.
 
 ## Migration
 

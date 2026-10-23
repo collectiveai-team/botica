@@ -17,7 +17,7 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
              botica itself, the skills, .gitignore, the prek hooks, the workflow of abide and the \
              sections of AGENTS.md\n  \
              rules: 9, judgment: 11, exports: 2\n  \
-             skills: 31, files: 5, sections: 2, gitignore: 8, params: 2\n  from: built-in\n"
+             skills: 31, files: 5, sections: 2, gitignore: 10, params: 2\n  from: built-in\n"
         ),
         "{text}"
     );
@@ -56,6 +56,7 @@ fn list_adds_the_recipes_of_the_project_in_the_order_of_their_ids() {
             "agent-opencode",
             "base",
             "base-go",
+            "base-node",
             "base-python",
             "base-rust",
             "ci",
@@ -69,6 +70,7 @@ fn list_adds_the_recipes_of_the_project_in_the_order_of_their_ids() {
             "ci-python",
             "ci-rust",
             "full-go",
+            "full-node",
             "full-python",
             "full-rust",
             "mine",

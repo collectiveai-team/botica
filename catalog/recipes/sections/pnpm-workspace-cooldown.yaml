@@ -1,0 +1,4 @@
+# MARK: cooldown
+# CES-128: pnpm installs only the versions that were published at least
+# {{ param.cooldown-days }} days ago. The value is in minutes.
+minimumReleaseAge: {{ param.cooldown-days.minutes }}

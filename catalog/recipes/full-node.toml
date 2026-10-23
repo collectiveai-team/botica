@@ -1,0 +1,2 @@
+description = "A TypeScript or JavaScript project with its CI: base-node and ci-node"
+extends = ["base-node", "ci-node"]

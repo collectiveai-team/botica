@@ -114,12 +114,13 @@ scaffolder writes the configuration of a repository from its own components, apa
    has `source` (a repository, with a `#tag` to pin it) and `names`. `[[files]]` has `path` and
    `template`. `[[sections]]` has `path`, `marker` and `template`. A `template` is a file under the
    folder of the recipe (`files/`, `sections/`). `[[links]]` has `path` and `target`, the text
-   of the link, relative to the folder of the link. `[[tools]]` has `manager` (`uv`), `packages` and
-   optionally `group` (`dev` when absent); a package is a requirement without a URL, a name with
-   optional extras, versions and marker, and the name is what `check` looks for; two recipes that
-   ask for a package with different requirements do not resolve. `[[gitignore]]` has `lines` and
-   `unignore`, and needs one of them. A line is one line of text, and a recipe lists it once across
-   its steps.
+   of the link, relative to the folder of the link. `[[tools]]` has `manager` (`uv`, `pnpm` or
+   `npm`), `packages` and optionally `group` (`dev` when absent); a package is a requirement without
+   a URL (for uv a name with optional extras, versions and marker, for pnpm and npm a name with an
+   optional range), and the name is what `check` looks for;
+   two recipes that ask for a package with different requirements do not resolve. `[[gitignore]]`
+   has `lines` and `unignore`, and needs one of them. A line is one line of text, and a recipe
+   lists it once across its steps.
    `unignore` accepts only `skills-lock.json`, and `lines` does not accept it (CES-107).
    `unignore` is the one step that deletes text from a file that the repository has: CES-107
    tracks `skills-lock.json`, and a repository that already ignores it would keep the manifest
@@ -177,7 +178,8 @@ scaffolder writes the configuration of a repository from its own components, apa
    - a section's marker is in its file;
    - a link's path is a symbolic link whose text is its target;
    - `.gitignore` has each line of `lines` and has no line of `unignore`;
-   - `pyproject.toml` declares each package of a tool;
+   - `pyproject.toml` declares each package of a tool of uv, and `package.json` each package of a
+     tool of pnpm or npm;
    - a skill is in `skills-lock.json` and in `.agents/skills/`.
 
    `check` does not read the value of a parameter back from a file: a file that `install` wrote
@@ -224,7 +226,9 @@ scaffolder writes the configuration of a repository from its own components, apa
      declare. A package that is declared afterwards is `added` and one that is not is `failed`.
      When a call for several packages fails, `install` makes it again for each package, because
      `uv add` adds none when one does not exist. A project without `pyproject.toml` leaves each
-     package `pending`.
+     package `pending`. A step of `pnpm` or `npm` runs `pnpm add --save-dev` or `npm install
+     --save-dev` for the packages that `package.json` does not declare, with the manager of the
+     lockfile of the project when it has one, so that the project keeps one lockfile.
    - The `[[skills]]` steps run last. `install` runs `npx skills add <source> --agent <agents>
      --yes --json --skill <name>...` once for each source, for the names that are not in `.agents/skills/`. A
      name that is there is `ok`; one that is there afterwards is `added`; one that is absent
@@ -254,8 +258,8 @@ scaffolder writes the configuration of a repository from its own components, apa
    `npx skills add --agent claude-code` writes in `.claude/skills/<name>` and fails through that link.
    `install` takes one or more names (`botica recipe install base base-python agent-claude-code`),
    and a step does not carry a condition. A parameter changes a value inside a template, never
-   whether a step runs. A recipe `full-<language>` extends the `base-*` and the
-   `ci-*` of a language and has no step of its own: one name for the whole package of a language.
+   whether a step runs. A recipe `full-<language>` extends the `base-*` and the `ci-*` of a language
+   and has no step of its own: one name for the whole package of a language.
 
    The components of `scaffolding` are recipes: `gitignore`, `agents`, `standards` and `skills` in
    `base`, `prek` and `pyproject` in `base-python`, `agent-config` in `agent-opencode`,
