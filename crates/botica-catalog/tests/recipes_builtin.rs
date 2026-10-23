@@ -11,7 +11,7 @@ fn the_binary_carries_its_recipes_with_a_description_and_the_origin_built_in() {
     let recipes = embedded();
 
     let ids: Vec<&str> = recipes.recipes().iter().map(|r| r.id.as_str()).collect();
-    assert_eq!(ids.len(), 21);
+    assert_eq!(ids.len(), 22);
     for recipe in recipes.recipes() {
         assert_eq!(recipe.origin, Origin::BuiltIn);
         assert!(
@@ -200,7 +200,8 @@ fn the_binary_carries_a_recipe_for_each_agent_and_each_piece_of_ci() {
             "repo-private",
             "repo-public",
             "secrets-varlock",
-            "testing-blockbuster"
+            "testing-blockbuster",
+            "testing-hypothesis"
         ]
     );
 
@@ -378,4 +379,24 @@ fn testing_blockbuster_adds_blockbuster_bounded_on_the_minor_and_nothing_else() 
     assert!(blockbuster.extends.is_empty() && blockbuster.rules.is_empty());
     assert!(blockbuster.files.is_empty() && blockbuster.sections.is_empty());
     assert!(blockbuster.gitignore.is_empty() && blockbuster.skills.is_empty());
+}
+
+#[test]
+fn testing_hypothesis_adds_only_hypothesis_and_its_folder_of_examples() {
+    let recipes = embedded();
+
+    let hypothesis = recipes
+        .recipe("testing-hypothesis")
+        .expect("testing-hypothesis");
+    let tools: Vec<String> = hypothesis
+        .tools
+        .iter()
+        .map(|t| format!("{} {:?} {:?}", t.manager, t.group, t.packages))
+        .collect();
+    assert_eq!(tools, ["uv None [\"hypothesis\"]"]);
+    assert_eq!(hypothesis.gitignore.len(), 1);
+    assert_eq!(hypothesis.gitignore[0].lines, [".hypothesis/"]);
+    assert!(hypothesis.extends.is_empty() && hypothesis.rules.is_empty());
+    assert!(hypothesis.files.is_empty() && hypothesis.sections.is_empty());
+    assert!(hypothesis.skills.is_empty() && hypothesis.links.is_empty());
 }

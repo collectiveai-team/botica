@@ -1,0 +1,26 @@
+title = "Property-based tests with Hypothesis"
+
+[[references]]
+file = "code/tests/test_merge.py"
+anchor = "def test_the_merge_has_every_item_of_both_lists_in_order"
+note = "a property: for any two sorted lists, the merge equals `sorted` of both, so the empty list is one of the inputs"
+
+[[references]]
+file = "code/tests/strategies.py"
+anchor = "invoice_lines = st.builds("
+note = "the strategies of the models: each field gets the constraints that its `Field` declares"
+
+[[references]]
+file = "code/tests/test_invoices.py"
+anchor = "def test_an_invoice_survives_a_round_trip_through_json"
+note = "two properties of a model: a round trip through JSON, and a total that adds up when two invoices are joined"
+
+[[references]]
+url = "https://hypothesis.readthedocs.io/en/latest/reference/api.html#built-in-profiles"
+note = "the `ci` profile is active when `CI` is set: it turns off the deadline and the database and makes the run deterministic"
+quote = "If the CI environment variable is set to any value, the ci profile is active by default."
+
+[[references]]
+url = "https://hypothesis.readthedocs.io/en/latest/reference/api.html#hypothesis.settings.database"
+note = "where Hypothesis keeps the failing examples that it replays on the next run"
+quote = "If not set, a DirectoryBasedExampleDatabase is created in the current working directory under .hypothesis/examples."
