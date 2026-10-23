@@ -12,3 +12,8 @@ template = "files/github/dependabot.yml"
 [[files]]
 path = ".github/workflows/osv-scanner.yml"
 template = "files/github/workflows/osv-scanner.yml"
+
+[params.cooldown-days]
+description = "The days that a new release of a dependency waits before a package manager or dependabot takes it"
+kind = "days"
+default = 7

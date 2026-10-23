@@ -1,5 +1,6 @@
 //! `botica recipe check`: how the project differs from a recipe.
 
+use std::collections::BTreeMap;
 use std::path::Path;
 use std::process::ExitCode;
 
@@ -39,10 +40,12 @@ impl Report {
 /// for each package that they and the recipes the project uses ask for with different
 /// requirements, then a summary. The command fails when a rule is not active, a fragment or an
 /// export is not current, a step is not in the project, or two recipes conflict. The paths of the
-/// steps are from the root of the project.
+/// steps are from the root of the project. A value of `[recipes.params]` that does not fit its
+/// parameter fails the command, as a recipe that does not load does; `check` does not read the
+/// values back from the files.
 pub fn run(collection: &Collection, names: &[String], project: &ProjectArgs) -> Result<ExitCode> {
     let recipes = collection.loaded()?;
-    let resolved = recipes.resolve_many(names).map_err(anyhow::Error::msg)?;
+    let resolved = collection.resolve(names, &BTreeMap::new())?;
     for warning in &resolved.warnings {
         eprintln!("warning: {warning}");
     }

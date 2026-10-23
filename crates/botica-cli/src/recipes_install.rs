@@ -1,15 +1,17 @@
 //! `botica recipe install`: prepare the repository with the steps of one or more recipes.
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 use std::process::ExitCode;
 
 use anyhow::{anyhow, Result};
-use botica_catalog::Status;
+use botica_catalog::{render, Status};
 
 use crate::project::ProjectArgs;
 use crate::recipes_collection::Collection;
 use crate::recipes_install_gitignore as gitignore;
+use crate::recipes_install_params as params;
 use crate::recipes_install_release;
 use crate::recipes_install_selection as selection;
 use crate::recipes_install_skills as skills;
@@ -81,20 +83,29 @@ fn export(root: &Path, name: &str, project: &ProjectArgs) -> Outcome {
     }
 }
 
-/// Writes the selection of the rules, then adds the files, then the sections, then the links, then the lines of `.gitignore`, then the tools, then the skills, of the recipes in `names`, from the root of
-/// the project. The command exits with 1 when a step is pending or a skill is not installed at the
-/// end.
-pub fn run(collection: &Collection, names: &[String], project: &ProjectArgs) -> Result<ExitCode> {
+/// Writes the selection of the rules and the values of `set`, then adds the files, then the
+/// sections, then the links, then the lines of `.gitignore`, then the tools, then the skills, of
+/// the recipes in `names`, from the root of the project. The templates are written with the values
+/// of the parameters. The command exits with 1 when a step is pending or a skill is not installed
+/// at the end.
+pub fn run(
+    collection: &Collection,
+    names: &[String],
+    set: &BTreeMap<String, String>,
+    project: &ProjectArgs,
+) -> Result<ExitCode> {
     let recipes = collection.loaded()?;
-    let gathered = recipes.resolve_many(names).map_err(anyhow::Error::msg)?;
+    let gathered = collection.resolve(names, set)?;
     for warning in &gathered.warnings {
         eprintln!("warning: {warning}");
     }
     let root = collection.project.loaded.root.as_path();
     let text = |recipe: &str, path: &str| {
-        recipes
+        let template = recipes
             .template(recipe, path)
-            .ok_or_else(|| anyhow!("the template `{path}` of `{recipe}` is missing"))
+            .ok_or_else(|| anyhow!("the template `{path}` of `{recipe}` is missing"))?;
+        render(template, &gathered.params)
+            .map_err(|problem| anyhow!("the template `{path}` of `{recipe}`: {problem}"))
     };
     let mut tally = Tally::default();
     let rules: Vec<&str> = gathered
@@ -111,11 +122,15 @@ pub fn run(collection: &Collection, names: &[String], project: &ProjectArgs) -> 
             .is_some_and(|rule| rule.status == Status::Preview)
     });
     if !rules.is_empty() {
-        let outcome = selection::add(root, names, &rules, preview)?;
+        let outcome = selection::add(root, names, &rules, preview, set)?;
         tally.report("selection", selection::BOTICA_TOML, &outcome);
     }
+    for (name, outcome) in params::add(root, set)? {
+        tally.report("param", &name, &outcome);
+    }
     for item in &gathered.files {
-        let pinned = recipes_install_release::at_this_release(text(&item.from, &item.template)?);
+        let rendered = text(&item.from, &item.template)?;
+        let pinned = recipes_install_release::at_this_release(&rendered);
         let template = Template {
             text: &pinned,
             path: &item.template,
@@ -126,7 +141,7 @@ pub fn run(collection: &Collection, names: &[String], project: &ProjectArgs) -> 
     }
     for item in &gathered.sections {
         let template = text(&item.from, &item.template)?;
-        let outcome = steps::add_section(root, &item.path, &item.marker, template)?;
+        let outcome = steps::add_section(root, &item.path, &item.marker, &template)?;
         let id = format!("{} `{}`", item.path, item.marker);
         tally.report("section", &id, &outcome);
     }

@@ -1,5 +1,7 @@
+use std::collections::BTreeMap;
+
 use anyhow::{bail, Result};
-use botica_catalog::{read_recipes, CatalogError, Recipes, RECIPES_DIR};
+use botica_catalog::{read_recipes, CatalogError, Recipes, ResolvedRecipe, RECIPES_DIR};
 
 use crate::project::{self, Project, ProjectArgs};
 
@@ -28,5 +30,29 @@ impl Collection {
             Ok(recipes) => Ok(recipes),
             Err(error) => bail!("{RECIPES_DIR}/ does not load:\n{error}"),
         }
+    }
+
+    /// The recipes `names` as one, with the values of their parameters: `set` (`--set`) before
+    /// `[recipes.params]` of the configuration before the default.
+    pub fn resolve<S: AsRef<str>>(
+        &self,
+        names: &[S],
+        set: &BTreeMap<String, String>,
+    ) -> Result<ResolvedRecipe> {
+        let recipes = self.loaded()?;
+        let mut resolved = recipes.resolve_many(names).map_err(anyhow::Error::msg)?;
+        let config: BTreeMap<String, String> = self
+            .project
+            .loaded
+            .config
+            .recipes
+            .params
+            .iter()
+            .map(|(name, value)| (name.clone(), value.text()))
+            .collect();
+        recipes
+            .set_params(&mut resolved, &config, set)
+            .map_err(anyhow::Error::msg)?;
+        Ok(resolved)
     }
 }

@@ -2,6 +2,7 @@
 //! the configuration, which `botica lint`, the hooks of prek and the editor read, and the names of
 //! the recipes into `installed` of `[recipes]`, which `recipe-conflict` reads.
 
+use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::fs;
 use std::path::Path;
@@ -13,8 +14,20 @@ use crate::recipes_install_steps::Outcome;
 pub const BOTICA_TOML: &str = "botica.toml";
 const PYPROJECT: &str = "pyproject.toml";
 
-/// The text of a new `botica.toml` that selects `rules` and lists the recipes `names`.
-fn text(names: &[String], rules: &[&str], preview: bool) -> String {
+/// The table `[recipes.params]` with the values of `set`, or nothing when `set` is empty.
+pub(crate) fn params_table(set: &BTreeMap<String, String>) -> String {
+    if set.is_empty() {
+        return String::new();
+    }
+    let mut text = String::from("\n[recipes.params]\n");
+    for (name, value) in set {
+        let _ = writeln!(text, "{name} = {}", toml::Value::String(value.clone()));
+    }
+    text
+}
+
+/// The text of a new `botica.toml` that selects `rules` and keeps the values of `set`.
+fn text(names: &[String], rules: &[&str], preview: bool, set: &BTreeMap<String, String>) -> String {
     let mut text = format!(
         "# The rules of the recipes {}, written by `botica recipe install`. `botica lint`, its hooks\n\
          # in prek.toml and the editor read this list, and a rule that botica adds later runs once it\n\
@@ -39,11 +52,12 @@ fn text(names: &[String], rules: &[&str], preview: bool) -> String {
         "\n[recipes]\ninstalled = [{}]\n",
         installed.join(", ")
     );
+    text.push_str(&params_table(set));
     text
 }
 
 /// The configuration of botica that the project already has: the file and its table.
-fn existing(root: &Path) -> Option<(&'static str, Option<toml::Table>)> {
+pub(crate) fn existing(root: &Path) -> Option<(&'static str, Option<toml::Table>)> {
     let read = |name: &str| {
         fs::read_to_string(root.join(name))
             .ok()
@@ -58,12 +72,19 @@ fn existing(root: &Path) -> Option<(&'static str, Option<toml::Table>)> {
 }
 
 /// Writes `botica.toml` with the rules and the names of the recipes when the project has no
-/// configuration of botica, with `preview = true` when one of them is in preview. One that exists is `ok` when its `select`
-/// lists every rule and it has `preview = true` where needed, and pending otherwise.
-pub fn add(root: &Path, names: &[String], rules: &[&str], preview: bool) -> Result<Outcome> {
+/// configuration of botica, with `preview = true` when one of them is in preview and with the
+/// values of `set` under `[recipes.params]`. One that exists is `ok` when its `select` lists every
+/// rule and it has `preview = true` where needed, and pending otherwise.
+pub fn add(
+    root: &Path,
+    names: &[String],
+    rules: &[&str],
+    preview: bool,
+    set: &BTreeMap<String, String>,
+) -> Result<Outcome> {
     let Some((file, table)) = existing(root) else {
         let path = root.join(BOTICA_TOML);
-        fs::write(&path, text(names, rules, preview))
+        fs::write(&path, text(names, rules, preview, set))
             .with_context(|| format!("cannot write `{}`", path.display()))?;
         return Ok(Outcome::Added(None));
     };

@@ -1,9 +1,10 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Deserialize;
 
 use crate::issue::{issue, CatalogError, CatalogIssue};
 use crate::load::SourceFile;
+use crate::recipes_params::{param_problems, ParamSpec};
 use crate::recipes_steps::{
     step_problems, template_problems, FileStep, GitignoreStep, LinkStep, SectionStep, SkillStep,
     ToolStep,
@@ -49,6 +50,8 @@ struct RecipeFile {
     gitignore: Vec<GitignoreStep>,
     #[serde(default)]
     tools: Vec<ToolStep>,
+    #[serde(default)]
+    params: BTreeMap<String, ParamSpec>,
 }
 
 /// A file `<id>.toml` of the catalog: the rules, the exports and the steps that prepare a
@@ -74,6 +77,8 @@ pub struct Recipe {
     pub links: Vec<LinkStep>,
     pub gitignore: Vec<GitignoreStep>,
     pub tools: Vec<ToolStep>,
+    /// The parameters that its templates write, by name.
+    pub params: BTreeMap<String, ParamSpec>,
 }
 
 /// A file under `files/` or `sections/` of the recipes folder, whose path is from that folder.
@@ -147,6 +152,13 @@ impl Recipes {
         self.recipes.iter().find(|recipe| recipe.id == id)
     }
 
+    /// Whether a recipe, of any chain, declares the parameter `name`.
+    pub fn declares(&self, name: &str) -> bool {
+        self.recipes
+            .iter()
+            .any(|recipe| recipe.params.contains_key(name))
+    }
+
     /// The text of a template, by its path from the recipes folder, for the recipe `id`: the
     /// templates of a recipe are the ones that came with it, built in or of the project.
     pub fn template(&self, id: &str, path: &str) -> Option<&str> {
@@ -210,6 +222,7 @@ fn load_recipe(
         &parsed.gitignore,
         &parsed.tools,
     ));
+    problems.extend(param_problems(&parsed.params));
     issues.extend(problems.into_iter().map(|message| issue(path, message)));
     Some(Recipe {
         id: id.to_owned(),
@@ -226,6 +239,7 @@ fn load_recipe(
         links: parsed.links,
         gitignore: parsed.gitignore,
         tools: parsed.tools,
+        params: parsed.params,
     })
 }
 
