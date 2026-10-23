@@ -1,7 +1,6 @@
 description = "A Go module: the rules of any repository and the ones about Go code, golangci-lint with its configuration, go mod tidy and govulncheck (manual by default) in prek"
 extends = ["base"]
 rules = [
-  "no-utils",
   "cognitive-complexity",
   "lockfile-committed",
 ]

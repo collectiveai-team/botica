@@ -91,6 +91,12 @@ pub struct NoUtils {
 
 const CATCH_ALL_STEMS: [&str; 5] = ["utils", "helpers", "aux", "misc", "common"];
 
+/// Names that JavaScript and TypeScript projects give to the same kind of module; a warning, since
+/// a framework may expect them (`lib/` of SvelteKit is a folder, which the rule does not read).
+const VAGUE_SCRIPT_STEMS: [&str; 3] = ["util", "shared", "lib"];
+
+const SCRIPT_EXTENSIONS: [&str; 8] = ["ts", "tsx", "mts", "cts", "js", "jsx", "mjs", "cjs"];
+
 impl NoUtils {
     /// Whether a directory called `tests` is on the way to the file, counting the ones above
     /// where botica runs.
@@ -100,6 +106,21 @@ impl NoUtils {
             .split('/')
             .chain(directories.split('/'))
             .any(|part| part == "tests")
+    }
+}
+
+/// The severity of a module with this name, or `None` when the name says what it holds.
+fn severity_of(stem: &str, extension: &str) -> Option<Severity> {
+    let script = SCRIPT_EXTENSIONS.contains(&extension);
+    if !(script || matches!(extension, "py" | "go" | "rs")) {
+        return None;
+    }
+    if CATCH_ALL_STEMS.contains(&stem) {
+        Some(Severity::Error)
+    } else if script && VAGUE_SCRIPT_STEMS.contains(&stem) {
+        Some(Severity::Warning)
+    } else {
+        None
     }
 }
 
@@ -115,19 +136,23 @@ impl NativeRule for NoUtils {
     fn check(&self, doc: &Document<'_>, out: &mut Vec<Diagnostic>) {
         let path = doc.path;
         let name = path.rsplit('/').next().unwrap_or(path);
-        let Some((stem, "py")) = name.rsplit_once('.') else {
+        let Some((stem, extension)) = name.rsplit_once('.') else {
             return;
         };
-        if !CATCH_ALL_STEMS.contains(&stem) || self.in_tests(path) {
+        let Some(severity) = severity_of(stem, extension) else {
+            return;
+        };
+        if self.in_tests(path) {
             return;
         }
-        out.push(Diagnostic::file_level(
-            path,
-            self.id(),
-            Severity::Error,
-            format!(
+        let message = match severity {
+            Severity::Error => format!(
                 "{path} is a catch-all module — name modules for what they hold, not utils/helpers/aux/misc/common."
             ),
-        ));
+            _ => format!(
+                "{path} has a vague name — name modules for what they hold, not util/shared/lib."
+            ),
+        };
+        out.push(Diagnostic::file_level(path, self.id(), severity, message));
     }
 }

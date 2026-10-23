@@ -1,7 +1,6 @@
 description = "A Python project: the rules of any repository and the ones about Python code, pyproject.toml, the Python hooks of prek and the dev tools"
 extends = ["base"]
 rules = [
-  "no-utils",
   "no-tests-in-package",
   "no-dict-alias",
   "no-dict-call-return",

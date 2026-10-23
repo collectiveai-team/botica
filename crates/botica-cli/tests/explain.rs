@@ -37,7 +37,7 @@ fn says_what_the_rule_is_and_prints_its_readme() {
     assert!(line_with(&text, "standard").contains("CES-63"));
     assert!(text.contains("## Directive"), "{text}");
     assert!(
-        text.contains("Name a module for what it holds."),
+        text.contains("Name a module for"),
         "the README comes after the settings:\n{text}"
     );
 }

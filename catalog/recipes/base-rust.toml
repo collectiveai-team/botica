@@ -1,7 +1,6 @@
 description = "A Rust crate or workspace: the rules of any repository and the ones about Rust code, the cooldown of Cargo, and cargo fmt, clippy and cargo-shear in prek"
 extends = ["base"]
 rules = [
-  "no-utils",
   "cognitive-complexity",
   "lockfile-committed",
   "cargo-cooldown",

@@ -33,7 +33,6 @@ fn base_node_extends_base_and_selects_the_rules_that_read_typescript() {
     assert_eq!(
         node.rules,
         [
-            "no-utils",
             "log-no-print",
             "no-disabled-typecheck",
             "cognitive-complexity",

@@ -1,7 +1,6 @@
 description = "A TypeScript or JavaScript project: the rules of any repository and the ones about its code, the cooldown of pnpm, Biome, ESLint for JSDoc, tsc and knip in prek from the packages of the project, and those packages"
 extends = ["base"]
 rules = [
-  "no-utils",
   "log-no-print",
   "no-disabled-typecheck",
   "cognitive-complexity",
