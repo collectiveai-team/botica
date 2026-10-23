@@ -17,6 +17,7 @@ rules = [
   "settings-env-schema",
   "cognitive-complexity",
   "ruff-selection",
+  "docstring-matches-signature",
 ]
 
 [[files]]

@@ -133,8 +133,11 @@ applies-when = ["pnpm-lock.yaml"]
 `dockerfile`, needs `applies-when`, or the rule counts as used in every project.
 
 In the built-in catalog, [`ruff-selection`](../rules/tooling/bttool002-ruff-selection.md) is one:
-ruff enforces it, and its fragment goes into `pyproject.toml`. A catalog of a project declares its
-own.
+ruff enforces it, and its fragment goes into `pyproject.toml`.
+[`docstring-matches-signature`](../rules/docs/btdocs001-docstring-matches-signature.md) has two
+external implementations: ruff for Python, with its fragment in `pyproject.toml`, and ESLint for
+TypeScript and JavaScript, with the hook that runs it in `prek.toml`. A catalog of a project
+declares its own.
 
 ## Judgment rules
 

@@ -1,0 +1,7 @@
+[tool.ruff.lint]
+preview = true
+explicit-preview-rules = true
+select = ["DOC102", "DOC202", "DOC403"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

@@ -16,6 +16,7 @@ fn the_default_selection_runs_every_rule_enabled_by_default() {
             "api-schemas-extra-forbid",
             "cli-typed-framework",
             "database-package",
+            "docstring-matches-signature",
             "external-config",
             "file-size-guard",
             "import-layers",
@@ -76,7 +77,7 @@ fn select_and_extend_select_are_added_together() {
     );
     assert_eq!(
         active(&resolve(&catalog, "select = []\nextend-select = [\"all\"]")).len(),
-        21
+        22
     );
 }
 
@@ -90,6 +91,7 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
             "api-schemas-extra-forbid",
             "cli-typed-framework",
             "database-package",
+            "docstring-matches-signature",
             "external-config",
             "import-layers",
             "invalid-suppression",
@@ -138,7 +140,7 @@ fn the_preview_rules_stay_out_of_the_default_selection_and_of_all() {
         assert_eq!(reason(&by_default, slug), Reason::NotSelected, "{slug}");
         assert_eq!(reason(&by_all, slug), Reason::OnlyPreview, "{slug}");
     }
-    assert_eq!(active(&by_all).len(), 21);
+    assert_eq!(active(&by_all).len(), 22);
 }
 
 #[test]
@@ -158,7 +160,7 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
         &catalog,
         "select = []\nextend-select = [\"all\"]\npreview = true",
     );
-    assert_eq!(active(&resolution).len(), 51);
+    assert_eq!(active(&resolution).len(), 52);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTSEC\"]\npreview = true")),
         ["jwt-verified", "no-token-in-web-storage", "route-auth"]
@@ -187,6 +189,7 @@ fn a_rule_switched_off_in_its_own_section_stays_out() {
             "api-schemas-extra-forbid",
             "cli-typed-framework",
             "database-package",
+            "docstring-matches-signature",
             "external-config",
             "import-layers",
             "invalid-suppression",

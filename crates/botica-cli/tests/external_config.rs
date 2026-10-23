@@ -95,12 +95,16 @@ fn the_rules_of_the_project_scope_check_the_external_rules_that_are_selected() {
     assert_eq!(file.status.code(), Some(0), "{}", stdout(&file));
 }
 
-/// A project whose catalog has `acme/selection`, which needs ruff to select `ASYNC`, and selects it.
+/// A project whose catalog has `acme/selection`, which needs ruff to select `ASYNC`, and selects it
+/// alone of the rules of ruff.
 fn ruff_project(name: &str) -> PathBuf {
     let dir = project_in(
         "external-config",
         name,
-        Some("preview = true\nextend-select = [\"acme/selection\"]\n"),
+        Some(
+            "preview = true\nextend-select = [\"acme/selection\"]\n\
+             ignore = [\"docstring-matches-signature\"]\n",
+        ),
     );
     complexity_rule(&dir);
     let rule = ".botica/rules/acme/checks/selection";

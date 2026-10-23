@@ -100,7 +100,9 @@ fn the_listing_names_the_programs_lint_runs_and_the_tools_outside_it() {
     assert!(text.contains(&runs), "{text}");
     assert!(
         text.contains(
-            "tools that enforce rules outside `botica lint`:\n  acme/complexity  complexipy\n"
+            "tools that enforce rules outside `botica lint`:\n  \
+             docstring-matches-signature  ruff\n  docstring-matches-signature  eslint\n  \
+             acme/complexity  complexipy\n"
         ),
         "{text}"
     );
@@ -108,7 +110,10 @@ fn the_listing_names_the_programs_lint_runs_and_the_tools_outside_it() {
 
 #[test]
 fn the_listing_names_no_program_of_a_rule_that_is_not_active() {
-    let dir = project("programs-inactive", "");
+    let dir = project(
+        "programs-inactive",
+        "ignore = [\"docstring-matches-signature\"]\n",
+    );
     add_rule(&dir, "by-sh", "ACMESTRUC001", "", "acme/by-sh");
 
     let text = run(&dir, &["rules", "--all", "--ignore", "acme/by-sh"]);
