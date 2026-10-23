@@ -1,0 +1,16 @@
+id = "test-no-network"
+code = "BTTEST010"
+standard = "CES-64"
+references = ["in-memory-adapters"]
+summary = "A test opens no network socket unless it is marked integration or e2e"
+status = "preview"
+tags = ["tests"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["python"]
+tool = "pytest"
+docs = "https://github.com/miketheman/pytest-socket"
+config = "config/pyproject.toml"

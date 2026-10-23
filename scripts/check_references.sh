@@ -8,7 +8,9 @@
 #
 # The environment is its own (`.tmp/references-venv` unless UV_PROJECT_ENVIRONMENT names another),
 # with a CPython 3.14 that has the GIL: the house version (CES-77), and some dependencies of prefect
-# have no wheels for the free-threaded build. Run by the job `references` of ci.yml.
+# have no wheels for the free-threaded build. The tests run with the network blocked by
+# pytest-socket (CES-64): a test marked `integration` or `e2e` gets it back through the hook of its
+# `conftest.py`. Run by the job `references` of ci.yml.
 set -u
 
 export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-.tmp/references-venv}"
@@ -32,6 +34,7 @@ for code in catalog/references/*/code; do
     # shellcheck disable=SC2086 # `tests` is empty or one path
     run pyrefly check --python-version 3.14 --search-path "$code" --search-path "$logger" \
         "$code" $tests || status=1
-    run pytest -q -p no:cacheprovider "$topic" -o "pythonpath=$code $logger" || status=1
+    run pytest -q -p no:cacheprovider --disable-socket --allow-unix-socket "$topic" \
+        -o "pythonpath=$code $logger" || status=1
 done
 exit "$status"

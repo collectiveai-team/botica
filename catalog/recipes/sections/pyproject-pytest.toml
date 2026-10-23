@@ -5,13 +5,13 @@
 minversion = "9.0"
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = ["-ra"]
+addopts = ["-ra", "--disable-socket", "--allow-unix-socket"]
 strict_config = true
 strict_markers = true
 strict_xfail = true
 strict_parametrization_ids = true
 empty_parameter_set_mark = "fail_at_collect"
-required_plugins = ["pytest-asyncio", "pytest-timeout"]
+required_plugins = ["pytest-asyncio", "pytest-socket", "pytest-timeout"]
 # Seconds for each test; a slower test takes @pytest.mark.timeout(N).
 timeout = 60
 # Seconds for the whole run. pytest-timeout checks it after each test and stops the run there.

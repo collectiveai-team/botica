@@ -136,9 +136,9 @@ In the built-in catalog, [`ruff-selection`](../rules/tooling/bttool002-ruff-sele
 ruff enforces it, and its fragment goes into `pyproject.toml`.
 [`docstring-matches-signature`](../rules/docs/btdocs001-docstring-matches-signature.md) has two
 external implementations: ruff for Python, with its fragment in `pyproject.toml`, and ESLint for
-TypeScript and JavaScript, with the hook that runs it in `prek.toml`. `pyrefly-strict` and
-`pytest-strict` put their fragments in `pyproject.toml` too. A catalog of a project declares its
-own.
+TypeScript and JavaScript, with the hook that runs it in `prek.toml`. `pyrefly-strict`,
+`pytest-strict` and `test-no-network` put their fragments in `pyproject.toml` too. A catalog of a
+project declares its own.
 
 ## Judgment rules
 

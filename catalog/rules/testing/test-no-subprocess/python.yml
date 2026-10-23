@@ -1,0 +1,102 @@
+id: test-no-subprocess
+language: python
+severity: warning
+message: "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, mark the test `integration` and silence this line with the reason."
+files:
+  - "**/tests/**/*.py"
+  - "**/test_*.py"
+  - "**/*_test.py"
+  - "**/conftest.py"
+rule:
+  kind: call
+  any:
+    - has:
+        field: function
+        kind: attribute
+        all:
+          - has:
+              field: object
+              regex: "^subprocess$"
+          - has:
+              field: attribute
+              regex: "^(run|call|check_call|check_output|Popen|getoutput|getstatusoutput)$"
+    - has:
+        field: function
+        kind: attribute
+        all:
+          - has:
+              field: object
+              regex: "^os$"
+          - has:
+              field: attribute
+              regex: "^(system|popen|exec[lv]p?e?|spawn[lv]p?e?|posix_spawnp?)$"
+    - has:
+        field: function
+        kind: attribute
+        all:
+          - has:
+              field: object
+              regex: "^asyncio$"
+          - has:
+              field: attribute
+              regex: "^create_subprocess_(exec|shell)$"
+    - all:
+        - has:
+            field: function
+            kind: identifier
+            regex: "^(run|call|check_call|check_output|Popen|getoutput|getstatusoutput)$"
+            pattern: $NAME
+        - inside:
+            kind: module
+            stopBy: end
+            has:
+              kind: import_from_statement
+              all:
+                - has:
+                    field: module_name
+                    regex: "^subprocess$"
+                - has:
+                    kind: dotted_name
+                    has:
+                      kind: identifier
+                      pattern: $NAME
+    - all:
+        - has:
+            field: function
+            kind: identifier
+            regex: "^(system|popen|exec[lv]p?e?|spawn[lv]p?e?|posix_spawnp?)$"
+            pattern: $NAME
+        - inside:
+            kind: module
+            stopBy: end
+            has:
+              kind: import_from_statement
+              all:
+                - has:
+                    field: module_name
+                    regex: "^os$"
+                - has:
+                    kind: dotted_name
+                    has:
+                      kind: identifier
+                      pattern: $NAME
+    - all:
+        - has:
+            field: function
+            kind: identifier
+            regex: "^create_subprocess_(exec|shell)$"
+            pattern: $NAME
+        - inside:
+            kind: module
+            stopBy: end
+            has:
+              kind: import_from_statement
+              all:
+                - has:
+                    field: module_name
+                    regex: "^asyncio$"
+                - has:
+                    kind: dotted_name
+                    has:
+                      kind: identifier
+                      pattern: $NAME

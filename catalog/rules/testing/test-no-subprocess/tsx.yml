@@ -1,0 +1,38 @@
+id: test-no-subprocess
+language: tsx
+severity: warning
+message: "A test starts a process, and the process reaches the network and the programs of the host outside the isolation of the test. Drive the logic through an in-memory adapter of the port that runs the command; for a test of the command itself, silence this line with the reason."
+files:
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/__tests__/**"
+  - "**/test/**"
+  - "**/tests/**"
+rule:
+  any:
+    - kind: import_statement
+      not:
+        regex: "^import\\s+type\\b"
+      has:
+        kind: string
+        stopBy: end
+        regex: "^[\"'](node:)?child_process[\"']$|^[\"'](execa|zx|cross-spawn)[\"']$"
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            regex: "^(require|import)$"
+        - has:
+            field: arguments
+            has:
+              kind: string
+              nthChild: 1
+              regex: "^[\"'](node:)?child_process[\"']$|^[\"'](execa|zx|cross-spawn)[\"']$"
+    - kind: call_expression
+      has:
+        field: function
+        regex: "^Bun\\.(spawn|spawnSync|\\$)$"
+    - kind: new_expression
+      has:
+        field: constructor
+        regex: "^Deno\\.Command$"

@@ -1,0 +1,32 @@
+id = "test-no-subprocess"
+code = "BTTEST009"
+standard = "CES-64"
+references = ["in-memory-adapters"]
+summary = "A test does not start a process"
+status = "preview"
+tags = ["tests"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["typescript"]
+file = "typescript.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["tsx"]
+file = "tsx.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["javascript"]
+file = "javascript.yml"
