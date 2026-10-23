@@ -1,0 +1,24 @@
+id = "pyrefly-strict"
+code = "BTTOOL003"
+standard = "CES-58"
+summary = "pyrefly runs with the strict preset and reports an explicit `Any`"
+status = "preview"
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["python"]
+tool = "pyrefly"
+docs = "https://pyrefly.org/en/docs/configuration/#preset-strict"
+codes = [
+  "implicit-any",
+  "explicit-any",
+  "direct-abstract-base-instantiation",
+  "method-assign",
+  "missing-override-decorator",
+  "open-unpacking",
+  "potential-bad-keyword-argument",
+  "unused-ignore",
+]
+config = "config/pyproject.toml"

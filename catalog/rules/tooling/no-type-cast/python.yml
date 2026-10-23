@@ -1,0 +1,55 @@
+id: no-type-cast
+language: python
+severity: error
+message: "`cast()` gives the type checker a type that nothing checks: narrow the value with `isinstance` or a `TypeIs` function, or fix the annotation where the value comes from. A cast that has to stay is silenced on its line with the reason."
+rule:
+  kind: call
+  any:
+    - pattern: typing.cast($$$)
+    - pattern: typing_extensions.cast($$$)
+    - all:
+        - pattern: cast($$$)
+        - inside:
+            kind: module
+            stopBy: end
+            has:
+              stopBy: end
+              kind: import_from_statement
+              all:
+                - has:
+                    field: module_name
+                    regex: "^typing(_extensions)?$"
+                - has:
+                    kind: dotted_name
+                    regex: "^cast$"
+    - all:
+        - pattern: $CAST($$$)
+        - inside:
+            kind: module
+            stopBy: end
+            has:
+              stopBy: end
+              kind: import_from_statement
+              all:
+                - has:
+                    field: module_name
+                    regex: "^typing(_extensions)?$"
+                - has:
+                    kind: aliased_import
+                    all:
+                      - has:
+                          field: name
+                          regex: "^cast$"
+                      - has:
+                          field: alias
+                          pattern: $CAST
+    - all:
+        - pattern: $MODULE.cast($$$)
+        - inside:
+            kind: module
+            stopBy: end
+            has:
+              stopBy: end
+              any:
+                - pattern: import typing as $MODULE
+                - pattern: import typing_extensions as $MODULE

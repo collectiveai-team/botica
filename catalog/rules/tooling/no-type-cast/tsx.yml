@@ -1,0 +1,23 @@
+id: no-type-cast
+language: tsx
+severity: error
+message: "A type assertion to `any`, or one through `unknown` or `never`, gives the type checker a type that nothing checks: take `unknown` and narrow it with a type guard or a schema, or fix the type where the value comes from. One that has to stay is silenced on its line with the reason."
+rule:
+  any:
+    - kind: as_expression
+      has:
+        kind: predefined_type
+        regex: "^any$"
+    - kind: as_expression
+      has:
+        any:
+          - kind: as_expression
+            has:
+              kind: predefined_type
+              regex: "^(unknown|never)$"
+          - kind: parenthesized_expression
+            has:
+              kind: as_expression
+              has:
+                kind: predefined_type
+                regex: "^(unknown|never)$"

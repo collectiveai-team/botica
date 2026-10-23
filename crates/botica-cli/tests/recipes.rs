@@ -67,6 +67,7 @@ fn list_adds_the_recipes_of_the_project_in_the_order_of_their_ids() {
             "ci-python",
             "full-python",
             "mine",
+            "python-strict-types",
             "repo-private",
             "repo-public",
             "secrets-varlock"
