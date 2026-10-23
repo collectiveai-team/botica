@@ -1,7 +1,8 @@
+use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::process::ExitCode;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use botica_catalog::{Origin, Recipe, RecipeItem, ResolvedRecipe};
 use clap::{Args, Subcommand};
 
@@ -37,8 +38,20 @@ struct InstallArgs {
     /// The ids of the recipes, installed in the order given.
     #[arg(required = true)]
     names: Vec<String>,
+    /// The value of a parameter of the recipes for this run, over `[recipes.params]` of the
+    /// configuration; repeat it for each parameter.
+    #[arg(long = "set", value_name = "NAME=VALUE", value_parser = parse_set)]
+    set: Vec<(String, String)>,
     #[command(flatten)]
     project: ProjectArgs,
+}
+
+/// `NAME=VALUE` of `--set`, split at the first `=`.
+fn parse_set(text: &str) -> Result<(String, String)> {
+    let (name, value) = text
+        .split_once('=')
+        .ok_or_else(|| anyhow!("`{text}` is not NAME=VALUE"))?;
+    Ok((name.to_owned(), value.to_owned()))
 }
 
 #[derive(Args)]
@@ -76,6 +89,7 @@ pub fn run(args: &RecipesArgs) -> Result<ExitCode> {
         RecipesCommand::Install(args) => recipes_install::run(
             &recipes_collection::open(&args.project)?,
             &args.names,
+            &args.set.iter().cloned().collect(),
             &args.project,
         ),
     }
@@ -117,9 +131,8 @@ fn list_block(recipe: &Recipe) -> String {
 }
 
 fn show(collection: &Collection, name: &str) -> Result<ExitCode> {
-    let recipes = collection.loaded()?;
-    let resolved = recipes.resolve(name).map_err(anyhow::Error::msg)?;
-    let recipe = recipes.recipe(name);
+    let resolved = collection.resolve(&[name], &BTreeMap::new())?;
+    let recipe = collection.loaded()?.recipe(name);
     for warning in &resolved.warnings {
         eprintln!("warning: {warning}");
     }

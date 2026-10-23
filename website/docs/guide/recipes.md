@@ -9,6 +9,7 @@ botica recipe list             # the recipes of the binary and of recipes/, with
 botica recipe show base-python # a recipe with the rules and the exports of the recipes it extends
 botica recipe check base base-python   # how the project differs from the recipes
 botica recipe install base base-python # adds what the repository lacks
+botica recipe install ci-node --set cooldown-days=14  # with the value of a parameter
 ```
 
 ## A recipe
@@ -103,6 +104,48 @@ that is not empty, and a recipe lists it once, across its steps. `unignore` name
 from `.gitignore`, and the only line it accepts is `skills-lock.json` ([ADR 0006](https://github.com/collectiveai-team/botica/blob/main/docs/adr/0006-external-rules-and-recipes.md)); `lines` does not
 accept it (CES-107).
 
+## Parameters
+
+A recipe declares the parameters that its templates write:
+
+```toml
+[params.cooldown-days]
+description = "The days that a new release of a dependency waits before a package manager or dependabot takes it"
+kind = "days"
+default = 7
+```
+
+A template writes the value as `{{ param.cooldown-days }}`. The name is kebab-case, `description` is
+one line for `show`, and `choices`, when present, lists the values it may take, the default among
+them. `kind` is `text` when absent, or one of two kinds whose views spare the template any
+arithmetic or condition:
+
+| Kind | Value | Views |
+| --- | --- | --- |
+| `text` | one line | none |
+| `days` | a whole number | `{{ param.<name>.minutes }}`, `{{ param.<name>.seconds }}` |
+| `version` | a version or a range (`1.30.1`, `5`), or empty | `{{ param.<name>.at }}`: `@<value>`, or nothing when the value is empty |
+
+So a template that pnpm reads writes `minimumReleaseAge: {{ param.cooldown-days.minutes }}`, and
+one that runs a tool with `uvx` writes `uvx zizmor{{ param.zizmor-version.at }}`: an empty version
+runs the tool unpinned, as `uvx zizmor`. A version written without `.at` needs a value, and an
+empty one fails. Only `{{ param.` is replaced, so the `${{ github.ref }}` of a workflow stays.
+
+The value comes from `--set <name>=<value>` of `install`, else from the configuration, else from
+the default:
+
+```toml
+[recipes.params]
+cooldown-days = 14
+```
+
+Two recipes of a chain may declare a name the same, and not differently. A template that writes a
+name that no recipe of its chain declares, a `--set` that none of the named recipes declares, a
+name of `[recipes.params]` that no recipe at all declares, and a value that does not fit its kind
+or its choices fail the command with 2 before anything is written. A name of `[recipes.params]`
+that another recipe declares is left for that recipe. A parameter changes a value inside a
+template, never whether a step runs.
+
 ## Built-in recipes
 
 The built-in recipes are in `catalog/recipes/` and are compiled into the binary; `botica recipe
@@ -161,10 +204,11 @@ installed = ["base-python", "team"]
 `botica recipe list` prints each recipe with what it extends and how many rules, judgment rules and
 exports its file lists, and where it comes from; a recipe with steps has a line with the number of
 steps of each kind that it has: skills, files, sections, links, gitignore (the lines and the
-unignored lines) and tools. `botica recipe show <name>` prints the recipe with the lists of what it extends first, each
+unignored lines), tools and params. `botica recipe show <name>` prints the recipe with the lists of what it extends first, each
 rule with its code, its summary and the recipe that lists it, and then the sections Skills, Files,
-Sections, Links, Gitignore, Unignore and Tools for the steps it has, and a section Agents first
-when the recipe lists agents.
+Sections, Links, Gitignore, Unignore, Tools and Parameters for the steps it has, and a section
+Agents first when the recipe lists agents. A parameter shows its value, which is the one of
+`[recipes.params]` or the default.
 
 ## Check
 
@@ -211,8 +255,11 @@ not a file, cannot be read, or has no line equal to it once the white space at i
 `unignore` line differs when `.gitignore` is not a file, cannot be read, or has a line equal to it
 between white space; without a `.gitignore` it is `ok`. A skill differs when its name is not a key of `skills`
 in `skills-lock.json` or `.agents/skills/<name>/SKILL.md` is not a file. The paths of files and
-sections are from the root of the project, wherever the command runs. The command exits with 1 when
-something differs and with 2 when the recipe does not exist or the recipes do not load.
+sections are from the root of the project, wherever the command runs. `check` does not read the
+value of a parameter back from a file: a file that `install` wrote belongs to the repository, and a
+value that a standard requires is the fragment of an external rule. The command exits with 1 when
+something differs and with 2 when the recipe does not exist, the recipes do not load or a value of
+`[recipes.params]` does not fit its parameter.
 
 ## Install
 
@@ -234,7 +281,8 @@ base: 6 added, 1 ok, 1 pending, 1 edited
 ```
 
 A file is written from its template when its path does not exist (`added`). A path that exists is
-`ok` when it has the text of the template and `pending` otherwise; `install` does not change it. In
+`ok` when it has the text of the template and `pending` otherwise; `install` does not change it.
+The text of a template of a file or a section is the one with the values of the parameters. In
 the text of a template, the `rev` on the line after the mirror `botica-pre-commit` is set to the
 release of the binary that runs `install`, so the file asks for the hooks of that release. A
 section is written to a new file, appended after a blank line to a file that has no marker (`added`),
@@ -243,6 +291,11 @@ and left alone when the file has the marker (`ok`); a path that is not a file or
 after: a file that is not, or a section that would define a table twice, leaves the step `pending`
 and the file as it is. Running the command again changes nothing. A step that two of the named recipes share is
 done once, and a name that is not a recipe fails the command with 2 before anything is written.
+
+Each value of `--set` has a line `param <name>`. In a project with no configuration of botica, the
+values go to `[recipes.params]` of the new `botica.toml` (`added`). A configuration that has the
+value is `ok`, and one that lacks it or has another is `pending`: the run used the value of
+`--set`, and the next run without it uses the configuration again.
 
 A link is created, with the folders of its path, when its path does not exist (`added`), also when
 its target does not exist. A path that holds a link with the text of the target is `ok`, and a path

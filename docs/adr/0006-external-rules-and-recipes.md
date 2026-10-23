@@ -140,6 +140,17 @@ scaffolder writes the configuration of a repository from its own components, apa
    `[[sections]]` template under `sections/`, and a recipe loads only when the template of each of
    its steps exists. Recipes of the same folder share templates. A standard that cites a template
    as canonical code cites it with a reference (ADR 0007).
+   A recipe declares the parameters that its templates write under `[params.<name>]`, with
+   `description`, `default`, `kind` (`text` when absent, `days` or `version`) and optionally
+   `choices`. A template writes `{{ param.<name> }}`, and a kind adds views, so the template does
+   no arithmetic: `days` gives `{{ param.<name>.minutes }}` and `.seconds`, and `version` gives
+   `{{ param.<name>.at }}`, which is `@<value>`, or nothing for an empty value (an unpinned tool).
+   Only that form is replaced, so `${{ github.ref }}` stays. Two recipes of a chain may declare a
+   name the same and not differently, and a template that writes a name that no recipe of its chain
+   declares does not resolve. The value is the one of `--set <name>=<value>` of `install`, else the
+   one of `[recipes.params]` of the configuration, else the default; `install` keeps a value of
+   `--set` in `[recipes.params]` of a new `botica.toml` and reports one that an existing
+   configuration lacks as `pending`, as for the selection.
 4. **Recipes are built into the binary and read from `recipes/`.** `catalog/recipes/` is compiled into
    the binary with its templates: `base` has the three rules that look at any file, the skills,
    `.gitignore`, `prek.toml` and the standards index that `scaffolding` installed, and `base-python`
@@ -168,6 +179,10 @@ scaffolder writes the configuration of a repository from its own components, apa
    - `.gitignore` has each line of `lines` and has no line of `unignore`;
    - `pyproject.toml` declares each package of a tool;
    - a skill is in `skills-lock.json` and in `.agents/skills/`.
+
+   `check` does not read the value of a parameter back from a file: a file that `install` wrote
+   belongs to the repository (CES-30), and a value that a standard requires is the fragment of an
+   external rule. A value of `[recipes.params]` that does not fit its parameter fails the command.
 
    `check` takes one or more names, as `install` does, and checks them as one recipe: the chain has
    each recipe once, an entry that several list stays where it is first, and the warnings of the
@@ -238,7 +253,8 @@ scaffolder writes the configuration of a repository from its own components, apa
    `agent-claude-code` links `.claude/skills` to `../.agents/skills` and names no agent, because
    `npx skills add --agent claude-code` writes in `.claude/skills/<name>` and fails through that link.
    `install` takes one or more names (`botica recipe install base base-python agent-claude-code`),
-   and a step does not carry a condition.
+   and a step does not carry a condition. A parameter changes a value inside a template, never
+   whether a step runs.
 
    The components of `scaffolding` are recipes: `gitignore`, `agents`, `standards` and `skills` in
    `base`, `prek` and `pyproject` in `base-python`, `agent-config` in `agent-opencode`,
@@ -282,6 +298,12 @@ scaffolder writes the configuration of a repository from its own components, apa
   uses a template, and nothing else cites or versions it apart from the recipe.
 - **A condition on a step (`when`) for the agent or the visibility of the repository.** Rejected:
   a recipe for each variant, chosen by name, needs no language of conditions.
+- **A parameter that the project only passes on the command line.** Rejected: a second `install`
+  without the flag would write the default into a new file. The values live in `[recipes.params]`,
+  as copier keeps its answers in `.copier-answers.yml`.
+- **Expressions or filters in a template (Jinja).** Rejected: the conversions that the templates
+  need are a few units of time and an optional `@` before a version, which the kind of a parameter
+  gives; a language of expressions would also need escaping for the `${{ }}` of the workflows.
 - **A recipe names only components of the binary.** Rejected: a project could not add a step of its
   own. The steps are declared in the `.toml` of the recipe, and a recipe of the project defines
   its own.
@@ -299,6 +321,6 @@ scaffolder writes the configuration of a repository from its own components, apa
 - `botica recipe install` and `botica recipe check` replaced `scaffolding install` and
   `scaffolding check`, and `scaffolding` was removed on 2026-10-18.
 - The catalog carries `catalog/recipes/` and its templates, loads `recipes/` of the project, and the
-  configuration has the table `[recipes]` with `replace` and `installed`.
+  configuration has the table `[recipes]` with `replace`, `params` and `installed`.
 - A recipe installs skills (`npx skills add`), so `botica recipe install` needs `npx` on the
   `PATH` for a recipe with a `[[skills]]` step.

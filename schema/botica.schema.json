@@ -222,6 +222,19 @@
         "files"
       ]
     },
+    "ParamValue": {
+      "description": "The value of a parameter of a recipe: a string, or a whole number such as a number of days.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      ]
+    },
     "RecipesConfig": {
       "description": "Settings of `botica recipe`.",
       "type": "object",
@@ -232,6 +245,13 @@
           "default": [],
           "items": {
             "type": "string"
+          }
+        },
+        "params": {
+          "description": "The values of the parameters of the recipes, by name: what their templates write in place\nof the default. `botica recipe install --set <name>=<value>` takes over for one run.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/ParamValue"
           }
         },
         "replace": {

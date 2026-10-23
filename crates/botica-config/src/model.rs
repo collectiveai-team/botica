@@ -70,6 +70,28 @@ pub struct RecipesConfig {
     /// with the id of a built-in one is an error unless the id is listed here.
     #[serde(default)]
     pub replace: Vec<String>,
+    /// The values of the parameters of the recipes, by name: what their templates write in place
+    /// of the default. `botica recipe install --set <name>=<value>` takes over for one run.
+    #[serde(default)]
+    pub params: BTreeMap<String, ParamValue>,
+}
+
+/// The value of a parameter of a recipe: a string, or a whole number such as a number of days.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, JsonSchema)]
+#[serde(untagged)]
+pub enum ParamValue {
+    Text(String),
+    Number(u32),
+}
+
+impl ParamValue {
+    /// The value as the templates write it.
+    pub fn text(&self) -> String {
+        match self {
+            Self::Text(text) => text.clone(),
+            Self::Number(number) => number.to_string(),
+        }
+    }
 }
 
 /// What `botica lint` does when the process of an extension rule does not answer in time.

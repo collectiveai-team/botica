@@ -12,6 +12,7 @@ mod question;
 mod readme;
 mod recipes;
 mod recipes_merge;
+mod recipes_params;
 mod recipes_resolve;
 mod recipes_steps;
 mod recipes_steps_resolve;
@@ -39,6 +40,7 @@ pub use model::{
 pub use question::{BooleanCriteria, Choices, Question};
 pub use readme::Section;
 pub use recipes::{Recipe, Recipes, AGENTS, EXPORTS, RECIPES_DIR};
+pub use recipes_params::{render, ParamKind, ParamSpec, ResolvedParam};
 pub use recipes_resolve::{RecipeItem, ResolvedRecipe};
 pub use recipes_steps::{
     normalized_package, requirement_package, FileStep, GitignoreStep, LinkStep, SectionStep,

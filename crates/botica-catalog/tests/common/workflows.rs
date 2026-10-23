@@ -1,14 +1,16 @@
 //! The workflows that the built-in recipes of CI add, read as YAML.
 
-use botica_catalog::Recipes;
+use botica_catalog::{render, Recipes};
 use serde_yaml::Value;
 
+/// The template as `install` writes it with the defaults of the parameters of `recipe`.
 pub fn text(recipe: &str, template: &str) -> String {
     let recipes = Recipes::embedded().expect("the built-in recipes load");
-    recipes
+    let raw = recipes
         .template(recipe, template)
-        .unwrap_or_else(|| panic!("{recipe} has no template {template}"))
-        .to_owned()
+        .unwrap_or_else(|| panic!("{recipe} has no template {template}"));
+    let resolved = recipes.resolve(recipe).expect("the recipe resolves");
+    render(raw, &resolved.params).expect("the template renders")
 }
 
 pub fn parse(text: &str) -> Value {

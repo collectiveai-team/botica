@@ -41,7 +41,13 @@ jobs:
       #
       # Pinned: new zizmor releases add audits, and an unpinned uvx would fail CI
       # on every PR the day one lands. Bump deliberately.
+      #
+      # The templates of dependabot.yml under catalog/recipes/files/ write
+      # `default-days: {{ param.cooldown-days }}`, which is not YAML until botica
+      # fills it, so dependabot.yml is collected from .github/ only.
       - name: Run zizmor
-        run: uvx zizmor@1.30.1 --strict-collection .
+        run: |
+          uvx zizmor@1.30.1 --strict-collection --collect=workflows,actions,pre-commit .
+          uvx zizmor@1.30.1 --strict-collection --collect=dependabot .github/
         env:
           GH_TOKEN: ${{ github.token }}

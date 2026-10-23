@@ -21,6 +21,7 @@ pub fn count_line(recipe: &Recipe) -> Option<String> {
             "tools",
             recipe.tools.iter().map(|step| step.packages.len()).sum(),
         ),
+        ("params", recipe.params.len()),
     ];
     let shown: Vec<String> = counts
         .iter()
@@ -66,6 +67,17 @@ pub fn steps_text(resolved: &ResolvedRecipe) -> String {
         format!(
             "{} ({}, group {}, from {})",
             tool.package, tool.manager, tool.group, tool.from
+        )
+    });
+    push_section(&mut text, "Parameters", &resolved.params, |param| {
+        format!(
+            "{} = \"{}\" ({}, default \"{}\", from {}): {}",
+            param.name,
+            param.value,
+            param.spec.kind.name(),
+            param.spec.default,
+            param.from,
+            param.spec.description
         )
     });
     text
