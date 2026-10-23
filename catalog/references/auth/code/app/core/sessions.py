@@ -6,7 +6,7 @@ import hashlib
 import secrets
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, TypeGuard
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -58,6 +58,11 @@ def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
+def is_live(stored: StoredRefreshToken | None, now: datetime) -> TypeGuard[StoredRefreshToken]:
+    """Return whether a stored refresh token exists and has not expired at `now`."""
+    return stored is not None and stored.expires_at > now
+
+
 @dataclass
 class Sessions:
     """Opens sessions, rotates their refresh tokens and ends them."""
@@ -76,7 +81,7 @@ class Sessions:
         """
         token_hash = hash_token(token)
         stored = self.store.get(token_hash)
-        if stored is None or stored.expires_at <= now:
+        if not is_live(stored, now):
             raise InvalidRefreshTokenError
         if not self.store.mark_used(token_hash):
             self.store.delete_family(stored.family)

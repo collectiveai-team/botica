@@ -26,6 +26,9 @@ type StoredRefreshToken struct {
 type RefreshTokenStore interface {
 	Save(tokenHash string, stored StoredRefreshToken)
 	Get(tokenHash string) (StoredRefreshToken, bool)
+	// MarkUsed marks the token as used, and returns false when it was used already or is not
+	// stored. One step, so that two requests with the same token cannot both see it unused.
+	MarkUsed(tokenHash string) bool
 	DeleteFamily(family string)
 }
 
@@ -51,6 +54,18 @@ func (s *MemoryStore) Get(tokenHash string) (StoredRefreshToken, bool) {
 	defer s.mu.Unlock()
 	stored, ok := s.byHash[tokenHash]
 	return stored, ok
+}
+
+func (s *MemoryStore) MarkUsed(tokenHash string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	stored, ok := s.byHash[tokenHash]
+	if !ok || stored.Used {
+		return false
+	}
+	stored.Used = true
+	s.byHash[tokenHash] = stored
+	return true
 }
 
 func (s *MemoryStore) DeleteFamily(family string) {
@@ -79,15 +94,13 @@ func (s Sessions) Open(userID string, now time.Time) string {
 func (s Sessions) Rotate(token string, now time.Time) (string, string, error) {
 	tokenHash := hash(token)
 	stored, ok := s.Store.Get(tokenHash)
-	if !ok || !now.Before(stored.ExpiresAt) {
+	if !isLive(stored, ok, now) {
 		return "", "", ErrInvalidRefreshToken
 	}
-	if stored.Used {
+	if !s.Store.MarkUsed(tokenHash) {
 		s.Store.DeleteFamily(stored.Family)
 		return "", "", ErrInvalidRefreshToken
 	}
-	stored.Used = true
-	s.Store.Save(tokenHash, stored)
 	return stored.UserID, s.issue(stored.UserID, stored.Family, now), nil
 }
 
@@ -96,6 +109,11 @@ func (s Sessions) Close(token string) {
 	if stored, ok := s.Store.Get(hash(token)); ok {
 		s.Store.DeleteFamily(stored.Family)
 	}
+}
+
+// isLive reports whether a stored refresh token was found and has not expired at now.
+func isLive(stored StoredRefreshToken, found bool, now time.Time) bool {
+	return found && now.Before(stored.ExpiresAt)
 }
 
 func (s Sessions) issue(userID, family string, now time.Time) string {

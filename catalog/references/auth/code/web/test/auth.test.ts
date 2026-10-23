@@ -8,6 +8,7 @@ process.env.APP_AUTH_AUDIENCE = "orders";
 const { DELETE, POST } = await import("../app/api/auth/refresh/route.ts");
 const { GET } = await import("../app/api/orders/route.ts");
 const { openSession } = await import("../lib/auth/http.ts");
+const { InMemoryRefreshTokenStore } = await import("../lib/auth/sessions.ts");
 const { loadSettings } = await import("../lib/auth/settings.ts");
 const { issueAccessToken } = await import("../lib/auth/tokens.ts");
 
@@ -83,6 +84,15 @@ describe("a session", () => {
 
     const refreshed = await POST(request("/api/auth/refresh", { "__Secure-refresh": token }, "POST"));
     assert.equal(refreshed.status, 401);
+  });
+});
+
+describe("the store of refresh tokens", () => {
+  test("marks a token used once", async () => {
+    const store = new InMemoryRefreshTokenStore();
+    await store.save("hash", { userId: "ana", family: "family", expiresAt: 0, used: false });
+
+    assert.deepEqual([await store.markUsed("hash"), await store.markUsed("hash")], [true, false]);
   });
 });
 

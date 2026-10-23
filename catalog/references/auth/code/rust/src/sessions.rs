@@ -21,6 +21,10 @@ pub trait RefreshTokenStore {
     fn save(&mut self, token_hash: &str, stored: StoredRefreshToken);
     /// Return what is stored for the hash.
     fn get(&self, token_hash: &str) -> Option<StoredRefreshToken>;
+    /// Mark the token as used, and return false when it was used already or is not stored.
+    ///
+    /// One step, so that two requests with the same token cannot both see it unused.
+    fn mark_used(&mut self, token_hash: &str) -> bool;
     /// Delete every refresh token of a session.
     fn delete_family(&mut self, family: &str);
 }
@@ -38,6 +42,16 @@ impl RefreshTokenStore for MemoryStore {
 
     fn get(&self, token_hash: &str) -> Option<StoredRefreshToken> {
         self.by_hash.get(token_hash).cloned()
+    }
+
+    fn mark_used(&mut self, token_hash: &str) -> bool {
+        match self.by_hash.get_mut(token_hash) {
+            Some(stored) if !stored.used => {
+                stored.used = true;
+                true
+            }
+            _ => false,
+        }
     }
 
     fn delete_family(&mut self, family: &str) {
@@ -70,21 +84,15 @@ impl<S: RefreshTokenStore> Sessions<S> {
         now: u64,
     ) -> Result<(String, String), InvalidRefreshToken> {
         let token_hash = hash(token);
-        let stored = match self.store.get(&token_hash) {
-            Some(stored) if stored.expires_at > now => stored,
-            _ => return Err(InvalidRefreshToken),
-        };
-        if stored.used {
+        let stored = self
+            .store
+            .get(&token_hash)
+            .filter(|stored| is_live(stored, now))
+            .ok_or(InvalidRefreshToken)?;
+        if !self.store.mark_used(&token_hash) {
             self.store.delete_family(&stored.family);
             return Err(InvalidRefreshToken);
         }
-        self.store.save(
-            &token_hash,
-            StoredRefreshToken {
-                used: true,
-                ..stored.clone()
-            },
-        );
         let replacement = self.issue(&stored.user_id, &stored.family, now);
         Ok((stored.user_id, replacement))
     }
@@ -107,6 +115,11 @@ impl<S: RefreshTokenStore> Sessions<S> {
         self.store.save(&hash(&token), stored);
         token
     }
+}
+
+/// Whether a stored refresh token has not expired at `now`.
+pub fn is_live(stored: &StoredRefreshToken, now: u64) -> bool {
+    stored.expires_at > now
 }
 
 /// The SHA-256 of a refresh token, in hexadecimal: the key of the store.

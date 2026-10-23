@@ -97,6 +97,19 @@ fn a_refresh_token_used_twice_ends_the_session() {
 }
 
 #[test]
+fn a_token_is_marked_used_once() {
+    let mut sessions = sessions();
+    let token_hash = hash(&sessions.open("ana", NOW));
+
+    let marked = [
+        sessions.store.mark_used(&token_hash),
+        sessions.store.mark_used(&token_hash),
+    ];
+
+    assert_eq!(marked, [true, false]);
+}
+
+#[test]
 fn an_expired_or_closed_refresh_token_is_invalid() {
     let mut sessions = sessions();
     let expiring = sessions.open("ana", NOW);
