@@ -1,6 +1,7 @@
 {
   "verdicts": [
     { "file": "valid/test-added.diff", "band": "clear" },
-    { "file": "invalid/test-runs-lines.diff", "band": "act" }
+    { "file": "invalid/test-runs-lines.diff", "band": "act" },
+    { "file": "invalid/new-route-untested.diff", "band": "act" }
   ]
 }
