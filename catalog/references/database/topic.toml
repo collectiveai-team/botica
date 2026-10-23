@@ -1,0 +1,77 @@
+title = "The database package with SQLModel and Alembic"
+
+[[references]]
+file = "code/app/core/users.py"
+anchor = "class UserRepository(Protocol)"
+note = "the port and the model of the domain, in `core`, with no database library"
+
+[[references]]
+file = "code/app/database/models/users.py"
+anchor = "class UserRow(SQLModel, table=True)"
+note = "a table: it stays in `app.database`"
+
+[[references]]
+file = "code/app/database/models/__init__.py"
+note = "the module that imports every table, so that `SQLModel.metadata` holds them all"
+
+[[references]]
+file = "code/app/database/repositories/users.py"
+anchor = "class SqlUserRepository"
+note = "the adapter of the port: it returns a `User` of `core`, never a row"
+
+[[references]]
+file = "code/app/database/migrations/env.py"
+anchor = "target_metadata = SQLModel.metadata"
+note = "`env.py`: the metadata to compare, the URL from the settings and the connection of the caller"
+
+[[references]]
+file = "code/app/database/services/migrations.py"
+anchor = "def migration_config"
+note = "the migrations named as a resource of the package, and `upgrade_to_head`"
+
+[[references]]
+file = "code/app/entrypoints/migrate.py"
+anchor = "def main"
+note = "the migration step of a deployment, apart from the processes of the API"
+
+[[references]]
+file = "code/app/database/services/session.py"
+anchor = "def get_user_repository"
+note = "the engine once per process, and a repository over a session of its own per request"
+
+[[references]]
+file = "code/app/api/v1/routers/users.py"
+anchor = "def create_user"
+note = "the router takes the port and builds the response field by field, with no `from_attributes`"
+
+[[references]]
+file = "code/tests/conftest.py"
+anchor = "def engine"
+note = "a SQLite database in memory, built by the migrations and not by `create_all`"
+
+[[references]]
+file = "code/tests/test_migrations.py"
+anchor = "def test_the_migrations_leave_nothing_for_autogenerate_to_add"
+note = "the migrations match the tables: `compare_metadata` finds nothing to add"
+
+[[references]]
+url = "https://alembic.sqlalchemy.org/en/latest/autogenerate.html#what-does-autogenerate-detect-and-what-does-it-not-detect"
+note = "what autogenerate sees, and what a candidate migration needs edited by hand"
+quote = "Changes of table name. These will come out as an add/drop of two different tables, and should be hand-edited into a name change instead."
+
+[[references]]
+url = "https://alembic.sqlalchemy.org/en/latest/autogenerate.html#running-alembic-check-to-test-for-new-upgrade-operations"
+note = "`alembic check` fails when the tables have changes that no migration has"
+
+[[references]]
+url = "https://alembic.sqlalchemy.org/en/latest/cookbook.html#sharing-a-connection-across-one-or-more-programmatic-migration-commands"
+note = "the connection of the caller passed to `env.py` through `Config.attributes`"
+
+[[references]]
+url = "https://alembic.sqlalchemy.org/en/latest/tutorial.html#using-pyproject-toml-for-configuration"
+note = "the configuration of the command `alembic` in `pyproject.toml`"
+
+[[references]]
+url = "https://github.com/sqlalchemy/alembic/discussions/1438#discussioncomment-8700859"
+note = "why the migrations do not run when each replica of the API starts"
+quote = "usually the part of the program that runs migrations is separate from the part of the program that handles requests, so the \"run the migrations\" part would not be in an \"auto scaled\" system."

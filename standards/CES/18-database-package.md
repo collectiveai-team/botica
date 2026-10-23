@@ -1,6 +1,7 @@
 ---
 id: CES-18
 title: Relational persistence is its own package
+references: ["database"]
 ---
 
 ## Directive
