@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-23T06:12:41Z",
+  "compiledAt": "2026-10-23T06:21:39Z",
   "compiledBy": "botica 0.14.2",
   "manual": true,
   "sources": [
@@ -498,6 +498,7 @@
         "catalog/rules/security/npm-cooldown/README.md",
         "catalog/rules/security/pnpm-cooldown/README.md",
         "catalog/rules/security/route-auth/README.md",
+        "catalog/rules/security/short-lived-access-token/README.md",
         "catalog/rules/security/uv-cooldown/README.md",
         "catalog/rules/security/yarn-cooldown/README.md",
         "catalog/rules/structure/cognitive-complexity/README.md",
@@ -753,6 +754,7 @@
         "catalog/rules/security/pnpm-cooldown/rule.toml",
         "catalog/rules/security/pnpm-cooldown/config/**",
         "catalog/rules/security/route-auth/rule.toml",
+        "catalog/rules/security/short-lived-access-token/rule.toml",
         "catalog/rules/security/uv-cooldown/rule.toml",
         "catalog/rules/security/uv-cooldown/config/**",
         "catalog/rules/security/yarn-cooldown/rule.toml",
@@ -988,6 +990,7 @@
         "catalog/rules/security/npm-cooldown/README.md",
         "catalog/rules/security/pnpm-cooldown/README.md",
         "catalog/rules/security/route-auth/README.md",
+        "catalog/rules/security/short-lived-access-token/README.md",
         "catalog/rules/security/uv-cooldown/README.md",
         "catalog/rules/security/yarn-cooldown/README.md",
         "catalog/rules/structure/cognitive-complexity/README.md",

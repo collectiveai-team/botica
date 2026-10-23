@@ -1,0 +1,10 @@
+{
+  "verdicts": [
+    { "file": "valid/auth.py", "band": "clear" },
+    { "file": "valid/auth.go", "band": "clear" },
+    { "file": "valid/refresh.py", "band": "clear" },
+    { "file": "invalid/auth.py", "band": "act" },
+    { "file": "invalid/auth.ts", "band": "act" },
+    { "file": "invalid/no_expiry.py", "band": "act" }
+  ]
+}
