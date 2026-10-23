@@ -1,0 +1,17 @@
+description = "Python tests that can fail: the hook of falsegreen in prek.toml, its configuration in pyproject.toml and the rule no-tautological-assert"
+rules = ["no-tautological-assert"]
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: falsegreen"
+template = "sections/prek-falsegreen.toml"
+
+[[sections]]
+path = "pyproject.toml"
+marker = "# MARK: Falsegreen"
+template = "sections/pyproject-falsegreen.toml"
+
+[params.falsegreen-version]
+description = "The version of falsegreen that the hook of prek runs with uvx"
+kind = "version"
+default = "0.9.2"

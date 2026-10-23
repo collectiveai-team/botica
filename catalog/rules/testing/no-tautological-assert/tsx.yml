@@ -1,0 +1,31 @@
+id: no-tautological-assert
+language: tsx
+severity: error
+message: "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+rule:
+  any:
+    - kind: call_expression
+      pattern: expect($A).$M($A)
+      has:
+        field: function
+        has:
+          field: property
+          regex: "^(toBe|toEqual|toStrictEqual)$"
+    - kind: call_expression
+      pattern: expect(true).$M()
+      has:
+        field: function
+        has:
+          field: property
+          regex: "^toBeTruthy$"
+    - kind: call_expression
+      pattern: assert.$M($A, $A)
+      has:
+        field: function
+        has:
+          field: property
+          regex: "^(equal|strictEqual|deepEqual|deepStrictEqual)$"
+    - kind: call_expression
+      any:
+        - pattern: assert(true)
+        - pattern: assert.ok(true)

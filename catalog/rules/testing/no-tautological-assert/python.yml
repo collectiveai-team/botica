@@ -1,0 +1,30 @@
+id: no-tautological-assert
+language: python
+severity: error
+message: "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+rule:
+  any:
+    - kind: assert_statement
+      has:
+        nthChild: 1
+        kind: "true"
+    - kind: assert_statement
+      has:
+        nthChild: 1
+        any:
+          - pattern: $A == $A
+          - pattern: $A is $A
+    - kind: call
+      pattern: $S.$M(True)
+      has:
+        field: function
+        has:
+          field: attribute
+          regex: "^assertTrue$"
+    - kind: call
+      pattern: $S.$M($A, $A)
+      has:
+        field: function
+        has:
+          field: attribute
+          regex: "^(assertEqual|assertIs|assertDictEqual|assertListEqual)$"

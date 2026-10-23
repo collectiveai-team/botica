@@ -1,0 +1,259 @@
+{
+  "diagnostics": [
+    {
+      "path": "button.test.tsx",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 58,
+          "line": 3,
+          "column": 3
+        },
+        "end": {
+          "offset": 86,
+          "line": 3,
+          "column": 31
+        }
+      },
+      "message": "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+    },
+    {
+      "path": "cart.test.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 78,
+          "line": 5,
+          "column": 3
+        },
+        "end": {
+          "offset": 103,
+          "line": 5,
+          "column": 28
+        }
+      },
+      "message": "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+    },
+    {
+      "path": "cart.test.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 107,
+          "line": 6,
+          "column": 3
+        },
+        "end": {
+          "offset": 132,
+          "line": 6,
+          "column": 28
+        }
+      },
+      "message": "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+    },
+    {
+      "path": "cart.test.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 136,
+          "line": 7,
+          "column": 3
+        },
+        "end": {
+          "offset": 168,
+          "line": 7,
+          "column": 35
+        }
+      },
+      "message": "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+    },
+    {
+      "path": "cart.test.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 172,
+          "line": 8,
+          "column": 3
+        },
+        "end": {
+          "offset": 184,
+          "line": 8,
+          "column": 15
+        }
+      },
+      "message": "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+    },
+    {
+      "path": "legacy.test.js",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 43,
+          "line": 3,
+          "column": 3
+        },
+        "end": {
+          "offset": 77,
+          "line": 3,
+          "column": 37
+        }
+      },
+      "message": "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+    },
+    {
+      "path": "order.rs",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 179,
+          "line": 12,
+          "column": 9
+        },
+        "end": {
+          "offset": 199,
+          "line": 12,
+          "column": 29
+        }
+      },
+      "message": "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+    },
+    {
+      "path": "order.rs",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 209,
+          "line": 13,
+          "column": 9
+        },
+        "end": {
+          "offset": 240,
+          "line": 13,
+          "column": 40
+        }
+      },
+      "message": "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+    },
+    {
+      "path": "order_test.go",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 177,
+          "line": 12,
+          "column": 2
+        },
+        "end": {
+          "offset": 206,
+          "line": 12,
+          "column": 31
+        }
+      },
+      "message": "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+    },
+    {
+      "path": "order_test.go",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 208,
+          "line": 13,
+          "column": 2
+        },
+        "end": {
+          "offset": 229,
+          "line": 13,
+          "column": 23
+        }
+      },
+      "message": "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+    },
+    {
+      "path": "test_orders.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 40,
+          "line": 5,
+          "column": 5
+        },
+        "end": {
+          "offset": 51,
+          "line": 5,
+          "column": 16
+        }
+      },
+      "message": "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+    },
+    {
+      "path": "test_orders.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 89,
+          "line": 10,
+          "column": 5
+        },
+        "end": {
+          "offset": 110,
+          "line": 10,
+          "column": 26
+        }
+      },
+      "message": "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+    },
+    {
+      "path": "test_orders.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 156,
+          "line": 15,
+          "column": 5
+        },
+        "end": {
+          "offset": 190,
+          "line": 15,
+          "column": 39
+        }
+      },
+      "message": "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+    },
+    {
+      "path": "test_orders.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 262,
+          "line": 20,
+          "column": 9
+        },
+        "end": {
+          "offset": 283,
+          "line": 20,
+          "column": 30
+        }
+      },
+      "message": "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+    },
+    {
+      "path": "test_orders.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 337,
+          "line": 24,
+          "column": 9
+        },
+        "end": {
+          "offset": 367,
+          "line": 24,
+          "column": 39
+        }
+      },
+      "message": "This assertion holds whatever the code under test returns, so the test cannot fail on it: compare the result with an expected value that the test writes down, not with the result itself or a constant."
+    }
+  ]
+}

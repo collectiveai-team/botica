@@ -43,6 +43,7 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
             "no-dict-return-annotation",
             "no-disabled-typecheck",
             "no-notebooks",
+            "no-tautological-assert",
             "no-tests-in-package",
             "no-token-in-web-storage",
             "no-type-cast",

@@ -1,0 +1,20 @@
+# MARK: falsegreen
+# CES-124. falsegreen exits with 20 on a finding of high confidence and with 10 when there are only
+# findings of low confidence; the hook fails on 20 and prints the others. `--baseline` leaves out
+# the findings of `.falsegreen-baseline.json`, which
+# `uvx falsegreen{{ param.falsegreen-version.at }} tests/ --write-baseline` writes. The hook of the
+# repository of falsegreen fails on 10 too, so this one is local. It runs before each commit,
+# because `--staged` reads only the tests in the index.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "falsegreen"
+name = "falsegreen (tests that cannot fail)"
+entry = "sh -c 's=0; uvx falsegreen{{ param.falsegreen-version.at }} --staged --baseline || s=$?; [ \"$s\" -eq 0 ] || [ \"$s\" -eq 10 ]'"
+language = "system"
+types = ["python"]
+pass_filenames = false
+stages = ["pre-commit"]
+verbose = true
+priority = 2
