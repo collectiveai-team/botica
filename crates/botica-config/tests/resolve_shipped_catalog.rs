@@ -113,14 +113,16 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
     );
 }
 
-const PROPOSED: [&str; 25] = [
+const PROPOSED: [&str; 27] = [
     "api-request-schema-name",
     "api-response-schema-name",
     "api-schema-in-route-module",
     "cargo-cooldown",
     "cognitive-complexity",
+    "compose-config",
     "db-no-create-all",
     "dependabot-cooldown",
+    "dockerfile-lint",
     "eager-test",
     "external-config-weakened",
     "jwt-verified",
@@ -170,7 +172,7 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
         &catalog,
         "select = []\nextend-select = [\"all\"]\npreview = true",
     );
-    assert_eq!(active(&resolution).len(), 65);
+    assert_eq!(active(&resolution).len(), 67);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTSEC\"]\npreview = true")),
         [

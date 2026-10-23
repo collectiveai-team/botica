@@ -1,0 +1,16 @@
+id = "dockerfile-lint"
+code = "BTINFRA001"
+standard = "CES-114"
+summary = "Each Dockerfile of the repository passes hadolint, as a hook of prek that needs no Docker"
+status = "preview"
+tags = ["docker"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["dockerfile"]
+tool = "hadolint"
+docs = "https://github.com/hadolint/hadolint#rules"
+config = "config/prek.toml"
+applies-when = ["**/Dockerfile", "**/Dockerfile.*", "**/*.Dockerfile", "**/Containerfile"]

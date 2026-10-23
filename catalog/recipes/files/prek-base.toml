@@ -113,9 +113,29 @@ priority = 2
 id = "botica-rubric"
 priority = 2
 
-# MARK: hadolint-docker
-# CES-114; runs only when a Dockerfile exists.
+# MARK: hadolint
+# CES-114. Lints every file that prek tags `dockerfile`, in any folder, and does nothing in a repo
+# without one. The mirror installs the release binary of hadolint that `rev` names, with no Docker.
+# DL3008 is ignored because Debian and Ubuntu drop old package versions from their archives:
+# https://github.com/hadolint/hadolint/issues/884
 [[repos]]
-repo = "https://github.com/hadolint/hadolint"
+repo = "https://github.com/AleksaC/hadolint-py"
 rev = "v2.15.1"
-hooks = [{ id = "hadolint-docker", files = "^Dockerfile", priority = 2 }]
+hooks = [{ id = "hadolint", args = ["--failure-threshold=warning", "--ignore=DL3008"], priority = 2 }]
+
+# MARK: docker-compose-config
+# CES-114. Checks each Compose file against the schema of Compose, with no daemon. It runs only on
+# files named compose*.y*ml or docker-compose*.y*ml, so a repo without one needs no Docker. The two
+# flags keep a missing .env and unset variables from failing it. `docker compose config` takes
+# service names as arguments, so the entry passes each file with `--file`.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "docker-compose-config"
+name = "docker compose config"
+entry = "sh -c 'status=0; for file do docker compose --file \"$file\" config --quiet --no-interpolate --no-env-resolution || status=1; done; exit $status' --"
+language = "system"
+files = '(^|/)(docker-)?compose[^/]*\.ya?ml$'
+types = ["yaml"]
+priority = 2

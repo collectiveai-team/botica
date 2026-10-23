@@ -10,6 +10,8 @@ rules = [
   "external-config",
   "conventional-commits",
   "no-ai-coauthorship",
+  "dockerfile-lint",
+  "compose-config",
 ]
 judgment = [
   "separate-orchestration",

@@ -16,7 +16,7 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
             "\nbase: Any repository, in any language: the rules about any file, the rules of \
              botica itself, the skills, .gitignore, the prek hooks, the workflow of abide and the \
              sections of AGENTS.md\n  \
-             rules: 10, judgment: 11, exports: 2\n  \
+             rules: 12, judgment: 11, exports: 2\n  \
              skills: 31, files: 5, sections: 2, gitignore: 10, params: 2\n  from: built-in\n"
         ),
         "{text}"
@@ -154,7 +154,7 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
         .lines()
         .filter(|line| line.starts_with("- "))
         .collect();
-    assert_eq!(lines.len(), 30, "{text}");
+    assert_eq!(lines.len(), 32, "{text}");
     assert!(
         lines[0].starts_with("- file-size-guard (BT"),
         "{}",
