@@ -6,8 +6,8 @@ name: Botica release
 # Gated on the CI suite and on the repository's own Tests suite. Builds wheels with the binary and `botica.sdk`
 # (maturin, bindings = "bin") per platform, attaches them with a .sha256 each to a GitHub Release,
 # and uploads them to PyPI (trusted publishing) when PUBLISH_TO_PYPI is "true". Then it pushes the
-# mirror botica-pre-commit with its tag, runs it on this repository, and points the template of the
-# recipes and the docs of the branch of the release at it.
+# mirror botica-pre-commit with its tag, runs it on this repository, and points the docs of the
+# branch of the release at it.
 
 on:
   push:
@@ -253,12 +253,12 @@ jobs:
       - name: Run the hooks of the mirror at the new tag
         run: uvx prek try-repo https://github.com/collectiveai-team/botica-pre-commit --rev "$TAG" --all-files
 
-  # After the mirror passes on this repository, the branch of the release points the template of the
-  # recipes and the docs at it (scripts/bump_mirror_rev.py), and the commit goes straight to that
-  # branch. The tests of the repository run first: when one fails, nothing is pushed and the release
-  # ends red. The branch is `main` when the tag is on it, or else the one branch that holds the tag.
+  # After the mirror passes on this repository, the branch of the release points the docs at it
+  # (scripts/bump_mirror_rev.py), and the commit goes straight to that branch. The tests of the
+  # repository run first: when one fails, nothing is pushed and the release ends red. The branch is
+  # `main` when the tag is on it, or else the one branch that holds the tag.
   bump:
-    name: point the template and the docs at the mirror
+    name: point the docs at the mirror
     needs: mirror-check
     runs-on: ubuntu-latest
     permissions:
@@ -291,7 +291,7 @@ jobs:
           version: "0.13.3"
           enable-cache: false
 
-      - name: Point the template and the docs at the mirror
+      - name: Point the docs at the mirror
         run: |
           git switch --quiet "$BRANCH"
           uv run --no-project --python 3.14 --with cyclopts python scripts/bump_mirror_rev.py "${TAG#v}"
@@ -305,10 +305,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           if git diff --cached --quiet; then
-            echo "the template and the docs already name $TAG"
+            echo "the docs already name $TAG"
             exit 0
           fi
-          git commit --quiet -m "chore(release): the template and the docs name the mirror at $TAG"
+          git commit --quiet -m "chore(release): the docs name the mirror at $TAG"
           remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           for _ in 1 2 3; do
             git push --quiet "$remote" "HEAD:$BRANCH" && exit 0

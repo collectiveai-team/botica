@@ -58,12 +58,12 @@ def test_a_second_run_with_the_same_version_changes_nothing(tmp_path: Path):
 
 def test_only_the_rev_of_the_mirror_moves(tmp_path: Path):
     root = copy_of_the_repository(tmp_path)
-    prek = root / "catalog/recipes/files/prek-base.toml"
-    prek.write_text(OTHER_HOOK + prek.read_text(encoding="utf-8"), encoding="utf-8")
+    doc = root / "website/docs/guide/prek-and-ci.md"
+    doc.write_text(OTHER_HOOK + doc.read_text(encoding="utf-8"), encoding="utf-8")
 
     bmr.bump(root, "9.8.7")
 
-    assert prek.read_text(encoding="utf-8").startswith(OTHER_HOOK)
+    assert doc.read_text(encoding="utf-8").startswith(OTHER_HOOK)
 
 
 def test_a_file_that_no_longer_names_the_mirror_fails_the_release(tmp_path: Path):

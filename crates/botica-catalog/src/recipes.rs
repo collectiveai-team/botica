@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use crate::issue::{issue, CatalogError, CatalogIssue};
 use crate::load::SourceFile;
-use crate::recipes_params::{param_problems, ParamSpec};
+use crate::recipes_params::{param_problems, ParamSpec, BOTICA_VERSION};
 use crate::recipes_steps::{
     step_problems, template_problems, FileStep, GitignoreStep, LinkStep, SectionStep, SkillStep,
     ToolStep,
@@ -152,11 +152,13 @@ impl Recipes {
         self.recipes.iter().find(|recipe| recipe.id == id)
     }
 
-    /// Whether a recipe, of any chain, declares the parameter `name`.
+    /// Whether botica or a recipe, of any chain, declares the parameter `name`.
     pub fn declares(&self, name: &str) -> bool {
-        self.recipes
-            .iter()
-            .any(|recipe| recipe.params.contains_key(name))
+        name == BOTICA_VERSION
+            || self
+                .recipes
+                .iter()
+                .any(|recipe| recipe.params.contains_key(name))
     }
 
     /// The text of a template, by its path from the recipes folder, for the recipe `id`: the

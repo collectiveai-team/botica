@@ -41,4 +41,4 @@ jobs:
           if [ -z "${BASE_SHA//0/}" ]; then
             range="$HEAD_SHA"
           fi
-          uvx botica@0.13.0 lint --select no-ai-coauthorship --commits "$range"
+          uvx botica@{{ param.botica-version }} lint --select no-ai-coauthorship --commits "$range"

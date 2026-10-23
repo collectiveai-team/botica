@@ -2,7 +2,8 @@
 //! default that the project changes in `[recipes.params]` of its configuration or with
 //! `botica recipe install --set <name>=<value>`. A template does no arithmetic and has no
 //! condition: a parameter of the kind `days` also gives its value in minutes and in seconds, and one
-//! of the kind `version` gives `@<value>`, or nothing when the value is empty.
+//! of the kind `version` gives `@<value>`, or nothing when the value is empty. `botica-version` is
+//! declared by botica itself, with the release of the binary that runs as its default.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -13,6 +14,30 @@ use crate::validate::is_kebab_case;
 
 const OPEN: &str = "{{ param.";
 const CLOSE: &str = " }}";
+
+/// The parameter that every chain has: the release of botica that the templates run, by default
+/// the one of the binary, so the files ask for the rules that it knows. It takes the place of the
+/// rewrite of `botica@X.Y.Z` and of the `rev` of the mirror that `install` made before.
+pub const BOTICA_VERSION: &str = "botica-version";
+
+/// What declares `BOTICA_VERSION`, in the place of a recipe.
+pub const BUILT_IN: &str = "botica";
+
+/// The parameters that botica declares, before those of the recipes.
+pub(crate) fn built_in() -> Vec<ResolvedParam> {
+    let version = env!("CARGO_PKG_VERSION");
+    vec![ResolvedParam {
+        name: BOTICA_VERSION.to_owned(),
+        spec: ParamSpec {
+            description: "The release of botica that the hooks and the workflows run".to_owned(),
+            default: version.to_owned(),
+            kind: ParamKind::Version,
+            choices: Vec::new(),
+        },
+        value: version.to_owned(),
+        from: BUILT_IN.to_owned(),
+    }]
+}
 
 /// What a value of a parameter is, and the views of it that a template may write.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
@@ -155,6 +180,11 @@ pub(crate) fn param_problems(params: &BTreeMap<String, ParamSpec>) -> Vec<String
         if !is_kebab_case(name) {
             problems.push(format!("the parameter `{name}` is not a kebab-case name"));
         }
+        if name == BOTICA_VERSION {
+            problems.push(format!(
+                "botica declares the parameter `{name}`; a recipe does not"
+            ));
+        }
         if spec.description.trim().is_empty() {
             problems.push(format!("the parameter `{name}` has no description"));
         }
@@ -266,10 +296,14 @@ pub fn render(text: &str, params: &[ResolvedParam]) -> Result<String, String> {
     Ok(out)
 }
 
-/// The parameters that the recipes of `chain` declare, each at its default. Two recipes that
-/// declare one name differently are an error.
+/// The parameters of botica and the ones that the recipes of `chain` declare, each at its
+/// default. Two recipes that declare one name differently are an error.
 pub(crate) fn resolve_params(chain: &[&Recipe]) -> Result<Vec<ResolvedParam>, String> {
-    let mut declared: BTreeMap<&str, ResolvedParam> = BTreeMap::new();
+    let builtin = built_in();
+    let mut declared: BTreeMap<&str, ResolvedParam> = builtin
+        .iter()
+        .map(|param| (param.name.as_str(), param.clone()))
+        .collect();
     for recipe in chain {
         for (name, spec) in &recipe.params {
             match declared.get(name.as_str()) {
@@ -450,5 +484,27 @@ mod tests {
 
         assert_eq!(param_problems(&params).len(), 2);
         assert_eq!(param_problems(&days).len(), 1);
+    }
+
+    #[test]
+    fn every_chain_has_botica_version_at_the_release_of_the_binary_and_no_recipe_declares_it() {
+        let params = resolve_params(&[]).expect("resolves");
+        let declared = BTreeMap::from([(
+            BOTICA_VERSION.to_owned(),
+            ParamSpec {
+                description: "d".to_owned(),
+                default: "1.0.0".to_owned(),
+                kind: ParamKind::Version,
+                choices: Vec::new(),
+            },
+        )]);
+
+        assert_eq!(params.len(), 1);
+        assert_eq!(params[0].value, env!("CARGO_PKG_VERSION"));
+        assert_eq!(
+            render("uvx botica@{{ param.botica-version }} lint", &params).expect("renders"),
+            format!("uvx botica@{} lint", env!("CARGO_PKG_VERSION"))
+        );
+        assert_eq!(param_problems(&declared).len(), 1);
     }
 }
