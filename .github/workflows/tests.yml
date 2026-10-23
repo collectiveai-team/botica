@@ -42,6 +42,10 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
+      # The hooks of botica run `cargo run -p botica-cli` (ADR 0013).
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
       - name: Lint, format & type check (prek)
         run: uvx prek run --all-files --show-diff-on-failure
 

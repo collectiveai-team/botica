@@ -162,24 +162,47 @@ rev = "v0.59.0"
 hooks = [{ id = "agnix", args = [], priority = 2 }]
 
 # MARK: botica
-# Selection and exclusions: `[tool.botica]` of `pyproject.toml`.
+# Selection and exclusions: `[tool.botica]` of `pyproject.toml`. The hooks of the mirror
+# (`distribution/botica-pre-commit/.pre-commit-hooks.yaml`), with the botica of the checkout: a pull
+# request that adds a rule selects it before a release knows it (ADR 0013). `botica-release.yml`
+# runs the mirror on this repository after each release.
 [[repos]]
-repo = "https://github.com/collectiveai-team/botica-pre-commit"
-rev = "v0.14.2"
+repo = "local"
 
 [[repos.hooks]]
 id = "botica"
+name = "botica"
+entry = "cargo run --quiet --locked -p botica-cli -- lint --scope file --force-exclude"
+language = "system"
+types = ["file"]
+verbose = true
 priority = 2
 
 [[repos.hooks]]
 id = "botica-project"
+name = "botica (rules of project scope)"
+entry = "cargo run --quiet --locked -p botica-cli -- lint --scope project"
+language = "system"
+pass_filenames = false
+always_run = true
+verbose = true
 priority = 2
 
 # The block of AGENTS.md and the rubric of abide match the catalog and the configuration.
 [[repos.hooks]]
 id = "botica-agents-md"
+name = "botica (block of the judgment rules in AGENTS.md)"
+entry = "cargo run --quiet --locked -p botica-cli -- rules export --format agents-md --output AGENTS.md --check"
+language = "system"
+pass_filenames = false
+always_run = true
 priority = 2
 
 [[repos.hooks]]
 id = "botica-rubric"
+name = "botica (rubric of abide)"
+entry = "cargo run --quiet --locked -p botica-cli -- rules export --format abide --check"
+language = "system"
+pass_filenames = false
+always_run = true
 priority = 2

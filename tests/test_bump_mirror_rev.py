@@ -58,7 +58,7 @@ def test_a_second_run_with_the_same_version_changes_nothing(tmp_path: Path):
 
 def test_only_the_rev_of_the_mirror_moves(tmp_path: Path):
     root = copy_of_the_repository(tmp_path)
-    prek = root / "prek.toml"
+    prek = root / "catalog/recipes/files/prek-base.toml"
     prek.write_text(OTHER_HOOK + prek.read_text(encoding="utf-8"), encoding="utf-8")
 
     bmr.bump(root, "9.8.7")
