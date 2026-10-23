@@ -7,6 +7,7 @@ to Codex what its frontmatter says to Claude, and `ask-user` routes every instal
 from __future__ import annotations
 
 import tomllib
+from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -15,16 +16,23 @@ LOCAL_SOURCE = "collectiveai-team/botica"
 UPSTREAM_REPO = "mattpocock/skills"
 
 
-def _skills_steps() -> list[dict]:
-    return tomllib.loads(BASE.read_text(encoding="utf-8"))["skills"]
+@dataclass(frozen=True)
+class SkillsStep:
+    source: str
+    names: list[str]
+
+
+def _skills_steps() -> list[SkillsStep]:
+    steps = tomllib.loads(BASE.read_text(encoding="utf-8"))["skills"]
+    return [SkillsStep(str(step["source"]), [str(n) for n in step["names"]]) for step in steps]
 
 
 def _names(source_prefix: str) -> list[str]:
     return [
         name
         for step in _skills_steps()
-        if step["source"].startswith(source_prefix)
-        for name in step["names"]
+        if step.source.startswith(source_prefix)
+        for name in step.names
     ]
 
 
@@ -38,7 +46,7 @@ def _local_skill_root(name: str) -> Path | None:
 def test_the_upstream_source_pins_a_ref_as_a_fragment():
     # `owner/repo@tag` is parsed by the skills CLI as a skill-name filter, not a
     # ref, and installs from the default branch without warning.
-    sources = [s["source"] for s in _skills_steps() if s["source"].startswith(UPSTREAM_REPO)]
+    sources = [s.source for s in _skills_steps() if s.source.startswith(UPSTREAM_REPO)]
     assert len(sources) == 1, sources
     assert sources[0].startswith(f"{UPSTREAM_REPO}#v"), sources[0]
     assert "@" not in sources[0]

@@ -145,7 +145,9 @@ def test_a_version_equal_to_the_last_event_is_a_release_that_stamps_again(tmp_pa
     assert history(tmp_path)[-1] == ("0.9.0", "fresh", "preview")
 
 
-def test_the_check_fails_while_a_status_is_not_sealed_and_names_it(tmp_path: Path, capsys):
+def test_the_check_fails_while_a_status_is_not_sealed_and_names_it(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     add_rule(tmp_path, "logging", "fresh", "preview")
     write_history(tmp_path)
 

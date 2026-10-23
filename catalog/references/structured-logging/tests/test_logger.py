@@ -26,7 +26,7 @@ except ZeroDivisionError:
 
 def run(**environment: str) -> str:
     env = {"PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(CODE), **environment}
-    done = subprocess.run(
+    done = subprocess.run(  # botica: ignore[test-no-subprocess] -- each run needs a new interpreter
         [sys.executable, "-c", LOG_USER], env=env, capture_output=True, text=True, check=True
     )
     return done.stdout

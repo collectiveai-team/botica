@@ -104,7 +104,7 @@ repo = "local"
 [[repos.hooks]]
 id = "pyrefly"
 name = "pyrefly"
-entry = "uvx pyrefly check --config pyproject.toml"
+entry = "uvx pyrefly@latest check --config pyproject.toml"
 language = "system"
 types = ["python"]
 pass_filenames = false

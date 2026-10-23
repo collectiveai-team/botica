@@ -119,13 +119,17 @@ def _new_rule_folders(changes: Sequence[Change], catalogs: Sequence[str]) -> lis
     return folders
 
 
-def _rule_toml(root: Path, folder: PurePosixPath) -> dict:
-    return tomllib.loads((root / folder / "rule.toml").read_text(encoding="utf-8"))
+def _read_rule_toml(root: Path, folder: PurePosixPath) -> str:
+    return (root / folder / "rule.toml").read_text(encoding="utf-8")
 
 
 def _kinds(root: Path, folder: PurePosixPath) -> set[str]:
-    data = _rule_toml(root, folder)
-    return {implementation["kind"] for implementation in data.get("implementations", [])}
+    data = tomllib.loads(_read_rule_toml(root, folder))
+    return {str(implementation["kind"]) for implementation in data.get("implementations", [])}
+
+
+def _rule_id(root: Path, folder: PurePosixPath) -> str:
+    return str(tomllib.loads(_read_rule_toml(root, folder)).get("id", folder.name))
 
 
 def _in_native_zone(path: str) -> bool:
@@ -253,7 +257,7 @@ def violations(
     builtin = [folder for folder in folders if str(folder.parents[1]) == BUILTIN_CATALOG]
     native = any("native" in _kinds(root, folder) for folder in builtin)
     own_files = {str(folder.parent / "family.toml") for folder in folders}
-    names = {_rule_toml(root, folder).get("id", folder.name) for folder in folders}
+    names = {_rule_id(root, folder) for folder in folders}
     return sorted(
         change.path
         for change in changes
