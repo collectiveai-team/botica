@@ -11,7 +11,7 @@ fn the_binary_carries_its_recipes_with_a_description_and_the_origin_built_in() {
     let recipes = embedded();
 
     let ids: Vec<&str> = recipes.recipes().iter().map(|r| r.id.as_str()).collect();
-    assert_eq!(ids.len(), 32);
+    assert_eq!(ids.len(), 35);
     for recipe in recipes.recipes() {
         assert_eq!(recipe.origin, Origin::BuiltIn);
         assert!(
@@ -228,12 +228,15 @@ fn the_binary_carries_a_recipe_for_each_agent_and_each_piece_of_ci() {
             "base-python",
             "base-rust",
             "ci",
+            "ci-api-compat-python",
+            "ci-asyncapi-compat",
             "ci-automerge-private",
             "ci-automerge-public",
             "ci-dependency-review",
             "ci-docker",
             "ci-go",
             "ci-node",
+            "ci-openapi-compat",
             "ci-publish",
             "ci-python",
             "ci-rust",

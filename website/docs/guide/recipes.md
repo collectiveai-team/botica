@@ -313,6 +313,15 @@ What the recipes cannot say about themselves:
   repository that also names `iac-terraform` the hooks of Terraform run there and in
   `terraform.yml`. `SKIP: terraform_fmt,terraform_validate,terraform_tflint,terraform_trivy` in the
   `env` of the step of prek of `tests.yml` runs them once.
+- `ci-api-compat-python`, `ci-openapi-compat` and `ci-asyncapi-compat` (CES-131) write a workflow
+  with a placeholder: `PACKAGE`, the import name of the package, in `api-compat-python.yml`, `APP`,
+  the module and the name of the FastAPI app, in `openapi-compat.yml`, and `ASYNCAPI`, the function
+  that returns the AsyncAPI document, in `asyncapi-compat.yml`. The check fails until the
+  placeholder is replaced. A pull request declares a break with the label `breaking-change`, which
+  a recipe does not create: `gh label create breaking-change --description "Breaks a published
+  interface"`, once per repository. A break shows on the pull request as a warning when the label is
+  there, and as an error, with a failed job, when it is not. The parameters `griffe-version`
+  (`2.3.2`) and `asyncapi-cli-version` (`6.2.1`) set the versions of griffe and `@asyncapi/cli`.
 
 ## Recipes of a project
 

@@ -1,0 +1,5 @@
+description = "GitHub Actions: oasdiff fails a pull request that breaks the OpenAPI document of a FastAPI app, unless the pull request has the label breaking-change"
+
+[[files]]
+path = ".github/workflows/openapi-compat.yml"
+template = "files/github/workflows/openapi-compat.yml"
