@@ -1,0 +1,38 @@
+{
+  "diagnostics": [
+    {
+      "path": ".github/dependabot.yml",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 24,
+          "line": 3,
+          "column": 5
+        },
+        "end": {
+          "offset": 101,
+          "line": 6,
+          "column": 23
+        }
+      },
+      "message": "This Dependabot update has no cooldown of 7 days: add `cooldown:` with `default-days: 7` to it."
+    },
+    {
+      "path": ".github/dependabot.yml",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 106,
+          "line": 7,
+          "column": 5
+        },
+        "end": {
+          "offset": 220,
+          "line": 12,
+          "column": 22
+        }
+      },
+      "message": "This Dependabot update has no cooldown of 7 days: add `cooldown:` with `default-days: 7` to it."
+    }
+  ]
+}

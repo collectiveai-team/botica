@@ -1,0 +1,37 @@
+id: dependabot-cooldown
+language: yaml
+severity: warning
+message: "This Dependabot update has no cooldown of 7 days: add `cooldown:` with `default-days: 7` to it."
+files:
+  - ".github/dependabot.yml"
+  - ".github/dependabot.yaml"
+rule:
+  kind: block_mapping
+  inside:
+    kind: block_sequence_item
+    stopBy: { kind: block_sequence }
+  has:
+    kind: block_mapping_pair
+    has:
+      field: key
+      regex: "^package-ecosystem$"
+  not:
+    has:
+      kind: block_mapping_pair
+      all:
+        - has:
+            field: key
+            regex: "^cooldown$"
+        - has:
+            field: value
+            stopBy: end
+            any:
+              - kind: block_mapping_pair
+              - kind: flow_pair
+            all:
+              - has:
+                  field: key
+                  regex: "^default-days$"
+              - has:
+                  field: value
+                  regex: "^([7-9]|[1-9][0-9]+)$"

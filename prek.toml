@@ -126,12 +126,13 @@ priority = 2
 # repository installs its own configuration from, and the variant of a workflow for each ecosystem
 # repeats its header. A rule of botica for TypeScript carries its `typescript.yml` again as
 # `tsx.yml` and `javascript.yml`, with only `language:` changed.
+# The fixtures of the rules are wrong on purpose, and the projects inside them repeat each other.
 # The gate is the duplicated-lines percentage, set just above the baseline of the repository; do not
 # add `--exit-code`, which fails on any clone.
 [[repos.hooks]]
 id = "jscpd"
 name = "jscpd (copy-paste duplication)"
-entry = "npx --yes jscpd@5 . --threshold 2.5 --ignore \"catalog/recipes/files/**,catalog/recipes/sections/**,catalog/rules/**/tsx.yml,catalog/rules/**/javascript.yml\""
+entry = "npx --yes jscpd@5 . --threshold 2.5 --ignore \"catalog/rules/**/fixtures/**,catalog/recipes/files/**,catalog/recipes/sections/**,catalog/rules/**/tsx.yml,catalog/rules/**/javascript.yml\""
 language = "system"
 pass_filenames = false
 priority = 2

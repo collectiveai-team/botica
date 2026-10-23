@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+  - package-ecosystem: uv
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+      semver-major-days: 30
+  - package-ecosystem: gomod
+    directory: "/"
+    cooldown: { default-days: 7 }

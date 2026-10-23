@@ -1,5 +1,6 @@
 description = "GitHub Actions for a Go module: gofmt, build, vet and test, dependabot and osv-scanner"
 extends = ["ci"]
+rules = ["dependabot-cooldown"]
 
 [[files]]
 path = ".github/workflows/go.yml"

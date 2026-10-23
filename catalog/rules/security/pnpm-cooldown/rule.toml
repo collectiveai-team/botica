@@ -1,0 +1,17 @@
+id = "pnpm-cooldown"
+code = "BTSEC006"
+standard = "CES-128"
+summary = "pnpm resolves only the versions that were published at least 7 days ago"
+status = "preview"
+tags = ["supply-chain"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["javascript", "typescript", "tsx"]
+tool = "pnpm"
+docs = "https://pnpm.io/settings/dependency-resolution#minimumreleaseage"
+codes = []
+config = "config/pnpm-workspace.yaml"
+applies-when = ["pnpm-lock.yaml"]

@@ -1,0 +1,17 @@
+id = "cargo-cooldown"
+code = "BTSEC009"
+standard = "CES-128"
+summary = "Cargo resolves only the versions that were published at least 7 days ago"
+status = "preview"
+tags = ["supply-chain"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["rust"]
+tool = "cargo"
+docs = "https://doc.rust-lang.org/nightly/cargo/reference/config.html#registryglobal-min-publish-age"
+codes = []
+config = "config/.cargo/config.toml"
+applies-when = ["Cargo.lock"]

@@ -23,6 +23,7 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
             "conventional-commits",
             "database-package",
             "db-no-create-all",
+            "dependabot-cooldown",
             "eager-test",
             "external-config",
             "external-config-weakened",
