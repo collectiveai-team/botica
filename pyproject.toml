@@ -260,6 +260,13 @@ extend-ignores = ["catalog/references/**"]
 [tool.botica.rules.cli-typed-framework]
 extend-ignores = ["bench/**"]
 
+# The table of the rules of ruff is data that `include_str!` embeds in the binary of botica.
+[tool.botica.rules.no-artifacts-in-package]
+extend-ignores = ["crates/botica-core/src/external_config/ruff_rules.tsv"]
+
+[tool.botica.rules.file-size-guard]
+extend-ignores = ["crates/botica-core/src/external_config/ruff_rules.tsv"]
+
 [tool.pyrefly]
 python-version = "3.11"
 search-path = [".", "tests"]  # the tests import the support module of the site tests

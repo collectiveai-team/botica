@@ -160,6 +160,7 @@ fn the_fields_of_an_external_tool_belong_to_an_external_implementation_only() {
         ("docs", "docs = \"https://docs.astral.sh/ruff/\""),
         ("codes", "codes = [\"C901\"]"),
         ("config", "config = \"config/pyproject.toml\""),
+        ("applies-when", "applies-when = [\"uv.lock\"]"),
     ] {
         let native = format!(
             "scope = \"file\"\nneeds = \"path\"\nrun-on = [\"cli\"]\n\n[[implementations]]\n\
@@ -179,13 +180,15 @@ fn the_fields_of_an_external_tool_belong_to_an_external_implementation_only() {
 }
 
 #[test]
-fn the_configuration_is_a_toml_file_of_the_folder_config() {
+fn the_configuration_is_a_file_of_the_folder_config_in_a_format_botica_reads() {
     for config in [
         "prek.toml",
-        "config/prek.yaml",
-        "config/a/prek.toml",
+        "config/prek.json",
         "config/.toml",
+        "config/a/.toml",
         "../prek.toml",
+        "config/../prek.toml",
+        "config//prek.toml",
     ] {
         let implementation = format!("{COMPLEXIPY}config = \"{config}\"\n");
 
@@ -193,11 +196,85 @@ fn the_configuration_is_a_toml_file_of_the_folder_config() {
 
         assert!(
             message.contains(&format!(
-                "config `{config}` must be `config/<file>.toml`, the file of the project it goes into"
+                "config `{config}` must be `config/<path>`, the path of the file of the project it \
+                 goes into, in TOML (`.toml`), YAML (`.yaml`, `.yml`) or INI (`.ini`, `.cfg`, \
+                 `.npmrc`)"
             )),
             "{config}: {message}"
         );
     }
+}
+
+#[test]
+fn applies_when_names_the_files_that_show_the_tool_with_globs_from_the_root() {
+    let implementation =
+        format!("{COMPLEXIPY}applies-when = [\"uv.lock\", \"**/Dockerfile\", \"**/*.tf\"]\n");
+    let loaded = catalog(vec![external("", &implementation, vec![])])
+        .unwrap_or_else(|error| panic!("{error}"));
+    let rule = loaded.resolve("cognitive-complexity").expect("the rule");
+    assert_eq!(
+        rule.implementations[0].applies_when,
+        ["uv.lock", "**/Dockerfile", "**/*.tf"]
+    );
+
+    for glob in ["/uv.lock", "../uv.lock", "a/../uv.lock", "[uv.lock"] {
+        let implementation = format!("{COMPLEXIPY}applies-when = [\"{glob}\"]\n");
+
+        let message = issues(vec![external("", &implementation, vec![])]);
+
+        assert!(
+            message.contains(&format!(
+                "applies-when `{glob}` must be a glob from the root of the project, such as \
+                 `pnpm-lock.yaml` or `**/*.tf`"
+            )),
+            "{glob}: {message}"
+        );
+    }
+}
+
+#[test]
+fn a_fragment_may_go_into_a_folder_of_the_project_and_be_yaml_or_ini() {
+    for (config, text, target) in [
+        (
+            "config/.cargo/config.toml",
+            "[registry]\nglobal-min-publish-age = \"7 days\"\n",
+            ".cargo/config.toml",
+        ),
+        (
+            "config/pnpm-workspace.yaml",
+            "minimumReleaseAge: 10080\n",
+            "pnpm-workspace.yaml",
+        ),
+        (
+            "config/.yarnrc.yml",
+            "npmMinimalAgeGate: 7d\n",
+            ".yarnrc.yml",
+        ),
+        ("config/.npmrc", "min-release-age=7\n", ".npmrc"),
+    ] {
+        let implementation = format!("{COMPLEXIPY}config = \"{config}\"\n");
+        let loaded = catalog(vec![external(
+            "",
+            &implementation,
+            vec![fragment(config, text)],
+        )])
+        .unwrap_or_else(|error| panic!("{config}: {error}"));
+
+        let rule = loaded.resolve("cognitive-complexity").expect("the rule");
+        let implementation = &rule.implementations[0];
+        assert_eq!(implementation.target(), Some(target));
+        assert_eq!(implementation.source.as_deref(), Some(text));
+    }
+
+    let broken = issues(vec![external(
+        "",
+        &format!("{COMPLEXIPY}config = \"config/pnpm-workspace.yaml\"\n"),
+        vec![fragment("config/pnpm-workspace.yaml", "packages: [app\n")],
+    )]);
+    assert!(
+        broken.contains("structure/cognitive-complexity/config/pnpm-workspace.yaml"),
+        "{broken}"
+    );
 }
 
 #[test]

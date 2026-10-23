@@ -162,7 +162,7 @@ fn an_external_rule_needs_its_tool_and_its_docs_and_only_it_takes_them() {
 }
 
 #[test]
-fn the_configuration_of_a_new_rule_is_a_toml_file_of_the_root_of_the_project() {
+fn the_configuration_of_a_new_rule_is_a_file_of_a_format_botica_reads() {
     let dir = workdir("external-bad-config");
 
     let output = new_rule(
@@ -178,14 +178,14 @@ fn the_configuration_of_a_new_rule_is_a_toml_file_of_the_root_of_the_project() {
             "--docs",
             "https://deptry.com/",
             "--config",
-            ".pre-commit-config.yaml",
+            ".pre-commit-config.json",
         ],
     );
 
     assert_eq!(output.status.code(), Some(2));
     assert!(
         stderr_of(&output)
-            .contains("config `config/.pre-commit-config.yaml` must be `config/<file>.toml`"),
+            .contains("config `config/.pre-commit-config.json` must be `config/<path>`"),
         "{}",
         stderr_of(&output)
     );

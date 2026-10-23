@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::config_format::Format;
 use crate::extension::check_extension;
 use crate::issue::{issue, CatalogIssue};
 use crate::model::{Event, Family, Implementation, Kind, Rule, Status};
@@ -287,6 +288,7 @@ fn check_external(index: usize, implementation: &Implementation, add: &mut impl 
         ("docs", implementation.docs.is_some()),
         ("codes", !implementation.codes.is_empty()),
         ("config", implementation.config.is_some()),
+        ("applies-when", !implementation.applies_when.is_empty()),
     ];
     if implementation.kind != Kind::External {
         for (field, _) in fields.into_iter().filter(|(_, set)| *set) {
@@ -302,13 +304,32 @@ fn check_external(index: usize, implementation: &Implementation, add: &mut impl 
         }
     }
     if let Some(config) = &implementation.config {
-        let valid = implementation.target().is_some_and(|name| {
-            name.strip_suffix(".toml")
-                .is_some_and(|stem| !stem.is_empty() && !stem.contains('/'))
-        });
-        if !valid {
+        if !implementation.target().is_some_and(valid_target) {
             add(format!(
-                "config `{config}` must be `config/<file>.toml`, the file of the project it goes into"
+                "config `{config}` must be `config/<path>`, the path of the file of the project it goes \
+                 into, in TOML (`.toml`), YAML (`.yaml`, `.yml`) or INI (`.ini`, `.cfg`, `.npmrc`)"
+            ));
+        }
+    }
+    check_applies_when(implementation, add);
+}
+
+/// A relative path to a file of the project, in a format botica reads.
+fn valid_target(path: &str) -> bool {
+    path.split('/')
+        .all(|part| !part.is_empty() && part != "." && part != "..")
+        && Format::of(path).is_some()
+        && !path.ends_with("/.toml")
+        && path != ".toml"
+}
+
+fn check_applies_when(implementation: &Implementation, add: &mut impl FnMut(String)) {
+    for glob in &implementation.applies_when {
+        let relative = !glob.starts_with('/') && !glob.split('/').any(|part| part == "..");
+        if !relative || globset::Glob::new(glob).is_err() {
+            add(format!(
+                "applies-when `{glob}` must be a glob from the root of the project, such as \
+                 `pnpm-lock.yaml` or `**/*.tf`"
             ));
         }
     }

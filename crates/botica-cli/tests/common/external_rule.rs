@@ -19,12 +19,16 @@ needs: `botica explain acme/complexity` shows it";
 
 pub const DOCS: &str = "https://github.com/rohaquinlop/complexipy";
 
+pub const DOCS_RUFF: &str = "https://docs.astral.sh/ruff/rules/";
+
 const README: &str =
     "## Directive\n\nd\n\n## Why\n\nw\n\n## Tool\n\nt\n\n## Configuration\n\nc\n\n\
 ## Do\n\ndo\n\n## Don't\n\ndont\n\n## Suppression\n\ns\n";
 
-/// Writes `.botica/rules/acme` into `dir`.
+/// Writes `.botica/rules/acme` into `dir`, and `a.py`: a project without a file of Python does
+/// not use complexipy, and `external-config` asks nothing of it.
 pub fn complexity_rule(dir: &Path) {
+    write(dir, "a.py", "x = 1\n");
     let acme = ".botica/rules/acme";
     write(dir, &format!("{acme}/catalog.toml"), "code = \"ACME\"\n");
     write(

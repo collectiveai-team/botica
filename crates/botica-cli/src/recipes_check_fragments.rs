@@ -7,14 +7,20 @@ use botica_core::Severity;
 
 use crate::recipes_collection::Collection;
 
-/// One line for each fragment that the external implementations of the rule `key` declare: the
-/// file, and why the file does not hold it, if it does not. A rule that is not in the catalog has
-/// none. The same reading as `external-config` decides, whether or not the rule is active.
-pub fn of_rule(collection: &Collection, key: &str, root: &Path) -> Vec<(String, Option<String>)> {
+/// One line for each fragment that the external implementations of the rule `key` declare and
+/// whose tool the project uses, its files from the root being `files`: the file, and why the file
+/// does not hold it, if it does not. A rule that is not in the catalog has none. The same reading
+/// as `external-config` decides, whether or not the rule is active.
+pub fn of_rule(
+    collection: &Collection,
+    key: &str,
+    root: &Path,
+    files: &[String],
+) -> Vec<(String, Option<String>)> {
     let Some(entry) = collection.project.resolution.entry(key) else {
         return Vec::new();
     };
-    Requirement::of(&entry.rule)
+    Requirement::of_used(&entry.rule, Some(files))
         .iter()
         .map(|requirement| {
             let found = check(
