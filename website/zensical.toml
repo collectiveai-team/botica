@@ -35,12 +35,9 @@ cli = "DIC_kwDOS6BBd84DJFlY" # betterleaks:allow
 config = "DIC_kwDOS6BBd84DJFlf" # betterleaks:allow
 data-models = "DIC_kwDOS6BBd84DIcbo" # betterleaks:allow
 database = "DIC_kwDOS6BBd84DJFlg" # betterleaks:allow
-# No Discussions category is named `docs` yet: its pages go to `Ideas` until one exists.
-docs = "DIC_kwDOS6BBd84DIcYk" # betterleaks:allow
+docs = "DIC_kwDOS6BBd84DJawx" # betterleaks:allow
 fastapi = "DIC_kwDOS6BBd84DIcbv" # betterleaks:allow
-# No Discussions category is named `infrastructure` yet: its pages go to `Show and tell` until one
-# exists.
-infrastructure = "DIC_kwDOS6BBd84DIcYl" # betterleaks:allow
+infrastructure = "DIC_kwDOS6BBd84DJaw4" # betterleaks:allow
 logging = "DIC_kwDOS6BBd84DIcb2" # betterleaks:allow
 process = "DIC_kwDOS6BBd84DIcb9" # betterleaks:allow
 security = "DIC_kwDOS6BBd84DJLLx" # betterleaks:allow
