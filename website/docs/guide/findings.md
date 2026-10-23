@@ -17,7 +17,8 @@ A finding about a whole file (size, name, layout) has no line: use `ignore-file`
 configuration so it does not report `RUF102` for `BT` codes (the section `# MARK: Ruff` of
 `base-python` has it).
 
-A rule of project scope (`external-config`, `import-layers`, `settings-env-schema`) is silenced in
+A rule of project scope (`external-config`, `import-layers`, `recipe-conflict`,
+`settings-env-schema`) is silenced in
 the configuration, with the path in `extend-ignores` of `[rules.<slug>]` or the rule in `ignore`; a
 comment that names it is `invalid-suppression`. `external-config-weakened` is the exception: its
 finding sits on a line of a file of settings (TOML, YAML, `.npmrc`), and a comment with a reason on

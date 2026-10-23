@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt;
 
 use crate::recipes::Recipe;
 use crate::recipes_resolve::RecipeItem;
@@ -167,11 +168,50 @@ pub(crate) fn resolve_links(chain: &[&Recipe]) -> Vec<ResolvedLink> {
     links
 }
 
+/// A package of a tool that two recipes of a chain ask for with different requirements.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ToolConflict {
+    pub manager: String,
+    pub group: String,
+    /// The name of the package, normalized as `uv` compares names: `my-pkg`.
+    pub package: String,
+    /// The requirement that comes first in the chain, and the recipe that asks for it.
+    pub first: RecipeItem,
+    /// The requirement of a later recipe of the chain, and that recipe.
+    pub then: RecipeItem,
+}
+
+impl fmt::Display for ToolConflict {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "`{}` asks for `{}` and `{}` for `{}`: a package has one requirement across the recipes",
+            self.then.from, self.then.id, self.first.from, self.first.id
+        )
+    }
+}
+
 /// The packages of the `tools` steps of the recipes in `chain`, one entry for each manager, group
 /// and package, where it is first. Two recipes of the chain that ask for the same package with
 /// different requirements are an error: which one wins would depend on the order of `extends`.
 pub(crate) fn resolve_tools(chain: &[&Recipe]) -> Result<Vec<ResolvedTool>, String> {
+    let (tools, conflicts) = gather_tools(chain);
+    match conflicts.first() {
+        Some(conflict) => Err(conflict.to_string()),
+        None => Ok(tools),
+    }
+}
+
+/// Each package of the `tools` steps of the recipes in `chain` that a recipe asks for with
+/// another requirement than the first recipe of the chain that asks for it, in the order of the
+/// chain.
+pub(crate) fn tool_conflicts(chain: &[&Recipe]) -> Vec<ToolConflict> {
+    gather_tools(chain).1
+}
+
+fn gather_tools(chain: &[&Recipe]) -> (Vec<ResolvedTool>, Vec<ToolConflict>) {
     let mut tools: Vec<ResolvedTool> = Vec::new();
+    let mut conflicts = Vec::new();
     for recipe in chain {
         for step in &recipe.tools {
             let group = step.group.as_deref().unwrap_or(DEFAULT_TOOL_GROUP);
@@ -184,11 +224,19 @@ pub(crate) fn resolve_tools(chain: &[&Recipe]) -> Result<Vec<ResolvedTool>, Stri
                 });
                 match listed {
                     Some(first) if !same_requirement(&first.package, package) => {
-                        return Err(format!(
-                            "`{}` asks for `{package}` and `{}` for `{}`: a package has one \
-                             requirement across the recipes",
-                            recipe.id, first.from, first.package
-                        ));
+                        conflicts.push(ToolConflict {
+                            manager: step.manager.clone(),
+                            group: group.to_owned(),
+                            package: name,
+                            first: RecipeItem {
+                                id: first.package.clone(),
+                                from: first.from.clone(),
+                            },
+                            then: RecipeItem {
+                                id: package.clone(),
+                                from: recipe.id.clone(),
+                            },
+                        });
                     }
                     Some(_) => {}
                     None => tools.push(ResolvedTool {
@@ -201,5 +249,5 @@ pub(crate) fn resolve_tools(chain: &[&Recipe]) -> Result<Vec<ResolvedTool>, Stri
             }
         }
     }
-    Ok(tools)
+    (tools, conflicts)
 }

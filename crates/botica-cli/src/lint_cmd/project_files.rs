@@ -10,24 +10,28 @@ use botica_core::external_config::EXTERNAL_CONFIG;
 use botica_core::external_weakened::EXTERNAL_CONFIG_WEAKENED;
 use botica_core::import_layers::IMPORT_LAYERS;
 use botica_core::lockfiles::LOCKFILE_COMMITTED;
+use botica_core::recipe_conflict::RECIPE_CONFLICT;
 use botica_core::{walk, Diagnostic};
 
+use super::recipe_conflict::{self, ProjectRecipes};
 use super::{external, external_weakened, import_layers, lockfiles, settings_schema};
 use crate::project;
 
 /// The native rules of project scope.
-pub const RULES: [&str; 5] = [
+pub const RULES: [&str; 6] = [
     EXTERNAL_CONFIG,
     EXTERNAL_CONFIG_WEAKENED,
     SETTINGS_ENV_SCHEMA,
     IMPORT_LAYERS,
     LOCKFILE_COMMITTED,
+    RECIPE_CONFLICT,
 ];
 
 /// What the native rules of project scope find, once for the whole project at `root`, shown from
-/// the directory `prefix` inside it.
+/// the directory `prefix` inside it. `recipes` is what the configuration says of the recipes.
 pub fn findings(
     resolution: &Arc<Resolution>,
+    recipes: &ProjectRecipes,
     root: &Path,
     prefix: Option<&str>,
 ) -> Vec<Diagnostic> {
@@ -36,6 +40,7 @@ pub fn findings(
     found.extend(settings_schema::findings(resolution, root, prefix));
     found.extend(import_layers::findings(resolution, root, prefix));
     found.extend(lockfiles::findings(resolution, root, prefix));
+    found.extend(recipe_conflict::findings(resolution, recipes, root, prefix));
     found
 }
 

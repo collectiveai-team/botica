@@ -1,0 +1,22 @@
+{
+  "diagnostics": [
+    {
+      "path": "recipes/docs.toml",
+      "severity": "error",
+      "range": {
+        "start": { "offset": 93, "line": 5, "column": 13 },
+        "end": { "offset": 104, "line": 5, "column": 24 }
+      },
+      "message": "The recipes `docs` and `base-python` ask for the package `pytest` as `pytest>=9` and as `pytest`: a package has one requirement across the recipes, and `botica recipe install` stops on them"
+    },
+    {
+      "path": "recipes/team.toml",
+      "severity": "error",
+      "range": {
+        "start": { "offset": 112, "line": 6, "column": 13 },
+        "end": { "offset": 124, "line": 6, "column": 25 }
+      },
+      "message": "The recipes `team` and `base-python` ask for the package `ruff` as `ruff>=0.15` and as `ruff`: a package has one requirement across the recipes, and `botica recipe install` stops on them"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 //! The selection step of `botica recipe install`: the rules of the recipes go into the `select` of
-//! the configuration, which `botica lint`, the hooks of prek and the editor read.
+//! the configuration, which `botica lint`, the hooks of prek and the editor read, and the names of
+//! the recipes into `installed` of `[recipes]`, which `recipe-conflict` reads.
 
 use std::fmt::Write as _;
 use std::fs;
@@ -12,7 +13,7 @@ use crate::recipes_install_steps::Outcome;
 pub const BOTICA_TOML: &str = "botica.toml";
 const PYPROJECT: &str = "pyproject.toml";
 
-/// The text of a new `botica.toml` that selects `rules`.
+/// The text of a new `botica.toml` that selects `rules` and lists the recipes `names`.
 fn text(names: &[String], rules: &[&str], preview: bool) -> String {
     let mut text = format!(
         "# The rules of the recipes {}, written by `botica recipe install`. `botica lint`, its hooks\n\
@@ -32,6 +33,12 @@ fn text(names: &[String], rules: &[&str], preview: bool) -> String {
     if preview {
         text.push_str("preview = true\n");
     }
+    let installed: Vec<String> = names.iter().map(|name| format!("\"{name}\"")).collect();
+    let _ = write!(
+        text,
+        "\n[recipes]\ninstalled = [{}]\n",
+        installed.join(", ")
+    );
     text
 }
 
@@ -50,8 +57,8 @@ fn existing(root: &Path) -> Option<(&'static str, Option<toml::Table>)> {
     Some((PYPROJECT, Some(table)))
 }
 
-/// Writes `botica.toml` with the rules when the project has no configuration of botica, with
-/// `preview = true` when one of them is in preview. One that exists is `ok` when its `select`
+/// Writes `botica.toml` with the rules and the names of the recipes when the project has no
+/// configuration of botica, with `preview = true` when one of them is in preview. One that exists is `ok` when its `select`
 /// lists every rule and it has `preview = true` where needed, and pending otherwise.
 pub fn add(root: &Path, names: &[String], rules: &[&str], preview: bool) -> Result<Outcome> {
     let Some((file, table)) = existing(root) else {

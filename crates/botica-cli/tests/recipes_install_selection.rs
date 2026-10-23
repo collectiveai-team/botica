@@ -23,7 +23,10 @@ fn a_project_without_a_configuration_gets_a_botica_toml_that_selects_the_rules()
     );
     let config = fs::read_to_string(dir.join("botica.toml")).expect("read botica.toml");
     assert!(
-        config.ends_with("select = [\n  \"file-size-guard\",\n  \"no-utils\",\n]\n"),
+        config.ends_with(
+            "select = [\n  \"file-size-guard\",\n  \"no-utils\",\n]\n\n\
+             [recipes]\ninstalled = [\"mine\"]\n"
+        ),
         "{config}"
     );
     let rules = ok(&recipe(&dir, &["check", "mine"]));

@@ -111,7 +111,7 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
     );
 }
 
-const PROPOSED: [&str; 13] = [
+const PROPOSED: [&str; 14] = [
     "api-request-schema-name",
     "api-response-schema-name",
     "api-schema-in-route-module",
@@ -122,6 +122,7 @@ const PROPOSED: [&str; 13] = [
     "lockfile-committed",
     "no-disabled-typecheck",
     "no-token-in-web-storage",
+    "recipe-conflict",
     "route-auth",
     "settings-base-class",
     "settings-direct-instantiation",
@@ -156,7 +157,7 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
         &catalog,
         "select = []\nextend-select = [\"all\"]\npreview = true",
     );
-    assert_eq!(active(&resolution).len(), 49);
+    assert_eq!(active(&resolution).len(), 50);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTSEC\"]\npreview = true")),
         ["jwt-verified", "no-token-in-web-storage", "route-auth"]

@@ -1,0 +1,6 @@
+description = "The Python projects of the team"
+extends = ["base-python"]
+
+[[tools]]
+manager = "uv"
+packages = ["Ruff", "pytest-cov"]

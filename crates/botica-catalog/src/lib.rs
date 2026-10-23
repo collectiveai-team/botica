@@ -45,6 +45,6 @@ pub use recipes_steps::{
     SkillStep, ToolStep, DEFAULT_TOOL_GROUP, TOOL_MANAGERS, UNIGNORE_WHITELIST,
 };
 pub use recipes_steps_resolve::{
-    ResolvedFile, ResolvedLink, ResolvedSection, ResolvedSkill, ResolvedTool,
+    ResolvedFile, ResolvedLink, ResolvedSection, ResolvedSkill, ResolvedTool, ToolConflict,
 };
 pub use references::{Origin, Reference, References, Topic, CODE_DIR, REFERENCES_DIR, TOPIC_FILE};

@@ -299,6 +299,6 @@ scaffolder writes the configuration of a repository from its own components, apa
 - `botica recipe install` and `botica recipe check` replaced `scaffolding install` and
   `scaffolding check`, and `scaffolding` was removed on 2026-10-18.
 - The catalog carries `catalog/recipes/` and its templates, loads `recipes/` of the project, and the
-  configuration has the table `[recipes]` with `replace`.
+  configuration has the table `[recipes]` with `replace` and `installed`.
 - A recipe installs skills (`npx skills add`), so `botica recipe install` needs `npx` on the
   `PATH` for a recipe with a `[[skills]]` step.
