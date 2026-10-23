@@ -11,7 +11,7 @@ fn the_binary_carries_its_recipes_with_a_description_and_the_origin_built_in() {
     let recipes = embedded();
 
     let ids: Vec<&str> = recipes.recipes().iter().map(|r| r.id.as_str()).collect();
-    assert_eq!(ids.len(), 30);
+    assert_eq!(ids.len(), 31);
     for recipe in recipes.recipes() {
         assert_eq!(recipe.origin, Origin::BuiltIn);
         assert!(
@@ -247,6 +247,7 @@ fn the_binary_carries_a_recipe_for_each_agent_and_each_piece_of_ci() {
             "repo-private",
             "repo-public",
             "secrets-varlock",
+            "security",
             "testing-blockbuster",
             "testing-hypothesis"
         ]
@@ -300,6 +301,27 @@ fn secrets_varlock_installs_only_the_skill_of_varlock() {
         .description
         .as_deref()
         .is_some_and(|d| d.contains("varlock init --agent")));
+}
+
+#[test]
+fn security_selects_the_rules_of_ces_121_and_has_no_step() {
+    let recipes = embedded();
+    let catalog = Catalog::embedded().expect("the catalog loads");
+
+    let security = recipes.recipe("security").expect("security");
+    assert_eq!(
+        security.rules,
+        ["route-auth", "jwt-verified", "no-token-in-web-storage"]
+    );
+    assert_eq!(security.judgment, ["short-lived-access-token"]);
+    for id in security.rules.iter().chain(&security.judgment) {
+        let rule = catalog.resolve(id).expect("in the catalog");
+        assert_eq!(rule.standard.as_deref(), Some("CES-121"), "{id}");
+    }
+    assert!(security.extends.is_empty() && security.agents.is_empty());
+    assert!(security.skills.is_empty() && security.files.is_empty());
+    assert!(security.sections.is_empty() && security.links.is_empty());
+    assert!(security.gitignore.is_empty() && security.tools.is_empty());
 }
 
 #[test]

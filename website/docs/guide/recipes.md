@@ -235,6 +235,14 @@ that `terraform.yml` runs with uvx. checkov runs only in `terraform.yml`, and
 fails on a check that fails and is not in `.checkov.baseline`: in a repository with Terraform code,
 run checkov once with `--create-baseline` and commit the file it writes (CES-129, Migration).
 
+`security` selects the rules of CES-121 and has no step: `route-auth`, `jwt-verified` and
+`no-token-in-web-storage`, and the judgment rule `short-lived-access-token`. A repository whose code
+issues or checks credentials names it beside the others (`botica recipe install base base-python
+security`). `route-auth` reads the routes of FastAPI and reports nothing until `[rules.route-auth]`
+names in `dependencies` the functions that check the caller; `no-token-in-web-storage` reads
+TypeScript and JavaScript; `jwt-verified` reads Python, TypeScript, JavaScript, Go and Rust; and
+`short-lived-access-token` is judged on each edit of code in those languages.
+
 What the recipes cannot say about themselves:
 
 - A recipe has no condition, so `ci-docker` and `repo-public` add `docker.yml` also to a
