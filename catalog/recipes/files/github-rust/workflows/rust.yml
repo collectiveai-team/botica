@@ -1,0 +1,53 @@
+name: Rust
+
+# cargo fmt, clippy, test and doc on every push to main and every PR, with the
+# commands of the hooks of base-rust in prek.toml.
+#
+# No branch filter on pull_request: a repository that lands work as stacks has
+# PRs whose base is another feature branch, and a gate that only runs against
+# main leaves every intermediate PR of a stack unverified.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Allow other workflows (e.g. a release) to gate on this suite.
+  workflow_call:
+
+concurrency:
+  group: rust-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: fmt, clippy, test, doc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # A rust-toolchain.toml in the repository takes precedence over stable:
+      # rustup installs the toolchain it names on the first cargo command.
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+
+      - name: cargo fmt
+        run: cargo fmt --all --check
+
+      # The flags of the hook cargo-clippy of prek.toml (CES-58, CES-123).
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings -W clippy::missing_errors_doc -W clippy::missing_panics_doc
+
+      - name: cargo test
+        run: cargo test --workspace --locked
+
+      # CES-123: a link of a doc comment names an item that exists. rustdoc
+      # checks it and clippy does not, so it runs here and not in prek.
+      - name: cargo doc
+        run: cargo doc --no-deps --workspace --locked
+        env:
+          RUSTDOCFLAGS: -D rustdoc::broken_intra_doc_links

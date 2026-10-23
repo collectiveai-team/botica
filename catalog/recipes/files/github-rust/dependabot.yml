@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    # Wait a few days after a release before opening update PRs, to dodge
+    # freshly published (and sometimes yanked or compromised) versions.
+    cooldown:
+      default-days: {{ param.cooldown-days }}
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Crates of Cargo.toml and Cargo.lock. A workspace has one entry at its root,
+  # which covers its members.
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: {{ param.cooldown-days }}
+    open-pull-requests-limit: 5

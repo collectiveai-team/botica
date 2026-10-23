@@ -1,0 +1,19 @@
+# MARK: cargo-shear
+# CES-109. cargo-shear reports the dependencies of each Cargo.toml that no source file uses, and the
+# ones in the wrong table. It parses the sources and does not build, so it runs on stable; a
+# dependency that only a macro uses goes in `[package.metadata.cargo-shear] ignored`. cargo-shear
+# publishes no hook, so prek installs the crate with `cargo install --locked`. It needs rustc 1.95
+# or newer; prek installs one when the toolchain of the PATH is older.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "cargo-shear"
+name = "cargo shear (unused dependencies)"
+entry = "cargo shear"
+language = "rust"
+language_version = ">=1.95"
+additional_dependencies = ["cli:cargo-shear:{{ param.cargo-shear-version }}"]
+files = "(^|/)Cargo\\.toml$|\\.rs$"
+pass_filenames = false
+priority = 2

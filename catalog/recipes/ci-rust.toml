@@ -1,0 +1,20 @@
+description = "GitHub Actions for a Rust crate or workspace: cargo fmt, clippy, test and doc, dependabot and osv-scanner"
+extends = ["ci"]
+rules = ["dependabot-cooldown"]
+
+[[files]]
+path = ".github/workflows/rust.yml"
+template = "files/github-rust/workflows/rust.yml"
+
+[[files]]
+path = ".github/dependabot.yml"
+template = "files/github-rust/dependabot.yml"
+
+[[files]]
+path = ".github/workflows/osv-scanner.yml"
+template = "files/github-rust/workflows/osv-scanner.yml"
+
+[params.cooldown-days]
+description = "The days that a new release of a dependency waits before a package manager or dependabot takes it"
+kind = "days"
+default = 7

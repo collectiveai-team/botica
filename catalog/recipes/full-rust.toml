@@ -1,0 +1,2 @@
+description = "A Rust crate or workspace with its CI: base-rust and ci-rust"
+extends = ["base-rust", "ci-rust"]

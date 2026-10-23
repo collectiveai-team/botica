@@ -99,8 +99,10 @@ uvx botica recipe install base base-python agent-claude-code ci-python repo-publ
 | `full-python` | `base-python` and `ci-python` |
 | `base-go` | a Go module: the rules about Go code, `.golangci.yml`, golangci-lint and `go mod tidy` in prek, and govulncheck in the manual stage of prek |
 | `full-go` | `base-go` and `ci-go` |
+| `base-rust` | a Rust crate or workspace: the rules about Rust code, the cooldown of Cargo, and cargo fmt, clippy and cargo-shear in prek |
+| `full-rust` | `base-rust` and `ci-rust` |
 | `agent-claude-code`, `agent-codex`, `agent-opencode` | the configuration and the skills of an agent |
-| `ci`, `ci-python`, `ci-node`, `ci-go` | the workflows of GitHub Actions for commits and for an ecosystem |
+| `ci`, `ci-python`, `ci-node`, `ci-go`, `ci-rust` | the workflows of GitHub Actions for commits and for an ecosystem |
 | `repo-public`, `repo-private` | the workflows that fit the visibility of the repository |
 | `ci-publish`, `ci-docker`, `ci-dependency-review`, `ci-automerge-public`, `ci-automerge-private`, `secrets-varlock` | one workflow or tool each |
 
