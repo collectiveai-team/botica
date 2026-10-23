@@ -1,0 +1,17 @@
+feat(invoices): a route lists the invoices of a customer
+
+--- /dev/null
++++ b/app/api/v1/routers/invoices.py
+@@ -0,0 +1,12 @@
++from fastapi import APIRouter
++
++from app.api.v1.schemas.invoices import InvoiceResponse
++from app.core.invoices import InvoiceRepository
++
++router = APIRouter(prefix="/invoices")
++
++
++@router.get("/{customer_id}")
++async def list_invoices(customer_id: str, repository: InvoiceRepository) -> list[InvoiceResponse]:
++    invoices = await repository.of_customer(customer_id)
++    return [InvoiceResponse.from_invoice(invoice) for invoice in invoices]
