@@ -73,6 +73,7 @@ fn list_adds_the_recipes_of_the_project_in_the_order_of_their_ids() {
             "full-node",
             "full-python",
             "full-rust",
+            "iac-terraform",
             "mine",
             "python-strict-types",
             "python-test-smells",

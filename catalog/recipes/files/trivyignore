@@ -1,0 +1,6 @@
+# CES-129. The checks of trivy that the repository does not apply, each with its reason.
+
+# S3 encrypts every bucket with SSE-S3 by default since January 2023; a customer managed key in KMS
+# is a choice for each bucket, not the floor.
+# https://docs.aws.amazon.com/AmazonS3/latest/userguide/default-encryption-faq.html
+AWS-0132

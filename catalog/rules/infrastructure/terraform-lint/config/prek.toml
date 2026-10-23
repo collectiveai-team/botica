@@ -1,0 +1,15 @@
+[[repos]]
+[[repos.hooks]]
+id = "terraform_fmt"
+
+[[repos]]
+[[repos.hooks]]
+id = "terraform_validate"
+
+[[repos]]
+[[repos.hooks]]
+id = "terraform_tflint"
+
+[[repos]]
+[[repos.hooks]]
+id = "terraform_trivy"

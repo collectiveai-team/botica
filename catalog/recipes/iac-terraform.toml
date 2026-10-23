@@ -1,0 +1,62 @@
+description = "Terraform or OpenTofu: terraform fmt, terraform validate, tflint and trivy as hooks of prek, and the workflow that runs them and checkov in CI"
+rules = ["terraform-lint"]
+
+[params.terraform-version]
+description = "The release of Terraform that the hooks terraform_fmt and terraform_validate download"
+kind = "version"
+default = "1.17.0"
+
+[params.tflint-version]
+description = "The release of tflint that the hook terraform_tflint downloads"
+kind = "version"
+default = "0.65.0"
+
+[params.trivy-version]
+description = "The release of trivy that the hook terraform_trivy downloads"
+kind = "version"
+default = "0.76.1"
+
+[params.checkov-version]
+description = "The release of checkov that the workflow terraform.yml runs with uvx"
+kind = "version"
+default = "3.3.30"
+
+[params.prek-version]
+description = "The version of prek that the workflows run with uvx (empty: the newest)"
+kind = "version"
+default = ""
+
+[[files]]
+path = ".tflint.hcl"
+template = "files/tflint.hcl"
+
+[[files]]
+path = ".trivyignore"
+template = "files/trivyignore"
+
+[[files]]
+path = ".checkov.yaml"
+template = "files/checkov.yaml"
+
+[[files]]
+path = ".checkov.baseline"
+template = "files/checkov.baseline"
+
+[[files]]
+path = ".github/workflows/terraform.yml"
+template = "files/github/workflows/terraform.yml"
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: terraform"
+template = "sections/prek-terraform.toml"
+
+[[gitignore]]
+lines = [
+  ".terraform/",
+  "*.tfstate",
+  "*.tfstate.*",
+  ".terraform.tfstate.lock.info",
+  "crash.log",
+  "crash.*.log",
+]

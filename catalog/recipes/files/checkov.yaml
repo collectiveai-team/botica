@@ -1,0 +1,11 @@
+# CES-129. checkov reads this file from the folder it runs in; terraform.yml runs it at the root,
+# with `--baseline .checkov.baseline`. The baseline stays out of this file because
+# `--create-baseline` cannot write it while this file names it.
+# https://www.checkov.io/2.Basics/CLI%20Command%20Reference.html
+framework:
+  - terraform
+skip-check:
+  # S3 encrypts every bucket with SSE-S3 by default since January 2023; a customer managed key in
+  # KMS is a choice for each bucket. The same check is AWS-0132 in .trivyignore.
+  # https://docs.aws.amazon.com/AmazonS3/latest/userguide/default-encryption-faq.html
+  - CKV_AWS_145

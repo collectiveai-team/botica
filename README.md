@@ -107,6 +107,7 @@ uvx botica recipe install base base-python agent-claude-code ci-python repo-publ
 | `ci`, `ci-python`, `ci-node`, `ci-go`, `ci-rust` | the workflows of GitHub Actions for commits and for an ecosystem |
 | `repo-public`, `repo-private` | the workflows that fit the visibility of the repository |
 | `ci-publish`, `ci-docker`, `ci-dependency-review`, `ci-automerge-public`, `ci-automerge-private`, `secrets-varlock` | one workflow or tool each |
+| `iac-terraform` | Terraform or OpenTofu: the hooks of `terraform fmt`, `terraform validate`, tflint and trivy, and the workflow that runs them and checkov |
 
 `botica recipe list` prints them with their steps, and `botica recipe check` says how the
 repository differs from them. A file that exists is left as it is and reported `pending`. Commit
