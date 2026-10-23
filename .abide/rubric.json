@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-23T04:46:42Z",
+  "compiledAt": "2026-10-23T04:59:59Z",
   "compiledBy": "botica 0.14.2",
   "manual": true,
   "sources": [
@@ -508,6 +508,7 @@
         "catalog/recipes/ci-publish.toml",
         "catalog/recipes/ci-python.toml",
         "catalog/recipes/ci.toml",
+        "catalog/recipes/full-python.toml",
         "catalog/recipes/repo-private.toml",
         "catalog/recipes/repo-public.toml",
         "catalog/recipes/secrets-varlock.toml",

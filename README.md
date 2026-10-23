@@ -96,6 +96,7 @@ uvx botica recipe install base base-python agent-claude-code ci-python repo-publ
 |---|---|
 | `base` | any repository: the rules about any file, the skills, `.gitignore`, the hooks of prek, the workflow of abide, the sections of `AGENTS.md` |
 | `base-python` | a Python project: the rules about Python code and `pyproject.toml`, the Python hooks and the dev tools |
+| `full-python` | `base-python` and `ci-python` |
 | `agent-claude-code`, `agent-codex`, `agent-opencode` | the configuration and the skills of an agent |
 | `ci`, `ci-python`, `ci-node`, `ci-go` | the workflows of GitHub Actions for commits and for an ecosystem |
 | `repo-public`, `repo-private` | the workflows that fit the visibility of the repository |

@@ -175,6 +175,13 @@ starts with that section. An agent is a recipe chosen by name, beside the others
 for the skills: `npx skills add --agent claude-code` writes in `.claude/skills/<name>`, which the
 link `.claude/skills` makes a path inside `.agents/skills`, and fails with `ENOTDIR`.
 
+`full-python` is the whole package of a Python project: it extends `base-python` and `ci-python`
+and has no step of its own, so `botica recipe install full-python` does what `botica recipe install
+base-python ci-python` does. Each language that has a `base-*` and a `ci-*` has its `full-*`. The
+agent and the visibility of the repository stay apart: `botica recipe install full-python
+agent-claude-code repo-public`. So does `ci-publish`, which only a library that publishes to PyPI
+needs: `botica recipe install full-python ci-publish`.
+
 `secrets-varlock` installs the skill `varlock` of `dmno-dev/varlock` and has no other step. A
 person or an agent runs `varlock init --agent`, which writes a draft of `.env.schema` from
 `.env.example`, from the variables that the code reads, or with one example variable; the skill
