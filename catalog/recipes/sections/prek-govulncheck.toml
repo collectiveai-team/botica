@@ -1,0 +1,18 @@
+# MARK: govulncheck
+# CES-119. govulncheck reports the known vulnerabilities of the modules whose vulnerable functions
+# the code calls. It needs the network on each run, and osv-scanner of ci-go already reads go.mod, so
+# its stage is the parameter `govulncheck-stage` of the recipe `base-go`, `manual` by default:
+# `prek run --hook-stage manual govulncheck` runs it, and `pre-commit` runs it on each commit.
+# `go run` builds the release of the parameter `govulncheck-version`.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "govulncheck"
+name = "govulncheck (vulnerable calls)"
+entry = "go run golang.org/x/vuln/cmd/govulncheck@{{ param.govulncheck-version }} ./..."
+language = "system"
+files = "(^|/)go\\.(mod|sum)$|\\.go$"
+pass_filenames = false
+stages = ["{{ param.govulncheck-stage }}"]
+priority = 2

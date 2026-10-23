@@ -1,0 +1,41 @@
+description = "A Go module: the rules of any repository and the ones about Go code, golangci-lint with its configuration, go mod tidy and govulncheck (manual by default) in prek"
+extends = ["base"]
+rules = [
+  "no-utils",
+  "cognitive-complexity",
+  "lockfile-committed",
+]
+
+[[files]]
+path = ".golangci.yml"
+template = "files/golangci.yml"
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: golangci-lint"
+template = "sections/prek-golangci-lint.toml"
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: go-mod-tidy"
+template = "sections/prek-go-mod-tidy.toml"
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: govulncheck"
+template = "sections/prek-govulncheck.toml"
+
+[params.go-preference]
+description = "The Go that prek builds golangci-lint with: the language_version.preference of prek"
+default = "system"
+choices = ["system", "only-system", "managed", "only-managed"]
+
+[params.govulncheck-stage]
+description = "The stage of prek that runs govulncheck: manual leaves it off until it is asked for"
+default = "manual"
+choices = ["manual", "pre-commit", "pre-push"]
+
+[params.govulncheck-version]
+description = "The release of golang.org/x/vuln that the hook of govulncheck builds with go run"
+kind = "version"
+default = "v1.9.0"

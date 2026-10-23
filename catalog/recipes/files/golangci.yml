@@ -1,0 +1,44 @@
+# The configuration of golangci-lint v2 (https://golangci-lint.run/docs/configuration/file/).
+# The linters are part of CES-58: a linter is added or removed by a change to the standard.
+# `standard` is errcheck, govet, ineffassign, staticcheck and unused. botica measures the cognitive
+# complexity of a function (cognitive-complexity), so gocognit and gocyclo stay off.
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    # A wrapped error is compared with errors.Is and errors.As, and wrapped with %w.
+    - errorlint
+    # An error that comes from another package is wrapped with context before it is returned.
+    - wrapcheck
+    # The body of an HTTP response is closed.
+    - bodyclose
+    # Security patterns: weak crypto, unchecked file paths, TLS without verification.
+    - gosec
+    # The rules of revive listed under settings, and only those.
+    - revive
+    # A doc comment starts with the name of what it documents, and a package has one doc
+    # comment (CES-123).
+    - godoclint
+  settings:
+    revive:
+      rules:
+        # A package is not named util, utils, common, misc, types or interfaces, nor like a
+        # package of the standard library that programs import often (CES-63, as no-utils
+        # does for the files).
+        - name: package-naming
+  exclusions:
+    presets:
+      - std-error-handling
+    rules:
+      # A test reads the files and the paths it builds itself, and returns the errors of its
+      # helpers as they come.
+      - path: _test\.go$
+        linters:
+          - gosec
+          - wrapcheck
+
+formatters:
+  enable:
+    # A stricter gofmt; its output is also gofmt-clean, so the check of go.yml (ci-go) agrees.
+    - gofumpt

@@ -1,0 +1,2 @@
+description = "A Go module with its CI: base-go and ci-go"
+extends = ["base-go", "ci-go"]
