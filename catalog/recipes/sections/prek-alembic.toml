@@ -1,0 +1,18 @@
+# MARK: alembic-check
+# CES-18. `alembic check` fails when a table changed and no migration has the change. It needs a
+# database at the last migration, so the hook first migrates a SQLite database of its own, which it
+# removes after, and leaves the database of the project alone. When the migrations need the engine
+# of production (an ALTER that SQLite does not have), ALEMBIC_CHECK_URL names an empty database of
+# that engine, such as a PostgreSQL service of the CI. alembic runs from the environment of the
+# project: env.py imports the tables and the driver of the database.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "alembic-check"
+name = "alembic check (a change to a table with no migration)"
+entry = "sh -c 'dir=$(mktemp -d) && trap \"rm -rf $dir\" EXIT && export {{ param.database-url-variable }}=${ALEMBIC_CHECK_URL:-sqlite:///$dir/alembic-check.db} && uv run --frozen alembic upgrade head && uv run --frozen alembic check'"
+language = "system"
+files = "(^|/)database/.*\\.py$"
+pass_filenames = false
+priority = 2

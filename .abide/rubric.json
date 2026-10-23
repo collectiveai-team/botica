@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-23T06:31:28Z",
+  "compiledAt": "2026-10-23T06:39:13Z",
   "compiledBy": "botica 0.14.2",
   "manual": true,
   "sources": [
@@ -674,6 +674,7 @@
         "catalog/recipes/ci-python.toml",
         "catalog/recipes/ci-rust.toml",
         "catalog/recipes/ci.toml",
+        "catalog/recipes/database-alembic.toml",
         "catalog/recipes/full-go.toml",
         "catalog/recipes/full-node.toml",
         "catalog/recipes/full-python.toml",
@@ -700,6 +701,7 @@
         "catalog/recipes/files/github/zizmor.yml",
         "catalog/recipes/files/github/workflows/**",
         "catalog/recipes/sections/pnpm-workspace-cooldown.yaml",
+        "catalog/recipes/sections/prek-alembic.toml",
         "catalog/recipes/sections/prek-biome.toml",
         "catalog/recipes/sections/prek-cargo-shear.toml",
         "catalog/recipes/sections/prek-cargo.toml",
@@ -714,6 +716,7 @@
         "catalog/recipes/sections/prek-terraform.toml",
         "catalog/recipes/sections/prek-tsc.toml",
         "catalog/recipes/sections/prek-validate-pyproject.toml",
+        "catalog/recipes/sections/pyproject-alembic.toml",
         "catalog/recipes/sections/pyproject-falsegreen.toml",
         "catalog/recipes/sections/pyproject-pyrefly.toml",
         "catalog/recipes/sections/pyproject-pytest.toml",
