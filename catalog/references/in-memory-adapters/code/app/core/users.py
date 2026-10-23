@@ -17,16 +17,12 @@ class User:
 class UserRepository(Protocol):
     """The port. The SQL adapter and the fake of the tests both implement it."""
 
-    def add(self, user: User) -> None:
-        """Store a user."""
+    def add(self, email: str) -> User:
+        """Store a user with this email and return it with the id the store gave it."""
         ...
 
     def get_by_email(self, email: str) -> User | None:
         """Return the user with this email, or None."""
-        ...
-
-    def next_id(self) -> int:
-        """Return an id that no stored user has."""
         ...
 
 
@@ -45,6 +41,4 @@ class UserService:
         email = email.lower()
         if self.users.get_by_email(email) is not None:
             raise EmailTakenError(email)
-        user = User(id=self.users.next_id(), email=email)
-        self.users.add(user)
-        return user
+        return self.users.add(email)

@@ -2,7 +2,7 @@ title = "In-memory adapters for tests"
 
 [[references]]
 file = "code/app/core/users.py"
-lines = "17-30"
+lines = "17-26"
 anchor = "class UserRepository(Protocol)"
 note = "the port: the Protocol that the SQL adapter and the fake both implement"
 
