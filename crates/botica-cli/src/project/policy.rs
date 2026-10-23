@@ -5,7 +5,7 @@ use botica_catalog::Scope;
 use botica_config::Resolution;
 use botica_core::report::RuleDoc;
 use botica_core::suppress::{Policy, INVALID, UNUSED};
-use botica_core::{postprocess, Diagnostic, Severity};
+use botica_core::{postprocess, registry, Diagnostic, Severity};
 
 use super::verdicts;
 
@@ -23,6 +23,8 @@ pub fn suppression_policy(resolution: &Arc<Resolution>) -> Policy {
             policy.with_judgment_rule(&entry.rule.id, &spellings)
         } else if entry.rule.has_extension() {
             policy.with_extension_rule(&entry.rule.id, &spellings, entry.active)
+        } else if registry::silenced_on_its_line(&entry.rule.id) {
+            policy.with_line_project_rule(&entry.rule.id, &spellings)
         } else if matches!(entry.rule.scope, Some(Scope::Project | Scope::Commit)) {
             policy.with_project_rule(&entry.rule.id, &spellings)
         } else {

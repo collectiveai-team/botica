@@ -19,6 +19,7 @@ mod diff;
 mod editor;
 mod extensions;
 mod external;
+mod external_weakened;
 mod git;
 mod import_layers;
 mod judged;

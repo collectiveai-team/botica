@@ -63,3 +63,7 @@ pub(super) fn project_scope_rule_in_a_comment(name: &str, slug: &str) -> String 
          add the path to `extend-ignores` in `[rules.{slug}]`"
     )
 }
+
+pub(super) fn project_rule_without_reason(name: &str) -> String {
+    format!("A suppression of `{name}` needs a reason after `--`")
+}

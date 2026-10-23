@@ -1,0 +1,13 @@
+id = "external-config-weakened"
+code = "BT005"
+summary = "A value of the settings of a tool that holds less than an active external rule asks has its reason"
+status = "preview"
+scope = "project"
+needs = "bytes"
+run-on = ["cli"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "native"
+languages = ["*"]

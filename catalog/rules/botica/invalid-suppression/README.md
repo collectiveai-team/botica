@@ -13,7 +13,8 @@ It applies to both channels: `# botica: ignore[...]` / `# botica: ignore-file[..
   written as `noqa`, and one with no reason after `--` are reported on the ID.
 - A rule of project scope (`external-config`, `import-layers`, `settings-env-schema`) is silenced in the
   configuration, with `extend-ignores` in `[rules.<slug>]` or `ignore`. A comment that names one is reported on the
-  ID.
+  ID. `external-config-weakened` is the exception: a comment silences it, and one without a reason
+  after `--` is reported on the ID.
 
 A known rule that is not active in that file, or that has nothing to silence on that line, is not
 invalid: it is `unused-suppression`.

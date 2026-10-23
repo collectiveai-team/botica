@@ -7,9 +7,12 @@ use toml::{Table, Value};
 pub enum Format {
     Toml,
     Yaml,
-    /// `key = value` lines under `[section]` headers, as `pytest.ini`, `setup.cfg` and `.npmrc`
-    /// write them. Every value is text.
+    /// `key = value` lines under `[section]` headers, as `pytest.ini` and `setup.cfg` write them.
+    /// Every value is text, and a `#` after a value is part of it, as pytest reads it.
     Ini,
+    /// INI as npm reads `.npmrc`: a value that is not quoted ends before its first `#` or `;`
+    /// that a `\` does not escape.
+    Npmrc,
 }
 
 impl Format {
@@ -23,7 +26,8 @@ impl Format {
         match name.rsplit_once('.')?.1 {
             "toml" => Some(Self::Toml),
             "yaml" | "yml" => Some(Self::Yaml),
-            "ini" | "cfg" | "npmrc" => Some(Self::Ini),
+            "ini" | "cfg" => Some(Self::Ini),
+            "npmrc" => Some(Self::Npmrc),
             _ => None,
         }
     }
@@ -32,7 +36,7 @@ impl Format {
         match self {
             Self::Toml => "TOML",
             Self::Yaml => "YAML",
-            Self::Ini => "INI",
+            Self::Ini | Self::Npmrc => "INI",
         }
     }
 
@@ -44,7 +48,8 @@ impl Format {
                 .parse::<Table>()
                 .map_err(|error| error.message().to_owned()),
             Self::Yaml => parse_yaml(text),
-            Self::Ini => parse_ini(text),
+            Self::Ini => parse_ini(text, false),
+            Self::Npmrc => parse_ini(text, true),
         }
     }
 }
@@ -83,8 +88,9 @@ fn toml_of(value: serde_json::Value) -> Option<Value> {
 
 /// A key of the root or of a `[section]`, with `=` or `:` between the key and the value. A line
 /// that starts with white space continues the value above it, on a line of its own, as pytest
-/// writes `testpaths` and `markers`. `#` and `;` start a comment line.
-fn parse_ini(text: &str) -> Result<Table, String> {
+/// writes `testpaths` and `markers`. `#` and `;` start a comment line, and with `npm` also a
+/// comment after a value.
+fn parse_ini(text: &str, npm: bool) -> Result<Table, String> {
     let mut root = Table::new();
     let mut section: Option<String> = None;
     let mut last: Option<String> = None;
@@ -114,7 +120,7 @@ fn parse_ini(text: &str) -> Result<Table, String> {
             last = None;
             continue;
         }
-        let (key, value) = key_value(trimmed)
+        let (key, value) = key_value(trimmed, npm)
             .ok_or_else(|| format!("line {}: expected `key = value`", index + 1))?;
         table.insert(key.clone(), Value::String(value));
         last = Some(key);
@@ -132,16 +138,48 @@ fn continues(table: &mut Table, last: Option<&str>, trimmed: &str) -> bool {
     true
 }
 
-/// The key and the value of a line, without the quotes around the value.
-fn key_value(trimmed: &str) -> Option<(String, String)> {
+/// The key and the value of a line, without the quotes around the value; with `npm`, as npm reads
+/// the value.
+fn key_value(trimmed: &str, npm: bool) -> Option<(String, String)> {
     // A key of `.npmrc` may hold a `:` (`//registry.npmjs.org/:_authToken`), so `=` comes first.
     let (key, value) = trimmed
         .split_once('=')
         .or_else(|| trimmed.split_once(':'))?;
+    if npm {
+        return Some((key.trim().to_owned(), npm_value(value)));
+    }
     let value = value.trim();
     let value = value
         .strip_prefix('"')
         .and_then(|rest| rest.strip_suffix('"'))
         .unwrap_or(value);
     Some((key.trim().to_owned(), value.trim().to_owned()))
+}
+
+/// A value of `.npmrc` as npm reads it: a quoted value without its quotes, or the text before the
+/// first `#` or `;` that a `\` does not escape.
+fn npm_value(raw: &str) -> String {
+    let value = raw.trim();
+    for quote in ['"', '\''] {
+        if value.len() > 1 && value.starts_with(quote) && value.ends_with(quote) {
+            return value[1..value.len() - 1].to_owned();
+        }
+    }
+    let mut kept = String::new();
+    let mut chars = value.chars();
+    while let Some(c) = chars.next() {
+        match c {
+            '\\' => match chars.next() {
+                Some(escaped @ ('\\' | ';' | '#')) => kept.push(escaped),
+                Some(other) => {
+                    kept.push('\\');
+                    kept.push(other);
+                }
+                None => kept.push('\\'),
+            },
+            ';' | '#' => break,
+            _ => kept.push(c),
+        }
+    }
+    kept.trim().to_owned()
 }

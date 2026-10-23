@@ -243,6 +243,9 @@ pub fn alone(target: &str) -> [Place<'_>; 1] {
         file: target,
         table: &[],
         always: true,
-        text: botica_catalog::Format::of(target) == Some(botica_catalog::Format::Ini),
+        text: matches!(
+            botica_catalog::Format::of(target),
+            Some(botica_catalog::Format::Ini | botica_catalog::Format::Npmrc)
+        ),
     }]
 }

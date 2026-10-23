@@ -1,0 +1,9 @@
+[project]
+name = "app"
+version = "1.0.0"
+
+[tool.pyrefly]
+preset = "basic"
+
+[tool.uv]
+exclude-newer = "3 days"  # botica: ignore[external-config-weakened] -- the mirror of the registry lags a week

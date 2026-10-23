@@ -1,0 +1,14 @@
+id = "acme/uv-cooldown"
+code = "ACMECHK002"
+summary = "uv resolves only packages released at least seven days ago"
+status = "preview"
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["*"]
+tool = "uv"
+docs = "https://docs.astral.sh/uv/reference/settings/#exclude-newer"
+config = "config/pyproject.toml"
+applies-when = ["uv.lock"]

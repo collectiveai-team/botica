@@ -109,7 +109,8 @@ fragment of configuration that goes into `<path>` at the root of the project, in
 file: TOML, YAML or INI (`config/pnpm-workspace.yaml`, `config/.npmrc`,
 `config/.cargo/config.toml`). [`external-config`](../rules/botica/bt004-external-config.md) reports
 a key of the fragment that the settings do not set; a key set to a weaker value is the decision of
-the repository. For ruff, pyrefly, pytest, uv, pnpm, npm, Yarn, Cargo and Bun it reads the settings
+the repository, and `external-config-weakened` (preview) asks for its reason in a comment on its
+line. For ruff, pyrefly, pytest, uv, pnpm, npm, Yarn, Cargo and Bun it reads the settings
 where the tool reads them: a fragment written for `pyproject.toml` also holds in `ruff.toml`, under
 `extend-select`, or when the repository switches the family off with `ignore`.
 

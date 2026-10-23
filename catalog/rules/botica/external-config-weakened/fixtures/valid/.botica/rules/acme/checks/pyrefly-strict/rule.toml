@@ -1,0 +1,14 @@
+id = "acme/pyrefly-strict"
+code = "ACMECHK001"
+summary = "pyrefly checks a Python project with its strict preset"
+status = "preview"
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["*"]
+tool = "pyrefly"
+docs = "https://pyrefly.org/en/docs/configuration/"
+config = "config/pyproject.toml"
+applies-when = ["pyproject.toml"]

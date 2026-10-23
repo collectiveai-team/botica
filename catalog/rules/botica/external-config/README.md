@@ -37,7 +37,8 @@ The settings lack a fragment when they do not set one of its keys, or when a lis
 lacks an item of a list of the fragment. A key that the settings set to a value that holds less than
 the fragment asks is the decision of the project, and this rule does not report it: a shorter
 cooldown, `preset = "basic"` where the fragment asks `strict`, `convention = "numpy"` where it asks
-`google`. Some values hold in more ways, as the tool reads them:
+`google`. `external-config-weakened` reports it as a warning on its line, until a comment there
+gives the reason. Some values hold in more ways, as the tool reads them:
 
 - A code of ruff under `select` or `extend-select` of the fragment holds when the settings select
   it, with `select` or `extend-select`. The settings may name its family (`A` takes in `A005` and
