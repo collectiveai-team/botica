@@ -115,13 +115,18 @@ pub struct Implementation {
     /// of. abide sets one band for every rule, and a judge can be less sure of one rule.
     pub act_at: Option<Probability>,
     /// The fields of an external implementation: the tool that enforces the rule, the address of
-    /// its documentation, its codes, and the fragment of configuration it needs,
-    /// `config/<file>.toml`.
+    /// its documentation, its codes, and the fragment of configuration it needs, `config/<path>`
+    /// in the format of the file it goes into.
     pub tool: Option<String>,
     pub docs: Option<String>,
     #[serde(default)]
     pub codes: Vec<String>,
     pub config: Option<String>,
+    /// Globs, from the root of the project, of the files that show that the project uses the tool
+    /// of an external implementation (`pnpm-lock.yaml`, `**/Dockerfile`). Without them, a file of
+    /// one of `languages` shows it.
+    #[serde(default)]
+    pub applies_when: Vec<String>,
     /// The text of `file` or of `config`, read by the catalog when it loads (never written in
     /// `rule.toml`).
     #[serde(skip)]
@@ -155,7 +160,8 @@ pub const CONFIG_DIR: &str = "config/";
 
 impl Implementation {
     /// The file of the project that the fragment of `config` goes into, from the root of the
-    /// project: `config/prek.toml` goes into `prek.toml`.
+    /// project: `config/prek.toml` goes into `prek.toml`, `config/.cargo/config.toml` into
+    /// `.cargo/config.toml`.
     pub fn target(&self) -> Option<&str> {
         self.config.as_deref()?.strip_prefix(CONFIG_DIR)
     }

@@ -5,6 +5,7 @@ use std::process::ExitCode;
 
 use anyhow::Result;
 use botica_catalog::{Kind, ResolvedRecipe};
+use botica_core::walk;
 
 use crate::project::ProjectArgs;
 use crate::recipes_check_fragments as fragments;
@@ -70,8 +71,9 @@ impl Report {
                 rule_problem(collection, &item.id, true),
             );
         }
+        let files = walk::files(root, None);
         for item in &resolved.rules {
-            for (id, problem) in fragments::of_rule(collection, &item.id, root) {
+            for (id, problem) in fragments::of_rule(collection, &item.id, root, &files) {
                 self.add("fragment", &id, problem);
             }
         }

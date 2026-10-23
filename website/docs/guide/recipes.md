@@ -177,7 +177,7 @@ A rule differs when it is not in the catalog, is not active (the reason is the o
 rules --all` gives), is a judgment rule listed under `rules` or is not one listed under
 `judgment`. A fragment is a line for each configuration that an external implementation of a rule
 under `rules` declares; it differs when the
-file it names does not exist, is not TOML or lacks the fragment, as `external-config` decides, and
+settings of its tool do not exist, cannot be read or lack the fragment, as `external-config` decides, and
 a rule that is not active has its fragment checked too. A rule that is not in the catalog has none.
 An export differs when `botica rules export --check` fails for it with its default file:
 `AGENTS.md` for `agents-md` and `.abide/rubric.json` for `abide`. A file differs when its path is

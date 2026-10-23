@@ -98,7 +98,7 @@ fn a_missing_file_or_one_that_is_not_toml_has_a_finding() {
 }
 
 #[test]
-fn a_table_holds_a_fragment_when_it_has_each_key_with_a_value_that_holds_the_fragment() {
+fn a_table_holds_a_fragment_when_it_sets_each_key_and_each_item_of_its_lists() {
     let cases = [
         ("[tool.ruff.lint]\nselect = [\"C90\"]\n", true),
         ("[tool.ruff.lint]\nselect = [\"C91\"]\n", false),
@@ -108,8 +108,8 @@ fn a_table_holds_a_fragment_when_it_has_each_key_with_a_value_that_holds_the_fra
             false,
         ),
         ("[tool.ruff.lint.mccabe]\nmax-complexity = 10\n", true),
-        ("[tool.ruff.lint.mccabe]\nmax-complexity = 12\n", false),
-        ("[tool.ruff]\nline-length = 100\n", false),
+        ("[tool.ruff.lint.mccabe]\nmax-complexity = 12\n", true),
+        ("[tool.ruff]\nline-length = 100\n", true),
         (
             "[tool.ruff.lint]\nselect = [\"E\", \"C90\"]\nignore = [\"E501\"]\n",
             true,

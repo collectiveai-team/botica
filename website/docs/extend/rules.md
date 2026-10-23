@@ -104,9 +104,33 @@ A new rule is `status = "preview"` and runs only with `--preview` and when it is
 ## External rules
 
 Another tool enforces an external rule (`kind = "external"`) through its configuration. The rule
-names the tool, the address of its documentation and, in `config/<file>.toml` of its folder,
-the fragment of configuration that goes into `<file>.toml` at the root of the project;
-[`external-config`](../rules/botica/bt004-external-config.md) reports a fragment that is missing.
+names the tool, the address of its documentation and, in `config/<path>` of its folder, the
+fragment of configuration that goes into `<path>` at the root of the project, in the format of that
+file: TOML, YAML or INI (`config/pnpm-workspace.yaml`, `config/.npmrc`,
+`config/.cargo/config.toml`). [`external-config`](../rules/botica/bt004-external-config.md) reports
+a key of the fragment that the settings do not set; a key set to a weaker value is the decision of
+the repository. For ruff, pyrefly, pytest, uv, pnpm, npm, Yarn, Cargo and Bun it reads the settings
+where the tool reads them: a fragment written for `pyproject.toml` also holds in `ruff.toml`, under
+`extend-select`, or when the repository switches the family off with `ignore`.
+
+An external rule asks nothing of a project that does not use its tool. `applies-when` lists globs,
+from the root of the project, of the files that show the tool; without it, a file of one of
+`languages` shows it:
+
+```toml
+[[implementations]]
+kind = "external"
+languages = ["javascript", "typescript"]
+tool = "pnpm"
+docs = "https://pnpm.io/settings"
+config = "config/pnpm-workspace.yaml"
+applies-when = ["pnpm-lock.yaml"]
+```
+
+`*` stays inside a folder and `**/` matches any folders, the root too: `**/Dockerfile` matches
+`Dockerfile` and `deploy/Dockerfile`. A language whose files botica does not know, such as
+`dockerfile`, needs `applies-when`, or the rule counts as used in every project.
+
 The built-in catalog has no external rule; a catalog of a project declares them.
 
 ## Judgment rules

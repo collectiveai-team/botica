@@ -42,7 +42,7 @@ struct RuleEntry<'a> {
     readme: Option<&'a SourceFile>,
     /// The YAML files of the implementations.
     sources: Vec<&'a SourceFile>,
-    /// The fragments of configuration of the external implementations, `config/<file>.toml`.
+    /// The fragments of configuration of the external implementations, `config/<path>`.
     configs: Vec<&'a SourceFile>,
     /// The scripts of the folder: the ones the extensions name and the modules they import.
     scripts: Vec<&'a SourceFile>,
@@ -201,12 +201,12 @@ fn scan<'a>(
             [dir, slug, name] if name.ends_with(".yml") => {
                 dirs.entry(dir).or_default().rules.entry(slug).or_default().sources.push(file);
             }
-            [dir, slug, "config", name] if name.ends_with(".toml") => {
+            [dir, slug, "config", rest @ ..] if !rest.is_empty() => {
                 dirs.entry(dir).or_default().rules.entry(slug).or_default().configs.push(file);
             }
             _ => issues.push(issue(
                 file.path.as_str(),
-                "unexpected file: expected history.toml, <family>/family.toml or <family>/<slug>/{rule.toml,README.md,<implementation>.yml,<script>.py|.js|.mjs,config/<file>.toml}",
+                "unexpected file: expected history.toml, <family>/family.toml or <family>/<slug>/{rule.toml,README.md,<implementation>.yml,<script>.py|.js|.mjs,config/<path>}",
             )),
         }
     }

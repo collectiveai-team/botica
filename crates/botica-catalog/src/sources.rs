@@ -1,6 +1,7 @@
 //! The files an implementation names: the YAML of an ast-grep rule and the fragment of
 //! configuration of an external one.
 
+use crate::config_format::Format;
 use crate::issue::{issue, CatalogIssue};
 use crate::load::SourceFile;
 use crate::model::{Kind, Rule};
@@ -107,7 +108,8 @@ pub(crate) fn attach_scripts(
 }
 
 /// Gives each external implementation the text of the fragment that `config` names, and rejects
-/// the fragments that are named by nobody, the ones that are missing and those that are not TOML.
+/// the fragments that are named by nobody, the ones that are missing and those that do not parse
+/// in the format of their file.
 pub(crate) fn attach_configs(
     base: &str,
     rule: &mut Rule,
@@ -122,8 +124,9 @@ pub(crate) fn attach_configs(
         let path = format!("{base}/{name}");
         match configs.iter().find(|config| config.path == path) {
             Some(config) => {
-                if let Err(error) = config.text.parse::<toml::Table>() {
-                    issues.push(issue(path, error.message().to_owned()));
+                let format = implementation.target().and_then(Format::of);
+                if let Some(Err(error)) = format.map(|format| format.parse(&config.text)) {
+                    issues.push(issue(path, error));
                 }
                 implementation.source = Some(config.text.clone());
             }

@@ -32,9 +32,13 @@ scaffolder writes the configuration of a repository from its own components, apa
    included, and the knowledge of a tool is the README of its rule.
 
    `tool` and `docs` are required; `codes` and `config` are optional, and only an external
-   implementation has them. `config` is `config/<file>.toml`, a file of the folder of the rule that
-   the catalog embeds, and its name is the file of the project the fragment goes into, from the root
-   of the project: `config/prek.toml` goes into `prek.toml`. A fragment is TOML. A rule whose
+   implementation has them. `config` is `config/<path>`, a file under the folder `config/` of the
+   rule that the catalog embeds, and its path is the file of the project the fragment goes into,
+   from the root of the project: `config/prek.toml` goes into `prek.toml`, and
+   `config/.cargo/config.toml` into `.cargo/config.toml`. A fragment is in the format of its file:
+   TOML, YAML (`.yaml`, `.yml`) or INI (`.ini`, `.cfg`, `.npmrc`; ADR 0014). `applies-when`, also
+   optional and only of an external implementation, lists globs of the files that show that a
+   project uses the tool (`pnpm-lock.yaml`, `**/Dockerfile`; ADR 0014). A rule whose
    implementations are all external has no `scope`, `needs`, `run-on` or `prefilter`, has no
    fixtures, and the conformance runner skips it, as it skips a judgment rule. A rule may have an
    external implementation beside a deterministic one (ruff for Python, ast-grep for TypeScript), and
@@ -46,12 +50,13 @@ scaffolder writes the configuration of a repository from its own components, apa
    enabled by default, severity error), reports a repository where the fragment that an active
    external rule declares is missing from the file it names (`pyproject.toml`, `prek.toml`). The
    tool checks the code; botica checks that the tool is set up. Its scope is `project`: every
-   `botica lint` reads those files at the root of the project, whatever files it is given, and reports
-   each file as a whole when it does not exist, is not TOML, or lacks the fragment. A file holds a
-   fragment when it has each key of the fragment with a value that holds the value of the fragment: a
-   table holds the keys it names, an array holds one item for each item of the fragment, and any
-   other value is equal. `--scope` leaves the rules with no scope (judgment and external ones) as
-   the selection made them.
+   `botica lint` reads the settings of the tool at the root of the project, whatever files it is
+   given, and reports a file as a whole when no file of settings exists, when the file cannot be read
+   in its format, or when the settings lack a key of the fragment. A key that the settings set to a
+   weaker value is the decision of the repository, and an external rule asks nothing of a project
+   that does not use its tool. For the tools it knows, botica reads the settings where the tool reads
+   them and accepts what the tool accepts (ADR 0014). `--scope` leaves the rules with no scope
+   (judgment and external ones) as the selection made them.
 3. **A recipe is a package of steps,** `recipes/<name>.toml`. It prepares a repository: it lists the
    rules and the exports of botica, and it declares the skills to install and the files and
    sections to add. A recipe composes with `extends`:

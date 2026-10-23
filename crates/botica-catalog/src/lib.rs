@@ -1,3 +1,4 @@
+mod config_format;
 mod dir;
 mod ecosystem;
 mod embedded;
@@ -23,6 +24,7 @@ mod validate_across;
 
 pub use validate::is_kebab_case;
 
+pub use config_format::Format;
 pub use dir::{
     project_catalog_dirs, read_catalog_files, read_files, read_project_files, read_recipes,
     read_references,
