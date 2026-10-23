@@ -5,7 +5,7 @@ repo = "local"
 [[repos.hooks]]
 id = "pyrefly"
 name = "pyrefly"
-entry = "uvx pyrefly check --config pyproject.toml"
+entry = "uvx pyrefly{{ param.pyrefly-version.at }} check --config pyproject.toml"
 language = "system"
 types = ["python"]
 pass_filenames = false
@@ -16,7 +16,7 @@ priority = 2
 [[repos.hooks]]
 id = "deptry"
 name = "deptry (unused/missing/misplaced dependencies)"
-entry = "uvx deptry ."
+entry = "uvx deptry{{ param.deptry-version.at }} ."
 language = "system"
 types = ["python"]
 pass_filenames = false

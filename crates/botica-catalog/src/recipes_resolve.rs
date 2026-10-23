@@ -2,7 +2,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::issue::{issue, CatalogIssue};
 use crate::recipes::{recipe_path, Recipe, Recipes};
-use crate::recipes_params::{placeholder_problem, resolve_params, set_values, ResolvedParam};
+use crate::recipes_params::{
+    placeholder_problem, placeholders, resolve_params, set_values, ResolvedParam, BUILT_IN,
+};
 use crate::recipes_steps_resolve::{
     resolve_files, resolve_gitignore, resolve_links, resolve_sections, resolve_skills,
     resolve_tools, tool_conflicts, ResolvedFile, ResolvedLink, ResolvedSection, ResolvedSkill,
@@ -56,7 +58,8 @@ impl Recipes {
     /// with a warning. A name that is not a recipe fails before anything is resolved, and two
     /// recipes that ask for a package of a tool with different requirements fail. Two recipes
     /// that declare a parameter differently, and a template that writes a parameter that no recipe
-    /// of the chain declares, fail.
+    /// of the chain declares, fail. `botica-version` is a parameter of the chain when one of its
+    /// templates writes it.
     pub fn resolve_many<S: AsRef<str>>(&self, ids: &[S]) -> Result<ResolvedRecipe, String> {
         if ids.is_empty() {
             return Err("name at least one recipe".to_owned());
@@ -80,7 +83,7 @@ impl Recipes {
         let recipes: Vec<&Recipe> = chain.iter().filter_map(|id| self.recipe(id)).collect();
         let (skills, warnings) = resolve_skills(&recipes);
         let names: Vec<&str> = ids.iter().map(AsRef::as_ref).collect();
-        let params = resolve_params(&recipes)?;
+        let mut params = resolve_params(&recipes)?;
         let files = resolve_files(&recipes);
         let sections = resolve_sections(&recipes);
         let templates = files.iter().map(|file| (&file.from, &file.template)).chain(
@@ -88,12 +91,22 @@ impl Recipes {
                 .iter()
                 .map(|section| (&section.from, &section.template)),
         );
+        let mut written = BTreeSet::new();
         for (from, template) in templates {
             let text = self.template(from, template).unwrap_or_default();
             if let Some(problem) = placeholder_problem(text, &params) {
                 return Err(format!("the template `{template}` of `{from}`: {problem}"));
             }
+            written.extend(
+                placeholders(text)
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|(name, _)| name.to_owned()),
+            );
         }
+        // A parameter of botica counts only where a template of the chain writes it, so `show`
+        // does not list it for a recipe that has no use for it.
+        params.retain(|param| param.from != BUILT_IN || written.contains(&param.name));
         Ok(ResolvedRecipe {
             id: names.join(", "),
             rules: contribute(|recipe| &recipe.rules),

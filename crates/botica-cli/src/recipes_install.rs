@@ -12,7 +12,6 @@ use crate::project::ProjectArgs;
 use crate::recipes_collection::Collection;
 use crate::recipes_install_gitignore as gitignore;
 use crate::recipes_install_params as params;
-use crate::recipes_install_release;
 use crate::recipes_install_selection as selection;
 use crate::recipes_install_skills as skills;
 use crate::recipes_install_steps::{self as steps, Outcome, Template};
@@ -130,9 +129,8 @@ pub fn run(
     }
     for item in &gathered.files {
         let rendered = text(&item.from, &item.template)?;
-        let pinned = recipes_install_release::at_this_release(&rendered);
         let template = Template {
-            text: &pinned,
+            text: &rendered,
             path: &item.template,
             recipe: &item.from,
         };

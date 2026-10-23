@@ -17,7 +17,7 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
              botica itself, the skills, .gitignore, the prek hooks, the workflow of abide and the \
              sections of AGENTS.md\n  \
              rules: 9, judgment: 11, exports: 2\n  \
-             skills: 31, files: 5, sections: 2, gitignore: 8\n  from: built-in\n"
+             skills: 31, files: 5, sections: 2, gitignore: 8, params: 2\n  from: built-in\n"
         ),
         "{text}"
     );
@@ -25,7 +25,7 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
     assert!(
         text.contains(
             "  extends: base\n  rules: 15, judgment: 0, exports: 0\n  \
-             files: 1, sections: 6, tools: 6\n  from: built-in\n"
+             files: 1, sections: 6, tools: 6, params: 2\n  from: built-in\n"
         ),
         "{text}"
     );
@@ -189,14 +189,39 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
         "{text}"
     );
     assert!(
-        text.ends_with(
+        text.contains(
             "\n## Unignore\n\n- skills-lock.json (from base)\n\n## Tools\n\n\
              - ruff (uv, group dev, from base-python)\n\
              - pyrefly (uv, group dev, from base-python)\n\
              - pytest (uv, group dev, from base-python)\n\
              - pytest-asyncio (uv, group dev, from base-python)\n\
              - pytest-timeout (uv, group dev, from base-python)\n\
-             - pytest-randomly (uv, group dev, from base-python)\n"
+             - pytest-randomly (uv, group dev, from base-python)\n\n## Parameters\n\n"
+        ),
+        "{text}"
+    );
+    let params: Vec<&str> = text
+        .split("\n## Parameters\n\n")
+        .nth(1)
+        .expect("a section of parameters")
+        .lines()
+        .map(|line| line.split(' ').nth(1).unwrap_or_default())
+        .collect();
+    assert_eq!(
+        params,
+        [
+            "abide-version",
+            "botica-version",
+            "deptry-version",
+            "jscpd-version",
+            "pyrefly-version"
+        ],
+        "{text}"
+    );
+    assert!(
+        text.ends_with(
+            "- pyrefly-version = \"\" (version, default \"\", from base-python): The version of \
+             pyrefly that the hook of prek runs with uvx (empty: the newest)\n"
         ),
         "{text}"
     );

@@ -32,4 +32,4 @@ jobs:
       - name: Validate Conventional Commits format
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
-        run: uvx botica@0.13.0 lint --select conventional-commits --pr-title="$PR_TITLE"
+        run: uvx botica@{{ param.botica-version }} lint --select conventional-commits --pr-title="$PR_TITLE"

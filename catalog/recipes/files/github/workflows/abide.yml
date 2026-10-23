@@ -47,7 +47,7 @@ jobs:
           node-version: "24"
 
       - name: Check the rubric
-        run: uvx botica@0.13.0 rules export --format abide --check
+        run: uvx botica@{{ param.botica-version }} rules export --format abide --check
 
       - name: Judge the diff
         run: |
@@ -62,10 +62,10 @@ jobs:
           # timeout: a run with a finding or a failure is judged once more, and the second decides.
           for attempt in 1 2; do
             status=0
-            npx --yes @coldtea/abide@0.0.11 check --json --diff "$RUNNER_TEMP/abide/pr.diff" \
+            npx --yes @coldtea/abide{{ param.abide-version.at }} check --json --diff "$RUNNER_TEMP/abide/pr.diff" \
               > "$RUNNER_TEMP/abide/abide.json" || status=$?
             # abide exits with 1 when a verdict is in the band act; botica decides.
-            if [ "$status" -le 1 ] && uvx botica@0.13.0 lint --judged "$RUNNER_TEMP/abide/abide.json" \
+            if [ "$status" -le 1 ] && uvx botica@{{ param.botica-version }} lint --judged "$RUNNER_TEMP/abide/abide.json" \
               --fail-on warning > /dev/null 2>&1; then
               break
             fi
@@ -80,11 +80,11 @@ jobs:
           {
             echo "## Judgment rules"
             echo
-            uvx botica@0.13.0 lint --judged "$RUNNER_TEMP/abide/abide.json" --output-format markdown \
+            uvx botica@{{ param.botica-version }} lint --judged "$RUNNER_TEMP/abide/abide.json" --output-format markdown \
               --exit-zero
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail on the findings
         run: |
-          uvx botica@0.13.0 lint --judged "$RUNNER_TEMP/abide/abide.json" --output-format github \
+          uvx botica@{{ param.botica-version }} lint --judged "$RUNNER_TEMP/abide/abide.json" --output-format github \
             --fail-on warning

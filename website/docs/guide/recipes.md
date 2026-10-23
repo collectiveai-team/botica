@@ -146,6 +146,24 @@ or its choices fail the command with 2 before anything is written. A name of `[r
 that another recipe declares is left for that recipe. A parameter changes a value inside a
 template, never whether a step runs.
 
+Every chain also has `botica-version`, which botica declares and a recipe cannot: its default is
+the release of the binary that runs `install`, so the `rev` of the mirror `botica-pre-commit` and
+each `uvx botica@` of the templates ask for the rules of that release. Each tool that a built-in
+template runs with `uvx` or `npx` reads its version from a parameter, whose default is what the
+template ran before:
+
+| Parameter | Recipe | Template | Default |
+| --- | --- | --- | --- |
+| `botica-version` | botica | `prek.toml`, `abide.yml`, `conventional-commits.yml`, `commit-policy.yml` | the release of the binary |
+| `jscpd-version` | `base` | `prek.toml` | `5` |
+| `abide-version` | `base` | `abide.yml` | `0.0.11` |
+| `zizmor-version` | `ci` | `zizmor.yml` | `1.30.1` |
+| `prek-version` | `ci-python` | `tests.yml` | empty (`uvx prek`) |
+| `pyrefly-version` | `base-python` | `prek.toml` | empty (`uvx pyrefly`) |
+| `deptry-version` | `base-python` | `prek.toml` | empty (`uvx deptry`) |
+
+A hook with a `rev` has no parameter: `prek update` moves it.
+
 ## Built-in recipes
 
 The built-in recipes are in `catalog/recipes/` and are compiled into the binary; `botica recipe
@@ -282,9 +300,7 @@ base: 6 added, 1 ok, 1 pending, 1 edited
 
 A file is written from its template when its path does not exist (`added`). A path that exists is
 `ok` when it has the text of the template and `pending` otherwise; `install` does not change it.
-The text of a template of a file or a section is the one with the values of the parameters. In
-the text of a template, the `rev` on the line after the mirror `botica-pre-commit` is set to the
-release of the binary that runs `install`, so the file asks for the hooks of that release. A
+The text of a template of a file or a section is the one with the values of the parameters. A
 section is written to a new file, appended after a blank line to a file that has no marker (`added`),
 and left alone when the file has the marker (`ok`); a path that is not a file or cannot be read is
 `pending`. A path that ends in `.toml` gets the section only when the file is valid TOML before and

@@ -62,3 +62,13 @@ packages = [
   "pytest-timeout",
   "pytest-randomly",
 ]
+
+[params.pyrefly-version]
+description = "The version of pyrefly that the hook of prek runs with uvx (empty: the newest)"
+kind = "version"
+default = ""
+
+[params.deptry-version]
+description = "The version of deptry that the hook of prek runs with uvx (empty: the newest)"
+kind = "version"
+default = ""

@@ -287,21 +287,10 @@ fn the_built_in_base_writes_its_prek_toml_and_check_finds_it() {
         .nth(1)
         .and_then(|rest| rest.lines().next());
     assert_eq!(rev, Some(this_release.as_str()), "{written}");
-    let template_rev = template
-        .split(mirror)
-        .nth(1)
-        .and_then(|rest| rest.lines().next())
-        .expect("the template names the mirror and its rev");
-    let template_package = template
-        .split("uvx botica@")
-        .nth(1)
-        .and_then(|rest| rest.split(' ').next())
-        .map(|version| format!("uvx botica@{version} "))
-        .expect("the template runs uvx botica");
     let package = format!("uvx botica@{} ", env!("CARGO_PKG_VERSION"));
     let expected = template
-        .replace(template_rev, &this_release)
-        .replace(&template_package, &package);
+        .replace("{{ param.botica-version }}", env!("CARGO_PKG_VERSION"))
+        .replace("{{ param.jscpd-version.at }}", "@5");
     assert_eq!(written, expected);
     let workflow = read(&dir, ".github/workflows/abide.yml");
     assert_eq!(workflow.matches(&package).count(), 4, "{workflow}");

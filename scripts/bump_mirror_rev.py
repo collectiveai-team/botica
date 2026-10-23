@@ -1,11 +1,12 @@
 """Point every use of the mirror of botica at one release.
 
 prek installs botica through the mirror `collectiveai-team/botica-pre-commit`, at the tag that
-`rev` names. A release sets that tag in the template of the recipes and in the examples of the docs
-and of the mirror's README, and sets the version and the `botica==` pin of the mirror's package.
-This repository's own `prek.toml` runs the botica of its checkout and names no `rev` (ADR 0013).
-The release workflow runs `bump` twice: on the copy it pushes to the mirror, and on the branch of
-the release after the mirror has its tag.
+`rev` names. A release sets that tag in the examples of the docs and of the mirror's README, and
+sets the version and the `botica==` pin of the mirror's package. This repository's own `prek.toml`
+runs the botica of its checkout and names no `rev` (ADR 0013), and the template of the recipes
+writes `rev = "v{{ param.botica-version }}"`, which `botica recipe install` fills with the release
+of the binary. The release workflow runs `bump` twice: on the copy it pushes to the mirror, and on
+the branch of the release after the mirror has its tag.
 """
 
 from __future__ import annotations
@@ -21,7 +22,6 @@ VERSION = re.compile(r"^\d+\.\d+\.\d+$")
 MIRROR = "https://github.com/collectiveai-team/botica-pre-commit"
 # Each file names the mirror on one line and its `rev` on the next.
 REV_FILES = (
-    "catalog/recipes/files/prek-base.toml",
     "website/docs/guide/prek-and-ci.md",
     "distribution/botica-pre-commit/README.md",
 )

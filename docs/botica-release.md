@@ -27,7 +27,7 @@ when the tag is on `main`, or else the one remote branch that holds the tag.
    `bump` does not run; the version is published, and the fix is a patch release.
 9. `bump` runs `scripts/bump_mirror_rev.py X.Y.Z` on the branch of the release and the tests of the
    repository (`uv run pytest`), and pushes the commit
-   `chore(release): the template and the docs name the mirror at vX.Y.Z` to that branch, with no
+   `chore(release): the docs name the mirror at vX.Y.Z` to that branch, with no
    pull request. When a test fails, nothing is pushed and the run ends red.
 
 The Linux jobs build in a container that owns `dist/`, so the checksums are written to `sums/`
@@ -105,10 +105,12 @@ secret `MIRROR_DEPLOY_KEY` of this repository.
 
 ## Files that name the mirror's `rev`
 
-- `catalog/recipes/files/prek-base.toml`, the example of `website/docs/guide/prek-and-ci.md` and
-  the mirror's README name the mirror and its `rev`. This repository's own `prek.toml` does not: its
-  hooks of botica run the checkout (ADR 0013). The job `bump` moves them all; `scripts/bump_mirror_rev.py` fails the release when one of them
-  no longer names the mirror on the line above its `rev`. The binary is built before `bump`, so
-  the template it embeds names the release before; `botica recipe install` writes the `rev` of
-  the release of the binary instead, whose tag the mirror has once the binary is published.
+- The example of `website/docs/guide/prek-and-ci.md` and the mirror's README name the mirror and
+  its `rev`. This repository's own `prek.toml` does not: its hooks of botica run the checkout
+  (ADR 0013). The job `bump` moves them; `scripts/bump_mirror_rev.py` fails the release when one of
+  them no longer names the mirror on the line above its `rev`.
+- The templates of the recipes (`catalog/recipes/files/prek-base.toml` and the workflows of `base`
+  and `ci`) write `{{ param.botica-version }}` for the `rev` of the mirror and for each
+  `uvx botica@`. Its default is the release of the binary that runs `botica recipe install`, whose
+  tag the mirror has once the binary is published, so a release moves nothing in them.
 - Not published, and not planned yet: npm, Homebrew, a GitHub Action, standalone binaries.

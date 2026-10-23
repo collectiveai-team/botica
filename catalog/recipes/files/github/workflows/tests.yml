@@ -39,7 +39,7 @@ jobs:
         run: uv sync --frozen
 
       - name: Lint, format & type check (prek)
-        run: uvx prek run --all-files --show-diff-on-failure
+        run: uvx prek{{ param.prek-version.at }} run --all-files --show-diff-on-failure
 
       - name: Run tests
         run: uv run pytest
