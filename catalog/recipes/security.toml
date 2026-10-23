@@ -1,0 +1,7 @@
+description = "Code that handles credentials: the rules of CES-121 on who checks the caller of a route, how a token is decoded, where the browser keeps it and how long an access token lives; route-auth reports nothing until [rules.route-auth] names the dependencies that check the caller"
+rules = [
+  "route-auth",
+  "jwt-verified",
+  "no-token-in-web-storage",
+]
+judgment = ["short-lived-access-token"]

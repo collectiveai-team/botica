@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-23T06:26:09Z",
+  "compiledAt": "2026-10-23T06:29:04Z",
   "compiledBy": "botica 0.14.2",
   "manual": true,
   "sources": [
@@ -661,6 +661,7 @@
         "catalog/recipes/repo-private.toml",
         "catalog/recipes/repo-public.toml",
         "catalog/recipes/secrets-varlock.toml",
+        "catalog/recipes/security.toml",
         "catalog/recipes/testing-blockbuster.toml",
         "catalog/recipes/testing-hypothesis.toml",
         "catalog/recipes/files/cargo-config.toml",
