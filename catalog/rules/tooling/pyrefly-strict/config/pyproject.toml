@@ -1,0 +1,5 @@
+[tool.pyrefly]
+preset = "strict"
+
+[tool.pyrefly.errors]
+explicit-any = true

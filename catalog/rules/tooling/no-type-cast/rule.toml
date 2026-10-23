@@ -1,0 +1,26 @@
+id = "no-type-cast"
+code = "BTTOOL004"
+standard = "CES-58"
+summary = "No cast or type assertion gives the type checker a type that nothing checks"
+status = "preview"
+tags = ["types"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["typescript"]
+file = "typescript.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["tsx"]
+file = "tsx.yml"

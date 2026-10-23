@@ -57,5 +57,6 @@ A repository where the checker is off somewhere turns it back on in its own pull
 the directive or the setting, run the checker (`pyrefly check`, `tsc --noEmit`), and fix the errors
 or silence each on its line with the reason (`# pyrefly: ignore[<code>]`,
 `// @ts-expect-error <reason>`). When the errors are too many for one pull request, keep the file in
-the `extend-ignores` of `[rules.no-disabled-typecheck]` and take it out file by file; a `baseline`
-file of pyrefly holds the existing errors and reports only new ones.
+the `extend-ignores` of `[rules.no-disabled-typecheck]` and take it out file by file. A `baseline`
+file of pyrefly holds the existing errors only with `baseline-matching-mode = "column-ordered"`;
+with the default mode, one entry hides every new error of the same kind at the same column.

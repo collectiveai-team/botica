@@ -189,6 +189,12 @@ asks to review the draft with the user. `varlock init` keeps an `.env.schema` th
 drafts nothing, so the recipe has no template of it. `base` ignores `.env` and keeps
 `.env.schema` in git.
 
+`python-strict-types` goes beside `base-python` and selects `pyrefly-strict` and `no-type-cast`,
+two rules in preview. It writes no file: the `[tool.pyrefly]` of `base-python` is already in
+`pyproject.toml`, and `botica recipe check` reports the fragment of `pyrefly-strict` until the
+repository adds `preset = "strict"` and `explicit-any = true` to it
+(`botica explain pyrefly-strict` shows them).
+
 What the recipes cannot say about themselves:
 
 - A recipe has no condition, so `ci-docker` and `repo-public` add `docker.yml` also to a

@@ -1,0 +1,5 @@
+description = "Strict types for Python, beside base-python: pyrefly with the strict preset and no explicit Any, and no cast or type assertion that nothing checks"
+rules = [
+  "pyrefly-strict",
+  "no-type-cast",
+]

@@ -22,6 +22,12 @@ build: `# pyrefly: ignore-errors`, `// @ts-nocheck`, `"strict": false` or an opt
 family set to `false` in `tsconfig.json`, and `typescript.ignoreBuildErrors` in `next.config`. A
 type error that cannot be fixed yet is silenced on its line, with the reason.
 
+The type checker checks every value. pyrefly runs with `preset = "strict"` and reports an `Any`
+written in an annotation (`explicit-any = true`). No expression gives a value a type that nothing
+checks: `typing.cast()` in Python; `as any`, `<any>x` or an assertion through `unknown` in
+TypeScript, where Biome (`noExplicitAny`) also reports `any` in an annotation. A value of an
+unknown type is narrowed with `isinstance`, a `TypeIs` function or a schema.
+
 ## Why
 
 - ruff covers black, isort, flake8, pyupgrade and most of pylint in one fast tool with one config.
@@ -34,6 +40,9 @@ type error that cannot be fixed yet is silenced on its line, with the reason.
   `ASYNC` reports it. An `assert x == x` passes whatever `x` is; `PLR0124` reports it.
 - A checker that is off for a file reports nothing there, and the errors it would report stay in
   the code. An agent whose build fails on types can turn the checker off instead of fixing them.
+- A parameter without an annotation has the type `Any`, and pyrefly checks nothing that flows from
+  it, while it still reports 0 errors. A cast does the same for one value and leaves no comment
+  that a reader or a tool can find.
 
 ## Replacements
 
@@ -66,5 +75,10 @@ A repository where the checker is off somewhere turns it back on in its own pull
 2. Fix the errors it reports. An error that has to stay gets a suppression on its line with the
    reason: `# pyrefly: ignore[<code>]`, `// @ts-expect-error <reason>`.
 3. When there are too many errors for one pull request, keep the file in the `extend-ignores` of
-   `[rules.no-disabled-typecheck]` and remove it from there file by file. In pyrefly, a
-   `baseline` file holds the existing errors and reports only new ones.
+   `[rules.no-disabled-typecheck]` and remove it from there file by file.
+
+A repository that moves to the strict preset runs `pyrefly check --preset strict` once to count
+the errors, and sets the kinds with the most errors to `"warn"` in `[tool.pyrefly.errors]` until
+they are fixed. A `baseline` file of pyrefly holds the existing errors only with
+`baseline-matching-mode = "column-ordered"`: with the default mode, `"column"`, one entry of the
+baseline hides every new error of the same kind at the same column of its file.

@@ -1,0 +1,259 @@
+{
+  "diagnostics": [
+    {
+      "path": "aliased_import.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 215,
+          "line": 11,
+          "column": 12
+        },
+        "end": {
+          "offset": 244,
+          "line": 11,
+          "column": 41
+        }
+      },
+      "message": "`cast()` gives the type checker a type that nothing checks: narrow the value with `isinstance` or a `TypeIs` function, or fix the annotation where the value comes from. A cast that has to stay is silenced on its line with the reason."
+    },
+    {
+      "path": "angle_bracket.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 110,
+          "line": 4,
+          "column": 10
+        },
+        "end": {
+          "offset": 127,
+          "line": 4,
+          "column": 27
+        }
+      },
+      "message": "A type assertion to `any`, or one through `unknown` or `never`, gives the type checker a type that nothing checks: take `unknown` and narrow it with a type guard or a schema, or fix the type where the value comes from. One that has to stay is silenced on its line with the reason."
+    },
+    {
+      "path": "angle_bracket.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 213,
+          "line": 8,
+          "column": 16
+        },
+        "end": {
+          "offset": 230,
+          "line": 8,
+          "column": 33
+        }
+      },
+      "message": "A type assertion to `any`, or one through `unknown` or `never`, gives the type checker a type that nothing checks: take `unknown` and narrow it with a type guard or a schema, or fix the type where the value comes from. One that has to stay is silenced on its line with the reason."
+    },
+    {
+      "path": "as_any.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 110,
+          "line": 4,
+          "column": 10
+        },
+        "end": {
+          "offset": 129,
+          "line": 4,
+          "column": 29
+        }
+      },
+      "message": "A type assertion to `any`, or one through `unknown` or `never`, gives the type checker a type that nothing checks: take `unknown` and narrow it with a type guard or a schema, or fix the type where the value comes from. One that has to stay is silenced on its line with the reason."
+    },
+    {
+      "path": "as_any.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 209,
+          "line": 8,
+          "column": 10
+        },
+        "end": {
+          "offset": 228,
+          "line": 8,
+          "column": 29
+        }
+      },
+      "message": "A type assertion to `any`, or one through `unknown` or `never`, gives the type checker a type that nothing checks: take `unknown` and narrow it with a type guard or a schema, or fix the type where the value comes from. One that has to stay is silenced on its line with the reason."
+    },
+    {
+      "path": "direct_import.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 116,
+          "line": 7,
+          "column": 12
+        },
+        "end": {
+          "offset": 143,
+          "line": 7,
+          "column": 39
+        }
+      },
+      "message": "`cast()` gives the type checker a type that nothing checks: narrow the value with `isinstance` or a `TypeIs` function, or fix the annotation where the value comes from. A cast that has to stay is silenced on its line with the reason."
+    },
+    {
+      "path": "double_angle.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 110,
+          "line": 4,
+          "column": 10
+        },
+        "end": {
+          "offset": 139,
+          "line": 4,
+          "column": 39
+        }
+      },
+      "message": "A type assertion to `any`, or one through `unknown` or `never`, gives the type checker a type that nothing checks: take `unknown` and narrow it with a type guard or a schema, or fix the type where the value comes from. One that has to stay is silenced on its line with the reason."
+    },
+    {
+      "path": "double_angle.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 217,
+          "line": 8,
+          "column": 10
+        },
+        "end": {
+          "offset": 242,
+          "line": 8,
+          "column": 35
+        }
+      },
+      "message": "A type assertion to `any`, or one through `unknown` or `never`, gives the type checker a type that nothing checks: take `unknown` and narrow it with a type guard or a schema, or fix the type where the value comes from. One that has to stay is silenced on its line with the reason."
+    },
+    {
+      "path": "double_assertion.ts",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 110,
+          "line": 4,
+          "column": 10
+        },
+        "end": {
+          "offset": 141,
+          "line": 4,
+          "column": 41
+        }
+      },
+      "message": "A type assertion to `any`, or one through `unknown` or `never`, gives the type checker a type that nothing checks: take `unknown` and narrow it with a type guard or a schema, or fix the type where the value comes from. One that has to stay is silenced on its line with the reason."
+    },
+    {
+      "path": "local_import.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 120,
+          "line": 7,
+          "column": 12
+        },
+        "end": {
+          "offset": 147,
+          "line": 7,
+          "column": 39
+        }
+      },
+      "message": "`cast()` gives the type checker a type that nothing checks: narrow the value with `isinstance` or a `TypeIs` function, or fix the annotation where the value comes from. A cast that has to stay is silenced on its line with the reason."
+    },
+    {
+      "path": "module_alias.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 111,
+          "line": 7,
+          "column": 12
+        },
+        "end": {
+          "offset": 140,
+          "line": 7,
+          "column": 41
+        }
+      },
+      "message": "`cast()` gives the type checker a type that nothing checks: narrow the value with `isinstance` or a `TypeIs` function, or fix the annotation where the value comes from. A cast that has to stay is silenced on its line with the reason."
+    },
+    {
+      "path": "module_attribute.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 106,
+          "line": 7,
+          "column": 12
+        },
+        "end": {
+          "offset": 142,
+          "line": 7,
+          "column": 48
+        }
+      },
+      "message": "`cast()` gives the type checker a type that nothing checks: narrow the value with `isinstance` or a `TypeIs` function, or fix the annotation where the value comes from. A cast that has to stay is silenced on its line with the reason."
+    },
+    {
+      "path": "props.tsx",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 68,
+          "line": 2,
+          "column": 16
+        },
+        "end": {
+          "offset": 80,
+          "line": 2,
+          "column": 28
+        }
+      },
+      "message": "A type assertion to `any`, or one through `unknown` or `never`, gives the type checker a type that nothing checks: take `unknown` and narrow it with a type guard or a schema, or fix the type where the value comes from. One that has to stay is silenced on its line with the reason."
+    },
+    {
+      "path": "typing_extensions.py",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 229,
+          "line": 14,
+          "column": 12
+        },
+        "end": {
+          "offset": 256,
+          "line": 14,
+          "column": 39
+        }
+      },
+      "message": "`cast()` gives the type checker a type that nothing checks: narrow the value with `isinstance` or a `TypeIs` function, or fix the annotation where the value comes from. A cast that has to stay is silenced on its line with the reason."
+    },
+    {
+      "path": "view.tsx",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 110,
+          "line": 4,
+          "column": 16
+        },
+        "end": {
+          "offset": 138,
+          "line": 4,
+          "column": 44
+        }
+      },
+      "message": "A type assertion to `any`, or one through `unknown` or `never`, gives the type checker a type that nothing checks: take `unknown` and narrow it with a type guard or a schema, or fix the type where the value comes from. One that has to stay is silenced on its line with the reason."
+    }
+  ]
+}
