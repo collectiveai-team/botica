@@ -233,6 +233,15 @@ What the recipes cannot say about themselves:
   `pending` and the setting is added by hand to the table that is there. The days are the parameter
   `cooldown-days` (7 by default), which the recipes of CI also write into
   `.github/dependabot.yml`.
+- The hooks of golangci-lint in `base-go` build it with the Go of the `PATH`: golangci-lint stops
+  on a module whose `go` directive is newer than the Go that built it. A machine whose Go prek does
+  not take as a Go of the system installs with another `go-preference` (`managed`, `only-managed`
+  or `only-system`, the values of prek).
+- `golangci-lint run` in `base-go` reports only the lines that changed since `HEAD`, and a second
+  hook runs `unused` alone over the whole module: the commit that removes the last call of a
+  function does not touch the line where `unused` reports it. govulncheck is in the stage that
+  `govulncheck-stage` names, `manual` by default (`prek run --hook-stage manual govulncheck`),
+  because it needs the network; `--set govulncheck-stage=pre-commit` runs it on each commit.
 
 ## Recipes of a project
 

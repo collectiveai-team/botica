@@ -1,0 +1,15 @@
+# MARK: go-mod-tidy
+# CES-109. `go mod tidy -diff` (Go 1.23 or newer) prints what tidy would change in go.mod and go.sum,
+# fails when that is not empty, and writes no file. It runs in the module at the root; a workspace of
+# several modules adds one hook per module, with `entry = "go -C <dir> mod tidy -diff"`.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "go-mod-tidy"
+name = "go mod tidy -diff (unused/missing modules)"
+entry = "go mod tidy -diff"
+language = "system"
+files = "(^|/)go\\.(mod|sum)$|\\.go$"
+pass_filenames = false
+priority = 2

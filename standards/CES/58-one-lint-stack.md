@@ -17,6 +17,14 @@ neither raises again nor logs the traceback), `SLOT` (a subclass of `str`, `tupl
 `NamedTuple` without `__slots__`) and the codes `PLR0124` and `PLR0133` (a comparison of a name
 with itself or of two constants).
 
+Go code is formatted and linted by golangci-lint v2: `golangci-lint fmt` with the formatter
+`gofumpt`, and `golangci-lint run` with the linters `standard` (errcheck, govet, ineffassign,
+staticcheck, unused), `errorlint`, `wrapcheck`, `bodyclose`, `gosec`, `revive` with its rule
+`package-naming`, and `godoclint` for the doc comments (CES-123), as `.golangci.yml` of the recipe
+`base-go` lists them. A linter is added to that
+list or removed from it by a change to this standard. `gocognit`, `gocyclo` and `funlen` are not
+enabled: botica measures complexity (CES-110), and the size of a function is a judgment.
+
 The type checker stays on. No setting or directive turns it off for a whole file, a project or a
 build: `# pyrefly: ignore-errors`, `// @ts-nocheck`, `"strict": false` or an option of the strict
 family set to `false` in `tsconfig.json`, and `typescript.ignoreBuildErrors` in `next.config`. A

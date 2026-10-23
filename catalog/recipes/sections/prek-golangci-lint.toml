@@ -1,0 +1,41 @@
+# MARK: golangci-lint
+# CES-58. One tool formats and lints Go: `golangci-lint fmt` runs the formatters of `.golangci.yml`
+# and `golangci-lint run` its linters, `govet` among them. language = "golang" in the manifest of the
+# hooks, so prek builds it from the pinned tag. golangci-lint refuses a module whose `go` directive
+# is newer than the Go that built it, and prek takes by default the Go of the `go.mod` of
+# golangci-lint, which may be older. The preference is the parameter `go-preference` of the recipe
+# `base-go`, `system` by default: it builds golangci-lint with the Go of the PATH, the one that
+# builds the module.
+[[repos]]
+repo = "https://github.com/golangci/golangci-lint"
+rev = "v2.15.0"
+
+[[repos.hooks]]
+id = "golangci-lint-config-verify"
+language_version = { request = "default", preference = "{{ param.go-preference }}" }
+priority = 0
+
+# MARK: golangci-lint-fmt
+[[repos.hooks]]
+id = "golangci-lint-fmt"
+language_version = { request = "default", preference = "{{ param.go-preference }}" }
+priority = 0
+
+# MARK: golangci-lint-run
+# `run --new-from-rev HEAD` analyses the whole module and reports only the lines that changed since
+# HEAD, so a commit is not blocked by what was there before it.
+[[repos.hooks]]
+id = "golangci-lint"
+language_version = { request = "default", preference = "{{ param.go-preference }}" }
+priority = 1
+
+# MARK: golangci-lint-unused
+# `unused` reports a function at its declaration, which the commit that removes its last call does
+# not touch, so the hook above never shows it. This one runs only `unused` and reports every
+# finding of the module.
+[[repos.hooks]]
+id = "golangci-lint-full"
+name = "golangci-lint unused"
+args = ["--enable-only", "unused"]
+language_version = { request = "default", preference = "{{ param.go-preference }}" }
+priority = 1
