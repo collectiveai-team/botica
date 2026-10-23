@@ -1,0 +1,17 @@
+id = "npm-cooldown"
+code = "BTSEC007"
+standard = "CES-128"
+summary = "npm installs only the versions that were published at least 7 days ago"
+status = "preview"
+tags = ["supply-chain"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["javascript", "typescript", "tsx"]
+tool = "npm"
+docs = "https://docs.npmjs.com/cli/v11/using-npm/config#min-release-age"
+codes = []
+config = "config/.npmrc"
+applies-when = ["package-lock.json"]

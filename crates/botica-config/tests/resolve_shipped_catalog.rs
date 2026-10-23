@@ -113,12 +113,14 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
     );
 }
 
-const PROPOSED: [&str; 19] = [
+const PROPOSED: [&str; 25] = [
     "api-request-schema-name",
     "api-response-schema-name",
     "api-schema-in-route-module",
+    "cargo-cooldown",
     "cognitive-complexity",
     "db-no-create-all",
+    "dependabot-cooldown",
     "eager-test",
     "external-config-weakened",
     "jwt-verified",
@@ -127,12 +129,16 @@ const PROPOSED: [&str; 19] = [
     "no-tautological-assert",
     "no-token-in-web-storage",
     "no-type-cast",
+    "npm-cooldown",
+    "pnpm-cooldown",
     "pyrefly-strict",
     "recipe-conflict",
     "route-auth",
     "ruff-selection",
     "settings-base-class",
     "settings-direct-instantiation",
+    "uv-cooldown",
+    "yarn-cooldown",
 ];
 
 #[test]
@@ -164,10 +170,20 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
         &catalog,
         "select = []\nextend-select = [\"all\"]\npreview = true",
     );
-    assert_eq!(active(&resolution).len(), 59);
+    assert_eq!(active(&resolution).len(), 65);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTSEC\"]\npreview = true")),
-        ["jwt-verified", "no-token-in-web-storage", "route-auth"]
+        [
+            "cargo-cooldown",
+            "dependabot-cooldown",
+            "jwt-verified",
+            "no-token-in-web-storage",
+            "npm-cooldown",
+            "pnpm-cooldown",
+            "route-auth",
+            "uv-cooldown",
+            "yarn-cooldown",
+        ]
     );
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTCONF\"]\npreview = true")),

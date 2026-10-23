@@ -1,5 +1,6 @@
 description = "GitHub Actions for a Node project that uses pnpm: dependabot and osv-scanner"
 extends = ["ci"]
+rules = ["dependabot-cooldown"]
 
 [[files]]
 path = ".github/dependabot.yml"

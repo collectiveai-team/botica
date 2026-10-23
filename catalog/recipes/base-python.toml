@@ -21,6 +21,7 @@ rules = [
   "pytest-strict",
   "test-no-subprocess",
   "test-no-network",
+  "uv-cooldown",
 ]
 
 [[files]]

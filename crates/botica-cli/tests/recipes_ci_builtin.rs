@@ -77,7 +77,7 @@ fn the_python_pieces_come_apart_from_the_common_ones() {
     let text = ok(&recipe(&dir, &["install", "ci-python", "ci-publish"]));
 
     assert!(
-        text.ends_with("ci-python, ci-publish: 9 added, 0 ok, 0 pending\n"),
+        text.ends_with("ci-python, ci-publish: 10 added, 0 ok, 0 pending\n"),
         "{text}"
     );
     assert!(dir.join(".github/dependabot.yml").is_file());

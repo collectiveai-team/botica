@@ -1,0 +1,17 @@
+id = "uv-cooldown"
+code = "BTSEC004"
+standard = "CES-128"
+summary = "uv resolves only the files that were uploaded to the index at least 7 days ago"
+status = "preview"
+tags = ["supply-chain"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["python"]
+tool = "uv"
+docs = "https://docs.astral.sh/uv/concepts/resolution/#dependency-cooldowns"
+codes = []
+config = "config/pyproject.toml"
+applies-when = ["uv.lock"]

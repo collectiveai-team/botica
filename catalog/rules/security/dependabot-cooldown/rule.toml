@@ -1,0 +1,18 @@
+id = "dependabot-cooldown"
+code = "BTSEC005"
+standard = "CES-128"
+summary = "Each update of Dependabot waits 7 days after a release"
+status = "preview"
+tags = ["supply-chain"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+# `*` and not `yaml`: botica gives no language to a `.yml` file, so an implementation for `yaml`
+# would never run. The `files` of `yaml.yml` limit it to the configuration of Dependabot.
+[[implementations]]
+kind = "ast-grep"
+languages = ["*"]
+file = "yaml.yml"

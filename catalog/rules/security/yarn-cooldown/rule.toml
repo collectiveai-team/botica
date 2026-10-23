@@ -1,0 +1,17 @@
+id = "yarn-cooldown"
+code = "BTSEC008"
+standard = "CES-128"
+summary = "Yarn installs only the versions that were published at least 7 days ago"
+status = "preview"
+tags = ["supply-chain"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["javascript", "typescript", "tsx"]
+tool = "yarn"
+docs = "https://yarnpkg.com/configuration/yarnrc#npmMinimalAgeGate"
+codes = []
+config = "config/.yarnrc.yml"
+applies-when = ["yarn.lock"]

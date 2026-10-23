@@ -246,6 +246,7 @@ select = [
   "settings-env-schema",
   "cognitive-complexity",
   "ruff-selection",
+  "uv-cooldown",
   "separate-orchestration",
   "architecture-vocabulary",
   "pr-small-by-intent",

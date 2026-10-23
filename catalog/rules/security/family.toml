@@ -1,2 +1,2 @@
 code = "SEC"
-description = "How code handles credentials: who checks them, how a token is decoded and where the browser keeps it."
+description = "How code handles credentials (who checks them, how a token is decoded and where the browser keeps it) and when a package manager may take a new release of a dependency."
