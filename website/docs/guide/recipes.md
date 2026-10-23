@@ -243,6 +243,18 @@ names in `dependencies` the functions that check the caller; `no-token-in-web-st
 TypeScript and JavaScript; `jwt-verified` reads Python, TypeScript, JavaScript, Go and Rust; and
 `short-lived-access-token` is judged on each edit of code in those languages.
 
+`database-alembic` is for a Python project with the package `database` of CES-18. It adds
+`[tool.alembic]` to `pyproject.toml`, with the migrations as a resource of the package
+(`--set alembic-script-location=orders.database:migrations`), and a hook of prek, `alembic-check`,
+that runs when a Python file under a `database/` folder changes. The hook migrates a SQLite
+database of its own to the last migration and runs `alembic check`, which fails when a table
+changed and no migration has the change. It exports the URL in the variable that the settings of
+`database` read (`database-url-variable`, `APP_DATABASE_URL` by default). When the migrations need
+the engine of production, `ALEMBIC_CHECK_URL` names an empty database of that engine, such as a
+PostgreSQL service of the CI. alembic runs with `uv run`, from the environment of the project, so
+alembic is a dependency of the project: the recipe adds no `[[tools]]`, which would make it a
+development dependency. It also selects `db-no-create-all`.
+
 What the recipes cannot say about themselves:
 
 - A recipe has no condition, so `ci-docker` and `repo-public` add `docker.yml` also to a

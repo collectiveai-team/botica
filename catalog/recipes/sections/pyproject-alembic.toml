@@ -1,0 +1,8 @@
+# MARK: Alembic
+# CES-18. The configuration of the command `alembic`, so that `alembic revision --autogenerate`,
+# `alembic check` and `alembic upgrade head` run from the root of the project. The migrations are
+# named as a resource of the package, so an installed wheel finds them too; `prepend_sys_path`
+# lets `env.py` import the package when the project is not installed.
+[tool.alembic]
+script_location = "{{ param.alembic-script-location }}"
+prepend_sys_path = ["."]

@@ -1,0 +1,23 @@
+description = "Alembic in a Python project with the package database of CES-18: the configuration of the command alembic in pyproject.toml and a hook of prek that runs alembic check (needs alembic among the dependencies of the project)"
+extends = ["base-python"]
+rules = ["db-no-create-all"]
+
+[[sections]]
+path = "pyproject.toml"
+marker = "# MARK: Alembic"
+template = "sections/pyproject-alembic.toml"
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: alembic-check"
+template = "sections/prek-alembic.toml"
+
+[params.alembic-script-location]
+description = "The migrations of the package database, as <package>:<folder>, for script_location of [tool.alembic]"
+kind = "text"
+default = "app.database:migrations"
+
+[params.database-url-variable]
+description = "The environment variable that the settings of the package database read as the URL of the database (CES-76)"
+kind = "text"
+default = "APP_DATABASE_URL"
