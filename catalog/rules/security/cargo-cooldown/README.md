@@ -21,8 +21,8 @@ reason in the pull request.
 ## Tool
 
 [Cargo](https://doc.rust-lang.org/nightly/cargo/reference/config.html#registryglobal-min-publish-age)
-enforces the rule from Rust 1.100. Cargo 1.93 ignores the key without a warning, and a project on
-an older toolchain relies on the cooldown of Dependabot. Botica checks that `.cargo/config` or
+enforces the rule from Rust 1.100. An older Cargo ignores the key, and a project on that toolchain
+relies on the cooldown of Dependabot. Botica checks that `.cargo/config` or
 `.cargo/config.toml` has it, the one that Cargo reads.
 
 ## Configuration
@@ -32,9 +32,9 @@ an older toolchain relies on the cooldown of Dependabot. Botica checks that `.ca
 global-min-publish-age = "7 days"
 ```
 
-Any span of 7 days or more holds the rule: `"1 weeks"` or `"14 days"`. A shorter span, `"0"` too,
-is a value the project wrote on purpose, and botica does not report it. botica asks for the
-setting only in a project with `Cargo.lock`.
+Any span of 7 days or more holds the rule: `"1 weeks"` or `"14 days"`. `external-config-weakened`
+reports a shorter span, `"0"` too, until a comment on its line gives the reason. botica asks for
+the setting only in a project with `Cargo.lock`.
 
 ## Do
 

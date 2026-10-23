@@ -226,11 +226,9 @@ jobs:
           git tag "$TAG"
           git push --quiet origin HEAD "refs/tags/$TAG"
 
-  # The hooks of `prek.toml` run the botica of the checkout (ADR 0013), so this job is where this
-  # repository installs the mirror: prek clones it at the new tag, installs the wheel from PyPI and
-  # runs the hooks of its `.pre-commit-hooks.yaml` on the commit of the tag, as a project would.
-  # When it fails, the version is already published: `bump` does not run, and the fix is a patch
-  # release.
+  # The hooks of `prek.toml` run the botica of the checkout (ADR 0013), so only this job runs the
+  # published wheel through the mirror, as a project does. When it fails, the version is already
+  # on PyPI, and the fix is a patch release.
   mirror-check:
     name: run the mirror on this repository
     needs: mirror
@@ -253,10 +251,8 @@ jobs:
       - name: Run the hooks of the mirror at the new tag
         run: uvx prek try-repo https://github.com/collectiveai-team/botica-pre-commit --rev "$TAG" --all-files
 
-  # After the mirror passes on this repository, the branch of the release points the docs at it
-  # (scripts/bump_mirror_rev.py), and the commit goes straight to that branch. The tests of the
-  # repository run first: when one fails, nothing is pushed and the release ends red. The branch is
-  # `main` when the tag is on it, or else the one branch that holds the tag.
+  # The commit goes straight to the branch of the release, with no pull request, so the tests of
+  # the repository run before the push.
   bump:
     name: point the docs at the mirror
     needs: mirror-check

@@ -13,8 +13,9 @@ failure. A test that only calls the code and asserts nothing is a smoke test, an
 
 - A test that cannot fail reports a broken program as working. It also raises the coverage of the
   lines it runs, so the gap that CES-66 reads is hidden.
-- A model asked to make a suite pass writes these tests when it does not know the expected value:
-  `assert True`, a value compared with itself, an assertion inside `try` with `except: pass`.
+- A test written to make a suite pass without the expected value is `assert True`, a value
+  compared with itself, or an assertion inside `try` with `except: pass`. falsegreen and
+  `no-tautological-assert` report these forms.
 
 ## How it is checked
 

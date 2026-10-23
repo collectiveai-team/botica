@@ -1,11 +1,10 @@
 ## Directive
 
-A value that the settings of a tool set and that holds less than an active external rule asks is a
-warning, on the line of the value, until a comment there gives the reason: `preset = "basic"` of
-pyrefly where the rule asks `strict`, `exclude-newer = "3 days"` of uv where it asks `7 days`, a code
-of ruff that `ignore` switches off where the rule selects it. `external-config` decides what holds
-less, reading the settings where the tool reads them, and does not report it: the value is the
-decision of the project. This rule asks for the reason of that decision on the line of the value.
+A setting of a tool whose value holds less than what an active external rule asks is a warning on
+its line, until a comment there gives the reason. Three cases: `preset = "basic"` of pyrefly where
+the rule asks `strict`, `exclude-newer = "3 days"` of uv where it asks `7 days`, and a code of ruff
+that `ignore` switches off where the rule selects it. botica reads the settings where the tool
+reads them, as `external-config` does.
 
 ```toml
 # pyproject.toml, with a rule that asks for preset = "strict"

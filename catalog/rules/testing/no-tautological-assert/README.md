@@ -15,8 +15,7 @@ Two arguments are the same when their syntax trees are the same.
 ## Why
 
 A test whose assertion always holds passes when the code under test is broken, and it raises the
-coverage of the lines it runs. A model that writes a test to make a suite pass writes such an
-assertion when it does not know the expected value. Ruff reports a tuple or a string asserted
+coverage of the lines it runs. Ruff reports a tuple or a string asserted
 (`F631`, `PLW0129`) and, with the section of ruff of `base-python`, `x == x` and `1 == 1`
 (`PLR0124`, `PLR0133`); clippy reports `assert!(true)` (`assertions_on_constants`). `assert True`,
 `self.assertEqual(x, x)`, `assert_eq!(x, x)` in a test and the forms of TypeScript and Go reach no
