@@ -1,0 +1,4 @@
+# CES-128: Cargo resolves only the versions that were published at least
+# {{ param.cooldown-days }} days ago. Cargo before 1.100 ignores the key.
+[registry]
+global-min-publish-age = "{{ param.cooldown-days }} days"

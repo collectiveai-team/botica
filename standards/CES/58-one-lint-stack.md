@@ -25,6 +25,11 @@ staticcheck, unused), `errorlint`, `wrapcheck`, `bodyclose`, `gosec`, `revive` w
 list or removed from it by a change to this standard. `gocognit`, `gocyclo` and `funlen` are not
 enabled: botica measures complexity (CES-110), and the size of a function is a judgment.
 
+Rust code is formatted by rustfmt (`cargo fmt --all`, which rewrites the files) and linted by
+clippy with `-D warnings` and the lints `missing_errors_doc` and `missing_panics_doc` (CES-123),
+both from the toolchain of the repository. `clippy::cognitive_complexity` stays off: botica
+measures complexity (CES-110).
+
 The type checker stays on. No setting or directive turns it off for a whole file, a project or a
 build: `# pyrefly: ignore-errors`, `// @ts-nocheck`, `"strict": false` or an option of the strict
 family set to `false` in `tsconfig.json`, and `typescript.ignoreBuildErrors` in `next.config`. A

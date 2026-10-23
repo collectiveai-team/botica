@@ -218,9 +218,10 @@ has the tests to copy.
 What the recipes cannot say about themselves:
 
 - A recipe has no condition, so `ci-docker` and `repo-public` add `docker.yml` also to a
-  repository that has no `Dockerfile`: name them only when it has one, and `ci-python`, `ci-node`
-  or `ci-go` only for a project of that ecosystem. The three add the same `.github/dependabot.yml`
-  and `.github/workflows/osv-scanner.yml`, so a repository names one of them.
+  repository that has no `Dockerfile`: name them only when it has one, and `ci-python`, `ci-node`,
+  `ci-go` or `ci-rust` only for a project of that ecosystem. The four add the same
+  `.github/dependabot.yml` and `.github/workflows/osv-scanner.yml`, so a repository names one of
+  them.
 - `repo-private` leaves out the dependency review, which needs a paid plan on a private
   repository, and `docker.yml`, which pushes to GHCR and bills it. `ci-automerge-public` needs the
   setting "Allow auto-merge" and a branch protection rule with required checks; without a required
@@ -242,6 +243,13 @@ What the recipes cannot say about themselves:
   function does not touch the line where `unused` reports it. govulncheck is in the stage that
   `govulncheck-stage` names, `manual` by default (`prek run --hook-stage manual govulncheck`),
   because it needs the network; `--set govulncheck-stage=pre-commit` runs it on each commit.
+- The hooks of `cargo fmt` and `cargo clippy` in `base-rust` need the components `rustfmt` and
+  `clippy` of the toolchain (`rustup component add rustfmt clippy`). The hook of cargo-shear needs
+  rustc 1.95 or newer to build it: prek installs that toolchain once, with rustup, when the one of
+  the `PATH` is older. `.cargo/config.toml` sets `global-min-publish-age`, which Cargo before 1.100
+  ignores.
+- `ci-rust` runs `cargo doc` with `-D rustdoc::broken_intra_doc_links`, which the hooks do not run,
+  so a broken link of a doc comment fails in CI and not in the commit.
 
 ## Recipes of a project
 

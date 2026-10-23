@@ -1,0 +1,30 @@
+# MARK: cargo-fmt
+# CES-58. rustfmt and clippy come with the toolchain (`rustup component add rustfmt clippy`), so the
+# hooks run the cargo of the PATH, and the one of `rust-toolchain.toml` when the repository has it.
+# `cargo fmt --all` rewrites the files, as ruff-format does, and the commit stops so they are added.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "cargo-fmt"
+name = "cargo fmt"
+entry = "cargo fmt --all"
+language = "system"
+types = ["rust"]
+pass_filenames = false
+priority = 0
+
+# MARK: cargo-clippy
+# `-D warnings` makes every warning of rustc and of the default groups of clippy an error. `--locked`
+# fails when Cargo.lock does not match Cargo.toml. CES-123: a public function that returns `Result`
+# or can panic documents `# Errors` or `# Panics`; the two lints are flags here and not `[lints]` of
+# Cargo.toml, which a virtual workspace rejects. botica measures the cognitive complexity of a
+# function (cognitive-complexity), so `clippy::cognitive_complexity` stays in its group, off.
+[[repos.hooks]]
+id = "cargo-clippy"
+name = "cargo clippy -D warnings"
+entry = "cargo clippy --workspace --all-targets --locked -- -D warnings -W clippy::missing_errors_doc -W clippy::missing_panics_doc"
+language = "system"
+files = "(^|/)Cargo\\.(toml|lock)$|\\.rs$"
+pass_filenames = false
+priority = 1

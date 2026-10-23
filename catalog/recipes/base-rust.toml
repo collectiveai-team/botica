@@ -1,0 +1,35 @@
+description = "A Rust crate or workspace: the rules of any repository and the ones about Rust code, the cooldown of Cargo, and cargo fmt, clippy and cargo-shear in prek"
+extends = ["base"]
+rules = [
+  "no-utils",
+  "cognitive-complexity",
+  "lockfile-committed",
+  "cargo-cooldown",
+]
+
+[[gitignore]]
+lines = ["target/"]
+
+[[files]]
+path = ".cargo/config.toml"
+template = "files/cargo-config.toml"
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: cargo-fmt"
+template = "sections/prek-cargo.toml"
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: cargo-shear"
+template = "sections/prek-cargo-shear.toml"
+
+[params.cooldown-days]
+description = "The days that a new release of a dependency waits before a package manager or dependabot takes it"
+kind = "days"
+default = 7
+
+[params.cargo-shear-version]
+description = "The release of cargo-shear that prek installs for its hook"
+kind = "version"
+default = "1.14.0"
