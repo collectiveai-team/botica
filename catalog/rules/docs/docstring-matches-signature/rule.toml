@@ -1,0 +1,26 @@
+id = "docstring-matches-signature"
+code = "BTDOCS001"
+standard = "CES-123"
+summary = "A doc comment documents only the parameters, the return value and the yields that the function has"
+status = "stable"
+tags = ["docstrings", "jsdoc"]
+default-enabled = true
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["python"]
+tool = "ruff"
+docs = "https://docs.astral.sh/ruff/rules/#pydoclint-doc"
+codes = ["DOC102", "DOC202", "DOC403"]
+config = "config/pyproject.toml"
+applies-when = ["pyproject.toml", "ruff.toml", ".ruff.toml"]
+
+[[implementations]]
+kind = "external"
+languages = ["typescript", "tsx", "javascript"]
+tool = "eslint"
+docs = "https://github.com/gajus/eslint-plugin-jsdoc#rules"
+codes = ["jsdoc/check-param-names", "jsdoc/require-returns-check", "jsdoc/check-tag-names"]
+config = "config/prek.toml"
+applies-when = ["package.json"]

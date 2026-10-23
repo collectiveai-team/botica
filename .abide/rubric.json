@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-23T05:02:55Z",
+  "compiledAt": "2026-10-23T05:10:10Z",
   "compiledBy": "botica 0.14.2",
   "manual": true,
   "sources": [
@@ -411,6 +411,7 @@
         "catalog/rules/data-models/no-dict-return-annotation/README.md",
         "catalog/rules/database/database-package/README.md",
         "catalog/rules/database/db-no-create-all/README.md",
+        "catalog/rules/docs/docstring-matches-signature/README.md",
         "catalog/rules/fastapi/api-request-schema-name/README.md",
         "catalog/rules/fastapi/api-response-schema-name/README.md",
         "catalog/rules/fastapi/api-schema-in-route-module/README.md",
@@ -582,6 +583,9 @@
         "catalog/rules/database/database-package/rule.toml",
         "catalog/rules/database/db-no-create-all/python.yml",
         "catalog/rules/database/db-no-create-all/rule.toml",
+        "catalog/rules/docs/family.toml",
+        "catalog/rules/docs/docstring-matches-signature/rule.toml",
+        "catalog/rules/docs/docstring-matches-signature/config/**",
         "catalog/rules/fastapi/family.toml",
         "catalog/rules/fastapi/api-request-schema-name/python.yml",
         "catalog/rules/fastapi/api-request-schema-name/rule.toml",
@@ -798,6 +802,7 @@
         "catalog/rules/data-models/no-dict-return-annotation/README.md",
         "catalog/rules/database/database-package/README.md",
         "catalog/rules/database/db-no-create-all/README.md",
+        "catalog/rules/docs/docstring-matches-signature/README.md",
         "catalog/rules/fastapi/api-request-schema-name/README.md",
         "catalog/rules/fastapi/api-response-schema-name/README.md",
         "catalog/rules/fastapi/api-schema-in-route-module/README.md",

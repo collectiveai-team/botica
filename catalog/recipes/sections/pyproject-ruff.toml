@@ -6,6 +6,10 @@ line-length = 100
 quote-style = "double"
 
 [tool.ruff.lint]
+# DOC102, DOC202 and DOC403 are preview rules. `explicit-preview-rules` keeps every other preview
+# rule off, and `preview` stays in `lint` so that the formatter keeps its stable style.
+preview = true
+explicit-preview-rules = true
 select = [
   "E",
   "F",
@@ -62,6 +66,9 @@ select = [
   "D417",
   "D418",
   "D419",
+  "DOC102",
+  "DOC202",
+  "DOC403",
   "PERF",
 ]
 task-tags = ["TODO", "FIXME", "XXX", "MARK"]
