@@ -1,6 +1,7 @@
 id = "db-no-create-all"
 code = "BTDB002"
 standard = "CES-18"
+references = ["database"]
 summary = "The schema changes through migrations, not metadata.create_all()"
 status = "preview"
 tags = ["layout"]

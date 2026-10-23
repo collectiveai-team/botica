@@ -2,6 +2,7 @@ id = "database-package"
 aliases = ["arch-database-package"]
 code = "BTDB001"
 standard = "CES-18"
+references = ["database"]
 summary = "Relational persistence lives in a database package"
 status = "stable"
 tags = ["layout"]
