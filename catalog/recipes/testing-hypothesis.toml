@@ -1,0 +1,8 @@
+description = "Property-based tests: adds hypothesis to the dev group and ignores its folder of examples; the topic property-based-testing has the pattern"
+
+[[tools]]
+manager = "uv"
+packages = ["hypothesis"]
+
+[[gitignore]]
+lines = [".hypothesis/"]

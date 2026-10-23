@@ -211,6 +211,10 @@ turns it on names the package of the project, so the recipe writes no `tests/con
 topic `async-blocking` (`botica refs show async-blocking`) has the fixture to copy. Name the recipe
 only for a project that runs asyncio.
 
+`testing-hypothesis` adds `hypothesis` to the `dev` group and `.hypothesis/` to `.gitignore`, and
+has no other step. The topic `property-based-testing` (`botica refs show property-based-testing`)
+has the tests to copy.
+
 What the recipes cannot say about themselves:
 
 - A recipe has no condition, so `ci-docker` and `repo-public` add `docker.yml` also to a
