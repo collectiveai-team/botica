@@ -245,6 +245,18 @@ wheels = [
 ]
 
 [[package]]
+name = "blockbuster"
+version = "1.5.29"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "forbiddenfruit", marker = "implementation_name == 'cpython'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/38/f8/4ce64776d7e9e5a4ba17055a665e2dc602fd4edf36b847d4ed30820a4be9/blockbuster-1.5.29.tar.gz", hash = "sha256:0fd507a4a115eb93eddf580d7a0c29f0a8ef2d447ded7f853d0cf9ab1cf9787d", size = 100653, upload-time = "2026-10-09T10:13:34.079Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/38/e4/f01196a971c8e137fd8b2d6f8eb4223955d2e749dde0d5ea0044ccc75af7/blockbuster-1.5.29-py3-none-any.whl", hash = "sha256:b32b9fdb9d2c535e7d7920bce8561e2877ce604a609ac677eb174b2ab59f67bc", size = 13647, upload-time = "2026-10-09T10:13:32.613Z" },
+]
+
+[[package]]
 name = "botica"
 source = { virtual = "." }
 
@@ -261,6 +273,7 @@ dev = [
     { name = "ruff", marker = "python_full_version >= '3.11'" },
 ]
 references = [
+    { name = "blockbuster", marker = "python_full_version >= '3.14'" },
     { name = "fastapi", marker = "python_full_version >= '3.14'" },
     { name = "httpx", marker = "python_full_version >= '3.14'" },
     { name = "prefect", marker = "python_full_version >= '3.14'" },
@@ -288,6 +301,7 @@ dev = [
     { name = "ruff", marker = "python_full_version >= '3.11'", specifier = ">=0.17.0" },
 ]
 references = [
+    { name = "blockbuster", marker = "python_full_version >= '3.14'", specifier = "==1.5.29" },
     { name = "fastapi", marker = "python_full_version >= '3.14'", specifier = "==0.153.0" },
     { name = "httpx", marker = "python_full_version >= '3.14'", specifier = "==0.28.1" },
     { name = "prefect", marker = "python_full_version >= '3.14'", specifier = "==3.8.8" },
@@ -813,6 +827,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/0a/69/8461d4c25490b5efe
 wheels = [
     { url = "https://files.pythonhosted.org/packages/93/41/c2c2c10be9068304a522dd64893916b5b21549af084ea942c26388aaa5b0/fastapi-0.153.0-py3-none-any.whl", hash = "sha256:77fbc9f41d2e5cd81f0c0a20482e627f8ebbb9b9005ac7586e415ee69dfea4ec", size = 146107, upload-time = "2026-10-20T13:47:38.295Z" },
 ]
+
+[[package]]
+name = "forbiddenfruit"
+version = "0.1.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e6/79/d4f20e91327c98096d605646bdc6a5ffedae820f38d378d3515c42ec5e60/forbiddenfruit-0.1.4.tar.gz", hash = "sha256:e3f7e66561a29ae129aac139a85d610dbf3dd896128187ed5454b6421f624253", size = 43756, upload-time = "2021-01-16T21:03:35.401Z" }
 
 [[package]]
 name = "fsspec"

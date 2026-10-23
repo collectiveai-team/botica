@@ -55,6 +55,7 @@ dev = [
 # versions are fixed: they are the ones the code is written and tested against, and
 # `scripts/check_references.sh` runs with this group.
 references = [
+  "blockbuster==1.5.29",
   "fastapi==0.153.0",
   "httpx==0.28.1",
   "prefect==3.8.8",
