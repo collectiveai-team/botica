@@ -1,0 +1,21 @@
+title = "Blocking calls in the event loop, found by blockbuster"
+
+[[references]]
+file = "code/tests/conftest.py"
+anchor = "def blockbuster"
+note = "the fixture: active in every test, and scoped to the package so that the blocking calls of pytest and of the tests do not fail"
+
+[[references]]
+file = "code/app/core/reports.py"
+anchor = "async def get_report"
+note = "the async function runs the blocking read in a thread with `asyncio.to_thread`"
+
+[[references]]
+file = "code/tests/test_reports.py"
+anchor = "def test_a_blocking_call_of_the_package_inside_the_event_loop_fails"
+note = "the same read called inside the event loop raises `BlockingError`"
+
+[[references]]
+url = "https://github.com/cbornet/blockbuster#readme"
+note = "the version is bounded on the minor: a minor version can add functions that blockbuster checks"
+quote = "Breaking changes such as new rules added may be introduced between minor versions, but not between patch versions."

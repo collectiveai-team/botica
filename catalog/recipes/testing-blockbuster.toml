@@ -1,0 +1,5 @@
+description = "Blocking calls in the event loop (CES-127): adds blockbuster to the dev group, bounded on the minor; the fixture to copy into tests/conftest.py is in the topic async-blocking"
+
+[[tools]]
+manager = "uv"
+packages = ["blockbuster>=1.5,<1.6"]

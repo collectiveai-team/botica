@@ -71,7 +71,8 @@ fn list_adds_the_recipes_of_the_project_in_the_order_of_their_ids() {
             "python-test-smells",
             "repo-private",
             "repo-public",
-            "secrets-varlock"
+            "secrets-varlock",
+            "testing-blockbuster"
         ],
         "{text}"
     );

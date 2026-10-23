@@ -11,7 +11,7 @@ fn the_binary_carries_its_recipes_with_a_description_and_the_origin_built_in() {
     let recipes = embedded();
 
     let ids: Vec<&str> = recipes.recipes().iter().map(|r| r.id.as_str()).collect();
-    assert_eq!(ids.len(), 20);
+    assert_eq!(ids.len(), 21);
     for recipe in recipes.recipes() {
         assert_eq!(recipe.origin, Origin::BuiltIn);
         assert!(
@@ -199,7 +199,8 @@ fn the_binary_carries_a_recipe_for_each_agent_and_each_piece_of_ci() {
             "python-test-smells",
             "repo-private",
             "repo-public",
-            "secrets-varlock"
+            "secrets-varlock",
+            "testing-blockbuster"
         ]
     );
 
@@ -359,4 +360,22 @@ fn a_public_repository_has_the_dependency_review_and_the_docker_workflows_and_a_
             .extends,
         ["ci"]
     );
+}
+
+#[test]
+fn testing_blockbuster_adds_blockbuster_bounded_on_the_minor_and_nothing_else() {
+    let recipes = embedded();
+
+    let blockbuster = recipes
+        .recipe("testing-blockbuster")
+        .expect("testing-blockbuster");
+    let tools: Vec<String> = blockbuster
+        .tools
+        .iter()
+        .map(|t| format!("{} {:?} {:?}", t.manager, t.group, t.packages))
+        .collect();
+    assert_eq!(tools, ["uv None [\"blockbuster>=1.5,<1.6\"]"]);
+    assert!(blockbuster.extends.is_empty() && blockbuster.rules.is_empty());
+    assert!(blockbuster.files.is_empty() && blockbuster.sections.is_empty());
+    assert!(blockbuster.gitignore.is_empty() && blockbuster.skills.is_empty());
 }
