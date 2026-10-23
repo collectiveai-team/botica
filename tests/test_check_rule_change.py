@@ -10,6 +10,11 @@ import importlib.util
 import subprocess
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pytest
+
 
 _SPEC = importlib.util.spec_from_file_location(
     "check_rule_change", Path(__file__).resolve().parents[1] / "scripts" / "check_rule_change.py"
@@ -168,7 +173,7 @@ def test_the_changes_of_git_are_read_as_status_and_path_with_a_rename_as_two_cha
 
 
 def git(root: Path, *args: str) -> None:
-    subprocess.run(
+    subprocess.run(  # botica: ignore[test-no-subprocess] -- the script under test drives git
         ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
         cwd=root,
         check=True,
@@ -190,7 +195,9 @@ def branch_that_adds_a_rule_and_edits_the_engine(root: Path) -> None:
     git(root, "commit", "-q", "-m", "feature")
 
 
-def test_a_branch_outside_the_contract_fails_unless_it_is_acknowledged(tmp_path: Path, capsys):
+def test_a_branch_outside_the_contract_fails_unless_it_is_acknowledged(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     branch_that_adds_a_rule_and_edits_the_engine(tmp_path)
 
     assert crc.check_branch("main", tmp_path) == 1
@@ -258,7 +265,9 @@ def branch_that_touches_standards(root: Path, *paths: str) -> None:
     git(root, "commit", "-q", "-m", "feature")
 
 
-def test_a_branch_cannot_touch_two_standards_and_no_label_changes_that(tmp_path: Path, capsys):
+def test_a_branch_cannot_touch_two_standards_and_no_label_changes_that(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     branch_that_touches_standards(
         tmp_path, "standards/CES/71-keep-files-small.md", "standards/CES/79-no-raw-dicts.md"
     )
@@ -300,7 +309,9 @@ def test_the_same_number_in_two_sets_or_an_index_is_not_a_duplicate(tmp_path: Pa
     assert crc.duplicated_standards(tmp_path) == []
 
 
-def test_a_branch_cannot_add_a_standard_with_a_number_that_is_taken(tmp_path: Path, capsys):
+def test_a_branch_cannot_add_a_standard_with_a_number_that_is_taken(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     branch_that_touches_standards(
         tmp_path, "standards/CES/120-keep-files-small.md", "standards/CES/120-keep-files-short.md"
     )
@@ -479,7 +490,9 @@ def test_a_branch_that_adds_a_rule_and_adopts_it_passes(tmp_path: Path):
     assert crc.check_branch("main", tmp_path) == 0
 
 
-def test_a_branch_that_adopts_a_rule_and_edits_code_fails(tmp_path: Path, capsys):
+def test_a_branch_that_adopts_a_rule_and_edits_code_fails(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     branch_that_adds_a_rule_and_adopts_it(tmp_path, "x = 2  # botica: ignore[no-foo]\n")
 
     assert crc.check_branch("main", tmp_path) == 1

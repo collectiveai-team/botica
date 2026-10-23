@@ -46,9 +46,11 @@ strip = true
 [dependency-groups]
 dev = [
   "cyclopts>=5.2.0",
-  "pytest>=8.0",
+  "pytest>=9.0",
   # CES-111
   "pytest-randomly>=4.1.0",
+  "pytest-socket>=0.8.1",
+  "pytest-timeout>=2.4.0",
   "ruff>=0.17.0",
 ]
 # The code of the built-in topics, under `catalog/references/<topic>/code/`, and its tests. The
@@ -255,6 +257,15 @@ select = [
   "cognitive-complexity",
   "ruff-selection",
   "uv-cooldown",
+  "pytest-strict",
+  "test-no-subprocess",
+  "test-no-network",
+  "docstring-matches-signature",
+  "no-tautological-assert",
+  "pyrefly-strict",
+  "no-type-cast",
+  "dependabot-cooldown",
+  "cargo-cooldown",
   "separate-orchestration",
   "architecture-vocabulary",
   "pr-small-by-intent",
@@ -301,6 +312,8 @@ extend-ignores = ["crates/botica-core/src/external_config/ruff_rules.tsv"]
 
 [tool.pyrefly]
 python-version = "3.11"
+# CES-58: every value has a type the checker knows.
+preset = "strict"
 search-path = [".", "tests"]  # the tests import the support module of the site tests
 project-excludes = [
   "**/node_modules",
@@ -322,8 +335,20 @@ project-excludes = [
 use-ignore-files = false
 disable-project-excludes-heuristics = true
 
+[tool.pyrefly.errors]
+explicit-any = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# CES-125 and CES-64: pytest fails a run on an unknown marker or setting, a passing xfail or an
+# empty parametrize, and the tests reach no network.
+strict_config = true
+strict_markers = true
+strict_xfail = true
+strict_parametrization_ids = true
+empty_parameter_set_mark = "fail_at_collect"
+addopts = ["--disable-socket", "--allow-unix-socket"]
+required_plugins = ["pytest-socket", "pytest-timeout"]
 # The markers of the tests of the topics: `integration` and `e2e` get the network (CES-64).
 markers = [
   "integration: tests requiring external services or multi-component interaction",
