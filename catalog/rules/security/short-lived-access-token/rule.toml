@@ -1,0 +1,19 @@
+id = "short-lived-access-token"
+code = "BTSEC010"
+standard = "CES-121"
+summary = "An access token that the server issues expires, after a number of seconds that the settings read, with a short default"
+status = "preview"
+tags = ["auth", "jwt"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "judgment"
+languages = ["python", "typescript", "tsx", "javascript", "go", "rust"]
+when = "edit"
+why-not-deterministic = "A lifetime is a value that reaches the call that signs a token through settings, constants and arguments, in a unit that each library spells its own way (`timedelta`, `\"7d\"`, `time.Hour`, a number of seconds), and the same call signs access tokens and refresh tokens: whether the token is an access token and where its lifetime comes from needs the code around the call."
+
+[implementations.question]
+type = "boolean"
+instructions = "Read the code that issues tokens in the file: the call that signs a token and the expiry it sets (`exp`, `expiresIn`, `setExpirationTime`, `ExpiresAt`). An access token is a token that authorizes requests on its own. Its lifetime should be a number of seconds that a setting reads from the variable `ACCESS_TOKEN_TTL_SECONDS` (after a prefix of the settings, such as `APP_`), with a short default such as 900; the value that a project sets is its own choice. Is an access token issued with no expiry, with an expiry that a setting can turn off (`None` or `0` meaning no expiry), or with a lifetime written in the code instead of read from the settings? A refresh token that the server stores and replaces at each use, and a token that the file only verifies, do not break the rule."
+criteria = { true = "an access token is issued with no expiry, with an expiry that can be turned off, or with a lifetime written in the code", false = "each access token issued in the file expires after a lifetime read from the settings, or the file issues no access token" }
