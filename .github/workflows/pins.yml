@@ -3,7 +3,8 @@ name: pins
 # Dependabot moves the actions of .github/workflows/ and the packages of uv.lock. It reads the hooks
 # of .pre-commit-config.yaml only, so the `rev` of each hook of prek.toml and of the templates of
 # the recipes, the actions of the templates and the version of uv that setup-uv installs are moved
-# here: `prek update` with the same cooldown as dependabot.yml and no prerelease, then
+# here: `prek update` with the same cooldown as dependabot.yml and no prerelease, through
+# scripts/bump_prek_revs.py (a template holds parameters that prek cannot parse), then
 # scripts/sync_pins.py, then one pull request on the branch `chore/pins`.
 #
 # The mirror of botica is left out: the release moves it (botica-release.yml, job `bump`).
@@ -46,14 +47,9 @@ jobs:
         run: uv sync --frozen
 
       - name: Update the hooks of prek.toml and of the templates
-        run: |
-          for config in prek.toml catalog/recipes/files/prek-base.toml catalog/recipes/sections/prek-*.toml; do
-            if grep -q '^rev = ' "$config"; then
-              uvx prek update --config "$config" --cooldown-days 7 \
-                --exclude-tag '*-rc*' --exclude-tag '*-beta*' --exclude-tag '*-alpha*' \
-                --exclude-repo https://github.com/collectiveai-team/botica-pre-commit
-            fi
-          done
+        run: >-
+          uv run python scripts/bump_prek_revs.py
+          prek.toml catalog/recipes/files/prek-base.toml catalog/recipes/sections/prek-*.toml
 
       - name: Copy the pins into the templates
         run: uv run python scripts/sync_pins.py
