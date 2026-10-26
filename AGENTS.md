@@ -47,8 +47,9 @@ its SDKs and its benchmarks). The binary embeds `catalog/rules/`, `catalog/refer
   the upstream catalog of skills that `base` pins; the `skills-drift` workflow runs it. `check_skills.sh`
   runs the skill validator over `skills/`; the `skill-validator` hook of prek runs it.
   `check_rule_change.py` flags a change that adds a botica rule and touches more than that rule
-  needs; the `rule-contract` job of `ci.yml` runs it. `build_site.sh` builds the standards site. `sync_pins.py` copies the pins of the actions and of uv into the
-  templates of the recipes; the weekly `pins` workflow runs it after `prek update` and opens a pull
+  needs; the `rule-contract` job of `ci.yml` runs it. `build_site.sh` builds the standards site. `bump_prek_revs.py` runs `prek update` on a copy of each template with its parameters
+  replaced, since prek cannot parse them all, and writes the new `rev` lines back. `sync_pins.py` copies the pins of the actions and of uv into the
+  templates of the recipes; the weekly `pins` workflow runs both and opens a pull
   request.
 
 Every agent reads `AGENTS.md`; skills install once into `.agents/skills`.
