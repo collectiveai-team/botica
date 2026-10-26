@@ -1,0 +1,27 @@
+id = "no-client-page"
+code = "BTARCH006"
+standard = "CES-0"
+summary = "A page or a layout of Next.js stays a Server Component"
+status = "preview"
+tags = ["nextjs"]
+files = ["**/app/**/page.*", "**/app/**/layout.*"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["tsx"]
+file = "tsx.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["typescript"]
+file = "typescript.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["javascript"]
+file = "javascript.yml"

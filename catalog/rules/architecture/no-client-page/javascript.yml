@@ -1,0 +1,14 @@
+id: no-client-page
+language: javascript
+severity: warning
+message: "A page or a layout with the \"use client\" directive puts the page and every module it imports into the JavaScript that the browser loads: keep it a Server Component, move the interactive part to a component of the segment that starts with \"use client\", and pass it the data as props."
+rule:
+  kind: expression_statement
+  regex: "^[\"']use client[\"']"
+  nthChild:
+    position: 1
+    ofRule:
+      not:
+        kind: comment
+  inside:
+    kind: program
