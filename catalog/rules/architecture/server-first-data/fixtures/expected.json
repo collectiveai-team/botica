@@ -1,0 +1,6 @@
+{
+  "verdicts": [
+    { "file": "valid/order-search.tsx", "band": "clear" },
+    { "file": "invalid/order-list.tsx", "band": "act" }
+  ]
+}

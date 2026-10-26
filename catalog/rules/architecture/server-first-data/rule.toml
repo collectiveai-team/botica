@@ -1,0 +1,21 @@
+id = "server-first-data"
+code = "BTARCH007"
+standard = "CES-0"
+summary = "A Next.js app loads its data on the server and passes it as props"
+status = "preview"
+tags = ["nextjs"]
+files = ["**/*.tsx", "**/*.jsx", "**/*.ts", "**/*.js"]
+ignores = ["**/tests/**", "**/__tests__/**", "**/*.test.*", "**/*.spec.*"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "judgment"
+languages = ["typescript", "javascript"]
+when = "edit"
+why-not-deterministic = "A fetch in a Client Component is right when it depends on what the user does after the first render, such as a search as the user types, and wrong when the server could have loaded the same data; telling them apart needs a reading of the component."
+
+[implementations.question]
+type = "boolean"
+instructions = "Read the file only if it starts with the \"use client\" directive. Answer true only when the component loads data (fetch, an API client, a query in useEffect) that a Server Component or a Route Handler could load and pass as props, or calls a third-party API that needs a credential. These do not break the rule: data that depends on input of the user after the first render (search as the user types, infinite scroll), polling or subscriptions, a mutation from a form or a handler, and a call to a Route Handler of the same app."
+criteria = { true = "a client component loads data that the server could load, or calls a third-party API with a credential", false = "the data is loaded on the server, or depends on interaction after the first render" }
