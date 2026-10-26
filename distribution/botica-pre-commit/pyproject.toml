@@ -6,11 +6,11 @@ build-backend = "setuptools.build_meta"
 # `botica` wheel of the exact same version. Keep the two versions equal.
 [project]
 name = "botica-pre-commit"
-version = "0.15.0"
+version = "0.15.1"
 description = "Mirror of botica for prek and pre-commit"
 requires-python = ">=3.9"
 license = "MIT"
-dependencies = ["botica==0.15.0"]
+dependencies = ["botica==0.15.1"]
 
 [tool.setuptools]
 packages = []
