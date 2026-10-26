@@ -70,3 +70,29 @@ fn the_docker_workflow_pins_the_major_versions_that_coro_runs() {
         assert!(found[0] >= vec![major], "{action} pins {:?}", found[0]);
     }
 }
+
+#[test]
+fn the_docker_workflow_attests_the_pushed_digest_in_a_public_repository_only() {
+    let text = workflow("ci-docker", "docker.yml");
+    let step = text
+        .split("- name: ")
+        .find(|step| step.contains("uses: actions/attest@"))
+        .expect("a step attests the image");
+
+    assert_eq!(pins(&text, "actions/attest"), [vec![4]]);
+    assert!(
+        step.contains("if: ${{ !github.event.repository.private }}"),
+        "{step}"
+    );
+    assert!(
+        step.contains("subject-digest: ${{ steps.push.outputs.digest }}"),
+        "{step}"
+    );
+    for permission in [
+        "id-token: write",
+        "attestations: write",
+        "artifact-metadata: write",
+    ] {
+        assert!(text.contains(permission), "{permission}");
+    }
+}

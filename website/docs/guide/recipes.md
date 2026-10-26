@@ -263,7 +263,9 @@ What the recipes cannot say about themselves:
   `.github/dependabot.yml` and `.github/workflows/osv-scanner.yml`, so a repository names one of
   them.
 - `repo-private` leaves out the dependency review, which needs a paid plan on a private
-  repository, and `docker.yml`, which pushes to GHCR and bills it. `ci-automerge-public` needs the
+  repository, and `docker.yml`, which pushes to GHCR and bills it. `docker.yml` signs a build
+  provenance attestation of the image in a public repository only: GitHub attests artifacts of a
+  private repository on Enterprise Cloud. `ci-automerge-public` needs the
   setting "Allow auto-merge" and a branch protection rule with required checks; without a required
   check the merge is immediate. `ci-automerge-private` is for a repository with no branch protection
   (a private one on the Free plan).
