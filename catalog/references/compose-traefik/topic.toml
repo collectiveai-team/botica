@@ -1,0 +1,44 @@
+title = "Traefik in front of a Compose stack, with Let's Encrypt and a socket proxy"
+
+[[references]]
+file = "code/compose.prod.yaml"
+lines = "2-30"
+anchor = "--providers.docker.exposedbydefault=false"
+note = "Traefik: the Docker API through the socket proxy, only the containers with `traefik.enable=true`, HTTP redirected to HTTPS, and certificates of Let's Encrypt kept in a volume"
+
+[[references]]
+file = "code/compose.prod.yaml"
+lines = "32-40"
+anchor = "CONTAINERS: 1"
+note = "the socket proxy: the only service that mounts the Docker socket, read-only API calls on the containers, on an internal network"
+
+[[references]]
+file = "code/compose.prod.yaml"
+lines = "42-58"
+anchor = "traefik.http.routers.app.tls.certresolver=le"
+note = "the labels that route a host name to a service over HTTPS, and the networks and the volume of the file"
+
+[[references]]
+url = "https://doc.traefik.io/traefik/reference/install-configuration/providers/docker/#docker-api-access"
+note = "why Traefik does not get the Docker socket: the Docker API without restriction gives the host to an attacker of Traefik"
+quote = "Accessing the Docker API without any restriction is a security concern: If Traefik is attacked, then the attacker might get access to the underlying host."
+
+[[references]]
+url = "https://doc.traefik.io/traefik/reference/install-configuration/providers/docker/#opt-providers-docker-exposedByDefault"
+note = "with `exposedByDefault` false, a container without the label `traefik.enable=true` gets no route"
+
+[[references]]
+url = "https://doc.traefik.io/traefik/reference/install-configuration/tls/certificate-resolvers/acme/#httpchallenge"
+note = "the HTTP-01 challenge of Let's Encrypt on the entry point `web`, which has to be reachable on port 80"
+
+[[references]]
+url = "https://doc.traefik.io/traefik/reference/install-configuration/entrypoints/#opt-http-redirections-entryPoint-to"
+note = "the redirection of every request of an entry point to another one"
+
+[[references]]
+url = "https://github.com/Tecnativa/docker-socket-proxy#grant-or-revoke-access-to-certain-api-sections"
+note = "the variables of the socket proxy: `1` grants a section of the API, `0` revokes it, and `POST` set to 0 leaves the API read-only"
+
+[[references]]
+url = "https://docs.docker.com/compose/how-tos/production/#modify-your-compose-file-for-production"
+note = "a second Compose file applied over `compose.yaml` with `-f` for production"

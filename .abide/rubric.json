@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-26T14:22:25Z",
-  "compiledBy": "botica 0.15.0",
+  "compiledAt": "2026-10-26T15:34:42Z",
+  "compiledBy": "botica 0.15.2",
   "manual": true,
   "sources": [
     {
@@ -526,6 +526,8 @@
         "catalog/references/api-schemas/README.md",
         "catalog/references/async-blocking/README.md",
         "catalog/references/auth/README.md",
+        "catalog/references/compose-traefik/README.md",
+        "catalog/references/compose/README.md",
         "catalog/references/database/README.md",
         "catalog/references/in-memory-adapters/README.md",
         "catalog/references/prefect/README.md",
@@ -751,6 +753,10 @@
         "catalog/references/auth/code/web/app/**",
         "catalog/references/auth/code/web/lib/**",
         "catalog/references/auth/code/web/test/**",
+        "catalog/references/compose-traefik/topic.toml",
+        "catalog/references/compose-traefik/code/**",
+        "catalog/references/compose/topic.toml",
+        "catalog/references/compose/code/**",
         "catalog/references/database/topic.toml",
         "catalog/references/database/code/app/api/**",
         "catalog/references/database/code/app/core/**",
@@ -1063,6 +1069,8 @@
         "catalog/references/auth/code/web/app/**",
         "catalog/references/auth/code/web/lib/**",
         "catalog/references/auth/code/web/test/**",
+        "catalog/references/compose-traefik/README.md",
+        "catalog/references/compose/README.md",
         "catalog/references/database/README.md",
         "catalog/references/database/code/app/api/**",
         "catalog/references/database/code/app/core/**",

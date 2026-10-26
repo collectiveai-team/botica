@@ -1,6 +1,7 @@
 ---
 id: CES-114
 title: Dockerfile and Compose lint
+references: ["compose", "compose-traefik"]
 ---
 
 ## Directive

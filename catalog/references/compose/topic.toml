@@ -1,0 +1,49 @@
+title = "Docker Compose for local development and a single host"
+
+[[references]]
+file = "code/compose.yaml"
+lines = "1-17"
+anchor = "condition: service_healthy"
+note = "the service of the application: a pinned image, the settings from `.env`, a secret, a healthcheck, and a start that waits for a healthy database"
+
+[[references]]
+file = "code/compose.yaml"
+lines = "19-35"
+anchor = "pg_isready"
+note = "the database: a pinned image, the password from a secret file, the data in a named volume, and the healthcheck that `service_healthy` waits for"
+
+[[references]]
+file = "code/compose.yaml"
+lines = "37-53"
+anchor = "profiles: [tools]"
+note = "a tool that starts only with `--profile tools`, and the secrets and the volume that the file declares"
+
+[[references]]
+file = "code/compose.override.yaml"
+anchor = "develop:"
+note = "the override that Compose reads on its own in local development: the build, a port on 127.0.0.1 and `develop.watch`"
+
+[[references]]
+url = "https://docs.docker.com/compose/how-tos/startup-order/#control-startup"
+note = "`depends_on` with `condition: service_healthy`: Compose waits for the healthcheck of the dependency"
+quote = "On startup, Compose does not wait until a container is \"ready\", only until it's running."
+
+[[references]]
+url = "https://docs.docker.com/compose/how-tos/use-secrets/#use-secrets"
+note = "a secret is a file under `/run/secrets/` of the container, granted to each service that names it"
+
+[[references]]
+url = "https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables/#use-the-env_file-attribute"
+note = "`env_file`: the variables of a file that stays out of git"
+
+[[references]]
+url = "https://docs.docker.com/compose/how-tos/profiles/#assigning-profiles-to-services"
+note = "a service with `profiles` starts only when one of its profiles is active"
+
+[[references]]
+url = "https://docs.docker.com/compose/how-tos/file-watch/#sync--restart"
+note = "`develop.watch`: `sync+restart` copies the changed files into the container and restarts it, `rebuild` builds the image again"
+
+[[references]]
+url = "https://docs.pydantic.dev/latest/concepts/pydantic_settings/#use-case-docker-secrets"
+note = "pydantic-settings reads the files of `/run/secrets` with `secrets_dir`"

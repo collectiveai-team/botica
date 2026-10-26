@@ -17,6 +17,10 @@
 # every file of `code/`, so nothing is built inside it: `go vet` and `go test` leave their output
 # in the cache of Go, `npm ci`, `npm test` and `npm run typecheck` run in a copy of the package
 # under `.tmp/references-node/`, and cargo writes to `.tmp/references-rust/`.
+#
+# A Compose file of a topic, a `compose*.yaml` or `docker-compose*.yaml` under `code/`, passes
+# `docker compose config` with the flags of the hook `docker-compose-config` (CES-114): alone, and
+# `compose.yaml` together with the `compose.override.yaml` beside it, as Compose reads them.
 set -u
 
 export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-.tmp/references-venv}"
@@ -72,5 +76,20 @@ for crate in catalog/references/*/code/rust; do
             cargo clippy --locked --all-targets --target-dir "$target" -- -D warnings &&
             cargo test --locked --target-dir "$target"
     ) || status=1
+done
+compose_config() {
+    docker compose "$@" config --quiet --no-interpolate --no-env-resolution
+}
+for file in $(find catalog/references/*/code -type f \
+    \( -name 'compose*.yaml' -o -name 'compose*.yml' -o -name 'docker-compose*.yaml' \
+    -o -name 'docker-compose*.yml' \) | sort); do
+    echo "== ${file#catalog/references/}"
+    compose_config --file "$file" || status=1
+done
+for base in catalog/references/*/code/compose.yaml; do
+    override=${base%.yaml}.override.yaml
+    [ -f "$base" ] && [ -f "$override" ] || continue
+    echo "== ${base#catalog/references/} with compose.override.yaml"
+    compose_config --file "$base" --file "$override" || status=1
 done
 exit "$status"
