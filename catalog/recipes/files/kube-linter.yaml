@@ -1,0 +1,72 @@
+# CES-0. kube-linter also runs the checks it turns on by default: run-as-non-root,
+# no-read-only-root-fs, drop-net-raw-capability, privilege-escalation-container,
+# unset-cpu-requirements (a CPU request), unset-memory-requirements (a memory limit) and others.
+# `botica refs show k8s-manifests` shows a Deployment that passes.
+checks:
+  ignorePaths:
+    - "**/node_modules/**"
+    - "**/.venv/**"
+  include:
+    - dangling-horizontalpodautoscaler
+customChecks:
+  # no-liveness-probe and no-readiness-probe also flag a Job and a CronJob, which run to
+  # completion and take no traffic. These two run the same templates on long-running workloads.
+  - name: long-running-no-liveness-probe
+    description: Indicates when a container of a long-running workload has no liveness probe.
+    remediation: Specify a livenessProbe in the container.
+    scope:
+      objectKinds: [Deployment, StatefulSet, DaemonSet]
+    template: liveness-probe
+  - name: long-running-no-readiness-probe
+    description: Indicates when a container of a long-running workload has no readiness probe.
+    remediation: Specify a readinessProbe in the container.
+    scope:
+      objectKinds: [Deployment, StatefulSet, DaemonSet]
+    template: readiness-probe
+  # A CEL expression returns the message of the finding, or '' when the object passes.
+  - name: long-running-no-startup-probe
+    description: Indicates when a container of a long-running workload has no startup probe.
+    remediation: >-
+      Specify a startupProbe in the container, so that the liveness probe starts once the
+      application is up.
+    scope:
+      objectKinds: [Deployment, StatefulSet, DaemonSet]
+    template: cel-expression
+    params:
+      check: >-
+        [object.spec.template.spec.containers.filter(c, !has(c.startupProbe))]
+        .map(l, size(l) == 0 ? '' : 'container "' + l[0].name + '" has no startupProbe')[0]
+  # drop-net-raw-capability reads only a container that declares capabilities; this check also
+  # flags a container that declares none.
+  - name: drop-all-capabilities
+    description: Indicates when a container does not drop all capabilities.
+    remediation: >-
+      Set securityContext.capabilities.drop to ["ALL"] in the container and add back only the
+      capabilities it needs, such as NET_BIND_SERVICE.
+    scope:
+      objectKinds: [DeploymentLike]
+    template: cel-expression
+    params:
+      check: >-
+        [object.kind == 'CronJob' ? object.spec.jobTemplate.spec.template.spec :
+        object.kind == 'Pod' ? object.spec : object.spec.template.spec]
+        .map(s, s.containers + (has(s.initContainers) ? s.initContainers : []))
+        .map(cs, cs.filter(c, !(has(c.securityContext) && has(c.securityContext.capabilities) &&
+        has(c.securityContext.capabilities.drop) && 'ALL' in c.securityContext.capabilities.drop)))
+        .map(l, size(l) == 0 ? '' : 'container "' + l[0].name + '" does not drop ALL capabilities')[0]
+  - name: autoscaled-deployment-has-hpa
+    description: Indicates when a Deployment labelled autoscale=true has no HorizontalPodAutoscaler.
+    remediation: >-
+      Add a HorizontalPodAutoscaler whose scaleTargetRef names the Deployment, or remove the
+      label autoscale=true.
+    scope:
+      objectKinds: [Deployment]
+    template: cel-expression
+    params:
+      check: >-
+        has(object.metadata.labels) && 'autoscale' in object.metadata.labels &&
+        object.metadata.labels['autoscale'] == 'true' &&
+        !objects.exists(o, o.kind == 'HorizontalPodAutoscaler' &&
+        o.spec.scaleTargetRef.kind == 'Deployment' &&
+        o.spec.scaleTargetRef.name == object.metadata.name)
+        ? 'the Deployment is labelled autoscale=true and no HorizontalPodAutoscaler targets it' : ''

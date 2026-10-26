@@ -1,0 +1,11 @@
+description = "Kubernetes manifests: kube-linter as a hook of prek, with the checks of the security context, the resources and the probes"
+rules = ["k8s-workload-hardening"]
+
+[[files]]
+path = ".kube-linter.yaml"
+template = "files/kube-linter.yaml"
+
+[[sections]]
+path = "prek.toml"
+marker = "# MARK: kube-linter"
+template = "sections/prek-kube-linter.toml"
