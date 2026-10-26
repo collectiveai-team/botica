@@ -36,6 +36,7 @@ pub struct Resolution {
     external: PathMatcher,
     exclude: PathMatcher,
     include: PathMatcher,
+    scope: Option<Scope>,
 }
 
 pub(crate) type Selectors = Vec<(String, Selector)>;
@@ -83,6 +84,7 @@ impl Resolution {
             external: matcher_of(&config.external, "external")?,
             exclude: matcher_of(&config.extend_exclude, "extend-exclude")?,
             include: matcher_of(&config.extend_include, "extend-include")?,
+            scope: None,
         };
         resolution.apply_replacements(config)?;
         Ok(resolution)
@@ -122,10 +124,12 @@ impl Resolution {
         Ok(())
     }
 
-    /// Keeps active only the rules of this scope (`None` keeps them all). A rule that was not
-    /// active keeps the reason it had, and a rule with no scope (`botica lint` does not run it: a
-    /// judge or another tool does) stays as it is.
-    pub fn only_scope(mut self, scope: Option<Scope>) -> Self {
+    /// Keeps active only the rules of this scope (`None` keeps them all) and the rules of
+    /// `reported_too`, which a pass of this scope also reports. A rule that was not active keeps
+    /// the reason it had, and a rule with no scope (`botica lint` does not run it: a judge or
+    /// another tool does) stays as it is.
+    pub fn only_scope(mut self, scope: Option<Scope>, reported_too: &[&str]) -> Self {
+        self.scope = scope;
         let Some(scope) = scope else {
             return self;
         };
@@ -135,7 +139,9 @@ impl Resolution {
             Scope::Commit => "commit",
         };
         for entry in self.entries.iter_mut().filter(|entry| entry.active) {
-            if entry.rule.scope.is_some_and(|own| own != scope) {
+            if entry.rule.scope.is_some_and(|own| own != scope)
+                && !reported_too.contains(&entry.rule.id.as_str())
+            {
                 entry.active = false;
                 entry.reason = Reason::OutOfScope(name.to_owned());
             }
@@ -184,6 +190,11 @@ impl Resolution {
     /// Whether a walk looking for what `extend-include` asks for should enter this directory.
     pub fn include_may_reach(&self, dir: &str) -> bool {
         self.include.may_match_below(dir)
+    }
+
+    /// The scope `only_scope` kept, `None` when the run covers every scope.
+    pub fn scope(&self) -> Option<Scope> {
+        self.scope
     }
 
     pub fn entries(&self) -> &[Entry] {

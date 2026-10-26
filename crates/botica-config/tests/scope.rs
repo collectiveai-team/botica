@@ -48,7 +48,7 @@ fn active(scope: Option<Scope>) -> (Vec<String>, Resolution) {
     let catalog = catalog();
     let resolution = Resolution::new(&Config::default(), &catalog)
         .expect("valid config")
-        .only_scope(scope);
+        .only_scope(scope, &[]);
     let mut slugs: Vec<String> = resolution
         .entries()
         .iter()
@@ -87,9 +87,18 @@ fn a_rule_that_was_already_inactive_keeps_its_reason() {
     let config: Config = toml::from_str("ignore = [\"per-file\"]\n").expect("config");
     let resolution = Resolution::new(&config, &catalog)
         .expect("valid config")
-        .only_scope(Some(Scope::Project));
+        .only_scope(Some(Scope::Project), &[]);
     assert_eq!(
         resolution.entry("per-file").expect("rule").reason,
         Reason::IgnoredBy("per-file".to_owned())
     );
+}
+
+#[test]
+fn a_rule_of_another_scope_that_the_scope_reports_too_stays_active() {
+    let resolution = Resolution::new(&Config::default(), &catalog())
+        .expect("valid config")
+        .only_scope(Some(Scope::Project), &["per-file"]);
+    assert!(resolution.entry("per-file").expect("rule").active);
+    assert_eq!(resolution.scope(), Some(Scope::Project));
 }

@@ -20,7 +20,7 @@ use catalogs::ProjectCatalogs;
 pub use args::ProjectArgs;
 pub use natives::natives;
 pub use paths::{exclusion, extension_paths, extensions_at, inclusion, planner, verdicts};
-pub use policy::{keep_judged, rule_docs, suppression_policy};
+pub use policy::{keep_judged, project_pass_policy, rule_docs, suppression_policy};
 
 pub struct Project {
     pub loaded: Loaded,
@@ -86,7 +86,9 @@ pub fn load(args: &ProjectArgs) -> Result<Project> {
     loaded.config = loaded
         .config
         .with_command_line(&catalog, &args.command_line())?;
-    let resolution = Resolution::new(&loaded.config, &catalog)?.only_scope(args.scope.only());
+    let scope = args.scope.only();
+    let resolution =
+        Resolution::new(&loaded.config, &catalog)?.only_scope(scope, policy::reported_too(scope));
     Ok(Project {
         loaded,
         catalog,
