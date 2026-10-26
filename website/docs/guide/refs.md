@@ -51,7 +51,8 @@ quote = "Each logger with its context is immutable."   # optional: the passage, 
 A reference points at a fragment. It has a `file`, a `path` or a `url`. A `file` is a file under
 `code/` of the topic, written for the topic, so it shows the whole file unless it names `lines`; its
 `lines` and `anchor` are checked when the topic loads, so a built-in topic whose code moved fails
-the tests of botica. CI lints, type-checks and tests that code (`scripts/check_references.sh`). A
+the tests of botica. CI lints, type-checks and tests that code, and checks its Compose files with
+`docker compose config` (`scripts/check_references.sh`). A
 `url` is a page of documentation: it ends with the `#fragment` of a section, or has a `quote` of the
 passage, and `note` says why. A reference to a whole page, or to a whole file through `path`, loads,
 and `botica refs check` warns about it. A `path` is a file: of the project when the reference has no

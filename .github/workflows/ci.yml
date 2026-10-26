@@ -103,7 +103,8 @@ jobs:
         with:
           node-version: "24"
 
-      # The topics with a Cargo package run their fmt, clippy and tests. Go is on the runner already.
+      # The topics with a Cargo package run their fmt, clippy and tests. Go is on the runner already,
+      # and so is Docker with its Compose plugin, which checks the Compose files of the topics.
       - name: Install the Rust toolchain
         run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
 

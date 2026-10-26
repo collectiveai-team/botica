@@ -51,6 +51,8 @@ fn list_of_a_project_without_topics_has_the_built_in_ones() {
     assert!(text.starts_with("ai: "), "{text}");
     for id in [
         "api-schemas",
+        "compose",
+        "compose-traefik",
         "in-memory-adapters",
         "settings-module",
         "structured-logging",
