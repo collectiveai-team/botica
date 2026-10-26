@@ -173,11 +173,12 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
         &catalog,
         "select = []\nextend-select = [\"all\"]\npreview = true",
     );
-    assert_eq!(active(&resolution).len(), 69);
+    assert_eq!(active(&resolution).len(), 72);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTSEC\"]\npreview = true")),
         [
             "cargo-cooldown",
+            "client-env-public-only",
             "dependabot-cooldown",
             "jwt-verified",
             "no-token-in-web-storage",
