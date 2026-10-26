@@ -81,11 +81,29 @@ fn a_comment_with_a_reason_silences_it_and_one_that_silences_nothing_is_reported
         CONFIG,
         "[tool.pyrefly]\npreset = \"strict\"  # botica: ignore[external-config-weakened] -- moves to strict in Q1\n",
     );
-    // `--scope project` leaves out `unused-suppression`, a rule of file scope: the run of every
-    // scope reports the comment.
-    let text = stdout(&botica(&stale, &[]));
+    let text = stdout(&botica(&stale, &["--scope", "project"]));
     assert!(
         text.contains("pyproject.toml:2:22: warning [unused-suppression]"),
+        "{text}"
+    );
+    let text = stdout(&botica(&stale, &["--scope", "file"]));
+    assert!(!text.contains("pyproject.toml"), "{text}");
+}
+
+#[test]
+fn the_project_scope_leaves_the_comments_about_rules_of_file_scope_to_the_file_scope() {
+    let dir = project("file-rule", CONFIG, "[tool.pyrefly]\npreset = \"strict\"\n");
+    write(
+        &dir,
+        "app.py",
+        "print(1)  # botica: ignore[cognitive-complexity]\n",
+    );
+
+    let text = stdout(&botica(&dir, &["--scope", "project"]));
+    assert!(!text.contains("suppression]"), "{text}");
+    let text = stdout(&botica(&dir, &["--scope", "file"]));
+    assert!(
+        text.contains("app.py:1:13: warning [unused-suppression]"),
         "{text}"
     );
 }

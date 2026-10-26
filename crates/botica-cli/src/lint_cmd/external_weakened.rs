@@ -58,7 +58,7 @@ pub fn findings(
             .iter()
             .map(|requirement| requirement.target.to_owned()),
     );
-    let policy = project::suppression_policy(resolution);
+    let policy = project::project_pass_policy(resolution);
     let mut kept = Vec::new();
     for path in paths {
         let (mut here, rest): (Vec<_>, Vec<_>) =

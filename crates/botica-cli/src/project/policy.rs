@@ -33,19 +33,45 @@ pub fn suppression_policy(resolution: &Arc<Resolution>) -> Policy {
     }
     let external = Arc::clone(resolution);
     policy = policy.with_external(move |id| external.is_external(id));
-    let reporting = |slug: &str| {
-        resolution
-            .entry(slug)
-            .filter(|entry| entry.active)
-            .map(|entry| Severity::from(entry.severity))
-    };
-    if let Some(level) = reporting(UNUSED) {
+    // With `--scope project`, `unused-suppression` is active for the pass after the rules of
+    // project scope alone: the walk would report again what `--scope file` reports.
+    if let Some(level) =
+        reporting(resolution, UNUSED).filter(|_| resolution.scope() != Some(Scope::Project))
+    {
         policy = policy.report_unused(level);
     }
-    if let Some(level) = reporting(INVALID) {
+    if let Some(level) = reporting(resolution, INVALID) {
         policy = policy.report_invalid(level);
     }
     policy
+}
+
+/// The policy of the pass after the rules of project scope, which reports the comments that name
+/// one whose findings sit on a line and silence nothing, whatever the scope of the run.
+pub fn project_pass_policy(resolution: &Arc<Resolution>) -> Policy {
+    let policy = suppression_policy(resolution);
+    match reporting(resolution, UNUSED) {
+        Some(level) => policy.report_unused(level),
+        None => policy,
+    }
+}
+
+/// The rules of another scope that the run of `scope` reports too: with `--scope project`,
+/// `unused-suppression`, since only the project pass tells whether a comment that names a rule
+/// of project scope silences anything.
+pub fn reported_too(scope: Option<Scope>) -> &'static [&'static str] {
+    if scope == Some(Scope::Project) {
+        &[UNUSED]
+    } else {
+        &[]
+    }
+}
+
+fn reporting(resolution: &Resolution, slug: &str) -> Option<Severity> {
+    resolution
+        .entry(slug)
+        .filter(|entry| entry.active)
+        .map(|entry| Severity::from(entry.severity))
 }
 
 /// What the project keeps of findings of judgment rules, grouped by path: those that no
