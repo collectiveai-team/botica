@@ -12,6 +12,7 @@ use crate::eager_test::{EagerTest, EAGER_TEST};
 use crate::env_schema::SETTINGS_ENV_SCHEMA;
 use crate::external_config::EXTERNAL_CONFIG;
 use crate::external_weakened::EXTERNAL_CONFIG_WEAKENED;
+use crate::heavy_imports::{NoEagerHeavyImports, NO_EAGER_HEAVY_IMPORTS};
 use crate::import_layers::IMPORT_LAYERS;
 use crate::layout::{CodeDir, NoArtifactsInPackage, NoNotebooks, NoTestsInPackage};
 use crate::lockfiles::LOCKFILE_COMMITTED;
@@ -51,7 +52,7 @@ enum Provider {
     },
 }
 
-const NATIVES: [(&str, Provider); 20] = [
+const NATIVES: [(&str, Provider); 21] = [
     (
         CONVENTIONAL_COMMITS,
         Provider::Message {
@@ -133,6 +134,17 @@ const NATIVES: [(&str, Provider); 20] = [
         EAGER_TEST,
         Provider::Rule {
             make: eager_test,
+            reads_code_dirs: false,
+        },
+    ),
+    (
+        NO_EAGER_HEAVY_IMPORTS,
+        Provider::Rule {
+            make: |options, _| {
+                Box::new(NoEagerHeavyImports {
+                    modules: strings(options, "modules"),
+                })
+            },
             reads_code_dirs: false,
         },
     ),

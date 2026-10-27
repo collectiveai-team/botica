@@ -44,6 +44,7 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
             "no-dict-literal-return",
             "no-dict-return-annotation",
             "no-disabled-typecheck",
+            "no-eager-heavy-imports",
             "no-notebooks",
             "no-tautological-assert",
             "no-tests-in-package",

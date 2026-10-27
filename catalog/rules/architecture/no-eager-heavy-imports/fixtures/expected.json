@@ -1,0 +1,106 @@
+{
+  "diagnostics": [
+    {
+      "path": "app/core/embeddings.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 18,
+          "line": 3,
+          "column": 8
+        },
+        "end": {
+          "offset": 23,
+          "line": 3,
+          "column": 13
+        }
+      },
+      "message": "`torch` is loaded when this module is imported, so every importer waits for it: import it inside the function that uses it, write `lazy import` on Python 3.15 or later, or name it in `__lazy_modules__` when the code also runs on older versions"
+    },
+    {
+      "path": "app/core/embeddings.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 29,
+          "line": 4,
+          "column": 6
+        },
+        "end": {
+          "offset": 41,
+          "line": 4,
+          "column": 18
+        }
+      },
+      "message": "`transformers` is loaded when this module is imported, so every importer waits for it: import it inside the function that uses it, write `lazy from` on Python 3.15 or later, or name it in `__lazy_modules__` when the code also runs on older versions"
+    },
+    {
+      "path": "app/core/vision.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 53,
+          "line": 4,
+          "column": 12
+        },
+        "end": {
+          "offset": 56,
+          "line": 4,
+          "column": 15
+        }
+      },
+      "message": "`cv2` is loaded when this module is imported, so every importer waits for it: import it inside the function that uses it (an import in a `try` block or a class body stays eager on Python 3.15)"
+    },
+    {
+      "path": "app/core/vision.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 100,
+          "line": 8,
+          "column": 8
+        },
+        "end": {
+          "offset": 108,
+          "line": 8,
+          "column": 16
+        }
+      },
+      "message": "`torch.nn` is loaded when this module is imported, so every importer waits for it: import it inside the function that uses it, write `lazy import` on Python 3.15 or later, or name it in `__lazy_modules__` when the code also runs on older versions"
+    },
+    {
+      "path": "app/entrypoints/cli.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 84,
+          "line": 6,
+          "column": 12
+        },
+        "end": {
+          "offset": 94,
+          "line": 6,
+          "column": 22
+        }
+      },
+      "message": "`tensorflow` is loaded when this module is imported, so every importer waits for it: import it inside the function that uses it, write `lazy import` on Python 3.15 or later, or name it in `__lazy_modules__` when the code also runs on older versions"
+    },
+    {
+      "path": "app/entrypoints/cli.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 129,
+          "line": 10,
+          "column": 12
+        },
+        "end": {
+          "offset": 138,
+          "line": 10,
+          "column": 21
+        }
+      },
+      "message": "`jax.numpy` is loaded when this module is imported, so every importer waits for it: import it inside the function that uses it (an import in a `try` block or a class body stays eager on Python 3.15)"
+    }
+  ]
+}
