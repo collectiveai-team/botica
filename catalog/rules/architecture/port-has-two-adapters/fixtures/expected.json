@@ -1,6 +1,0 @@
-{
-  "verdicts": [
-    { "file": "valid/clock.py", "band": "clear" },
-    { "file": "invalid/pricing.py", "band": "act" }
-  ]
-}
