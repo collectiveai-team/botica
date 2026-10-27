@@ -6,13 +6,6 @@ name: Docker
 # The image name defaults to ghcr.io/<owner>/<repo>; adjust IMAGE below if you
 # publish under a different name. Add a build matrix if you
 # need several flavours, such as cpu and gpu.
-#
-# In a public repository the job signs a build provenance attestation for the
-# digest it pushed (actions/attest, Sigstore), which anyone can check with
-#   gh attestation verify oci://<image>@<digest> --owner <owner>
-# GitHub attests artifacts in a private repository only on Enterprise Cloud, so
-# a private repository skips the step and keeps the unsigned provenance that
-# BuildKit adds to the image.
 
 on:
   push:
@@ -27,6 +20,7 @@ concurrency:
 
 permissions:
   contents: read
+  packages: write
 
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
@@ -35,12 +29,6 @@ jobs:
   build:
     name: build & push image
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write # push the image to GHCR
-      id-token: write # the Sigstore certificate of the attestation
-      attestations: write # store the attestation
-      artifact-metadata: write # the storage record of the attestation
     steps:
       - uses: actions/checkout@v7
         with:
@@ -69,7 +57,6 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Build and push
-        id: push
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -79,11 +66,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Attest build provenance
-        if: ${{ !github.event.repository.private }}
-        uses: actions/attest@v4
-        with:
-          subject-name: ${{ env.IMAGE }}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
