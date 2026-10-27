@@ -1,0 +1,8 @@
+# MARK: kube-linter
+# CES-0. language = "golang": prek builds kube-linter from the pinned tag. It lints the whole tree
+# with `.kube-linter.yaml`: the templates of a Helm chart are linted once the chart is rendered, and
+# a file of them alone holds no object.
+[[repos]]
+repo = "https://github.com/stackrox/kube-linter"
+rev = "v0.8.3"
+hooks = [{ id = "kube-linter", args = ["."], pass_filenames = false, priority = 2 }]

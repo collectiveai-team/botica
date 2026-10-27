@@ -235,6 +235,13 @@ that `terraform.yml` runs with uvx. checkov runs only in `terraform.yml`, and
 fails on a check that fails and is not in `.checkov.baseline`: in a repository with Terraform code,
 run checkov once with `--create-baseline` and commit the file it writes (CES-129, Migration).
 
+`k8s` is for a repository with Kubernetes manifests, plain, in a Helm chart or in a folder of
+kustomize (CES-0). It writes `.kube-linter.yaml`, adds the hook `kube-linter` to `prek.toml` and
+selects `k8s-workload-hardening`, an external rule in preview: `external-config` reports a
+`prek.toml` without the hook. The hook builds kube-linter with Go from the tag that `rev` pins the
+first time it runs. The topic `k8s-manifests` (`botica refs show k8s-manifests`) has a Deployment
+that passes.
+
 `security` selects the rules of CES-121 and has no step: `route-auth`, `jwt-verified` and
 `no-token-in-web-storage`, and the judgment rule `short-lived-access-token`. A repository whose code
 issues or checks credentials names it beside the others (`botica recipe install base base-python

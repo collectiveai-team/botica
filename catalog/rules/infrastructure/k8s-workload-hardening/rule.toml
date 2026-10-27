@@ -1,0 +1,30 @@
+id = "k8s-workload-hardening"
+code = "BTINFRA004"
+standard = "CES-0"
+references = ["k8s-manifests"]
+summary = "A Kubernetes workload runs as non-root, drops its capabilities, has a read-only root filesystem, and declares its resources and probes, as kube-linter checks in a hook of prek"
+status = "preview"
+tags = ["kubernetes"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "external"
+languages = ["yaml"]
+tool = "kube-linter"
+docs = "https://docs.kubelinter.io/#/generated/checks"
+codes = [
+  "run-as-non-root",
+  "drop-net-raw-capability",
+  "drop-all-capabilities",
+  "privilege-escalation-container",
+  "no-read-only-root-fs",
+  "unset-cpu-requirements",
+  "unset-memory-requirements",
+  "long-running-no-liveness-probe",
+  "long-running-no-readiness-probe",
+  "long-running-no-startup-probe",
+  "dangling-horizontalpodautoscaler",
+  "autoscaled-deployment-has-hpa",
+]
+config = "config/prek.toml"

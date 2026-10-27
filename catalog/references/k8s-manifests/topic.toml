@@ -1,0 +1,45 @@
+title = "A Kubernetes Deployment that runs unprivileged and declares its resources and probes"
+
+[[references]]
+file = "code/deploy/api.yaml"
+lines = "18-24"
+anchor = "runAsNonRoot: true"
+note = "the security context of the pod: a user other than root and the default seccomp profile of the runtime"
+
+[[references]]
+file = "code/deploy/api.yaml"
+lines = "40-44"
+anchor = "readOnlyRootFilesystem: true"
+note = "the security context of the container: no privilege escalation, a read-only root filesystem and no capabilities"
+
+[[references]]
+file = "code/deploy/api.yaml"
+lines = "45-50"
+anchor = "resources:"
+note = "a CPU request for the scheduler and a memory limit, with the memory request equal to it"
+
+[[references]]
+file = "code/deploy/api.yaml"
+lines = "51-68"
+anchor = "startupProbe:"
+note = "the startup probe holds back the liveness probe until the application is up; the readiness probe decides when the pod receives traffic"
+
+[[references]]
+file = "code/deploy/api.yaml"
+lines = "69-75"
+anchor = "emptyDir:"
+note = "an emptyDir on /tmp, the one place the container writes with a read-only root filesystem"
+
+[[references]]
+file = "code/deploy/api.yaml"
+lines = "89-106"
+anchor = "kind: HorizontalPodAutoscaler"
+note = "the autoscaler of the Deployment labelled autoscale=true; the Deployment sets no replicas, so that a rollout does not override it"
+
+[[references]]
+url = "https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-capabilities-for-a-container"
+note = "dropping and adding the capabilities of a container"
+
+[[references]]
+url = "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-startup-probes"
+note = "a startup probe that holds back the liveness probe of a slow application"
