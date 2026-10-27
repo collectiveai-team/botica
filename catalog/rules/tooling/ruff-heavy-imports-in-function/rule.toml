@@ -1,6 +1,6 @@
 id = "ruff-heavy-imports-in-function"
 code = "BTTOOL005"
-standard = "CES-0"
+standard = "CES-132"
 summary = "Before Python 3.15, ruff reports a heavy library imported at the top of a module"
 status = "stable"
 tags = ["ruff", "imports"]

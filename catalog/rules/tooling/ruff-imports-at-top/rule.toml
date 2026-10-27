@@ -1,6 +1,6 @@
 id = "ruff-imports-at-top"
 code = "BTTOOL006"
-standard = "CES-0"
+standard = "CES-132"
 summary = "From Python 3.15, ruff reports an import outside the top of a module"
 status = "stable"
 tags = ["ruff", "imports"]

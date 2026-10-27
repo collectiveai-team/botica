@@ -1,6 +1,6 @@
 id = "no-eager-heavy-imports"
 code = "BTARCH004"
-standard = "CES-0"
+standard = "CES-132"
 summary = "From Python 3.15, a heavy library is imported at the top of a module with lazy import"
 status = "stable"
 tags = ["imports", "startup"]
