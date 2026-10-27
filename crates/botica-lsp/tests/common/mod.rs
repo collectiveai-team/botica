@@ -52,20 +52,32 @@ impl Write for Written {
     }
 }
 
-pub fn unframe(mut bytes: &[u8]) -> Vec<Value> {
+pub fn unframe(bytes: &[u8]) -> Vec<Value> {
+    let (messages, rest) = whole_messages(bytes);
+    assert!(rest.is_empty(), "a message is cut: {rest:?}");
+    messages
+}
+
+/// The messages whose frame is whole, and the bytes after them. The server writes a message in
+/// several pieces, so an editor that reads while it writes may see the start of one.
+fn whole_messages(mut bytes: &[u8]) -> (Vec<Value>, &[u8]) {
     let mut messages = Vec::new();
-    while !bytes.is_empty() {
-        let text = std::str::from_utf8(bytes).expect("UTF-8");
-        let (head, rest) = text.split_once("\r\n\r\n").expect("a header");
-        let length: usize = head
+    loop {
+        let Some(split) = bytes.windows(4).position(|window| window == b"\r\n\r\n") else {
+            return (messages, bytes);
+        };
+        let length: usize = std::str::from_utf8(&bytes[..split])
+            .expect("UTF-8")
             .strip_prefix("Content-Length: ")
             .expect("a Content-Length")
             .parse()
             .expect("a number");
-        messages.push(serde_json::from_str(&rest[..length]).expect("JSON"));
-        bytes = &rest.as_bytes()[length..];
+        let Some(body) = bytes.get(split + 4..split + 4 + length) else {
+            return (messages, bytes);
+        };
+        messages.push(serde_json::from_slice(body).expect("JSON"));
+        bytes = &bytes[split + 4 + length..];
     }
-    messages
 }
 
 pub struct Client {
@@ -85,7 +97,7 @@ impl Client {
     }
 
     pub fn all(&self) -> Vec<Value> {
-        unframe(&self.output.0.lock().expect("the output"))
+        whole_messages(&self.output.0.lock().expect("the output")).0
     }
 
     /// Waits until the server has written `count` messages in all.
@@ -188,6 +200,18 @@ impl Fake {
 
     pub fn asked(&self) -> Vec<Asked> {
         self.asked.lock().expect("asked").clone()
+    }
+
+    /// Waits until the rules have been asked `count` times in all.
+    pub fn wait_asked(&self, count: usize) {
+        let limit = Instant::now() + DEADLINE;
+        while self.asked.lock().expect("asked").len() < count {
+            assert!(
+                Instant::now() < limit,
+                "the rules were not asked {count} times"
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        }
     }
 }
 

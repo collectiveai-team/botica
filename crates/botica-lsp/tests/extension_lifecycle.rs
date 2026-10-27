@@ -63,6 +63,7 @@ fn a_result_for_a_text_that_has_changed_is_dropped() {
         editor.send(&initialize(&asking()));
         editor.send(&open(A_PY, 1, "one\n"));
         editor.wait_for(2);
+        fake.wait_asked(1);
         editor.send(&change(A_PY, 2, "two\n"));
         editor.wait_for(3);
         gate.open();
@@ -259,6 +260,7 @@ fn a_rule_that_is_busy_skips_the_texts_that_were_replaced_meanwhile() {
         editor.send(&initialize(&asking()));
         editor.send(&open(A_PY, 1, "one\n"));
         editor.wait_for(2);
+        fake.wait_asked(1);
         editor.send(&change(A_PY, 2, "two\n"));
         editor.wait_for(3);
         std::thread::sleep(after_the_debounce);
