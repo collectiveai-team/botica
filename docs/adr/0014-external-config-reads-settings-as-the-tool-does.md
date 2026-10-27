@@ -105,7 +105,9 @@ the cooldown of pnpm in a repository that installs with npm.
   that added a rule to it holds until the list is made again; a code that the list does not have is
   read as a selector of its own.
 - The kinds of pyrefly whose default is below `error` are those of 1.4.0. A kind that the list does
-  not have, as one that a newer pyrefly adds, takes `true` as `error`.
+  not have, as one that a newer pyrefly adds, takes `true` as `error`. A test of `pyrefly.rs`
+  fails when the pin of pyrefly in `pyproject.toml` moves away from that version, so the pull
+  request of Dependabot that moves it is where the list is copied again.
 - The table of tools changes when a tool changes where it reads its settings; a test pins each file
   and order with a link to the documentation of the tool.
 - `botica lint` walks the files of the project once more when an active rule has an external

@@ -5,6 +5,8 @@ use toml::Value;
 /// The kinds of error of pyrefly 1.4.0 whose default severity is `warn` or `info`, from
 /// `ErrorKind::default_severity` in `crates/pyrefly_config/src/error_kind.rs` of the tag `1.4.0`
 /// (<https://github.com/facebook/pyrefly/blob/1.4.0/crates/pyrefly_config/src/error_kind.rs>).
+/// `tests::COPIED_FROM` holds the version, and its test fails when the pin of pyrefly in the root
+/// `pyproject.toml`, which Dependabot moves, names another.
 /// Every other kind defaults to `error` or `ignore`, and `true` makes both an error.
 const DEFAULT_BELOW_ERROR: [(&str, Level); 25] = [
     ("attribute-assign-on-never", Level::Warn),
@@ -58,5 +60,33 @@ pub(super) fn severity(kind: &str, value: &Value) -> Level {
             _ => Level::Ignore,
         },
         _ => Level::Ignore,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// The version of pyrefly that `DEFAULT_BELOW_ERROR` is copied from.
+    const COPIED_FROM: &str = "1.4.0";
+
+    #[test]
+    fn the_table_is_copied_from_the_pyrefly_that_the_repository_pins() {
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../pyproject.toml");
+        let text = std::fs::read_to_string(path).expect("the root pyproject.toml");
+        let pyproject: toml::Table = text.parse().expect("pyproject.toml is TOML");
+        let pinned = pyproject["dependency-groups"]
+            .as_table()
+            .expect("[dependency-groups]")
+            .values()
+            .filter_map(toml::Value::as_array)
+            .flatten()
+            .filter_map(toml::Value::as_str)
+            .find_map(|spec| spec.strip_prefix("pyrefly=="))
+            .expect("pyrefly==<version> in a dependency group");
+        assert_eq!(
+            pinned, COPIED_FROM,
+            "pyproject.toml pins pyrefly {pinned}: copy the kinds whose default is warn or info from \
+             ErrorKind::default_severity in crates/pyrefly_config/src/error_kind.rs of the tag \
+             {pinned} of facebook/pyrefly into DEFAULT_BELOW_ERROR, then set COPIED_FROM"
+        );
     }
 }
