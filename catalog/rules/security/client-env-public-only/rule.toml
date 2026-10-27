@@ -1,0 +1,26 @@
+id = "client-env-public-only"
+code = "BTSEC011"
+standard = "CES-0"
+summary = "A Client Component reads only public environment variables"
+status = "preview"
+tags = ["nextjs", "browser"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["typescript"]
+file = "typescript.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["tsx"]
+file = "tsx.yml"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["javascript"]
+file = "javascript.yml"
