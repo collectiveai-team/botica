@@ -11,7 +11,8 @@ file it modifies.
 
 A standard is a file, `standards/<set>/<number>-<slug>.md`. A change touches at most one, and no
 label says otherwise. The number of a standard is the next free one of its set, so two standards of
-a set never share it.
+a set never share it. A proposal carries its standard as number 0 while it is a draft, and
+`scripts/number_standard.py` numbers it before the merge (ADR 0004).
 """
 
 from __future__ import annotations
@@ -240,6 +241,17 @@ def standards_touched(changes: Sequence[Change]) -> list[str]:
     return sorted(touched)
 
 
+def unnumbered_standards(changes: Sequence[Change]) -> list[tuple[str, str]]:
+    """Return the set and the path of each standard numbered 0 that a change adds or modifies."""
+    return sorted(
+        (match["set"], change.path)
+        for change in changes
+        if change.status != "D"
+        and (match := STANDARD_FILE.match(change.path))
+        and match["number"] == "0"
+    )
+
+
 def violations(
     changes: Sequence[Change],
     root: Path,
@@ -314,8 +326,20 @@ def verdict(
     found: Sequence[str],
     *,
     acknowledged: bool,
+    unnumbered: Sequence[tuple[str, str]] = (),
 ) -> tuple[int, list[str]]:
     """Return the exit code and the report for what the branch changed."""
+    if unnumbered:
+        head = "This change proposes a standard that has no number yet:"
+        commands = sorted(
+            {f"  scripts/number_standard.py {standard_set}" for standard_set, _ in unnumbered}
+        )
+        return 1, [
+            head,
+            *(f"  {path}" for _, path in unnumbered),
+            "Number it on the branch rebased onto the base before the merge:",
+            *commands,
+        ]
     if duplicated:
         head = "These standards share their number with another standard of the same set:"
         return 1, [head, *(f"  {standard}" for standard in duplicated)]
@@ -339,14 +363,19 @@ def check_branch(
     *,
     catalogs: Sequence[str] = (BUILTIN_CATALOG,),
     acknowledged: bool = False,
+    draft: bool = False,
 ) -> int:
-    """Exit code for the changes of `HEAD` since it left `base`: 1 unless acknowledged."""
+    """Exit code for the changes of `HEAD` since it left `base`: 1 unless acknowledged.
+
+    A draft may propose a standard numbered 0; a branch ready for review numbers it first.
+    """
     changes = branch_changes(base, root)
     code, lines = verdict(
         duplicated_standards(root),
         standards_touched(changes),
         violations(changes, root, catalogs, branch_texts(base, root)),
         acknowledged=acknowledged,
+        unnumbered=() if draft else unnumbered_standards(changes),
     )
     for line in lines:
         print(line)
@@ -359,14 +388,19 @@ def main(
     *,
     catalog: list[str] | None = None,
     acknowledged: bool = False,
+    draft: bool = False,
 ) -> None:
-    """Check the branch against BASE (a git ref); `--catalog` repeats for more catalogs."""
+    """Check the branch against BASE (a git ref); `--catalog` repeats for more catalogs.
+
+    `--draft` accepts a proposed standard numbered 0.
+    """
     raise SystemExit(
         check_branch(
             base,
             Path.cwd(),
             catalogs=tuple(catalog) if catalog else (BUILTIN_CATALOG,),
             acknowledged=acknowledged,
+            draft=draft,
         )
     )
 
