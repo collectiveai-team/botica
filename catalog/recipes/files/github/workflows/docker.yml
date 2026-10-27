@@ -47,6 +47,10 @@ jobs:
           fetch-depth: 0 # hatch-vcs needs tags to resolve the version
           persist-credentials: false
 
+      # GHCR takes only lowercase names, and the owner or the repository can have capitals.
+      - name: Lowercase the image name
+        run: echo "IMAGE=${IMAGE,,}" >> "$GITHUB_ENV"
+
       - name: Log in to GHCR
         uses: docker/login-action@v4
         with:

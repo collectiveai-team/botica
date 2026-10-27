@@ -88,6 +88,13 @@ fn the_docker_workflow_attests_the_pushed_digest_in_a_public_repository_only() {
         step.contains("subject-digest: ${{ steps.push.outputs.digest }}"),
         "{step}"
     );
+    let lowercase = text
+        .find(r#"echo "IMAGE=${IMAGE,,}" >> "$GITHUB_ENV""#)
+        .expect("a step lowercases IMAGE");
+    assert!(
+        lowercase < text.find("uses: docker/metadata-action@").unwrap(),
+        "IMAGE is lowercased before the image is named"
+    );
     for permission in [
         "id-token: write",
         "attestations: write",
