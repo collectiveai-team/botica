@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-27T14:59:42Z",
-  "compiledBy": "botica 0.15.2",
+  "compiledAt": "2026-10-27T17:09:58Z",
+  "compiledBy": "botica 0.15.3",
   "manual": true,
   "sources": [
     {
@@ -969,6 +969,7 @@
         "crates/botica-core/src/env_schema/**",
         "crates/botica-core/src/external_config/duration.rs",
         "crates/botica-core/src/external_config/in_use.rs",
+        "crates/botica-core/src/external_config/pyrefly.rs",
         "crates/botica-core/src/external_config/ruff.rs",
         "crates/botica-core/src/external_config/tools.rs",
         "crates/botica-core/src/import_layers/**",
@@ -1215,6 +1216,7 @@
         "crates/botica-core/src/env_schema/**",
         "crates/botica-core/src/external_config/duration.rs",
         "crates/botica-core/src/external_config/in_use.rs",
+        "crates/botica-core/src/external_config/pyrefly.rs",
         "crates/botica-core/src/external_config/ruff.rs",
         "crates/botica-core/src/external_config/tools.rs",
         "crates/botica-core/src/import_layers/**",
