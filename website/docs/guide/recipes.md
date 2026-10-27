@@ -267,8 +267,11 @@ What the recipes cannot say about themselves:
   setting "Allow auto-merge" and a branch protection rule with required checks; without a required
   check the merge is immediate. `ci-automerge-private` is for a repository with no branch protection
   (a private one on the Free plan).
-- The template of `pyproject.toml` of `base-python` has `readme = "README.md"`, so `uv add` fails
-  to build a project that has no `README.md`.
+- The template of `pyproject.toml` of `base-python` describes a package built by hatchling, named
+  `replace-me`, with `readme = "README.md"`. `uv add` builds the project, so in a folder with no
+  `README.md` or with no package folder (`src/replace_me/` or `replace_me/`, after the name in
+  `[project]`) the `[[tools]]` step is `failed` for each package and `check` reports them as
+  `not in pyproject.toml`. Running `install` again after adding them adds the packages.
 - `base-python` appends `[tool.uv]` with `exclude-newer = "7 days"` to `pyproject.toml` (CES-128).
   A `pyproject.toml` that already has `[tool.uv]` would hold the table twice, so the step is
   `pending` and the setting is added by hand to the table that is there. The days are the parameter
