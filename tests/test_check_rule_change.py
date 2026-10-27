@@ -320,6 +320,23 @@ def test_a_branch_cannot_add_a_standard_with_a_number_that_is_taken(
     assert "CES/120" in capsys.readouterr().out
 
 
+def test_a_draft_may_propose_a_standard_that_has_no_number_yet(tmp_path: Path):
+    branch_that_touches_standards(tmp_path, "standards/CES/0-keep-files-small.md")
+
+    assert crc.check_branch("main", tmp_path, draft=True) == 0
+
+
+def test_a_branch_ready_for_review_numbers_its_standard_first(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    branch_that_touches_standards(tmp_path, "standards/CES/0-keep-files-small.md")
+
+    assert crc.check_branch("main", tmp_path) == 1
+    out = capsys.readouterr().out
+    assert "standards/CES/0-keep-files-small.md" in out
+    assert "scripts/number_standard.py CES" in out
+
+
 def test_a_branch_may_touch_one_standard_and_its_documentation(tmp_path: Path):
     branch_that_touches_standards(
         tmp_path, "standards/CES/71-keep-files-small.md", "standards/CES/index.md"

@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-26T14:22:25Z",
-  "compiledBy": "botica 0.15.0",
+  "compiledAt": "2026-10-27T02:06:02Z",
+  "compiledBy": "botica 0.15.2",
   "manual": true,
   "sources": [
     {
@@ -975,6 +975,7 @@
         "scripts/bump_prek_revs.py",
         "scripts/check_rule_change.py",
         "scripts/check_skill_drift.py",
+        "scripts/number_standard.py",
         "scripts/site_filter.py",
         "scripts/site_language_tabs.py",
         "scripts/site_llms.py",
@@ -1218,6 +1219,7 @@
         "scripts/bump_prek_revs.py",
         "scripts/check_rule_change.py",
         "scripts/check_skill_drift.py",
+        "scripts/number_standard.py",
         "scripts/site_filter.py",
         "scripts/site_language_tabs.py",
         "scripts/site_llms.py",

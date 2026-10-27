@@ -7,10 +7,13 @@ title: CES
 The Collective Engineering Standard is the set of standards of Collective. Each standard is one
 page, `<number>-<slug>.md`, and a rule cites it as `standard = "CES-<number>"`.
 
-A new standard takes the next free number, the highest one plus one. The standards up to CES-119
-keep the number of the issue where they were first proposed; from CES-120 on the number is not
-that of an issue. A number is never reused or changed, and `scripts/check_rule_change.py` fails a
-change that leaves two standards with the same number (ADR 0004).
+A new standard takes the next free number, the highest one plus one, when it is merged. A proposal
+has no number yet: its file is `0-<slug>.md`, its front matter says `id: CES-0`, its rules say
+`standard = "CES-0"`, and its commits name it by its title. Before the merge, on the branch rebased
+onto `main`, `scripts/number_standard.py CES` gives it the number. The standards up to CES-119 keep
+the number of the issue where they were first proposed. A number is never reused or changed, and
+`scripts/check_rule_change.py` fails a change that leaves two standards with the same number, and a
+pull request ready for review that still proposes `CES-0` (ADR 0004).
 
 People cite a standard by its number, `CES-<number>`, in commits, pull requests and text. Tools
 use the slugs of its rules (`log-no-print`, `no-dict-alias`): botica selects, ignores and

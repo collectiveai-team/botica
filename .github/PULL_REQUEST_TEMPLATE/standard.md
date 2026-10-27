@@ -7,7 +7,8 @@ breaks it next to code that follows it, a file tree, or a diff. -->
 
 ## Standard
 
-<!-- The file, `standards/<set>/<number>-<slug>.md`, and whether it is new or changed. -->
+<!-- The file, `standards/<set>/<number>-<slug>.md`, and whether it is new or changed. A new
+standard is `0-<slug>.md` until `scripts/number_standard.py` numbers it before the merge. -->
 
 ## Discussion
 

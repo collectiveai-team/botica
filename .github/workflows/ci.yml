@@ -12,6 +12,8 @@ on:
   push:
     branches: [main]
   pull_request:
+    # `ready_for_review` runs the rule contract again: a draft may propose a standard numbered 0.
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "crates/**"
       - "catalog/**"
@@ -133,6 +135,9 @@ jobs:
         env:
           BASE: origin/${{ github.base_ref }}
           ACKNOWLEDGED: ${{ contains(github.event.pull_request.labels.*.name, 'contract-change') }}
+          DRAFT: ${{ github.event.pull_request.draft }}
         run: |
-          if [ "$ACKNOWLEDGED" = "true" ]; then set -- --acknowledged; else set --; fi
+          set --
+          if [ "$ACKNOWLEDGED" = "true" ]; then set -- "$@" --acknowledged; fi
+          if [ "$DRAFT" = "true" ]; then set -- "$@" --draft; fi
           uv run --locked python scripts/check_rule_change.py "$BASE" "$@"

@@ -7,6 +7,10 @@ rules, and it may repeat what the README of a rule says: its examples, configura
 stay in the standard. `docs/standards-migration-pending.md` is removed, and so is
 `docs/engineering-standards.md`: how a standard is numbered and cited is in `standards/CES/index.md`.
 
+**Amended 2026-10-26:** a standard gets its number at the merge, not when it is proposed (decision
+6). A proposal is a draft pull request whose standard is `0-<slug>.md`, `id: <SET>-0`, and whose
+rules name `<SET>-0`; `scripts/number_standard.py` numbers it before the merge.
+
 ADR 0002 left open where the text of a standard lives. A standard states what is required; a rule
 is one way to check it. A standard has any number of rules, none included, and a rule names at most
 one standard. Botica evaluates rules. Collective writes the CES, and another team can write
@@ -28,11 +32,16 @@ standards of its own.
 4. **The discussion happens in GitHub Discussions**, shown at the end of the page of the standard.
 5. **The site copies `standards/`** into its documents (`scripts/build_site.sh`); the copy is never
    committed, and "edit this page" opens the file at the root.
-6. **The number of a standard is the next free one of its set**, `max + 1`. The standards that
-   existed as issues keep their number (up to `CES-119`); from `CES-120` on the number is no longer
-   that of an issue. A number is never reused or changed, and a standard that is rejected takes
-   none. `scripts/check_rule_change.py` fails a change that leaves two standards of a set with the
-   same number, which is what two proposals that pick the same one would do.
+6. **The number of a standard is the next free one of its set, `max + 1`, taken at the merge.**
+   A proposal has no number: its standard is `standards/<set>/0-<slug>.md`, with `id: <SET>-0`,
+   its rules name `<SET>-0`, and its commits name the standard by its title. Before the merge, on
+   the branch rebased onto `main`, `scripts/number_standard.py <SET>` renames the file to the next
+   free number and writes it in the `id` and in the `standard` of each rule. The rule contract of
+   CI (`scripts/check_rule_change.py`) accepts a standard numbered 0 in a draft and fails a pull
+   request ready for review that still has one. The standards that existed as issues keep their
+   number (up to `CES-119`). A number is never reused or changed, and a standard that is rejected
+   takes none. `scripts/check_rule_change.py` fails a change that leaves two standards of a set
+   with the same number.
 
 ## Not decided
 
