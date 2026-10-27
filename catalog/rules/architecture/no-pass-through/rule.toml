@@ -1,6 +1,6 @@
 id = "no-pass-through"
 code = "BTARCH005"
-standard = "CES-0"
+standard = "CES-132"
 summary = "A unit does something its callers would otherwise repeat"
 status = "preview"
 tags = ["design"]
