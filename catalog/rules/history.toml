@@ -365,3 +365,8 @@ status = "stable"
 version = "0.16.0"
 rule = "ruff-imports-at-top"
 status = "stable"
+
+[[event]]
+version = "0.17.0"
+rule = "asyncio-no-get-event-loop"
+status = "preview"
