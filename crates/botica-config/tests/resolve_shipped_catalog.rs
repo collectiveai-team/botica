@@ -29,9 +29,12 @@ fn the_default_selection_runs_every_rule_enabled_by_default() {
             "no-dict-call-return",
             "no-dict-literal-return",
             "no-dict-return-annotation",
+            "no-eager-heavy-imports",
             "no-notebooks",
             "no-tests-in-package",
             "no-utils",
+            "ruff-heavy-imports-in-function",
+            "ruff-imports-at-top",
             "settings-env-schema",
             "settings-module",
             "unused-suppression"
@@ -77,7 +80,7 @@ fn select_and_extend_select_are_added_together() {
     );
     assert_eq!(
         active(&resolve(&catalog, "select = []\nextend-select = [\"all\"]")).len(),
-        22
+        25
     );
 }
 
@@ -102,6 +105,9 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
             "no-dict-call-return",
             "no-dict-literal-return",
             "no-dict-return-annotation",
+            "no-eager-heavy-imports",
+            "ruff-heavy-imports-in-function",
+            "ruff-imports-at-top",
             "settings-env-schema",
             "settings-module",
             "unused-suppression"
@@ -113,7 +119,7 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
     );
 }
 
-const PROPOSED: [&str; 31] = [
+const PROPOSED: [&str; 28] = [
     "api-request-schema-name",
     "api-response-schema-name",
     "api-schema-in-route-module",
@@ -128,7 +134,6 @@ const PROPOSED: [&str; 31] = [
     "jwt-verified",
     "lockfile-committed",
     "no-disabled-typecheck",
-    "no-eager-heavy-imports",
     "no-tautological-assert",
     "no-token-in-web-storage",
     "no-type-cast",
@@ -137,8 +142,6 @@ const PROPOSED: [&str; 31] = [
     "pyrefly-strict",
     "recipe-conflict",
     "route-auth",
-    "ruff-heavy-imports-in-function",
-    "ruff-imports-at-top",
     "ruff-selection",
     "settings-base-class",
     "settings-direct-instantiation",
@@ -156,7 +159,7 @@ fn the_preview_rules_stay_out_of_the_default_selection_and_of_all() {
         assert_eq!(reason(&by_default, slug), Reason::NotSelected, "{slug}");
         assert_eq!(reason(&by_all, slug), Reason::OnlyPreview, "{slug}");
     }
-    assert_eq!(active(&by_all).len(), 22);
+    assert_eq!(active(&by_all).len(), 25);
 }
 
 #[test]
@@ -228,8 +231,11 @@ fn a_rule_switched_off_in_its_own_section_stays_out() {
             "no-dict-call-return",
             "no-dict-literal-return",
             "no-dict-return-annotation",
+            "no-eager-heavy-imports",
             "no-notebooks",
             "no-tests-in-package",
+            "ruff-heavy-imports-in-function",
+            "ruff-imports-at-top",
             "settings-env-schema",
             "settings-module",
             "unused-suppression"

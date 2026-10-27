@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-27T14:16:18Z",
+  "compiledAt": "2026-10-27T14:59:42Z",
   "compiledBy": "botica 0.15.2",
   "manual": true,
   "sources": [
@@ -686,8 +686,6 @@
         "catalog/recipes/full-python.toml",
         "catalog/recipes/full-rust.toml",
         "catalog/recipes/iac-terraform.toml",
-        "catalog/recipes/python-heavy-imports.toml",
-        "catalog/recipes/python-lazy-imports.toml",
         "catalog/recipes/python-strict-types.toml",
         "catalog/recipes/python-test-smells.toml",
         "catalog/recipes/repo-private.toml",

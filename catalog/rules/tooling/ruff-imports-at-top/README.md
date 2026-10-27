@@ -1,10 +1,11 @@
 ## Directive
 
-In a project whose `requires-python` is 3.15 or later, ruff reports an import inside a function or
-a class body with `PLC0415` (`import-outside-top-level`), and every import goes at the top of the
-module. A heavy library is imported there with `lazy import` (`no-eager-heavy-imports`).
-`TID253` stays off: `banned-module-level-imports` is empty, because ruff 0.17.1 reports
-`lazy import torch` and an import that `__lazy_modules__` makes lazy.
+In a project whose `requires-python` is 3.15 or later (`python = ">=3.15"`), ruff reports an
+import inside a function or a class body with `PLC0415` (`import-outside-top-level`), and every
+import goes at the top of the module, the tests included. A heavy library is imported there with
+`lazy import` (`no-eager-heavy-imports`). `TID253` stays off, because ruff 0.17.1 reports
+`lazy import torch` and an import that `__lazy_modules__` makes lazy under it. Before 3.15 the rule
+is not active, and `ruff-heavy-imports-in-function` asks for the import inside the function.
 
 ## Why
 
@@ -21,8 +22,9 @@ the top and the library loads at its first use, which is what an import inside a
 ## Tool
 
 [ruff](https://docs.astral.sh/ruff/rules/import-outside-top-level/) checks the code, through the
-hook `ruff-check` of `prek.toml`. `external-config` reports the settings that neither select nor
-ignore `PLC0415`. It does not check that `banned-module-level-imports` is empty.
+hook `ruff-check` of `prek.toml`. In a project that has `pyproject.toml`, `ruff.toml` or
+`.ruff.toml`, `external-config` reports the settings that neither select nor ignore `PLC0415`. It
+does not check that `TID253` is off.
 
 ## Configuration
 
@@ -31,8 +33,10 @@ ignore `PLC0415`. It does not check that `banned-module-level-imports` is empty.
 select = ["PLC0415"]
 ```
 
-The section of ruff that `base-python` installs does not select `PLC`: add the code to its
-`select`. The recipe `python-lazy-imports` selects this rule and `no-eager-heavy-imports`.
+`base-python` writes `PLC0415` in the `select` of its section of ruff when its parameter
+`ruff-import-rule` is `PLC0415` (`botica recipe install base-python --set
+ruff-import-rule=PLC0415`), and then selects no `TID253`; its default, `TID253`, is for a project
+before 3.15.
 
 ## Do
 

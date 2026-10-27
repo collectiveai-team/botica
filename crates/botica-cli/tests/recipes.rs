@@ -24,8 +24,8 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
     assert!(text.contains("\nbase-python: A Python project"), "{text}");
     assert!(
         text.contains(
-            "  extends: base\n  rules: 20, judgment: 0, exports: 0\n  \
-             files: 1, sections: 7, tools: 7, params: 3\n  from: built-in\n"
+            "  extends: base\n  rules: 23, judgment: 0, exports: 0\n  \
+             files: 1, sections: 7, tools: 7, params: 5\n  from: built-in\n"
         ),
         "{text}"
     );
@@ -79,8 +79,6 @@ fn list_adds_the_recipes_of_the_project_in_the_order_of_their_ids() {
             "full-rust",
             "iac-terraform",
             "mine",
-            "python-heavy-imports",
-            "python-lazy-imports",
             "python-strict-types",
             "python-test-smells",
             "repo-private",
@@ -162,7 +160,7 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
         .lines()
         .filter(|line| line.starts_with("- "))
         .collect();
-    assert_eq!(lines.len(), 33, "{text}");
+    assert_eq!(lines.len(), 36, "{text}");
     assert!(
         lines[0].starts_with("- file-size-guard (BT"),
         "{}",
@@ -241,14 +239,24 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
             "cooldown-days",
             "deptry-version",
             "jscpd-version",
-            "pyrefly-version"
+            "pyrefly-version",
+            "ruff-adapters",
+            "ruff-import-rule"
         ],
         "{text}"
     );
     assert!(
-        text.ends_with(
+        text.contains(
             "- pyrefly-version = \"\" (version, default \"\", from base-python): The version of \
              pyrefly that the hook of prek runs with uvx (empty: the newest)\n"
+        ),
+        "{text}"
+    );
+    assert!(
+        text.ends_with(
+            "- ruff-import-rule = \"TID253\" (text, default \"TID253\", from base-python): The \
+             rule of ruff for heavy imports: TID253 when requires-python allows a version before \
+             3.15, PLC0415 from 3.15\n"
         ),
         "{text}"
     );

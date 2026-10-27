@@ -3,8 +3,3 @@ select = ["TID253"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 banned-module-level-imports = ["torch", "tensorflow", "jax", "transformers", "cv2"]
-
-[tool.ruff.lint.per-file-ignores]
-"**/impl/**" = ["TID253"]
-"**/test_*.py" = ["TID253"]
-"**/*_test.py" = ["TID253"]

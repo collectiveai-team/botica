@@ -11,7 +11,7 @@ fn the_binary_carries_its_recipes_with_a_description_and_the_origin_built_in() {
     let recipes = embedded();
 
     let ids: Vec<&str> = recipes.recipes().iter().map(|r| r.id.as_str()).collect();
-    assert_eq!(ids.len(), 37);
+    assert_eq!(ids.len(), 35);
     for recipe in recipes.recipes() {
         assert_eq!(recipe.origin, Origin::BuiltIn);
         assert!(
@@ -83,7 +83,7 @@ fn base_python_resolves_to_the_rules_of_base_first() {
         first,
         ["file-size-guard", "no-notebooks", "no-artifacts-in-package"]
     );
-    assert_eq!(resolved.rules.len(), 33);
+    assert_eq!(resolved.rules.len(), 36);
 }
 
 #[test]
@@ -246,8 +246,6 @@ fn the_binary_carries_a_recipe_for_each_agent_and_each_piece_of_ci() {
             "full-python",
             "full-rust",
             "iac-terraform",
-            "python-heavy-imports",
-            "python-lazy-imports",
             "python-strict-types",
             "python-test-smells",
             "repo-private",

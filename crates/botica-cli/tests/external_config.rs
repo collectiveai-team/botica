@@ -103,7 +103,7 @@ fn ruff_project(name: &str) -> PathBuf {
         name,
         Some(
             "preview = true\nextend-select = [\"acme/selection\"]\n\
-             ignore = [\"docstring-matches-signature\"]\n",
+             ignore = [\"docstring-matches-signature\", \"ruff-heavy-imports-in-function\"]\n",
         ),
     );
     complexity_rule(&dir);

@@ -17,9 +17,9 @@ The rule does not report:
 - an import inside a function or a class body, which ruff `PLC0415` reports (`ruff-imports-at-top`);
 - a relative import.
 
-The recipe `python-lazy-imports` selects the rule with `ruff-imports-at-top`. A project that also
-supports a version before 3.15 follows `ruff-heavy-imports-in-function` instead, with the recipe
-`python-heavy-imports`.
+The rule has `python = ">=3.15"`: in a project whose `requires-python` allows an older version, or
+names none, it is not active, and `ruff-heavy-imports-in-function` asks for the import inside the
+function instead. `base-python` selects the three rules.
 
 ## Why
 

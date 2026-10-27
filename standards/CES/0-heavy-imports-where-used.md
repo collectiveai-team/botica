@@ -6,17 +6,22 @@ title: A heavy library loads when it is used
 ## Directive
 
 A Python module does not load a heavy library, such as `torch`, `tensorflow`, `jax`,
-`transformers` or `cv2`, when it is imported. How it defers the import depends on the oldest
-version of Python that `requires-python` of the project allows.
+`transformers` or `cv2`, when it is imported. How it defers the import depends on the lowest
+version of Python that the `requires-python` of the project allows, 3.14 when it names none
+(CES-77, ADR 0015).
 
-| `requires-python` | Where the import goes | ruff | botica | Recipe |
+| `requires-python` | Where the import goes | ruff | botica | `ruff-import-rule` of `base-python` |
 |---|---|---|---|---|
-| allows a version before 3.15 | inside the function that uses the library | `TID253` on, with the list in `banned-module-level-imports`; `PLC0415` off | `ruff-heavy-imports-in-function` | `python-heavy-imports` |
-| 3.15 or later | at the top of the module, as `lazy import torch` or `lazy from transformers import AutoModel` (PEP 810) | `PLC0415` on; `TID253` off | `ruff-imports-at-top`, `no-eager-heavy-imports` | `python-lazy-imports` |
+| allows a version before 3.15 | inside the function that uses the library | `TID253` on, with the list in `banned-module-level-imports`; `PLC0415` off | `ruff-heavy-imports-in-function` | `TID253`, the default |
+| 3.15 or later | at the top of the module, as `lazy import torch` or `lazy from transformers import AutoModel` (PEP 810) | `PLC0415` on, the tests included; `TID253` off | `ruff-imports-at-top`, `no-eager-heavy-imports` | `PLC0415` |
 
-Before 3.15, the adapters of the `impl` package (CES-16), which exist to use the library, import it
-at the top. From 3.15 the adapters write `lazy` too, which costs them nothing, and a module may name
-the library in `__lazy_modules__` at its top, before the import, instead of writing `lazy`.
+`base-python` selects the three rules, and each one runs only in its range.
+
+Before 3.15, the adapters, which exist to use the library, import it at the top. Which folders hold
+them is the choice of the project: `base-python` suggests the `impl` package (CES-16) through its
+parameter `ruff-adapters`, and a project adds its own. From 3.15 the adapters write `lazy` too,
+which costs them nothing, and a module may name the library in `__lazy_modules__` at its top,
+before the import, instead of writing `lazy`.
 
 In both ranges:
 

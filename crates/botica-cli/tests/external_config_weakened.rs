@@ -9,7 +9,7 @@ use common::{botica, project_in, stdout, write};
 
 const CONFIG: &str = "preview = true\n\
                       extend-select = [\"acme/pyrefly-strict\", \"external-config-weakened\"]\n\
-                      ignore = [\"docstring-matches-signature\"]\n";
+                      ignore = [\"docstring-matches-signature\", \"ruff-heavy-imports-in-function\"]\n";
 
 const README: &str =
     "## Directive\n\nd\n\n## Why\n\nw\n\n## Tool\n\nt\n\n## Configuration\n\nc\n\n\
