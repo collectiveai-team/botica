@@ -46,7 +46,7 @@ jobs:
             echo "not gofmt-clean:"
             echo "$unformatted"
             echo
-            gofmt -d $unformatted
+            gofmt -d .
             exit 1
           fi
 
