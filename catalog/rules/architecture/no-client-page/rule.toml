@@ -1,6 +1,6 @@
 id = "no-client-page"
 code = "BTARCH006"
-standard = "CES-0"
+standard = "CES-133"
 summary = "A page or a layout of Next.js stays a Server Component"
 status = "preview"
 tags = ["nextjs"]

@@ -1,6 +1,6 @@
 id = "client-env-public-only"
 code = "BTSEC011"
-standard = "CES-0"
+standard = "CES-133"
 summary = "A Client Component reads only public environment variables"
 status = "preview"
 tags = ["nextjs", "browser"]
