@@ -36,7 +36,7 @@ select = ["PLC0415"]
 `base-python` writes `PLC0415` in the `select` of its section of ruff when its parameter
 `ruff-import-rule` is `PLC0415` (`botica recipe install base-python --set
 ruff-import-rule=PLC0415`), and then selects no `TID253`; its default, `TID253`, is for a project
-before 3.15.
+before 3.15 or whose `requires-python` sets no lower bound.
 
 ## Do
 
