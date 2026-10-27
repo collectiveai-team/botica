@@ -4,8 +4,9 @@
 #
 # The JSON API of PyPI lists an upload before the simple index that uv and prek read: in the
 # release of 0.14.2 the JSON API had the version and `uvx prek` in the next job did not. So the
-# check is a resolution by uv, with no cache. The wait between checks doubles from 5 seconds up to
-# 160, and the script gives up after 10 minutes.
+# check is a resolution by uv, with no cache and no configuration: the `exclude-newer` of the
+# pyproject.toml of this repository (CES-128) leaves out a release younger than 7 days. The wait
+# between checks doubles from 5 seconds up to 160, and the script gives up after 10 minutes.
 set -u
 
 version="${1:?usage: wait_for_pypi.sh VERSION}"
@@ -14,7 +15,7 @@ delay=5
 waited=0
 
 while :; do
-    if echo "botica==$version" | uv pip compile --no-cache --quiet --no-header --python-version 3.9 - >/dev/null 2>&1; then
+    if echo "botica==$version" | uv pip compile --no-cache --no-config --quiet --no-header --python-version 3.9 - >/dev/null 2>&1; then
         echo "uv resolves botica $version after ${waited}s"
         exit 0
     fi
