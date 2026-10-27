@@ -156,11 +156,12 @@ priority = 2
 # MARK: agnix
 # Lints the files that agents read: AGENTS.md, SKILL.md, opencode.jsonc, the Claude settings and the
 # like. The mirror passes `--strict`, which fails the hook on a warning; `args = []` removes it, so
-# an error fails the hook and a warning does not. `uvx agnix .` lists the warnings.
+# an error fails the hook and a warning does not. `uvx agnix .` lists the warnings. The fixtures of
+# the rules are wrong on purpose.
 [[repos]]
 repo = "https://github.com/agent-sh/agnix"
 rev = "v0.59.0"
-hooks = [{ id = "agnix", args = [], priority = 2 }]
+hooks = [{ id = "agnix", args = [], priority = 2, exclude = "^catalog/rules/.*/fixtures/" }]
 
 # MARK: botica
 # Selection and exclusions: `[tool.botica]` of `pyproject.toml`. The hooks of the mirror

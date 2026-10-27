@@ -14,6 +14,7 @@ fn every_rule_of_the_catalog_conforms_to_its_fixtures_with_and_without_each_opti
     assert_eq!(
         names,
         [
+            "agents-md-refs-exist",
             "api-request-schema-name",
             "api-response-schema-name",
             "api-schema-in-route-module",

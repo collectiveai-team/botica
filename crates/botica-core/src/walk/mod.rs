@@ -1,3 +1,4 @@
+mod gitignore;
 mod read;
 
 use crate::diagnostic::Diagnostic;
@@ -5,6 +6,7 @@ use crate::engine::{Engine, Exclusion};
 use ignore::WalkBuilder;
 use std::path::{Component, Path, PathBuf};
 
+pub use gitignore::is_gitignored;
 use read::{lint_opened, open_named, Outcome};
 pub use read::{lint_streaming, read_all, read_and_lint, SourceFile, Unreadable};
 

@@ -1,0 +1,89 @@
+{
+  "diagnostics": [
+    {
+      "path": "AGENTS.md",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 38,
+          "line": 3,
+          "column": 24
+        },
+        "end": {
+          "offset": 73,
+          "line": 3,
+          "column": 59
+        }
+      },
+      "message": "`@standards/CES/120-documentation.md` names no file or folder of the repository: fix the path, or remove the reference"
+    },
+    {
+      "path": "AGENTS.md",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 81,
+          "line": 4,
+          "column": 5
+        },
+        "end": {
+          "offset": 103,
+          "line": 4,
+          "column": 27
+        }
+      },
+      "message": "`@docs/agents/domain.md` names no file or folder of the repository: fix the path, or remove the reference"
+    },
+    {
+      "path": "AGENTS.md",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 154,
+          "line": 5,
+          "column": 33
+        },
+        "end": {
+          "offset": 179,
+          "line": 5,
+          "column": 58
+        }
+      },
+      "message": "`@.agents/rules/no-dict.md` names no file or folder of the repository: fix the path, or remove the reference"
+    },
+    {
+      "path": "pkg/CLAUDE.md",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 22,
+          "line": 3,
+          "column": 6
+        },
+        "end": {
+          "offset": 37,
+          "line": 3,
+          "column": 21
+        }
+      },
+      "message": "`@notes/setup.md` names no file or folder of the repository: fix the path, or remove the reference"
+    },
+    {
+      "path": "pkg/CLAUDE.md",
+      "severity": "error",
+      "range": {
+        "start": {
+          "offset": 50,
+          "line": 3,
+          "column": 34
+        },
+        "end": {
+          "offset": 65,
+          "line": 3,
+          "column": 49
+        }
+      },
+      "message": "`@../GLOSAARY.md` names no file or folder of the repository: fix the path, or remove the reference"
+    }
+  ]
+}

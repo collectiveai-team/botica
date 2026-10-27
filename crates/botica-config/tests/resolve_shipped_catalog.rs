@@ -119,7 +119,8 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
     );
 }
 
-const PROPOSED: [&str; 28] = [
+const PROPOSED: [&str; 29] = [
+    "agents-md-refs-exist",
     "api-request-schema-name",
     "api-response-schema-name",
     "api-schema-in-route-module",
@@ -179,7 +180,7 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
         &catalog,
         "select = []\nextend-select = [\"all\"]\npreview = true",
     );
-    assert_eq!(active(&resolution).len(), 72);
+    assert_eq!(active(&resolution).len(), 73);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTSEC\"]\npreview = true")),
         [

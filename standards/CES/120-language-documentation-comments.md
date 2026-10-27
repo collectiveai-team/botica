@@ -14,6 +14,8 @@ title: Language, documentation and comments
 3. The project names each concept of its domain with one term. The glossary of the project
    (`GLOSSARY.md`) lists each term with its definition and the words to avoid for it, and the code
    and the documentation use the term.
+4. A reference `@<path>` in `AGENTS.md` or `CLAUDE.md` names a file or a folder of the repository.
+   An agent reads the file it names, and goes on without it when the file is missing.
 
 ### Signs of text written by a model
 

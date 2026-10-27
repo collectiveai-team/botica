@@ -1,0 +1,15 @@
+id = "agents-md-refs-exist"
+code = "BTWRIT004"
+standard = "CES-120"
+summary = "Each `@<path>` reference of AGENTS.md or CLAUDE.md names a file or folder of the repository"
+status = "preview"
+tags = ["agents"]
+scope = "project"
+needs = "bytes"
+run-on = ["cli"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "native"
+languages = ["*"]

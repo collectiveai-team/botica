@@ -14,6 +14,7 @@ use std::process::ExitCode;
 use std::sync::Arc;
 use std::time::Instant;
 
+mod agents_refs;
 mod baseline;
 mod diff;
 mod editor;
