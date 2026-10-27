@@ -1,6 +1,6 @@
 id = "port-has-two-adapters"
 code = "BTARCH004"
-standard = "CES-0"
+standard = "CES-132"
 summary = "A port has a second adapter, or it is not a port"
 status = "preview"
 tags = ["design"]
