@@ -26,10 +26,19 @@ Python of the extensions (`crates/botica-cli/src/extension_python.rs`).
    allows 3.14.1). `<`, `<=` and `!=` set no lower bound. The code of the project has to run on the
    lowest version it allows, so that version decides which syntax a rule may ask for.
    `.python-version` and `.venv` name the Python of one machine, and do not count.
-3. **No lower bound counts as 3.14.** A project with no `pyproject.toml`, no `requires-python`, a
-   `requires-python` without a lower bound (`<4`) or one botica cannot read counts as 3.14, the
-   default of CES-77 for a new repository. A rule for an older range runs there and one for 3.15 or
-   later does not, which keeps a project that names no version off syntax it may not have.
+3. **No lower bound counts as older than every range.** A project with no `pyproject.toml`, no
+   `requires-python`, a `requires-python` without a lower bound (`<4`) or one botica cannot read
+   has no version: a rule whose `python` sets a lower bound (`>=3.15`, `==3.14`) is not active
+   there, and one with only upper bounds and exclusions (`<3.15`, `!=3.13`) is. botica assumes no
+   version, so `requires-python` is the one place that names the Python of the project, for
+   botica and for ruff. ruff 0.17.1 does the same: without `target-version` or `requires-python`
+   it applies its default, `py311` ([settings](https://docs.astral.sh/ruff/settings/#target-version)),
+   so `UP045` reports `Optional[int]`; with `target-version = "py311"`, the setting of this
+   repository, it reports `lazy import json` as `invalid-syntax: Cannot use lazy import statement
+   on Python 3.11 (syntax was added in Python 3.15)`. With no version at all, `ruff check
+   --show-settings` gives `linter.unresolved_target_version = none` and ruff reports no syntax
+   error for `lazy import`. A project that writes `lazy import` sets `requires-python = ">=3.15"`,
+   which CES-77 suggests for a new repository and which both tools then read.
 4. **A selected rule outside the range is not active.** After the selection and the replacements,
    and before `--scope`, each active rule whose `python` does not hold the version of the project
    becomes not active, with the reason `requires Python <range>, and <what the project asks>`.
@@ -47,6 +56,9 @@ Python of the extensions (`crates/botica-cli/src/extension_python.rs`).
 - **A project without `requires-python` is unknown, and no rule with `python` runs.** Rejected: a
   repository that names no version would run neither side of #242, and `base-python` would ask it
   for nothing.
+- **No lower bound counts as the default of CES-77.** Rejected: CES-77 suggests a version for a
+  new repository and does not impose it. botica would run the rules for 3.15 in a project that
+  ruff checks as 3.11, and `requires-python` would no longer be the one source of the version.
 - **The Python that `uv` would choose, as for the extensions.** Rejected: `.python-version` names
   the interpreter of development, often newer than the lowest version the package supports, and a
   rule for 3.15 would ask for syntax that the users on an older Python cannot import.

@@ -22,6 +22,6 @@ pub use model::{
     ReferencesConfig, RuleConfig, RuleSeverity,
 };
 pub use parse::json_schema;
-pub use python::{requires_python, ProjectPython, DEFAULT_PYTHON};
+pub use python::{requires_python, ProjectPython};
 pub use resolve::{FileRule, Resolution};
 pub use selector::Selector;

@@ -164,8 +164,10 @@ python = ">=3.15"
 botica compares the range with the lowest version that the `requires-python` of the
 `pyproject.toml` at the root of the project allows: `>=3.12, <4` gives 3.12, `~=3.15.0` gives
 3.15.0 and `>3.14` gives 3.14.1. A project whose `requires-python` is missing or sets no lower
-bound, such as `<4`, counts as 3.14, the default of CES-77. `.python-version` and the Python that
-runs botica do not count: the code of the project has to run on the lowest version it allows.
+bound, such as `<4`, counts as older than every version a range names: a rule for `>=3.15` is not
+active there, and one for `<3.15` is, as ruff applies its own default (`py311` in ruff 0.17.1)
+when nothing names the version. `.python-version` and the Python that runs botica do not count: the
+code of the project has to run on the lowest version it allows.
 
 A rule that the configuration selects and whose range does not hold that version is not active, for
 every kind of rule. `botica rules --all` and `botica explain` give the reason:

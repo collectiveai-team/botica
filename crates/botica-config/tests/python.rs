@@ -73,9 +73,13 @@ fn the_lower_bound_of_requires_python_picks_the_rules_whose_range_holds_it() {
 }
 
 #[test]
-fn a_project_without_a_lower_bound_counts_as_the_default_of_ces_77() {
+fn a_project_without_a_lower_bound_counts_as_older_than_every_range() {
     assert_eq!(active(&resolve(None)), ["any-python", "before-315"]);
     assert_eq!(active(&resolve(Some("<4"))), ["any-python", "before-315"]);
+    assert_eq!(
+        active(&resolve(Some(">=three"))),
+        ["any-python", "before-315"]
+    );
 }
 
 #[test]
@@ -102,8 +106,16 @@ fn a_rule_left_out_by_its_range_says_what_each_side_asks() {
             .expect("rule")
             .reason
             .to_string(),
-        "requires Python `>=3.15`, and the project names no `requires-python`, so botica takes \
-         3.14 (CES-77)"
+        "requires Python `>=3.15`, and the project names no lower bound in `requires-python`"
+    );
+    assert_eq!(
+        resolve(Some("<4"))
+            .entry("from-315")
+            .expect("rule")
+            .reason
+            .to_string(),
+        "requires Python `>=3.15`, and the `requires-python` of the project, `<4`, sets no lower \
+         bound"
     );
 }
 

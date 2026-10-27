@@ -135,6 +135,17 @@ impl PythonRange {
             .iter()
             .all(|(operator, bound)| operator.holds(version, *bound))
     }
+
+    /// Whether the range holds a version older than every version it names, as for a project
+    /// whose `requires-python` sets no lower bound: `<3.15` does, `>=3.15` does not.
+    pub fn holds_an_older_version(&self) -> bool {
+        self.clauses.iter().all(|(operator, _)| {
+            matches!(
+                operator,
+                Operator::AtMost | Operator::Below | Operator::NotEqual
+            )
+        })
+    }
 }
 
 impl TryFrom<String> for PythonRange {
@@ -214,6 +225,16 @@ mod tests {
         assert!(range("!=3.13").contains(version("3.14")));
         assert!(range("==3.14").contains(version("3.14.0")));
         assert!(range("<=3.14").contains(version("3.14")));
+    }
+
+    #[test]
+    fn only_a_range_with_no_lower_bound_holds_an_older_version() {
+        for text in ["<3.15", "<=3.14", "!=3.13", "<3.15, !=3.12"] {
+            assert!(range(text).holds_an_older_version(), "{text}");
+        }
+        for text in [">=3.15", ">3.14", "==3.14", ">=3.10, <3.15"] {
+            assert!(!range(text).holds_an_older_version(), "{text}");
+        }
     }
 
     #[test]

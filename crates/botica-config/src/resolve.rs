@@ -132,7 +132,7 @@ impl Resolution {
             let Some(range) = &entry.rule.python else {
                 continue;
             };
-            if !range.contains(project.version) {
+            if !project.is_in(range) {
                 entry.active = false;
                 entry.reason = Reason::OutsidePython {
                     range: range.to_string(),

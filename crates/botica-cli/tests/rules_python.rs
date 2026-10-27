@@ -103,15 +103,16 @@ fn a_project_from_315_runs_the_other_rule() {
 }
 
 #[test]
-fn a_project_without_requires_python_counts_as_314() {
+fn a_project_without_requires_python_runs_the_rule_for_the_older_range() {
     let text = rules_all(&project("unpinned", None));
     assert!(
         line_of(&text, "acme/before-315").contains(" active "),
         "{text}"
     );
     assert!(
-        line_of(&text, "acme/from-315")
-            .contains("the project names no `requires-python`, so botica takes 3.14 (CES-77)"),
+        line_of(&text, "acme/from-315").contains(
+            "requires Python `>=3.15`, and the project names no lower bound in `requires-python`"
+        ),
         "{text}"
     );
 }
