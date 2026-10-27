@@ -47,7 +47,7 @@ jobs:
         run: uv python install
 
       - name: Install dependencies
-        run: uv sync --frozen
+        run: uv sync --locked
 
       # --check-upstream also clones the newest tag, so keep it off the hot path
       # of ordinary PRs; the scheduled run is what watches upstream.

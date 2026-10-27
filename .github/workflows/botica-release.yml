@@ -293,7 +293,7 @@ jobs:
           uv run --no-project --python 3.14 --with cyclopts python scripts/bump_mirror_rev.py "${TAG#v}"
 
       - name: Run the tests of the repository
-        run: uv sync --frozen && uv run pytest
+        run: uv sync --locked && uv run pytest
 
       - name: Commit and push
         run: |

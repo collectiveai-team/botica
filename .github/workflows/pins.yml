@@ -44,7 +44,7 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --frozen
+        run: uv sync --locked
 
       - name: Update the hooks of prek.toml and of the templates
         run: >-

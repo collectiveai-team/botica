@@ -15,7 +15,7 @@ name: openapi-compat
 # Replace `replace_me.entrypoints.api:app` in APP with the module and the name of the FastAPI app.
 # The export imports the app, so the dependencies the import needs come from `uv sync`; a project
 # whose full install is heavy declares a dependency group with only the web layer and syncs it with
-# `uv sync --frozen --only-group <group>`. The job fails while APP starts with `replace_me`, and
+# `uv sync --locked --only-group <group>`. The job fails while APP starts with `replace_me`, and
 # passes without comparing when the base has no such module. The two documents go to `.tmp/`, which the recipe `base` ignores, so the checkout of
 # the base keeps them.
 
@@ -80,7 +80,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.base.outputs.present == 'true'
-        run: uv sync --frozen
+        run: uv sync --locked
 
       - name: Export the head and the base
         if: steps.base.outputs.present == 'true'
