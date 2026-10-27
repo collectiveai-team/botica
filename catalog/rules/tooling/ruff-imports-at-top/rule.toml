@@ -1,0 +1,16 @@
+id = "ruff-imports-at-top"
+code = "BTTOOL006"
+standard = "CES-0"
+summary = "From Python 3.15, ruff reports an import outside the top of a module"
+status = "preview"
+tags = ["ruff", "imports"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "external"
+languages = ["python"]
+tool = "ruff"
+docs = "https://docs.astral.sh/ruff/rules/import-outside-top-level/"
+codes = ["PLC0415"]
+config = "config/pyproject.toml"

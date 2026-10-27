@@ -1,10 +1,10 @@
 id = "no-eager-heavy-imports"
 code = "BTARCH004"
 standard = "CES-0"
-summary = "A heavy library is imported where it is used, not when the module loads"
+summary = "From Python 3.15, a heavy library is imported at the top of a module with lazy import"
 status = "preview"
 tags = ["imports", "startup"]
-ignores = ["**/impl/**", "**/tests/**", "**/test_*.py", "**/*_test.py", "**/conftest.py", "**/*.pyi"]
+ignores = ["**/test_*.py", "**/*_test.py", "**/*.pyi"]
 scope = "file"
 needs = "syntax"
 run-on = ["cli", "save"]

@@ -1,3 +1,4 @@
+import warnings
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -5,6 +6,5 @@ if TYPE_CHECKING:
 else:
     import tensorflow as tf
 
-
-class Trainer:
+with warnings.catch_warnings():
     import jax.numpy as jnp

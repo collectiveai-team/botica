@@ -1,0 +1,2 @@
+description = "Heavy libraries imported inside the function that uses them, for a project whose requires-python allows a version before 3.15: ruff TID253 with torch, tensorflow, jax, transformers and cv2, beside base-python"
+rules = ["ruff-heavy-imports-in-function"]

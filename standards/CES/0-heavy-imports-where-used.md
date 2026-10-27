@@ -1,41 +1,56 @@
 ---
 id: CES-0
-title: A heavy library is imported where it is used
+title: A heavy library loads when it is used
 ---
 
 ## Directive
 
 A Python module does not load a heavy library, such as `torch`, `tensorflow`, `jax`,
-`transformers` or `cv2`, when it is imported, unless the module is an adapter that exists to use
-that library.
+`transformers` or `cv2`, when it is imported. How it defers the import depends on the oldest
+version of Python that `requires-python` of the project allows.
 
-- A module outside the adapters imports the library inside the function that uses it.
-- On Python 3.15 or later the import can stay at the top as `lazy import torch` or
-  `lazy from transformers import AutoModel` (PEP 810), which loads the library at its first use.
-- Code that also runs on older versions names the library in `__lazy_modules__` at the top of the
-  module, before the import: Python 3.15 makes that import lazy and older versions leave it eager.
-- An import that only type annotations need goes under `if TYPE_CHECKING:`.
+| `requires-python` | Where the import goes | ruff | botica | Recipe |
+|---|---|---|---|---|
+| allows a version before 3.15 | inside the function that uses the library | `TID253` on, with the list in `banned-module-level-imports`; `PLC0415` off | `ruff-heavy-imports-in-function` | `python-heavy-imports` |
+| 3.15 or later | at the top of the module, as `lazy import torch` or `lazy from transformers import AutoModel` (PEP 810) | `PLC0415` on; `TID253` off | `ruff-imports-at-top`, `no-eager-heavy-imports` | `python-lazy-imports` |
 
-The adapters live in the `impl` package (CES-16), and their modules import the library at the top.
-Tests import it where they need it.
+Before 3.15, the adapters of the `impl` package (CES-16), which exist to use the library, import it
+at the top. From 3.15 the adapters write `lazy` too, which costs them nothing, and a module may name
+the library in `__lazy_modules__` at its top, before the import, instead of writing `lazy`.
+
+In both ranges:
+
+- an import that only type annotations need goes under `if TYPE_CHECKING:`;
+- the test files (`test_*.py`, `*_test.py`) import the library at the top, and `conftest.py`
+  follows the rule, since one at the root loads the library for every run of the tests.
+
+From 3.15, an optional dependency imported in `try: ... except ImportError:` stays eager, because
+Python 3.15 does not accept `lazy` in a `try` block.
 
 ## Why
 
 Importing a module runs the imports at its top. `import torch` of torch 2.13 on Linux took 8.3
 seconds the first time and 1.0 second after, and took the memory of the process from 12 MB to
-518 MB. Each program that imports the module pays for it, even when it never calls the model: `--help` of a command-line tool, a test of code that does not touch the model, the start of
-an API where few routes use it. PEP 810 gives this cost as the reason for lazy imports: "even
-running the command with --help can load dozens of unnecessary modules and take several seconds."
+518 MB. Each program that imports the module pays for it, even when it never calls the model:
+`--help` of a command-line tool, a test of code that does not touch the model, the start of an API
+where few routes use it. PEP 810 gives this cost as the reason for lazy imports: "even running the
+command with --help can load dozens of unnecessary modules and take several seconds."
 
-ruff `TID253` (`banned-module-level-imports`) reports an import of a listed module at the top of a
-module, but ruff 0.17.1 with `target-version = "py315"` also reports `lazy import torch` and an
-import that `__lazy_modules__` makes lazy, which are the fixes this standard asks for.
-`no-eager-heavy-imports` reports the eager imports and leaves those two alone.
+Before 3.15 the language has no lazy import, and an import inside the function is how a module
+loads the library only when it is used. ruff `PLC0415` reports every import inside a function, so
+it stays off there. From 3.15, `lazy import` keeps every import at the top, where the reader sees
+the dependencies of the module, and loads the library at its first use; an import inside a function
+no longer saves anything, and `PLC0415` reports it. ruff 0.17.1 with `target-version = "py315"`
+reports `lazy import torch` and an import that `__lazy_modules__` makes lazy under `TID253`, so
+`TID253` stays off there and `no-eager-heavy-imports` reports the eager imports instead.
+
+PEP 810 forbids `lazy` in a function, a class body and a `try` block, and allows it in `if` and
+`with` blocks at the top of the module.
 
 ## Examples
 
 ```python
-# Do
+# Before 3.15. Do
 def embed(texts: list[str]) -> list[list[float]]:
     import torch
 
@@ -43,7 +58,16 @@ def embed(texts: list[str]) -> list[list[float]]:
         return model(texts).tolist()
 
 
-# Don't: every importer of this module loads torch
+# From 3.15. Do
+lazy import torch
+
+
+def embed(texts: list[str]) -> list[list[float]]:
+    with torch.no_grad():
+        return model(texts).tolist()
+
+
+# In both. Don't: every importer of this module loads torch
 import torch
 
 

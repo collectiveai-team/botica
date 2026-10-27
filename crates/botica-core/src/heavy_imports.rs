@@ -1,6 +1,7 @@
-//! `no-eager-heavy-imports`: a heavy library imported when a Python module loads, outside a
-//! function. An import inside `if TYPE_CHECKING:`, a `lazy import` of Python 3.15 and an import
-//! that `__lazy_modules__` makes lazy are left alone.
+//! `no-eager-heavy-imports`: on Python 3.15 or later, a heavy library imported at the top of a
+//! Python module without `lazy`. An import inside a function or a class body is for ruff
+//! `PLC0415`; an import inside `if TYPE_CHECKING:` or a `try` block, and one that
+//! `__lazy_modules__` makes lazy, are left alone.
 
 use std::collections::BTreeSet;
 
@@ -77,29 +78,23 @@ impl NativeRule for NoEagerHeavyImports {
                 "import_statement" | "import_from_statement"
             )
         }) {
-            if in_function(&statement)
+            if cannot_be_lazy(&statement)
                 || under_type_checking(&statement)
                 || after_lazy_keyword(&statement, text)
             {
                 continue;
             }
-            let can_be_lazy = !statement
-                .ancestors()
-                .any(|node| matches!(node.kind().as_ref(), "try_statement" | "class_definition"));
             for module in imported_modules(&statement) {
                 let name = dotted(&module);
                 if !self.is_heavy(&name) {
                     continue;
                 }
-                let declared = can_be_lazy
-                    && declarations.iter().any(|declaration| {
-                        declaration.end <= statement.range().start
-                            && declaration.names.contains(&name)
-                    });
-                if declared {
-                    continue;
+                let declared = declarations.iter().any(|declaration| {
+                    declaration.end <= statement.range().start && declaration.names.contains(&name)
+                });
+                if !declared {
+                    out.push(finding(doc, &module, &name, &statement));
                 }
-                out.push(finding(doc, &module, &name, &statement, can_be_lazy));
             }
         }
     }
@@ -110,25 +105,15 @@ fn finding(
     module: &PyNode<'_>,
     name: &str,
     statement: &PyNode<'_>,
-    can_be_lazy: bool,
 ) -> Diagnostic {
     let range = module.range();
     let (line, column) = doc.position(range.start);
     let (end_line, end_column) = doc.position(range.end);
-    let lazy = if statement.kind() == "import_from_statement" {
-        "lazy from"
+    let written = statement.text();
+    let fix = if written.contains('\n') {
+        "write `lazy` before this import".to_owned()
     } else {
-        "lazy import"
-    };
-    let fix = if can_be_lazy {
-        format!(
-            "import it inside the function that uses it, write `{lazy}` on Python 3.15 or later, \
-             or name it in `__lazy_modules__` when the code also runs on older versions"
-        )
-    } else {
-        "import it inside the function that uses it (an import in a `try` block or a class \
-         body stays eager on Python 3.15)"
-            .to_owned()
+        format!("write `lazy {written}`")
     };
     Diagnostic {
         path: doc.path.to_owned(),
@@ -142,7 +127,10 @@ fn finding(
         end_column,
         file_level: false,
         measure: None,
-        message: format!("`{name}` is loaded when this module is imported, so every importer waits for it: {fix}"),
+        message: format!(
+            "`{name}` is loaded when this module is imported, so every importer waits for it: \
+             {fix}, or name it in `__lazy_modules__`"
+        ),
     }
 }
 
@@ -174,10 +162,15 @@ fn dotted(module: &PyNode<'_>) -> String {
         .collect()
 }
 
-fn in_function(statement: &PyNode<'_>) -> bool {
-    statement
-        .ancestors()
-        .any(|node| node.kind() == "function_definition")
+/// Whether Python 3.15 forbids `lazy` on the statement and keeps it eager under
+/// `__lazy_modules__`: in a function, a class body or a `try` block (PEP 810).
+fn cannot_be_lazy(statement: &PyNode<'_>) -> bool {
+    statement.ancestors().any(|node| {
+        matches!(
+            node.kind().as_ref(),
+            "function_definition" | "class_definition" | "try_statement"
+        )
+    })
 }
 
 /// Whether the statement is in the body of an `if TYPE_CHECKING:` (or `typing.TYPE_CHECKING`),

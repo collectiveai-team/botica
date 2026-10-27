@@ -1,0 +1,16 @@
+id = "ruff-heavy-imports-in-function"
+code = "BTTOOL005"
+standard = "CES-0"
+summary = "Before Python 3.15, ruff reports a heavy library imported at the top of a module outside the adapters"
+status = "preview"
+tags = ["ruff", "imports"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "external"
+languages = ["python"]
+tool = "ruff"
+docs = "https://docs.astral.sh/ruff/rules/banned-module-level-imports/"
+codes = ["TID253"]
+config = "config/pyproject.toml"

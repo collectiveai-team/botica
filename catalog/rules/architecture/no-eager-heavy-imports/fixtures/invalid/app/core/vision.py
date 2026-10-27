@@ -1,9 +1,6 @@
-__lazy_modules__ = ["cv2", "torch"]
+import cv2
 
-try:
-    import cv2
-except ImportError:
-    cv2 = None
+__lazy_modules__ = ["cv2", "torch"]
 
 import torch.nn
 

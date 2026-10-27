@@ -113,7 +113,7 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
     );
 }
 
-const PROPOSED: [&str; 29] = [
+const PROPOSED: [&str; 31] = [
     "api-request-schema-name",
     "api-response-schema-name",
     "api-schema-in-route-module",
@@ -137,6 +137,8 @@ const PROPOSED: [&str; 29] = [
     "pyrefly-strict",
     "recipe-conflict",
     "route-auth",
+    "ruff-heavy-imports-in-function",
+    "ruff-imports-at-top",
     "ruff-selection",
     "settings-base-class",
     "settings-direct-instantiation",
@@ -174,7 +176,7 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
         &catalog,
         "select = []\nextend-select = [\"all\"]\npreview = true",
     );
-    assert_eq!(active(&resolution).len(), 70);
+    assert_eq!(active(&resolution).len(), 72);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTSEC\"]\npreview = true")),
         [

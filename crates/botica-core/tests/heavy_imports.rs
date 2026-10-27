@@ -1,4 +1,5 @@
-//! `no-eager-heavy-imports`: a heavy library imported when a Python module loads.
+//! `no-eager-heavy-imports`: on Python 3.15 or later, a heavy library imported at the top of a
+//! module without `lazy`.
 
 use botica_core::heavy_imports::NoEagerHeavyImports;
 use botica_core::{Document, NativeRule};
@@ -27,9 +28,31 @@ fn an_import_at_the_top_is_reported_once_per_heavy_module() {
 }
 
 #[test]
-fn an_import_inside_a_function_or_a_method_is_not_reported() {
-    let text = "def f():\n    import torch\n\nclass A:\n    async def g(self):\n        from jax import numpy\n";
+fn the_message_gives_the_import_with_lazy_before_it() {
+    let found = reported_with(
+        &NoEagerHeavyImports::default(),
+        "from transformers import AutoModel\n",
+    );
+    assert!(
+        found[0]
+            .1
+            .contains("write `lazy from transformers import AutoModel`"),
+        "{}",
+        found[0].1
+    );
+}
+
+#[test]
+fn an_import_where_python_forbids_lazy_is_not_reported() {
+    let text = "def f():\n    import torch\n\nclass A:\n    import jax\n\n\
+                try:\n    import cv2\nexcept ImportError:\n    cv2 = None\n";
     assert!(reported(text).is_empty());
+}
+
+#[test]
+fn an_import_in_an_if_or_a_with_at_the_top_is_reported() {
+    let text = "with ctx():\n    import torch\nif FLAG:\n    import jax\n";
+    assert_eq!(reported(text), [2, 4]);
 }
 
 #[test]
@@ -53,14 +76,6 @@ fn lazy_modules_covers_the_names_it_lists_before_the_import() {
         reported("import torch\n__lazy_modules__ = (\"torch\",)\n"),
         [1]
     );
-}
-
-#[test]
-fn lazy_modules_does_not_cover_an_import_in_a_try_block() {
-    let text = "__lazy_modules__ = {\"torch\"}\ntry:\n    import torch\nexcept ImportError:\n    torch = None\n";
-    let found = reported_with(&NoEagerHeavyImports::default(), text);
-    assert_eq!(found.len(), 1);
-    assert!(found[0].1.contains("stays eager"), "{}", found[0].1);
 }
 
 #[test]

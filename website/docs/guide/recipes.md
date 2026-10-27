@@ -205,6 +205,16 @@ two rules in preview. It writes no file: the `[tool.pyrefly]` of `base-python` i
 repository adds `preset = "strict"` and `explicit-any = true` to it
 (`botica explain pyrefly-strict` shows them).
 
+`python-heavy-imports` and `python-lazy-imports` go beside `base-python`, and a project names the
+one that matches its `requires-python`. Both write no file, like `python-strict-types`, because the
+tables of ruff they need are already in `pyproject.toml`. `python-heavy-imports`, for a project
+that allows a version before 3.15, selects `ruff-heavy-imports-in-function`: ruff `TID253` with
+`torch`, `tensorflow`, `jax`, `transformers` and `cv2`, and the adapters of `impl` left out.
+`python-lazy-imports`, for 3.15 or later, selects `ruff-imports-at-top` (ruff `PLC0415`) and
+`no-eager-heavy-imports`, which asks for `lazy import`. ruff takes its target version from
+`requires-python` and reports `lazy import` as invalid syntax before 3.15, so the second recipe
+fails on the first import it asks for in a project that allows an older version.
+
 `python-test-smells` selects `no-tautological-assert` and adds the hook `falsegreen` to `prek.toml`
 and `[tool.falsegreen.severity]` to `pyproject.toml` (CES-124). The hook runs
 `uvx falsegreen@0.9.2 --staged --baseline` before each commit and fails on a finding of high
