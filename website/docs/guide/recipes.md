@@ -274,6 +274,21 @@ What the recipes cannot say about themselves:
   `pending` and the setting is added by hand to the table that is there. The days are the parameter
   `cooldown-days` (7 by default), which the recipes of CI also write into
   `.github/dependabot.yml`.
+- `base-python` selects the rules of heavy imports for both ranges of Python, and botica runs the
+  ones whose `python` holds the `requires-python` of the project: `ruff-heavy-imports-in-function`
+  before 3.15, `ruff-imports-at-top` and `no-eager-heavy-imports` from 3.15. The section of ruff
+  is written in every project, so the code of ruff that depends on the range is the parameter
+  `ruff-import-rule`: `TID253` by default, for a project that allows a version before 3.15 or
+  whose `requires-python` sets no lower bound, and `PLC0415` for 3.15 or later
+  (`--set ruff-import-rule=PLC0415`). The rest of the section holds in both ranges: the list of
+  heavy libraries in `banned-module-level-imports` does nothing while `TID253` is not selected, and
+  the section selects `TID251` and `TID252` instead of the family `TID`. A project of 3.15 installed
+  without the parameter gets `TID253` on its `lazy import`, and `botica recipe check` reports the
+  fragment of `ruff-imports-at-top`; a project before 3.15 or with no lower bound installed with
+  `PLC0415` gets `PLC0415` on its imports inside functions, and `botica recipe check` reports the
+  fragment of `ruff-heavy-imports-in-function`. The parameter `ruff-adapters` (`**/impl/**` by default) is the
+  glob of the adapters, which import a heavy library at the top before 3.15; a project adds other
+  folders to `per-file-ignores` by hand (`"coro/backends/**" = ["TID253"]`).
 - The hooks of golangci-lint in `base-go` build it with the Go of the `PATH`: golangci-lint stops
   on a module whose `go` directive is newer than the Go that built it. A machine whose Go prek does
   not take as a Go of the system installs with another `go-preference` (`managed`, `only-managed`

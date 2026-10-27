@@ -34,7 +34,10 @@ select = [
   "DTZ",
   "PTH",
   "LOG",
-  "TID",
+  "TID251",
+  "TID252",
+  # TID253 before Python 3.15, PLC0415 from 3.15: the parameter ruff-import-rule.
+  "{{ param.ruff-import-rule }}",
   "UP",
   "RUF",
   "ERA001",
@@ -83,6 +86,11 @@ max-complexity = 10
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
+banned-module-level-imports = ["torch", "tensorflow", "jax", "transformers", "cv2"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "INP001"]
+# The adapters, which exist to use a heavy library, and the test files import it at the top.
+"{{ param.ruff-adapters }}" = ["TID253"]
+"**/test_*.py" = ["TID253"]
+"**/*_test.py" = ["TID253"]

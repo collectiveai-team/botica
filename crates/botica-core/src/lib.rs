@@ -11,6 +11,7 @@ pub mod env_schema;
 mod extension_run;
 pub mod external_config;
 pub mod external_weakened;
+pub mod heavy_imports;
 pub mod import_layers;
 mod layout;
 pub mod lockfiles;

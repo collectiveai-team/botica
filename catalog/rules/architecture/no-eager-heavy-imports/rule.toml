@@ -1,0 +1,20 @@
+id = "no-eager-heavy-imports"
+code = "BTARCH004"
+standard = "CES-132"
+summary = "From Python 3.15, a heavy library is imported at the top of a module with lazy import"
+status = "stable"
+tags = ["imports", "startup"]
+ignores = ["**/test_*.py", "**/*_test.py", "**/*.pyi"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save"]
+default-enabled = true
+default-severity = "warning"
+python = ">=3.15"
+
+[options]
+modules = { type = "strings", default = ["torch", "tensorflow", "jax", "transformers", "cv2"] }
+
+[[implementations]]
+kind = "native"
+languages = ["python"]

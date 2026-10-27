@@ -1,0 +1,140 @@
+{
+  "diagnostics": [
+    {
+      "path": "app/core/embeddings.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 18,
+          "line": 3,
+          "column": 8
+        },
+        "end": {
+          "offset": 23,
+          "line": 3,
+          "column": 13
+        }
+      },
+      "message": "`torch` is loaded when this module is imported, so every importer waits for it: write `lazy import torch`, or name it in `__lazy_modules__`"
+    },
+    {
+      "path": "app/core/embeddings.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 29,
+          "line": 4,
+          "column": 6
+        },
+        "end": {
+          "offset": 41,
+          "line": 4,
+          "column": 18
+        }
+      },
+      "message": "`transformers` is loaded when this module is imported, so every importer waits for it: write `lazy from transformers import AutoModel`, or name it in `__lazy_modules__`"
+    },
+    {
+      "path": "app/core/vision.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 7,
+          "line": 1,
+          "column": 8
+        },
+        "end": {
+          "offset": 10,
+          "line": 1,
+          "column": 11
+        }
+      },
+      "message": "`cv2` is loaded when this module is imported, so every importer waits for it: write `lazy import cv2`, or name it in `__lazy_modules__`"
+    },
+    {
+      "path": "app/core/vision.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 56,
+          "line": 5,
+          "column": 8
+        },
+        "end": {
+          "offset": 64,
+          "line": 5,
+          "column": 16
+        }
+      },
+      "message": "`torch.nn` is loaded when this module is imported, so every importer waits for it: write `lazy import torch.nn`, or name it in `__lazy_modules__`"
+    },
+    {
+      "path": "app/entrypoints/cli.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 100,
+          "line": 7,
+          "column": 12
+        },
+        "end": {
+          "offset": 110,
+          "line": 7,
+          "column": 22
+        }
+      },
+      "message": "`tensorflow` is loaded when this module is imported, so every importer waits for it: write `lazy import tensorflow as tf`, or name it in `__lazy_modules__`"
+    },
+    {
+      "path": "app/entrypoints/cli.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 161,
+          "line": 10,
+          "column": 12
+        },
+        "end": {
+          "offset": 170,
+          "line": 10,
+          "column": 21
+        }
+      },
+      "message": "`jax.numpy` is loaded when this module is imported, so every importer waits for it: write `lazy import jax.numpy as jnp`, or name it in `__lazy_modules__`"
+    },
+    {
+      "path": "app/impl/torch_embedder.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 7,
+          "line": 1,
+          "column": 8
+        },
+        "end": {
+          "offset": 12,
+          "line": 1,
+          "column": 13
+        }
+      },
+      "message": "`torch` is loaded when this module is imported, so every importer waits for it: write `lazy import torch`, or name it in `__lazy_modules__`"
+    },
+    {
+      "path": "tests/conftest.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 21,
+          "line": 2,
+          "column": 8
+        },
+        "end": {
+          "offset": 26,
+          "line": 2,
+          "column": 13
+        }
+      },
+      "message": "`torch` is loaded when this module is imported, so every importer waits for it: write `lazy import torch`, or name it in `__lazy_modules__`"
+    }
+  ]
+}

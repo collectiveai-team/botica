@@ -21,6 +21,9 @@ rules = [
   "test-no-subprocess",
   "test-no-network",
   "uv-cooldown",
+  "ruff-heavy-imports-in-function",
+  "ruff-imports-at-top",
+  "no-eager-heavy-imports",
 ]
 
 [[files]]
@@ -73,6 +76,15 @@ packages = [
   "pytest-randomly",
   "pytest-socket",
 ]
+
+[params.ruff-import-rule]
+description = "The rule of ruff for heavy imports: TID253 when requires-python allows a version before 3.15, PLC0415 from 3.15"
+choices = ["TID253", "PLC0415"]
+default = "TID253"
+
+[params.ruff-adapters]
+description = "The glob of the adapters, which import a heavy library at the top before Python 3.15"
+default = "**/impl/**"
 
 [params.pyrefly-version]
 description = "The version of pyrefly that the hook of prek runs with uvx (empty: the newest)"
