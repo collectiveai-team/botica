@@ -1,0 +1,21 @@
+title = "Races between coroutines, caught by an invariant test"
+
+[[references]]
+file = "code/tests/test_stock.py"
+anchor = "def test_concurrent_reserves_never_take_more_units_than_the_stock_has"
+note = "concurrent reserves run with `asyncio.gather`, and the invariant asserted on the stock afterwards; the reserve that checks and acts across an await fails it on every run"
+
+[[references]]
+file = "code/app/core/stock.py"
+anchor = "class Stock:"
+note = "the fix: an `asyncio.Lock` keeps the check and the take of one reserve together"
+
+[[references]]
+url = "https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.call_soon"
+note = "the event loop calls the ready callbacks in a fixed order, so coroutines that await no real I/O interleave the same way on every run"
+quote = "Callbacks are called in the order in which they are registered."
+
+[[references]]
+url = "https://docs.python.org/3/library/asyncio-sync.html"
+note = "an `asyncio.Lock` serializes the coroutines of one event loop, not threads"
+quote = "asyncio primitives are not thread-safe"
