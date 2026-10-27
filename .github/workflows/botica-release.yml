@@ -86,15 +86,17 @@ jobs:
       contents: write
     strategy:
       fail-fast: false
+      # `check` says where the wheel runs before it is attached: on the runner (`native`), in an
+      # Alpine container (`container`, musl), or nowhere (`none`: macos-latest is arm64).
       matrix:
         include:
-          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, manylinux: auto }
-          - { os: ubuntu-latest, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2 }
-          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, manylinux: auto }
-          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl, manylinux: musllinux_1_2 }
-          - { os: macos-latest, target: aarch64-apple-darwin, manylinux: "off" }
-          - { os: macos-latest, target: x86_64-apple-darwin, manylinux: "off" }
-          - { os: windows-latest, target: x86_64-pc-windows-msvc, manylinux: "off" }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, manylinux: auto, check: native }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2, check: container }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, manylinux: auto, check: native }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl, manylinux: musllinux_1_2, check: container }
+          - { os: macos-latest, target: aarch64-apple-darwin, manylinux: "off", check: native }
+          - { os: macos-latest, target: x86_64-apple-darwin, manylinux: "off", check: none }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc, manylinux: "off", check: native }
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -111,6 +113,29 @@ jobs:
           target: ${{ matrix.target }}
           manylinux: ${{ matrix.manylinux }}
           args: --release --locked --out dist
+
+      - name: Install uv
+        if: matrix.check == 'native'
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: "0.13.3"
+          enable-cache: false
+
+      # The wheel alone, from dist/: --no-index keeps a botica on PyPI from standing in for it.
+      - name: Run the wheel
+        if: matrix.check == 'native'
+        shell: bash
+        run: |
+          wheel=$(echo dist/*.whl)
+          uv run --no-config --no-project --isolated --no-index --with "$wheel" \
+            sh scripts/check_wheel.sh "${TAG#v}"
+
+      - name: Run the wheel on musl
+        if: matrix.check == 'container'
+        run: |
+          docker run --rm -v "$PWD:/src:ro" -w /src python:3.14-alpine sh -euc '
+            pip install --quiet --no-index --root-user-action=ignore dist/*.whl
+            sh scripts/check_wheel.sh "$1"' check "${TAG#v}"
 
       - name: Attach the wheel and its checksum to the release
         shell: bash

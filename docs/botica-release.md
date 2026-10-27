@@ -14,7 +14,11 @@ when the tag is on `main`, or else the one remote branch that holds the tag.
    and `scripts/stamp_release.py check` finds every status of the catalog sealed in the history.
 3. `draft` creates a draft GitHub Release.
 4. `wheels` builds a wheel per platform and attaches it, with a `.sha256`, to the draft: Linux
-   x64 and arm64 (glibc and musl), macOS arm64 and x64, Windows x64.
+   x64 and arm64 (glibc and musl), macOS arm64 and x64, Windows x64. Before attaching it, the job
+   installs the wheel alone, with no index, and runs `scripts/check_wheel.sh` with it: `botica
+   --version` reports the version of the tag, `botica rules list` and `botica recipe list` run,
+   and `import botica.sdk` works. The musl wheels run in a `python:3.14-alpine` container. The
+   wheel for macOS x64 is built on an arm64 runner and is not run.
 5. `publish` makes the release public when every wheel is attached, and the release becomes
    "latest". By hand, `gh release edit vA.B.C --latest` marks another one.
 6. `pypi` uploads the wheels to PyPI when the repository variable `PUBLISH_TO_PYPI` is `true`.
@@ -39,8 +43,7 @@ instead. The two calls to reusable workflows use GitHub's self-repository syntax
 `-ignore 'reusable workflow call "\$/.+" at "uses" is not following the format'`.
 
 `mirror-check` installs the wheel of Linux x64 from PyPI through the mirror and runs it. Not
-checked: that the wheels for musl, arm64, macOS and Windows run (they build and are published,
-nothing more).
+checked: that the wheel for macOS x64 runs (it builds and is published, nothing more).
 
 ## PyPI and who may release
 
