@@ -345,3 +345,23 @@ status = "preview"
 version = "0.15.0"
 rule = "yarn-cooldown"
 status = "preview"
+
+[[event]]
+version = "0.16.0"
+rule = "agents-md-refs-exist"
+status = "preview"
+
+[[event]]
+version = "0.16.0"
+rule = "no-eager-heavy-imports"
+status = "stable"
+
+[[event]]
+version = "0.16.0"
+rule = "ruff-heavy-imports-in-function"
+status = "stable"
+
+[[event]]
+version = "0.16.0"
+rule = "ruff-imports-at-top"
+status = "stable"
