@@ -1,5 +1,5 @@
 ---
-id: CES-0
+id: CES-133
 title: A Next.js app loads its data and reads its secrets on the server
 ---
 

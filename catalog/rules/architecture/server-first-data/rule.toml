@@ -1,6 +1,6 @@
 id = "server-first-data"
 code = "BTARCH007"
-standard = "CES-0"
+standard = "CES-133"
 summary = "A Next.js app loads its data on the server and passes it as props"
 status = "preview"
 tags = ["nextjs"]
