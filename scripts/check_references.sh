@@ -7,8 +7,8 @@
 # `structured-logging` goes on the path of every topic: the others import its `get_logger`.
 #
 # The environment is its own (`.tmp/references-venv` unless UV_PROJECT_ENVIRONMENT names another),
-# with a CPython 3.14 that has the GIL: the house version (CES-77), and some dependencies of prefect
-# have no wheels for the free-threaded build. The tests run with the network blocked by
+# with a CPython 3.14 that has the GIL: the floor of the group `references`, and some dependencies of
+# prefect have no wheels for the free-threaded build. The tests run with the network blocked by
 # pytest-socket (CES-64): a test marked `integration` or `e2e` gets it back through the hook of its
 # `conftest.py`. Run by the job `references` of ci.yml.
 #

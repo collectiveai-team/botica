@@ -86,7 +86,7 @@ exclude-newer-package = { certifi = "2026-10-22T00:00:00Z", fastapi = "2026-10-2
 
 [tool.uv.dependency-groups]
 dev = { requires-python = ">=3.11" }
-# The house version of Python (CES-77).
+# 3.14, the default of CES-77 when the group was set; the pin stays as it is (CES-30).
 references = { requires-python = ">=3.14" }
 
 [tool.ruff]
@@ -104,7 +104,7 @@ extend-exclude = [
 ]
 force-exclude = true
 # `botica.sdk` ships in the wheel, whose floor is Python 3.9; the code of the topics is written for
-# the house version (CES-77).
+# the Python of the group `references`.
 per-file-target-version = { "sdk/python/**" = "py39", "catalog/references/**" = "py314" }
 
 [tool.ruff.lint]
