@@ -83,7 +83,7 @@ fn base_python_resolves_to_the_rules_of_base_first() {
         first,
         ["file-size-guard", "no-notebooks", "no-artifacts-in-package"]
     );
-    assert_eq!(resolved.rules.len(), 36);
+    assert_eq!(resolved.rules.len(), 37);
 }
 
 #[test]

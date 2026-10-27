@@ -20,6 +20,7 @@ rules = [
   "pytest-strict",
   "test-no-subprocess",
   "test-no-network",
+  "asyncio-no-get-event-loop",
   "uv-cooldown",
   "ruff-heavy-imports-in-function",
   "ruff-imports-at-top",

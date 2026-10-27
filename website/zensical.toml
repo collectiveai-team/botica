@@ -30,6 +30,7 @@ fallback = { name = "General", id = "DIC_kwDOS6BBd84DIcYi" } # betterleaks:allow
 
 [project.extra.giscus.categories]
 architecture = "DIC_kwDOS6BBd84DIcbn" # betterleaks:allow
+async = "DIC_kwDOS6BBd84DJvvK" # betterleaks:allow
 botica = "DIC_kwDOS6BBd84DIcb_" # betterleaks:allow
 cli = "DIC_kwDOS6BBd84DJFlY" # betterleaks:allow
 config = "DIC_kwDOS6BBd84DJFlf" # betterleaks:allow

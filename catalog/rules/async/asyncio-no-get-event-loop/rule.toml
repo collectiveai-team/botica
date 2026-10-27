@@ -1,0 +1,16 @@
+id = "asyncio-no-get-event-loop"
+code = "BTASYNC001"
+standard = "CES-133"
+summary = "The event loop starts with asyncio.run, and a coroutine gets it with asyncio.get_running_loop"
+status = "preview"
+tags = ["async"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"
