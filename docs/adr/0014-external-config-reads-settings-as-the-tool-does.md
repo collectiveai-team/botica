@@ -60,7 +60,9 @@ the cooldown of pnpm in a repository that installs with npm.
    versions (<https://docs.astral.sh/ruff/versioning/>), and botica does not count them. For
    pyrefly, a preset holds one that checks less (`all` holds `strict`, `strict` holds `default`),
    and a kind of error under `errors` holds when the repository sets it at least as high or the
-   preset is `all`.
+   preset is `all`. `true` is the default severity of the kind, or `error` when that default is
+   `ignore`, as pyrefly reads it; `crates/botica-core/src/external_config/pyrefly.rs` lists the
+   kinds of pyrefly 1.4.0 whose default is `warn` or `info`.
 6. **A time span holds a span at least as long.** botica reads the forms that the tools take: a
    bare number in the unit of the key (minutes for pnpm and Yarn, days for npm, seconds for Bun),
    ISO 8601 (`P7D`), and numbers followed by units (`7 days`, `1 week`, `1w`). A date or `false`
@@ -102,6 +104,8 @@ the cooldown of pnpm in a repository that installs with npm.
 - `ruff_rules.tsv` is the list of ruff 0.17.1. A family written code by code against a newer ruff
   that added a rule to it holds until the list is made again; a code that the list does not have is
   read as a selector of its own.
+- The kinds of pyrefly whose default is below `error` are those of 1.4.0. A kind that the list does
+  not have, as one that a newer pyrefly adds, takes `true` as `error`.
 - The table of tools changes when a tool changes where it reads its settings; a test pins each file
   and order with a link to the documentation of the tool.
 - `botica lint` walks the files of the project once more when an active rule has an external

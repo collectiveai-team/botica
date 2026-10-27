@@ -60,7 +60,8 @@ implicit-any-parameter = false
 ```
 
 `missing-attribute-patch-target` takes `"error"` and not `true`: `true` turns a kind on at its
-default severity, and the default of this kind is a warning.
+default severity, and the default of this kind is a warning, so `external-config-weakened` reports
+`missing-attribute-patch-target = true`.
 
 `external-config` checks `preset = "strict"` and the three kinds of `errors` where pyrefly reads
 them, in `pyrefly.toml` or in `[tool.pyrefly]` of `pyproject.toml`. `preset = "all"` checks what

@@ -6,6 +6,7 @@
 
 mod duration;
 mod in_use;
+mod pyrefly;
 mod ruff;
 mod tools;
 
@@ -435,7 +436,7 @@ fn pyrefly(merged: &Table, mut wanted: Table, compare: &Compare<'_>, tally: &mut
             match set.and_then(|set| set.get(kind)) {
                 _ if all => {}
                 None => tally.missing = true,
-                Some(have) if severity(have) >= severity(need) => {}
+                Some(have) if pyrefly::severity(kind, have) >= pyrefly::severity(kind, need) => {}
                 Some(have) => {
                     tally.weaker(&["errors".to_owned(), kind.clone()], need, have.to_string())
                 }
@@ -443,20 +444,6 @@ fn pyrefly(merged: &Table, mut wanted: Table, compare: &Compare<'_>, tally: &mut
         }
     }
     compare.table(&mut Vec::new(), merged, &wanted, tally);
-}
-
-/// The severity of a kind of error of pyrefly: `true` is `error` and `false` is `ignore`.
-fn severity(value: &Value) -> u8 {
-    match value {
-        Value::Boolean(true) => 3,
-        Value::String(name) => match name.as_str() {
-            "error" => 3,
-            "warn" => 2,
-            "info" => 1,
-            _ => 0,
-        },
-        _ => 0,
-    }
 }
 
 /// How a value of the settings holds a value of the fragment.
