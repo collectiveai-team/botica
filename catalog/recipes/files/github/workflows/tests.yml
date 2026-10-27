@@ -33,10 +33,10 @@ jobs:
       - name: Set up Python
         run: uv python install
 
-      # --frozen fails if uv.lock is out of date. Add --extra / --group flags
-      # here if the test suite needs optional dependencies.
+      # --locked fails if uv.lock does not match pyproject.toml; --frozen would install the stale
+      # lock. Add --extra / --group flags here if the test suite needs optional dependencies.
       - name: Install dependencies
-        run: uv sync --frozen
+        run: uv sync --locked
 
       - name: Lint, format & type check (prek)
         run: uvx prek{{ param.prek-version.at }} run --all-files --show-diff-on-failure

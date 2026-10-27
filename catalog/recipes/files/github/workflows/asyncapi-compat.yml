@@ -80,7 +80,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.base.outputs.present == 'true'
-        run: uv sync --frozen
+        run: uv sync --locked
 
       - name: Export the head and the base
         if: steps.base.outputs.present == 'true'
