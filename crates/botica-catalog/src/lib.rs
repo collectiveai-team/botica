@@ -8,6 +8,7 @@ mod load;
 mod model;
 mod origin;
 mod project;
+mod python;
 mod question;
 mod readme;
 mod recipes;
@@ -37,6 +38,7 @@ pub use model::{
     Event, Family, Implementation, Kind, Lifecycle, Needs, OptionSpec, OptionType, Probability,
     Rule, RunOn, Runtime, Scope, Severity, Status, When, CONFIG_DIR,
 };
+pub use python::{lower_bound, PythonRange, PythonVersion};
 pub use question::{BooleanCriteria, Choices, Question};
 pub use readme::Section;
 pub use recipes::{Recipe, Recipes, AGENTS, EXPORTS, RECIPES_DIR};

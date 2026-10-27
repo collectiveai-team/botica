@@ -143,6 +143,45 @@ TypeScript and JavaScript, with the hook that runs it in `prek.toml`. `pyrefly-s
 `docker compose config` enforce them, and their fragments go into `prek.toml`. A catalog of a
 project declares its own.
 
+## A rule for some versions of Python
+
+A rule that asks for syntax or a library of some versions of Python names them in `python`, a
+list of clauses joined by commas, each one of `>=`, `>`, `<=`, `<`, `==` or `!=` and a version:
+
+```toml
+id = "acme/lazy-heavy-imports"
+code = "ACMEARCH001"
+summary = "From Python 3.15, a heavy library is imported at the top with lazy import"
+status = "preview"
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save"]
+default-enabled = false
+default-severity = "warning"
+python = ">=3.15"
+```
+
+botica compares the range with the lowest version that the `requires-python` of the
+`pyproject.toml` at the root of the project allows: `>=3.12, <4` gives 3.12, `~=3.15.0` gives
+3.15.0 and `>3.14` gives 3.14.1. A project whose `requires-python` is missing or sets no lower
+bound, such as `<4`, counts as 3.14, the default of CES-77. `.python-version` and the Python that
+runs botica do not count: the code of the project has to run on the lowest version it allows.
+
+A rule that the configuration selects and whose range does not hold that version is not active, for
+every kind of rule. `botica rules --all` and `botica explain` give the reason:
+
+```text
+ACMEARCH001  acme/lazy-heavy-imports inactive  requires Python `>=3.15`, and the project requires `>=3.12`
+```
+
+An external rule that is not active asks nothing of `external-config`, so two external rules with
+`python = "<3.15"` and `python = ">=3.15"` ask each project for one fragment. `botica recipe check`
+reports such a rule as `ok, not active` and checks no fragment of it. The steps of a recipe, such
+as `[[files]]` and `[[sections]]`, have no `python`: `botica recipe install` writes them in every
+project. The fixtures of a rule with `python` hold a `pyproject.toml` whose `requires-python` falls
+in the range, on each side, or `botica rules conform` finds nothing on the invalid side
+([ADR 0015](https://github.com/collectiveai-team/botica/blob/main/docs/adr/0015-a-rule-names-the-python-it-asks-for.md)).
+
 ## Judgment rules
 
 A judgment rule has one implementation of kind `judgment`, with a question, its criteria and

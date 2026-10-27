@@ -11,7 +11,7 @@ use std::sync::OnceLock;
 
 use anyhow::{bail, Context, Result};
 use botica_catalog::Catalog;
-use botica_config::{discover, load_file, Loaded, Resolution};
+use botica_config::{discover, load_file, Loaded, ProjectPython, Resolution};
 use botica_core::{registry, CodeDir};
 
 use args::ConfigOption;
@@ -87,8 +87,9 @@ pub fn load(args: &ProjectArgs) -> Result<Project> {
         .config
         .with_command_line(&catalog, &args.command_line())?;
     let scope = args.scope.only();
-    let resolution =
-        Resolution::new(&loaded.config, &catalog)?.only_scope(scope, policy::reported_too(scope));
+    let resolution = Resolution::new(&loaded.config, &catalog)?
+        .only_python(&ProjectPython::read(&loaded.root))
+        .only_scope(scope, policy::reported_too(scope));
     Ok(Project {
         loaded,
         catalog,

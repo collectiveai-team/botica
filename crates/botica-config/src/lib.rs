@@ -6,6 +6,7 @@ mod issue;
 mod matcher;
 mod model;
 mod parse;
+mod python;
 mod resolve;
 mod selector;
 mod validate;
@@ -21,5 +22,6 @@ pub use model::{
     ReferencesConfig, RuleConfig, RuleSeverity,
 };
 pub use parse::json_schema;
+pub use python::{requires_python, ProjectPython, DEFAULT_PYTHON};
 pub use resolve::{FileRule, Resolution};
 pub use selector::Selector;
