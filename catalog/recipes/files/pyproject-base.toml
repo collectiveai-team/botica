@@ -12,7 +12,7 @@ dynamic = ["version"]
 description = "Replace me"
 readme = "README.md"
 # CES-77: uncomment to set a floor; an existing pin of the repository wins.
-# requires-python = ">=3.14"
+# requires-python = ">=3.15"
 
 # MARK: Dependencies
 dependencies = []
