@@ -20,5 +20,7 @@ codes = [
   "open-unpacking",
   "potential-bad-keyword-argument",
   "unused-ignore",
+  "missing-attribute-patch-target",
+  "unused-coroutine",
 ]
 config = "config/pyproject.toml"

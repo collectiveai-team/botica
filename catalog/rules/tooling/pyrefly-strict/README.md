@@ -3,7 +3,9 @@
 pyrefly checks the Python code with the `strict` preset, and an `Any` written in an annotation is
 an error. The preset reports a parameter without an annotation, an empty container whose type
 pyrefly cannot infer, a lambda whose parameters have no type, a generic without its arguments
-(the `implicit-any` kinds), and a method that overrides another without `@override`. botica checks
+(the `implicit-any` kinds), and a method that overrides another without `@override`. A target of
+`mock.patch` that the module does not have (`missing-attribute-patch-target`) and a call of an
+`async` function whose result nothing awaits (`unused-coroutine`) are errors too. botica checks
 that `pyproject.toml` holds that configuration; pyrefly reports the code.
 
 ## Why
@@ -13,6 +15,13 @@ from it: `def handle(payload):` turns off the checks of every value that `payloa
 `pyrefly check` still reports 0 errors. An annotation `x: Any` does the same and says so. With the
 default configuration neither is an error, so an agent can make a type error go away by removing
 an annotation.
+
+`mock.patch("app.billing.charge")` after `charge` is renamed patches nothing that the code calls,
+and the test exercises the real function. pyrefly reports the target as a warning, which
+`pyrefly check` prints only with `--min-severity warn` and which leaves its exit code at 0.
+`refresh()` without `await` inside an `async def` creates a coroutine that never runs; pyrefly
+reports it as an error by default, and the fragment keeps a project from lowering it without a
+reason (`external-config-weakened`).
 
 ## Exceptions
 
@@ -40,6 +49,8 @@ required-version = ">=1.4,<2"
 
 [tool.pyrefly.errors]
 explicit-any = true
+missing-attribute-patch-target = "error"
+unused-coroutine = "error"
 
 [[tool.pyrefly.sub-config]]
 matches = "tests/**"
@@ -48,9 +59,12 @@ matches = "tests/**"
 implicit-any-parameter = false
 ```
 
-`external-config` checks `preset = "strict"` and `explicit-any = true` where pyrefly reads them,
-in `pyrefly.toml` or in `[tool.pyrefly]` of `pyproject.toml`. `preset = "all"` checks what `strict`
-checks and holds it, and a kind of error that the repository sets under `errors`, to any severity,
+`missing-attribute-patch-target` takes `"error"` and not `true`: `true` turns a kind on at its
+default severity, and the default of this kind is a warning.
+
+`external-config` checks `preset = "strict"` and the three kinds of `errors` where pyrefly reads
+them, in `pyrefly.toml` or in `[tool.pyrefly]` of `pyproject.toml`. `preset = "all"` checks what
+`strict` checks and holds it, and a kind of error that the repository sets under `errors`, to any severity,
 is its choice. `required-version` makes pyrefly stop with an error when the hook runs a version
 outside the range, so an old pyrefly fails with a message that names the version.
 
