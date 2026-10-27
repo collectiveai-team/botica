@@ -1,2 +1,5 @@
 [tool.pyrefly]
 preset = "strict"
+
+[tool.pyrefly.errors]
+missing-attribute-patch-target = "error"

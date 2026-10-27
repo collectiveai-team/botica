@@ -202,7 +202,7 @@ drafts nothing, so the recipe has no template of it. `base` ignores `.env` and k
 `python-strict-types` goes beside `base-python` and selects `pyrefly-strict` and `no-type-cast`,
 two rules in preview. It writes no file: the `[tool.pyrefly]` of `base-python` is already in
 `pyproject.toml`, and `botica recipe check` reports the fragment of `pyrefly-strict` until the
-repository adds `preset = "strict"` and `explicit-any = true` to it
+repository adds `preset = "strict"` and the kinds of `[tool.pyrefly.errors]` it names to it
 (`botica explain pyrefly-strict` shows them).
 
 `python-test-smells` selects `no-tautological-assert` and adds the hook `falsegreen` to `prek.toml`

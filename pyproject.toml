@@ -337,6 +337,8 @@ disable-project-excludes-heuristics = true
 
 [tool.pyrefly.errors]
 explicit-any = true
+missing-attribute-patch-target = "error"
+unused-coroutine = "error"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -331,6 +331,49 @@ fn a_kind_of_error_of_pyrefly_holds_when_the_project_sets_it_as_high_or_the_pres
 }
 
 #[test]
+fn true_sets_a_kind_of_pyrefly_to_its_default_severity_or_error_when_that_is_ignore() {
+    let error = |kind: &str| format!("[tool.pyrefly.errors]\n{kind} = \"error\"\n");
+    let warn = |kind: &str| format!("[tool.pyrefly.errors]\n{kind} = \"warn\"\n");
+    // missing-attribute-patch-target defaults to warn, explicit-any to ignore, unused-coroutine
+    // to error, and pyrefly 1.4.0 has no kind named some-future-kind.
+    for (fragment, pyproject, weakened_it) in [
+        (
+            error("missing-attribute-patch-target"),
+            "missing-attribute-patch-target = true",
+            true,
+        ),
+        (
+            warn("missing-attribute-patch-target"),
+            "missing-attribute-patch-target = true",
+            false,
+        ),
+        (error("reveal-type"), "reveal-type = true", true),
+        (error("explicit-any"), "explicit-any = true", false),
+        (error("unused-coroutine"), "unused-coroutine = true", false),
+        (error("some-future-kind"), "some-future-kind = true", false),
+    ] {
+        let settings = format!("[tool.pyrefly.errors]\n{pyproject}\n");
+        let files = [("pyproject.toml", settings.as_str())];
+        let weak = weaker(requirement("pyrefly", "pyproject.toml", &fragment), &files);
+        assert_eq!(
+            !weak.is_empty(),
+            weakened_it,
+            "{fragment} against {pyproject}"
+        );
+    }
+
+    let patch_target = "[tool.pyrefly.errors]\nmissing-attribute-patch-target = true\n";
+    let weak = weaker(
+        requirement("pyrefly", "pyproject.toml", patch_target),
+        &[(
+            "pyproject.toml",
+            "[tool.pyrefly.errors]\nmissing-attribute-patch-target = \"warn\"\n",
+        )],
+    );
+    assert!(weak.is_empty(), "true asks for warn: {weak:?}");
+}
+
+#[test]
 fn pytest_reads_the_first_file_that_matches_and_compares_text_with_typed_values() {
     let fragment = "[tool.pytest]\nxfail_strict = true\naddopts = [\"--strict-markers\"]\n";
     let ini = "[pytest]\nxfail_strict = True\naddopts = -ra --strict-markers\n";
