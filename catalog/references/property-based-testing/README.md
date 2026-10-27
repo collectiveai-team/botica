@@ -21,6 +21,26 @@ inputs. When one fails, Hypothesis shrinks it to the smallest input that still f
   that folder. `pytest-randomly` does not seed Hypothesis: `--randomly-seed` reorders the tests but
   does not repeat the examples. `--hypothesis-seed=<n>` repeats them.
 
+## A refactor checked against the old implementation
+
+A refactor keeps the old implementation as an oracle, and a property asserts that the old and the
+new one give the same outcome for every generated input. The oracle is a copy of the old code in
+`tests/`, `legacy_batches.py`, and it is deleted with the test once the refactor has shipped.
+
+- `outcome` calls a function and returns `("ok", value)`, or `("raised", type(exc))` when the call
+  raises. `test_the_new_batches_give_the_outcome_of_the_old_for_every_input` compares the outcomes
+  of `batches` and `legacy_batches`, so an input that the old code rejects is compared too.
+- A plain `assert batches(items, size) == legacy_batches(items, size)` fails on every input where
+  the old code raises, so a test written that way draws only the inputs that the old code accepts
+  (`st.integers(min_value=1)` for `size`). With the check of `size` removed from `batches`, that
+  test passes; the test of `outcome` fails and reports `items=[], size=-1`: the old code raised
+  `ValueError` and the new one returned `[]`. A new version that raises where the old one returned,
+  or that raises another type of exception, fails the same way.
+- Hypothesis shrinks a failing input toward `[]`, `0` and `""`, so the failure it reports is at the
+  empty and boundary values, as `items=[]` above.
+- A test that passes shows that no generated input made the two differ. It does not prove that the
+  two are equivalent for every input.
+
 ## What to adapt
 
 - `merge_sorted`, `Invoice` and the properties are one example. Write a property for a function
