@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-27T17:30:49Z",
-  "compiledBy": "botica 0.15.3",
+  "compiledAt": "2026-10-27T21:01:17Z",
+  "compiledBy": "botica 0.16.1",
   "manual": true,
   "sources": [
     {
@@ -560,6 +560,7 @@
         "catalog/rules/architecture/import-layers/README.md",
         "catalog/rules/architecture/no-eager-heavy-imports/README.md",
         "catalog/rules/architecture/separate-orchestration/README.md",
+        "catalog/rules/async/asyncio-no-get-event-loop/README.md",
         "catalog/rules/botica/external-config-weakened/README.md",
         "catalog/rules/botica/external-config/README.md",
         "catalog/rules/botica/invalid-suppression/README.md",
@@ -813,6 +814,9 @@
         "catalog/rules/architecture/import-layers/rule.toml",
         "catalog/rules/architecture/no-eager-heavy-imports/rule.toml",
         "catalog/rules/architecture/separate-orchestration/rule.toml",
+        "catalog/rules/async/family.toml",
+        "catalog/rules/async/asyncio-no-get-event-loop/python.yml",
+        "catalog/rules/async/asyncio-no-get-event-loop/rule.toml",
         "catalog/rules/botica/external-config-weakened/rule.toml",
         "catalog/rules/botica/external-config/rule.toml",
         "catalog/rules/botica/invalid-suppression/rule.toml",
@@ -1135,6 +1139,7 @@
         "catalog/rules/architecture/import-layers/README.md",
         "catalog/rules/architecture/no-eager-heavy-imports/README.md",
         "catalog/rules/architecture/separate-orchestration/README.md",
+        "catalog/rules/async/asyncio-no-get-event-loop/README.md",
         "catalog/rules/botica/external-config-weakened/README.md",
         "catalog/rules/botica/external-config/README.md",
         "catalog/rules/botica/invalid-suppression/README.md",

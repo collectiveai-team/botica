@@ -24,7 +24,7 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
     assert!(text.contains("\nbase-python: A Python project"), "{text}");
     assert!(
         text.contains(
-            "  extends: base\n  rules: 23, judgment: 0, exports: 0\n  \
+            "  extends: base\n  rules: 24, judgment: 0, exports: 0\n  \
              files: 1, sections: 7, tools: 7, params: 5\n  from: built-in\n"
         ),
         "{text}"
@@ -160,7 +160,7 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
         .lines()
         .filter(|line| line.starts_with("- "))
         .collect();
-    assert_eq!(lines.len(), 36, "{text}");
+    assert_eq!(lines.len(), 37, "{text}");
     assert!(
         lines[0].starts_with("- file-size-guard (BT"),
         "{}",
