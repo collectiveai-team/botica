@@ -1,0 +1,55 @@
+{
+  "diagnostics": [
+    {
+      "path": "migrations/versions/0002_add_nickname.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 372,
+          "line": 23,
+          "column": 5
+        },
+        "end": {
+          "offset": 381,
+          "line": 23,
+          "column": 14
+        }
+      },
+      "message": "downgrade() does nothing while upgrade() changes the schema, so `alembic downgrade` records the revision as undone and leaves the change in the database. Write the operations that undo upgrade(), or raise NotImplementedError with the reason the migration is one-way."
+    },
+    {
+      "path": "migrations/versions/0003_index_nickname.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 431,
+          "line": 24,
+          "column": 5
+        },
+        "end": {
+          "offset": 440,
+          "line": 24,
+          "column": 14
+        }
+      },
+      "message": "downgrade() does nothing while upgrade() changes the schema, so `alembic downgrade` records the revision as undone and leaves the change in the database. Write the operations that undo upgrade(), or raise NotImplementedError with the reason the migration is one-way."
+    },
+    {
+      "path": "migrations/versions/0004_unique_nickname.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 348,
+          "line": 22,
+          "column": 5
+        },
+        "end": {
+          "offset": 357,
+          "line": 22,
+          "column": 14
+        }
+      },
+      "message": "downgrade() does nothing while upgrade() changes the schema, so `alembic downgrade` records the revision as undone and leaves the change in the database. Write the operations that undo upgrade(), or raise NotImplementedError with the reason the migration is one-way."
+    }
+  ]
+}

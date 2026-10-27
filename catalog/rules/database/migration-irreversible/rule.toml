@@ -1,0 +1,17 @@
+id = "migration-irreversible"
+code = "BTDB004"
+standard = "CES-0"
+references = ["database"]
+summary = "The downgrade of a migration undoes its upgrade, or raises with the reason it cannot"
+status = "preview"
+tags = ["migrations"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

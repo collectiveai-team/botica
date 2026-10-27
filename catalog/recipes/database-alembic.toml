@@ -1,6 +1,6 @@
 description = "Alembic in a Python project with the package database of CES-18: the configuration of the command alembic in pyproject.toml and a hook of prek that runs alembic check (needs alembic among the dependencies of the project)"
 extends = ["base-python"]
-rules = ["db-no-create-all"]
+rules = ["db-no-create-all", "migration-drop-or-rename", "migration-blocking-index", "migration-irreversible"]
 
 [[sections]]
 path = "pyproject.toml"
