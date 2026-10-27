@@ -16,6 +16,11 @@ anchor = "def test_an_invoice_survives_a_round_trip_through_json"
 note = "two properties of a model: a round trip through JSON, and a total that adds up when two invoices are joined"
 
 [[references]]
+file = "code/tests/test_batches.py"
+anchor = "def test_the_new_batches_give_the_outcome_of_the_old_for_every_input"
+note = "a refactor checked against its old implementation: the outcome of each call, a value or the type of the exception it raised, is the same for both"
+
+[[references]]
 url = "https://hypothesis.readthedocs.io/en/latest/reference/api.html#built-in-profiles"
 note = "the `ci` profile is active when `CI` is set: it turns off the deadline and the database and makes the run deterministic"
 quote = "If the CI environment variable is set to any value, the ci profile is active by default."
