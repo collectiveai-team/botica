@@ -7,10 +7,10 @@
 # `structured-logging` goes on the path of every topic: the others import its `get_logger`.
 #
 # The environment is its own (`.tmp/references-venv` unless UV_PROJECT_ENVIRONMENT names another),
-# with a CPython 3.14 that has the GIL: the floor of the group `references`, and some dependencies of
-# prefect have no wheels for the free-threaded build. The tests run with the network blocked by
-# pytest-socket (CES-64): a test marked `integration` or `e2e` gets it back through the hook of its
-# `conftest.py`. Run by the job `references` of ci.yml.
+# with a CPython 3.14 that has the GIL: pyyaml and ruamel-yaml-clib publish no cp315 wheels, and some
+# dependencies of prefect have no wheels for the free-threaded build. The tests run with the network
+# blocked by pytest-socket (CES-64): a test marked `integration` or `e2e` gets it back through the
+# hook of its `conftest.py`. Run by the job `references` of ci.yml.
 #
 # A topic with no Python file skips pyrefly and pytest. A topic may also carry a Go module in
 # `code/go/`, a Node package in `code/web/` and a Cargo package in `code/rust/`. The binary embeds
