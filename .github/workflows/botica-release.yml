@@ -189,13 +189,7 @@ jobs:
           enable-cache: false
 
       - name: Wait for the wheel on PyPI
-        run: |
-          for _ in $(seq 60); do
-            curl -fsS -o /dev/null "https://pypi.org/pypi/botica/${TAG#v}/json" && exit 0
-            sleep 10
-          done
-          echo "botica ${TAG#v} is not on PyPI after 10 minutes" >&2
-          exit 1
+        run: sh scripts/wait_for_pypi.sh "${TAG#v}"
 
       - name: Point the mirror's package at the release
         run: uv run --no-project --python 3.14 --with cyclopts python scripts/bump_mirror_rev.py "${TAG#v}"
@@ -247,6 +241,11 @@ jobs:
         with:
           version: "0.13.3"
           enable-cache: false
+
+      # The runner of this job can reach a node of the CDN of PyPI that still serves the index
+      # without the version, as in the release of 0.14.2.
+      - name: Wait for the wheel on PyPI
+        run: sh scripts/wait_for_pypi.sh "${TAG#v}"
 
       - name: Run the hooks of the mirror at the new tag
         run: uvx prek try-repo https://github.com/collectiveai-team/botica-pre-commit --rev "$TAG" --all-files
