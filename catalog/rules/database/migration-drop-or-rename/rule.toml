@@ -1,0 +1,17 @@
+id = "migration-drop-or-rename"
+code = "BTDB003"
+standard = "CES-0"
+references = ["database"]
+summary = "The upgrade of a migration drops or renames no column or table that the running version reads"
+status = "preview"
+tags = ["migrations"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"

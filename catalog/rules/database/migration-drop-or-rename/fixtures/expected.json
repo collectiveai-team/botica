@@ -1,0 +1,72 @@
+{
+  "diagnostics": [
+    {
+      "path": "migrations/versions/0002_drop_legacy.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 318,
+          "line": 20,
+          "column": 5
+        },
+        "end": {
+          "offset": 354,
+          "line": 20,
+          "column": 41
+        }
+      },
+      "message": "op.drop_column in upgrade() removes or renames a column or a table that the running version still reads until the new one replaces it, and a drop deletes its data. Add the new column or table first, and drop or rename the old one in a later migration, with a suppression that gives the reason: no running code reads it any more, or the program is stopped while it migrates."
+    },
+    {
+      "path": "migrations/versions/0002_drop_legacy.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 359,
+          "line": 21,
+          "column": 5
+        },
+        "end": {
+          "offset": 385,
+          "line": 21,
+          "column": 31
+        }
+      },
+      "message": "op.drop_table in upgrade() removes or renames a column or a table that the running version still reads until the new one replaces it, and a drop deletes its data. Add the new column or table first, and drop or rename the old one in a later migration, with a suppression that gives the reason: no running code reads it any more, or the program is stopped while it migrates."
+    },
+    {
+      "path": "migrations/versions/0003_rename.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 288,
+          "line": 19,
+          "column": 5
+        },
+        "end": {
+          "offset": 349,
+          "line": 19,
+          "column": 66
+        }
+      },
+      "message": "op.alter_column in upgrade() removes or renames a column or a table that the running version still reads until the new one replaces it, and a drop deletes its data. Add the new column or table first, and drop or rename the old one in a later migration, with a suppression that gives the reason: no running code reads it any more, or the program is stopped while it migrates."
+    },
+    {
+      "path": "migrations/versions/0003_rename.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 354,
+          "line": 20,
+          "column": 5
+        },
+        "end": {
+          "offset": 392,
+          "line": 20,
+          "column": 43
+        }
+      },
+      "message": "op.rename_table in upgrade() removes or renames a column or a table that the running version still reads until the new one replaces it, and a drop deletes its data. Add the new column or table first, and drop or rename the old one in a later migration, with a suppression that gives the reason: no running code reads it any more, or the program is stopped while it migrates."
+    }
+  ]
+}

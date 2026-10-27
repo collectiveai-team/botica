@@ -1,0 +1,67 @@
+id: migration-blocking-index
+language: python
+severity: warning
+message: "$OP in upgrade() either blocks writes to the table while PostgreSQL builds the index, or runs CONCURRENTLY inside the transaction of the migration, where PostgreSQL refuses it. Pass postgresql_concurrently=True and put the call inside `with op.get_context().autocommit_block():`."
+files:
+  - "**/versions/*.py"
+rule:
+  kind: call
+  has:
+    field: function
+    pattern: $OP
+  inside:
+    kind: function_definition
+    stopBy: end
+    has:
+      field: name
+      regex: "^upgrade$"
+  any:
+    - all:
+        - any:
+            - pattern: op.create_index($$$, table_name=$TABLE, $$$)
+            - pattern: op.create_index($INDEX, $TABLE, $$$)
+        - not:
+            has:
+              field: arguments
+              has:
+                kind: keyword_argument
+                all:
+                  - has:
+                      field: name
+                      regex: "^postgresql_concurrently$"
+                  - has:
+                      field: value
+                      regex: "^True$"
+        - not:
+            inside:
+              kind: function_definition
+              stopBy: end
+              has:
+                stopBy: end
+                any:
+                  - pattern: create_table($TABLE)
+                  - pattern: create_table($TABLE, $$$)
+                  - pattern: $MODULE.create_table($TABLE)
+                  - pattern: $MODULE.create_table($TABLE, $$$)
+    - all:
+        - has:
+            field: function
+            regex: "^op\\.(create|drop)_index$"
+        - has:
+            field: arguments
+            has:
+              kind: keyword_argument
+              all:
+                - has:
+                    field: name
+                    regex: "^postgresql_concurrently$"
+                - has:
+                    field: value
+                    regex: "^True$"
+        - not:
+            inside:
+              kind: with_statement
+              stopBy: end
+              has:
+                stopBy: end
+                pattern: op.get_context().autocommit_block()

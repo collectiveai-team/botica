@@ -1,0 +1,46 @@
+id: migration-irreversible
+language: python
+severity: warning
+message: "downgrade() does nothing while upgrade() changes the schema, so `alembic downgrade` records the revision as undone and leaves the change in the database. Write the operations that undo upgrade(), or raise NotImplementedError with the reason the migration is one-way."
+files:
+  - "**/versions/*.py"
+utils:
+  empty-body:
+    kind: block
+    not:
+      has:
+        not:
+          any:
+            - kind: pass_statement
+            - kind: comment
+            - kind: expression_statement
+              has:
+                any:
+                  - kind: string
+                  - kind: ellipsis
+rule:
+  kind: identifier
+  regex: "^downgrade$"
+  inside:
+    kind: function_definition
+    field: name
+    all:
+      - has:
+          field: body
+          matches: empty-body
+      - inside:
+          kind: module
+          has:
+            kind: function_definition
+            all:
+              - has:
+                  field: name
+                  regex: "^upgrade$"
+              - has:
+                  field: body
+                  has:
+                    kind: call
+                    stopBy: end
+                    has:
+                      field: function
+                      regex: "^op\\.((create|drop|add|alter|rename)_[a-z_]+|batch_alter_table)$"

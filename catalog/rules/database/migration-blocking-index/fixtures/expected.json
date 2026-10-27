@@ -1,0 +1,55 @@
+{
+  "diagnostics": [
+    {
+      "path": "migrations/versions/0004_index_users.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 284,
+          "line": 19,
+          "column": 5
+        },
+        "end": {
+          "offset": 337,
+          "line": 19,
+          "column": 58
+        }
+      },
+      "message": "op.create_index in upgrade() either blocks writes to the table while PostgreSQL builds the index, or runs CONCURRENTLY inside the transaction of the migration, where PostgreSQL refuses it. Pass postgresql_concurrently=True and put the call inside `with op.get_context().autocommit_block():`."
+    },
+    {
+      "path": "migrations/versions/0004_index_users.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 342,
+          "line": 20,
+          "column": 5
+        },
+        "end": {
+          "offset": 435,
+          "line": 20,
+          "column": 98
+        }
+      },
+      "message": "op.create_index in upgrade() either blocks writes to the table while PostgreSQL builds the index, or runs CONCURRENTLY inside the transaction of the migration, where PostgreSQL refuses it. Pass postgresql_concurrently=True and put the call inside `with op.get_context().autocommit_block():`."
+    },
+    {
+      "path": "migrations/versions/0004_index_users.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 440,
+          "line": 21,
+          "column": 5
+        },
+        "end": {
+          "offset": 510,
+          "line": 21,
+          "column": 75
+        }
+      },
+      "message": "op.create_index in upgrade() either blocks writes to the table while PostgreSQL builds the index, or runs CONCURRENTLY inside the transaction of the migration, where PostgreSQL refuses it. Pass postgresql_concurrently=True and put the call inside `with op.get_context().autocommit_block():`."
+    }
+  ]
+}

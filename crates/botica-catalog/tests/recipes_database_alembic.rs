@@ -13,7 +13,15 @@ fn database_alembic_adds_the_configuration_of_alembic_and_a_hook_that_runs_alemb
         .expect("database-alembic");
 
     assert_eq!(recipe.extends, ["base-python"]);
-    assert_eq!(recipe.rules, ["db-no-create-all"]);
+    assert_eq!(
+        recipe.rules,
+        [
+            "db-no-create-all",
+            "migration-drop-or-rename",
+            "migration-blocking-index",
+            "migration-irreversible"
+        ]
+    );
     assert!(recipe.tools.is_empty() && recipe.files.is_empty());
     let sections: Vec<String> = recipe
         .sections

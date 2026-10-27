@@ -1,0 +1,47 @@
+id: migration-drop-or-rename
+language: python
+severity: warning
+message: "$OP in upgrade() removes or renames a column or a table that the running version still reads until the new one replaces it, and a drop deletes its data. Add the new column or table first, and drop or rename the old one in a later migration, with a suppression that gives the reason: no running code reads it any more, or the program is stopped while it migrates."
+files:
+  - "**/versions/*.py"
+rule:
+  kind: call
+  has:
+    field: function
+    pattern: $OP
+  inside:
+    kind: function_definition
+    stopBy: end
+    has:
+      field: name
+      regex: "^upgrade$"
+  any:
+    - has:
+        field: function
+        regex: "^op\\.(drop_column|rename_table)$"
+    - all:
+        - any:
+            - pattern: op.drop_table($TABLE)
+            - pattern: op.drop_table($TABLE, $$$)
+        - not:
+            inside:
+              kind: function_definition
+              stopBy: end
+              has:
+                stopBy: end
+                any:
+                  - pattern: create_table($TABLE)
+                  - pattern: create_table($TABLE, $$$)
+                  - pattern: $MODULE.create_table($TABLE)
+                  - pattern: $MODULE.create_table($TABLE, $$$)
+    - all:
+        - has:
+            field: function
+            regex: "^op\\.alter_column$"
+        - has:
+            field: arguments
+            has:
+              kind: keyword_argument
+              has:
+                field: name
+                regex: "^new_column_name$"
