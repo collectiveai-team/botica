@@ -6,6 +6,7 @@ use std::process::ExitCode;
 
 use anyhow::Result;
 use botica_catalog::{is_node_manager, Kind, Recipes, ResolvedRecipe};
+use botica_config::Reason;
 use botica_core::{recipe_conflict, walk};
 
 use crate::lint_cmd::recipe_conflict::conflicts;
@@ -33,6 +34,13 @@ impl Report {
                 format!("{kind} {id}: differs: {problem}")
             }
         });
+    }
+
+    /// A line that does not differ and says why the rule is not active: its `python` does not
+    /// hold the Python of the project, which the recipe leaves to the rule (ADR 0015).
+    fn add_outside_python(&mut self, kind: &str, id: &str, reason: &Reason) {
+        self.lines
+            .push(format!("{kind} {id}: ok, not active: {reason}"));
     }
 }
 
@@ -68,14 +76,20 @@ impl Report {
         root: &Path,
     ) {
         for item in &resolved.rules {
-            self.add("rule", &item.id, rule_problem(collection, &item.id, false));
+            match outside_python(collection, &item.id) {
+                Some(reason) => self.add_outside_python("rule", &item.id, reason),
+                None => self.add("rule", &item.id, rule_problem(collection, &item.id, false)),
+            }
         }
         for item in &resolved.judgment {
-            self.add(
-                "judgment rule",
-                &item.id,
-                rule_problem(collection, &item.id, true),
-            );
+            match outside_python(collection, &item.id) {
+                Some(reason) => self.add_outside_python("judgment rule", &item.id, reason),
+                None => self.add(
+                    "judgment rule",
+                    &item.id,
+                    rule_problem(collection, &item.id, true),
+                ),
+            }
         }
         let files = walk::files(root, None);
         for item in &resolved.rules {
@@ -177,6 +191,12 @@ impl Report {
             ExitCode::from(1)
         }
     }
+}
+
+/// The reason of the rule `key` when its `python` leaves it out of the project.
+fn outside_python<'c>(collection: &'c Collection, key: &str) -> Option<&'c Reason> {
+    let entry = collection.project.resolution.entry(key)?;
+    matches!(entry.reason, Reason::OutsidePython { .. }).then_some(&entry.reason)
 }
 
 /// Why the project does not run the rule `key` as the recipe lists it, if it does not.

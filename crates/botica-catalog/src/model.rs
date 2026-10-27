@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::python::PythonRange;
 use crate::question::Question;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
@@ -253,6 +254,10 @@ pub struct Rule {
     pub run_on: Option<Vec<RunOn>>,
     pub default_enabled: bool,
     pub default_severity: Severity,
+    /// The Python versions the rule asks of a project, `>=3.15`: a selected rule whose range does
+    /// not hold the lowest version that the `requires-python` of the project allows is not active
+    /// (ADR 0015).
+    pub python: Option<PythonRange>,
     #[serde(default)]
     pub dependencies: Vec<String>,
     #[serde(default)]

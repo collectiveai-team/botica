@@ -44,6 +44,7 @@ struct RuleView<'a> {
     run_on: Option<&'a [RunOn]>,
     default_enabled: bool,
     default_severity: Severity,
+    python: Option<String>,
     dependencies: &'a [String],
     options: &'a BTreeMap<String, OptionSpec>,
     implementations: Vec<ImplementationView<'a>>,
@@ -94,6 +95,7 @@ impl<'a> RuleView<'a> {
             run_on: rule.run_on.as_deref(),
             default_enabled: rule.default_enabled,
             default_severity: rule.default_severity,
+            python: rule.python.as_ref().map(ToString::to_string),
             dependencies: &rule.dependencies,
             options: &rule.options,
             implementations: rule

@@ -22,6 +22,13 @@ pub enum Reason {
     ReplacedBy(String),
     /// Left out by `--scope`; holds the scope that was asked for.
     OutOfScope(String),
+    /// The `python` of the rule does not hold the Python of the project (ADR 0015).
+    OutsidePython {
+        /// The `python` of the rule.
+        range: String,
+        /// What the project asks, from [`crate::ProjectPython::describe`].
+        project: String,
+    },
 }
 
 impl fmt::Display for Reason {
@@ -40,6 +47,9 @@ impl fmt::Display for Reason {
             Self::Removed => write!(f, "removed from the catalog"),
             Self::ReplacedBy(new) => write!(f, "replaced by `{new}`"),
             Self::OutOfScope(scope) => write!(f, "outside `--scope {scope}`"),
+            Self::OutsidePython { range, project } => {
+                write!(f, "requires Python `{range}`, and {project}")
+            }
         }
     }
 }

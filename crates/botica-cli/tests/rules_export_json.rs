@@ -108,6 +108,7 @@ fn a_rule_carries_every_field_of_its_rule_toml_its_releases_and_the_path_of_its_
             "run_on": ["cli", "save", "type"],
             "default_enabled": true,
             "default_severity": "warning",
+            "python": null,
             "dependencies": [],
             "options": {},
             "implementations": [{

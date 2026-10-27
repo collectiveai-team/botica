@@ -39,7 +39,7 @@ fn project_python(root: &Path) -> (String, String) {
     if let Some(version) = read(".venv/pyvenv.cfg").as_deref().and_then(venv_version) {
         return (version, "`.venv/pyvenv.cfg`".to_owned());
     }
-    if let Some(version) = read("pyproject.toml").as_deref().and_then(requires_python) {
+    if let Some(version) = botica_config::requires_python(root) {
         return (version, "`requires-python` of `pyproject.toml`".to_owned());
     }
     (DEFAULT_PYTHON.to_owned(), "botica".to_owned())
@@ -61,12 +61,6 @@ fn venv_version(text: &str) -> Option<String> {
     })?;
     let mut parts = value.split('.');
     Some(format!("{}.{}", parts.next()?, parts.next()?))
-}
-
-fn requires_python(text: &str) -> Option<String> {
-    let document: toml::Table = text.parse().ok()?;
-    let project = document.get("project")?.as_table()?;
-    Some(project.get("requires-python")?.as_str()?.trim().to_owned())
 }
 
 /// `3.13t`, `3.14+freethreaded`, `cpython-3.14t`: a request for a Python without the GIL.

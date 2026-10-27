@@ -6,6 +6,7 @@ use crate::entry::{entry, path_matcher, runs, severity_of, Entry, Reason};
 use crate::issue::ConfigError;
 use crate::matcher::PathMatcher;
 use crate::model::{Config, RuleConfig, RuleSeverity};
+use crate::python::ProjectPython;
 use crate::selector::Selector;
 
 #[derive(Debug)]
@@ -122,6 +123,24 @@ impl Resolution {
             }
         }
         Ok(())
+    }
+
+    /// Leaves inactive each active rule whose `python` does not hold the version of `project`, with
+    /// the reason. A rule with no `python` runs whatever Python the project names.
+    pub fn only_python(mut self, project: &ProjectPython) -> Self {
+        for entry in self.entries.iter_mut().filter(|entry| entry.active) {
+            let Some(range) = &entry.rule.python else {
+                continue;
+            };
+            if !project.is_in(range) {
+                entry.active = false;
+                entry.reason = Reason::OutsidePython {
+                    range: range.to_string(),
+                    project: project.describe(),
+                };
+            }
+        }
+        self
     }
 
     /// Keeps active only the rules of this scope (`None` keeps them all) and the rules of
