@@ -9,6 +9,11 @@ A test fails when the behaviour it checks breaks. Its assertions run on every pa
 result with a value that the test writes down, and no `try` or `except` in the test catches their
 failure. A test that only calls the code and asserts nothing is a smoke test, and its name says so.
 
+A test that a change adds or changes to cover a change of the code fails on the base of the change.
+Run against the code before the change, with the tests of the change, at least one of them fails.
+A change whose new tests pass on its base on purpose, such as a refactor with characterisation
+tests, carries the label `tests-pass-on-base`.
+
 ## Why
 
 - A test that cannot fail reports a broken program as working. It also raises the coverage of the
@@ -26,6 +31,7 @@ failure. A test that only calls the code and asserts nothing is a smoke test, an
 | a test with no assertion, an assertion that a `try` swallows, a test that returns a comparison, an uncollected test, a mock assertion with a typo (pytest) | the hook `falsegreen` of the recipe `python-test-smells`, before each commit |
 | several asserts without a message, the same assert twice, a long setup before the first assert, a `print()` in a test, a long test (pytest) | the same hook, as information that does not fail it (`D1`, `D3`, `D5`, `D6`, `M2`) |
 | an expected value copied from the output, a mock of the unit under test | review, with the skill `test-smell-review` |
+| a change of the code whose added or changed tests all pass on its base (pytest) | the workflow `tests-fail-on-base-python.yml` of the recipe `ci-tests-fail-on-base-python`, on each pull request |
 
 ## Adoption in an existing repository
 

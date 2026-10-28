@@ -339,6 +339,16 @@ What the recipes cannot say about themselves:
   interface"`, once per repository. A break shows on the pull request as a warning when the label is
   there, and as an error, with a failed job, when it is not. The parameters `griffe-version`
   (`2.3.2`) and `asyncapi-cli-version` (`6.2.1`) set the versions of griffe and `@asyncapi/cli`.
+- `ci-tests-fail-on-base-python` (CES-124) writes `tests-fail-on-base-python.yml` and the script
+  that it runs, `.github/scripts/tests_fail_on_base.py` with its two modules. On a pull request
+  that changes code, the script runs the pytest functions that the pull request adds or changes at
+  the head and on the merge base, and fails when none of them fails on the base. Both trees
+  install the `uv.lock` of the head with `uv sync --frozen`, the `INSTALL` of the workflow, into
+  their `.venv`; a project that needs an extra or a group adds its flags there. pytest runs without
+  the `addopts` of the project. A pull request whose new tests pass on the base on purpose carries
+  the label `tests-pass-on-base`, which a recipe does not create: `gh label create
+  tests-pass-on-base --description "The new tests pass on the base on purpose"`, once per
+  repository. The failure then shows as a warning and the job passes.
 
 ## Recipes of a project
 

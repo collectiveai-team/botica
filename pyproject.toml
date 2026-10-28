@@ -223,6 +223,9 @@ ban-relative-imports = "all"
 # botica's Python extension SDK and benchmark scripts run as files, not as a package.
 "sdk/**" = ["INP001"]
 "bench/**" = ["INP001"]
+# The scripts that a recipe installs carry the suppressions that the ruff of `base-python` needs,
+# which include S603 and S607 that this configuration ignores.
+"catalog/recipes/files/github/scripts/**" = ["RUF100"]
 # The code of a topic is the namespace package `app` (scripts/check_references.sh).
 "catalog/references/**" = ["INP001"]
 "catalog/references/*/tests/**" = ["S101"]
