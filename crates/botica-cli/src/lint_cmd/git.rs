@@ -2,16 +2,23 @@
 //! working directory, as the walk names the files.
 
 use anyhow::{bail, Context, Result};
-use std::process::{Command, Stdio};
+use std::process::{Command, Output, Stdio};
 
-fn git(args: &[&str]) -> Result<Vec<u8>> {
-    let output = Command::new("git")
+fn run(args: &[&str]) -> Result<Output> {
+    Command::new("git")
         .args(["-c", "core.quotePath=false"])
         .args(args)
         .env("GIT_TERMINAL_PROMPT", "0")
         .stdin(Stdio::null())
         .output()
-        .context("cannot run git, which `--diff` and `--staged` need")?;
+        .context("cannot run git, which `--diff` and `--staged` need")
+}
+
+fn git(args: &[&str]) -> Result<Vec<u8>> {
+    checked(args, run(args)?)
+}
+
+fn checked(args: &[&str], output: Output) -> Result<Vec<u8>> {
     if !output.status.success() {
         bail!(
             "git {} failed: {}",
@@ -28,7 +35,19 @@ fn text(args: &[&str]) -> Result<String> {
 
 /// The commit where `HEAD` and `rev` part.
 pub(super) fn merge_base(rev: &str) -> Result<String> {
-    Ok(text(&["merge-base", rev, "HEAD"])?.trim().to_owned())
+    let args = ["merge-base", rev, "HEAD"];
+    let output = run(&args)?;
+    // git exits with 1 and prints nothing when the two have no commit in common.
+    if output.status.code() == Some(1) && output.stdout.is_empty() && output.stderr.is_empty() {
+        bail!(
+            "`{rev}` and HEAD have no commit in common in this clone. A shallow clone, such as the \
+             one of `actions/checkout` with its default `fetch-depth: 1`, lacks the history: fetch \
+             it with `fetch-depth: 0` or `git fetch --deepen`"
+        );
+    }
+    let base =
+        String::from_utf8(checked(&args, output)?).context("git printed text that is not UTF-8")?;
+    Ok(base.trim().to_owned())
 }
 
 /// The diff from `base` to the working tree, or from `HEAD` to the index when `base` is `None`,

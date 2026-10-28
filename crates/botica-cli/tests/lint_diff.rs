@@ -188,3 +188,20 @@ fn the_three_inputs_exclude_each_other_and_a_revision_git_does_not_know_fails_th
         stderr(&unknown)
     );
 }
+
+#[test]
+fn a_revision_with_no_commit_in_common_with_head_fails_the_run_and_says_why() {
+    let dir = repository("unrelated", &[("app.py", "x = 1\n")]);
+    git(&dir, &["branch", "base"]);
+    git(&dir, &["checkout", "--quiet", "--orphan", "other"]);
+    git(&dir, &["commit", "--quiet", "--message", "unrelated"]);
+
+    let output = command(&dir, &["lint", "--diff", "base"]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        stderr(&output).contains("`base` and HEAD have no commit in common"),
+        "{}",
+        stderr(&output)
+    );
+}
