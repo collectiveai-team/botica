@@ -1,0 +1,20 @@
+[[repos]]
+repo = "local"
+
+# Was `uvx botica@0.16.1` before the last release.
+[[repos.hooks]]
+id = "agents-conventional-commits"
+entry = "uvx botica@0.17.1 lint --select conventional-commits --commit-msg"
+language = "system"
+stages = ["commit-msg"]
+
+[[repos.hooks]]
+id = "botica-latest"
+entry = "uvx botica@latest rules"
+language = "system"
+stages = ["manual"]
+
+[[repos]]
+repo = "https://github.com/collectiveai-team/botica-pre-commit.git"
+rev = "v0.17.1"
+hooks = [{ id = "botica" }]

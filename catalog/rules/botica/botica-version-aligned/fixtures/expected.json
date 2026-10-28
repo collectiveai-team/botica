@@ -1,0 +1,49 @@
+{
+  "diagnostics": [
+    {
+      "path": ".github/workflows/conventional-commits.yml",
+      "severity": "warning",
+      "range": {
+        "start": { "offset": 237, "line": 10, "column": 18 },
+        "end": { "offset": 250, "line": 10, "column": 31 }
+      },
+      "message": "This line runs botica 0.16.1, and the `rev` of the mirror `collectiveai-team/botica-pre-commit` in prek.toml is `v0.17.1`: write `botica@0.17.1` here, so that the hooks and the workflows run one version of botica"
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "severity": "warning",
+      "range": {
+        "start": { "offset": 130, "line": 6, "column": 20 },
+        "end": { "offset": 143, "line": 6, "column": 33 }
+      },
+      "message": "This line runs botica 0.16.1, and the `rev` of the mirror `collectiveai-team/botica-pre-commit` in prek.toml is `v0.17.1`: write `botica@0.17.1` here, so that the hooks and the workflows run one version of botica"
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "severity": "warning",
+      "range": {
+        "start": { "offset": 318, "line": 10, "column": 10 },
+        "end": { "offset": 325, "line": 10, "column": 17 }
+      },
+      "message": "This `rev` installs botica 0.16.1, and the `rev` of the mirror `collectiveai-team/botica-pre-commit` in prek.toml is `v0.17.1`: write `v0.17.1` here, so that prek and pre-commit install one version of botica"
+    },
+    {
+      "path": "botica.toml",
+      "severity": "warning",
+      "range": {
+        "start": { "offset": 34, "line": 2, "column": 18 },
+        "end": { "offset": 42, "line": 2, "column": 26 }
+      },
+      "message": "The parameter `botica-version = \"0.16.1\"` of the recipes makes the next `botica recipe install` write `botica@0.16.1` again, and the `rev` of the mirror `collectiveai-team/botica-pre-commit` in prek.toml is `v0.17.1`: set it to `0.17.1`, or remove it so that `install` writes the version of the botica that runs it"
+    },
+    {
+      "path": "prek.toml",
+      "severity": "warning",
+      "range": {
+        "start": { "offset": 90, "line": 6, "column": 14 },
+        "end": { "offset": 103, "line": 6, "column": 27 }
+      },
+      "message": "This line runs botica 0.16.1, and the `rev` of the mirror `collectiveai-team/botica-pre-commit` in prek.toml is `v0.17.1`: write `botica@0.17.1` here, so that the hooks and the workflows run one version of botica"
+    }
+  ]
+}

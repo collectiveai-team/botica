@@ -16,6 +16,7 @@ use std::time::Instant;
 
 mod agents_refs;
 mod baseline;
+mod botica_version;
 mod diff;
 mod editor;
 mod extensions;

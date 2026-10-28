@@ -279,6 +279,7 @@ select = [
   "minimal-comments",
   "ubiquitous-language",
   "agents-md-refs-exist",
+  "botica-version-aligned",
 ]
 preview = true
 # The fixtures of the rules are wrong on purpose, those of botica-complexity are copied from

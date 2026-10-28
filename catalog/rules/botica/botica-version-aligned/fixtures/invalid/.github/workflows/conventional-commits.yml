@@ -1,0 +1,11 @@
+name: conventional-commits
+on: pull_request
+jobs:
+  title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Conventional Commits format
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: uvx botica@0.16.1 lint --select conventional-commits --pr-title="$PR_TITLE"
+permissions: {}

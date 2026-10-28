@@ -1,0 +1,19 @@
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "agents-conventional-commits"
+entry = "uvx botica@0.16.1 lint --select conventional-commits --commit-msg"
+language = "system"
+stages = ["commit-msg"]
+
+[[repos.hooks]]
+id = "no-ai-coauthorship"
+entry = "uvx botica@0.17.1 lint --select no-ai-coauthorship --commit-msg"
+language = "system"
+stages = ["commit-msg"]
+
+[[repos]]
+repo = "https://github.com/collectiveai-team/botica-pre-commit"
+rev = "v0.17.1"
+hooks = [{ id = "botica" }]

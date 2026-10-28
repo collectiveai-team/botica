@@ -3,15 +3,15 @@
 
 use std::path::Path;
 
-use botica_catalog::{read_recipes, Origin, Recipes, ToolConflict, RECIPES_DIR};
-use botica_config::Resolution;
+use botica_catalog::{read_recipes, Origin, Recipes, ToolConflict, BOTICA_VERSION, RECIPES_DIR};
+use botica_config::{ParamValue, Resolution};
 use botica_core::recipe_conflict::{check, unresolved, RecipeFile, RECIPE_CONFLICT};
 use botica_core::{Diagnostic, Severity};
 
 use super::project_files;
 use crate::project::Project;
 
-/// What `recipe-conflict` reads of the configuration.
+/// What `recipe-conflict` and `botica-version-aligned` read of the configuration.
 #[derive(Debug, Clone, Default)]
 pub struct ProjectRecipes {
     /// `installed` of `[recipes]`.
@@ -21,6 +21,8 @@ pub struct ProjectRecipes {
     /// The file of the configuration from the root of the project, `botica.toml` when there is
     /// none: a finding that no recipe of `recipes/` holds is about it.
     pub config_file: String,
+    /// The value of the parameter `botica-version` in `params` of `[recipes]`.
+    pub botica_version: Option<String>,
 }
 
 impl ProjectRecipes {
@@ -38,6 +40,12 @@ impl ProjectRecipes {
             installed: loaded.config.recipes.installed.clone(),
             replace: loaded.config.recipes.replace.clone(),
             config_file,
+            botica_version: loaded
+                .config
+                .recipes
+                .params
+                .get(BOTICA_VERSION)
+                .map(ParamValue::text),
         }
     }
 }

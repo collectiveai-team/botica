@@ -1,0 +1,10 @@
+name: abide
+on: pull_request
+jobs:
+  judge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: collectiveai-team/botica@v1
+      # The rubric is the one of `uvx botica@0.16.1`, exported again below.
+      - run: uvx botica@0.17.1 rules export --format abide --check
+permissions: {}
