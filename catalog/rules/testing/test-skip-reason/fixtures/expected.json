@@ -1,0 +1,293 @@
+{
+  "diagnostics": [
+    {
+      "path": "test_calls.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 54,
+          "line": 5,
+          "column": 5
+        },
+        "end": {
+          "offset": 67,
+          "line": 5,
+          "column": 18
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_calls.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 110,
+          "line": 9,
+          "column": 5
+        },
+        "end": {
+          "offset": 124,
+          "line": 9,
+          "column": 19
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_calls.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 157,
+          "line": 13,
+          "column": 5
+        },
+        "end": {
+          "offset": 172,
+          "line": 13,
+          "column": 20
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_calls.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 207,
+          "line": 17,
+          "column": 5
+        },
+        "end": {
+          "offset": 255,
+          "line": 17,
+          "column": 53
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_from_import.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 40,
+          "line": 4,
+          "column": 2
+        },
+        "end": {
+          "offset": 49,
+          "line": 4,
+          "column": 11
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_from_import.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 118,
+          "line": 9,
+          "column": 5
+        },
+        "end": {
+          "offset": 124,
+          "line": 9,
+          "column": 11
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_from_import.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 167,
+          "line": 13,
+          "column": 5
+        },
+        "end": {
+          "offset": 174,
+          "line": 13,
+          "column": 12
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_marks.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 29,
+          "line": 6,
+          "column": 2
+        },
+        "end": {
+          "offset": 45,
+          "line": 6,
+          "column": 18
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_marks.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 77,
+          "line": 10,
+          "column": 2
+        },
+        "end": {
+          "offset": 95,
+          "line": 10,
+          "column": 20
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_marks.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 139,
+          "line": 14,
+          "column": 2
+        },
+        "end": {
+          "offset": 166,
+          "line": 14,
+          "column": 29
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_marks.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 202,
+          "line": 18,
+          "column": 2
+        },
+        "end": {
+          "offset": 245,
+          "line": 18,
+          "column": 45
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_marks.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 289,
+          "line": 22,
+          "column": 2
+        },
+        "end": {
+          "offset": 306,
+          "line": 22,
+          "column": 19
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_marks.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 339,
+          "line": 26,
+          "column": 2
+        },
+        "end": {
+          "offset": 386,
+          "line": 26,
+          "column": 49
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_marks.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 436,
+          "line": 30,
+          "column": 2
+        },
+        "end": {
+          "offset": 483,
+          "line": 30,
+          "column": 49
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_module.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 28,
+          "line": 3,
+          "column": 14
+        },
+        "end": {
+          "offset": 73,
+          "line": 3,
+          "column": 59
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_module.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 145,
+          "line": 8,
+          "column": 31
+        },
+        "end": {
+          "offset": 162,
+          "line": 8,
+          "column": 48
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    },
+    {
+      "path": "test_unittest.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 59,
+          "line": 5,
+          "column": 6
+        },
+        "end": {
+          "offset": 72,
+          "line": 5,
+          "column": 19
+        }
+      },
+      "message": "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+    }
+  ]
+}

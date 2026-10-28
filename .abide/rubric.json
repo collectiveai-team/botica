@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-27T21:01:17Z",
-  "compiledBy": "botica 0.16.1",
+  "compiledAt": "2026-10-28T00:55:04Z",
+  "compiledBy": "botica 0.17.1",
   "manual": true,
   "sources": [
     {
@@ -619,6 +619,7 @@
         "catalog/rules/testing/test-in-memory-adapters/README.md",
         "catalog/rules/testing/test-no-network/README.md",
         "catalog/rules/testing/test-no-subprocess/README.md",
+        "catalog/rules/testing/test-skip-reason/README.md",
         "catalog/rules/testing/test-through-interface/README.md",
         "catalog/rules/tooling/no-disabled-typecheck/README.md",
         "catalog/rules/tooling/no-type-cast/README.md",
@@ -937,6 +938,8 @@
         "catalog/rules/testing/test-no-subprocess/rule.toml",
         "catalog/rules/testing/test-no-subprocess/tsx.yml",
         "catalog/rules/testing/test-no-subprocess/typescript.yml",
+        "catalog/rules/testing/test-skip-reason/python.yml",
+        "catalog/rules/testing/test-skip-reason/rule.toml",
         "catalog/rules/testing/test-through-interface/rule.toml",
         "catalog/rules/tooling/family.toml",
         "catalog/rules/tooling/no-disabled-typecheck/javascript.yml",
@@ -1198,6 +1201,7 @@
         "catalog/rules/testing/test-in-memory-adapters/README.md",
         "catalog/rules/testing/test-no-network/README.md",
         "catalog/rules/testing/test-no-subprocess/README.md",
+        "catalog/rules/testing/test-skip-reason/README.md",
         "catalog/rules/testing/test-through-interface/README.md",
         "catalog/rules/tooling/no-disabled-typecheck/README.md",
         "catalog/rules/tooling/no-type-cast/README.md",

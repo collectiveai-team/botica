@@ -21,6 +21,7 @@ rules = [
   "test-no-subprocess",
   "test-no-network",
   "asyncio-no-get-event-loop",
+  "test-skip-reason",
   "uv-cooldown",
   "ruff-heavy-imports-in-function",
   "ruff-imports-at-top",
