@@ -4,6 +4,7 @@ use std::fmt;
 use botica_catalog::{Catalog, Kind};
 
 use crate::agents_refs::AGENTS_MD_REFS_EXIST;
+use crate::botica_version::BOTICA_VERSION_ALIGNED;
 use crate::commit::{
     ConventionalCommits, MessageRule, NoAiCoauthorship, CONVENTIONAL_COMMITS, NO_AI_COAUTHORSHIP,
 };
@@ -45,7 +46,8 @@ enum Provider {
     },
     /// The engine reports these itself while it lints (suppression comments, unreadable files), or
     /// the run once for the whole project (`external-config`, `external-config-weakened`,
-    /// `settings-env-schema`, `import-layers`, `recipe-conflict`, `agents-md-refs-exist`).
+    /// `settings-env-schema`, `import-layers`, `recipe-conflict`, `agents-md-refs-exist`,
+    /// `botica-version-aligned`).
     Engine,
     /// A rule of scope `commit`, which reads a commit message.
     Message {
@@ -53,7 +55,7 @@ enum Provider {
     },
 }
 
-const NATIVES: [(&str, Provider); 22] = [
+const NATIVES: [(&str, Provider); 23] = [
     (
         CONVENTIONAL_COMMITS,
         Provider::Message {
@@ -159,6 +161,7 @@ const NATIVES: [(&str, Provider); 22] = [
     (LOCKFILE_COMMITTED, Provider::Engine),
     (RECIPE_CONFLICT, Provider::Engine),
     (AGENTS_MD_REFS_EXIST, Provider::Engine),
+    (BOTICA_VERSION_ALIGNED, Provider::Engine),
 ];
 
 pub fn uses_code_dirs(slug: &str) -> bool {

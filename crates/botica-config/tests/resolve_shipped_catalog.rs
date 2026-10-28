@@ -119,12 +119,13 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
     );
 }
 
-const PROPOSED: [&str; 30] = [
+const PROPOSED: [&str; 31] = [
     "agents-md-refs-exist",
     "api-request-schema-name",
     "api-response-schema-name",
     "api-schema-in-route-module",
     "asyncio-no-get-event-loop",
+    "botica-version-aligned",
     "cargo-cooldown",
     "cognitive-complexity",
     "compose-config",
@@ -181,7 +182,7 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
         &catalog,
         "select = []\nextend-select = [\"all\"]\npreview = true",
     );
-    assert_eq!(active(&resolution).len(), 74);
+    assert_eq!(active(&resolution).len(), 75);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTSEC\"]\npreview = true")),
         [

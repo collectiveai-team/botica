@@ -1,4 +1,5 @@
 pub mod agents_refs;
+pub mod botica_version;
 mod buffer;
 pub mod commit;
 mod complexity;

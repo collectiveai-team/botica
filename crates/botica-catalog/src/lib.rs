@@ -42,7 +42,7 @@ pub use python::{lower_bound, PythonRange, PythonVersion};
 pub use question::{BooleanCriteria, Choices, Question};
 pub use readme::Section;
 pub use recipes::{Recipe, Recipes, AGENTS, EXPORTS, RECIPES_DIR};
-pub use recipes_params::{render, ParamKind, ParamSpec, ResolvedParam};
+pub use recipes_params::{render, ParamKind, ParamSpec, ResolvedParam, BOTICA_VERSION};
 pub use recipes_resolve::{RecipeItem, ResolvedRecipe};
 pub use recipes_steps::{
     is_node_manager, normalized_package, requirement_package, tool_package, FileStep,

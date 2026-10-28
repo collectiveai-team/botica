@@ -9,6 +9,7 @@ rules = [
   "unused-suppression",
   "invalid-suppression",
   "external-config",
+  "botica-version-aligned",
   "conventional-commits",
   "no-ai-coauthorship",
   "dockerfile-lint",

@@ -1,0 +1,12 @@
+repos:
+  - repo: local
+    hooks:
+      - id: no-ai-coauthorship
+        name: no-ai-coauthorship (commit-msg)
+        entry: uvx botica@0.16.1 lint --select no-ai-coauthorship --commit-msg
+        language: system
+        stages: [commit-msg]
+  - repo: https://github.com/collectiveai-team/botica-pre-commit
+    rev: v0.16.1
+    hooks:
+      - id: botica

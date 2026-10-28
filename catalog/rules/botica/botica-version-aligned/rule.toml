@@ -1,0 +1,13 @@
+id = "botica-version-aligned"
+code = "BT007"
+summary = "The hooks, the workflows and the parameter botica-version of a project name the version of botica of its mirror"
+status = "preview"
+scope = "project"
+needs = "bytes"
+run-on = ["cli"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "native"
+languages = ["*"]
