@@ -16,6 +16,7 @@ Needs prek on PATH. Clones go to <workdir>/real/<name> (shared with parity_real.
 private, so it is skipped if it cannot be cloned. Exit status 1 if anything is unexplained.
 """
 
+# botica: ignore-file[no-import-side-effects] -- a script of the benchmarks, never imported
 import json
 import re
 import subprocess

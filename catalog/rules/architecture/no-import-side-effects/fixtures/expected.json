@@ -1,0 +1,174 @@
+{
+  "diagnostics": [
+    {
+      "path": "cache.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 65,
+          "line": 4,
+          "column": 1
+        },
+        "end": {
+          "offset": 105,
+          "line": 4,
+          "column": 41
+        }
+      },
+      "message": "This call reads or writes files, opens a connection or starts a process when the module is imported, so every program and test that imports the module waits for it and fails when it fails. Move it into a function that the caller runs, or under `if __name__ == \"__main__\":` in a script."
+    },
+    {
+      "path": "commit.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 46,
+          "line": 3,
+          "column": 10
+        },
+        "end": {
+          "offset": 99,
+          "line": 3,
+          "column": 63
+        }
+      },
+      "message": "This call reads or writes files, opens a connection or starts a process when the module is imported, so every program and test that imports the module waits for it and fails when it fails. Move it into a function that the caller runs, or under `if __name__ == \"__main__\":` in a script."
+    },
+    {
+      "path": "decorated.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 52,
+          "line": 4,
+          "column": 34
+        },
+        "end": {
+          "offset": 68,
+          "line": 4,
+          "column": 50
+        }
+      },
+      "message": "This call reads or writes files, opens a connection or starts a process when the module is imported, so every program and test that imports the module waits for it and fails when it fails. Move it into a function that the caller runs, or under `if __name__ == \"__main__\":` in a script."
+    },
+    {
+      "path": "default.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 55,
+          "line": 4,
+          "column": 34
+        },
+        "end": {
+          "offset": 81,
+          "line": 4,
+          "column": 60
+        }
+      },
+      "message": "This call reads or writes files, opens a connection or starts a process when the module is imported, so every program and test that imports the module waits for it and fails when it fails. Move it into a function that the caller runs, or under `if __name__ == \"__main__\":` in a script."
+    },
+    {
+      "path": "else_branch.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 85,
+          "line": 7,
+          "column": 5
+        },
+        "end": {
+          "offset": 127,
+          "line": 7,
+          "column": 47
+        }
+      },
+      "message": "This call reads or writes files, opens a connection or starts a process when the module is imported, so every program and test that imports the module waits for it and fails when it fails. Move it into a function that the caller runs, or under `if __name__ == \"__main__\":` in a script."
+    },
+    {
+      "path": "plugins.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 39,
+          "line": 3,
+          "column": 29
+        },
+        "end": {
+          "offset": 60,
+          "line": 3,
+          "column": 50
+        }
+      },
+      "message": "This call reads or writes files, opens a connection or starts a process when the module is imported, so every program and test that imports the module waits for it and fails when it fails. Move it into a function that the caller runs, or under `if __name__ == \"__main__\":` in a script."
+    },
+    {
+      "path": "rates.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 34,
+          "line": 4,
+          "column": 13
+        },
+        "end": {
+          "offset": 86,
+          "line": 4,
+          "column": 65
+        }
+      },
+      "message": "This call reads or writes files, opens a connection or starts a process when the module is imported, so every program and test that imports the module waits for it and fails when it fails. Move it into a function that the caller runs, or under `if __name__ == \"__main__\":` in a script."
+    },
+    {
+      "path": "schema.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 18,
+          "line": 3,
+          "column": 6
+        },
+        "end": {
+          "offset": 37,
+          "line": 3,
+          "column": 25
+        }
+      },
+      "message": "This call reads or writes files, opens a connection or starts a process when the module is imported, so every program and test that imports the module waits for it and fails when it fails. Move it into a function that the caller runs, or under `if __name__ == \"__main__\":` in a script."
+    },
+    {
+      "path": "store.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 47,
+          "line": 5,
+          "column": 18
+        },
+        "end": {
+          "offset": 74,
+          "line": 5,
+          "column": 45
+        }
+      },
+      "message": "This call reads or writes files, opens a connection or starts a process when the module is imported, so every program and test that imports the module waits for it and fails when it fails. Move it into a function that the caller runs, or under `if __name__ == \"__main__\":` in a script."
+    },
+    {
+      "path": "version.py",
+      "severity": "warning",
+      "range": {
+        "start": {
+          "offset": 40,
+          "line": 3,
+          "column": 15
+        },
+        "end": {
+          "offset": 87,
+          "line": 3,
+          "column": 62
+        }
+      },
+      "message": "This call reads or writes files, opens a connection or starts a process when the module is imported, so every program and test that imports the module waits for it and fails when it fails. Move it into a function that the caller runs, or under `if __name__ == \"__main__\":` in a script."
+    }
+  ]
+}

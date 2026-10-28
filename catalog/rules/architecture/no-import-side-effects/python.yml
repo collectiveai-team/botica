@@ -1,0 +1,62 @@
+id: no-import-side-effects
+language: python
+severity: warning
+message: "This call reads or writes files, opens a connection or starts a process when the module is imported, so every program and test that imports the module waits for it and fails when it fails. Move it into a function that the caller runs, or under `if __name__ == \"__main__\":` in a script."
+utils:
+  io-call:
+    kind: call
+    any:
+      - has:
+          field: function
+          kind: identifier
+          regex: "^open$"
+      - has:
+          field: function
+          kind: attribute
+          regex: "^(io\\.open|os\\.(open|listdir|scandir|walk|mkdir|makedirs|remove|unlink|rmdir|removedirs|rename|renames|replace|system|popen)|shutil\\.(copy|copy2|copyfile|copytree|move|rmtree|make_archive|unpack_archive)|glob\\.i?glob|subprocess\\.(run|call|check_call|check_output|Popen|getoutput|getstatusoutput)|(requests|httpx)\\.(get|post|put|patch|delete|head|options|request|stream)|urllib\\.request\\.urlopen|socket\\.(socket|create_connection|create_server|getaddrinfo|gethostbyname)|(sqlite3|psycopg|psycopg2|pymysql|duckdb)\\.connect|(pd|pandas)\\.read_[a-z_]+)$"
+      - has:
+          field: function
+          kind: attribute
+          has:
+            field: attribute
+            regex: "^(read_text|read_bytes|write_text|write_bytes|iterdir|rglob|mkdir|touch|unlink|rmdir)$"
+      - all:
+          - has:
+              field: function
+              kind: identifier
+              regex: "^(listdir|scandir|walk|makedirs|system|popen|copy|copy2|copyfile|copytree|move|rmtree|glob|iglob|run|call|check_call|check_output|Popen|getoutput|getstatusoutput|get|post|put|patch|delete|head|request|urlopen|socket|create_connection|getaddrinfo|gethostbyname|connect)$"
+              pattern: $NAME
+          - inside:
+              kind: module
+              stopBy: end
+              has:
+                kind: import_from_statement
+                all:
+                  - has:
+                      field: module_name
+                      regex: "^(os|shutil|glob|subprocess|requests|httpx|urllib\\.request|socket|sqlite3|psycopg|psycopg2|pymysql|duckdb)$"
+                  - has:
+                      kind: dotted_name
+                      has:
+                        kind: identifier
+                        pattern: $NAME
+  deferred:
+    any:
+      # The body of a function runs when the function is called; its default values do not.
+      - kind: block
+        inside:
+          kind: function_definition
+      - kind: lambda
+      - kind: block
+        inside:
+          kind: if_statement
+          has:
+            field: condition
+            regex: "^(__name__\\s*==\\s*['\"]__main__['\"]|['\"]__main__['\"]\\s*==\\s*__name__|(typing\\.)?TYPE_CHECKING)$"
+rule:
+  all:
+    - matches: io-call
+    - not:
+        inside:
+          stopBy: end
+          matches: deferred

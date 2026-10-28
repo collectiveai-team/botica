@@ -6,6 +6,7 @@ paths that are not in a hidden directory (the CLI skips those; botica walks them
 `extra_rules_dir` is passed to botica as `--extra-rules` (the CLI must also have those rules).
 """
 
+# botica: ignore-file[no-import-side-effects] -- a script of the benchmarks, never imported
 import json
 import subprocess
 import sys

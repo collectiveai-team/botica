@@ -1,0 +1,26 @@
+id = "no-import-side-effects"
+code = "BTARCH008"
+standard = "CES-0"
+summary = "Importing a module reads and writes no file, opens no connection and starts no process"
+status = "preview"
+tags = ["imports", "startup"]
+ignores = [
+  "**/test_*.py",
+  "**/*_test.py",
+  "**/*.pyi",
+  "**/__main__.py",
+  "**/setup.py",
+  "**/noxfile.py",
+  "**/doc/**/conf.py",
+  "**/docs/**/conf.py",
+]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"
