@@ -106,7 +106,7 @@ uvx botica recipe install base base-python agent-claude-code ci-python repo-publ
 | `agent-claude-code`, `agent-codex`, `agent-opencode` | the configuration and the skills of an agent |
 | `ci`, `ci-python`, `ci-node`, `ci-go`, `ci-rust` | the workflows of GitHub Actions for commits and for an ecosystem |
 | `repo-public`, `repo-private` | the workflows that fit the visibility of the repository |
-| `ci-publish`, `ci-docker`, `ci-dependency-review`, `ci-automerge-public`, `ci-automerge-private`, `secrets-varlock` | one workflow or tool each |
+| `ci-publish`, `ci-docker`, `ci-dependency-review`, `ci-automerge-public`, `ci-automerge-private`, `ci-botica-update`, `secrets-varlock` | one workflow or tool each |
 | `iac-terraform` | Terraform or OpenTofu: the hooks of `terraform fmt`, `terraform validate`, tflint and trivy, and the workflow that runs them and checkov |
 | `security` | code that issues or checks credentials: the rules of CES-121 |
 

@@ -1,0 +1,19 @@
+description = "GitHub Actions: a weekly pull request that moves the hooks, the workflows and the configuration to the newest release of botica (needs the secret BOTICA_UPDATE_TOKEN)"
+
+[[files]]
+path = ".github/workflows/botica-update.yml"
+template = "files/github/workflows/botica-update.yml"
+
+[[files]]
+path = ".github/scripts/botica_update.py"
+template = "files/github/scripts/botica_update.py"
+
+[params.cooldown-days]
+description = "The days that a new release of a dependency waits before a package manager or dependabot takes it"
+kind = "days"
+default = 7
+
+[params.prek-version]
+description = "The version of prek that the workflows run with uvx (empty: the newest)"
+kind = "version"
+default = "0.5.7"

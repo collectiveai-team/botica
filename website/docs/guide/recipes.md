@@ -163,12 +163,13 @@ template ran before:
 | `jscpd-version` | `base` | `prek.toml` | `5` |
 | `abide-version` | `base` | `abide.yml` | `0.0.11` |
 | `zizmor-version` | `ci` | `zizmor.yml` | `1.30.1` |
-| `prek-version` | `ci-python` | `tests.yml` | empty (`uvx prek`) |
+| `prek-version` | `ci-python`, `ci-botica-update` | `tests.yml`, `botica-update.yml` | `0.5.7` |
 | `pyrefly-version` | `base-python` | `prek.toml` | empty (`uvx pyrefly`) |
 | `deptry-version` | `base-python` | `prek.toml` | empty (`uvx deptry`) |
 | `falsegreen-version` | `python-test-smells` | `prek.toml` | `0.9.2` |
 
-A hook with a `rev` has no parameter: `prek update` moves it.
+A hook with a `rev` has no parameter: `prek update` moves it. `prek update` leaves the other
+versions of botica as they are, and `ci-botica-update` moves them with the `rev` of the mirror.
 
 ## Built-in recipes
 
@@ -234,6 +235,21 @@ so the tools need not be installed; the parameters `terraform-version`, `tflint-
 that `terraform.yml` runs with uvx. checkov runs only in `terraform.yml`, and
 fails on a check that fails and is not in `.checkov.baseline`: in a repository with Terraform code,
 run checkov once with `--create-baseline` and commit the file it writes (CES-129, Migration).
+
+`ci-botica-update` moves the project to the newest release of botica. Its workflow
+`.github/workflows/botica-update.yml` runs on Monday and by hand: `prek update --repo
+https://github.com/collectiveai-team/botica-pre-commit` moves the `rev` of the mirror to the newest
+release that is not a prerelease and is at least `cooldown-days` old (7 by default, the days of
+`.github/dependabot.yml`), and `.github/scripts/botica_update.py`, which the recipe also writes and
+`uv run --no-project` runs, writes that version in each `botica@<version>` of `prek.toml`,
+`.pre-commit-config.yaml` and `.github/workflows/`, in the `rev` of the mirror in
+`.pre-commit-config.yaml`, and in `botica-version` of `[recipes.params]` (`[tool.botica.recipes.params]` in
+`pyproject.toml`). The change goes to one pull
+request on the branch `chore/botica-update`, which a later run updates. The push and the pull request
+need the secret `BOTICA_UPDATE_TOKEN`: a fine-grained personal access token of the repository with
+read and write access to Contents, Pull requests and Workflows. The token of the workflow cannot push
+a change to `.github/workflows/`, and a pull request that it opens runs no workflow, so the job
+fails without the secret. Name the recipe only once the secret exists.
 
 `security` selects the rules of CES-121 and has no step: `route-auth`, `jwt-verified` and
 `no-token-in-web-storage`, and the judgment rule `short-lived-access-token`. A repository whose code

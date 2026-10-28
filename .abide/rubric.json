@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-28T04:53:03Z",
+  "compiledAt": "2026-10-28T04:58:46Z",
   "compiledBy": "botica 0.17.1",
   "manual": true,
   "sources": [
@@ -697,6 +697,7 @@
         "catalog/recipes/ci-asyncapi-compat.toml",
         "catalog/recipes/ci-automerge-private.toml",
         "catalog/recipes/ci-automerge-public.toml",
+        "catalog/recipes/ci-botica-update.toml",
         "catalog/recipes/ci-dependency-review.toml",
         "catalog/recipes/ci-docker.toml",
         "catalog/recipes/ci-go.toml",
@@ -731,6 +732,7 @@
         "catalog/recipes/files/github-rust/**",
         "catalog/recipes/files/github/dependabot.yml",
         "catalog/recipes/files/github/zizmor.yml",
+        "catalog/recipes/files/github/scripts/**",
         "catalog/recipes/files/github/workflows/**",
         "catalog/recipes/sections/pnpm-workspace-cooldown.yaml",
         "catalog/recipes/sections/prek-alembic.toml",
@@ -1083,6 +1085,7 @@
         "catalog/recipes/files/eslint.config.js",
         "catalog/recipes/files/github/pull_request_template.md",
         "catalog/recipes/files/github/ISSUE_TEMPLATE/**",
+        "catalog/recipes/files/github/scripts/**",
         "catalog/recipes/sections/agents-workspace-defaults.md",
         "catalog/recipes/sections/botica-rules.md",
         "catalog/references/ai/README.md",

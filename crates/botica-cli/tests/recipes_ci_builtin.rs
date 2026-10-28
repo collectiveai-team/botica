@@ -122,3 +122,22 @@ fn the_private_automerge_adds_the_workflow_that_labels_and_the_one_that_merges()
         .join(".github/workflows/dependabot-automerge-run.yml")
         .is_file());
 }
+
+#[test]
+fn the_botica_update_adds_its_workflow_and_the_script_that_it_runs() {
+    let dir = project("ci-botica-update", None);
+
+    let text = ok(&recipe(&dir, &["install", "ci-botica-update"]));
+
+    assert!(
+        text.ends_with("ci-botica-update: 2 added, 0 ok, 0 pending\n"),
+        "{text}"
+    );
+    assert_eq!(workflows(&dir), ["botica-update.yml"]);
+    assert!(dir.join(".github/scripts/botica_update.py").is_file());
+    let checked = ok(&recipe(&dir, &["check", "ci-botica-update"]));
+    assert!(
+        checked.ends_with("ci-botica-update: 2 checked, 0 differ\n"),
+        "{checked}"
+    );
+}

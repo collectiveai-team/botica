@@ -64,6 +64,7 @@ fn list_adds_the_recipes_of_the_project_in_the_order_of_their_ids() {
             "ci-asyncapi-compat",
             "ci-automerge-private",
             "ci-automerge-public",
+            "ci-botica-update",
             "ci-dependency-review",
             "ci-docker",
             "ci-go",
