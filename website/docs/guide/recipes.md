@@ -154,19 +154,22 @@ template, never whether a step runs.
 Every chain also has `botica-version`, which botica declares and a recipe cannot: its default is
 the release of the binary that runs `install`, so the `rev` of the mirror `botica-pre-commit` and
 each `uvx botica@` of the templates ask for the rules of that release. Each tool that a built-in
-template runs with `uvx` or `npx` reads its version from a parameter, whose default is what the
-template ran before:
+template runs with `uvx` or `npx` reads its version from a parameter, whose default is an exact
+version:
 
 | Parameter | Recipe | Template | Default |
 | --- | --- | --- | --- |
 | `botica-version` | botica | `prek.toml`, `abide.yml`, `conventional-commits.yml`, `commit-policy.yml` | the release of the binary |
-| `jscpd-version` | `base` | `prek.toml` | `5` |
+| `jscpd-version` | `base` | `prek.toml` | `5.4.2` |
 | `abide-version` | `base` | `abide.yml` | `0.0.11` |
-| `zizmor-version` | `ci` | `zizmor.yml` | `1.30.1` |
-| `prek-version` | `ci-python`, `ci-botica-update` | `tests.yml`, `botica-update.yml` | `0.5.7` |
-| `pyrefly-version` | `base-python` | `prek.toml` | empty (`uvx pyrefly`) |
-| `deptry-version` | `base-python` | `prek.toml` | empty (`uvx deptry`) |
+| `zizmor-version` | `ci` | `zizmor.yml` | `1.31.1` |
+| `prek-version` | `ci-python`, `ci-botica-update`, `iac-terraform` | `tests.yml`, `botica-update.yml`, `terraform.yml` | `0.5.7` |
+| `pyrefly-version` | `base-python` | `prek.toml` | `1.4.0` |
+| `deptry-version` | `base-python` | `prek.toml` | `0.25.1` |
 | `falsegreen-version` | `python-test-smells` | `prek.toml` | `0.9.2` |
+| `griffe-version` | `ci-api-compat-python` | `api-compat-python.yml` | `2.4.0` |
+| `asyncapi-cli-version` | `ci-asyncapi-compat` | `asyncapi-compat.yml` | `6.2.1` |
+| `checkov-version` | `iac-terraform` | `terraform.yml` | `3.3.30` |
 
 A hook with a `rev` has no parameter: `prek update` moves it. `prek update` leaves the other
 versions of botica as they are, and `ci-botica-update` moves them with the `rev` of the mirror.
