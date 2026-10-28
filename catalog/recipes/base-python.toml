@@ -25,6 +25,7 @@ rules = [
   "ruff-heavy-imports-in-function",
   "ruff-imports-at-top",
   "no-eager-heavy-imports",
+  "no-import-side-effects",
 ]
 
 [[files]]
