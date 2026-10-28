@@ -63,6 +63,7 @@ jobs:
             exit 0
           fi
 
+          # shellcheck disable=SC2016 # $w is a variable of jq, not of the shell
           not_green=$(gh pr checks "$NUMBER" --repo "$REPO" --json workflow,bucket --jq '
             [.[] | select(.workflow as $w
               | ["Tests","osv-scanner","zizmor","Conventional Commits","commit-policy"] | index($w))]

@@ -10,7 +10,9 @@ scripts/build_site.sh                # the site, in website/site
 
 CI (`.github/workflows/ci.yml`, which checks the whole workspace) also sets `BOTICA_REQUIRE_RUFF=1`, so the catalog test
 cannot skip itself for lack of `ruff`, and `BOTICA_REQUIRE_READ_ERRORS=1`, so the permission tests
-cannot skip themselves when the runner is root. Set them locally to run as CI does. `bench/` has
+cannot skip themselves when the runner is root, and `BOTICA_REQUIRE_WORKFLOW_LINTERS=1`, so
+`crates/botica-catalog/tests/recipes_workflows_lint.rs` cannot skip actionlint or zizmor, which it
+runs on the workflows of the recipes. Set them locally to run as CI does. `bench/` has
 the parity and timing scripts (`parity.py`, `hook_parity.py`, `run.sh`).
 
 The hooks of botica in `prek.toml`, the workflows and `abide.yml` run the botica of the checkout
