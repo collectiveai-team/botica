@@ -19,4 +19,4 @@ template = "files/github/zizmor.yml"
 [params.zizmor-version]
 description = "The version of zizmor that zizmor.yml runs with uvx (empty: the newest)"
 kind = "version"
-default = "1.30.1"
+default = "1.31.1"

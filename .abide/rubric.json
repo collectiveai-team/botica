@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-27T21:01:17Z",
-  "compiledBy": "botica 0.16.1",
+  "compiledAt": "2026-10-28T02:00:59Z",
+  "compiledBy": "botica 0.17.1",
   "manual": true,
   "sources": [
     {
@@ -14,7 +14,7 @@
       "text": "A function either orders the steps of a task or carries out one of them. The orchestration (the order of the calls and the control flow) does not share a function with the rules of the domain and the I/O; it calls named units that hold them.",
       "source": {
         "path": "AGENTS.md",
-        "line": 89
+        "line": 91
       },
       "scope": [
         "bench/**/*.js",
@@ -226,7 +226,7 @@
       "text": "Layers and packages are named `entrypoints`, `api`, `database`, `impl` and `core`, an interface is a port and its implementation an adapter, and a concept that already has a name gets no synonym.",
       "source": {
         "path": "AGENTS.md",
-        "line": 90
+        "line": 92
       },
       "scope": [
         "bench/**/*.js",
@@ -318,7 +318,7 @@
       "text": "Tests drive the logic through in-memory adapters of the ports of the project: working fakes that implement the same interface as the production adapter. A mock stands in only for a third-party boundary that cannot reasonably be faked. `botica refs show in-memory-adapters` prints an adapter with its port.",
       "source": {
         "path": "AGENTS.md",
-        "line": 99
+        "line": 101
       },
       "scope": [
         "catalog/references/ai/tests/**/*.py",
@@ -366,7 +366,7 @@
       "text": "Tests call the unit under test through the public interface that production code calls, and assert on observable behaviour. A test reads no private attribute, calls no underscore-prefixed member and asserts on no internal state of the unit.",
       "source": {
         "path": "AGENTS.md",
-        "line": 100
+        "line": 102
       },
       "scope": [
         "catalog/references/ai/tests/**/*.js",
@@ -528,7 +528,7 @@
       "text": "Prose says what a thing is and what it does, in plain sentences that a file, a command or an issue of the repository backs, with no inflated words, hedges, trailing judgments, bold emphasis or claims without a source.",
       "source": {
         "path": "AGENTS.md",
-        "line": 106
+        "line": 108
       },
       "scope": [
         "AGENTS.md",
@@ -662,7 +662,7 @@
       "text": "A comment says only what the code cannot say through its names and its structure: the reason for a choice that looks wrong, an invariant, a workaround with the link to its cause, or the docstring of a public interface.",
       "source": {
         "path": "AGENTS.md",
-        "line": 107
+        "line": 109
       },
       "scope": [
         "Cargo.toml",
@@ -1015,6 +1015,7 @@
         "distribution/botica-pre-commit/pyproject.toml",
         "scripts/bump_mirror_rev.py",
         "scripts/bump_prek_revs.py",
+        "scripts/bump_tool_params.py",
         "scripts/check_rule_change.py",
         "scripts/check_skill_drift.py",
         "scripts/number_standard.py",
@@ -1057,7 +1058,7 @@
       "text": "Each concept of the domain has one term, the one that `GLOSSARY.md` defines, in the code and in the documentation. `GLOSSARY.md` lists each term with its definition and the words to avoid for it, and the code and the documentation use the term.",
       "source": {
         "path": "AGENTS.md",
-        "line": 108
+        "line": 110
       },
       "scope": [
         "AGENTS.md",
@@ -1269,6 +1270,7 @@
         "docs/**",
         "scripts/bump_mirror_rev.py",
         "scripts/bump_prek_revs.py",
+        "scripts/bump_tool_params.py",
         "scripts/check_rule_change.py",
         "scripts/check_skill_drift.py",
         "scripts/number_standard.py",

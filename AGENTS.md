@@ -49,7 +49,9 @@ its SDKs and its benchmarks). The binary embeds `catalog/rules/`, `catalog/refer
   `check_rule_change.py` flags a change that adds a botica rule and touches more than that rule
   needs; the `rule-contract` job of `ci.yml` runs it. `build_site.sh` builds the standards site. `bump_prek_revs.py` runs `prek update` on a copy of each template with its parameters
   replaced, since prek cannot parse them all, and writes the new `rev` lines back. `sync_pins.py` copies the pins of the actions and of uv into the
-  templates of the recipes; the weekly `pins` workflow runs both and opens a pull
+  templates of the recipes. `bump_tool_params.py` moves the default version of each tool that a
+  template runs with `uvx` or `npx` to its newest release past the cooldown. The weekly `pins`
+  workflow runs the three and opens a pull
   request.
 
 Every agent reads `AGENTS.md`; skills install once into `.agents/skills`.
