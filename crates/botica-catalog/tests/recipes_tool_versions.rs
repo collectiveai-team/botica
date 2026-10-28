@@ -1,5 +1,5 @@
 //! The version of each tool that a built-in template runs with `uvx` or `npx` is a parameter, and
-//! its default is what the template ran before the parameters (`recipe-tool-versions`).
+//! its default is an exact version, which `scripts/bump_tool_params.py` moves.
 
 use std::collections::BTreeMap;
 
@@ -59,41 +59,30 @@ fn every_tool_that_a_built_in_template_runs_with_uvx_or_npx_reads_its_version_fr
     }
 }
 
-#[test]
-fn the_defaults_write_what_the_templates_ran_before() {
-    let recipes = Recipes::embedded().expect("the built-in recipes load");
-    let botica = format!("botica@{}", env!("CARGO_PKG_VERSION"));
-    let expected: BTreeMap<&str, Vec<&str>> = BTreeMap::from([
-        (
-            "files/prek-base.toml",
-            vec![botica.as_str(), botica.as_str(), "jscpd@5", "jscpd@5"],
-        ),
-        (
-            "files/github/workflows/abide.yml",
-            vec![
-                botica.as_str(),
-                botica.as_str(),
-                botica.as_str(),
-                botica.as_str(),
-                "@coldtea/abide@0.0.11",
-            ],
-        ),
-        ("files/github/workflows/zizmor.yml", vec!["zizmor@1.30.1"]),
-        ("files/github/workflows/tests.yml", vec!["prek"]),
-        ("sections/prek-python-tools.toml", vec!["pyrefly", "deptry"]),
-    ]);
+/// `name@1.2.3`: a package at an exact version, as `scripts/bump_tool_params.py` writes it.
+fn pinned(package: &str) -> bool {
+    package.rsplit_once('@').is_some_and(|(name, version)| {
+        !name.is_empty()
+            && version.split('.').count() == 3
+            && version
+                .split('.')
+                .all(|part| !part.is_empty() && part.bytes().all(|b| b.is_ascii_digit()))
+    })
+}
 
-    for (recipe, path, text) in templates(&recipes) {
-        let Some(packages_before) = expected.get(path.as_str()) else {
-            continue;
-        };
+#[test]
+fn the_defaults_pin_each_tool_to_an_exact_version() {
+    let recipes = Recipes::embedded().expect("the built-in recipes load");
+
+    for (recipe, path, text) in templates(&recipes)
+        .into_iter()
+        .filter(|(_, path, _)| path != PROSE)
+    {
         let resolved = recipes.resolve(&recipe).expect("resolves");
         let written = render(&text, &resolved.params).expect("renders");
-        let mut found = packages(&written);
-        let mut wanted = packages_before.clone();
-        found.sort_unstable();
-        wanted.sort_unstable();
-        assert_eq!(found, wanted, "{path}");
+        for package in packages(&written) {
+            assert!(pinned(package), "`{path}` runs `{package}`");
+        }
     }
 }
 

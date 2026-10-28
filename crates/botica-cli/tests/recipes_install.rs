@@ -288,9 +288,15 @@ fn the_built_in_base_writes_its_prek_toml_and_check_finds_it() {
         .and_then(|rest| rest.lines().next());
     assert_eq!(rev, Some(this_release.as_str()), "{written}");
     let package = format!("uvx botica@{} ", env!("CARGO_PKG_VERSION"));
+    let base: toml::Table = include_str!("../../../catalog/recipes/base.toml")
+        .parse()
+        .expect("base.toml");
+    let jscpd = base["params"]["jscpd-version"]["default"]
+        .as_str()
+        .expect("the default of jscpd-version");
     let expected = template
         .replace("{{ param.botica-version }}", env!("CARGO_PKG_VERSION"))
-        .replace("{{ param.jscpd-version.at }}", "@5");
+        .replace("{{ param.jscpd-version.at }}", &format!("@{jscpd}"));
     assert_eq!(written, expected);
     let workflow = read(&dir, ".github/workflows/abide.yml");
     assert_eq!(workflow.matches(&package).count(), 4, "{workflow}");

@@ -247,8 +247,8 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
     );
     assert!(
         text.contains(
-            "- pyrefly-version = \"\" (version, default \"\", from base-python): The version of \
-             pyrefly that the hook of prek runs with uvx (empty: the newest)\n"
+            "- cooldown-days = \"7\" (days, default \"7\", from base-python): The days that a new \
+             release of a dependency waits before a package manager or dependabot takes it\n"
         ),
         "{text}"
     );

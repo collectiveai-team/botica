@@ -24,7 +24,7 @@ default = "3.3.30"
 [params.prek-version]
 description = "The version of prek that the workflows run with uvx (empty: the newest)"
 kind = "version"
-default = ""
+default = "0.5.7"
 
 [[files]]
 path = ".tflint.hcl"

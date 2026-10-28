@@ -7,4 +7,4 @@ template = "files/github/workflows/api-compat-python.yml"
 [params.griffe-version]
 description = "The version of griffe that api-compat-python.yml runs with uvx (empty: the newest)"
 kind = "version"
-default = "2.3.2"
+default = "2.4.0"

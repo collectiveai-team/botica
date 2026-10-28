@@ -117,7 +117,7 @@ template = "sections/botica-rules.md"
 [params.jscpd-version]
 description = "The version of jscpd that the hook of prek runs with npx (empty: the newest)"
 kind = "version"
-default = "5"
+default = "5.4.2"
 
 [params.abide-version]
 description = "The version of @coldtea/abide that abide.yml runs with npx (empty: the newest)"

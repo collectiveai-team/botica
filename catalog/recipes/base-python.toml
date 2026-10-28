@@ -90,12 +90,12 @@ default = "**/impl/**"
 [params.pyrefly-version]
 description = "The version of pyrefly that the hook of prek runs with uvx (empty: the newest)"
 kind = "version"
-default = ""
+default = "1.4.0"
 
 [params.deptry-version]
 description = "The version of deptry that the hook of prek runs with uvx (empty: the newest)"
 kind = "version"
-default = ""
+default = "0.25.1"
 [params.cooldown-days]
 description = "The days that a new release of a dependency waits before a package manager or dependabot takes it"
 default = 7
