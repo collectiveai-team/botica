@@ -1,0 +1,17 @@
+description = "GitHub Actions: a pull request that changes the code of a Python project fails when none of the pytest tests that it adds or changes fails on its base, unless the pull request has the label tests-pass-on-base"
+
+[[files]]
+path = ".github/workflows/tests-fail-on-base-python.yml"
+template = "files/github/workflows/tests-fail-on-base-python.yml"
+
+[[files]]
+path = ".github/scripts/tests_fail_on_base.py"
+template = "files/github/scripts/tests_fail_on_base.py"
+
+[[files]]
+path = ".github/scripts/tests_fail_on_base_core.py"
+template = "files/github/scripts/tests_fail_on_base_core.py"
+
+[[files]]
+path = ".github/scripts/tests_fail_on_base_pytest.py"
+template = "files/github/scripts/tests_fail_on_base_pytest.py"

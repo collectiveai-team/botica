@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-27T21:01:17Z",
-  "compiledBy": "botica 0.16.1",
+  "compiledAt": "2026-10-28T02:45:33Z",
+  "compiledBy": "botica 0.17.1",
   "manual": true,
   "sources": [
     {
@@ -704,6 +704,7 @@
         "catalog/recipes/ci-publish.toml",
         "catalog/recipes/ci-python.toml",
         "catalog/recipes/ci-rust.toml",
+        "catalog/recipes/ci-tests-fail-on-base-python.toml",
         "catalog/recipes/ci.toml",
         "catalog/recipes/database-alembic.toml",
         "catalog/recipes/full-go.toml",
@@ -730,6 +731,7 @@
         "catalog/recipes/files/github-rust/**",
         "catalog/recipes/files/github/dependabot.yml",
         "catalog/recipes/files/github/zizmor.yml",
+        "catalog/recipes/files/github/scripts/**",
         "catalog/recipes/files/github/workflows/**",
         "catalog/recipes/sections/pnpm-workspace-cooldown.yaml",
         "catalog/recipes/sections/prek-alembic.toml",
@@ -1079,6 +1081,7 @@
         "catalog/recipes/files/eslint.config.js",
         "catalog/recipes/files/github/pull_request_template.md",
         "catalog/recipes/files/github/ISSUE_TEMPLATE/**",
+        "catalog/recipes/files/github/scripts/**",
         "catalog/recipes/sections/agents-workspace-defaults.md",
         "catalog/recipes/sections/botica-rules.md",
         "catalog/references/ai/README.md",

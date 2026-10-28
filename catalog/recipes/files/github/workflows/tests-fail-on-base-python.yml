@@ -1,0 +1,67 @@
+name: tests-fail-on-base-python
+
+# CES-124: a test that a pull request adds or changes to cover a change of the code fails on the
+# base of the pull request.
+#
+# `.github/scripts/tests_fail_on_base.py` reads the diff from the merge base, and selects the test
+# functions that the pull request adds (a new name in its file) or changes (its AST differs,
+# decorators included). With no code changed, or no test function selected, the check passes. It
+# runs the selected tests with pytest at the head, and in a worktree of the merge base with the test
+# files of the pull request copied in. Both trees install the `uv.lock` of the head with INSTALL,
+# so a test dependency that the pull request adds is present on the base. pytest runs without the
+# `addopts` of the project.
+#
+# A node is red on the base when it fails, when a fixture fails in its setup, or when its module
+# cannot be imported because a name of the project is missing there; the last is a weak red and
+# gets a notice. A module outside the project that is missing is not red. A red node runs again and
+# counts only when it fails both times. The check passes when at least one node is red and every
+# selected node passes at the head; a selected function with no red node gets a warning. A pull
+# request whose title starts with `fix:` and that adds or changes no test gets a warning.
+#
+# With the label `tests-pass-on-base` on the pull request, as a refactor with characterisation
+# tests has, a failure is reported as a warning and the job passes. Adding or removing the label
+# runs the check again. A repository creates the label once:
+# `gh label create tests-pass-on-base --description "The new tests pass on the base on purpose"`.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+concurrency:
+  group: tests-fail-on-base-python-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  LABEL: tests-pass-on-base
+  # Installs the `.venv` of each tree from the lockfile of the head. Add --extra / --group flags
+  # here if the tests need optional dependencies.
+  INSTALL: uv sync --frozen
+  LOCKFILES: uv.lock
+
+jobs:
+  tests:
+    name: the new tests fail on the base
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The script reads the merge base and its files from git history.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install uv
+        # An exact tag: setup-uv publishes no major tag since v8.0.0.
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: "0.13.3"
+          enable-cache: true
+
+      - name: Run the new tests on the base
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          DECLARED: ${{ contains(github.event.pull_request.labels.*.name, env.LABEL) }}
+        run: uv run --no-project .github/scripts/tests_fail_on_base.py
