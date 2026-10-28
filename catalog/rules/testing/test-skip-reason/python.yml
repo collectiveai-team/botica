@@ -1,0 +1,131 @@
+id: test-skip-reason
+language: python
+severity: warning
+message: "This skip or xfail does not say why the test is switched off. Give it a reason that names the bug, the platform or the missing dependency: `reason=\"...\"`, or the text as the first argument of `pytest.skip()`, `pytest.xfail()` and `@pytest.mark.skip()`."
+utils:
+  empty-string:
+    kind: string
+    not:
+      has:
+        any:
+          - kind: string_content
+          - kind: interpolation
+  # An argument list with `reason=` set to anything but an empty string.
+  reason-keyword:
+    has:
+      kind: keyword_argument
+      all:
+        - has:
+            field: name
+            regex: "^reason$"
+        - not:
+            has:
+              field: value
+              matches: empty-string
+  # An argument list whose first argument is positional and not an empty string.
+  reason-positional:
+    has:
+      nthChild: 1
+      not:
+        any:
+          - kind: keyword_argument
+          - kind: comment
+          - matches: empty-string
+  skip-mark:
+    kind: attribute
+    any:
+      - regex: "^pytest\\.mark\\.(skip|skipif|xfail)$"
+      - regex: "^mark\\.(skip|skipif|xfail)$"
+        inside:
+          kind: module
+          stopBy: end
+          has:
+            kind: import_from_statement
+            all:
+              - has:
+                  field: module_name
+                  regex: "^pytest$"
+              - has:
+                  kind: dotted_name
+                  regex: "^mark$"
+rule:
+  any:
+    # A mark used as it is: `@pytest.mark.skip`, `pytestmark = pytest.mark.xfail`,
+    # `pytest.param(..., marks=pytest.mark.xfail)`.
+    - matches: skip-mark
+      not:
+        inside:
+          kind: call
+          field: function
+    # `@pytest.mark.skip(...)` takes its reason as the first argument or as `reason=`.
+    - kind: call
+      all:
+        - has:
+            field: function
+            matches: skip-mark
+            regex: "\\.skip$"
+        - has:
+            field: arguments
+            kind: argument_list
+            not:
+              any:
+                - matches: reason-keyword
+                - matches: reason-positional
+    # The first argument of `skipif` and `xfail` is a condition, so the reason is `reason=`.
+    - kind: call
+      all:
+        - has:
+            field: function
+            matches: skip-mark
+            regex: "\\.(skipif|xfail)$"
+        - has:
+            field: arguments
+            kind: argument_list
+            not:
+              matches: reason-keyword
+    - kind: call
+      all:
+        - has:
+            field: function
+            kind: attribute
+            regex: "^pytest\\.(skip|xfail)$"
+        - has:
+            field: arguments
+            kind: argument_list
+            not:
+              any:
+                - matches: reason-keyword
+                - matches: reason-positional
+    - kind: call
+      all:
+        - has:
+            field: function
+            kind: identifier
+            regex: "^(skip|xfail)$"
+            pattern: $NAME
+        - inside:
+            kind: module
+            stopBy: end
+            has:
+              kind: import_from_statement
+              all:
+                - has:
+                    field: module_name
+                    regex: "^pytest$"
+                - has:
+                    kind: dotted_name
+                    has:
+                      kind: identifier
+                      pattern: $NAME
+        - has:
+            field: arguments
+            kind: argument_list
+            not:
+              any:
+                - matches: reason-keyword
+                - matches: reason-positional
+    # `@unittest.skip` with no call skips with an empty reason.
+    - kind: attribute
+      regex: "^unittest\\.skip$"
+      inside:
+        kind: decorator

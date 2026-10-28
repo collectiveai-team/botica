@@ -1,0 +1,16 @@
+id = "test-skip-reason"
+code = "BTTEST012"
+standard = "CES-0"
+summary = "A skipped or xfailed test says why"
+status = "preview"
+tags = ["tests"]
+scope = "file"
+needs = "syntax"
+run-on = ["cli", "save", "type"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "ast-grep"
+languages = ["python"]
+file = "python.yml"
