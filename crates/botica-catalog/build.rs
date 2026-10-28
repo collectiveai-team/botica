@@ -27,9 +27,13 @@ fn push(table: &mut String, rules_dir: &Path, path: &Path) {
     .expect("writing to a String cannot fail");
 }
 
-/// Every file under `dir`, at any depth, in the order of their paths.
+/// Every file under `dir`, at any depth, in the order of their paths, but `__pycache__`: running a
+/// Python template of a recipe where it is writes one, and its bytecode is not text.
 fn push_tree(table: &mut String, root: &Path, dir: &Path) {
     for entry in sorted_entries(dir) {
+        if entry.file_name().is_some_and(|name| name == "__pycache__") {
+            continue;
+        }
         if entry.is_dir() {
             push_tree(table, root, &entry);
         } else if entry.is_file() {
