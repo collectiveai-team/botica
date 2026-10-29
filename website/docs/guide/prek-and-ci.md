@@ -10,7 +10,7 @@ title: prek and CI
 # prek.toml: the mirror installs the wheel of the same version from PyPI
 [[repos]]
 repo = "https://github.com/collectiveai-team/botica-pre-commit"
-rev = "v0.18.0"
+rev = "v0.18.1"
 
 [[repos.hooks]]
 id = "botica"
