@@ -7,7 +7,7 @@ use anyhow::Result;
 use botica_catalog::{Kind, Runtime};
 use clap::{Args, Subcommand};
 
-use crate::extension_pool::Launcher;
+use crate::extension_pool::{sdk_of, Launcher};
 use crate::project::{self, ProjectArgs};
 
 #[derive(Args)]
@@ -19,7 +19,8 @@ pub struct ExtArgs {
 #[derive(Subcommand)]
 enum ExtCommand {
     /// Create or update the environment of the script of each active extension rule of the
-    /// runtime `python`, with `uv sync --script` and the Python of the project.
+    /// runtime `python`, with `uv sync --script` and the Python of the project; a script that
+    /// declares `botica` with no version also starts once, to install the version of botica.
     Sync(SyncArgs),
 }
 
@@ -61,7 +62,10 @@ pub fn run(args: &ExtArgs) -> Result<ExitCode> {
     })
 }
 
-/// Runs `uv sync --script` on the script of a Python rule, with the Python of the project.
+/// Runs `uv sync --script` on the script of a Python rule, with the Python of the project. A
+/// script that gets its `botica` from botica (`uv run --with`) then starts once, as `botica lint`
+/// starts it, with its stdin closed: `uv sync` does not take `--with`, and that run installs the
+/// version of botica in the cache of `uv`.
 fn prepare(
     launcher: &Launcher,
     rule: &botica_catalog::Rule,
@@ -71,18 +75,28 @@ fn prepare(
     let script = launcher
         .script(rule, implementation)
         .ok_or_else(|| "no script".to_owned())?;
-    let status = Command::new("uv")
-        .arg("sync")
-        .args(launcher.python()?)
-        .arg("--script")
-        .arg(&script)
+    let mut sync = vec!["uv".to_owned(), "sync".to_owned()];
+    sync.extend(launcher.python()?.iter().cloned());
+    sync.extend(["--script".to_owned(), script.to_string_lossy().into_owned()]);
+    run_quietly(&sync, root)?;
+    if sdk_of(&script).is_some() {
+        run_quietly(&launcher.command(rule, implementation)?, root)?;
+    }
+    Ok(())
+}
+
+/// Runs `argv` in `root` with no stdin and its stdout left out.
+fn run_quietly(argv: &[String], root: &std::path::Path) -> Result<(), String> {
+    let status = Command::new(&argv[0])
+        .args(&argv[1..])
         .current_dir(root)
         .stdin(Stdio::null())
+        .stdout(Stdio::null())
         .status()
-        .map_err(|error| format!("cannot run `uv`: {error}"))?;
+        .map_err(|error| format!("cannot run `{}`: {error}", argv[0]))?;
     if status.success() {
         Ok(())
     } else {
-        Err(format!("`uv sync` exited with {status}"))
+        Err(format!("`{}` exited with {status}", argv[..2].join(" ")))
     }
 }

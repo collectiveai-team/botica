@@ -6,7 +6,9 @@ one JSON-RPC 2.0 message per line.
 
 It ships in the `botica` wheel, as the module `botica.sdk`; this folder is the `python-source` of
 `pyproject.toml`. A script declares `botica[sdk]`, which adds `ast-grep-py`, and runs with
-Python 3.9 or later.
+Python 3.9 or later. It names no version: `botica lint` runs it with
+`uv run --with "botica[sdk]==<version of botica>"`, so the SDK is the one of the botica that runs
+it.
 
 ```python
 # /// script

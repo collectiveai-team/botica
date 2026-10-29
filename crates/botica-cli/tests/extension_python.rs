@@ -171,6 +171,59 @@ fn ext_sync_prepares_the_environment_of_each_python_script_with_its_python() {
     );
 }
 
+/// A script whose metadata declares `dependencies`.
+fn header(dependencies: &str) -> String {
+    format!("# /// script\n# dependencies = [{dependencies}]\n# ///\nprint(1)\n")
+}
+
+fn with_script(dir: &Path, text: &str) {
+    write(dir, &format!("{}/check.py", folder("py-rule")), text);
+}
+
+const SDK: &str = concat!("botica[sdk]==", env!("CARGO_PKG_VERSION"));
+
+#[test]
+fn a_script_that_names_botica_with_no_version_runs_with_the_version_of_botica() {
+    let dir = python_project("sdk-unversioned", "");
+    with_script(&dir, &header("\"botica[sdk]\""));
+
+    assert_eq!(runs(&dir), uv_with(&["--python", "3.13", "--with", SDK]));
+}
+
+#[test]
+fn a_script_that_pins_botica_or_does_not_use_it_runs_as_it_declares() {
+    for (name, dependencies) in [
+        ("sdk-pinned", "\"botica[sdk]==0.17.1\""),
+        ("sdk-url", "\"botica[sdk] @ file:///src/botica\""),
+        ("sdk-none", "\"ruff\""),
+    ] {
+        let dir = python_project(name, "");
+        with_script(&dir, &header(dependencies));
+
+        assert_eq!(runs(&dir), uv_with(&["--python", "3.13"]), "{name}");
+    }
+}
+
+#[test]
+fn ext_sync_starts_a_script_that_gets_botica_from_botica_once() {
+    let dir = python_project("sync-sdk", "");
+    with_script(&dir, &header("\"botica[sdk]\""));
+    let bin = fake_uv(&dir, 0);
+
+    let output = sync(&dir, &bin);
+
+    assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
+    let script = format!("{}/{}/check.py", dir.display(), folder("py-rule"));
+    assert_eq!(
+        std::fs::read_to_string(dir.join("uv.log")).expect("uv ran"),
+        format!(
+            "sync --python 3.13 --script {script}\n\
+             run --python 3.13 --with {SDK} --script {script}\n"
+        )
+    );
+    assert_eq!(stdout(&output), "acme/py-rule: ready\n");
+}
+
 #[test]
 fn ext_sync_fails_when_an_environment_cannot_be_prepared() {
     let dir = python_project("sync-fails", "");

@@ -5,6 +5,7 @@ mod ext_cmd;
 mod extension;
 mod extension_pool;
 mod extension_python;
+mod extension_python_sdk;
 mod judgment;
 mod lint_cmd;
 mod project;
