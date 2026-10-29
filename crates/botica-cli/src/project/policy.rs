@@ -18,6 +18,7 @@ pub fn suppression_policy(resolution: &Arc<Resolution>) -> Policy {
     for entry in resolution.entries() {
         let spellings: Vec<&str> = std::iter::once(entry.rule.code.as_str())
             .chain(entry.rule.aliases.iter().map(String::as_str))
+            .chain(resolution.retired_names_of(&entry.rule.id))
             .collect();
         policy = if entry.rule.is_judgment() {
             policy.with_judgment_rule(&entry.rule.id, &spellings)
@@ -159,6 +160,28 @@ mod tests {
                 "`BTTEST901` is a judgment rule: suppress it for the whole file with \
               `botica: ignore-file[test-foo] -- <reason>`"
             ]
+        );
+    }
+
+    #[test]
+    fn a_suppression_may_name_a_retired_code_of_a_rule() {
+        let found = lint("x = 1  # noqa: BTARCH005\n");
+
+        assert!(
+            found
+                .iter()
+                .all(|message| !message.starts_with("Unknown rule")),
+            "{found:?}"
+        );
+    }
+
+    #[test]
+    fn a_suppression_that_names_no_rule_is_still_reported() {
+        let found = lint("x = 1  # noqa: BTARCH099\n");
+
+        assert!(
+            found.contains(&"Unknown rule `BTARCH099` in a suppression".to_owned()),
+            "{found:?}"
         );
     }
 }

@@ -21,7 +21,7 @@ pub struct Collection {
 }
 
 pub fn open(args: &ProjectArgs, cache_dir: Option<PathBuf>) -> Result<Collection> {
-    let project = project::load(args)?;
+    let project = project::load_describing(args)?;
     let root = project.loaded.root.clone();
     let files = read_references(&root.join(REFERENCES_DIR))?;
     let (standards, standard_problems) = refs_standards::read(&root);

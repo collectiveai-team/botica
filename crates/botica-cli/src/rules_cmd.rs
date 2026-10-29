@@ -87,7 +87,7 @@ pub fn run(args: &RulesArgs) -> Result<ExitCode> {
         Some(RulesCommand::List(list)) => list,
         None => &args.list,
     };
-    let project = project::load(&list.project)?;
+    let project = project::load_describing(&list.project)?;
     let mut out = std::io::stdout().lock();
     if list.json {
         write_json(&project, list.all, &mut out)?;

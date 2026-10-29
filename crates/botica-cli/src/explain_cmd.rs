@@ -19,13 +19,16 @@ pub struct ExplainArgs {
 }
 
 pub fn run(args: &ExplainArgs) -> Result<()> {
-    let project = project::load(&args.project)?;
+    let project = project::load_describing(&args.project)?;
     let Some(entry) = project.resolution.entry(&args.id) else {
         bail!(
             "no rule `{}` (`botica rules --all` lists every rule)",
             args.id
         );
     };
+    if let Some(warning) = project.catalog.retired_warning(&args.id) {
+        eprintln!("botica: warning: {warning}");
+    }
     let config = match &project.loaded.source {
         Some(path) => path.display().to_string(),
         None => "none (the defaults apply)".to_owned(),

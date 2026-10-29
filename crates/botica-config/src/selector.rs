@@ -75,19 +75,22 @@ impl Selector {
         }
     }
 
-    pub fn check(&self, catalog: &Catalog) -> Result<(), String> {
+    /// Checks what the selector names: an error, or the warning that reading it prints. `use`
+    /// says whether the selector turns rules on or leaves them off.
+    pub fn check(&self, catalog: &Catalog, how: Use) -> Result<Option<String>, String> {
         match self {
-            Self::Default | Self::All => Ok(()),
+            Self::Default | Self::All => Ok(None),
             Self::Tag(tag) => catalog
                 .rules()
                 .iter()
                 .any(|rule| rule.tags.contains(tag))
-                .then_some(())
+                .then_some(None)
                 .ok_or_else(|| format!("no rule has the tag `{tag}`")),
-            Self::Family(prefix) => check_family(catalog, prefix),
-            Self::CodePrefix { letters, digits } => check_prefix(catalog, letters, digits),
-            Self::Code(code) => check_rule(catalog.resolve(code), code),
-            Self::Slug(slug) => check_rule(catalog.resolve(slug), slug),
+            Self::Family(prefix) => check_family(catalog, prefix).map(|()| None),
+            Self::CodePrefix { letters, digits } => {
+                check_prefix(catalog, letters, digits).map(|()| None)
+            }
+            Self::Code(key) | Self::Slug(key) => read_rule(catalog, key, how),
         }
     }
 }
@@ -135,12 +138,51 @@ fn check_prefix(catalog: &Catalog, letters: &str, digits: &str) -> Result<(), St
         .ok_or_else(|| format!("no rule has a code starting with `{prefix}`"))
 }
 
-pub(crate) fn check_rule(rule: Option<&Rule>, id: &str) -> Result<(), String> {
-    match rule {
-        None => Err(format!("unknown rule `{id}`")),
-        Some(rule) if rule.status == Status::Removed => {
-            Err(format!("rule `{id}` was removed and cannot be mentioned"))
-        }
-        Some(_) => Ok(()),
+/// How a place of the configuration uses the name of a rule (ADR 0016, decision 3).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Use {
+    /// It turns the rule on: `select`, `extend-select`, `--select`, `--extend-select`,
+    /// `enabled = true`. A removed rule there is an error.
+    TurnsOn,
+    /// The same, read by a command that describes the configuration (`botica rules`, `botica
+    /// explain`, `botica recipe check`): a removed rule there is a warning, so the command runs.
+    TurnsOnDescribed,
+    /// Anything else: `ignore`, `--ignore`, `[rules.<name>]`, `[[overrides]]`, `replace`. A removed
+    /// rule there is a warning and changes nothing.
+    Other,
+}
+
+/// Reads the name of a rule: an error when no rule has it or when it turns on a removed rule, a
+/// warning when it names a removed rule elsewhere or is a retired name, nothing otherwise.
+pub(crate) fn read_rule(catalog: &Catalog, name: &str, how: Use) -> Result<Option<String>, String> {
+    let Some(rule) = catalog.resolve(name) else {
+        return Err(format!("unknown rule `{name}`"));
+    };
+    if rule.status == Status::Removed {
+        let message = removed(catalog, rule);
+        return if how == Use::TurnsOn {
+            Err(message)
+        } else {
+            Ok(Some(message))
+        };
     }
+    Ok(catalog.retired_warning(name))
+}
+
+/// `rule `no-console-log` was removed in 0.10.0 and `log-no-print` replaces it`.
+fn removed(catalog: &Catalog, rule: &Rule) -> String {
+    let when = catalog
+        .removed_in(rule)
+        .map_or_else(String::new, |version| format!(" in {version}"));
+    let by = catalog
+        .rules()
+        .iter()
+        .find(|other| other.replaces.as_deref() == Some(rule.id.as_str()))
+        .map_or_else(String::new, |other| {
+            format!(" and `{}` replaces it", other.id)
+        });
+    format!(
+        "rule `{}` was removed{when}{by}, so it no longer runs",
+        rule.id
+    )
 }
