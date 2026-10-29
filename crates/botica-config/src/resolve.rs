@@ -7,7 +7,7 @@ use crate::issue::ConfigError;
 use crate::matcher::PathMatcher;
 use crate::model::{Config, RuleConfig, RuleSeverity};
 use crate::python::ProjectPython;
-use crate::selector::Selector;
+use crate::selector::{Selector, Use};
 
 #[derive(Debug)]
 pub struct FileRule<'r> {
@@ -38,6 +38,7 @@ pub struct Resolution {
     exclude: PathMatcher,
     include: PathMatcher,
     scope: Option<Scope>,
+    warnings: Vec<String>,
 }
 
 pub(crate) type Selectors = Vec<(String, Selector)>;
@@ -58,8 +59,24 @@ fn matcher_of(patterns: &[String], key: &str) -> Result<PathMatcher, ConfigError
 }
 
 impl Resolution {
+    /// The rules of `catalog` as `config` sets them up for a run of `botica lint`.
     pub fn new(config: &Config, catalog: &Catalog) -> Result<Self, ConfigError> {
-        config.validate(catalog)?;
+        Self::reading(config, catalog, Use::TurnsOn)
+    }
+
+    /// The same for a command that describes the configuration, where a removed rule that
+    /// `select` turns on is a warning (ADR 0016, decision 3).
+    pub fn describing(config: &Config, catalog: &Catalog) -> Result<Self, ConfigError> {
+        Self::reading(config, catalog, Use::TurnsOnDescribed)
+    }
+
+    /// The warnings that reading the configuration printed, once each.
+    pub fn warnings(&self) -> &[String] {
+        &self.warnings
+    }
+
+    fn reading(config: &Config, catalog: &Catalog, turn_on: Use) -> Result<Self, ConfigError> {
+        let warnings = config.validate(catalog, turn_on)?;
         let select: Selectors = selectors_of(&config.select)
             .into_iter()
             .chain(selectors_of(&config.extend_select))
@@ -86,6 +103,7 @@ impl Resolution {
             exclude: matcher_of(&config.extend_exclude, "extend-exclude")?,
             include: matcher_of(&config.extend_include, "extend-include")?,
             scope: None,
+            warnings,
         };
         resolution.apply_replacements(config)?;
         Ok(resolution)
@@ -171,6 +189,11 @@ impl Resolution {
     /// The code of each catalog of the project, which the codes of its rules start with.
     pub fn project_codes(&self) -> Vec<&str> {
         self.catalog.project_codes()
+    }
+
+    /// The retired names of the rule with the id `id`, which a suppression may name too.
+    pub fn retired_names_of(&self, id: &str) -> Vec<&str> {
+        self.catalog.retired_names_of(id)
     }
 
     /// Whether a suppression may name `id` without a warning although no rule has it.

@@ -1,5 +1,5 @@
-use botica_catalog::{Catalog, SourceFile};
-use botica_config::{Config, RuleSeverity};
+use botica_catalog::Catalog;
+use botica_config::{Config, RuleSeverity, Use};
 
 fn catalog() -> Catalog {
     Catalog::embedded().expect("the built-in catalog loads")
@@ -13,7 +13,7 @@ fn problems_in(text: &str, catalog: &Catalog) -> String {
     match Config::from_botica_toml(text) {
         Err(error) => error.to_string(),
         Ok(config) => config
-            .validate(catalog)
+            .validate(catalog, Use::TurnsOn)
             .expect_err("the config should be rejected")
             .to_string(),
     }
@@ -25,7 +25,7 @@ fn problems(text: &str) -> String {
 
 fn accepted(text: &str) {
     parse(text)
-        .validate(&catalog())
+        .validate(&catalog(), Use::TurnsOn)
         .unwrap_or_else(|error| panic!("should be valid:\n{error}"));
 }
 
@@ -214,30 +214,6 @@ fn selectors_follow_the_family_rules_of_the_spec() {
 fn a_family_can_be_selected_but_a_prefix_must_match_a_rule() {
     accepted("select = [\"BTTEST\"]");
     assert!(problems("select = [\"BTTEST9\"]").contains("select[0]"));
-}
-
-#[test]
-fn a_removed_rule_cannot_be_mentioned() {
-    let removed = "id = \"old-rule\"\ncode = \"BTSTRUC009\"\nsummary = \"s\"\nstatus = \"removed\"\n\
-                   scope = \"file\"\nneeds = \"path\"\nrun-on = [\"cli\"]\ndefault-enabled = false\ndefault-severity = \"error\"\n\
-                   [[implementations]]\nkind = \"native\"\nlanguages = [\"*\"]\n";
-    let files = vec![
-        SourceFile {
-            path: "structure/family.toml".into(),
-            text: "code = \"STRUC\"\ndescription = \"d\"\n".into(),
-        },
-        SourceFile {
-            path: "structure/old-rule/rule.toml".into(),
-            text: removed.into(),
-        },
-        SourceFile {
-            path: "structure/old-rule/README.md".into(),
-            text: "## Directive\n\nd\n\n## Why\n\nw\n\n## Do\n\ndo\n\n## Don\'t\n\ndont\n\n## Suppression\n\ns\n".into(),
-        },
-    ];
-    let catalog = Catalog::from_files(&files).expect("catalog with a removed rule");
-    let message = problems_in("ignore = [\"old-rule\"]", &catalog);
-    assert!(message.contains("removed"), "{message}");
 }
 
 #[test]

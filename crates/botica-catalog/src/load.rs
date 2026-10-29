@@ -3,9 +3,10 @@ use std::collections::BTreeMap;
 use serde::de::DeserializeOwned;
 
 use crate::issue::{issue, CatalogError, CatalogIssue};
-use crate::model::{current_ids, Event, Family, FamilyFile, HistoryFile, Lifecycle, Rule};
+use crate::model::{current_ids, Event, Family, FamilyFile, HistoryFile, Lifecycle, Rule, Status};
 use crate::origin::{Origin, HEADER};
 use crate::readme::check_readme;
+use crate::retired::{retired_names, Retired, RetiredKind};
 use crate::sources::{attach_configs, attach_scripts, attach_sources, is_script};
 use crate::validate::{check_family_code, check_rule, is_kebab_case};
 use crate::validate_across::check_across;
@@ -27,6 +28,7 @@ pub struct Catalog {
     rules: Vec<Rule>,
     index: BTreeMap<String, usize>,
     history: Vec<Event>,
+    retired: BTreeMap<String, Retired>,
 }
 
 /// What one load of files produced: the families, the rules with the path of each `rule.toml`,
@@ -67,8 +69,15 @@ impl Catalog {
             rules: Vec::new(),
             index: BTreeMap::new(),
             history: Vec::new(),
+            retired: BTreeMap::new(),
         };
         catalog.append(parts);
+        catalog.retired = retired_names(&catalog.history, &catalog.rules);
+        for (name, retired) in &catalog.retired {
+            if let Some(position) = catalog.index.get(&retired.rule).copied() {
+                catalog.index.entry(name.clone()).or_insert(position);
+            }
+        }
         Ok(catalog)
     }
 
@@ -160,8 +169,45 @@ impl Catalog {
             .collect()
     }
 
+    /// The rule that `key` names: its id, its code, an alias or a retired name.
     pub fn resolve(&self, key: &str) -> Option<&Rule> {
         self.index.get(key).map(|position| &self.rules[*position])
+    }
+
+    /// What `name` was, when it is a retired name of a rule (ADR 0016).
+    pub fn retired(&self, name: &str) -> Option<&Retired> {
+        self.retired.get(name)
+    }
+
+    /// The retired names of the rule with the id `id`.
+    pub fn retired_names_of(&self, id: &str) -> Vec<&str> {
+        self.retired
+            .iter()
+            .filter(|(_, retired)| retired.rule == id)
+            .map(|(name, _)| name.as_str())
+            .collect()
+    }
+
+    /// The warning that reading the retired name `name` prints: ``BTARCH005` is the old code of
+    /// `db-no-create-all` (BTDB002 since 0.13.0)`.
+    pub fn retired_warning(&self, name: &str) -> Option<String> {
+        let retired = self.retired(name)?;
+        let rule = self.resolve(&retired.rule)?;
+        let (kind, now) = match retired.kind {
+            RetiredKind::Code => ("code", &rule.code),
+            RetiredKind::Id => ("id", &rule.id),
+        };
+        Some(format!(
+            "`{name}` is the old {kind} of `{}` ({now} since {})",
+            rule.id, retired.since
+        ))
+    }
+
+    /// The release that removed `rule`, from the history; `None` for a rule that is not removed.
+    pub fn removed_in(&self, rule: &Rule) -> Option<String> {
+        (rule.status == Status::Removed)
+            .then(|| self.lifecycle(rule).since)
+            .flatten()
     }
 }
 

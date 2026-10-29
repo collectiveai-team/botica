@@ -3,7 +3,7 @@
 mod common;
 
 use botica_catalog::{Catalog, SourceFile};
-use botica_config::{Config, Resolution};
+use botica_config::{Config, Resolution, Use};
 use common::{active, config, embedded, reason};
 
 const README: &str =
@@ -64,7 +64,7 @@ fn resolve(text: &str) -> Resolution {
 fn problems(text: &str) -> String {
     let parsed: Config = config(text);
     parsed
-        .validate(&with_acme())
+        .validate(&with_acme(), Use::TurnsOn)
         .expect_err("the configuration should be rejected")
         .to_string()
 }

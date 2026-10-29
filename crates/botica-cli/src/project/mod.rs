@@ -11,7 +11,7 @@ use std::sync::OnceLock;
 
 use anyhow::{bail, Context, Result};
 use botica_catalog::Catalog;
-use botica_config::{discover, load_file, Loaded, ProjectPython, Resolution};
+use botica_config::{discover, load_file, Loaded, ProjectPython, Resolution, Use};
 use botica_core::{registry, CodeDir};
 
 use args::ConfigOption;
@@ -40,7 +40,18 @@ pub struct Project {
 /// configuration say otherwise.
 pub const PROJECT_RULES: &str = ".botica/rules";
 
+/// Loads the project for `botica lint`: a removed rule that the configuration turns on stops it.
 pub fn load(args: &ProjectArgs) -> Result<Project> {
+    load_for(args, Use::TurnsOn)
+}
+
+/// Loads the project for a command that describes it, which goes on with a warning where `load`
+/// stops on a removed rule (ADR 0016, decision 3).
+pub fn load_describing(args: &ProjectArgs) -> Result<Project> {
+    load_for(args, Use::TurnsOnDescribed)
+}
+
+fn load_for(args: &ProjectArgs, turn_on: Use) -> Result<Project> {
     let files: Vec<&Path> = args
         .config
         .iter()
@@ -85,9 +96,17 @@ pub fn load(args: &ProjectArgs) -> Result<Project> {
         .collect();
     loaded.config = loaded
         .config
-        .with_command_line(&catalog, &args.command_line())?;
+        .with_command_line(&catalog, &args.command_line(), turn_on)?;
     let scope = args.scope.only();
-    let resolution = Resolution::new(&loaded.config, &catalog)?
+    let resolution = if turn_on == Use::TurnsOn {
+        Resolution::new(&loaded.config, &catalog)?
+    } else {
+        Resolution::describing(&loaded.config, &catalog)?
+    };
+    for warning in resolution.warnings() {
+        eprintln!("botica: warning: {warning}");
+    }
+    let resolution = resolution
         .only_python(&ProjectPython::read(&loaded.root))
         .only_scope(scope, policy::reported_too(scope));
     Ok(Project {

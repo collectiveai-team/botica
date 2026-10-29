@@ -20,6 +20,7 @@ mod recipes_steps_resolve;
 mod references;
 mod references_check;
 mod references_merge;
+mod retired;
 mod sources;
 mod validate;
 mod validate_across;
@@ -54,3 +55,4 @@ pub use recipes_steps_resolve::{
     ResolvedFile, ResolvedLink, ResolvedSection, ResolvedSkill, ResolvedTool, ToolConflict,
 };
 pub use references::{Origin, Reference, References, Topic, CODE_DIR, REFERENCES_DIR, TOPIC_FILE};
+pub use retired::{Retired, RetiredKind};

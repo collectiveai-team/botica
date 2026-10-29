@@ -29,6 +29,15 @@ for one run with `--config 'key = value'`.
   the hooks of prek and the editor read it.
 - `[rules.<slug>]` holds the settings of one rule; `botica explain <slug>` lists them with their
   values here.
+- A code or a slug that a rule had in an older release still names it, with a warning on stderr
+  that gives its current code and slug: ``botica: warning: `BTARCH005` is the old code of
+  `db-no-create-all` (BTDB002 since 0.13.0)`` (ADR 0016). The options of the command line,
+  `botica explain` and `botica refs show` print the same warning. A suppression comment that names
+  it silences the rule, with no warning.
+- A removed rule in `select`, `extend-select`, `--select`, `--extend-select` or with
+  `enabled = true` stops `botica lint` with exit code 2, and the message names the release that
+  removed it and the rule that replaces it. Anywhere else, and in `botica rules`, `botica explain`
+  and `botica recipe check`, it is a warning.
 - `extend-exclude` and `extend-include` change [which files](lint.md#which-files) the walk reaches.
 - `rule-dirs`, `catalogs` and `extensions` are in [Catalogs of a project](../extend/catalogs.md)
   and [Extensions](../extend/extensions.md); `references` in [References](refs.md); `recipes` in

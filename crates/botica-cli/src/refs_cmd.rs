@@ -193,7 +193,11 @@ fn topics_of<'a>(collection: &'a Collection, key: &str) -> Result<Vec<&'a Topic>
     if let Some(topic) = topics.topic(key) {
         return Ok(vec![topic]);
     }
-    let (kind, name, cited) = if let Some(rule) = collection.project.catalog.resolve(key) {
+    let catalog = &collection.project.catalog;
+    let (kind, name, cited) = if let Some(rule) = catalog.resolve(key) {
+        if let Some(warning) = catalog.retired_warning(key) {
+            eprintln!("botica: warning: {warning}");
+        }
         ("rule", rule.id.as_str(), &rule.references)
     } else if let Some(standard) = collection.standards.iter().find(|s| s.id == key) {
         ("standard", standard.id.as_str(), &standard.references)

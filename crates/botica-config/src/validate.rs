@@ -1,44 +1,113 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use botica_catalog::{Catalog, Ecosystem, OptionSpec, OptionType, Rule};
 
 use crate::issue::{issue, ConfigError, ConfigIssue};
 use crate::matcher::PathMatcher;
 use crate::model::{Config, Override, RuleConfig};
-use crate::selector::{check_rule, Selector};
+use crate::selector::{read_rule, Selector, Use};
 
 impl Config {
-    pub fn validate(&self, catalog: &Catalog) -> Result<(), ConfigError> {
-        let mut found = Vec::new();
-        selectors(&mut found, catalog, "select", &self.select);
-        selectors(&mut found, catalog, "extend-select", &self.extend_select);
-        selectors(&mut found, catalog, "ignore", &self.ignore);
-        globs(&mut found, "extend-exclude", &self.extend_exclude);
-        globs(&mut found, "extend-include", &self.extend_include);
-        globs(&mut found, "external", &self.external);
-        code_dirs(&mut found, self.code_dirs.as_ref());
+    /// Checks the configuration against `catalog`, and returns the warnings that reading it
+    /// printed: a retired name, or a removed rule where it changes nothing (ADR 0016). `turn_on`
+    /// is how `select` and `extend-select` use a rule: [`Use::TurnsOn`], or
+    /// [`Use::TurnsOnDescribed`] for a command that describes the configuration.
+    pub fn validate(&self, catalog: &Catalog, turn_on: Use) -> Result<Vec<String>, ConfigError> {
+        let mut reader = Reader {
+            catalog,
+            found: Vec::new(),
+            warnings: BTreeSet::new(),
+        };
+        reader.selectors("select", &self.select, turn_on);
+        reader.selectors("extend-select", &self.extend_select, turn_on);
+        reader.selectors("ignore", &self.ignore, Use::Other);
+        let found = &mut reader.found;
+        globs(found, "extend-exclude", &self.extend_exclude);
+        globs(found, "extend-include", &self.extend_include);
+        globs(found, "external", &self.external);
+        code_dirs(found, self.code_dirs.as_ref());
         for (old, new) in &self.replace {
             let location = format!("replace.{old}");
-            rule_id(&mut found, catalog, &location, old);
-            rule_id(&mut found, catalog, &location, new);
+            reader.rule_id(&location, old, Use::Other);
+            reader.rule_id(&location, new, Use::Other);
         }
-        rules(&mut found, catalog, &self.rules);
+        reader.rules(&self.rules, turn_on);
         for (index, over) in self.overrides.iter().enumerate() {
-            overrides(&mut found, catalog, index, over);
+            reader.overrides(index, over);
         }
-        if found.is_empty() {
-            Ok(())
+        if reader.found.is_empty() {
+            Ok(reader.warnings.into_iter().collect())
         } else {
-            Err(ConfigError::new(found))
+            Err(ConfigError::new(reader.found))
         }
     }
 }
 
-fn selectors(found: &mut Vec<ConfigIssue>, catalog: &Catalog, key: &str, values: &[String]) {
-    for (index, value) in values.iter().enumerate() {
-        let verdict = Selector::parse(value).and_then(|selector| selector.check(catalog));
-        if let Err(message) = verdict {
-            found.push(issue(format!("{key}[{index}]"), message));
+/// What reading the names of the rules of a configuration found: the errors, by location, and the
+/// warnings, once each.
+pub(crate) struct Reader<'a> {
+    pub catalog: &'a Catalog,
+    pub found: Vec<ConfigIssue>,
+    pub warnings: BTreeSet<String>,
+}
+
+impl<'a> Reader<'a> {
+    pub fn selectors(&mut self, key: &str, values: &[String], how: Use) {
+        for (index, value) in values.iter().enumerate() {
+            match Selector::parse(value).and_then(|selector| selector.check(self.catalog, how)) {
+                Ok(warning) => self.warnings.extend(warning),
+                Err(message) => self.found.push(issue(format!("{key}[{index}]"), message)),
+            }
+        }
+    }
+
+    fn rule_id(&mut self, location: &str, id: &str, how: Use) -> Option<&'a Rule> {
+        match read_rule(self.catalog, id, how) {
+            Ok(warning) => {
+                self.warnings.extend(warning);
+                self.catalog.resolve(id)
+            }
+            Err(message) => {
+                self.found.push(issue(location, message));
+                None
+            }
+        }
+    }
+
+    fn rules(&mut self, configured: &BTreeMap<String, RuleConfig>, turn_on: Use) {
+        let mut seen: BTreeMap<&str, &str> = BTreeMap::new();
+        for (key, config) in configured {
+            let location = format!("rules.{key}");
+            let how = if config.enabled == Some(true) {
+                turn_on
+            } else {
+                Use::Other
+            };
+            let Some(rule) = self.rule_id(&location, key, how) else {
+                continue;
+            };
+            if let Some(first) = seen.insert(rule.id.as_str(), key) {
+                self.found.push(issue(
+                    &location,
+                    format!("the same rule is configured twice, as `{first}` and as `{key}`"),
+                ));
+            }
+            rule_config(&mut self.found, &location, rule, config);
+        }
+    }
+
+    fn overrides(&mut self, index: usize, over: &Override) {
+        let base = format!("overrides[{index}]");
+        if over.files.is_empty() {
+            self.found.push(issue(
+                format!("{base}.files"),
+                "must list at least one glob",
+            ));
+        }
+        globs(&mut self.found, &format!("{base}.files"), &over.files);
+        self.selectors(&format!("{base}.ignore"), &over.ignore, Use::Other);
+        for id in over.severity.keys() {
+            self.rule_id(&format!("{base}.severity.{id}"), id, Use::Other);
         }
     }
 }
@@ -85,53 +154,21 @@ fn globs(found: &mut Vec<ConfigIssue>, key: &str, values: &[String]) {
     }
 }
 
-fn rule_id<'a>(
-    found: &mut Vec<ConfigIssue>,
-    catalog: &'a Catalog,
-    location: &str,
-    id: &str,
-) -> Option<&'a Rule> {
-    let rule = catalog.resolve(id);
-    match check_rule(rule, id) {
-        Ok(()) => rule,
-        Err(message) => {
-            found.push(issue(location, message));
-            None
-        }
-    }
-}
-
-fn rules(
-    found: &mut Vec<ConfigIssue>,
-    catalog: &Catalog,
-    configured: &BTreeMap<String, RuleConfig>,
-) {
-    let mut seen: BTreeMap<&str, &str> = BTreeMap::new();
-    for (key, config) in configured {
-        let location = format!("rules.{key}");
-        let Some(rule) = rule_id(found, catalog, &location, key) else {
-            continue;
-        };
-        if let Some(first) = seen.insert(rule.id.as_str(), key) {
-            found.push(issue(
-                &location,
-                format!("the same rule is configured twice, as `{first}` and as `{key}`"),
-            ));
-        }
-        globs(
-            found,
-            &format!("{location}.ignores"),
-            config.ignores.as_deref().unwrap_or_default(),
-        );
-        globs(
-            found,
-            &format!("{location}.extend-ignores"),
-            &config.extend_ignores,
-        );
-        for (name, value) in &config.options {
-            if let Err(message) = check_option(rule, name, value) {
-                found.push(issue(format!("{location}.{name}"), message));
-            }
+/// The globs and the options of `[rules.<name>]`.
+fn rule_config(found: &mut Vec<ConfigIssue>, location: &str, rule: &Rule, config: &RuleConfig) {
+    globs(
+        found,
+        &format!("{location}.ignores"),
+        config.ignores.as_deref().unwrap_or_default(),
+    );
+    globs(
+        found,
+        &format!("{location}.extend-ignores"),
+        &config.extend_ignores,
+    );
+    for (name, value) in &config.options {
+        if let Err(message) = check_option(rule, name, value) {
+            found.push(issue(format!("{location}.{name}"), message));
         }
     }
 }
@@ -172,20 +209,5 @@ fn check_value(name: &str, spec: &OptionSpec, value: &toml::Value) -> Result<(),
             Ok(())
         }
         (OptionType::Strings, _) => Err(format!("option `{name}` must be a list of strings")),
-    }
-}
-
-fn overrides(found: &mut Vec<ConfigIssue>, catalog: &Catalog, index: usize, over: &Override) {
-    let base = format!("overrides[{index}]");
-    if over.files.is_empty() {
-        found.push(issue(
-            format!("{base}.files"),
-            "must list at least one glob",
-        ));
-    }
-    globs(found, &format!("{base}.files"), &over.files);
-    selectors(found, catalog, &format!("{base}.ignore"), &over.ignore);
-    for id in over.severity.keys() {
-        rule_id(found, catalog, &format!("{base}.severity.{id}"), id);
     }
 }

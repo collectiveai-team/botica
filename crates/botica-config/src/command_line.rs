@@ -2,7 +2,7 @@ use botica_catalog::Catalog;
 
 use crate::issue::{issue, ConfigError};
 use crate::model::Config;
-use crate::selector::Selector;
+use crate::selector::{Selector, Use};
 
 /// What `--select`, `--extend-select`, `--ignore` and `--preview`/`--no-preview` say, to lay over
 /// the configuration file.
@@ -20,20 +20,23 @@ impl Config {
     /// `--select` starts the selection from scratch, as in ruff: it replaces `select`,
     /// `extend-select` and `ignore` of the file. `--extend-select` and `--ignore` are added to
     /// what is left, and `--preview`/`--no-preview` set the opt-in. Anything that names no rule
-    /// is an error.
+    /// is an error, and so is a removed rule that `--select` or `--extend-select` turns on when
+    /// `turn_on` is [`Use::TurnsOn`]. The warnings come out when the result is validated.
     pub fn with_command_line(
         mut self,
         catalog: &Catalog,
         command_line: &CommandLine,
+        turn_on: Use,
     ) -> Result<Self, ConfigError> {
         let mut found = Vec::new();
-        for (flag, values) in [
-            ("--select", &command_line.select),
-            ("--extend-select", &command_line.extend_select),
-            ("--ignore", &command_line.ignore),
+        for (flag, values, how) in [
+            ("--select", &command_line.select, turn_on),
+            ("--extend-select", &command_line.extend_select, turn_on),
+            ("--ignore", &command_line.ignore, Use::Other),
         ] {
             for value in values {
-                let verdict = Selector::parse(value).and_then(|selector| selector.check(catalog));
+                let verdict =
+                    Selector::parse(value).and_then(|selector| selector.check(catalog, how));
                 if let Err(message) = verdict {
                     found.push(issue(flag, message));
                 }

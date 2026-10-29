@@ -24,4 +24,4 @@ pub use model::{
 pub use parse::json_schema;
 pub use python::{requires_python, ProjectPython};
 pub use resolve::{FileRule, Resolution};
-pub use selector::Selector;
+pub use selector::{Selector, Use};

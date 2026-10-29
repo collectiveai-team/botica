@@ -13,7 +13,7 @@ pub struct Collection {
 }
 
 pub fn open(args: &ProjectArgs) -> Result<Collection> {
-    let project = project::load(args)?;
+    let project = project::load_describing(args)?;
     let files = read_recipes(&project.loaded.root.join(RECIPES_DIR))?;
     let builtin = Recipes::embedded()?;
     let replace = &project.loaded.config.recipes.replace;

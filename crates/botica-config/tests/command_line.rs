@@ -1,11 +1,11 @@
 use botica_catalog::Catalog;
-use botica_config::{CommandLine, Config, Reason, Resolution};
+use botica_config::{CommandLine, Config, Reason, Resolution, Use};
 
 fn resolve(config: &str, command_line: &CommandLine) -> Resolution {
     let catalog = Catalog::embedded().expect("embedded catalog");
     let config: Config = toml::from_str(config).expect("config");
     let config = config
-        .with_command_line(&catalog, command_line)
+        .with_command_line(&catalog, command_line, Use::TurnsOn)
         .expect("valid command line");
     Resolution::new(&config, &catalog).expect("valid config")
 }
@@ -90,7 +90,7 @@ fn a_selector_that_names_nothing_is_an_error_that_says_which_option() {
         ..CommandLine::default()
     };
     let error = Config::default()
-        .with_command_line(&catalog, &command_line)
+        .with_command_line(&catalog, &command_line, Use::TurnsOn)
         .expect_err("unknown selectors");
     let message = error.to_string();
     assert!(
@@ -113,6 +113,7 @@ fn preview_turns_on_the_opt_in_for_preview_rules() {
         .with_command_line(
             &Catalog::embedded().expect("embedded catalog"),
             &command_line,
+            Use::TurnsOn,
         )
         .expect("valid");
     assert!(config.preview);
@@ -128,12 +129,12 @@ fn no_preview_turns_off_what_the_file_turned_on_and_nothing_given_leaves_it() {
     };
     assert!(
         !on.clone()
-            .with_command_line(&catalog, &off)
+            .with_command_line(&catalog, &off, Use::TurnsOn)
             .expect("valid")
             .preview
     );
     assert!(
-        on.with_command_line(&catalog, &CommandLine::default())
+        on.with_command_line(&catalog, &CommandLine::default(), Use::TurnsOn)
             .expect("valid")
             .preview
     );
@@ -174,7 +175,7 @@ fn an_extend_select_that_names_nothing_is_an_error_that_says_which_option() {
         ..CommandLine::default()
     };
     let message = Config::default()
-        .with_command_line(&catalog, &command_line)
+        .with_command_line(&catalog, &command_line, Use::TurnsOn)
         .expect_err("unknown selector")
         .to_string();
     assert!(
