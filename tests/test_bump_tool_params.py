@@ -1,13 +1,15 @@
 """The default versions of the uvx and npx tools of the recipes move to the newest releases.
 
 Asserted through the public seam of `scripts/bump_tool_params.py`: the recipes of a repository and
-a registry go in, the lines it changed and the text of the recipes come out (CES-65). The registry
+a registry go in, the lines it changed and the text of the recipes and of the guide come out
+(CES-65). The registry
 is an in-memory stand-in for PyPI and npm (CES-64).
 """
 
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -51,6 +53,14 @@ entry = "npx --yes jscpd{{ param.jscpd-version.at }} ."
 run: uvx zizmor{{ param.zizmor-version.at }} --strict-collection .
 language_version = "{{ param.go-version }}"
 """
+GUIDE = """| Parameter | Recipe | Template | Default |
+| --- | --- | --- | --- |
+| `botica-version` | botica | `prek.toml` | the release of the binary |
+| `ruff-version` | `demo` | `hooks.toml` | `0.17.0` |
+| `jscpd-version` | `demo` | `hooks.toml` | `5` |
+| `zizmor-version` | `demo` | `hooks.toml` | `2.0.0` |
+"""
+ROW = re.compile(r"^\| `(?P<param>[a-z0-9-]+)` \|.*\| (?P<default>[^|]+) \|$", re.MULTILINE)
 
 
 class Registry:
@@ -75,7 +85,13 @@ def _repository(tmp_path: Path) -> Path:
     (tmp_path / "catalog/recipes/files").mkdir(parents=True)
     (tmp_path / "catalog/recipes/demo.toml").write_text(RECIPE, encoding="utf-8")
     (tmp_path / "catalog/recipes/files/hooks.toml").write_text(TEMPLATE, encoding="utf-8")
+    (tmp_path / "website/docs/guide").mkdir(parents=True)
+    (tmp_path / "website/docs/guide/recipes.md").write_text(GUIDE, encoding="utf-8")
     return tmp_path
+
+
+def _rows(text: str) -> dict[str, str]:
+    return {match["param"]: match["default"] for match in ROW.finditer(text)}
 
 
 def _days_ago(days: int) -> datetime:
@@ -114,6 +130,26 @@ def test_each_default_moves_to_the_newest_stable_release_past_the_cooldown(tmp_p
     assert sorted(registry.asked) == [("npm", "jscpd"), ("pypi", "ruff"), ("pypi", "zizmor")]
 
 
+def test_a_moved_default_moves_in_the_table_of_the_guide(tmp_path: Path):
+    root = _repository(tmp_path)
+    registry = Registry(
+        {
+            ("pypi", "ruff"): {"0.17.2": _days_ago(10)},
+            ("npm", "jscpd"): {"5.1.0": _days_ago(8)},
+            ("pypi", "zizmor"): {"1.9.0": _days_ago(90)},
+        }
+    )
+
+    btp.bump(root, registry.latest, NOW, cooldown_days=7)
+
+    assert _rows((root / "website/docs/guide/recipes.md").read_text(encoding="utf-8")) == {
+        "botica-version": "the release of the binary",
+        "ruff-version": "`0.17.2`",
+        "jscpd-version": "`5.1.0`",
+        "zizmor-version": "`2.0.0`",
+    }
+
+
 def test_a_package_with_no_release_past_the_cooldown_keeps_its_default(tmp_path: Path):
     root = _repository(tmp_path)
     registry = Registry({("pypi", "ruff"): {"0.17.2": _days_ago(1)}})
@@ -130,3 +166,11 @@ def test_the_recipes_of_the_catalog_name_a_package_for_each_uvx_and_npx_tool():
     assert found[("ci.toml", "zizmor-version")] == ("pypi", "zizmor")
     assert found[("ci-python.toml", "prek-version")] == ("pypi", "prek")
     assert ("base-go.toml", "govulncheck-version") not in found
+
+
+def test_the_table_of_the_guide_has_the_default_of_each_uvx_and_npx_tool():
+    rows = _rows((ROOT / "website/docs/guide/recipes.md").read_text(encoding="utf-8"))
+
+    defaults = {tool.param: f"`{tool.default}`" for tool in btp.tools(ROOT)}
+
+    assert {param: rows.get(param) for param in defaults} == defaults

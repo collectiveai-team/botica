@@ -211,10 +211,11 @@ repository adds `preset = "strict"` and the kinds of `[tool.pyrefly.errors]` it 
 
 `python-test-smells` selects `no-tautological-assert` and adds the hook `falsegreen` to `prek.toml`
 and `[tool.falsegreen.severity]` to `pyproject.toml` (CES-124). The hook runs
-`uvx falsegreen@0.9.2 --staged --baseline` before each commit and fails on a finding of high
-confidence only. `D1`, `D3`, `D5`, `D6` and `M2` are set to `"info"`: they are printed and never
-fail the hook. A repository with tests already reported writes `.falsegreen-baseline.json` once
-with `uvx falsegreen@0.9.2 tests/ --write-baseline` and commits it. falsegreen reads the test files
+`uvx falsegreen@<version> --staged --baseline`, with the version of the parameter
+`falsegreen-version`, before each commit and fails on a finding of high confidence only. `D1`,
+`D3`, `D5`, `D6` and `M2` are set to `"info"`: they are printed and never fail the hook. A
+repository with tests already reported writes `.falsegreen-baseline.json` once with
+`uvx falsegreen@<version> tests/ --write-baseline` and commits it. falsegreen reads the test files
 that git stages, fixtures of tests that are wrong on purpose included: list them in `exclude` of
 `[tool.falsegreen]`.
 
@@ -357,7 +358,7 @@ What the recipes cannot say about themselves:
   a recipe does not create: `gh label create breaking-change --description "Breaks a published
   interface"`, once per repository. A break shows on the pull request as a warning when the label is
   there, and as an error, with a failed job, when it is not. The parameters `griffe-version`
-  (`2.3.2`) and `asyncapi-cli-version` (`6.2.1`) set the versions of griffe and `@asyncapi/cli`.
+  and `asyncapi-cli-version` set the versions of griffe and `@asyncapi/cli`.
 
 ## Recipes of a project
 
