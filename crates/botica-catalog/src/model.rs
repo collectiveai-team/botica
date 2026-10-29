@@ -201,14 +201,31 @@ impl Family {
     }
 }
 
-/// One line of `history.toml`: from `version` on, `rule` has `status`. The file is written by the
-/// release, never by hand.
+/// One event of `history.toml`: from `version` on, the rule has the id `rule` and, when they are
+/// set, `status` and `code`. `renamed-from` is the id the rule had before `version`, which the
+/// events before this one name it by. The file is written by the release, never by hand.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct Event {
     pub version: String,
     pub rule: String,
-    pub status: Status,
+    pub renamed_from: Option<String>,
+    pub status: Option<Status>,
+    pub code: Option<String>,
+}
+
+/// The id that each former id of a rule became, following every rename to the id of the catalog.
+pub(crate) fn current_ids(events: &[Event]) -> BTreeMap<&str, &str> {
+    let mut renamed: BTreeMap<&str, &str> = BTreeMap::new();
+    for event in events {
+        if let Some(old) = &event.renamed_from {
+            for new in renamed.values_mut().filter(|new| **new == old.as_str()) {
+                *new = &event.rule;
+            }
+            renamed.insert(old, &event.rule);
+        }
+    }
+    renamed
 }
 
 #[derive(Debug, Default, Deserialize)]

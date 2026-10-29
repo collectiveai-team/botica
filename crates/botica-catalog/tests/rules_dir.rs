@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use botica_catalog::{Catalog, Kind, OWN_RULES_DIR};
+use botica_catalog::{Catalog, Kind, Status, OWN_RULES_DIR};
 
 fn rules_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../catalog/rules")
@@ -85,7 +85,7 @@ fn every_rule_that_botica_or_a_judge_evaluates_has_valid_and_invalid_fixtures() 
     for rule in catalog
         .rules()
         .iter()
-        .filter(|rule| !rule.is_external_only())
+        .filter(|rule| !rule.is_external_only() && rule.status != Status::Removed)
     {
         let family = rule.family.as_deref().unwrap_or(OWN_RULES_DIR);
         let fixtures = rules_dir().join(family).join(&rule.id).join("fixtures");

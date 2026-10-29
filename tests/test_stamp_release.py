@@ -1,9 +1,9 @@
-"""A release seals the status of every rule in `catalog/rules/history.toml`.
+"""A release seals the status, the code and the id of every rule in `catalog/rules/history.toml`.
 
-Nobody writes a version by hand: the author of a change sets the `status` of a rule, and the release
-records, under its own version, every status that the history does not have yet. Asserted through
-the public seam of `scripts/stamp_release.py`: the catalog and the history on disk go in, the
-changes they need and the history that results come out (CES-65).
+Nobody writes a version by hand: the author of a change sets the `status` or the `code` of a rule,
+or renames it, and the release records, under its own version, what the history does not have yet.
+Asserted through the public seam of `scripts/stamp_release.py`: the catalog and the history on disk
+go in, the changes they need and the history that results come out (CES-65).
 """
 
 from __future__ import annotations
@@ -27,10 +27,15 @@ _SPEC.loader.exec_module(sr)
 RULES = "catalog/rules"
 
 
-def add_rule(root: Path, family: str, slug: str, status: str) -> None:
+def add_rule(
+    root: Path, family: str, slug: str, status: str, code: str = "", aliases: str = ""
+) -> None:
     folder = root / RULES / family / slug
     folder.mkdir(parents=True, exist_ok=True)
-    (folder / "rule.toml").write_text(f'id = "{slug}"\nstatus = "{status}"\n', encoding="utf-8")
+    text = f'id = "{slug}"\nstatus = "{status}"\n'
+    text += f'code = "{code}"\n' if code else ""
+    text += f"aliases = [{aliases}]\n" if aliases else ""
+    (folder / "rule.toml").write_text(text, encoding="utf-8")
 
 
 def write_history(root: Path, *events: tuple[str, str, str]) -> None:
@@ -44,7 +49,11 @@ def write_history(root: Path, *events: tuple[str, str, str]) -> None:
 
 def history(root: Path) -> list[tuple[str, str, str]]:
     data = tomllib.loads((root / RULES / "history.toml").read_text(encoding="utf-8"))
-    return [(e["version"], e["rule"], e["status"]) for e in data.get("event", [])]
+    return [(e["version"], e["rule"], e.get("status", "")) for e in data.get("event", [])]
+
+
+def events(root: Path) -> list[dict[str, str]]:
+    return tomllib.loads((root / RULES / "history.toml").read_text(encoding="utf-8"))["event"]
 
 
 def changes(root: Path) -> list[tuple[str, str]]:
@@ -163,5 +172,66 @@ def test_the_history_of_this_repository_knows_every_rule_it_records(tmp_path: Pa
     root = Path(__file__).resolve().parents[1]
     recorded = {rule for _, rule, _ in history(root)}
     slugs = {path.parent.name for path in (root / RULES).glob("*/*/rule.toml")}
+    former = set(sr.current_ids(sr.read_events(root)))
 
-    assert recorded <= slugs, f"events for rules that do not exist: {sorted(recorded - slugs)}"
+    assert recorded <= slugs | former, f"events for unknown rules: {sorted(recorded - slugs)}"
+    assert sr.unsealed(root) == []
+
+
+def test_a_new_rule_is_sealed_with_its_status_and_its_code(tmp_path: Path):
+    add_rule(tmp_path, "logging", "fresh", "preview", code="BTLOG001")
+    write_history(tmp_path)
+
+    sr.stamp(tmp_path, "0.18.0")
+
+    assert events(tmp_path) == [
+        {"version": "0.18.0", "rule": "fresh", "status": "preview", "code": "BTLOG001"}
+    ]
+
+
+def test_a_rule_whose_code_changed_is_sealed_with_the_new_code_only(tmp_path: Path):
+    add_rule(tmp_path, "logging", "moved", "stable", code="BTLOG002")
+    write_history(tmp_path)
+    sr.stamp(tmp_path, "0.18.0")
+    add_rule(tmp_path, "logging", "moved", "stable", code="BTLOG009")
+
+    sr.stamp(tmp_path, "0.19.0")
+
+    assert events(tmp_path)[-1] == {"version": "0.19.0", "rule": "moved", "code": "BTLOG009"}
+
+
+def test_a_rule_that_keeps_its_old_id_as_an_alias_is_sealed_as_a_rename(tmp_path: Path):
+    add_rule(tmp_path, "logging", "old", "stable", code="BTLOG001")
+    write_history(tmp_path)
+    sr.stamp(tmp_path, "0.18.0")
+    (tmp_path / RULES / "logging" / "old" / "rule.toml").unlink()
+    add_rule(tmp_path, "logging", "new", "stable", code="BTLOG001", aliases='"old"')
+
+    sr.stamp(tmp_path, "0.19.0")
+
+    assert events(tmp_path)[-1] == {"version": "0.19.0", "rule": "new", "renamed-from": "old"}
+    assert sr.unsealed(tmp_path) == []
+
+
+def test_a_code_that_the_history_gave_to_another_rule_is_refused(tmp_path: Path):
+    add_rule(tmp_path, "logging", "first", "stable", code="BTLOG001")
+    write_history(tmp_path)
+    sr.stamp(tmp_path, "0.18.0")
+    add_rule(tmp_path, "logging", "first", "stable", code="BTLOG002")
+    add_rule(tmp_path, "logging", "second", "preview", code="BTLOG001")
+    before = (tmp_path / RULES / "history.toml").read_text(encoding="utf-8")
+
+    with pytest.raises(ValueError, match="`BTLOG001` already names `first`"):
+        sr.stamp(tmp_path, "0.19.0")
+
+    assert (tmp_path / RULES / "history.toml").read_text(encoding="utf-8") == before
+
+
+def test_the_check_names_a_code_that_is_not_sealed(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    add_rule(tmp_path, "logging", "moved", "stable", code="BTLOG002")
+    write_history(tmp_path, ("0.8.0", "moved", "stable"))
+
+    assert sr.check(tmp_path) == 1
+    assert "moved has the code BTLOG002" in capsys.readouterr().out

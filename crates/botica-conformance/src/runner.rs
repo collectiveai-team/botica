@@ -268,6 +268,9 @@ fn runs_in_lint(rule_toml: &Path) -> Result<bool> {
     let rule: toml::Table = text
         .parse()
         .with_context(|| format!("{} is not TOML", rule_toml.display()))?;
+    if rule.get("status").and_then(toml::Value::as_str) == Some("removed") {
+        return Ok(false);
+    }
     let implementations = rule
         .get("implementations")
         .and_then(toml::Value::as_array)

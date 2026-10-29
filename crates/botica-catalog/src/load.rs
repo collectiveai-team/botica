@@ -3,12 +3,13 @@ use std::collections::BTreeMap;
 use serde::de::DeserializeOwned;
 
 use crate::issue::{issue, CatalogError, CatalogIssue};
-use crate::model::{Event, Family, FamilyFile, HistoryFile, Lifecycle, Rule};
+use crate::model::{current_ids, Event, Family, FamilyFile, HistoryFile, Lifecycle, Rule};
 use crate::origin::{Origin, HEADER};
 use crate::readme::check_readme;
 use crate::sources::{attach_configs, attach_scripts, attach_sources, is_script};
-use crate::validate::{check_family_code, check_history, check_rule, is_kebab_case};
+use crate::validate::{check_family_code, check_rule, is_kebab_case};
 use crate::validate_across::check_across;
+use crate::validate_history::check_history;
 
 pub const OWN_RULES_DIR: &str = "botica";
 pub const HISTORY_FILE: &str = "history.toml";
@@ -94,12 +95,22 @@ impl Catalog {
 
     /// When `rule` was released, from the history of the catalog.
     pub fn lifecycle(&self, rule: &Rule) -> Lifecycle {
-        let mut events = self.history.iter().filter(|event| event.rule == rule.id);
-        let added = events.next().map(|event| event.version.clone());
-        let since = self
+        let current = current_ids(&self.history);
+        let events: Vec<&Event> = self
             .history
             .iter()
-            .rfind(|event| event.rule == rule.id && event.status == rule.status)
+            .filter(|event| {
+                current
+                    .get(event.rule.as_str())
+                    .copied()
+                    .unwrap_or(&event.rule)
+                    == rule.id
+            })
+            .collect();
+        let added = events.first().map(|event| event.version.clone());
+        let since = events
+            .iter()
+            .rfind(|event| event.status == Some(rule.status))
             .map(|event| event.version.clone());
         Lifecycle { added, since }
     }

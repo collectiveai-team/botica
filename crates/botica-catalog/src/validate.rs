@@ -1,9 +1,7 @@
-use std::collections::BTreeMap;
-
 use crate::config_format::Format;
 use crate::extension::check_extension;
 use crate::issue::{issue, CatalogIssue};
-use crate::model::{Event, Family, Implementation, Kind, Rule, Status};
+use crate::model::{Family, Implementation, Kind, Rule};
 use crate::origin::{check_origin, Origin};
 use crate::question::check_question;
 
@@ -31,56 +29,6 @@ fn check_rule_code(code: &str, header: &str, family: Option<&Family>) -> Option<
     let digits = code.strip_prefix(prefix.as_str());
     let valid = digits.is_some_and(|d| d.len() == 3 && d.bytes().all(|b| b.is_ascii_digit()));
     (!valid).then(|| format!("code `{code}` must be `{prefix}` followed by exactly 3 digits"))
-}
-
-fn parse_version(version: &str) -> Option<(u64, u64, u64)> {
-    let parts: Vec<&str> = version.split('.').collect();
-    let numbers: Vec<u64> = parts
-        .iter()
-        .filter(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit()))
-        .filter_map(|p| p.parse().ok())
-        .collect();
-    match (parts.len(), numbers.as_slice()) {
-        (3, [major, minor, patch]) => Some((*major, *minor, *patch)),
-        _ => None,
-    }
-}
-
-pub(crate) fn check_history(
-    events: &[Event],
-    rules: &[(String, Rule)],
-    found: &mut Vec<CatalogIssue>,
-) {
-    let mut last_version: Option<((u64, u64, u64), &str)> = None;
-    let mut last_status: BTreeMap<&str, Status> = BTreeMap::new();
-    for event in events {
-        let mut add = |message: String| found.push(issue("history.toml", message));
-        if !rules.iter().any(|(_, rule)| rule.id == event.rule) {
-            add(format!("`{}` is not a rule of the catalog", event.rule));
-        }
-        let Some(parsed) = parse_version(&event.version) else {
-            add(format!(
-                "version `{}` must look like `0.1.0`",
-                event.version
-            ));
-            continue;
-        };
-        if let Some((previous, text)) = last_version {
-            if parsed < previous {
-                add(format!(
-                    "version `{}` is older than `{text}`, the one of the event before: events are appended in release order",
-                    event.version
-                ));
-            }
-        }
-        last_version = Some((parsed, &event.version));
-        if last_status.insert(&event.rule, event.status) == Some(event.status) {
-            add(format!(
-                "`{}` is already {:?} in `{}`: an event has to change its status",
-                event.rule, event.status, event.version
-            ));
-        }
-    }
 }
 
 fn check_standard(standard: &str) -> bool {

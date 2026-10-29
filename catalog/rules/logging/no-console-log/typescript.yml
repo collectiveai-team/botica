@@ -1,0 +1,12 @@
+id: no-console-log
+language: typescript
+severity: warning
+message: "botica/no-console-log: remove console.log from library code; use the project logger."
+ignores:
+  - "**/*.test.ts"
+rule:
+  pattern: console.log($$$ARGS)
+  not:
+    inside:
+      stopBy: end
+      kind: catch_clause

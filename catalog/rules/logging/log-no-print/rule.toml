@@ -4,6 +4,7 @@ standard = "CES-46"
 references = ["structured-logging"]
 summary = "Libraries log, they don't print"
 status = "stable"
+replaces = "no-console-log"
 tags = ["logging"]
 scope = "file"
 needs = "syntax"

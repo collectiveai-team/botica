@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "compiledAt": "2026-10-28T04:58:46Z",
-  "compiledBy": "botica 0.17.1",
+  "compiledAt": "2026-10-29T04:37:55Z",
+  "compiledBy": "botica 0.18.0",
   "manual": true,
   "sources": [
     {
@@ -589,6 +589,7 @@
         "catalog/rules/infrastructure/terraform-lint/README.md",
         "catalog/rules/logging/log-get-logger/README.md",
         "catalog/rules/logging/log-no-print/README.md",
+        "catalog/rules/logging/no-console-log/README.md",
         "catalog/rules/process/conventional-commits/README.md",
         "catalog/rules/process/no-ai-coauthorship/README.md",
         "catalog/rules/process/pr-small-by-intent/README.md",
@@ -879,6 +880,8 @@
         "catalog/rules/logging/log-no-print/rule.toml",
         "catalog/rules/logging/log-no-print/tsx.yml",
         "catalog/rules/logging/log-no-print/typescript.yml",
+        "catalog/rules/logging/no-console-log/rule.toml",
+        "catalog/rules/logging/no-console-log/typescript.yml",
         "catalog/rules/process/family.toml",
         "catalog/rules/process/conventional-commits/rule.toml",
         "catalog/rules/process/no-ai-coauthorship/rule.toml",
@@ -1175,6 +1178,7 @@
         "catalog/rules/infrastructure/terraform-lint/README.md",
         "catalog/rules/logging/log-get-logger/README.md",
         "catalog/rules/logging/log-no-print/README.md",
+        "catalog/rules/logging/no-console-log/README.md",
         "catalog/rules/process/conventional-commits/README.md",
         "catalog/rules/process/no-ai-coauthorship/README.md",
         "catalog/rules/process/pr-small-by-intent/README.md",
