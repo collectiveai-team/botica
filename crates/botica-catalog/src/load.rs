@@ -115,6 +115,10 @@ impl Catalog {
         Lifecycle { added, since }
     }
 
+    pub(crate) fn history(&self) -> &[Event] {
+        &self.history
+    }
+
     pub fn families(&self) -> &[Family] {
         &self.families
     }

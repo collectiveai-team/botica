@@ -30,6 +30,9 @@ botica lint --pr-title="$PR_TITLE" # over the title of a pull request
 botica rules                   # which rules are active, and why (--all adds the inactive ones), the
                                # programs that `botica lint` runs and the tools that enforce rules
                                # outside it; --json adds the kind of each implementation
+botica rules --since 0.12.0    # what the releases after 0.12.0, up to this binary, did to the built-in
+                               # rules: added, status changed, renamed, code changed or removed,
+                               # one line per change; --json prints them as one document
 botica explain no-notebooks    # what a rule is, how it is built and how it is configured here
 botica rules eval no-utils src # what one rule finds in real code, on or off in the configuration,
                                # for a review of its false positives; the findings do not fail it
@@ -58,6 +61,24 @@ why; `botica explain <slug>` shows one, with its standard and its status. A rule
 `preview` is off by default: it runs only with `preview = true` and when you select it. A rule of
 kind `external` is enforced by another tool through its configuration
 ([External rules](../extend/rules.md#external-rules)).
+
+`botica rules --since <version>` lists what each release after `<version>`, up to the version of
+the binary, did to the rules of the built-in catalog, read from `catalog/rules/history.toml`:
+
+```text
+$ botica rules --since 0.9.0
+...
+0.10.0  no-console-log (BTLOG003)  removed, replaced by log-no-print
+...
+0.13.0  database-package (BTDB001)  renamed from arch-database-package
+0.13.0  database-package (BTDB001)  code BTARCH001 -> BTDB001
+...
+0.18.0  botica-version-aligned (BT007)  added as preview
+```
+
+Each line has the release, the id and the code that the rule had in it, and the change. Run it
+after an update with the version you had before to see which names of your configuration changed.
+A version newer than the binary lists nothing.
 
 ## Which files
 

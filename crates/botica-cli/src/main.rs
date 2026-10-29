@@ -46,6 +46,7 @@ mod rules_export;
 mod rules_new;
 mod rules_new_extension;
 mod rules_new_target;
+mod rules_since;
 mod rules_test;
 mod server_cmd;
 mod timings;

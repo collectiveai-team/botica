@@ -2,7 +2,7 @@ use std::io::Write;
 use std::process::ExitCode;
 
 use anyhow::Result;
-use botica_catalog::{Kind, Rule};
+use botica_catalog::{Kind, Release, Rule};
 use botica_config::Resolution;
 use clap::{Args, Subcommand};
 use serde::Serialize;
@@ -15,6 +15,7 @@ use crate::rules_conform::{self, ConformArgs};
 use crate::rules_eval::{self, EvalArgs};
 use crate::rules_export::{self, ExportArgs};
 use crate::rules_new::{self, NewArgs};
+use crate::rules_since;
 use crate::rules_test::{self, TestArgs};
 
 /// Version of the JSON document of `botica rules --json`.
@@ -57,6 +58,10 @@ struct ListArgs {
     /// Print one JSON document instead of the table.
     #[arg(long)]
     json: bool,
+    /// List what the releases after this version, up to this binary, did to the built-in rules:
+    /// the rules they added, renamed or removed, and the status and code they changed.
+    #[arg(long, value_name = "VERSION", conflicts_with = "all")]
+    since: Option<Release>,
     #[command(flatten)]
     project: ProjectArgs,
 }
@@ -87,6 +92,9 @@ pub fn run(args: &RulesArgs) -> Result<ExitCode> {
         Some(RulesCommand::List(list)) => list,
         None => &args.list,
     };
+    if let Some(since) = list.since {
+        return rules_since::run(since, list.json).map(success);
+    }
     let project = project::load(&list.project)?;
     let mut out = std::io::stdout().lock();
     if list.json {

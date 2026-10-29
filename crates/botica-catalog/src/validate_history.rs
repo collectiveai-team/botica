@@ -3,17 +3,18 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::changes::Release;
 use crate::issue::{issue, CatalogIssue};
 use crate::model::{current_ids, Event, Rule, Status};
 
-type Version = (u64, u64, u64);
+type Version = Release;
 
 /// The id each former id became, from [`current_ids`].
 type Renames<'a> = BTreeMap<&'a str, &'a str>;
 
 /// The last release whose history may give a code or an id to two rules: 0.13.0 and 0.16.0 did,
 /// before ADR 0016.
-const LAST_REUSE: Version = (0, 17, 1);
+const LAST_REUSE: Version = Release::new(0, 17, 1);
 
 pub(crate) fn check_history(
     events: &[Event],
@@ -53,16 +54,7 @@ fn is_rule(rules: &[(String, Rule)], id: &str) -> bool {
 }
 
 fn parse_version(version: &str) -> Option<Version> {
-    let parts: Vec<&str> = version.split('.').collect();
-    let numbers: Vec<u64> = parts
-        .iter()
-        .filter(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit()))
-        .filter_map(|p| p.parse().ok())
-        .collect();
-    match (parts.len(), numbers.as_slice()) {
-        (3, [major, minor, patch]) => Some((*major, *minor, *patch)),
-        _ => None,
-    }
+    version.parse().ok()
 }
 
 /// Each version looks like a release, and none is older than the one of the event before.
