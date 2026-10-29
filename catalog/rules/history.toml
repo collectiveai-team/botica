@@ -1,377 +1,530 @@
-# What each release did to the status of a rule. Written by scripts/stamp_release.py when a release
-# is cut, never by hand: a rule whose status has no event here yet is not released.
+# What each release did to a rule: its status, its code and its id. Written by
+# scripts/stamp_release.py when a release is cut, never by hand: a rule whose status or code has
+# no event here yet is not released. An event names the rule by the id it has at `version`.
 
 [[event]]
 version = "0.7.0"
 rule = "file-size-guard"
 status = "stable"
+code = "BTSTRUC001"
 
 [[event]]
 version = "0.7.0"
 rule = "invalid-suppression"
 status = "stable"
+code = "BT003"
 
 [[event]]
 version = "0.7.0"
 rule = "io-error"
 status = "stable"
+code = "BT001"
 
 [[event]]
 version = "0.7.0"
 rule = "no-artifacts-in-package"
 status = "stable"
+code = "BTSTRUC003"
 
 [[event]]
 version = "0.7.0"
 rule = "no-notebooks"
 status = "stable"
+code = "BTSTRUC004"
 
 [[event]]
 version = "0.7.0"
 rule = "no-tests-in-package"
 status = "stable"
+code = "BTSTRUC005"
 
 [[event]]
 version = "0.7.0"
 rule = "no-utils"
 status = "stable"
+code = "BTSTRUC002"
 
 [[event]]
 version = "0.7.0"
 rule = "unused-suppression"
 status = "stable"
+code = "BT002"
 
 [[event]]
 version = "0.8.0"
 rule = "api-schemas-extra-forbid"
 status = "stable"
+code = "BTDM001"
 
 [[event]]
 version = "0.8.0"
-rule = "database-package"
+rule = "arch-database-package"
 status = "stable"
+code = "BTARCH001"
 
 [[event]]
 version = "0.8.0"
 rule = "cli-typed-framework"
 status = "stable"
+code = "BTPROC001"
 
 [[event]]
 version = "0.8.0"
 rule = "log-get-logger"
 status = "stable"
+code = "BTLOG001"
 
 [[event]]
 version = "0.8.0"
 rule = "log-no-print"
 status = "stable"
+code = "BTLOG002"
+
+[[event]]
+version = "0.8.0"
+rule = "no-console-log"
+status = "stable"
+code = "BTLOG003"
 
 [[event]]
 version = "0.8.0"
 rule = "no-dict-alias"
 status = "stable"
+code = "BTDM002"
 
 [[event]]
 version = "0.8.0"
 rule = "no-dict-call-return"
 status = "stable"
+code = "BTDM003"
 
 [[event]]
 version = "0.8.0"
 rule = "no-dict-literal-return"
 status = "stable"
+code = "BTDM004"
 
 [[event]]
 version = "0.8.0"
 rule = "no-dict-return-annotation"
 status = "stable"
+code = "BTDM005"
 
 [[event]]
 version = "0.8.0"
 rule = "settings-module"
 status = "stable"
+code = "BTARCH002"
+
+[[event]]
+version = "0.9.0"
+rule = "api-schemas-extra-forbid"
+code = "BTFAST001"
 
 [[event]]
 version = "0.10.0"
 rule = "api-request-schema-name"
 status = "preview"
+code = "BTFAST003"
 
 [[event]]
 version = "0.10.0"
 rule = "api-response-schema-name"
 status = "preview"
+code = "BTFAST004"
 
 [[event]]
 version = "0.10.0"
 rule = "api-schema-in-route-module"
 status = "preview"
+code = "BTFAST002"
 
 [[event]]
 version = "0.10.0"
 rule = "cognitive-complexity"
 status = "preview"
+code = "BTSTRUC006"
 
 [[event]]
 version = "0.10.0"
 rule = "db-no-create-all"
 status = "preview"
+code = "BTARCH005"
 
 [[event]]
 version = "0.10.0"
 rule = "external-config"
 status = "stable"
+code = "BT004"
+
+[[event]]
+version = "0.10.0"
+rule = "no-console-log"
+status = "removed"
 
 [[event]]
 version = "0.10.0"
 rule = "settings-base-class"
 status = "preview"
+code = "BTARCH003"
 
 [[event]]
 version = "0.10.0"
 rule = "settings-direct-instantiation"
 status = "preview"
+code = "BTARCH004"
 
 [[event]]
 version = "0.12.0"
 rule = "import-layers"
 status = "stable"
+code = "BTARCH007"
 
 [[event]]
 version = "0.12.0"
 rule = "settings-env-schema"
 status = "stable"
+code = "BTARCH006"
 
 [[event]]
 version = "0.13.0"
 rule = "architecture-vocabulary"
 status = "preview"
+code = "BTARCH003"
+
+[[event]]
+version = "0.13.0"
+rule = "cli-typed-framework"
+code = "BTCLI001"
+
+[[event]]
+version = "0.13.0"
+rule = "database-package"
+renamed-from = "arch-database-package"
+code = "BTDB001"
+
+[[event]]
+version = "0.13.0"
+rule = "db-no-create-all"
+code = "BTDB002"
+
+[[event]]
+version = "0.13.0"
+rule = "import-layers"
+code = "BTARCH001"
 
 [[event]]
 version = "0.13.0"
 rule = "jwt-verified"
 status = "preview"
+code = "BTSEC002"
 
 [[event]]
 version = "0.13.0"
 rule = "lockfile-committed"
 status = "preview"
+code = "BTSTRUC007"
 
 [[event]]
 version = "0.13.0"
 rule = "minimal-comments"
 status = "preview"
+code = "BTWRIT002"
+
+[[event]]
+version = "0.13.0"
+rule = "no-dict-alias"
+code = "BTDM001"
+
+[[event]]
+version = "0.13.0"
+rule = "no-dict-call-return"
+code = "BTDM002"
+
+[[event]]
+version = "0.13.0"
+rule = "no-dict-literal-return"
+code = "BTDM003"
+
+[[event]]
+version = "0.13.0"
+rule = "no-dict-return-annotation"
+code = "BTDM004"
 
 [[event]]
 version = "0.13.0"
 rule = "no-disabled-typecheck"
 status = "preview"
+code = "BTTOOL001"
 
 [[event]]
 version = "0.13.0"
 rule = "no-token-in-web-storage"
 status = "preview"
+code = "BTSEC003"
 
 [[event]]
 version = "0.13.0"
 rule = "plain-writing"
 status = "preview"
+code = "BTWRIT001"
 
 [[event]]
 version = "0.13.0"
 rule = "pr-small-by-intent"
 status = "preview"
+code = "BTPROC001"
 
 [[event]]
 version = "0.13.0"
 rule = "respect-local-repo"
 status = "preview"
+code = "BTPROC002"
 
 [[event]]
 version = "0.13.0"
 rule = "route-auth"
 status = "preview"
+code = "BTSEC001"
 
 [[event]]
 version = "0.13.0"
 rule = "separate-orchestration"
 status = "preview"
+code = "BTARCH002"
+
+[[event]]
+version = "0.13.0"
+rule = "settings-base-class"
+code = "BTCONF002"
+
+[[event]]
+version = "0.13.0"
+rule = "settings-direct-instantiation"
+code = "BTCONF003"
+
+[[event]]
+version = "0.13.0"
+rule = "settings-env-schema"
+code = "BTCONF004"
+
+[[event]]
+version = "0.13.0"
+rule = "settings-module"
+code = "BTCONF001"
 
 [[event]]
 version = "0.13.0"
 rule = "test-coverage-gap"
 status = "preview"
+code = "BTTEST003"
 
 [[event]]
 version = "0.13.0"
 rule = "test-in-memory-adapters"
 status = "preview"
+code = "BTTEST001"
 
 [[event]]
 version = "0.13.0"
 rule = "test-through-interface"
 status = "preview"
+code = "BTTEST002"
 
 [[event]]
 version = "0.13.0"
 rule = "ubiquitous-language"
 status = "preview"
+code = "BTWRIT003"
 
 [[event]]
 version = "0.14.0"
 rule = "conventional-commits"
 status = "preview"
+code = "BTPROC003"
 
 [[event]]
 version = "0.14.0"
 rule = "coverage-exclusion-reachable"
 status = "preview"
+code = "BTTEST006"
 
 [[event]]
 version = "0.14.0"
 rule = "no-ai-coauthorship"
 status = "preview"
+code = "BTPROC004"
 
 [[event]]
 version = "0.14.0"
 rule = "no-coverage-exclusion"
 status = "preview"
+code = "BTTEST005"
 
 [[event]]
 version = "0.14.0"
 rule = "no-coverage-pragma"
 status = "preview"
+code = "BTTEST004"
 
 [[event]]
 version = "0.15.0"
 rule = "cargo-cooldown"
 status = "preview"
+code = "BTSEC009"
 
 [[event]]
 version = "0.15.0"
 rule = "compose-config"
 status = "preview"
+code = "BTINFRA002"
 
 [[event]]
 version = "0.15.0"
 rule = "dependabot-cooldown"
 status = "preview"
+code = "BTSEC005"
 
 [[event]]
 version = "0.15.0"
 rule = "dockerfile-lint"
 status = "preview"
+code = "BTINFRA001"
 
 [[event]]
 version = "0.15.0"
 rule = "docstring-matches-signature"
 status = "stable"
+code = "BTDOCS001"
 
 [[event]]
 version = "0.15.0"
 rule = "eager-test"
 status = "preview"
+code = "BTTEST011"
 
 [[event]]
 version = "0.15.0"
 rule = "external-config-weakened"
 status = "preview"
+code = "BT005"
 
 [[event]]
 version = "0.15.0"
 rule = "no-tautological-assert"
 status = "preview"
+code = "BTTEST007"
 
 [[event]]
 version = "0.15.0"
 rule = "no-type-cast"
 status = "preview"
+code = "BTTOOL004"
 
 [[event]]
 version = "0.15.0"
 rule = "npm-cooldown"
 status = "preview"
+code = "BTSEC007"
 
 [[event]]
 version = "0.15.0"
 rule = "pnpm-cooldown"
 status = "preview"
+code = "BTSEC006"
 
 [[event]]
 version = "0.15.0"
 rule = "pyrefly-strict"
 status = "preview"
+code = "BTTOOL003"
 
 [[event]]
 version = "0.15.0"
 rule = "pytest-strict"
 status = "preview"
+code = "BTTEST008"
 
 [[event]]
 version = "0.15.0"
 rule = "recipe-conflict"
 status = "preview"
+code = "BT006"
 
 [[event]]
 version = "0.15.0"
 rule = "ruff-selection"
 status = "preview"
+code = "BTTOOL002"
 
 [[event]]
 version = "0.15.0"
 rule = "short-lived-access-token"
 status = "preview"
+code = "BTSEC010"
 
 [[event]]
 version = "0.15.0"
 rule = "terraform-lint"
 status = "preview"
+code = "BTINFRA003"
 
 [[event]]
 version = "0.15.0"
 rule = "test-no-network"
 status = "preview"
+code = "BTTEST010"
 
 [[event]]
 version = "0.15.0"
 rule = "test-no-subprocess"
 status = "preview"
+code = "BTTEST009"
 
 [[event]]
 version = "0.15.0"
 rule = "uv-cooldown"
 status = "preview"
+code = "BTSEC004"
 
 [[event]]
 version = "0.15.0"
 rule = "yarn-cooldown"
 status = "preview"
+code = "BTSEC008"
 
 [[event]]
 version = "0.16.0"
 rule = "agents-md-refs-exist"
 status = "preview"
+code = "BTWRIT004"
 
 [[event]]
 version = "0.16.0"
 rule = "no-eager-heavy-imports"
 status = "stable"
+code = "BTARCH004"
 
 [[event]]
 version = "0.16.0"
 rule = "ruff-heavy-imports-in-function"
 status = "stable"
+code = "BTTOOL005"
 
 [[event]]
 version = "0.16.0"
 rule = "ruff-imports-at-top"
 status = "stable"
+code = "BTTOOL006"
 
 [[event]]
 version = "0.17.0"
 rule = "asyncio-no-get-event-loop"
 status = "preview"
+code = "BTASYNC001"
 
 [[event]]
 version = "0.18.0"
 rule = "botica-version-aligned"
 status = "preview"
+code = "BT007"
