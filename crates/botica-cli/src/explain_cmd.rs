@@ -72,7 +72,7 @@ fn or_none(items: &[String]) -> String {
     }
 }
 
-fn status_name(status: Status) -> &'static str {
+pub(crate) fn status_name(status: Status) -> &'static str {
     match status {
         Status::Preview => "preview",
         Status::Stable => "stable",
