@@ -38,13 +38,17 @@ file = "no-blobs.py"        # python: `uv run --python <version> --script`; node
 
 A script of the runtime `python` declares its dependencies (PEP 723) and writes its rule with the
 module `botica.sdk` of the wheel `botica`; the extra `botica[sdk]` brings `ast-grep-py`. The script
-pins the version of `botica` that the project runs (`<version>` below is the output of
-`botica --version`):
+names `botica[sdk]` with no version, and botica gives it its own version: it runs the script with
+`uv run --with "botica[sdk]==<version>" --script`, where `<version>` is the output of
+`botica --version`. The SDK of the script follows the botica of the project, and an upgrade of
+botica changes no script.
 
 ```python
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["botica[sdk]==<version>"]
+# dependencies = ["botica[sdk]"]
+# [tool.uv]
+# exclude-newer-package = { botica = false }
 # ///
 from botica.sdk import rule, serve
 
@@ -63,13 +67,33 @@ if __name__ == "__main__":
 and `end` are byte offsets in the UTF-8 text; `char_to_byte_offsets(text)` turns an index of a
 Python string, which is what `ast-grep-py` reports, into one.
 
+`uv` installs the version that `--with` asks for in an environment of its own, over the
+environment of the script, so the script imports that version and not the one that its header
+resolves alone. botica adds `--with` only when the header names `botica` with no version and no
+marker, and `[tool.uv.sources]` of the header does not name `botica`:
+
+- A script that pins `botica[sdk]==<version>`, or names it with a URL or a source, runs with that
+  version, as before. That is how to run a script against an SDK that is not on PyPI, such as a
+  checkout of botica.
+- A script that does not name `botica` gets no `--with` and installs no botica.
+
+The `exclude-newer` of uv (CES-128), in `pyproject.toml`, `uv.toml` or the configuration of the
+user, applies to the version that botica asks for as well: a release of botica younger than the
+cooldown is filtered out, and the run fails with the hint of uv. The line
+`exclude-newer-package = { botica = false }` of `[tool.uv]` in the header lifts the cooldown for
+`botica` alone; `botica rules new` writes it. The version of botica that runs is one that the
+project already chose, so the cooldown has no new version to hold back.
+
 `uv` runs a script of the runtime `python` with `--python <version>`. With `project` the version
 comes from `.python-version`, else from `.venv/pyvenv.cfg`, else from `requires-python` of
 `pyproject.toml`, else it is 3.13. `system` runs it with a Python of the system
 (`--python-preference only-system`). A free-threaded Python (`3.13t`, `3.14+freethreaded`) is
 refused: the run fails and names where the version is written. `botica ext sync` runs
 `uv sync --script` with that Python on the script of each active Python rule, so that the first
-`botica lint`, in a hook or in CI, does not create the environments.
+`botica lint`, in a hook or in CI, does not create the environments. `uv sync` takes no `--with`,
+so `botica ext sync` then starts each script that gets its version of botica from botica once,
+with the command of `botica lint` and its stdin closed: `serve()` returns at once, and the cache
+of uv keeps that version of botica for the next runs.
 
 ## Node
 

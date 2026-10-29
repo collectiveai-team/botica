@@ -82,11 +82,11 @@ fn a_python_extension_gets_the_id_and_the_code_of_its_catalog_and_a_script_that_
     );
     let script = read(&dir, &format!("{folder}/no-blobs.py"));
     assert!(
-        script.contains(&format!(
-            "dependencies = [\"botica[sdk]=={}\"]",
-            env!("CARGO_PKG_VERSION")
-        )),
-        "{script}"
+        script.starts_with(
+            "# /// script\n# requires-python = \">=3.10\"\n# dependencies = [\"botica[sdk]\"]\n\
+             # [tool.uv]\n# exclude-newer-package = { botica = false }\n# ///\n"
+        ),
+        "the script names botica with no version, and botica gives it its own:\n{script}"
     );
     assert!(
         script.contains("@rule(\"acme/no-blobs\", [\"python\"])\ndef check(path, text, options):"),

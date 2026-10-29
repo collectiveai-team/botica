@@ -131,7 +131,7 @@ warning each time; after the limit the rule does not run until the server restar
 
 | `runtime` | The rule names | botica runs |
 |---|---|---|
-| `python` | `file = "<name>.py"` | `uv run --python <version> --script <file>`; the script declares its dependencies (PEP 723) and uv caches its environment. The version is `[extensions] python`: by default the one the project pins, else 3.13; a free-threaded Python is refused. `botica ext sync` creates the environments beforehand |
+| `python` | `file = "<name>.py"` | `uv run --python <version> --script <file>`; the script declares its dependencies (PEP 723) and uv caches its environment. The version is `[extensions] python`: by default the one the project pins, else 3.13; a free-threaded Python is refused. A script that declares `botica` with no version also gets `--with botica[sdk]==<version of botica>`. `botica ext sync` creates the environments beforehand |
 | `node` | `file = "<name>.js"` or `.mjs` | `node <file>`, with the `node_modules` the rule brings, if any |
 | `command` | `command = ["<argv>", …]`, no `file` | the command, from the root of the project |
 
@@ -140,7 +140,7 @@ Python, TypeScript, Go and Rust; any other language speaks the protocol through 
 
 | SDK | Published as | Parses with |
 |---|---|---|
-| Python | the module `botica.sdk` of the wheel `botica` (`from botica.sdk import rule, serve`); the extra `botica[sdk]` adds `ast-grep-py`, and a script declares `botica[sdk]==<version>` | `ast-grep-py` |
+| Python | the module `botica.sdk` of the wheel `botica` (`from botica.sdk import rule, serve`); the extra `botica[sdk]` adds `ast-grep-py`, and a script declares `botica[sdk]`, with the version of the botica that runs it | `ast-grep-py` |
 | TypeScript | the npm package `@botica/sdk`, from `sdk/node`, released with the same tag | `@ast-grep/napi` |
 | Go | the module `github.com/collectiveai-team/botica/sdk/go`, tagged `sdk/go/vX.Y.Z` | the bindings of tree-sitter for Go, with the grammars of ast-grep: the same kinds of node, without the patterns of ast-grep |
 | Rust | the crate `botica-ext-sdk`, from `sdk/rust` | `ast-grep-core` |

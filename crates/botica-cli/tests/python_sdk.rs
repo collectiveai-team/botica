@@ -12,8 +12,12 @@ use common::{project_in, stderr, stdout, write};
 const README: &str =
     "## Directive\n\nd\n\n## Why\n\nw\n\n## Do\n\ndo\n\n## Don't\n\ndont\n\n## Suppression\n\ns\n";
 
-/// A rule written with the SDK: it flags each `x` of a line that starts with `x`.
-const SCRIPT: &str = r#"from botica.sdk import char_to_byte_offsets, rule, serve
+/// A rule written with the SDK: it flags each `x` of a line that starts with `x`. It names
+/// `botica[sdk]` with no version, so `botica lint` adds the version of botica.
+const SCRIPT: &str = r#"# /// script
+# dependencies = ["botica[sdk]"]
+# ///
+from botica.sdk import char_to_byte_offsets, rule, serve
 
 
 @rule("acme/no-leading-x", ["python"], severity="error")
@@ -194,7 +198,11 @@ fn botica_lint_runs_a_rule_written_with_the_sdk() {
     write(
         &bin,
         "uv",
-        "#!/bin/sh\n[ \"$1 $4\" = \"run --script\" ] || exit 9\nexec python3 \"$5\"\n",
+        &format!(
+            "#!/bin/sh\n[ \"$1 $4 $5 $6\" = \"run --with botica[sdk]=={} --script\" ] || exit 9\n\
+             exec python3 \"$7\"\n",
+            env!("CARGO_PKG_VERSION")
+        ),
     );
     let mut permissions = std::fs::metadata(bin.join("uv"))
         .expect("exists")

@@ -56,17 +56,19 @@ pub fn script(runtime: NewRuntime, id: &str, language: &str, slug: &str) -> Scri
     }
 }
 
+/// The script declares `botica[sdk]` with no version: `botica lint` runs it with the version of
+/// botica that runs it, which the `exclude-newer` of the project must not filter out.
 fn python(id: &str, language: &str) -> String {
     format!(
         "# /// script\n# requires-python = \">=3.10\"\n\
-         # dependencies = [\"botica[sdk]=={}\"]\n# ///\n\
+         # dependencies = [\"botica[sdk]\"]\n\
+         # [tool.uv]\n# exclude-newer-package = {{ botica = false }}\n# ///\n\
          from botica.sdk import rule, serve\n\n\n\
          @rule(\"{id}\", [\"{language}\"])\ndef check(path, text, options):\n    \
          # TODO: yield (start, end, message) for each finding; start and end are byte offsets,\n    \
          # and options holds the options of the rule\n    \
          return []\n\n\n\
-         if __name__ == \"__main__\":\n    serve()\n",
-        env!("CARGO_PKG_VERSION")
+         if __name__ == \"__main__\":\n    serve()\n"
     )
 }
 

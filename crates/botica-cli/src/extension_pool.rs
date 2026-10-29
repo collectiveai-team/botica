@@ -15,6 +15,7 @@ use botica_ext::{Deadlines, Selection};
 use botica_lsp::{Extensions, Process, When};
 
 use crate::extension_python::uv_python;
+use crate::extension_python_sdk::sdk_requirement;
 use crate::lint_cmd::when_of;
 use crate::project::{self, extensions_at, Project};
 
@@ -45,8 +46,9 @@ impl Launcher {
     }
 
     /// What runs an extension implementation: `uv run --script` on the script of a Python rule,
-    /// with the Python of the project, `node` on the script of a Node rule, the command of a rule
-    /// that names one.
+    /// with the Python of the project and, for a script that declares `botica` with no version,
+    /// `--with botica[sdk]==<version of botica>`; `node` on the script of a Node rule; the command
+    /// of a rule that names one.
     pub fn command(
         &self,
         rule: &Rule,
@@ -59,14 +61,17 @@ impl Launcher {
                 .clone()
                 .ok_or_else(|| named("`command`")),
             Some(runtime) => {
-                let script = self
+                let path = self
                     .script(rule, implementation)
                     .ok_or_else(|| named("script"))?;
-                let script = script.to_string_lossy().into_owned();
+                let script = path.to_string_lossy().into_owned();
                 Ok(match runtime {
                     Runtime::Python => {
                         let mut argv = vec!["uv".to_owned(), "run".to_owned()];
                         argv.extend(self.python()?.iter().cloned());
+                        if let Some(requirement) = sdk_of(&path) {
+                            argv.extend(["--with".to_owned(), requirement]);
+                        }
                         argv.extend(["--script".to_owned(), script]);
                         argv
                     }
@@ -89,6 +94,12 @@ impl Launcher {
             .join(slug);
         Some(folder.join(implementation.file.as_deref()?))
     }
+}
+
+/// The requirement of `botica` that `uv run --with` adds for the Python script at `path` (see
+/// [`sdk_requirement`]); a script that cannot be read gets none, and `uv` reports it.
+pub fn sdk_of(path: &Path) -> Option<String> {
+    sdk_requirement(&std::fs::read_to_string(path).ok()?)
 }
 
 pub struct ExtensionPool {
