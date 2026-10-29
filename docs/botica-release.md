@@ -11,7 +11,8 @@ when the tag is on `main`, or else the one remote branch that holds the tag.
 1. `test` and `repo-tests` run the `CI` suite (fmt, clippy, `cargo test`) and the
    repository's `Tests` suite (prek, pytest).
 2. `version` fails unless `X.Y.Z` equals `version` in `[workspace.package]` of `Cargo.toml`
-   and `scripts/stamp_release.py check` finds every status of the catalog sealed in the history.
+   and `scripts/stamp_release.py check` finds every status, code and id of the catalog sealed in the
+   history.
 3. `draft` creates a draft GitHub Release.
 4. `wheels` builds a wheel per platform and attaches it, with a `.sha256`, to the draft: Linux
    x64 and arm64 (glibc and musl), macOS arm64 and x64, Windows x64. Before attaching it, the job
@@ -72,8 +73,9 @@ wheels: a wheel built on your machine needs `--compatibility manylinux_2_28` (an
    at the root. Without it the build, which uses `--locked`, fails; the change to `Cargo.lock` is a
    few lines for the crates of the project.
 2. Seal the history: `uv run --no-project --with cyclopts python scripts/stamp_release.py stamp X.Y.Z` appends
-   to `catalog/rules/history.toml` the status of each rule that no release has recorded. The `version`
-   job runs `check` and fails the tag while one is left.
+   to `catalog/rules/history.toml` the status, the code and the rename of each rule that no release has
+   recorded (ADR 0016). It refuses a code or an id that the history gave to another rule. The
+   `version` job runs `check` and fails the tag while one is left.
 3. Commit (`chore(release): botica X.Y.Z`). The version of the mirror's package and every `rev`
    are moved by the workflow.
 4. Tag and push the branch with the tag:

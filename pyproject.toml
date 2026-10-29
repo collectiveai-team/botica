@@ -311,7 +311,8 @@ extend-ignores = ["bench/**"]
 extend-ignores = ["crates/botica-core/src/external_config/ruff_rules.tsv"]
 
 [tool.botica.rules.file-size-guard]
-extend-ignores = ["crates/botica-core/src/external_config/ruff_rules.tsv"]
+# history.toml is written by scripts/stamp_release.py and grows by one event per change of a rule.
+extend-ignores = ["crates/botica-core/src/external_config/ruff_rules.tsv", "catalog/rules/history.toml"]
 
 [tool.pyrefly]
 python-version = "3.11"
