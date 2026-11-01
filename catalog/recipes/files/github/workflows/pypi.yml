@@ -58,4 +58,4 @@ jobs:
       - name: Publish to PyPI (Trusted Publishing)
         # Its input `attestations` is true by default: with Trusted Publishing the
         # action signs and uploads a PEP 740 attestation of each file.
-        uses: pypa/gh-action-pypi-publish@v1.14.2
+        uses: pypa/gh-action-pypi-publish@v1.14.3
