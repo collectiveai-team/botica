@@ -1,0 +1,33 @@
+description = "GitLab CI for a Rust crate or workspace: cargo fmt, clippy, test and doc, Renovate and osv-scanner"
+extends = ["ci-gitlab"]
+
+[[files]]
+path = ".gitlab/ci/rust.yml"
+template = "files/gitlab-rust/ci/rust.yml"
+
+[[files]]
+path = ".gitlab/ci/osv-scanner.yml"
+template = "files/gitlab-rust/ci/osv-scanner.yml"
+
+[[files]]
+path = "renovate.json"
+template = "files/gitlab-rust/renovate.json"
+
+[[files]]
+path = ".gitlab/ci/renovate.yml"
+template = "files/gitlab/ci/renovate.yml"
+
+[params.cooldown-days]
+description = "The days that a new release of a dependency waits before a package manager or dependabot takes it"
+kind = "days"
+default = 7
+
+[params.osv-scanner-version]
+description = "The version of the image ghcr.io/google/osv-scanner that osv-scanner.yml runs"
+kind = "version"
+default = "2.2.1"
+
+[params.renovate-version]
+description = "The major version of the image renovate/renovate that renovate.yml runs"
+kind = "version"
+default = "39"

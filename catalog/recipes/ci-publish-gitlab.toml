@@ -1,0 +1,13 @@
+description = "GitLab CI: release and publish to PyPI with Trusted Publishing (OIDC, no long-lived token)"
+
+[[files]]
+path = ".gitlab-ci.yml"
+template = "files/gitlab/gitlab-ci.yml"
+
+[[files]]
+path = ".gitlab/ci/release.yml"
+template = "files/gitlab/ci/release.yml"
+
+[[files]]
+path = ".gitlab/ci/pypi.yml"
+template = "files/gitlab/ci/pypi.yml"

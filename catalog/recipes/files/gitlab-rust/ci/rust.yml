@@ -1,0 +1,26 @@
+# cargo fmt, clippy, test and doc on every push to main and every merge request, with the commands
+# of the hooks of base-rust in prek.toml.
+#
+# No branch filter: a repository that lands work as stacks has merge requests whose target is
+# another feature branch, and a gate that only runs against main leaves every intermediate merge
+# request of a stack unverified.
+rust:
+  stage: test
+  image: rust:slim
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+  before_script:
+    # A git dependency of Cargo.lock needs git, which rust:slim does not bundle.
+    - apt-get update -qq && apt-get install -qq -y --no-install-recommends git >/dev/null
+    # A rust-toolchain.toml in the repository takes precedence over stable: rustup installs the
+    # toolchain it names on the first cargo command.
+    - rustup component add rustfmt clippy
+  script:
+    - cargo fmt --all --check
+    # The flags of the hook cargo-clippy of prek.toml (CES-58, CES-123).
+    - cargo clippy --workspace --all-targets --locked -- -D warnings -W clippy::missing_errors_doc -W clippy::missing_panics_doc
+    - cargo test --workspace --locked
+    # CES-123: a link of a doc comment names an item that exists. rustdoc checks it and clippy does
+    # not, so it runs here and not in prek.
+    - RUSTDOCFLAGS="-D rustdoc::broken_intra_doc_links" cargo doc --no-deps --workspace --locked

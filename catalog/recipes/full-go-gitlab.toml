@@ -1,0 +1,2 @@
+description = "A Go module with its GitLab CI: base-go and ci-go-gitlab"
+extends = ["base-go", "ci-go-gitlab"]

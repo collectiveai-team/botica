@@ -1,0 +1,22 @@
+description = "GitLab CI: the checks of Conventional Commits and of the commit policy, and glsec"
+
+[[files]]
+path = ".gitlab-ci.yml"
+template = "files/gitlab/gitlab-ci.yml"
+
+[[files]]
+path = ".gitlab/ci/conventional-commits.yml"
+template = "files/gitlab/ci/conventional-commits.yml"
+
+[[files]]
+path = ".gitlab/ci/commit-policy.yml"
+template = "files/gitlab/ci/commit-policy.yml"
+
+[[files]]
+path = ".gitlab/ci/glsec.yml"
+template = "files/gitlab/ci/glsec.yml"
+
+[params.glsec-version]
+description = "The version of glsec that glsec.yml downloads (the equivalent of zizmor for GitLab CI)"
+kind = "version"
+default = "1.25.0"

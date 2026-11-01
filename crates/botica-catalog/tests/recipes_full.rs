@@ -15,7 +15,10 @@ fn a_full_recipe_extends_the_base_of_its_language_and_has_no_step_of_its_own() {
         .iter()
         .filter(|r| r.id.starts_with("full-"))
     {
-        let language = &recipe.id["full-".len()..];
+        // `full-<language>-gitlab` extends the same `base-<language>` as `full-<language>`: only
+        // its `ci-*` differs (`ci-<language>-gitlab` instead of `ci-<language>`).
+        let without_gitlab = recipe.id.strip_suffix("-gitlab").unwrap_or(&recipe.id);
+        let language = &without_gitlab["full-".len()..];
         assert_eq!(
             recipe.extends.first(),
             Some(&format!("base-{language}")),

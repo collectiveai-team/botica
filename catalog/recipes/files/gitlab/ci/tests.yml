@@ -1,0 +1,17 @@
+tests:
+  stage: test
+  image: ghcr.io/astral-sh/uv:0.13.3-debian-slim
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+  # The uv image has no git (needed by hatch-vcs/setuptools-scm and by prek to clone hook repos)
+  # and no CA bundle (needed by prek's HTTPS clones).
+  before_script:
+    - apt-get update -qq && apt-get install -qq -y --no-install-recommends git ca-certificates >/dev/null
+  script:
+    - uv python install
+    # --locked fails if uv.lock does not match pyproject.toml; --frozen would install the stale
+    # lock. Add --extra / --group flags here if the test suite needs optional dependencies.
+    - uv sync --locked
+    - uvx prek{{ param.prek-version.at }} run --all-files --show-diff-on-failure
+    - uv run pytest

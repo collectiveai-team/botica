@@ -1,0 +1,63 @@
+# CES-131: a merge request that breaks the public API of the package carries the label
+# breaking-change.
+#
+# griffe compares the public API of the package (the names without a leading `_`) at the head of
+# the merge request with the one at its base, without importing the code, and fails on a removed
+# object, a removed or renamed parameter, or a new parameter with no default. It does not compare
+# return types.
+#
+# With the label breaking-change on the merge request, a failure is reported as a warning and the
+# job passes; GitLab's merge request pipelines re-run on a label change. Create the label once, by
+# hand: Issues > Labels > New label, breaking-change.
+#
+# Replace `replace_me` in PACKAGE with the import name of the package, and list in SEARCH_PATHS the
+# folders that hold it; the job fails while PACKAGE is `replace_me`. The job passes without
+# comparing when the base has no such package, as in the merge request that creates it.
+api-compat-python:
+  stage: test
+  image: ghcr.io/astral-sh/uv:0.13.3-debian-slim
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  variables:
+    PACKAGE: replace_me
+    SEARCH_PATHS: "src ."
+    LABEL: breaking-change
+    GIT_DEPTH: "0"
+  # The uv image has no git, which the base lookup and griffe's --against need.
+  before_script:
+    - apt-get update -qq && apt-get install -qq -y --no-install-recommends git >/dev/null
+  script:
+    - |
+      set -eu
+      if [ "$PACKAGE" = replace_me ]; then
+        echo "Replace replace_me in PACKAGE with the import name of the package." >&2
+        exit 1
+      fi
+      BASE_SHA="$CI_MERGE_REQUEST_DIFF_BASE_SHA"
+      present=false
+      for dir in $SEARCH_PATHS; do
+        for path in "$dir/$PACKAGE" "$dir/$PACKAGE.py"; do
+          if git cat-file -e "$BASE_SHA:${path#./}" 2>/dev/null; then
+            present=true
+          fi
+        done
+      done
+      if [ "$present" = false ]; then
+        echo "The base has no package $PACKAGE in $SEARCH_PATHS; nothing to compare."
+        exit 0
+      fi
+      search=""
+      for dir in $SEARCH_PATHS; do
+        search="$search --search $dir"
+      done
+      declared=false
+      case ",$CI_MERGE_REQUEST_LABELS," in *",$LABEL,"*) declared=true ;; esac
+      if uvx griffe{{ param.griffe-version.at }} check "$PACKAGE" $search --against "$BASE_SHA"; then
+        exit 0
+      fi
+      if [ "$declared" = true ]; then
+        echo "The public API of $PACKAGE breaks, and the label $LABEL declares it."
+        exit 0
+      fi
+      echo "The public API of $PACKAGE breaks. If the break is on purpose, add the label $LABEL to the merge request." >&2
+      exit 1

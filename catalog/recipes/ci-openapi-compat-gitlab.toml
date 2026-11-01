@@ -1,0 +1,9 @@
+description = "GitLab CI: oasdiff fails a merge request that breaks the OpenAPI document of a FastAPI app, unless the merge request has the label breaking-change"
+
+[[files]]
+path = ".gitlab-ci.yml"
+template = "files/gitlab/gitlab-ci.yml"
+
+[[files]]
+path = ".gitlab/ci/openapi-compat.yml"
+template = "files/gitlab/ci/openapi-compat.yml"

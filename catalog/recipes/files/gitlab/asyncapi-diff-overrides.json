@@ -1,0 +1,27 @@
+{
+  "/channels/*/messages/*/payload/properties": {
+    "add": "non-breaking",
+    "remove": "breaking",
+    "edit": "breaking"
+  },
+  "/channels/*/messages/*/payload/properties/*": {
+    "add": "non-breaking",
+    "remove": "breaking",
+    "edit": "breaking"
+  },
+  "/channels/*/messages/*/payload/properties/*/type": {
+    "add": "breaking",
+    "remove": "breaking",
+    "edit": "breaking"
+  },
+  "/channels/*/messages/*/payload/required": {
+    "add": "non-breaking",
+    "remove": "breaking",
+    "edit": "breaking"
+  },
+  "/channels/*/messages/*/payload/required/*": {
+    "add": "non-breaking",
+    "remove": "breaking",
+    "edit": "breaking"
+  }
+}

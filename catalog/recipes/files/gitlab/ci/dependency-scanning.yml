@@ -1,0 +1,6 @@
+# CES-113's equivalent: GitLab's native Dependency Scanning, summarised on the merge request.
+# Needs GitLab Ultimate (Settings > General > Visibility shows the tier). On a tier without
+# Ultimate, this template does not run: the osv-scanner jobs of ci-python-gitlab, ci-rust-gitlab,
+# ci-node-gitlab and ci-go-gitlab already scan the lockfile on every tier, including Free.
+include:
+  - template: Jobs/Dependency-Scanning.gitlab-ci.yml

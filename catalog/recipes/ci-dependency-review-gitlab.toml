@@ -1,0 +1,9 @@
+description = "GitLab CI: dependency scanning of the merge request (the native template needs GitLab Ultimate; the osv-scanner jobs of ci-python-gitlab, ci-rust-gitlab, ci-node-gitlab and ci-go-gitlab already cover this on every tier)"
+
+[[files]]
+path = ".gitlab-ci.yml"
+template = "files/gitlab/gitlab-ci.yml"
+
+[[files]]
+path = ".gitlab/ci/dependency-scanning.yml"
+template = "files/gitlab/ci/dependency-scanning.yml"

@@ -1,0 +1,14 @@
+description = "GitLab CI: griffe fails a merge request that breaks the public API of a Python package that others import, unless the merge request has the label breaking-change"
+
+[[files]]
+path = ".gitlab-ci.yml"
+template = "files/gitlab/gitlab-ci.yml"
+
+[[files]]
+path = ".gitlab/ci/api-compat-python.yml"
+template = "files/gitlab/ci/api-compat-python.yml"
+
+[params.griffe-version]
+description = "The version of griffe that api-compat-python.yml runs with uvx (empty: the newest)"
+kind = "version"
+default = "2.4.0"

@@ -1,0 +1,25 @@
+# Self-hosted Renovate: the equivalent of Dependabot for GitLab, which has no native update bot.
+# `renovate.json` (of ci-python-gitlab, ci-rust-gitlab, ci-node-gitlab or ci-go-gitlab) holds the
+# cooldown and the automerge of patch updates; this job only runs Renovate.
+#
+# Setup, once, in the project:
+#   - a pipeline schedule (CI/CD > Schedules), weekly: .gitlab-ci.yml has no cron keyword, unlike
+#     the `schedule:` trigger of a GitHub Actions workflow.
+#   - the CI/CD variable RENOVATE_TOKEN, masked: a project or group access token with the API scope
+#     and at least the Maintainer role, so Renovate can open and auto-merge merge requests.
+# Until the schedule exists, run the job by hand (a pipeline run from the web UI).
+renovate:
+  stage: test
+  image: renovate/renovate:{{ param.renovate-version }}
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: manual
+  variables:
+    RENOVATE_PLATFORM: gitlab
+    RENOVATE_ENDPOINT: $CI_API_V4_URL
+    RENOVATE_TOKEN: $RENOVATE_TOKEN
+    RENOVATE_AUTODISCOVER: "false"
+    RENOVATE_REPOSITORIES: $CI_PROJECT_PATH
+  script:
+    - renovate

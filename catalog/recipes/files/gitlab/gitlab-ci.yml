@@ -1,0 +1,9 @@
+# Botica: this file stays thin on purpose. Each piece of CI is a job file under
+# .gitlab/ci/, included with a wildcard, so a recipe that adds a piece needs no
+# edit to this file: it only adds its own file under .gitlab/ci/.
+#
+# Every job defaults to the stage `test` (no `stages:` declared), since the
+# jobs of these recipes are independent checks, not a pipeline with sequenced
+# stages: each one plays the role of a workflow of GitHub Actions.
+include:
+  - local: ".gitlab/ci/*.yml"

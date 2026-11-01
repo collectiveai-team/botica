@@ -1,0 +1,2 @@
+description = "A TypeScript or JavaScript project with its GitLab CI: base-node and ci-node-gitlab"
+extends = ["base-node", "ci-node-gitlab"]
