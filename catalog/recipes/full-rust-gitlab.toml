@@ -1,0 +1,2 @@
+description = "A Rust crate or workspace with its GitLab CI: base-rust and ci-rust-gitlab"
+extends = ["base-rust", "ci-rust-gitlab"]

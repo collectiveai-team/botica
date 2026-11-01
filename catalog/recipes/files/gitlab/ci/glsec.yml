@@ -1,0 +1,18 @@
+# Static analysis of the GitLab CI/CD configuration with glsec, the equivalent of zizmor and
+# actionlint for GitLab CI (CI-only check: intentionally not wired into prek).
+#
+# Pinned by the parameter glsec-version of botica's recipe `ci-gitlab`: a new glsec release adds
+# checks, and an unpinned glsec would fail CI on every merge request the day one lands. Bump
+# deliberately.
+glsec:
+  stage: test
+  image: debian:bookworm-slim
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+  before_script:
+    - apt-get update -qq && apt-get install -qq -y --no-install-recommends curl ca-certificates tar >/dev/null
+  script:
+    - curl -sSLO "https://github.com/glsec/glsec/releases/download/v{{ param.glsec-version }}/glsec_{{ param.glsec-version }}_linux_amd64.tar.gz"
+    - tar xzf "glsec_{{ param.glsec-version }}_linux_amd64.tar.gz"
+    - ./glsec .

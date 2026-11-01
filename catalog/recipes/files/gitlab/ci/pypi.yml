@@ -1,0 +1,33 @@
+# Publishes the artifacts of release-build (release.yml) to PyPI with Trusted Publishing (OIDC):
+# GitLab issues a short-lived ID token, which PyPI exchanges for a short-lived upload token, so no
+# long-lived secret is stored in the project.
+#
+# The GitLab environment `release` scopes who can trigger a publish; protected environments are a
+# premium feature (GitLab Ultimate, or GitLab for Open Source). Without it, any job of this project
+# that requests the ID token can publish: protect the tag pattern `v*` at least (Settings >
+# Repository > Protected tags) and restrict who may push one.
+#
+# Setup required (one-time, on PyPI) — replace <PYPI_PROJECT_NAME> below:
+#   pypi.org -> project <PYPI_PROJECT_NAME> -> Publishing -> Add a Trusted Publisher -> GitLab:
+#     Namespace: <GITLAB_NAMESPACE>   Project: <GITLAB_PROJECT>
+#     Workflow filename: .gitlab-ci.yml   Environment: release
+# No API token or secret is needed once Trusted Publishing is set up.
+pypi-publish:
+  stage: test
+  image: ghcr.io/astral-sh/uv:0.13.3-debian-slim
+  needs: ["release-build"]
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  environment:
+    name: release
+    url: https://pypi.org/project/<PYPI_PROJECT_NAME>/
+  id_tokens:
+    PYPI_ID_TOKEN:
+      aud: pypi
+  before_script:
+    - apt-get update -qq && apt-get install -qq -y --no-install-recommends curl ca-certificates jq
+  script:
+    - |
+      set -eu
+      token=$(curl -sS -X POST "https://pypi.org/_/oidc/mint-token" -d "{\"token\":\"${PYPI_ID_TOKEN}\"}" | jq -r .token)
+      uv publish --token "$token"

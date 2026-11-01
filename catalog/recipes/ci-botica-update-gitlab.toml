@@ -1,0 +1,23 @@
+description = "GitLab CI: a weekly scheduled pipeline that moves the hooks, the jobs and the configuration to the newest release of botica (needs the CI/CD variable BOTICA_UPDATE_TOKEN and a pipeline schedule)"
+
+[[files]]
+path = ".gitlab-ci.yml"
+template = "files/gitlab/gitlab-ci.yml"
+
+[[files]]
+path = ".gitlab/ci/botica-update.yml"
+template = "files/gitlab/ci/botica-update.yml"
+
+[[files]]
+path = ".gitlab/scripts/botica_update.py"
+template = "files/gitlab/scripts/botica_update.py"
+
+[params.cooldown-days]
+description = "The days that a new release of a dependency waits before a package manager or dependabot takes it"
+kind = "days"
+default = 7
+
+[params.prek-version]
+description = "The version of prek that the workflows run with uvx (empty: the newest)"
+kind = "version"
+default = "0.5.7"

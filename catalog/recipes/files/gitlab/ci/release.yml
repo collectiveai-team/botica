@@ -1,0 +1,19 @@
+# Tag-driven (hatch-vcs): `git tag vX.Y.Z && git push origin vX.Y.Z`. Builds the sdist/wheel and
+# keeps them as job artifacts for the job `pypi-publish` of pypi.yml, which `needs` this job: a
+# failing build never reaches the publish step. Gated on a tag that looks like a release, so a
+# branch pipeline never tries to build a release.
+release-build:
+  stage: test
+  image: ghcr.io/astral-sh/uv:0.13.3-debian-slim
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  variables:
+    GIT_DEPTH: "0" # hatch-vcs needs the full history and tags to derive the version.
+  # The uv image has no git, which hatch-vcs needs.
+  before_script:
+    - apt-get update -qq && apt-get install -qq -y --no-install-recommends git >/dev/null
+  script:
+    - uv build
+  artifacts:
+    paths:
+      - dist/

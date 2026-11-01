@@ -1,0 +1,38 @@
+description = "GitLab CI for a Python project: tests, Renovate and osv-scanner"
+extends = ["ci-gitlab"]
+
+[[files]]
+path = ".gitlab/ci/tests.yml"
+template = "files/gitlab/ci/tests.yml"
+
+[[files]]
+path = ".gitlab/ci/osv-scanner.yml"
+template = "files/gitlab/ci/osv-scanner.yml"
+
+[[files]]
+path = "renovate.json"
+template = "files/gitlab/renovate.json"
+
+[[files]]
+path = ".gitlab/ci/renovate.yml"
+template = "files/gitlab/ci/renovate.yml"
+
+[params.cooldown-days]
+description = "The days that a new release of a dependency waits before a package manager or dependabot takes it"
+kind = "days"
+default = 7
+
+[params.prek-version]
+description = "The version of prek that the workflows run with uvx (empty: the newest)"
+kind = "version"
+default = "0.5.7"
+
+[params.osv-scanner-version]
+description = "The version of the image ghcr.io/google/osv-scanner that osv-scanner.yml runs"
+kind = "version"
+default = "2.2.1"
+
+[params.renovate-version]
+description = "The major version of the image renovate/renovate that renovate.yml runs"
+kind = "version"
+default = "39"

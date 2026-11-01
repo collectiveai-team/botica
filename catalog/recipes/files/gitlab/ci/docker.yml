@@ -1,0 +1,34 @@
+# Builds the runtime image and pushes it to the GitLab Container Registry:
+#   - push to the default branch -> :latest and :sha-<short>
+#   - tag vX.Y.Z                 -> :X.Y.Z
+# $CI_REGISTRY_IMAGE defaults to registry.gitlab.com/<namespace>/<project>; adjust the Dockerfile
+# path below if the image needs a build context other than the root. Add a build matrix (several
+# jobs) if you need several flavours, such as cpu and gpu.
+#
+# Unlike docker/build-push-action, this job does not sign a build provenance attestation: GitLab has
+# no Sigstore-backed attestation step as simple as actions/attest. A project that needs one adds
+# cosign by hand.
+docker:
+  stage: test
+  image: docker:27
+  services:
+    - docker:27-dind
+  rules:
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - |
+      set -eu
+      if [ -n "${CI_COMMIT_TAG:-}" ]; then
+        version="${CI_COMMIT_TAG#v}"
+        docker build -f Dockerfile -t "$CI_REGISTRY_IMAGE:$version" .
+        docker push "$CI_REGISTRY_IMAGE:$version"
+      else
+        docker build -f Dockerfile -t "$CI_REGISTRY_IMAGE:latest" -t "$CI_REGISTRY_IMAGE:sha-$CI_COMMIT_SHORT_SHA" .
+        docker push "$CI_REGISTRY_IMAGE:latest"
+        docker push "$CI_REGISTRY_IMAGE:sha-$CI_COMMIT_SHORT_SHA"
+      fi

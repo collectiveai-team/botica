@@ -1,0 +1,13 @@
+# CES-119: osv-scanner checks Cargo.lock against OSV.dev. See the comment of ci-python-gitlab's
+# osv-scanner.yml for the schedule and the tier note; this job differs only in --lockfile.
+osv-scanner:
+  stage: test
+  image:
+    name: ghcr.io/google/osv-scanner:v{{ param.osv-scanner-version }}
+    entrypoint: [""]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  script:
+    - /osv-scanner scan source --lockfile=Cargo.lock

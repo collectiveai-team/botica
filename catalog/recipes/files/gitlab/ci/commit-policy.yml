@@ -1,0 +1,28 @@
+# CES-91, on every commit of the merge request or of the push, which `git commit --no-verify` does
+# not skip.
+no-ai-coauthorship:
+  stage: test
+  image: ghcr.io/astral-sh/uv:0.13.3-debian-slim
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+  variables:
+    GIT_DEPTH: "0"
+  # The uv image has no git, which `botica lint --commits` needs to walk the range.
+  before_script:
+    - apt-get update -qq && apt-get install -qq -y --no-install-recommends git >/dev/null
+  script:
+    - |
+      if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ]; then
+        BASE_SHA="$CI_MERGE_REQUEST_DIFF_BASE_SHA"
+        HEAD_SHA="$CI_MERGE_REQUEST_SOURCE_BRANCH_SHA"
+      else
+        BASE_SHA="$CI_COMMIT_BEFORE_SHA"
+        HEAD_SHA="$CI_COMMIT_SHA"
+      fi
+      # A push that creates the branch has no commit before it: its range is the whole history.
+      range="$BASE_SHA..$HEAD_SHA"
+      if [ -z "${BASE_SHA//0/}" ]; then
+        range="$HEAD_SHA"
+      fi
+      uvx botica@{{ param.botica-version }} lint --select no-ai-coauthorship --commits "$range"

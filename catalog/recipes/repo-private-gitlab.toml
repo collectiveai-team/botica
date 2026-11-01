@@ -1,0 +1,2 @@
+description = "A private repository on GitLab: ci-gitlab, with no dependency scanning (GitLab Ultimate) and no Docker job"
+extends = ["ci-gitlab"]

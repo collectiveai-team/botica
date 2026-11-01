@@ -1,0 +1,2 @@
+description = "A public repository on GitLab: ci-gitlab, the dependency scanning and the Docker job (needs a Dockerfile)"
+extends = ["ci-gitlab", "ci-dependency-review-gitlab", "ci-docker-gitlab"]

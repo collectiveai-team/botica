@@ -1,0 +1,61 @@
+# Moves the project to the newest release of botica, once a week. `prek update` moves the `rev` of
+# the mirror collectiveai-team/botica-pre-commit to the newest release that is not a prerelease and
+# is at least {{ param.cooldown-days }} days old. `.gitlab/scripts/botica_update.py` then writes
+# that version in each `botica@<version>` of prek.toml, .pre-commit-config.yaml and .gitlab/ci/, and
+# in the parameter botica-version of the configuration of botica. The change goes to one merge
+# request on the branch chore/botica-update, which a later run updates.
+#
+# Setup, once: a pipeline schedule (CI/CD > Schedules; .gitlab-ci.yml has no cron keyword) and the
+# masked CI/CD variable BOTICA_UPDATE_TOKEN, a project access token with the api and
+# write_repository scopes and at least the Developer role. Without the secret the job fails.
+botica-update:
+  stage: test
+  image: ghcr.io/astral-sh/uv:0.13.3-debian-slim
+  timeout: 15m
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: manual
+  before_script:
+    - apt-get update -qq && apt-get install -qq -y --no-install-recommends git curl ca-certificates jq
+  script:
+    - >-
+      uvx prek{{ param.prek-version.at }} update
+      --repo https://github.com/collectiveai-team/botica-pre-commit
+      --cooldown-days {{ param.cooldown-days }}
+      --exclude-tag '*-rc*' --exclude-tag '*-beta*' --exclude-tag '*-alpha*'
+    - uv run --no-project .gitlab/scripts/botica_update.py | tee /tmp/aligned
+    - |
+      set -eu
+      version=$(head -n 1 /tmp/aligned)
+      if [ -z "${BOTICA_UPDATE_TOKEN:-}" ]; then
+        echo "the CI/CD variable BOTICA_UPDATE_TOKEN is not set" >&2
+        exit 1
+      fi
+      if git diff --quiet; then
+        echo "Every file names botica $version."
+        exit 0
+      fi
+      title="chore: botica $version"
+      body="Opened by the scheduled job \`botica-update\`: \`prek update\` moved the mirror \`collectiveai-team/botica-pre-commit\` to v$version, and \`.gitlab/scripts/botica_update.py\` wrote $version in the hooks, the jobs and the configuration.
+
+      Release notes: https://github.com/collectiveai-team/botica/releases/tag/v$version"
+      git config user.name "botica-update"
+      git config user.email "botica-update@noreply.gitlab.com"
+      git switch -c chore/botica-update
+      git commit -am "$title"
+      git push --force "https://botica-update:${BOTICA_UPDATE_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" chore/botica-update
+
+      existing=$(curl -sS --header "PRIVATE-TOKEN: ${BOTICA_UPDATE_TOKEN}" \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests?source_branch=chore/botica-update&state=opened" \
+        | jq -r '.[0].iid // empty')
+      if [ -n "$existing" ]; then
+        curl -sS --request PUT --header "PRIVATE-TOKEN: ${BOTICA_UPDATE_TOKEN}" \
+          --data-urlencode "title=$title" --data-urlencode "description=$body" \
+          "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${existing}" >/dev/null
+      else
+        curl -sS --request POST --header "PRIVATE-TOKEN: ${BOTICA_UPDATE_TOKEN}" \
+          --data-urlencode "source_branch=chore/botica-update" --data-urlencode "target_branch=${CI_DEFAULT_BRANCH}" \
+          --data-urlencode "title=$title" --data-urlencode "description=$body" \
+          "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests" >/dev/null
+      fi

@@ -170,6 +170,9 @@ version:
 | `griffe-version` | `ci-api-compat-python` | `api-compat-python.yml` | `2.4.0` |
 | `asyncapi-cli-version` | `ci-asyncapi-compat` | `asyncapi-compat.yml` | `6.2.1` |
 | `checkov-version` | `iac-terraform` | `terraform.yml` | `3.3.30` |
+| `glsec-version` | `ci-gitlab` | `.gitlab/ci/glsec.yml` | `1.25.0` |
+| `osv-scanner-version` | `ci-python-gitlab`, `ci-rust-gitlab`, `ci-node-gitlab`, `ci-go-gitlab` | `.gitlab/ci/osv-scanner.yml` | `2.2.1` |
+| `renovate-version` | `ci-python-gitlab`, `ci-rust-gitlab`, `ci-node-gitlab`, `ci-go-gitlab` | `.gitlab/ci/renovate.yml` | `39` |
 
 A hook with a `rev` has no parameter: `prek update` moves it. `prek update` leaves the other
 versions of botica as they are, and `ci-botica-update` moves them with the `rev` of the mirror.
@@ -358,6 +361,39 @@ What the recipes cannot say about themselves:
   interface"`, once per repository. A break shows on the pull request as a warning when the label is
   there, and as an error, with a failed job, when it is not. The parameters `griffe-version`
   (`2.3.2`) and `asyncapi-cli-version` (`6.2.1`) set the versions of griffe and `@asyncapi/cli`.
+
+## GitLab CI
+
+Each recipe `ci-*` that writes `.github/workflows/` has a counterpart `ci-*-gitlab` that writes
+`.gitlab-ci.yml` and `.gitlab/ci/` instead, for a project hosted on GitLab rather than GitHub:
+`ci-gitlab`, `ci-python-gitlab`, `ci-rust-gitlab`, `ci-node-gitlab`, `ci-go-gitlab`,
+`ci-docker-gitlab`, `ci-dependency-review-gitlab`, `ci-botica-update-gitlab`, `ci-publish-gitlab`,
+`ci-api-compat-python-gitlab`, `ci-asyncapi-compat-gitlab` and `ci-openapi-compat-gitlab`, with a
+`full-*-gitlab` and a `repo-*-gitlab` for each, as for GitHub. The two families never mix: a project
+names the one it is hosted on.
+
+`.gitlab-ci.yml` of `ci-gitlab` only includes `.gitlab/ci/*.yml` (`include: local:` with a wildcard),
+so a recipe that adds a piece of CI never edits a file that another recipe wrote: it only adds its
+own file under `.gitlab/ci/`, as a workflow of GitHub Actions does. Every job defaults to the stage
+`test`; the recipes declare no `stages:` because their jobs are independent checks, and `ci-publish-gitlab`
+orders its two jobs with `needs:` instead.
+
+A few pieces have no file-for-file equivalent, because GitHub Actions and GitLab CI each lean on a
+different platform feature or a different tool:
+
+| GitHub | GitLab | Why |
+| --- | --- | --- |
+| zizmor | glsec | zizmor audits the syntax of GitHub Actions; [glsec](https://github.com/glsec/glsec) is the same kind of static audit, for `.gitlab-ci.yml` |
+| Dependabot (`dependabot.yml`, `dependabot-automerge*.yml`) | Renovate (`renovate.json`, the job `renovate` of `.gitlab/ci/renovate.yml`) | GitLab has no built-in update bot; Renovate is self-hosted and holds the cooldown and the automerge of patch updates in one file, so `ci-*-gitlab` needs no separate automerge recipe |
+| `dependency-review` (free on a public repository) | `ci-dependency-review-gitlab` (native Dependency Scanning, GitLab Ultimate) | GitLab's Dependency Scanning is a paid-tier feature on every visibility; the osv-scanner job of each `ci-*-gitlab` already scans the lockfile on every tier |
+| PyPI Trusted Publishing (OIDC, `id-token: write`) | PyPI Trusted Publishing (OIDC, `id_tokens:`) | Same mechanism, different syntax; GitLab's protected environments, which scope who can publish, are a premium feature |
+| `contains(github.event.pull_request.labels.*.name, ...)` | `$CI_MERGE_REQUEST_LABELS` | GitLab exposes the labels of a merge request as a predefined variable; no API call is needed |
+
+`ci-botica-update-gitlab` needs the CI/CD variable `BOTICA_UPDATE_TOKEN` (a project access token
+with the scopes `api` and `write_repository`), the GitLab equivalent of the GitHub secret of the
+same name, and opens its merge request with the GitLab API instead of `gh pr create`.
+`ci-botica-update-gitlab` and the `osv-scanner` and `renovate` jobs need a pipeline schedule (CI/CD
+> Schedules), created by hand: `.gitlab-ci.yml` has no `cron` keyword.
 
 ## Recipes of a project
 

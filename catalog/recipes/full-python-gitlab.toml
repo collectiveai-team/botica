@@ -1,0 +1,2 @@
+description = "A Python project with its GitLab CI: base-python and ci-python-gitlab"
+extends = ["base-python", "ci-python-gitlab"]

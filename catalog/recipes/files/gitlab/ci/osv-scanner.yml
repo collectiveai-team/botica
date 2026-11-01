@@ -1,0 +1,15 @@
+# CES-119: osv-scanner checks uv.lock against OSV.dev, on every push to main, every merge request
+# and the weekly schedule (create one by hand in CI/CD > Schedules; .gitlab-ci.yml has no cron
+# keyword). A private project without GitLab Ultimate still gets this job: it is a plain CLI run,
+# not a feature of the platform.
+osv-scanner:
+  stage: test
+  image:
+    name: ghcr.io/google/osv-scanner:v{{ param.osv-scanner-version }}
+    entrypoint: [""]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  script:
+    - /osv-scanner scan source --lockfile=uv.lock

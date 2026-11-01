@@ -1,0 +1,9 @@
+# CES-75, on the title of the merge request. The title is read from an env var (never interpolated
+# into the shell) to avoid script injection.
+conventional-commits:
+  stage: test
+  image: ghcr.io/astral-sh/uv:0.13.3-debian-slim
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  script:
+    - uvx botica@{{ param.botica-version }} lint --select conventional-commits --pr-title="$CI_MERGE_REQUEST_TITLE"

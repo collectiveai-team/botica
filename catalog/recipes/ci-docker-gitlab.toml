@@ -1,0 +1,9 @@
+description = "GitLab CI: build and push an image to the GitLab Container Registry (needs a Dockerfile)"
+
+[[files]]
+path = ".gitlab-ci.yml"
+template = "files/gitlab/gitlab-ci.yml"
+
+[[files]]
+path = ".gitlab/ci/docker.yml"
+template = "files/gitlab/ci/docker.yml"
