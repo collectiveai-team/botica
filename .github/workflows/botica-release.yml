@@ -185,7 +185,7 @@ jobs:
         run: gh release download "$TAG" --pattern '*.whl' --dir dist
 
       - name: Upload to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.14.2
+        uses: pypa/gh-action-pypi-publish@v1.14.3
         with:
           packages-dir: dist/
 
