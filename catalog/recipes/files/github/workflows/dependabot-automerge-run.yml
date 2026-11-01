@@ -36,8 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: read
+      checks: read
       contents: write
       pull-requests: write
+      statuses: read
     steps:
       - name: Find the open PR for this commit
         id: pr
