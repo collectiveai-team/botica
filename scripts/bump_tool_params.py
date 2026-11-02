@@ -5,8 +5,9 @@ A parameter of `kind = "version"` of a recipe is the version of a tool that a te
 `prek update` do not see it. This script reads the package of each such parameter from the
 templates, asks PyPI (uvx) or npm (npx) for its newest stable release that is at least
 `--cooldown-days` old, the `exclude-newer` of this repository, and sets the `default` of the
-parameter to it. A default is never moved to an older version. The weekly workflow `pins.yml` runs
-it after `scripts/sync_pins.py`.
+parameter to it, in the recipe and in the row of the parameter in the table of
+`website/docs/guide/recipes.md`. A default is never moved to an older version. The weekly workflow
+`pins.yml` runs it after `scripts/sync_pins.py`.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ import cyclopts
 app = cyclopts.App(name="bump-tool-params", help=__doc__)
 
 RECIPES = "catalog/recipes"
+GUIDE = "website/docs/guide/recipes.md"
 USE = re.compile(
     r"\b(?P<runner>uvx|npx)\b[^\n]*?\s(?P<package>@?[A-Za-z0-9][\w./-]*?)@?"
     r"\{\{ *param\.(?P<name>[a-z0-9-]+)(?:\.at)? *\}\}"
@@ -77,12 +79,20 @@ def _set_default(text: str, param: str, version: str) -> str:
     return block.sub(lambda match: f"{match['head']}{version}{match['tail']}", text, count=1)
 
 
+def _set_row(text: str, param: str, version: str) -> str:
+    row = re.compile(
+        rf"^(?P<head>\| `{re.escape(param)}` \|.*\| )`[^`]*`(?P<tail> \|)$", re.MULTILINE
+    )
+    return row.sub(lambda match: f"{match['head']}`{version}`{match['tail']}", text, count=1)
+
+
 def bump(root: Path, latest: Latest, now: datetime, cooldown_days: int) -> list[str]:
-    """Set each default to the newest release past the cooldown.
+    """Set each default to the newest release past the cooldown, in its recipe and in the guide.
 
     Return one `recipe: param old -> new` line per default that moved.
     """
     before = now - timedelta(days=cooldown_days)
+    guide = root / GUIDE
     changed = []
     for tool in tools(root):
         newest = latest(tool.registry, tool.package, before)
@@ -92,6 +102,8 @@ def bump(root: Path, latest: Latest, now: datetime, cooldown_days: int) -> list[
             continue
         text = tool.recipe.read_text(encoding="utf-8")
         tool.recipe.write_text(_set_default(text, tool.param, newest), encoding="utf-8")
+        table = guide.read_text(encoding="utf-8")
+        guide.write_text(_set_row(table, tool.param, newest), encoding="utf-8")
         old = tool.default or '""'
         changed.append(
             f"{tool.recipe.relative_to(root).as_posix()}: {tool.param} {old} -> {newest}"
