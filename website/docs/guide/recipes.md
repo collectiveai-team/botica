@@ -290,7 +290,13 @@ What the recipes cannot say about themselves:
   private repository on Enterprise Cloud. `ci-automerge-public` needs the
   setting "Allow auto-merge" and a branch protection rule with required checks; without a required
   check the merge is immediate. `ci-automerge-private` is for a repository with no branch protection
-  (a private one on the Free plan).
+  (a private one on the Free plan). Both merge a minor or major update that fixes an open security
+  alert only when they can read the alerts: they need a GitHub App with the repository permissions
+  "Dependabot alerts: read" and "Pull requests: read", installed on the repository, with its app ID
+  in the variable `DEPENDABOT_APP_ID` and its private key in the secret
+  `DEPENDABOT_APP_PRIVATE_KEY`. Set at the level of the organization, the two serve every
+  repository on which the App is installed; a private repository on the Free plan cannot read the
+  secrets and variables of the organization, so it sets them itself.
 - The template of `pyproject.toml` of `base-python` has `readme = "README.md"`, so `uv add` fails
   to build a project that has no `README.md`.
 - `base-python` appends `[tool.uv]` with `exclude-newer = "7 days"` to `pyproject.toml` (CES-128).
