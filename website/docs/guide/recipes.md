@@ -167,7 +167,7 @@ version:
 | `pyrefly-version` | `base-python` | `prek.toml` | `1.4.0` |
 | `deptry-version` | `base-python` | `prek.toml` | `0.25.1` |
 | `falsegreen-version` | `python-test-smells` | `prek.toml` | `0.9.2` |
-| `griffe-version` | `ci-api-compat-python` | `api-compat-python.yml` | `2.4.0` |
+| `griffe-version` | `ci-api-compat-python` | `api-compat-python.yml` | `2.4.1` |
 | `asyncapi-cli-version` | `ci-asyncapi-compat` | `asyncapi-compat.yml` | `6.2.1` |
 | `checkov-version` | `iac-terraform` | `terraform.yml` | `3.3.30` |
 | `glsec-version` | `ci-gitlab` | `.gitlab/ci/glsec.yml` | `1.25.0` |

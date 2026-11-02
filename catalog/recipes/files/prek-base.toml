@@ -1,7 +1,7 @@
 # MARK: uv-lock
 [[repos]]
 repo = "https://github.com/astral-sh/uv-pre-commit"
-rev = "0.13.3"
+rev = "0.13.5"
 hooks = [{ id = "uv-lock", priority = 0 }]
 
 # MARK: pre-commit-hooks
