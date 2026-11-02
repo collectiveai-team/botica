@@ -1,0 +1,94 @@
+name: dependabot-automerge-label
+
+# Decides whether a Dependabot PR is "easy" (a patch update or a fix for an open
+# security alert) and labels it `automerge`, creating the label when the
+# repository lacks it. It never merges anything itself:
+# dependabot-automerge-run.yml merges, and this repository cannot use GitHub's
+# native auto-merge (see that file).
+#
+# `pull_request_target` (not `pull_request`) is required: fetch-metadata needs
+# write access to label the PR, and a Dependabot `pull_request` run gets a
+# read-only token with no secrets. This workflow only reads PR metadata and
+# applies a label; it never checks out or runs the code of the PR, so the
+# elevated token is not exposed to untrusted input.
+#
+# `dependency-type` is not used: it is derived from dependency-group
+# membership, so a package that a group re-lists is reported as
+# `direct:development` even when it is also a production dependency.
+#
+# The copy of `catalog/recipes/files/github/workflows/dependabot-automerge-label.yml`
+# that the recipe `ci-automerge-private` installs.
+
+on:
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
+
+concurrency:
+  group: dependabot-automerge-label-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  label:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      # alert-lookup needs a token that reads the Dependabot alerts, which the
+      # default GITHUB_TOKEN cannot. The token comes from a GitHub App with the
+      # repository permissions "Dependabot alerts: read" and "Pull requests:
+      # read", installed on this repository: its app ID in the variable
+      # DEPENDABOT_APP_ID and its private key in the secret
+      # DEPENDABOT_APP_PRIVATE_KEY, both at the level of the organization or of
+      # the repository. A personal access token in the secret
+      # DEPENDABOT_METADATA_TOKEN works as well. With neither, the job does not
+      # look up alerts, and patch updates still merge. The input is `app-id`, not
+      # `client-id`: actionlint 1.7.12 does not know `client-id`.
+      - name: Create a token of the GitHub App
+        id: app-token
+        if: vars.DEPENDABOT_APP_ID != ''
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.DEPENDABOT_APP_ID }}
+          private-key: ${{ secrets.DEPENDABOT_APP_PRIVATE_KEY }}
+          permission-pull-requests: read
+          permission-vulnerability-alerts: read
+
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v3
+        with:
+          github-token: ${{ steps.app-token.outputs.token || secrets.DEPENDABOT_METADATA_TOKEN || github.token }}
+          alert-lookup: ${{ steps.app-token.outputs.token != '' || secrets.DEPENDABOT_METADATA_TOKEN != '' }}
+
+      - name: Decide whether this update is "easy"
+        id: gate
+        env:
+          ALERT_STATE: ${{ steps.metadata.outputs.alert-state }}
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+        run: |
+          if [ "$ALERT_STATE" = "OPEN" ]; then
+            reason="open security alert"
+          elif [ "$UPDATE_TYPE" = "version-update:semver-patch" ]; then
+            reason="patch update"
+          else
+            reason=""
+          fi
+          echo "reason=$reason" >> "$GITHUB_OUTPUT"
+
+      - name: Label / unlabel
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          REASON: ${{ steps.gate.outputs.reason }}
+        run: |
+          if [ -n "$REASON" ]; then
+            echo "Marking as auto-mergeable: $REASON"
+            # `gh pr edit --add-label` fails when the label does not exist.
+            gh label create automerge --repo "$REPO" --description "Dependabot update that merges on its own" || true
+            gh pr edit "$PR_URL" --repo "$REPO" --add-label automerge
+          else
+            gh pr edit "$PR_URL" --repo "$REPO" --remove-label automerge || true
+          fi
