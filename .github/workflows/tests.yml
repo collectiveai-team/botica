@@ -30,7 +30,7 @@ jobs:
         # An exact tag: setup-uv publishes no major tag since v8.0.0.
         uses: astral-sh/setup-uv@v10.3.2
         with:
-          version: "0.13.3"
+          version: "0.13.5"
           enable-cache: true
 
       # Uses the version pinned by .python-version / pyproject.toml.

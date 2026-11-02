@@ -58,7 +58,7 @@ jobs:
         # An exact tag: setup-uv publishes no major tag since v8.0.0.
         uses: astral-sh/setup-uv@v10.3.2
         with:
-          version: "0.13.3"
+          version: "0.13.5"
           enable-cache: false
 
       # `ruff linter` lists the rules the catalog is checked against. Pinned to the version the
@@ -107,7 +107,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.3.2
         with:
-          version: "0.13.3"
+          version: "0.13.5"
           enable-cache: false
 
       # The topics with a Node package run their tests with the type stripping of Node 24.
@@ -138,7 +138,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.3.2
         with:
-          version: "0.13.3"
+          version: "0.13.5"
           enable-cache: false
 
       - name: Check the contract of the rules and the standards the change touches
