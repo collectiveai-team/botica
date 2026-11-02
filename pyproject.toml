@@ -57,7 +57,7 @@ dev = [
 # versions are fixed: they are the ones the code is written and tested against, and
 # `scripts/check_references.sh` runs with this group.
 references = [
-  "alembic==1.20.0",
+  "alembic==1.20.1",
   "blockbuster==1.5.29",
   "fastapi==0.153.0",
   "httpx==0.28.1",
