@@ -30,7 +30,7 @@ pub fn run(args: &ExplainArgs) -> Result<()> {
         Some(path) => path.display().to_string(),
         None => "none (the defaults apply)".to_owned(),
     };
-    let mut out = std::io::stdout().lock();
+    let mut out = crate::output::stdout();
     let code_dirs = registry::uses_code_dirs(&entry.rule.id).then(|| project.describe_code_dirs());
     let since = Catalog::embedded()?.lifecycle(&entry.rule).since;
     let shown = Shown {

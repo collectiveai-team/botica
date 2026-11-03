@@ -157,7 +157,7 @@ pub fn run(args: &RefsArgs) -> Result<ExitCode> {
 
 fn list(collection: &Collection) -> Result<ExitCode> {
     let topics = collection.loaded()?;
-    let mut out = std::io::stdout().lock();
+    let mut out = crate::output::stdout();
     let blocks: Vec<String> = topics
         .topics()
         .iter()
@@ -220,7 +220,7 @@ fn show(collection: &Collection, key: &str) -> Result<ExitCode> {
     for topic in topics_of(collection, key)? {
         text.push_str(&topic_text(collection, topic)?);
     }
-    write!(std::io::stdout().lock(), "{text}")?;
+    write!(crate::output::stdout(), "{text}")?;
     Ok(ExitCode::SUCCESS)
 }
 

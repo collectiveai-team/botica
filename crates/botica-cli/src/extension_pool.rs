@@ -3,6 +3,7 @@
 //! rule's own. `lint` starts the process of a rule, sends it the files and ends it; the server
 //! keeps it for the session of an editor.
 
+use crate::output::eprintln;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;

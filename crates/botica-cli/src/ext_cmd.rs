@@ -34,7 +34,7 @@ pub fn run(args: &ExtArgs) -> Result<ExitCode> {
     let ExtCommand::Sync(sync) = &args.command;
     let project = project::load(&sync.project)?;
     let launcher = Launcher::of(&project);
-    let mut out = std::io::stdout().lock();
+    let mut out = crate::output::stdout();
     let mut failed = false;
     for entry in project.resolution.entries().iter().filter(|e| e.active) {
         let rule = &entry.rule;

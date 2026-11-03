@@ -5,6 +5,7 @@ mod natives;
 mod paths;
 mod policy;
 
+use crate::output::eprintln;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;

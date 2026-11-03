@@ -8,6 +8,7 @@ mod extension_python;
 mod extension_python_sdk;
 mod judgment;
 mod lint_cmd;
+mod output;
 mod project;
 mod recipes_check;
 mod recipes_check_fragments;
@@ -81,7 +82,11 @@ enum Command {
 }
 
 fn main() -> ExitCode {
-    let result = match Cli::parse().command {
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(error) => return usage(error),
+    };
+    let result = match cli.command {
         Command::Lint(args) => lint_cmd::run(args),
         Command::Rules(args) => rules_cmd::run(&args),
         Command::Explain(args) => explain_cmd::run(&args).map(|()| ExitCode::SUCCESS),
@@ -90,11 +95,22 @@ fn main() -> ExitCode {
         Command::Server(args) => server_cmd::run(args).map(|()| ExitCode::SUCCESS),
         Command::Ext(args) => ext_cmd::run(&args),
     };
-    match result {
+    let code = match result {
         Ok(code) => code,
         Err(error) => {
-            eprintln!("botica: {error:#}");
+            output::print_stderr(format_args!("botica: {error:#}\n"));
             ExitCode::from(2)
         }
+    };
+    output::finish(code)
+}
+
+fn usage(error: clap::Error) -> ExitCode {
+    if let Err(cause) = error.print() {
+        if !error.use_stderr() && cause.kind() != std::io::ErrorKind::BrokenPipe {
+            output::print_stderr(format_args!("botica: {cause}\n"));
+            return ExitCode::from(2);
+        }
     }
+    ExitCode::from(error.exit_code() as u8)
 }

@@ -16,7 +16,7 @@ pub fn run(collection: &Collection) -> Result<ExitCode> {
         topics.push(topic_json(collection, topic)?);
     }
     let text = serde_json::to_string_pretty(&json!({ "topics": topics }))?;
-    writeln!(std::io::stdout().lock(), "{text}")?;
+    writeln!(crate::output::stdout(), "{text}")?;
     Ok(ExitCode::SUCCESS)
 }
 

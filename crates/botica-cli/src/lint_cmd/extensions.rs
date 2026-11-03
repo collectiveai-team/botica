@@ -12,6 +12,7 @@ use botica_ext::TimedOut;
 
 use super::{LintArgs, Setup};
 use crate::extension_pool::own_findings;
+use crate::output::eprintln;
 use crate::project;
 use crate::{extension, timings};
 

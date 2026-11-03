@@ -1,4 +1,5 @@
 use super::{Diff, LintArgs, Setup};
+use crate::output::eprintln;
 use crate::rules;
 use anyhow::Result;
 use botica_core::cache::{lint_files_cached, Cache};

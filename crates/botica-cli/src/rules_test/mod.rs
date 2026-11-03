@@ -4,6 +4,7 @@
 mod abide;
 mod expected;
 
+use crate::output::println;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
