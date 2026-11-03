@@ -50,14 +50,6 @@ botica explain no-utils        # one rule: what it asks, how it is built, how it
 `botica lint` exits with 0 when no finding is an error, with 1 when one is, and with 2 when the run
 itself fails. [Lint](guide/lint.md) lists the options.
 
-### Pipes
-
-When a consumer such as `head` closes stdout, botica discards the remaining output and finishes
-the command with its usual exit code. Closing the pipe does not cancel an installation or turn
-findings into success. Other stdout write errors fail the command with exit code 2. Diagnostic
-writes to stderr are best-effort and do not change the command's result. This policy applies to
-CLI output; `botica server` uses stdout for its editor protocol.
-
 ## Set up a repository
 
 From the root of the repository, with [`uv`](https://docs.astral.sh/uv/) on the `PATH`, and

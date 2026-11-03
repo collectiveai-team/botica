@@ -49,7 +49,8 @@ new`, `conform` and `test`.
 
 Exit code: `0` clean (a warning does not fail the run), `1` a finding of severity error, `2`
 the run itself failed (it wins over `1`). `--fail-on warning` (or `info`, `hint`) lowers the
-severity that exits with `1`. `--exit-zero` forgives only the findings.
+severity that exits with `1`. `--exit-zero` forgives only the findings. Piped into a command
+that stops reading early, such as `head`, botica stops writing and exits with the same code.
 
 ## Rules
 
