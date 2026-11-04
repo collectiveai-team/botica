@@ -1,9 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": [
-    "opencode-sessions-explorer",
-    "opencode-varlock@latest"
-  ],
   "permission": {
     "external_directory": {
       "~/.local/share/opencode/**": "allow"
