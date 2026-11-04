@@ -1,5 +1,6 @@
 //! `botica recipe install`: prepare the repository with the steps of one or more recipes.
 
+use crate::output::{eprintln, println};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;

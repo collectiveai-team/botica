@@ -1,6 +1,7 @@
 //! `botica refs update`: follows the anchor of each external reference to the head of its
 //! repository and proposes the commit and the lines, or writes them.
 
+use crate::output::{eprintln, println};
 use std::collections::HashMap;
 use std::fs;
 use std::process::ExitCode;

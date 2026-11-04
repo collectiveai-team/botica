@@ -1,5 +1,6 @@
 //! `botica refs pin`: a permalink of GitHub becomes a reference of a topic of the project.
 
+use crate::output::{eprintln, println};
 use std::fmt::Write as _;
 use std::fs;
 use std::io::ErrorKind;

@@ -1,4 +1,5 @@
 use crate::extension_pool::{ExtensionPool, Launcher};
+use crate::output::eprintln;
 use crate::{extension, project, rules, timings};
 use anyhow::{Context, Result};
 use botica_astgrep::Tuning;
@@ -517,8 +518,7 @@ fn write_report(
         rules: &rules,
         tool_version: env!("CARGO_PKG_VERSION"),
     };
-    let stdout = std::io::stdout();
-    let mut out = std::io::BufWriter::new(stdout.lock());
+    let mut out = std::io::BufWriter::new(crate::output::stdout());
     if args.statistics {
         report::statistics::write(&report, format, &mut out)?;
     } else {

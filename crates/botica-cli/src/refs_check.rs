@@ -1,3 +1,4 @@
+use crate::output::{eprintln, println};
 use std::process::ExitCode;
 
 use botica_catalog::{Origin, References, Topic, REFERENCES_DIR, TOPIC_FILE};

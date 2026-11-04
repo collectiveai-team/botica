@@ -1,6 +1,7 @@
 //! `botica rules conform`: runs each rule of a catalog over its fixtures, with and without each
 //! optimisation, through this same binary.
 
+use crate::output::println;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 

@@ -10,6 +10,7 @@ use botica_config::Reason;
 use botica_core::{recipe_conflict, walk};
 
 use crate::lint_cmd::recipe_conflict::conflicts;
+use crate::output::{eprintln, println};
 use crate::project::ProjectArgs;
 use crate::recipes_check_fragments as fragments;
 use crate::recipes_check_steps as steps;

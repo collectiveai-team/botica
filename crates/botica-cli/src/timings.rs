@@ -1,3 +1,4 @@
+use crate::output::eprintln;
 use std::time::Duration;
 
 use botica_core::RuleTime;
