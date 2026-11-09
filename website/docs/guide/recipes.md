@@ -169,7 +169,7 @@ version:
 | `falsegreen-version` | `python-test-smells` | `prek.toml` | `0.9.2` |
 | `griffe-version` | `ci-api-compat-python` | `api-compat-python.yml` | `2.4.1` |
 | `asyncapi-cli-version` | `ci-asyncapi-compat` | `asyncapi-compat.yml` | `6.2.3` |
-| `checkov-version` | `iac-terraform` | `terraform.yml` | `3.4.1` |
+| `checkov-version` | `iac-terraform` | `terraform.yml` | `3.4.2` |
 | `glsec-version` | `ci-gitlab` | `.gitlab/ci/glsec.yml` | `1.25.0` |
 | `osv-scanner-version` | `ci-python-gitlab`, `ci-rust-gitlab`, `ci-node-gitlab`, `ci-go-gitlab` | `.gitlab/ci/osv-scanner.yml` | `2.2.1` |
 | `renovate-version` | `ci-python-gitlab`, `ci-rust-gitlab`, `ci-node-gitlab`, `ci-go-gitlab` | `.gitlab/ci/renovate.yml` | `39` |

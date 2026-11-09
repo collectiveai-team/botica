@@ -19,7 +19,7 @@ default = "0.76.1"
 [params.checkov-version]
 description = "The release of checkov that the workflow terraform.yml runs with uvx"
 kind = "version"
-default = "3.4.1"
+default = "3.4.2"
 
 [params.prek-version]
 description = "The version of prek that the workflows run with uvx (empty: the newest)"
