@@ -56,7 +56,7 @@ jobs:
           fi
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           version: "0.13.5"
           enable-cache: false
@@ -116,7 +116,7 @@ jobs:
 
       - name: Install uv
         if: matrix.check == 'native'
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           version: "0.13.5"
           enable-cache: false
@@ -208,7 +208,7 @@ jobs:
           persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           version: "0.13.5"
           enable-cache: false
@@ -262,7 +262,7 @@ jobs:
           persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           version: "0.13.5"
           enable-cache: false
@@ -306,7 +306,7 @@ jobs:
           echo "BRANCH=$branch" >> "$GITHUB_ENV"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           version: "0.13.5"
           enable-cache: false
