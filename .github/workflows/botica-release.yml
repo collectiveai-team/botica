@@ -58,7 +58,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.3.3
         with:
-          version: "0.13.5"
+          version: "0.13.6"
           enable-cache: false
 
       - name: Check that the history seals every status of the catalog
@@ -118,7 +118,7 @@ jobs:
         if: matrix.check == 'native'
         uses: astral-sh/setup-uv@v10.3.3
         with:
-          version: "0.13.5"
+          version: "0.13.6"
           enable-cache: false
 
       # The wheel alone, from dist/: --no-index keeps a botica on PyPI from standing in for it.
@@ -210,7 +210,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.3.3
         with:
-          version: "0.13.5"
+          version: "0.13.6"
           enable-cache: false
 
       - name: Wait for the wheel on PyPI
@@ -264,7 +264,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.3.3
         with:
-          version: "0.13.5"
+          version: "0.13.6"
           enable-cache: false
 
       # The runner of this job can reach a node of the CDN of PyPI that still serves the index
@@ -308,7 +308,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.3.3
         with:
-          version: "0.13.5"
+          version: "0.13.6"
           enable-cache: false
 
       - name: Point the docs at the mirror

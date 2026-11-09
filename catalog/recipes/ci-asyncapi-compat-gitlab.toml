@@ -15,4 +15,4 @@ template = "files/gitlab/asyncapi-diff-overrides.json"
 [params.asyncapi-cli-version]
 description = "The version of @asyncapi/cli that asyncapi-compat.yml runs with npx (empty: the newest)"
 kind = "version"
-default = "6.2.1"
+default = "6.2.3"

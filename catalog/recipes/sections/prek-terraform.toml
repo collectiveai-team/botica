@@ -7,7 +7,7 @@
 # of .tflint.hcl and .trivyignore start at the root of the repository.
 [[repos]]
 repo = "https://github.com/antonbabenko/pre-commit-terraform"
-rev = "v1.109.3"
+rev = "v1.109.4"
 
 [[repos.hooks]]
 id = "terraform_fmt"

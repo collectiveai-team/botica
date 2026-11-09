@@ -19,12 +19,12 @@ default = "0.76.1"
 [params.checkov-version]
 description = "The release of checkov that the workflow terraform.yml runs with uvx"
 kind = "version"
-default = "3.3.30"
+default = "3.4.1"
 
 [params.prek-version]
 description = "The version of prek that the workflows run with uvx (empty: the newest)"
 kind = "version"
-default = "0.5.7"
+default = "0.5.9"
 
 [[files]]
 path = ".tflint.hcl"

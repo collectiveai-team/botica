@@ -1,7 +1,7 @@
 # MARK: uv-lock
 [[repos]]
 repo = "https://github.com/astral-sh/uv-pre-commit"
-rev = "0.13.5"
+rev = "0.13.6"
 hooks = [{ id = "uv-lock", priority = 0 }]
 
 # MARK: pre-commit-hooks
@@ -83,7 +83,7 @@ hooks = [
 # MARK: ruff-format
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "v0.17.2"
+rev = "v0.17.3"
 
 [[repos.hooks]]
 id = "ruff-format"
@@ -160,7 +160,7 @@ priority = 2
 # the rules are wrong on purpose.
 [[repos]]
 repo = "https://github.com/agent-sh/agnix"
-rev = "v0.59.3"
+rev = "v0.60.3"
 hooks = [{ id = "agnix", args = [], priority = 2, exclude = "^catalog/rules/.*/fixtures/" }]
 
 # MARK: botica
