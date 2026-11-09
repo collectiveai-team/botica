@@ -63,7 +63,7 @@ references = [
   "httpx==0.28.1",
   "hypothesis==6.170.5",
   "prefect==3.8.8",
-  "pydantic==2.14.1",
+  "pydantic==2.14.2",
   "pydantic-ai-slim==2.58.0",
   "pydantic-settings==2.16.1",
   "pyjwt[crypto]==2.15.1",
