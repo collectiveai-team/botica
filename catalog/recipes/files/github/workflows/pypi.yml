@@ -45,9 +45,9 @@ jobs:
 
       - name: Install uv
         # An exact tag: setup-uv publishes no major tag since v8.0.0.
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@v10.3.3
         with:
-          version: "0.13.5"
+          version: "0.13.6"
           # Cache disabled in the publish job: it runs with id-token: write
           # (OIDC Trusted Publishing), so a poisoned cache could taint it.
           enable-cache: false

@@ -163,13 +163,13 @@ version:
 | `jscpd-version` | `base` | `prek.toml` | `5.4.2` |
 | `abide-version` | `base` | `abide.yml` | `0.0.11` |
 | `zizmor-version` | `ci` | `zizmor.yml` | `1.31.1` |
-| `prek-version` | `ci-python`, `ci-botica-update`, `iac-terraform` | `tests.yml`, `botica-update.yml`, `terraform.yml` | `0.5.7` |
+| `prek-version` | `ci-python`, `ci-botica-update`, `iac-terraform` | `tests.yml`, `botica-update.yml`, `terraform.yml` | `0.5.9` |
 | `pyrefly-version` | `base-python` | `prek.toml` | `1.4.0` |
 | `deptry-version` | `base-python` | `prek.toml` | `0.25.1` |
 | `falsegreen-version` | `python-test-smells` | `prek.toml` | `0.9.2` |
 | `griffe-version` | `ci-api-compat-python` | `api-compat-python.yml` | `2.4.1` |
-| `asyncapi-cli-version` | `ci-asyncapi-compat` | `asyncapi-compat.yml` | `6.2.1` |
-| `checkov-version` | `iac-terraform` | `terraform.yml` | `3.3.30` |
+| `asyncapi-cli-version` | `ci-asyncapi-compat` | `asyncapi-compat.yml` | `6.2.3` |
+| `checkov-version` | `iac-terraform` | `terraform.yml` | `3.4.1` |
 | `glsec-version` | `ci-gitlab` | `.gitlab/ci/glsec.yml` | `1.25.0` |
 | `osv-scanner-version` | `ci-python-gitlab`, `ci-rust-gitlab`, `ci-node-gitlab`, `ci-go-gitlab` | `.gitlab/ci/osv-scanner.yml` | `2.2.1` |
 | `renovate-version` | `ci-python-gitlab`, `ci-rust-gitlab`, `ci-node-gitlab`, `ci-go-gitlab` | `.gitlab/ci/renovate.yml` | `39` |

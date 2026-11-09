@@ -25,7 +25,7 @@ default = 7
 [params.prek-version]
 description = "The version of prek that the workflows run with uvx (empty: the newest)"
 kind = "version"
-default = "0.5.7"
+default = "0.5.9"
 
 [params.osv-scanner-version]
 description = "The version of the image ghcr.io/google/osv-scanner that osv-scanner.yml runs"

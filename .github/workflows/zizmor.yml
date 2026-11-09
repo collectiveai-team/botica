@@ -28,7 +28,7 @@ jobs:
         # An exact tag: setup-uv publishes no major tag since v8.0.0.
         uses: astral-sh/setup-uv@v10.3.3
         with:
-          version: "0.13.5"
+          version: "0.13.6"
           enable-cache: true
 
       # --strict-collection: without it, an input that fails schema validation is
