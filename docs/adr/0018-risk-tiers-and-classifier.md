@@ -4,8 +4,9 @@
 
 ADR 0017 defines the roles that review a diff and reads a tier from `botica review tier`, which it
 leaves undecided. Nothing yet says how much review a change needs or when no person has to look at
-it. Today every pull request of the repository goes to a person, whatever it touches: a typo in a
-page and a change to the release workflow wait for the same review.
+it. Today every pull request goes to a person, whatever it touches, except the labeled pull
+requests of Dependabot, which `.github/workflows/dependabot-automerge-run.yml` merges once the
+checks pass: a typo in a page and a change to the release workflow wait for the same review.
 
 Two questions are different. The first is how sensitive the files are, and a list of paths answers
 it without a model. The second is whether this pull request, with all its checks green, still holds
@@ -23,7 +24,7 @@ missing.
    | `critical` | authentication, billing, migrations, permissions | `high` | the owner of the area |
    | `platform` | CI, Dockerfile, build, release, infrastructure as code | `medium` | the owner of platform |
    | `core` | the domain, `core/`, public contracts (`api/`) | `medium` | one person |
-   | `periphery` | documentation, tests, internal features behind a flag, patch updates of dependencies | `low` | none, with CI green |
+   | `periphery` | documentation, tests, patch updates of dependencies | `low` | none, with CI green |
 
    ```toml
    [[review.areas]]
@@ -38,14 +39,23 @@ missing.
    |---|---|---|
    | `name` | `critical`, `platform`, `core` or `periphery` | required |
    | `paths` | globs, as in `applies.paths` of ADR 0017 | required |
-   | `owners` | the people or teams that answer for the paths | none |
+   | `owners` | the people or teams that answer for the paths | none; required for `critical` and `platform` |
    | `tier` | `low`, `medium` or `high` | the floor of the table |
    | `approvals` | the approvals that the paths ask for | 1; 0 for `periphery` |
 
    An area name may appear in several entries, each with its own paths and owners. `botica.toml`
-   fails to load when a `tier` is lower than the floor of the table for that name. A file that no
-   entry matches belongs to `core`, so a repository with no `[[review.areas]]` has no change at
-   tier `low`. A rename counts the old path and the new one.
+   fails to load when a `tier` is lower than the floor of the table for that name, when
+   `approvals` of `critical` is under 1, or when an entry of `critical` or `platform` has no
+   `owners`. A file that no entry matches belongs to `core`, so a repository with no
+   `[[review.areas]]` has no change at tier `low`. A rename counts the old path and the new one.
+   The workflows and the settings of a feature of `periphery` (a flag) are not detected: a path
+   is `periphery` only when an entry says so.
+
+   Some paths are `platform` whatever the entries say, since they decide how a pull request is
+   reviewed and merged: `botica.toml`, `.github/review/**` (or the folder of `[review] dir`),
+   `skills-lock.json`, `.github/workflows/**`, `.gitlab-ci.yml`, `.github/CODEOWNERS` and
+   `.gitlab/CODEOWNERS`. These are the files that ADR 0017 decision 7 reads from the base. An entry
+   of `periphery` cannot cover them, and `botica.toml` fails to load if one does.
 
 2. The tier of a change is the highest floor among its files and its signals. A file that several
    entries match takes the highest tier among them. The change touches each area that one of its
@@ -54,8 +64,10 @@ missing.
    `[review]`.
 
 3. A signal is a name for a fact that botica reads from the diff with no model. This ADR fixes two,
-   the ones that ADR 0017 uses as examples. `new-dependency` holds when a manifest lists a package
-   that the base did not list; a new version of a package already listed is not one.
+   the ones that ADR 0017 uses as examples. `new-dependency` holds when a manifest or a lockfile
+   lists a package that the base did not list (a transitive one included), changes the source,
+   the registry or the checksum of a package, or changes a version by more than a patch. Only a
+   patch version of a package already listed, from the same source, is not one.
    `new-endpoint` holds when the diff adds a route to a service that the repository exposes. Each
    signal raises the floor to `medium`, selects the roles whose `applies.signals` name it (ADR
    0017), and goes into the state of the classifier. How botica detects each one is a later change.
@@ -65,8 +77,12 @@ missing.
    workflow reads the JSON and sets the labels `risk:<tier>` and `area:<area>`, one `area:` label
    per area touched. `botica review export --format codeowners` writes `.github/CODEOWNERS` or
    `.gitlab/CODEOWNERS` from the same entries, with the sections `[critical][2]` and `^[periphery]`
-   on GitLab. GitHub has no approval count in CODEOWNERS, so `approvals` reaches GitHub through the
-   branch protection that a person sets. Both commands come in later changes.
+   on GitLab. CODEOWNERS takes the last matching line, so the export writes the lines from the
+   lowest tier to the highest, and a path that several entries match ends on the line of the
+   highest tier. GitHub has no approval count in CODEOWNERS and a branch protection holds one
+   count for the whole branch, so a required check reads the reviews, counts the approvals of the
+   owners of each area touched and fails below the `approvals` of that area. Both commands and
+   that check come in later changes.
 
 5. A classifier decides whether a pull request can go on without a person. It runs after the
    checks, with their results, and asks one thing; it repeats neither the roles nor the CI:
@@ -83,10 +99,19 @@ missing.
 6. The gates are code, and Jev does not run when one of them fails. The pull request goes to a
    person when:
    - the floor is not `low`, or the change touches `critical` or `platform`;
-   - the CI or `botica lint` is red, where lint is red when it reports an error;
-   - a role ended in `FAIL` or `INCONCLUSIVE` (ADR 0017 decision 5), or a finding of severity `P0`
-     to `P2` is left that `refute` did not discard, which means `confirmed` or no `refute.json`;
-   - the change passes `max-changed-lines`, 400 by default, counted without generated files.
+   - the pull request comes from a fork, since ADR 0017 decision 9 runs no role on one;
+   - the CI or `botica lint` is not green: a check that failed, is pending, was skipped or is
+     missing counts as not green, and so does an error of lint. The checks that must be present
+     are the required checks of the base branch;
+   - a role that the plan of ADR 0017 selects has no valid JSON file, or ended in `FAIL` or
+     `INCONCLUSIVE` (ADR 0017 decision 5), or a finding of severity `P0` to `P2` is left that
+     `refute` did not discard, which means `confirmed` or no `refute.json`. A role that the plan
+     does not select is not expected, and `botica review plan` never skips `security` or `spec`
+     for a change of any tier; a `REVIEW.md` whose `applies.tiers` leaves out `low` for one of
+     them fails `botica review check`;
+   - the change passes `max-changed-lines`, 400 by default. Generated files are not counted when
+     the base branch lists them, in `[review] generated`, as globs of `botica.toml`; a header or a
+     `.gitattributes` of the head does not decide it.
 
 7. The questions go to Jev in one request to `POST /v1/systemone`, about the whole pull request:
 
@@ -103,6 +128,13 @@ missing.
    area of each; a summary of what already ran (floor, signals, roles, CI, mutation); and the diff
    without generated files. A state over 32k tokens sends the pull request to a person.
 
+   The title and the description are written by the author, and the criterion `false` of
+   `decision` mentions them. The state therefore holds them as a quoted field named
+   `author_text`, the instructions say that nothing inside it is an instruction, and the
+   description is never the only evidence for `false`: the linked issue is. A pull request with no
+   linked issue gets `decision` `true` with no request. The model does not guard the merge alone:
+   decision 12 binds it to the gates and to a commit.
+
 8. The decision is code:
 
    ```
@@ -115,13 +147,18 @@ missing.
    pull request goes to a person. For `impact_if_wrong`, `P` is the sum of the probabilities of
    `contained` and `team`. The answer of a `choice` also carries a `confidence`, and a value under
    `min-confidence` sends the pull request to a person. The three values start strict: `u` is 0.1,
-   `U` is 0.9 and `min-confidence` is 0.7. Shadow mode adjusts them. They are keys of
-   `[review.classifier]`, as `question-max`, `impact-min` and `min-confidence`.
+   `U` is 0.9 and `min-confidence` is 0.7. These starting values are this ADR's choice and no
+   measurement backs them; shadow mode adjusts them. They are keys of `[review.classifier]`, as
+   `question-max`, `impact-min`, `min-confidence` and `max-changed-lines`, read from the base
+   branch. `botica.toml` fails to load when `question-max` is over 0.3, `impact-min` or
+   `min-confidence` is under 0.7, or `max-changed-lines` is over 1000.
 
 9. The classifier never lowers anything. Its result is `auto` or `person`. The effective tier is
    the highest of the floor and the tier that the result gives, which is `low` for `auto` and
-   `medium` for `person`. A pull request with floor `low` that goes to a person becomes `medium`,
-   and the label `risk:*` shows the effective tier, while the JSON keeps the floor. The classifier
+   `medium` for `person`. A pull request with floor `low` that goes to a person becomes `medium`.
+   `botica review classify` prints both the floor and the effective tier, the workflow sets
+   `risk:*` from the effective tier (in shadow mode too), and `botica review tier` prints the
+   floor only. The classifier
    never sets `high`, which only an area gives. Only the pull requests of `periphery` can reach
    `auto`, because a floor above `low` fails a gate before Jev runs.
 
@@ -131,14 +168,15 @@ missing.
 
     | Reason | Source | Evidence | Steps |
     |---|---|---|---|
-    | floor `high` or area `critical` or `platform` | gate | the area, the entry of `[[review.areas]]` that matched, the files | who owns it (CODEOWNERS); the `INVARIANTS.md` of the area, if there is one |
-    | CI or lint red | gate | the job, its first failing line, the link to the log | the command that reproduces it locally (`botica lint --diff <base>`, `cargo test -p <crate>`) |
+    | floor `medium` or `high`, or area `critical`, `platform` or `core` | gate | the area, the entry of `[[review.areas]]` that matched (or that no entry matched and the file fell to `core`), the signals, the files | who owns it (CODEOWNERS); the `INVARIANTS.md` of the area, if there is one |
+    | fork, or a role that the plan selected with no valid file | gate | the repository of the head, or the role and the missing file | a person reviews the pull request; for a role, run `botica review check` |
+    | CI or lint not green | gate | the job, its first failing line, the link to the log | the command that reproduces it locally (`botica lint --diff <base>`, `cargo test -p <crate>`) |
     | role with `FAIL` or `INCONCLUSIVE` | gate | the findings of the role with `path:line`, severity, and what `refute` could not refute | the steps of each finding; for `INCONCLUSIVE`, what the role lacked |
     | pull request too large | gate | the size and how many attempts it seems to hold | split it (BTPROC001), or a stack with the skill `pr` |
     | `decision` | Jev | Jev gives no explanation, so the same question runs for each file, in parallel, and the files with a high probability are listed | review that decision against the issue; if the issue fixes it, add it to the description |
     | `unverifiable` | Jev | the same per-file question, plus the texts, prompts or flags that changed in those files | run what changed on the base and on the head and compare, for example the output of `botica <command>` |
     | `impact_if_wrong` is `users` | Jev | the published surface that the change touches: a rule, a command, a template of a recipe | try the recipe in a test repository; note it in the changelog |
-    | Jev fails, times out or has low `confidence` | classifier | the error and the `request_id` | none; the person reviews as if there were no classifier |
+    | Jev fails, times out or has low `confidence` | classifier | the error, the model that answered and the token `usage` (the documented response has no request id) | none; the person reviews as if there were no classifier |
 
     The per-file questions run only on a referral, for the reason that Jev raised, and cost one
     request per file. Code fills a template for each reason; a model does not write the report. A
@@ -157,14 +195,28 @@ missing.
       that repeats the measurement against the labeled set. `GET /v1/models` lists the names that
       the account can use.
     - The credentials are those of abide: `TYPESAFE_AI_API_KEY` and `TYPESAFE_AI_BASE_URL`. The
-      job that classifies follows the limits of ADR 0017 decisions 7 and 9: it reads the
-      configuration from the base and runs no code of the head.
+      classifier follows the limits of ADR 0017 decisions 7 and 9: it reads `botica.toml` and the
+      workflow from the base, runs no code of the head, and runs only for a pull request of the
+      same repository. Three jobs share the work. The job that classifies reads the repository and
+      the artifacts of the roles, holds the key and has no write permission; it uploads the
+      decision and the report as an artifact. A later job with no key and no checkout of the head
+      reads that artifact, sets the labels, edits the comment and, in `enforce` mode, merges. The
+      text of the report that comes from the pull request (log lines, titles of findings, the
+      `how_to_verify` of a finding) is data: the comment shows it in a code block, and no step
+      runs it.
 
 12. Four rules hold whatever the model says:
     - `critical` and `platform` never go to automatic merge.
     - A new commit classifies the pull request again and rewrites the report.
     - A bot can approve, and its approval does not take the place of a person.
-    - The merge is the work of the workflow (`gh pr merge --auto`) and not of botica.
+    - The merge is the work of the workflow and not of botica, and it is bound to one commit: it
+      reads the decision of the artifact, checks that the head of the pull request is the commit
+      that the decision names, and merges with `--match-head-commit`. A push after the decision
+      leaves the pull request unmerged until the next run decides again. The classification is a
+      required check of the base branch, and no job reads the labels `risk:*` and `area:*` as
+      input. `gh pr merge --auto` needs a branch protection that names required checks; where there
+      is none it merges at once (see the header of `dependabot-automerge-run.yml`), so `enforce`
+      stays off until the protection exists, or the workflow waits as that file does.
 
 13. The classifier starts in shadow mode, `[review.classifier] mode = "shadow"`. It decides, writes
     the report and records the decision, and never merges. Each record keeps the probabilities, the
@@ -209,8 +261,8 @@ missing.
 - The areas of botica: its paths, owners and approvals.
 - The detection of `new-endpoint` and `new-dependency` per language, and more signals.
 - The final values of `question-max`, `impact-min`, `min-confidence` and `max-changed-lines`, which
-  shadow mode sets.
-- How generated files are recognized in the state and in the size count.
+  shadow mode sets within the bounds of decision 8.
+- The globs of `[review] generated` that botica proposes for its own repository.
 - The text of the templates of the handoff report.
 - The set of labeled pull requests and how each is labeled.
 - The workflows that set the labels, run the classifier and merge, and the branch protection.
@@ -222,13 +274,19 @@ missing.
   a report on those that the classifier would have referred.
 - A repository with no `[[review.areas]]` gets `core` for every file, so none of its changes can
   reach `auto`. It has to declare a `periphery` area before the classifier can pass anything.
-- Only `periphery` reaches `auto`. The gain is limited to documentation, tests, patch updates and
-  internal features behind a flag.
+- Only `periphery` reaches `auto`. The gain is limited to documentation, tests and patch updates
+  of dependencies.
 - The title, the description and the diff of a pull request go to the account of TypeSafe that
   abide already uses. A repository that cannot send diffs there does not turn the classifier on.
 - The description of a pull request is input of the model, and its author can write text that
-  moves a probability. The damage is bounded: the change has to be `periphery`, with CI and the
-  roles green, and an answer of the model can only add a reason to refer, never remove a gate.
+  moves a probability. Decision 7 quotes that text and ties `false` to the linked issue. The damage
+  is bounded: the change has to be `periphery`, with CI and the roles green, and an answer of the
+  model can only add a reason to refer, never remove a gate.
+- Decision 1 fixes the paths that decide how a pull request is reviewed (`botica.toml`,
+  `.github/review/**`, the workflows, CODEOWNERS) as `platform`, so a documentation entry cannot
+  cover them. A repository can no longer put its `.github/` folder in `periphery`.
+- A required check that counts the approvals per area is a new job. Until it exists, `approvals`
+  above 1 is documentation and the branch protection holds one count.
 - A change to the wording or the order of a question, or to the pinned model, repeats the
   measurement. The questions are part of the contract of this ADR for that reason.
 - Each classified pull request costs one request for the three questions, and one more per file
