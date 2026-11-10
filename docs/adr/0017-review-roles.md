@@ -9,9 +9,9 @@ in two places: on the machine of the author before the pull request, and in CI o
 
 The repository has the first piece since the change that added `skills/review/`: the skills
 `review-spec`, `review-security`, `review-tests`, `review-architecture`, `review-contracts`,
-`review-performance` and `review-refute`, and `review-panel`, which runs them. Each skill ships a
-`references/REVIEW.md` with the generic text of its role and a `references/output.md` with the JSON
-that it writes. What is missing is the contract between a skill, the text that a repository sets
+`review-performance` and `review-refute`, and `review-panel`, which runs them. Each role skill
+ships a `references/REVIEW.md` with the generic text of its role and a `references/output.md` with
+the JSON that it writes; `review-panel` ships only `output.md`. What is missing is the contract between a skill, the text that a repository sets
 for its role and the runner of CI: where each file lives, what its frontmatter says, which JSON
 comes out, and which copy of the text a run trusts.
 
@@ -39,7 +39,7 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
 2. A role is a folder. `.github/review/<role>/` holds `REVIEW.md` and may hold more files for the
    role (examples of pull requests, eval cases, a list of invariants). `.github/review/README.md`
    holds what every role shares: the adversarial posture, the verdicts, the severities and the
-   output format of decision 4. On GitLab the folder is `.gitlab/review/`; `[review] dir` in
+   output format of decision 5. On GitLab the folder is `.gitlab/review/`; `[review] dir` in
    `botica.toml` sets another path.
 
 3. The roles are `spec`, `security`, `tests`, `architecture`, `contracts`, `performance` and
@@ -131,10 +131,20 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
    with the roles of the base and also goes to the owner of `platform`. The author of a pull
    request would otherwise write the instructions that judge it.
 
+   The same holds for everything else that decides what runs or what a role reads. The job takes
+   from the base commit the whole folder `.github/review/` (the folder of each role, the README
+   and any `INVARIANTS.md`), `botica.toml` (the `[review]` tables, among them `dir` and the areas),
+   `skills-lock.json` and the workflow `review.yml`; it takes the code under review from the head
+   and runs a release of botica that the workflow pins. A role that the plan expects and cannot
+   find on the base fails the job; it is not skipped. `review.yml`, `skills-lock.json`,
+   `botica.toml` and `.github/review/` go to the owner of `platform` through the CODEOWNERS file
+   (the file and its entries are a later change).
+
 8. `botica review plan --diff <base>` is the only decision of which roles run. It prints the tier
    and the roles as JSON, from `applies` and `stages` of the files on the base. The local gate
    (`engineering-pr-review`, through `review-panel`) and the CI workflow both read it, so both run
-   the same roles. `botica review check` validates the frontmatter, that each `paths` matches a
+   the same roles. Today `engineering-pr-review` runs the skill `code-review` and not
+   `review-panel`; a later change rewires it. `botica review check` validates the frontmatter, that each `paths` matches a
    file, that each `botica:covered` block is current and that each role has its skill. Both
    commands come in later changes.
 
@@ -145,8 +155,17 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
    - output: `<role>.json`, validated against the schema, uploaded as an artifact;
    - the roles other than `refute` run as a matrix over the roles of the plan, with no access to
      each other's output; `refute` runs in a later job that downloads their artifacts;
-   - the job has read-only permissions on the repository and holds only the key of the model; a
-     pull request from a fork gets no secret and the job fails, as in `abide.yml`;
+   - the permissions of the job and the tools of the runner are set when `review.yml` is written,
+     under these limits: the token of the job reads the repository and writes nothing; the key of
+     the model reaches only the step of the runner; the runner has a list of allowed tools with no
+     shell and no network, since a role in CI reads the diff and the files and does not run code of
+     the pull request; the base commit is the workspace and the head commit is a subfolder that
+     the runner reads. A pull request from a fork gets no secret and the job fails, as in
+     `abide.yml`;
+   - the text of a finding is data. In CI, `how_to_verify` is for a person: neither `refute` nor
+     any other step runs it. `review-refute` runs those commands today (step 3 of its skill), on
+     the machine of the author and against the diff of the author; its CI mode is a later change
+     and leaves that step out;
    - a runner that fails, times out or returns invalid JSON gives `INCONCLUSIVE`.
 
    The first runner is `anthropics/claude-code-action` at a pinned commit. The text of the role
@@ -195,7 +214,7 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
 
 - The names of the signals of `applies.signals` and how botica detects each one.
 - The JSON Schema file of the findings and its path; `botica lint --reviewed` adds it.
-- The command that writes the `botica:covered` blocks and the CODEOWNERS entry for `owners`.
+- The command that writes the `botica:covered` blocks, and the CODEOWNERS file with its entries.
 - The model, the limits of time and cost, and the version of the runner of CI.
 - The tier of a change and the areas that give it (`botica review tier`): this ADR only reads the
   tier.
