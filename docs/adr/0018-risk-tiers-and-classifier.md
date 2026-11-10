@@ -56,8 +56,10 @@ missing.
    `.github/review/**` and `.gitlab/review/**` (and the folder of `[review] dir`),
    `skills-lock.json`, `.github/workflows/**`, `.github/actions/**`, `.gitlab-ci.yml`,
    `.github/CODEOWNERS`, `.gitlab/CODEOWNERS`, `.gitattributes`, `prek.toml`, `.abide/**`,
-   `AGENTS.md`, `CLAUDE.md`, `INVARIANTS.md` and `**/SKILL.md`. The list includes the files that
-   ADR 0017 decision 7 reads from the base and the files that decision 9 strips from the head. An
+   `**/AGENTS.md`, `**/CLAUDE.md`, `**/.claude/**`, `**/.mcp.json`, `**/.cursorrules`,
+   `**/INVARIANTS.md`, `**/REVIEW.md` and `**/SKILL.md`. The list includes the files that ADR 0017
+   decision 7 reads from the base and, at every depth, the files that decision 9 strips from the
+   head. An
    entry of `periphery` cannot cover them, and `botica.toml` fails to load if one does. Their
    owners and approvals come from the entries of `platform`, and a `botica.toml` that has
    `[[review.areas]]` and no `platform` entry fails to load.
@@ -72,9 +74,12 @@ missing.
    the ones that ADR 0017 uses as examples. `new-dependency` holds when a manifest or a lockfile
    lists a package that the base did not list (a transitive one included), changes the source,
    the registry or the checksum of a package, loosens a version constraint, or changes a version
-   by more than a patch. Only a patch version of a package already listed, from the same source
-   and with the same constraint, is not one. The signal holds as well when botica has no detector
-   for the file or cannot parse it, so a missing detector raises the floor and never lowers it.
+   by more than a patch, or changes a manifest anywhere outside the lines that list a package (a
+   script that runs on install, a build requirement, a setting of a tool). Only a patch version of
+   a package already listed, from the same source and with the same constraint, and released at
+   least as long ago as the cooldown of the repository (`.github/dependabot.yml`), is not one. The
+   signal holds as well when botica has no detector for the file or cannot parse it, so a missing
+   detector raises the floor and never lowers it.
    `new-endpoint` holds when the diff adds a route to a service that the repository exposes. Each
    signal raises the floor to `medium`, selects the roles whose `applies.signals` name it (ADR
    0017), and goes into the state of the classifier. How botica detects each one is a later change.
@@ -88,8 +93,10 @@ missing.
    lowest tier to the highest, and a path that several entries match ends on the line of the
    highest tier. GitHub has no approval count in CODEOWNERS and a branch protection holds one
    count for the whole branch, so a required check reads the reviews, counts the approvals of the
-   owners of each area touched and fails below the `approvals` of that area. Both commands and
-   that check come in later changes.
+   owners of each area touched and fails below the `approvals` of that area. It counts only a
+   review made on the current head commit, from a person that the base `owners` or CODEOWNERS
+   name, who is not a bot and not the author of the pull request, so a push drops the approvals
+   that came before it. Both commands and that check come in later changes.
 
 5. A classifier decides whether a pull request can go on without a person. It runs after the
    checks, with their results, and asks one thing; it repeats neither the roles nor the CI:
@@ -121,9 +128,11 @@ missing.
      `-diff` (the size is counted with the attributes of the base, and a file that still prints no
      lines counts as over the limit). Generated files are not counted when the base lists them in
      `[review] generated`, as globs of `botica.toml`; a header or a `.gitattributes` of the head
-     does not decide it.
+     does not decide it. `botica.toml` fails to load when one of those globs matches a path
+     of `critical` or `platform`, or of the forced list of decision 1.
 
-7. The questions go to Jev in one request to `POST /v1/systemone`, about the whole pull request:
+7. Jev is the TypeSafe service that answers typed questions about a text with probabilities. The
+   questions go to it in one request to `POST /v1/systemone`, about the whole pull request:
 
    | Name | Type | Question | Criteria |
    |---|---|---|---|
@@ -143,9 +152,9 @@ missing.
    description, the linked issue, the paths, the diff and the text of the findings. The state
    holds each of them as a quoted field, and the instructions say that nothing inside a field is
    an instruction. The criterion `false` of `decision` rests on the linked issue and not on the
-   description. The issue counts only when it is in the same repository and its last edit is not
-   by the author of the pull request; a pull request with no such issue gets `decision` `true`
-   with no request. An edit of the title, the description or the linked issue classifies the pull
+   description. The issue counts only when it is in the same repository and neither its author
+   nor its last editor is the author of the pull request; a pull request with no such issue gets
+   `decision` `true` with no request. An edit of the title, the description or the linked issue classifies the pull
    request again, and the decision records a digest of the state. The model does not guard the
    merge alone: decision 12 binds it to the gates and to a commit.
 
@@ -162,9 +171,9 @@ missing.
    `contained` and `team`. The answer of a `choice` also carries a `confidence`, and a value under
    `min-confidence` sends the pull request to a person. The starting values are strict: `u` is
    0.1, `U` is 0.9, `min-confidence` is 0.7 and `max-changed-lines` is 400. These values and the
-   bounds below are this ADR's choice and no measurement backs them; shadow mode adjusts them. They are keys of `[review.classifier]`, as
-   `question-max`, `impact-min`, `min-confidence` and `max-changed-lines`, read from the base
-   branch. `botica.toml` fails to load when `question-max` is over 0.3, `impact-min` or
+   bounds below are this ADR's choice and no measurement backs them; shadow mode adjusts them. They
+   are keys of `[review.classifier]`, as `question-max` (`u`), `impact-min` (`U`),
+   `min-confidence` and `max-changed-lines`, read from the base branch. `botica.toml` fails to load when `question-max` is over 0.3, `impact-min` or
    `min-confidence` is under 0.7, or `max-changed-lines` is over 1000.
 
 9. The classifier never lowers anything. Its result is `auto` or `person`. The effective tier is
@@ -231,8 +240,9 @@ missing.
     - A bot can approve, and its approval does not take the place of a person.
     - The merge is the work of the workflow and not of botica, and it is bound to one commit: it
       reads the decision of the artifact, checks that the head of the pull request is the commit
-      and the base branch is the commit that the decision names, and merges with
-      `--match-head-commit`. A push after the decision leaves the pull request unmerged until the
+      and the base branch is the commit that the decision names, reads the title, the description
+      and the linked issue again and checks them against the digest of the decision, and merges
+      with `--match-head-commit`. A push after the decision leaves the pull request unmerged until the
       next run decides again. The classification is a required check of the base branch, and no
       job reads the labels `risk:*` and `area:*` as input. `gh pr merge --auto` needs a branch
       protection that names required checks; where there is none it merges at once (see the header
