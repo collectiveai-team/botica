@@ -1,0 +1,3 @@
+interface:
+  display_name: "Review: Performance"
+  short_description: "Find the cost a diff adds at scale"

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Review: Security"
+  short_description: "Find the security holes a diff adds"

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Review: Architecture"
+  short_description: "Check layers, abstractions and names"

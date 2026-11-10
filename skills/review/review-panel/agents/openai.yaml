@@ -1,0 +1,3 @@
+interface:
+  display_name: "Review Panel"
+  short_description: "Run the review roles on a diff and refute"
