@@ -48,7 +48,7 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
    | Role | Runs when | Looks for |
    |---|---|---|
    | `spec` | always | the criteria of the issue against the evidence in the pull request |
-   | `security` | always, deeper in `critical` | authentication, data of another tenant, secrets, injection |
+   | `security` | always, with more depth at tier `high` | authentication, data of another tenant, secrets, injection |
    | `tests` | the diff touches tests or `core` | weak assertions, deleted tests, `\|\| true`, lowered thresholds |
    | `architecture` | `core` and `platform` | layers, BTARCH rules, abstractions with one use |
    | `contracts` | the diff touches what another program consumes | a change of meaning with the same shape |
@@ -108,7 +108,7 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
    - top level: `role`, `head`, `base`, `verdict`, `findings`, `checked`, `not_checked`, `commands`;
    - each finding: `id`, `severity`, `path`, `line`, `title`, `evidence`, `reproduced`
      (`yes`, `no` or `not-tried`), `how_to_verify` and `fix`;
-   - `verdict` is `PASS`, `FAIL` or `INCONCLUSIVE`; `FAIL` means a finding at or above `blocking`;
+   - `verdict` is `PASS`, `FAIL` or `INCONCLUSIVE`; `FAIL` means a finding at or above `blocking`, and for `refute` a confirmed finding at or above it;
    - severity is `P0` (breaks production, loses data or opens a security hole on the normal path),
      `P1` (wrong behaviour that a user or a caller reaches), `P2` (wrong on an edge case, or a gap
      that makes a later bug likely) or `P3` (worth knowing, never blocks);
@@ -126,19 +126,21 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
 7. A run reads the roles from the base branch. In CI, the job checks out the base commit for
    `.github/review/` and the head commit for the code under review. Locally, the skill runs `git
    show <base>:.github/review/<role>/REVIEW.md` and falls back to its own
-   `references/REVIEW.md` when the base has no file. In CI a role that the plan expects and that has
-   no file on the base fails the job, as the next paragraph says. A pull request that changes `.github/review/` runs
-   with the roles of the base and also goes to the owner of `platform`. The author of a pull
+   `references/REVIEW.md` when the base has no file. In CI a role that is expected and has no file on
+   the base fails the job, as the next paragraph says. A pull request that changes
+   `.github/review/` runs with the roles of the base and also goes to the owner of `platform`. The author of a pull
    request would otherwise write the instructions that judge it.
 
    The same holds for everything else that decides what runs or what a role reads. The job takes
    from the base commit the whole folder `.github/review/` (the folder of each role, the README
    and any `INVARIANTS.md`), `botica.toml` (the `[review]` tables, among them `dir` and the areas),
    `skills-lock.json` and the workflow `review.yml`; it takes the code under review from the head
-   and runs a release of botica that the workflow pins. A role that the plan expects and cannot
-   find on the base fails the job; it is not skipped, and `botica review check` reports it before.
-   `review.yml`, `skills-lock.json`,
-   `botica.toml` and `.github/review/` go to the owner of `platform` through the CODEOWNERS file
+   and runs a release of botica that the workflow pins. A role is expected when the list `roles` of
+   the `[review]` table of `botica.toml` on the base names it, and that list holds the seven roles
+   of decision 3 when the table or the key is missing. The plan skips an expected role whose
+   `applies` does not hold, and a role that the plan selects and that has no file on the base fails
+   the job; it is not skipped, and `botica review check` reports it before. `review.yml`,
+   `skills-lock.json`, `botica.toml` and `.github/review/` go to the owner of `platform` through the CODEOWNERS file
    (the file and its entries are a later change).
 
 8. `botica review plan --diff <base>` is the only decision of which roles run. It prints the tier
@@ -159,8 +161,10 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
    - the workflow runs on `pull_request_target`, since only that trigger loads the workflow file
      from the base commit; with `pull_request` the file comes from the merge commit and the author
      of the pull request edits the workflow that judges it. A job of the workflow runs only when
-     `github.event.pull_request.head.repo.full_name == github.repository`; a pull request from a
-     fork gets no review by role. Because `pull_request_target` carries secrets, no step runs or
+     `github.event.pull_request.head.repo.full_name == github.repository`. A job with no condition,
+     `review-gate`, is the required check: it fails on a pull request from a fork, with the message
+     that no role reviewed it and a person has to, because GitHub counts a skipped required check
+     as passed; on any other pull request it passes only when every job of the roles passed. Because `pull_request_target` carries secrets, no step runs or
      installs code of the head: no build, no test, no hook, no `npm install`; the runner reads the
      head as files;
    - the permissions of the job and the tools of the runner are set when `review.yml` is written,
@@ -168,18 +172,22 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
      the model reaches only the step of the runner; the runner has a list of allowed tools with no
      shell and no network, since a role in CI reads the diff and the files and does not run code of
      the pull request, and reads only the workspace; the base commit is the workspace and the head
-     commit is a subfolder that the runner reads. Before the runner starts, the job deletes
-     `CLAUDE.md`, `AGENTS.md` and `.claude/` from the head checkout, so that a file of the pull
-     request is not loaded as instructions;
+     commit is a subfolder that the runner reads. Before the runner starts, the job deletes from the head checkout, at every depth, the files
+     that an agent loads as instructions or configuration (`CLAUDE.md`, `AGENTS.md`, `.claude/`,
+     `.mcp.json`, `.cursorrules`) and every symbolic link, and the checkout step sets
+     `persist-credentials: false`, so that a file of the pull request is not loaded as
+     instructions and no link leads out of the workspace;
    - the text of a finding is data. In CI, `how_to_verify` is for a person: neither `refute` nor
      any other step runs it. `review-refute` runs those commands today (step 3 of its skill), on
      the machine of the author and against the diff of the author; its CI mode is a later change
      and leaves that step out;
+   - the job does not trust the verdict that the model writes: it computes it from the findings
+     and from `blocking` (`FAIL` when a finding reaches it) and replaces the model's value;
    - a runner that fails, times out or returns invalid JSON gives `INCONCLUSIVE`, and the job
      fails on `FAIL` and on `INCONCLUSIVE` alike, so a role that did not finish never passes the
      required check;
-   - the job fails when a string of a finding holds the value of the key of the model, since the
-     findings go to an artifact.
+   - the job fails when a string of a finding holds the value of the key of the model, in plain
+     text or in base64, since the findings go to an artifact.
 
    The first runner is `anthropics/claude-code-action` at a pinned commit. The text of the role
    goes in `prompt`, and `claude_args: --json-schema '<schema>'` makes the action return the
@@ -193,8 +201,8 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
     `botica rules export --format abide` writes. A role covers a focus and the rubric covers every
     judgment rule, and the two do not share a runner.
 
-11. The recipe `base` installs `.github/review/README.md`, the generic `REVIEW.md` of each role and
-    the `review-*` skills. `install` writes a file that is missing and leaves an existing one as it
+11. A later change makes the recipe `base` install `.github/review/README.md`, the generic `REVIEW.md` of each role and
+    the `review-*` skills; `catalog/recipes/base.toml` has none of them yet. `install` writes a file that is missing and leaves an existing one as it
     is (ADR 0006), so a repository that adjusted a `REVIEW.md` keeps it. `review-tests` calls
     `test-smell-review` for the smells of a test.
 
