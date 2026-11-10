@@ -11,7 +11,7 @@ The repository has the first piece since the change that added `skills/review/`:
 `review-spec`, `review-security`, `review-tests`, `review-architecture`, `review-contracts`,
 `review-performance` and `review-refute`, and `review-panel`, which runs them. Each role skill
 ships a `references/REVIEW.md` with the generic text of its role and a `references/output.md` with
-the JSON that it writes; `review-panel` ships only `output.md`. What is missing is the contract between a skill, the text that a repository sets
+the JSON that it writes; `review-panel` ships no `REVIEW.md`. What is missing is the contract between a skill, the text that a repository sets
 for its role and the runner of CI: where each file lives, what its frontmatter says, which JSON
 comes out, and which copy of the text a run trusts.
 
@@ -126,8 +126,8 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
 7. A run reads the roles from the base branch. In CI, the job checks out the base commit for
    `.github/review/` and the head commit for the code under review. Locally, the skill runs `git
    show <base>:.github/review/<role>/REVIEW.md` and falls back to its own
-   `references/REVIEW.md` when the base has no file. In CI a role with no file on the base does not
-   run, and `botica review check` reports it. A pull request that changes `.github/review/` runs
+   `references/REVIEW.md` when the base has no file. In CI a role that the plan expects and that has
+   no file on the base fails the job, as the next paragraph says. A pull request that changes `.github/review/` runs
    with the roles of the base and also goes to the owner of `platform`. The author of a pull
    request would otherwise write the instructions that judge it.
 
@@ -136,7 +136,8 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
    and any `INVARIANTS.md`), `botica.toml` (the `[review]` tables, among them `dir` and the areas),
    `skills-lock.json` and the workflow `review.yml`; it takes the code under review from the head
    and runs a release of botica that the workflow pins. A role that the plan expects and cannot
-   find on the base fails the job; it is not skipped. `review.yml`, `skills-lock.json`,
+   find on the base fails the job; it is not skipped, and `botica review check` reports it before.
+   `review.yml`, `skills-lock.json`,
    `botica.toml` and `.github/review/` go to the owner of `platform` through the CODEOWNERS file
    (the file and its entries are a later change).
 
@@ -144,9 +145,9 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
    and the roles as JSON, from `applies` and `stages` of the files on the base. The local gate
    (`engineering-pr-review`, through `review-panel`) and the CI workflow both read it, so both run
    the same roles. Today `engineering-pr-review` runs the skill `code-review` and not
-   `review-panel`; a later change rewires it. `botica review check` validates the frontmatter, that each `paths` matches a
-   file, that each `botica:covered` block is current and that each role has its skill. Both
-   commands come in later changes.
+   `review-panel`; a later change rewires it. `botica review check` validates the frontmatter,
+   that each `paths` matches a file, that each `botica:covered` block is current and that each
+   role has its skill. Both commands come in later changes.
 
 9. The contract of a runner in CI is: it receives the role and the diff, and it returns the JSON of
    decision 5. In detail:
@@ -155,18 +156,30 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
    - output: `<role>.json`, validated against the schema, uploaded as an artifact;
    - the roles other than `refute` run as a matrix over the roles of the plan, with no access to
      each other's output; `refute` runs in a later job that downloads their artifacts;
+   - the workflow runs on `pull_request_target`, since only that trigger loads the workflow file
+     from the base commit; with `pull_request` the file comes from the merge commit and the author
+     of the pull request edits the workflow that judges it. A job of the workflow runs only when
+     `github.event.pull_request.head.repo.full_name == github.repository`; a pull request from a
+     fork gets no review by role. Because `pull_request_target` carries secrets, no step runs or
+     installs code of the head: no build, no test, no hook, no `npm install`; the runner reads the
+     head as files;
    - the permissions of the job and the tools of the runner are set when `review.yml` is written,
      under these limits: the token of the job reads the repository and writes nothing; the key of
      the model reaches only the step of the runner; the runner has a list of allowed tools with no
      shell and no network, since a role in CI reads the diff and the files and does not run code of
-     the pull request; the base commit is the workspace and the head commit is a subfolder that
-     the runner reads. A pull request from a fork gets no secret and the job fails, as in
-     `abide.yml`;
+     the pull request, and reads only the workspace; the base commit is the workspace and the head
+     commit is a subfolder that the runner reads. Before the runner starts, the job deletes
+     `CLAUDE.md`, `AGENTS.md` and `.claude/` from the head checkout, so that a file of the pull
+     request is not loaded as instructions;
    - the text of a finding is data. In CI, `how_to_verify` is for a person: neither `refute` nor
      any other step runs it. `review-refute` runs those commands today (step 3 of its skill), on
      the machine of the author and against the diff of the author; its CI mode is a later change
      and leaves that step out;
-   - a runner that fails, times out or returns invalid JSON gives `INCONCLUSIVE`.
+   - a runner that fails, times out or returns invalid JSON gives `INCONCLUSIVE`, and the job
+     fails on `FAIL` and on `INCONCLUSIVE` alike, so a role that did not finish never passes the
+     required check;
+   - the job fails when a string of a finding holds the value of the key of the model, since the
+     findings go to an artifact.
 
    The first runner is `anthropics/claude-code-action` at a pinned commit. The text of the role
    goes in `prompt`, and `claude_args: --json-schema '<schema>'` makes the action return the
