@@ -6,6 +6,7 @@ use crate::issue::{issue, ConfigError, ConfigIssue};
 use crate::matcher::PathMatcher;
 use crate::model::{Config, Override, RuleConfig};
 use crate::selector::{check_rule, Selector};
+use crate::validate_review::review;
 
 impl Config {
     pub fn validate(&self, catalog: &Catalog) -> Result<(), ConfigError> {
@@ -23,6 +24,7 @@ impl Config {
             rule_id(&mut found, catalog, &location, new);
         }
         rules(&mut found, catalog, &self.rules);
+        review(&mut found, &self.review);
         for (index, over) in self.overrides.iter().enumerate() {
             overrides(&mut found, catalog, index, over);
         }
@@ -43,6 +45,13 @@ fn selectors(found: &mut Vec<ConfigIssue>, catalog: &Catalog, key: &str, values:
     }
 }
 
+/// A directory from the project root with nothing around it: no empty part, `.` or `..`.
+pub(crate) fn is_plain_dir(value: &str) -> bool {
+    value
+        .split('/')
+        .all(|part| !part.is_empty() && part != "." && part != "..")
+}
+
 /// A directory of code is written as the directory it is, from the project root, with nothing
 /// around it: a path that cannot match what the walk reports would leave the rules about layout
 /// doing nothing. The ecosystems are the ones the linter knows.
@@ -59,10 +68,7 @@ fn code_dirs(found: &mut Vec<ConfigIssue>, configured: Option<&BTreeMap<String, 
             ));
         }
         for (index, value) in values.iter().enumerate() {
-            let plain = value
-                .split('/')
-                .all(|part| !part.is_empty() && part != "." && part != "..");
-            if !plain {
+            if !is_plain_dir(value) {
                 found.push(issue(
                     format!("code-dirs.{name}[{index}]"),
                     format!(

@@ -8,8 +8,10 @@ mod model;
 mod parse;
 mod python;
 mod resolve;
+mod review;
 mod selector;
 mod validate;
+mod validate_review;
 
 pub use command_line::CommandLine;
 pub use discover::{discover, load_file, Loaded};
@@ -24,4 +26,8 @@ pub use model::{
 pub use parse::json_schema;
 pub use python::{requires_python, ProjectPython};
 pub use resolve::{FileRule, Resolution};
+pub use review::{
+    AreaName, ClassifierConfig, ClassifierMode, ReviewArea, ReviewConfig, ReviewRole, Tier,
+    UnmatchedPath,
+};
 pub use selector::Selector;

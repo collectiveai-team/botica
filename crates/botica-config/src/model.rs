@@ -3,6 +3,8 @@ use std::collections::BTreeMap;
 use schemars::JsonSchema;
 use serde::Deserialize;
 
+use crate::review::ReviewConfig;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum RuleSeverity {
@@ -192,6 +194,10 @@ pub struct Config {
     pub baseline: Option<String>,
     #[serde(default)]
     pub history: HistoryConfig,
+    /// Who reviews a change and how much: areas of the code, roles and classifier (ADR 0017 and
+    /// ADR 0018).
+    #[serde(default)]
+    pub review: ReviewConfig,
 }
 
 fn default_select() -> Vec<String> {
@@ -224,6 +230,7 @@ impl Default for Config {
             extensions: ExtensionsConfig::default(),
             baseline: None,
             history: HistoryConfig::default(),
+            review: ReviewConfig::default(),
         }
     }
 }

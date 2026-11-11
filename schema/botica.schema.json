@@ -111,6 +111,10 @@
       },
       "default": {}
     },
+    "review": {
+      "description": "Who reviews a change and how much: areas of the code, roles and classifier (ADR 0017 and\nADR 0018).",
+      "$ref": "#/$defs/ReviewConfig"
+    },
     "rule-dirs": {
       "description": "Directories with the project's own rules.",
       "type": "array",
@@ -141,6 +145,16 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "AreaName": {
+      "description": "The four areas of ADR 0018, each with a floor under which no entry can put its tier.",
+      "type": "string",
+      "enum": [
+        "critical",
+        "platform",
+        "core",
+        "periphery"
+      ]
+    },
     "CatalogSource": {
       "description": "A catalog of rules that lives on disk.",
       "type": "object",
@@ -153,6 +167,65 @@
       "additionalProperties": false,
       "required": [
         "path"
+      ]
+    },
+    "ClassifierConfig": {
+      "description": "Settings of the classifier that runs after the checks (ADR 0018 decisions 6 and 8).",
+      "type": "object",
+      "properties": {
+        "impact-min": {
+          "description": "`U`: the probability that a mistake shows first to the team or to whoever develops the\nrepository, at least. Not under 0.7.",
+          "type": "number",
+          "format": "double",
+          "default": 0.9
+        },
+        "max-changed-lines": {
+          "description": "Larger changes go to a person. At most 1000.",
+          "type": "integer",
+          "format": "uint32",
+          "default": 400,
+          "minimum": 0
+        },
+        "min-confidence": {
+          "description": "A `choice` answer with less confidence than this goes to a person. Not under 0.7.",
+          "type": "number",
+          "format": "double",
+          "default": 0.7
+        },
+        "mode": {
+          "$ref": "#/$defs/ClassifierMode"
+        },
+        "question-max": {
+          "description": "`u`: a question answers `true` with a probability under this one. At most 0.3.",
+          "type": "number",
+          "format": "double",
+          "default": 0.1
+        },
+        "required-checks": {
+          "description": "The checks that must be present and green. An empty list sends every pull request to a\nperson.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ClassifierMode": {
+      "description": "What the classifier does with its decision (ADR 0018 decision 13).",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "enforce"
+          ]
+        },
+        {
+          "description": "Decides and writes the report, and never merges.",
+          "type": "string",
+          "const": "shadow"
+        }
       ]
     },
     "ExtensionsConfig": {
@@ -300,6 +373,110 @@
       },
       "additionalProperties": false
     },
+    "ReviewArea": {
+      "description": "One entry of `[[review.areas]]`. An area name may appear in several entries.",
+      "type": "object",
+      "properties": {
+        "approvals": {
+          "description": "The approvals that the paths ask for. Default: 1, and 0 for `periphery`.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "name": {
+          "$ref": "#/$defs/AreaName"
+        },
+        "owners": {
+          "description": "The people or teams that answer for the paths. Required for `critical` and `platform`.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        },
+        "paths": {
+          "description": "Globs of the paths of the area, as in `applies.paths` of a `REVIEW.md`.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tier": {
+          "description": "Default: the floor of the area. A lower tier than the floor is an error.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Tier"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "paths"
+      ]
+    },
+    "ReviewConfig": {
+      "description": "The `review` table: areas, roles and classifier (ADR 0017 and ADR 0018).",
+      "type": "object",
+      "properties": {
+        "areas": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ReviewArea"
+          }
+        },
+        "classifier": {
+          "$ref": "#/$defs/ClassifierConfig"
+        },
+        "dir": {
+          "description": "The folder of the review roles, from the root of the project, when it is not\n`.github/review` or `.gitlab/review`.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "generated": {
+          "description": "Globs of generated files, which the size of a change does not count. They cannot match a\npath of `critical` or `platform`.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        },
+        "roles": {
+          "description": "The roles that CI expects. Default: the seven roles.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/ReviewRole"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ReviewRole": {
+      "description": "The roles of ADR 0017.",
+      "type": "string",
+      "enum": [
+        "spec",
+        "security",
+        "tests",
+        "architecture",
+        "contracts",
+        "performance",
+        "refute"
+      ]
+    },
     "RuleConfig": {
       "description": "Settings of one rule. Any other key is an option declared by that rule.",
       "type": "object",
@@ -349,6 +526,15 @@
         "warning",
         "info",
         "off"
+      ]
+    },
+    "Tier": {
+      "description": "How much review a change needs (ADR 0018).",
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
       ]
     }
   }

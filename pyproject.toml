@@ -312,7 +312,84 @@ extend-ignores = ["crates/botica-core/src/external_config/ruff_rules.tsv"]
 
 [tool.botica.rules.file-size-guard]
 # history.toml is written by scripts/stamp_release.py and grows by one event per change of a rule.
-extend-ignores = ["crates/botica-core/src/external_config/ruff_rules.tsv", "catalog/rules/history.toml"]
+# pyproject.toml holds the settings of every tool of the repository, the areas of the review among
+# them; the schema is written by `cargo test -p botica-config` with BOTICA_UPDATE_SCHEMA.
+extend-ignores = ["crates/botica-core/src/external_config/ruff_rules.tsv", "catalog/rules/history.toml", "pyproject.toml", "schema/botica.schema.json"]
+
+# The review of a change (ADR 0017 and ADR 0018). Areas come from `git log` on main (where fixes and
+# reverts land) and from AGENTS.md (what the binary embeds and what other repositories install).
+# The owner is the only author that git confirms; a team of GitHub replaces it once one is chosen.
+[tool.botica.review]
+# Written by tools, so the size of a change does not count them. `.abide/rubric.json` is generated
+# too, but `.abide/**` is `platform` and cannot be listed here.
+generated = [
+  "uv.lock",
+  "Cargo.lock",
+  "schema/botica.schema.json",
+  "catalog/rules/history.toml",
+  "crates/botica-core/src/external_config/ruff_rules.tsv",
+]
+
+# The repository has no branch protection, so these are the checks that run on every pull request
+# (no `paths` filter, not skipped for Dependabot).
+[tool.botica.review.classifier]
+required-checks = ["lint, type-check & test", "zizmor", "no-ai-coauthorship", "validate PR title"]
+
+# The workflows that recipes write into other repositories, and the code of the history key.
+[[tool.botica.review.areas]]
+name = "critical"
+paths = [
+  "catalog/recipes/files/github/workflows/**",
+  "catalog/recipes/files/gitlab/**",
+  "crates/botica-core/src/fingerprint.rs",
+  "crates/botica-core/src/history.rs",
+]
+owners = ["@jedzill4"]
+approvals = 1
+
+[[tool.botica.review.areas]]
+name = "platform"
+paths = [
+  ".github/**",
+  ".cargo/**",
+  ".claude/**",
+  ".abide/**",
+  "prek.toml",
+  "skills-lock.json",
+  "Cargo.toml",
+  "pyproject.toml",
+  "scripts/**",
+  "distribution/**",
+  "docs/botica-release.md",
+  "**/AGENTS.md",
+  "**/SKILL.md",
+]
+owners = ["@jedzill4"]
+
+# What the binary embeds and publishes: the rules, the recipes, the topics, the protocol of the SDKs
+# and the schema of the configuration.
+[[tool.botica.review.areas]]
+name = "core"
+paths = [
+  "crates/**",
+  "catalog/**",
+  "sdk/**",
+  "schema/**",
+  "standards/**",
+  "skills/**",
+]
+
+[[tool.botica.review.areas]]
+name = "periphery"
+paths = [
+  "docs/**",
+  "website/**",
+  "tests/**",
+  "bench/**",
+  "README.md",
+  "GLOSSARY.md",
+  "LICENSE",
+]
 
 [tool.pyrefly]
 python-version = "3.11"
