@@ -267,3 +267,22 @@ fn a_judged_finding_of_a_staged_run_hashes_the_staged_text_and_not_the_working_t
 
     assert_eq!(fingerprint_of(&dirty, "test-through-interface"), clean);
 }
+
+#[test]
+fn a_staged_run_hashes_the_staged_text_and_not_the_working_tree() {
+    let dir = project("staged");
+    std::fs::remove_dir_all(dir.join(".git")).expect("remove the stand-in .git");
+    git(&dir, &["init", "--quiet"]);
+    write(&dir, "a.py", "y = 0\n");
+    git(&dir, &["add", "--all"]);
+    git(&dir, &["commit", "--quiet", "-m", "feat: a file"]);
+    write(&dir, "a.py", UNUSED);
+    git(&dir, &["add", "a.py"]);
+    let args = ["--staged", "--output-format", "json"];
+    let clean = fingerprint_of(&lint(&dir, None, &args), "unused-suppression");
+
+    write(&dir, "a.py", &UNUSED.replace("import os", "import sys"));
+    let dirty = lint(&dir, None, &args);
+
+    assert_eq!(fingerprint_of(&dirty, "unused-suppression"), clean);
+}

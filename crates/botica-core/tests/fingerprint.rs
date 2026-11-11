@@ -167,6 +167,16 @@ fn stamp_hashes_the_path_from_the_root_of_the_project_and_reads_each_file_once()
 }
 
 #[test]
+fn a_line_outside_the_text_counts_as_a_finding_about_the_whole_file() {
+    let text = "x = 1\nprint(x)\n";
+    let whole = unkeyed().of_file("no-print", "a.py");
+
+    assert_eq!(unkeyed().of_line("no-print", "a.py", text, 0), whole);
+    assert_eq!(unkeyed().of_line("no-print", "a.py", text, 3), whole);
+    assert_ne!(unkeyed().of_line("no-print", "a.py", text, 2), whole);
+}
+
+#[test]
 fn stamp_falls_back_to_the_whole_file_when_the_text_cannot_be_read() {
     let mut findings = [finding("gone.py", "no-print", 2)];
 
