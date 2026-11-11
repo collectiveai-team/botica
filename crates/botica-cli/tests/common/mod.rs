@@ -5,6 +5,7 @@ pub mod external;
 pub mod external_rule;
 pub mod fresh_rule;
 pub mod git_remote;
+pub mod history;
 pub mod judgment;
 pub mod lsp;
 pub mod new_rule;

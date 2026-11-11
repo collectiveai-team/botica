@@ -6,6 +6,7 @@ mod extension;
 mod extension_pool;
 mod extension_python;
 mod extension_python_sdk;
+mod history_cmd;
 mod judgment;
 mod lint_cmd;
 mod output;
@@ -79,6 +80,8 @@ enum Command {
     Server(server_cmd::ServerArgs),
     /// Prepare the extension rules of the catalogs of the project before `botica lint` runs them.
     Ext(ext_cmd::ExtArgs),
+    /// Read the local history of findings that `botica lint --record` writes.
+    History(history_cmd::HistoryArgs),
 }
 
 fn main() -> ExitCode {
@@ -94,6 +97,7 @@ fn main() -> ExitCode {
         Command::Recipe(args) => recipes_cmd::run(&args),
         Command::Server(args) => server_cmd::run(args).map(|()| ExitCode::SUCCESS),
         Command::Ext(args) => ext_cmd::run(&args),
+        Command::History(args) => history_cmd::run(&args),
     };
     let code = match result {
         Ok(code) => code,

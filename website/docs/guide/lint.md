@@ -113,6 +113,7 @@ directory ignores itself in git. A history that cannot be written (a read-only c
 symbolic link in place of `.botica/history` or of one of its files) is a warning on stderr, and
 the findings and the exit code stay the same.
 
-botica only appends to the two files and never prunes them: each recorded run adds about 180 bytes
-for each finding, so a run with 100,000 findings adds about 18 MB. Delete `.botica/history/` to
+`botica history report` reads the files ([History report](history.md)). botica only appends to
+the two files and never prunes them: each recorded run adds about 180 bytes for each finding, so a
+run with 100,000 findings adds about 18 MB. Delete `.botica/history/` to
 start over.
