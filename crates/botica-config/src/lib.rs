@@ -18,8 +18,8 @@ pub use inline::inline_setting;
 pub use issue::{ConfigError, ConfigIssue};
 pub use matcher::PathMatcher;
 pub use model::{
-    CatalogSource, Config, ExtensionsConfig, OnTimeout, Override, ParamValue, RecipesConfig,
-    ReferencesConfig, RuleConfig, RuleSeverity,
+    CatalogSource, Config, ExtensionsConfig, HistoryConfig, OnTimeout, Override, ParamValue,
+    RecipesConfig, ReferencesConfig, RuleConfig, RuleSeverity,
 };
 pub use parse::json_schema;
 pub use python::{requires_python, ProjectPython};

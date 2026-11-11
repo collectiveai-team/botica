@@ -119,6 +119,20 @@ pub struct ExtensionsConfig {
     pub on_timeout: OnTimeout,
 }
 
+/// Settings of the history of findings in `.botica/history/` (ADR 0019).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct HistoryConfig {
+    /// Each run of `botica lint` appends its findings and the rules it evaluated to
+    /// `.botica/history/`, as `--record` does. `--no-record` turns it off for one run.
+    #[serde(default)]
+    pub record: bool,
+    /// A run with no `BOTICA_HISTORY_KEY` records nothing, so that a job where the secret is
+    /// missing writes no unkeyed fingerprints.
+    #[serde(default)]
+    pub require_key: bool,
+}
+
 /// Settings of `botica lint`: `botica.toml`, or the `[tool.botica]` table of `pyproject.toml`.
 #[derive(Debug, Clone, PartialEq, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
@@ -176,6 +190,8 @@ pub struct Config {
     /// --write-baseline` writes. A finding it lists is left out while its value does not grow.
     #[serde(default)]
     pub baseline: Option<String>,
+    #[serde(default)]
+    pub history: HistoryConfig,
 }
 
 fn default_select() -> Vec<String> {
@@ -207,6 +223,7 @@ impl Default for Config {
             recipes: RecipesConfig::default(),
             extensions: ExtensionsConfig::default(),
             baseline: None,
+            history: HistoryConfig::default(),
         }
     }
 }

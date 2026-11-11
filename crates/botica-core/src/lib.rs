@@ -30,6 +30,8 @@ mod timings;
 #[cfg(feature = "fs")]
 pub mod cache;
 #[cfg(feature = "fs")]
+pub mod history;
+#[cfg(feature = "fs")]
 pub mod walk;
 
 pub use buffer::Buffer;

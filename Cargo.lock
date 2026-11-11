@@ -329,6 +329,7 @@ dependencies = [
  "criterion",
  "globset",
  "ignore",
+ "libc",
  "rayon",
  "serde",
  "serde_json",

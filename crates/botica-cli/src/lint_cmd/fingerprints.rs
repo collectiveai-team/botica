@@ -1,7 +1,7 @@
 //! The fingerprint of each finding in the json and sarif output (ADR 0019 decision 5).
 
-use super::baseline::from_root;
 use super::git;
+use super::inside::Inside;
 use crate::output::eprintln;
 use botica_core::fingerprint::FingerprintKey;
 use botica_core::report::Format;
@@ -23,15 +23,16 @@ pub(super) enum Read<'a> {
     Messages,
 }
 
-/// Sets the fingerprint of each finding when the output carries it. A `BOTICA_HISTORY_KEY` that
-/// is too short leaves every fingerprint out, with a warning.
+/// Sets the fingerprint of each finding when the output carries it or the run records. A
+/// `BOTICA_HISTORY_KEY` that is too short leaves every fingerprint out, with a warning.
 pub(super) fn stamp(
     format: Format,
-    prefix: Option<&str>,
+    recording: bool,
+    inside: &Inside<'_>,
     read: Read<'_>,
     diagnostics: &mut [Diagnostic],
 ) {
-    if !matches!(format, Format::Json | Format::Sarif) {
+    if !recording && !matches!(format, Format::Json | Format::Sarif) {
         return;
     }
     let key = match FingerprintKey::from_env() {
@@ -59,7 +60,7 @@ pub(super) fn stamp(
                 .collect();
             key.stamp(
                 diagnostics,
-                |path| from_root(prefix, path),
+                |path| inside.path(path),
                 |path| match linted.get(path) {
                     Some(source) => source.text().map(str::to_owned),
                     None if staged => {

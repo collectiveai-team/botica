@@ -21,7 +21,7 @@ max = 900
 
 Keys: `select`, `extend-select`, `ignore`, `preview`, `languages`, `extend-exclude`,
 `extend-include`, `code-dirs`, `rules` (settings per rule), `overrides`, `external`, `replace`,
-`rule-dirs`, `catalogs`, `extensions`, `references`, `recipes`, `baseline`. Any of them can be given
+`rule-dirs`, `catalogs`, `extensions`, `references`, `recipes`, `baseline`, `history`. Any of them can be given
 for one run with `--config 'key = value'`.
 
 - `select`, `extend-select` and `ignore` name rules by slug, by code (`BTLOG002`) or by the code of
@@ -32,7 +32,8 @@ for one run with `--config 'key = value'`.
 - `extend-exclude` and `extend-include` change [which files](lint.md#which-files) the walk reaches.
 - `rule-dirs`, `catalogs` and `extensions` are in [Catalogs of a project](../extend/catalogs.md)
   and [Extensions](../extend/extensions.md); `references` in [References](refs.md); `recipes` in
-  [Recipes](recipes.md); `baseline` in [Known findings](findings.md#known-findings).
+  [Recipes](recipes.md); `baseline` in [Known findings](findings.md#known-findings); `history` in
+  [History of findings](lint.md#history-of-findings).
 
 `code-dirs` says where the code of the project lives (`python`, `js`, `rust`, `go`, `jvm`), for
 the layout rules. Without it they are detected from `pyproject.toml`, `package.json`,

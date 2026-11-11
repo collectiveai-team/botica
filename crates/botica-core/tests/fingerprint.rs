@@ -84,8 +84,16 @@ fn the_fingerprint_does_not_change_when_the_finding_moves_down() {
     let mut found = [finding("src/a.py", "no-print", 4)];
     let mut moved = [finding("src/a.py", "no-print", 6)];
 
-    unkeyed().stamp(&mut found, str::to_owned, |_| Some(before.to_owned()));
-    unkeyed().stamp(&mut moved, str::to_owned, |_| Some(after.to_owned()));
+    unkeyed().stamp(
+        &mut found,
+        |path| Some(path.to_owned()),
+        |_| Some(before.to_owned()),
+    );
+    unkeyed().stamp(
+        &mut moved,
+        |path| Some(path.to_owned()),
+        |_| Some(after.to_owned()),
+    );
 
     assert!(found[0].fingerprint.is_some());
     assert_eq!(found[0].fingerprint, moved[0].fingerprint);
@@ -143,7 +151,7 @@ fn stamp_hashes_the_path_from_the_root_of_the_project_and_reads_each_file_once()
 
     unkeyed().stamp(
         &mut findings,
-        |path| format!("pkg/{path}"),
+        |path| Some(format!("pkg/{path}")),
         |_| {
             reads += 1;
             Some(text.to_owned())
@@ -180,10 +188,26 @@ fn a_line_outside_the_text_counts_as_a_finding_about_the_whole_file() {
 fn stamp_falls_back_to_the_whole_file_when_the_text_cannot_be_read() {
     let mut findings = [finding("gone.py", "no-print", 2)];
 
-    unkeyed().stamp(&mut findings, str::to_owned, |_| None);
+    unkeyed().stamp(&mut findings, |path| Some(path.to_owned()), |_| None);
 
     assert_eq!(
         findings[0].fingerprint.as_deref(),
         Some(unkeyed().of_file("no-print", "gone.py").as_str())
+    );
+}
+
+#[test]
+fn stamp_hashes_the_message_of_a_finding_whose_path_is_outside_the_project() {
+    let mut findings = [finding("../out/o.py", "no-print", 2)];
+
+    unkeyed().stamp(
+        &mut findings,
+        |_| None,
+        |_| panic!("a file outside the project is not read"),
+    );
+
+    assert_eq!(
+        findings[0].fingerprint.as_deref(),
+        Some(unkeyed().of_message("no-print", "", "a message").as_str())
     );
 }

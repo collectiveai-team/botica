@@ -28,6 +28,7 @@ botica lint --diff-file pr.diff    # the same for the changes of a unified diff
 botica lint --commit-msg "$1"      # the rules of scope commit over a commit message, and no file
 botica lint --commits origin/main..HEAD   # over each commit of the range (ADR 0010)
 botica lint --pr-title="$PR_TITLE" # over the title of a pull request
+botica lint --record               # append the findings and the rules evaluated to .botica/history/
 botica rules                   # which rules are active, and why (--all adds the inactive ones), the
                                # programs that `botica lint` runs and the tools that enforce rules
                                # outside it; --json adds the kind of each implementation
@@ -82,3 +83,35 @@ path and bytes; the whole cache is discarded when the version, the configuration
 change. A directory botica creates ignores itself in git; one that already existed is left alone,
 so add it to your `.gitignore`. A cache that cannot be written (a read-only checkout) is a warning
 on stderr, not a failure: the findings and the exit code are the same, only the next run is slower.
+
+## History of findings
+
+`botica lint --record`, or `record = true` in the `[history]` table of the configuration, appends
+each run to `.botica/history/` under the root of the project: one line per finding in
+`findings.jsonl`, then one line for the run in `runs.jsonl`. `--no-record` turns it off for one
+run (the last of `--record` and `--no-record` wins), and a run of `--write-baseline` records nothing. The design, with every key of a line, is
+[ADR 0019](https://github.com/collectiveai-team/botica/blob/main/docs/adr/0019-finding-history.md).
+
+```toml
+[history]
+record = true
+require-key = true   # record nothing when BOTICA_HISTORY_KEY is not set
+```
+
+A finding line holds the rule, its severity, the path from the root, the line and the fingerprint
+of the finding, and never its message nor the text of the code. A run line holds its commit, its
+branch, the version of botica, its mode (`full`, `paths`, `diff`, `staged`, `message` or
+`judged`), its origin (`ci` when `GITHUB_ACTIONS` or `GITLAB_CI` is `true`, else `hook` when
+`PRE_COMMIT=1`, else `cli`) and each rule that it evaluated, with the findings that the run
+reports and those that the baseline hid. A rule with no finding is listed too, so a rule that ran
+and found nothing differs from a rule that did not run.
+
+`BOTICA_HISTORY_KEY` keys the fingerprints; the run line names the key by `key_id`, 8 hex digits of
+its hash, and the value is written nowhere. A value shorter than 32 bytes records nothing. The
+directory ignores itself in git. A history that cannot be written (a read-only checkout, a
+symbolic link in place of `.botica/history` or of one of its files) is a warning on stderr, and
+the findings and the exit code stay the same.
+
+botica only appends to the two files and never prunes them: each recorded run adds about 180 bytes
+for each finding, so a run with 100,000 findings adds about 18 MB. Delete `.botica/history/` to
+start over.

@@ -13,7 +13,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Instant, SystemTime};
 
 mod agents_refs;
 mod baseline;
@@ -26,12 +26,14 @@ mod external_weakened;
 mod fingerprints;
 mod git;
 mod import_layers;
+mod inside;
 mod judged;
 mod lockfiles;
 mod messages;
 mod paths;
 mod project_files;
 pub(crate) mod recipe_conflict;
+mod record;
 mod settings_schema;
 
 use diff::Diff;
@@ -100,6 +102,15 @@ pub struct LintArgs {
     /// runs at the root of the project and takes no paths.
     #[arg(long, conflicts_with_all = ["paths", "judged", "change", "message", "statistics"])]
     write_baseline: bool,
+    /// Append the findings and the rules that the run evaluated to `.botica/history/` under the
+    /// root of the project (ADR 0019), as `[history] record = true` does. A run of
+    /// `--write-baseline` reports no finding and records nothing.
+    #[arg(long, overrides_with = "no_record", conflicts_with = "write_baseline")]
+    record: bool,
+    /// Record nothing, whatever `[history] record` says. The last of `--record` and
+    /// `--no-record` wins.
+    #[arg(long, overrides_with = "record")]
+    no_record: bool,
     /// Files per `lint/files` request.
     #[arg(long, default_value_t = 256)]
     batch: usize,
@@ -160,6 +171,8 @@ impl LintArgs {
             commits: None,
             pr_title: None,
             write_baseline: false,
+            record: false,
+            no_record: true,
             batch: 256,
             no_astgrep: false,
             no_prefilter: false,
@@ -231,6 +244,12 @@ struct Setup {
     baseline: Option<PathBuf>,
     /// What the configuration says of the recipes, for `recipe-conflict`.
     recipes: ProjectRecipes,
+    /// The `[history]` table of the configuration.
+    history: botica_config::HistoryConfig,
+    /// The key of the result cache with the configuration less its `[history]` table.
+    rules_fingerprint: String,
+    /// The rules that the plan gave a file, when the run records.
+    evaluated: Option<Arc<record::Evaluated>>,
 }
 
 impl Setup {
@@ -243,9 +262,27 @@ impl Setup {
         let io_error_active = project.is_active(IO_ERROR);
         let prefix = project.working_prefix();
         let config_key = project.fingerprint();
+        let history = project.loaded.config.history.clone();
+        let rules_fingerprint = if record::asked(args, &history) {
+            rules::fingerprint(
+                with_astgrep,
+                &project.resolution,
+                args.extra_rules.as_deref(),
+                &project.fingerprint_without_history(),
+            )?
+        } else {
+            String::new()
+        };
         let natives = project::natives(&project);
         let recipes = ProjectRecipes::of(&project);
         let resolution = Arc::new(project.resolution);
+        let evaluated = record::asked(args, &history).then(|| {
+            Arc::new(record::Evaluated::new(
+                Arc::clone(&resolution),
+                prefix.clone(),
+                with_astgrep,
+            ))
+        });
         let pool = ExtensionPool::new(
             Arc::clone(&resolution),
             prefix.clone(),
@@ -258,6 +295,16 @@ impl Setup {
             .any(|entry| entry.active && entry.rule.has_extension());
         let policy = project::suppression_policy(&resolution);
         let planner = project::planner(Arc::clone(&resolution), natives.index, prefix.clone());
+        let planner: botica_core::NativePlanner = match &evaluated {
+            Some(evaluated) => {
+                let evaluated = Arc::clone(evaluated);
+                Box::new(move |path| {
+                    evaluated.mark(path);
+                    planner(path)
+                })
+            }
+            None => planner,
+        };
         let exclusion = project::exclusion(Arc::clone(&resolution), prefix.clone());
         let inclusion = project::inclusion(Arc::clone(&resolution), prefix.clone());
         let engine = rules::build_engine(
@@ -301,7 +348,18 @@ impl Setup {
             pool,
             baseline,
             recipes,
+            history,
+            rules_fingerprint,
+            evaluated,
         })
+    }
+
+    /// Which paths of findings are inside the project.
+    fn inside(&self) -> inside::Inside<'_> {
+        inside::Inside {
+            root: &self.project_root,
+            prefix: self.prefix.as_deref(),
+        }
     }
 }
 
@@ -309,17 +367,32 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     let format = Format::from(args.output_format);
     check_statistics_format(&args, format)?;
     let total = Instant::now();
+    let started = SystemTime::now();
 
     let mut setup = Setup::build(&args)?;
+    let recording = setup.evaluated.is_some();
     if messages::asked(&args) {
-        let mut diagnostics = messages::findings(&args, &setup.resolution)?;
-        fingerprints::stamp(format, None, fingerprints::Read::Messages, &mut diagnostics);
+        let messages::Checked {
+            found: mut diagnostics,
+            rules,
+        } = messages::findings(&args, &setup.resolution)?;
+        fingerprints::stamp(
+            format,
+            recording,
+            &setup.inside(),
+            fingerprints::Read::Messages,
+            &mut diagnostics,
+        );
+        if recording {
+            let run = record::Run::of(&setup, started, record::Mode::Message, rules, &diagnostics);
+            record::write(&run);
+        }
         write_report(&args, format, &setup, &diagnostics, &[])?;
         return Ok(exit_code(&[], &diagnostics, &args));
     }
     let diff = Diff::read(&args)?;
     if let Some(sarif) = &args.judged {
-        return run_judged(&args, format, &setup, sarif, diff.as_ref());
+        return run_judged(&args, format, &setup, sarif, diff.as_ref(), started);
     }
     let known = known_findings(&args, &setup)?;
     let root = std::env::current_dir()?;
@@ -335,13 +408,21 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     }
 
     let mut errors = read_errors(unreadable);
+    let mut failed_rules = Vec::new();
     if let Some(command) = &args.ext {
-        errors.extend(run_extension(&args, command, &sources, &mut diagnostics));
+        let start = diagnostics.len();
+        let failed = run_extension(&args, command, &sources, &mut diagnostics);
+        if !failed.is_empty() {
+            failed_rules.extend(diagnostics[start..].iter().map(|d| d.rule.clone()));
+        }
+        errors.extend(failed);
     }
+    let mut extensions_finished = Vec::new();
     if setup.has_extensions {
         let ran = extensions::run(&args, &setup, &sources);
         diagnostics.extend(ran.found);
         errors.extend(ran.errors);
+        extensions_finished = ran.finished;
     }
     diagnostics.extend(io_errors);
     diagnostics.extend(project_files::findings(
@@ -357,21 +438,35 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     if args.write_baseline {
         return write_baseline(&setup, &diagnostics, &errors);
     }
-    if let Some(known) = &known {
-        known.apply(setup.prefix.as_deref(), &mut diagnostics);
-    }
+    let mut baselined = known
+        .as_ref()
+        .map(|known| known.apply(setup.prefix.as_deref(), &mut diagnostics))
+        .unwrap_or_default();
     if let Some(diff) = &diff {
         diagnostics.retain(|diagnostic| diff.changes.keeps(diagnostic));
+        baselined.retain(|diagnostic| diff.changes.keeps(diagnostic));
     }
     fingerprints::stamp(
         format,
-        setup.prefix.as_deref(),
+        recording,
+        &setup.inside(),
         fingerprints::Read::Files {
             sources: &sources,
             root: &root,
             staged: diff.as_ref().is_some_and(Diff::is_staged),
         },
         &mut diagnostics,
+    );
+    record::files(
+        &args,
+        &setup,
+        started,
+        &diagnostics,
+        record::Silenced {
+            extensions_finished,
+            failed_rules,
+            baselined: &baselined,
+        },
     );
     write_report(&args, format, &setup, &diagnostics, &errors)?;
     if args.timings {
@@ -429,6 +524,7 @@ fn run_judged(
     setup: &Setup,
     sarif: &std::path::Path,
     diff: Option<&Diff>,
+    started: SystemTime,
 ) -> Result<ExitCode> {
     let text = std::fs::read_to_string(sarif)
         .with_context(|| format!("cannot read `{}`", sarif.display()))?;
@@ -443,7 +539,8 @@ fn run_judged(
     let root = std::env::current_dir()?;
     fingerprints::stamp(
         format,
-        setup.prefix.as_deref(),
+        setup.evaluated.is_some(),
+        &setup.inside(),
         fingerprints::Read::Files {
             sources: &[],
             root: &root,
@@ -455,6 +552,15 @@ fn run_judged(
         eprintln!(
             "botica: `{rule}` is not a judgment rule of the catalog: its finding is left out"
         );
+    }
+    if setup.evaluated.is_some() {
+        record::write(&record::Run::of(
+            setup,
+            started,
+            record::Mode::Judged,
+            Vec::new(),
+            &judged.diagnostics,
+        ));
     }
     write_report(args, format, setup, &judged.diagnostics, &[])?;
     Ok(exit_code(&[], &judged.diagnostics, args))

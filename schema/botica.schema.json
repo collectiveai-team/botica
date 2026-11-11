@@ -67,6 +67,9 @@
         "type": "string"
       }
     },
+    "history": {
+      "$ref": "#/$defs/HistoryConfig"
+    },
     "ignore": {
       "description": "Rules to switch off. Same syntax as `select`.",
       "type": "array",
@@ -174,6 +177,23 @@
           ],
           "format": "uint64",
           "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "HistoryConfig": {
+      "description": "Settings of the history of findings in `.botica/history/` (ADR 0019).",
+      "type": "object",
+      "properties": {
+        "record": {
+          "description": "Each run of `botica lint` appends its findings and the rules it evaluated to\n`.botica/history/`, as `--record` does. `--no-record` turns it off for one run.",
+          "type": "boolean",
+          "default": false
+        },
+        "require-key": {
+          "description": "A run with no `BOTICA_HISTORY_KEY` records nothing, so that a job where the secret is\nmissing writes no unkeyed fingerprints.",
+          "type": "boolean",
+          "default": false
         }
       },
       "additionalProperties": false
