@@ -6,6 +6,9 @@ use super::lines::Run;
 use super::read::History;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
+/// How many heads the pairing asks git about; a CI run past the limit is paired by time.
+const MAX_HEADS: usize = 500;
+
 /// Why a rule of two paired runs is left out of the comparison.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Reason {
@@ -13,6 +16,13 @@ pub enum Reason {
     Unhashed,
     /// The two runs record different hashes: the version, the rule or its settings changed.
     Changed,
+}
+
+/// The two readings of the pairing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum Reading {
+    Caught,
+    Reached,
 }
 
 /// What the paired readings found.
@@ -31,10 +41,15 @@ pub struct Paired {
     /// The CI runs that have a hook run before them.
     pub paired_ci: usize,
     pub not_comparable: BTreeMap<String, BTreeSet<Reason>>,
+    /// The heads that git was not asked about because of the limit.
+    pub heads_unasked: usize,
 }
 
 /// The fingerprints of the findings of each rule in each run.
 type Held<'a> = HashMap<(usize, &'a str), HashMap<&'a str, HashSet<&'a str>>>;
+
+/// The proper ancestors, among the commits of the runs, of each head that git answered for.
+type Ancestors = HashMap<String, HashSet<String>>;
 
 pub fn pair(history: &History, window: &[&Run], ancestry: &dyn Ancestry) -> Paired {
     let runs_of = |origin: &str, mode: &str| -> Vec<&Run> {
@@ -44,29 +59,125 @@ pub fn pair(history: &History, window: &[&Run], ancestry: &dyn Ancestry) -> Pair
             .filter(|run| run.is(origin, mode) && named(run))
             .collect()
     };
+    let hooks = runs_of("hook", "staged");
+    let ci = runs_of("ci", "diff");
+    let mut paired = Paired {
+        hook_runs: hooks.len(),
+        ci_runs: ci.len(),
+        ..Paired::default()
+    };
+    let (ancestors, unasked) = ancestors(&hooks, &ci, ancestry);
+    paired.heads_unasked = unasked;
+    let order = Order::new(&ci, ancestors);
     let mut pairing = Pairing {
         held: held(history),
-        hooks: runs_of("hook", "staged"),
-        ci: runs_of("ci", "diff"),
-        ancestry,
-        paired: Paired::default(),
+        hooks,
+        ci,
+        order,
+        paired,
         seen: HashSet::new(),
     };
-    pairing.paired.hook_runs = pairing.hooks.len();
-    pairing.paired.ci_runs = pairing.ci.len();
     pairing.paired.paired_hooks = pairing.caught();
     pairing.paired.paired_ci = pairing.reached();
     pairing.paired
+}
+
+/// Asks `ancestry` once for each distinct head of the CI runs, and returns the answers and how
+/// many heads the limit left out.
+fn ancestors(hooks: &[&Run], ci: &[&Run], ancestry: &dyn Ancestry) -> (Ancestors, usize) {
+    let heads: BTreeSet<&str> = ci.iter().filter_map(|run| run.checked()).collect();
+    let among: HashSet<&str> = hooks
+        .iter()
+        .filter_map(|run| run.commit.as_deref())
+        .chain(heads.iter().copied())
+        .collect();
+    let mut answers = Ancestors::new();
+    for head in heads.iter().take(MAX_HEADS) {
+        if let Some(found) = ancestry.ancestors(head, &among) {
+            answers.insert((*head).to_owned(), found);
+        }
+    }
+    (answers, heads.len().saturating_sub(MAX_HEADS))
+}
+
+/// Which hook run precedes which CI run (ADR 0019 decision 8): same branch and key, and the
+/// `commit` of the hook run is a proper ancestor of the `head` of the CI run. When it is not, or
+/// the clone lacks a commit, the time of the runs decides, unless a CI run on a newer `head`
+/// started before the hook run.
+struct Order<'a> {
+    ancestors: Ancestors,
+    /// The start of the earliest CI run of the same branch and key whose `head` is a proper
+    /// descendant of the `head` of each CI run, by the position of the run in `ci`.
+    newer: Vec<Option<u64>>,
+    ci: Vec<&'a Run>,
+}
+
+impl<'a> Order<'a> {
+    fn new(ci: &[&'a Run], ancestors: Ancestors) -> Self {
+        let mut order = Self {
+            ancestors,
+            newer: Vec::new(),
+            ci: ci.to_vec(),
+        };
+        let mut by_group: HashMap<(&str, Option<&str>), Vec<usize>> = HashMap::new();
+        for (position, run) in ci.iter().enumerate() {
+            by_group.entry(group(run)).or_default().push(position);
+        }
+        order.newer = vec![None; ci.len()];
+        for positions in by_group.values() {
+            for &old in positions {
+                order.newer[old] = positions
+                    .iter()
+                    .filter(|&&other| order.is_ancestor(ci[old].checked(), ci[other].checked()))
+                    .map(|&other| ci[other].started_at)
+                    .min();
+            }
+        }
+        order
+    }
+
+    fn is_ancestor(&self, older: Option<&str>, newer: Option<&str>) -> bool {
+        match (older, newer) {
+            (Some(older), Some(newer)) if older != newer => self
+                .ancestors
+                .get(newer)
+                .is_some_and(|found| found.contains(older)),
+            _ => false,
+        }
+    }
+
+    /// Whether `hook` precedes the CI run at `position` of `ci`.
+    fn precedes(&self, hook: &Run, position: usize) -> bool {
+        let run = self.ci[position];
+        if group(hook) != group(run) {
+            return false;
+        }
+        if let (Some(commit), Some(head)) = (hook.commit.as_deref(), run.checked()) {
+            if commit == head {
+                return false;
+            }
+            if self.is_ancestor(Some(commit), Some(head)) {
+                return true;
+            }
+        }
+        hook.started_at < run.started_at
+            && self.newer[position].is_none_or(|at| at >= hook.started_at)
+    }
+}
+
+/// What two runs share to be paired: the branch, and the key of their fingerprints.
+fn group(run: &Run) -> (&str, Option<&str>) {
+    (branch(run), run.key_id.as_deref())
 }
 
 struct Pairing<'a> {
     held: Held<'a>,
     hooks: Vec<&'a Run>,
     ci: Vec<&'a Run>,
-    ancestry: &'a dyn Ancestry,
+    order: Order<'a>,
     paired: Paired,
     /// A finding counts once for a rule, a fingerprint and a branch, in each reading.
-    seen: HashSet<(&'static str, String, String, String)>,
+    seen: HashSet<(Reading, String, String, String)>,
 }
 
 impl<'a> Pairing<'a> {
@@ -75,13 +186,13 @@ impl<'a> Pairing<'a> {
     fn caught(&mut self) -> usize {
         let mut paired_hooks = 0;
         for hook in self.hooks.clone() {
-            let Some(after) = earliest(hook, &self.ci, self.ancestry) else {
+            let Some(after) = self.earliest(hook) else {
                 continue;
             };
             paired_hooks += 1;
             for slug in hook.rules.keys() {
                 if comparable(slug, hook, after, &mut self.paired) {
-                    self.count("caught", hook, after, slug);
+                    self.count(hook, &[after], slug);
                 }
             }
         }
@@ -92,12 +203,12 @@ impl<'a> Pairing<'a> {
     /// CI runs had a hook run before them.
     fn reached(&mut self) -> usize {
         let mut paired_ci = 0;
-        for run in self.ci.clone() {
+        for (position, run) in self.ci.clone().into_iter().enumerate() {
             let before: Vec<&Run> = self
                 .hooks
                 .iter()
                 .copied()
-                .filter(|hook| precedes(hook, run, &self.ci, self.ancestry))
+                .filter(|hook| self.order.precedes(hook, position))
                 .collect();
             if before.is_empty() {
                 continue;
@@ -110,40 +221,42 @@ impl<'a> Pairing<'a> {
                     .filter(|hook| comparable(slug, hook, run, &mut self.paired))
                     .collect();
                 if !comparable.is_empty() {
-                    self.count_new("reached", &comparable, run, slug);
+                    self.count(run, &comparable, slug);
                 }
             }
         }
         paired_ci
     }
 
-    /// Counts the findings of `hook` for `slug` that `after` does not hold.
-    fn count(&mut self, reading: &'static str, hook: &Run, after: &Run, slug: &str) {
-        let kept = held_by(&self.held, after, slug);
-        let new: Vec<String> = held_by(&self.held, hook, slug)
-            .into_iter()
-            .filter(|fingerprint| !kept.contains(fingerprint))
-            .map(str::to_owned)
-            .collect();
-        self.add(reading, hook, slug, new);
+    /// The earliest CI run of the branch of `hook` that the hook run precedes.
+    fn earliest(&self, hook: &Run) -> Option<&'a Run> {
+        self.ci
+            .iter()
+            .enumerate()
+            .filter(|(position, _)| self.order.precedes(hook, *position))
+            .map(|(_, run)| *run)
+            .min_by(|a, b| (a.started_at, &a.id).cmp(&(b.started_at, &b.id)))
     }
 
-    /// Counts the findings of `run` for `slug` that none of `hooks` holds.
-    fn count_new(&mut self, reading: &'static str, hooks: &[&Run], run: &Run, slug: &str) {
-        let holds: HashSet<&str> = hooks
+    /// Counts the findings of `run` for `slug` that none of `others` holds. The reading is
+    /// `Caught` for the finding of a hook run against its CI run, and `Reached` for the finding of
+    /// a CI run against the hook runs before it.
+    fn count(&mut self, run: &Run, others: &[&Run], slug: &str) {
+        let reading = if run.origin == "hook" {
+            Reading::Caught
+        } else {
+            Reading::Reached
+        };
+        let holds: HashSet<&str> = others
             .iter()
-            .flat_map(|hook| held_by(&self.held, hook, slug))
+            .flat_map(|other| held_by(&self.held, other, slug))
             .collect();
         let new: Vec<String> = held_by(&self.held, run, slug)
             .into_iter()
             .filter(|fingerprint| !holds.contains(fingerprint))
             .map(str::to_owned)
             .collect();
-        self.add(reading, run, slug, new);
-    }
-
-    fn add(&mut self, reading: &'static str, run: &Run, slug: &str, fingerprints: Vec<String>) {
-        for fingerprint in fingerprints {
+        for fingerprint in new {
             let key = (
                 reading,
                 slug.to_owned(),
@@ -154,8 +267,8 @@ impl<'a> Pairing<'a> {
                 continue;
             }
             let counts = match reading {
-                "caught" => &mut self.paired.caught,
-                _ => &mut self.paired.reached,
+                Reading::Caught => &mut self.paired.caught,
+                Reading::Reached => &mut self.paired.reached,
             };
             *counts.entry(slug.to_owned()).or_default() += 1;
         }
@@ -208,40 +321,4 @@ fn comparable(slug: &str, a: &Run, b: &Run, paired: &mut Paired) -> bool {
         .or_default()
         .insert(reason);
     false
-}
-
-/// The earliest CI run of the branch of `hook`, with the same `key_id`, that the hook run precedes.
-fn earliest<'a>(hook: &Run, ci: &[&'a Run], ancestry: &dyn Ancestry) -> Option<&'a Run> {
-    ci.iter()
-        .copied()
-        .filter(|run| precedes(hook, run, ci, ancestry))
-        .min_by(|a, b| (a.started_at, &a.id).cmp(&(b.started_at, &b.id)))
-}
-
-/// Whether the hook run precedes the CI run (ADR 0019 decision 8): same branch and key, and the
-/// `commit` of the hook run is a proper ancestor of the `head` of the CI run. When it is not, the
-/// time of the runs decides, unless a CI run on a newer `head` started before the hook run.
-fn precedes(hook: &Run, run: &Run, ci: &[&Run], ancestry: &dyn Ancestry) -> bool {
-    if !named(hook) || hook.branch != run.branch || hook.key_id != run.key_id {
-        return false;
-    }
-    let (commit, head) = (hook.commit.as_deref(), run.checked());
-    if let (Some(commit), Some(head)) = (commit, head) {
-        if commit == head {
-            return false;
-        }
-        if ancestry.is_ancestor(commit, head) {
-            return true;
-        }
-    }
-    hook.started_at < run.started_at
-        && !ci.iter().any(|other| {
-            other.branch == run.branch
-                && other.key_id == run.key_id
-                && other.started_at < hook.started_at
-                && match (head, other.checked()) {
-                    (Some(head), Some(newer)) => ancestry.is_ancestor(head, newer),
-                    _ => false,
-                }
-        })
 }

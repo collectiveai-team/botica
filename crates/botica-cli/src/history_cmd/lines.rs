@@ -43,6 +43,8 @@ pub struct Run {
     pub mode: String,
     pub origin: String,
     pub rules: BTreeMap<String, Entry>,
+    /// The blake3 of the line, so that two lines of one run that differ in any key are told apart.
+    pub raw: [u8; 32],
 }
 
 impl Run {
@@ -104,6 +106,7 @@ pub fn run(source: usize, line: &[u8]) -> Option<Run> {
         mode,
         origin,
         rules,
+        raw: *blake3::hash(line).as_bytes(),
     })
 }
 
@@ -172,7 +175,17 @@ fn plain(value: &Value, max: usize) -> Option<String> {
 }
 
 fn is_plain(text: &str, max: usize) -> bool {
-    text.len() <= max && !text.chars().any(char::is_control)
+    text.len() <= max && !text.chars().any(is_unsafe)
+}
+
+/// A control character, or a format character that reorders or hides the text around it (the
+/// marks and overrides of bidirectional text, the zero-width characters and the byte order mark).
+fn is_unsafe(found: char) -> bool {
+    found.is_control()
+        || matches!(
+            found,
+            '\u{200B}'..='\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}' | '\u{FEFF}'
+        )
 }
 
 /// A `mode` or an `origin`: at most 64 bytes of `[a-z:-]`.
@@ -189,7 +202,7 @@ fn label(value: &Value) -> Option<String> {
 fn relative(path: &str) -> Option<()> {
     let outside = path.starts_with(['/', '\\'])
         || path.split(['/', '\\']).any(|part| part == "..")
-        || path.chars().any(char::is_control);
+        || path.chars().any(is_unsafe);
     (!outside).then_some(())
 }
 
@@ -202,11 +215,11 @@ fn detail(value: &Value) -> bool {
 
 fn no_control(value: &Value) -> bool {
     match value {
-        Value::String(text) => !text.chars().any(char::is_control),
+        Value::String(text) => !text.chars().any(is_unsafe),
         Value::Array(items) => items.iter().all(no_control),
         Value::Object(map) => map
             .iter()
-            .all(|(key, item)| !key.chars().any(char::is_control) && no_control(item)),
+            .all(|(key, item)| !key.chars().any(is_unsafe) && no_control(item)),
         _ => true,
     }
 }

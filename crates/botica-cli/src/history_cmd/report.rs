@@ -34,6 +34,11 @@ pub struct Report {
     pub noise: Noise,
 }
 
+/// The first second of a window of `days` days that ends at `now`.
+pub fn since(now: u64, days: u64) -> u64 {
+    now.saturating_sub(days.saturating_mul(DAY))
+}
+
 /// The report of the last `days` days up to `now`, in Unix seconds.
 pub fn build(
     history: &History,
@@ -42,7 +47,7 @@ pub fn build(
     noise: Noise,
     ancestry: &dyn Ancestry,
 ) -> Report {
-    let since = now.saturating_sub(days.saturating_mul(DAY));
+    let since = since(now, days);
     let window: Vec<&Run> = history
         .runs
         .iter()

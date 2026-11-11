@@ -30,7 +30,7 @@ and with `2` when it could not run.
 ## What it says
 
 Rules with no findings
-: A rule that is in `rules` of at least one run of the window, with `hits`, `suppressed` and
+: A rule that is in `rules` of at least one trusted run of the window, of any mode, with `hits`, `suppressed` and
   `baselined` at 0 in every run. A rule whose findings are all suppressed or in the baseline is not
   one, and a rule that is absent from `rules` did not run, which is another case. Zero can mean that
   the rule works: the agent may follow it already because `AGENTS.md` lists it. The list is a set of
@@ -73,6 +73,11 @@ apart from the runs of CI. A run under `--from` is trusted when its `source.json
 findings and the noise of a rule read trusted runs only, since a person with write access to a
 branch can upload lines. The paired readings also read runs that are not trusted, and the hook
 runs they need are local ones only.
+
+`botica history fetch` is not part of botica yet, so nothing in botica writes `source.json`. Whoever
+downloads the artifacts writes it from the answer of the API of the CI system, and a `source.json`
+that the artifact itself carried would let the author of a branch mark a run as trusted. The
+files of an artifact may sit in `<id>/` or in a folder `<id>/<name>` of it.
 
 The report skips a line that fails the checks of ADR 0019 decision 9.4 and counts the skipped
 lines. It skips a file that is not a regular file, one over 50 MB, and what passes 2 GB in all, and

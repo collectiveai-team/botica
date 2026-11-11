@@ -63,10 +63,10 @@ fn report_run(args: &ReportArgs) -> Result<ExitCode> {
     }
     let start = std::env::current_dir().context("cannot read the working directory")?;
     let root = botica_config::discover(&start)?.root;
-    let history = read::load(&root, &args.from)?;
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_or(0, |elapsed| elapsed.as_secs());
+    let history = read::load(&root, &args.from, report::since(now, args.days))?;
     let noise = Noise {
         min_suppressed: args.min_suppressed,
         min_share: f64::from(args.min_share) / 100.0,
@@ -91,8 +91,8 @@ fn print_report(text: &str) {
     print!("::stop-commands::{token}\n{text}::{token}::\n");
 }
 
-/// A token that the lines of the history cannot predict: 128 bits of the clock, the process and the
-/// address of a stack variable, through blake3.
+/// A token for the stop line: blake3 of the clock, the process id and the address of a stack
+/// variable. The lines of the history are fixed before the process starts, so they cannot predict it.
 fn random_token() -> String {
     let marker = 0u8;
     let nanos = SystemTime::now()

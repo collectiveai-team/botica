@@ -191,10 +191,11 @@ pub fn help(dir: &Path) -> std::process::Output {
     command(dir, &["history", "report", "--help"])
 }
 
-const SECTIONS: [&str; 7] = [
+const SECTIONS: [&str; 8] = [
     "Runs read",
     "Caught before the commit",
     "Reached CI",
+    "Pairing by time",
     "Rules that are not comparable",
     "Rules with no findings",
     "Rules with many suppressions",

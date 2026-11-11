@@ -23,7 +23,7 @@ pub struct Noisy {
 impl Noisy {
     /// `suppressed` over `hits` plus `suppressed`.
     pub fn share(&self) -> f64 {
-        self.suppressed as f64 / (self.hits + self.suppressed) as f64
+        self.suppressed as f64 / self.hits.saturating_add(self.suppressed) as f64
     }
 }
 
@@ -58,14 +58,14 @@ pub fn rules(runs: &[&Run], noise: Noise) -> (Vec<Quiet>, Vec<Noisy>) {
         for (slug, entry) in &run.rules {
             let total = totals.entry(slug).or_default();
             total.runs += 1;
-            total.hits += entry.hits;
-            total.suppressed += entry.suppressed;
-            total.baselined += entry.baselined;
+            total.hits = total.hits.saturating_add(entry.hits);
+            total.suppressed = total.suppressed.saturating_add(entry.suppressed);
+            total.baselined = total.baselined.saturating_add(entry.baselined);
         }
     }
     let quiet = totals
         .iter()
-        .filter(|(_, total)| total.hits + total.suppressed + total.baselined == 0)
+        .filter(|(_, total)| total.hits == 0 && total.suppressed == 0 && total.baselined == 0)
         .map(|(slug, total)| Quiet {
             slug: (*slug).to_owned(),
             runs: total.runs,
@@ -105,8 +105,10 @@ pub fn roles(history: &History, runs: &HashSet<(usize, &str)>) -> Vec<Role> {
             judged: 0,
             dismissed: 0,
         });
-        role.judged += 1;
-        role.dismissed += u64::from(refutation != "confirmed");
+        role.judged = role.judged.saturating_add(1);
+        role.dismissed = role
+            .dismissed
+            .saturating_add(u64::from(refutation != "confirmed"));
     }
     by_role.into_values().collect()
 }

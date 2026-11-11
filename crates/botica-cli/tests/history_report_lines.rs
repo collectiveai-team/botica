@@ -3,7 +3,9 @@
 
 mod common;
 
-use common::history::{dir, finding, history_dir, report, section, write_local, RunSpec};
+use common::history::{
+    dir, finding, history_dir, report, section, write_downloaded, write_local, RunSpec, HASH,
+};
 use common::{stderr, stdout};
 use serde_json::{json, Value};
 use std::fs;
@@ -318,3 +320,54 @@ fn a_file_of_the_history_that_is_a_symbolic_link_is_skipped_and_named() {
         assert!(text.contains("is not a regular file: skipped"), "{text}");
     }
 }
+
+#[test]
+fn a_run_of_the_classifier_enters_no_rule_reading() {
+    let dir = dir("classify");
+    write_local(
+        &dir,
+        &[RunSpec::new(1, "classify", "classify").rule("only-classifier", 0, None)],
+        &[],
+    );
+
+    let text = stdout(&report(&dir, &[]));
+
+    assert!(!text.contains("only-classifier"), "{text}");
+}
+
+#[test]
+fn an_orphan_finding_does_not_make_a_hook_finding() {
+    let dir = dir("orphan-pair");
+    write_local(
+        &dir,
+        &[RunSpec::new(1, "hook", "staged")
+            .ago(7200)
+            .commit(COMMIT_A)
+            .rule("no-utils", 0, Some(HASH))],
+        &[finding(99, "no-utils", 4)],
+    );
+    write_downloaded(
+        &dir.join("downloads"),
+        "100",
+        true,
+        &[RunSpec::new(2, "ci", "diff")
+            .ago(3600)
+            .head(COMMIT_B)
+            .rule("no-utils", 0, Some(HASH))],
+        &[],
+    );
+    let downloads = dir.join("downloads");
+
+    let text = stdout(&report(
+        &dir,
+        &["--from", downloads.to_str().expect("UTF-8")],
+    ));
+
+    assert!(
+        section(&text, "Caught before the commit").contains("No finding."),
+        "{text}"
+    );
+}
+
+const COMMIT_A: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const COMMIT_B: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
