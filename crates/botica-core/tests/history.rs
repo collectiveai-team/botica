@@ -86,6 +86,95 @@ fn append_writes_the_findings_and_then_the_run_one_line_each() {
 }
 
 #[test]
+fn a_run_line_and_a_finding_line_hold_exactly_the_keys_of_adr_0019() {
+    let dir = root("keys");
+
+    history::append(&dir, &run("r"), &[finding("a.py", 1, "f")]).expect("written");
+
+    let base = dir.join(".botica").join("history");
+    let keys = |file: &str| -> Vec<String> {
+        let text = fs::read_to_string(base.join(file)).expect("the file");
+        let value: serde_json::Value = serde_json::from_str(text.trim()).expect("one line");
+        let mut keys: Vec<String> = value
+            .as_object()
+            .expect("an object")
+            .keys()
+            .cloned()
+            .collect();
+        keys.sort();
+        keys
+    };
+    assert_eq!(
+        keys("runs.jsonl"),
+        [
+            "botica",
+            "branch",
+            "commit",
+            "head",
+            "key_id",
+            "mode",
+            "origin",
+            "rules",
+            "rules_fingerprint",
+            "run_id",
+            "started_at",
+            "v"
+        ]
+    );
+    assert_eq!(
+        keys("findings.jsonl"),
+        [
+            "code",
+            "fingerprint",
+            "line",
+            "occurrence",
+            "path",
+            "run_id",
+            "severity",
+            "slug",
+            "v"
+        ]
+    );
+}
+
+#[test]
+fn runs_that_append_at_once_do_not_interleave_their_lines() {
+    let dir = root("concurrent");
+    let findings: Vec<FindingLine> = (0..200)
+        .map(|line| finding("a.py", line, &format!("{line:016x}")))
+        .collect();
+
+    std::thread::scope(|scope| {
+        for writer in 0..8 {
+            let (dir, findings) = (&dir, &findings);
+            scope.spawn(move || {
+                let mut mine = findings.clone();
+                for finding in &mut mine {
+                    finding.run_id = format!("run-{writer}");
+                }
+                history::append(dir, &run(&format!("run-{writer}")), &mine).expect("written");
+            });
+        }
+    });
+
+    let base = dir.join(".botica").join("history");
+    let text = fs::read_to_string(base.join("findings.jsonl")).expect("the findings");
+    let ids: Vec<String> = text
+        .lines()
+        .map(|line| {
+            let value: serde_json::Value = serde_json::from_str(line).expect("a whole line");
+            value["run_id"].as_str().expect("a run id").to_owned()
+        })
+        .collect();
+    assert_eq!(ids.len(), 8 * 200);
+    for block in ids.chunks(200) {
+        assert!(block.iter().all(|id| id == &block[0]), "{block:?}");
+    }
+    let runs = fs::read_to_string(base.join("runs.jsonl")).expect("the runs");
+    assert_eq!(runs.lines().count(), 8);
+}
+
+#[test]
 fn a_run_with_no_finding_writes_no_findings_file() {
     let dir = root("no-finding");
 

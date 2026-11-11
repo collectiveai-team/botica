@@ -81,48 +81,58 @@ impl FingerprintKey {
 
     /// Sets the fingerprint of each finding. `project_path` gives the path of a finding from the
     /// root of the project, and `text_of` the text that the run linted at the path of a finding,
-    /// which is read once for each path.
+    /// which is read once for each path and dropped once the findings of that path are done.
     pub fn stamp(
         &self,
         diagnostics: &mut [Diagnostic],
         project_path: impl Fn(&str) -> String,
         mut text_of: impl FnMut(&str) -> Option<String>,
     ) {
-        let mut lines_of: HashMap<String, Option<Vec<String>>> = HashMap::new();
-        for diagnostic in diagnostics {
-            let slug = diagnostic.rule.as_str();
-            let fingerprint = if diagnostic.path.is_empty() {
-                self.of_message(slug, "", &diagnostic.message)
-            } else {
-                let path = project_path(&diagnostic.path);
-                let lines = (!diagnostic.file_level).then(|| {
-                    lines_of.entry(diagnostic.path.clone()).or_insert_with(|| {
-                        text_of(&diagnostic.path)
-                            .map(|text| text.lines().map(str::to_owned).collect())
-                    })
-                });
-                match lines {
-                    Some(Some(lines)) => self.of_line_in(slug, &path, lines, diagnostic.line),
-                    _ => self.of_file(slug, &path),
-                }
-            };
-            diagnostic.fingerprint = Some(fingerprint);
+        let mut by_path: HashMap<&str, Vec<usize>> = HashMap::new();
+        for (index, diagnostic) in diagnostics.iter().enumerate() {
+            by_path.entry(&diagnostic.path).or_default().push(index);
+        }
+        let groups: Vec<(String, Vec<usize>)> = by_path
+            .into_iter()
+            .map(|(path, indexes)| (path.to_owned(), indexes))
+            .collect();
+        for (path, indexes) in groups {
+            let mut text: Option<Option<Lines>> = None;
+            let at_root = (!path.is_empty()).then(|| project_path(&path));
+            for index in indexes {
+                let diagnostic = &diagnostics[index];
+                let slug = diagnostic.rule.as_str();
+                let fingerprint = match &at_root {
+                    None => self.of_message(slug, "", &diagnostic.message),
+                    Some(at_root) if diagnostic.file_level => self.of_file(slug, at_root),
+                    Some(at_root) => {
+                        match text.get_or_insert_with(|| text_of(&path).map(Lines::new)) {
+                            Some(lines) => self.of_line_in(slug, at_root, lines, diagnostic.line),
+                            None => self.of_file(slug, at_root),
+                        }
+                    }
+                };
+                diagnostics[index].fingerprint = Some(fingerprint);
+            }
         }
     }
 
-    fn of_line_in(&self, slug: &str, path: &str, lines: &[impl AsRef<str>], line: usize) -> String {
-        let Some(index) = line.checked_sub(1).filter(|&index| index < lines.len()) else {
+    fn of_line_in(&self, slug: &str, path: &str, lines: &impl LineAt, line: usize) -> String {
+        let count = lines.count();
+        let Some(index) = line.checked_sub(1).filter(|&index| index < count) else {
             return self.of_file(slug, path);
         };
-        let non_blank = |line: &&_| !AsRef::<str>::as_ref(*line).trim().is_empty();
-        let above = lines[..index].iter().rev().find(non_blank);
-        let below = lines[index + 1..].iter().find(non_blank);
+        let non_blank = |&i: &usize| !lines.at(i).trim().is_empty();
+        let above = (0..index).rev().find(non_blank).map_or("", |i| lines.at(i));
+        let below = (index + 1..count)
+            .find(non_blank)
+            .map_or("", |i| lines.at(i));
         self.hash(&[
             slug,
             path,
-            &normalized(above.map_or("", AsRef::as_ref)),
-            &normalized(lines[index].as_ref()),
-            &normalized(below.map_or("", AsRef::as_ref)),
+            &normalized(above),
+            &normalized(lines.at(index)),
+            &normalized(below),
         ])
     }
 
@@ -135,6 +145,54 @@ impl FingerprintKey {
             hasher.update(field.as_bytes());
         }
         hasher.finalize().to_hex()[..16].to_owned()
+    }
+}
+
+/// The lines of a text, read by index.
+trait LineAt {
+    fn count(&self) -> usize;
+    fn at(&self, index: usize) -> &str;
+}
+
+impl LineAt for Vec<&str> {
+    fn count(&self) -> usize {
+        self.len()
+    }
+
+    fn at(&self, index: usize) -> &str {
+        self[index]
+    }
+}
+
+/// A text kept once, with where each of its lines (as `str::lines` splits them) starts and ends,
+/// so that a file with many findings is not copied line by line.
+struct Lines {
+    text: String,
+    bounds: Vec<(usize, usize)>,
+}
+
+impl Lines {
+    fn new(text: String) -> Self {
+        let base = text.as_ptr() as usize;
+        let bounds = text
+            .lines()
+            .map(|line| {
+                let start = line.as_ptr() as usize - base;
+                (start, start + line.len())
+            })
+            .collect();
+        Self { text, bounds }
+    }
+}
+
+impl LineAt for Lines {
+    fn count(&self) -> usize {
+        self.bounds.len()
+    }
+
+    fn at(&self, index: usize) -> &str {
+        let (start, end) = self.bounds[index];
+        &self.text[start..end]
     }
 }
 

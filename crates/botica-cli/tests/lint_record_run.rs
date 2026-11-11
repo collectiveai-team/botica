@@ -47,7 +47,6 @@ fn the_history_is_written_under_the_root_whatever_the_working_directory() {
     let found = findings(&dir);
     assert_eq!(found.len(), 1, "{found:?}");
     assert_eq!(found[0]["path"], "src/b.py");
-    assert_eq!(runs(&dir)[0]["mode"], "full");
 }
 
 #[test]

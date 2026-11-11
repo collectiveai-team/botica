@@ -102,8 +102,9 @@ pub struct LintArgs {
     #[arg(long, conflicts_with_all = ["paths", "judged", "change", "message", "statistics"])]
     write_baseline: bool,
     /// Append the findings and the rules that the run evaluated to `.botica/history/` under the
-    /// root of the project (ADR 0019), as `[history] record = true` does.
-    #[arg(long, conflicts_with = "no_record")]
+    /// root of the project (ADR 0019), as `[history] record = true` does. A run of
+    /// `--write-baseline` reports no finding and records nothing.
+    #[arg(long, conflicts_with_all = ["no_record", "write_baseline"])]
     record: bool,
     /// Record nothing, whatever `[history] record` says.
     #[arg(long)]
@@ -260,12 +261,16 @@ impl Setup {
         let prefix = project.working_prefix();
         let config_key = project.fingerprint();
         let history = project.loaded.config.history.clone();
-        let rules_fingerprint = rules::fingerprint(
-            with_astgrep,
-            &project.resolution,
-            args.extra_rules.as_deref(),
-            &project.fingerprint_without_history(),
-        )?;
+        let rules_fingerprint = if record::asked(args, &history) {
+            rules::fingerprint(
+                with_astgrep,
+                &project.resolution,
+                args.extra_rules.as_deref(),
+                &project.fingerprint_without_history(),
+            )?
+        } else {
+            String::new()
+        };
         let natives = project::natives(&project);
         let recipes = ProjectRecipes::of(&project);
         let resolution = Arc::new(project.resolution);
@@ -458,15 +463,11 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         &mut diagnostics,
     );
     if let Some(evaluated) = &setup.evaluated {
-        // A hit of the result cache does not ask the engine for the plan of its file.
-        for source in &sources {
-            evaluated.mark(&source.path);
-        }
         let mut rules = evaluated.slugs();
         rules.extend(extensions_finished);
         let mut run = setup.run_record(
             started,
-            record::Mode::of_files(&args, &setup.project_root),
+            record::Mode::of_files(&args, &setup.project_root, setup.prefix.as_deref()),
             rules,
             &diagnostics,
         );

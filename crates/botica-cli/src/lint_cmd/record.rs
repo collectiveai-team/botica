@@ -2,7 +2,7 @@
 //! rules that it evaluated.
 
 use super::baseline::from_root;
-use super::LintArgs;
+use super::{git, LintArgs};
 use crate::output::eprintln;
 use botica_catalog::{Kind, Scope};
 use botica_config::{HistoryConfig, Resolution};
@@ -11,7 +11,6 @@ use botica_core::history::{self, FindingLine, RuleEntry, RunLine};
 use botica_core::{language_of, Diagnostic};
 use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
-use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::SystemTime;
 
@@ -43,13 +42,16 @@ impl Mode {
         }
     }
 
-    /// The mode of a run that linted files: the last row of the table that its flags match.
-    pub(super) fn of_files(args: &LintArgs, project_root: &Path) -> Self {
+    /// The mode of a run that linted files: the last row of the table that its flags match. A run
+    /// with no path from a directory below the root lints that directory alone, so it is `paths`.
+    pub(super) fn of_files(args: &LintArgs, project_root: &Path, prefix: Option<&str>) -> Self {
         if args.staged {
             Self::Staged
         } else if args.diff.is_some() || args.diff_file.is_some() {
             Self::Diff
-        } else if args.paths.is_empty() || is_the_root(&args.paths, project_root) {
+        } else if (args.paths.is_empty() && prefix.is_none())
+            || is_the_root(&args.paths, project_root)
+        {
             Self::Full
         } else {
             Self::Paths
@@ -199,13 +201,13 @@ fn append(run: &Run<'_>) -> anyhow::Result<()> {
         .map(|diagnostic| finding_line(run, &key, &run_id, diagnostic))
         .collect();
     history::number_occurrences(&mut findings);
-    let commit = git(run.project_root, &["rev-parse", "HEAD"]).filter(|sha| is_object_name(sha));
+    let commit = git::answer(&["rev-parse", "HEAD"]).filter(|sha| is_object_name(sha));
     let line = RunLine {
         v: history::VERSION,
         run_id,
         started_at: history::unix_seconds(run.started),
         head: head().or_else(|| commit.clone()),
-        branch: branch(run.project_root),
+        branch: branch(),
         commit,
         botica: env!("CARGO_PKG_VERSION").to_owned(),
         rules_fingerprint: run.rules_fingerprint.clone(),
@@ -223,11 +225,13 @@ fn finding_line(
     run_id: &str,
     diagnostic: &Diagnostic,
 ) -> FindingLine {
-    let whole = matches!(run.mode, Mode::Message) || diagnostic.path.is_empty();
-    let fingerprint = match (&diagnostic.fingerprint, whole) {
-        (Some(fingerprint), _) => fingerprint.clone(),
-        (None, true) => key.of_message(&diagnostic.rule, "", &diagnostic.message),
-        (None, false) => key.of_file(&diagnostic.rule, &from_root(run.prefix, &diagnostic.path)),
+    // A path outside the root (`../x.py` from the root) has no path inside it: decision 7 drops
+    // such a path and leaves `path` empty.
+    let path = within_root(run.prefix, &diagnostic.path);
+    let whole = matches!(run.mode, Mode::Message) || path.is_none();
+    let fingerprint = match &diagnostic.fingerprint {
+        Some(fingerprint) => fingerprint.clone(),
+        None => key.of_message(&diagnostic.rule, "", &diagnostic.message),
     };
     FindingLine {
         v: history::VERSION,
@@ -241,7 +245,7 @@ fn finding_line(
         path: if whole {
             String::new()
         } else {
-            from_root(run.prefix, &diagnostic.path)
+            path.unwrap_or_default()
         },
         line: if whole { 0 } else { diagnostic.line },
         fingerprint,
@@ -249,19 +253,53 @@ fn finding_line(
     }
 }
 
+/// The path of a finding from the root of the project, `None` when it is empty or leaves the root.
+fn within_root(prefix: Option<&str>, path: &str) -> Option<String> {
+    if path.is_empty() {
+        return None;
+    }
+    let mut depth = prefix.map_or(0, |prefix| prefix.split('/').count());
+    for part in path.split('/') {
+        match part {
+            "." | "" => {}
+            ".." if depth == 0 => return None,
+            ".." => depth -= 1,
+            _ => depth += 1,
+        }
+    }
+    Some(from_root(prefix, path)).filter(|path| !path.is_empty())
+}
+
 /// The entry of each rule evaluated, with the findings that the run reports and those that the
-/// baseline hid.
+/// baseline hid. A rule with findings counts as evaluated, except an extension rule whose
+/// processes did not all finish (decision 3). In a `judged` run these are the rules of the judge
+/// that found something.
 fn rules(run: &Run<'_>) -> BTreeMap<String, RuleEntry> {
     let mut rules: BTreeMap<String, RuleEntry> = run
         .evaluated
         .iter()
         .map(|slug| (slug.clone(), RuleEntry::default()))
         .collect();
+    let counts = |slug: &str| {
+        matches!(run.mode, Mode::Judged)
+            || run
+                .resolution
+                .entry(slug)
+                .is_none_or(|entry| !entry.rule.has_extension())
+    };
     for diagnostic in run.diagnostics {
-        rules.entry(diagnostic.rule.clone()).or_default().hits += 1;
+        if let Some(entry) = rules.get_mut(&diagnostic.rule) {
+            entry.hits += 1;
+        } else if counts(&diagnostic.rule) {
+            rules.entry(diagnostic.rule.clone()).or_default().hits += 1;
+        }
     }
     for (slug, count) in &run.baselined {
-        rules.entry(slug.clone()).or_default().baselined += count;
+        if let Some(entry) = rules.get_mut(slug) {
+            entry.baselined += count;
+        } else if counts(slug) {
+            rules.entry(slug.clone()).or_default().baselined += count;
+        }
     }
     rules
 }
@@ -285,9 +323,9 @@ fn head() -> Option<String> {
         .filter(|sha| is_object_name(sha))
 }
 
-fn branch(project_root: &Path) -> Option<String> {
+fn branch() -> Option<String> {
     set("GITHUB_HEAD_REF")
-        .or_else(|| git(project_root, &["branch", "--show-current"]))
+        .or_else(|| git::answer(&["branch", "--show-current"]))
         .or_else(|| set("CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"))
         .or_else(|| set("CI_COMMIT_REF_NAME"))
 }
@@ -300,20 +338,4 @@ fn set(name: &str) -> Option<String> {
 /// The object name of a SHA-1 or a SHA-256 repository.
 fn is_object_name(text: &str) -> bool {
     matches!(text.len(), 40 | 64) && text.bytes().all(|byte| byte.is_ascii_hexdigit())
-}
-
-/// What git prints for `args` at the root of the project, trimmed; `None` when it fails or prints
-/// nothing.
-fn git(project_root: &Path, args: &[&str]) -> Option<String> {
-    let output = Command::new("git")
-        .args(args)
-        .current_dir(project_root)
-        .env("GIT_TERMINAL_PROMPT", "0")
-        .stdin(Stdio::null())
-        .stderr(Stdio::null())
-        .output()
-        .ok()?;
-    let text = String::from_utf8(output.stdout).ok()?;
-    let text = text.trim();
-    (output.status.success() && !text.is_empty()).then(|| text.to_owned())
 }

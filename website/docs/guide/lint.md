@@ -89,7 +89,7 @@ on stderr, not a failure: the findings and the exit code are the same, only the 
 `botica lint --record`, or `record = true` in the `[history]` table of the configuration, appends
 each run to `.botica/history/` under the root of the project: one line per finding in
 `findings.jsonl`, then one line for the run in `runs.jsonl`. `--no-record` turns it off for one
-run. The design, with every key of a line, is
+run, and a run of `--write-baseline` records nothing. The design, with every key of a line, is
 [ADR 0019](https://github.com/collectiveai-team/botica/blob/main/docs/adr/0019-finding-history.md).
 
 ```toml
