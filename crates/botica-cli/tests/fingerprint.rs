@@ -223,3 +223,47 @@ fn a_finding_of_a_message_has_the_fingerprint_of_its_message_wherever_it_was_rea
         fingerprint_of(&from_file, "conventional-commits")
     );
 }
+
+fn git(dir: &Path, args: &[&str]) {
+    let output = Command::new("git")
+        .args(["-c", "user.name=t", "-c", "user.email=t@example.invalid"])
+        .args(args)
+        .current_dir(dir)
+        .output()
+        .expect("run git");
+    assert!(output.status.success(), "git {args:?}");
+}
+
+/// A judge's finding of `test-through-interface` on line 2 of `tests/test_a.py`.
+const JUDGED: &str = r#"{"version": "2.1.0", "runs": [{"results": [{"ruleId": "test-through-interface", "message": {"text": "m"}, "locations": [{"physicalLocation": {"artifactLocation": {"uri": "tests/test_a.py"}, "region": {"startLine": 2}}}]}]}]}"#;
+
+#[test]
+fn a_judged_finding_of_a_staged_run_hashes_the_staged_text_and_not_the_working_tree() {
+    let dir = project("judged-staged");
+    std::fs::remove_dir_all(dir.join(".git")).expect("remove the stand-in .git");
+    git(&dir, &["init", "--quiet"]);
+    write(
+        &dir,
+        "botica.toml",
+        "preview = true\nselect = [\"test-through-interface\"]\n",
+    );
+    write(&dir, "judge.sarif", JUDGED);
+    write(&dir, "tests/test_a.py", "def test_a():\n");
+    git(&dir, &["add", "--all"]);
+    git(&dir, &["commit", "--quiet", "-m", "feat: a test"]);
+    write(&dir, "tests/test_a.py", "def test_a():\n    assert a._x\n");
+    git(&dir, &["add", "tests/test_a.py"]);
+    let args = [
+        "--judged",
+        "judge.sarif",
+        "--staged",
+        "--output-format",
+        "json",
+    ];
+    let clean = fingerprint_of(&lint(&dir, None, &args), "test-through-interface");
+
+    write(&dir, "tests/test_a.py", "def test_b():\n    assert a._x\n");
+    let dirty = lint(&dir, None, &args);
+
+    assert_eq!(fingerprint_of(&dirty, "test-through-interface"), clean);
+}

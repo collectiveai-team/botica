@@ -1,6 +1,7 @@
 //! The fingerprint of each finding in the json and sarif output (ADR 0019 decision 5).
 
 use super::baseline::from_root;
+use super::git;
 use crate::output::eprintln;
 use botica_core::fingerprint::FingerprintKey;
 use botica_core::report::Format;
@@ -11,10 +12,12 @@ use std::path::Path;
 
 /// What the findings were read from.
 pub(super) enum Read<'a> {
-    /// The texts that the run linted; a path that they lack is read from `root`.
+    /// The texts that the run linted. A path that they lack is read from the index when
+    /// `staged`, else from `root`.
     Files {
         sources: &'a [SourceFile],
         root: &'a Path,
+        staged: bool,
     },
     /// Commit messages and titles: no finding has a line of a file.
     Messages,
@@ -45,7 +48,11 @@ pub(super) fn stamp(
                     Some(key.of_message(&diagnostic.rule, "", &diagnostic.message));
             }
         }
-        Read::Files { sources, root } => {
+        Read::Files {
+            sources,
+            root,
+            staged,
+        } => {
             let linted: HashMap<&str, &SourceFile> = sources
                 .iter()
                 .map(|source| (source.path.as_str(), source))
@@ -55,6 +62,9 @@ pub(super) fn stamp(
                 |path| from_root(prefix, path),
                 |path| match linted.get(path) {
                     Some(source) => source.text().map(str::to_owned),
+                    None if staged => {
+                        git::show("", path).and_then(|bytes| String::from_utf8(bytes).ok())
+                    }
                     None => std::fs::read_to_string(root.join(path)).ok(),
                 },
             );

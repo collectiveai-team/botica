@@ -369,6 +369,7 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         fingerprints::Read::Files {
             sources: &sources,
             root: &root,
+            staged: diff.as_ref().is_some_and(Diff::is_staged),
         },
         &mut diagnostics,
     );
@@ -446,6 +447,7 @@ fn run_judged(
         fingerprints::Read::Files {
             sources: &[],
             root: &root,
+            staged: diff.is_some_and(Diff::is_staged),
         },
         &mut judged.diagnostics,
     );
