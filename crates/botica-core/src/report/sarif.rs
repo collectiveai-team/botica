@@ -72,6 +72,16 @@ struct SarifResult<'a> {
     level: &'static str,
     message: Text<'a>,
     locations: [Location; 1],
+    #[serde(skip_serializing_if = "Option::is_none")]
+    partial_fingerprints: Option<PartialFingerprints<'a>>,
+}
+
+/// The fingerprint of ADR 0019 decision 5, under a name that carries its version, as SARIF asks
+/// (3.27.17).
+#[derive(Serialize)]
+struct PartialFingerprints<'a> {
+    #[serde(rename = "boticaFinding/v1")]
+    finding: &'a str,
 }
 
 #[derive(Serialize)]
@@ -209,6 +219,10 @@ pub(super) fn write(report: &Report<'_>, out: &mut impl Write) -> io::Result<()>
                     }),
                 },
             }],
+            partial_fingerprints: d
+                .fingerprint
+                .as_deref()
+                .map(|finding| PartialFingerprints { finding }),
         })
         .collect();
     let document = Document {

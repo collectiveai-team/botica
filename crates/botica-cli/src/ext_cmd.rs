@@ -89,6 +89,7 @@ fn prepare(
 fn run_quietly(argv: &[String], root: &std::path::Path) -> Result<(), String> {
     let status = Command::new(&argv[0])
         .args(&argv[1..])
+        .env_remove(botica_ext::HISTORY_KEY_VARIABLE)
         .current_dir(root)
         .stdin(Stdio::null())
         .stdout(Stdio::null())

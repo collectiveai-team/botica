@@ -14,6 +14,7 @@ fn in_code(path: &str, rule: &str, severity: Severity, message: &str) -> Diagnos
         end_line: 2,
         end_column: 9,
         file_level: false,
+        fingerprint: None,
         measure: None,
         message: message.to_owned(),
     }
@@ -31,6 +32,7 @@ fn whole_file(path: &str, rule: &str, severity: Severity, message: &str) -> Diag
         end_line: 1,
         end_column: 1,
         file_level: true,
+        fingerprint: None,
         measure: None,
         message: message.to_owned(),
     }
@@ -145,12 +147,15 @@ fn markdown_is_a_table_of_the_findings_then_the_failures_of_the_run() {
 #[test]
 fn sarif_lists_the_rules_locates_each_result_and_reports_the_errors_as_notifications() {
     let diagnostics = [
-        in_code(
-            "src/my file.py",
-            "log-no-print",
-            Severity::Warning,
-            "no print",
-        ),
+        Diagnostic {
+            fingerprint: Some("0123456789abcdef".to_owned()),
+            ..in_code(
+                "src/my file.py",
+                "log-no-print",
+                Severity::Warning,
+                "no print",
+            )
+        },
         whole_file("big.py", "file-size-guard", Severity::Error, "too large"),
     ];
 
@@ -190,7 +195,8 @@ fn sarif_lists_the_rules_locates_each_result_and_reports_the_errors_as_notificat
                                 "endLine": 2, "endColumn": 9,
                                 "byteOffset": 10, "byteLength": 8
                             }
-                        }}]
+                        }}],
+                        "partialFingerprints": {"boticaFinding/v1": "0123456789abcdef"}
                     },
                     {
                         "ruleId": "file-size-guard",
@@ -284,7 +290,10 @@ fn github_says_a_read_error_with_the_file_in_the_message() {
 #[test]
 fn json_carries_the_schema_version_the_diagnostics_and_the_errors_apart() {
     let diagnostics = [
-        in_code("src/a.py", "log-no-print", Severity::Warning, "no print"),
+        Diagnostic {
+            fingerprint: Some("0123456789abcdef".to_owned()),
+            ..in_code("src/a.py", "log-no-print", Severity::Warning, "no print")
+        },
         whole_file("big.py", "file-size-guard", Severity::Error, "too large"),
     ];
 
@@ -306,7 +315,8 @@ fn json_carries_the_schema_version_the_diagnostics_and_the_errors_apart() {
                         "start": {"offset": 10, "line": 2, "column": 1},
                         "end": {"offset": 18, "line": 2, "column": 9}
                     },
-                    "message": "no print"
+                    "message": "no print",
+                    "fingerprint": "0123456789abcdef"
                 },
                 {
                     "rule": "file-size-guard",
@@ -315,7 +325,8 @@ fn json_carries_the_schema_version_the_diagnostics_and_the_errors_apart() {
                     "severity": "error",
                     "path": "big.py",
                     "range": null,
-                    "message": "too large"
+                    "message": "too large",
+                    "fingerprint": null
                 }
             ],
             "errors": [

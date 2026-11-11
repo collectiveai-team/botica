@@ -30,6 +30,7 @@ fn weakened(path: &str, text: &str, value: &str) -> Diagnostic {
         end_line,
         end_column,
         file_level: false,
+        fingerprint: None,
         measure: None,
         message: "weakened".to_owned(),
     }

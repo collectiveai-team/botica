@@ -95,6 +95,7 @@ fn finding(
         end_line,
         end_column,
         file_level: false,
+        fingerprint: None,
         measure: None,
         message,
     }

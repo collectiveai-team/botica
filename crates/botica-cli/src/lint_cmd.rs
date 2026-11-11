@@ -23,6 +23,7 @@ mod editor;
 mod extensions;
 mod external;
 mod external_weakened;
+mod fingerprints;
 mod git;
 mod import_layers;
 mod judged;
@@ -311,7 +312,8 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
 
     let mut setup = Setup::build(&args)?;
     if messages::asked(&args) {
-        let diagnostics = messages::findings(&args, &setup.resolution)?;
+        let mut diagnostics = messages::findings(&args, &setup.resolution)?;
+        fingerprints::stamp(format, None, fingerprints::Read::Messages, &mut diagnostics);
         write_report(&args, format, &setup, &diagnostics, &[])?;
         return Ok(exit_code(&[], &diagnostics, &args));
     }
@@ -361,6 +363,16 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     if let Some(diff) = &diff {
         diagnostics.retain(|diagnostic| diff.changes.keeps(diagnostic));
     }
+    fingerprints::stamp(
+        format,
+        setup.prefix.as_deref(),
+        fingerprints::Read::Files {
+            sources: &sources,
+            root: &root,
+            staged: diff.as_ref().is_some_and(Diff::is_staged),
+        },
+        &mut diagnostics,
+    );
     write_report(&args, format, &setup, &diagnostics, &errors)?;
     if args.timings {
         timings::print_rules(setup.engine.rule_times());
@@ -428,6 +440,17 @@ fn run_judged(
             .diagnostics
             .retain(|diagnostic| diff.changes.keeps(diagnostic));
     }
+    let root = std::env::current_dir()?;
+    fingerprints::stamp(
+        format,
+        setup.prefix.as_deref(),
+        fingerprints::Read::Files {
+            sources: &[],
+            root: &root,
+            staged: diff.is_some_and(Diff::is_staged),
+        },
+        &mut judged.diagnostics,
+    );
     for rule in &judged.left_out {
         eprintln!(
             "botica: `{rule}` is not a judgment rule of the catalog: its finding is left out"

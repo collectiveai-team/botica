@@ -127,7 +127,7 @@ fn key_of(prefix: Option<&str>, diagnostic: &Diagnostic) -> Option<Key> {
 }
 
 /// A path seen from the directory `prefix` inside the project, from its root.
-fn from_root(prefix: Option<&str>, path: &str) -> String {
+pub(super) fn from_root(prefix: Option<&str>, path: &str) -> String {
     let mut parts: Vec<&str> = prefix
         .map(|prefix| prefix.split('/').collect())
         .unwrap_or_default();
