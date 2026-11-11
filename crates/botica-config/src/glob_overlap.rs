@@ -103,10 +103,22 @@ fn names_a_file(name: &[Token]) -> bool {
             .all(|t| matches!(t, Token::Literal(_)))
 }
 
-/// A glob with no `/` in it matches at every depth, as in a `.gitignore`. A last name may be a
-/// folder, so what is inside it is selected too, unless `file` says that the glob names a file or
-/// the name looks like one.
-fn alternative(glob: &str, file: bool) -> Alternative {
+/// How the last name of a glob is read: as a file, as a folder (what is inside it is selected
+/// too) or, for `Guess`, as a folder unless the name looks like a file.
+#[derive(Clone, Copy)]
+enum Reading {
+    Guess,
+    File,
+    Folder,
+}
+
+/// A glob with no `/` in it matches at every depth, as in a `.gitignore`.
+fn alternative(glob: &str, reading: Reading) -> Alternative {
+    let reading = if glob.ends_with('/') {
+        Reading::Folder
+    } else {
+        reading
+    };
     let glob = glob.trim_end_matches('/');
     let anchored = glob.contains('/');
     let mut segments: Alternative = glob
@@ -126,7 +138,12 @@ fn alternative(glob: &str, file: bool) -> Alternative {
     let ends_with_a_file =
         matches!(segments.last(), Some(Segment::Name(name)) if names_a_file(name));
     let ends_with_a_name = matches!(segments.last(), Some(Segment::Name(_)));
-    if ends_with_a_name && !ends_with_a_file && !file {
+    let folder = match reading {
+        Reading::Folder => true,
+        Reading::File => false,
+        Reading::Guess => !ends_with_a_file,
+    };
+    if ends_with_a_name && folder {
         segments.push(Segment::AnyDepth);
     }
     segments
@@ -206,15 +223,30 @@ fn intersect<T: Element>(a: &[T], b: &[T]) -> bool {
 impl Glob {
     /// A glob of an entry, which may name a directory and then selects what is inside it.
     pub(crate) fn parse(text: &str) -> Self {
-        Self::build(text, false)
+        Self::build(text, Reading::Guess)
+    }
+
+    /// A glob of an entry whose last name is a folder, whatever the name looks like: `*.github`
+    /// may be the folder `.github`.
+    pub(crate) fn folder(text: &str) -> Self {
+        let last = text
+            .trim_end_matches('/')
+            .rsplit('/')
+            .next()
+            .unwrap_or(text);
+        if last.contains(['*', '?']) {
+            Self::build(text, Reading::Folder)
+        } else {
+            Self::build(text, Reading::Guess)
+        }
     }
 
     /// A glob that names a file or files, as `botica.toml` or `**/AGENTS.md`.
     pub(crate) fn file(text: &str) -> Self {
-        Self::build(text, true)
+        Self::build(text, Reading::File)
     }
 
-    fn build(text: &str, file: bool) -> Self {
+    fn build(text: &str, reading: Reading) -> Self {
         if too_complex(text) {
             return Self {
                 alternatives: vec![vec![Segment::AnyDepth]],
@@ -223,12 +255,10 @@ impl Glob {
         }
         let expanded = expand_braces(text);
         Self {
-            picks_files: expanded
-                .iter()
-                .any(|glob| !glob.ends_with('/') && !glob.ends_with("**")),
+            picks_files: expanded.iter().any(|glob| !glob.ends_with("**")),
             alternatives: expanded
                 .iter()
-                .map(|glob| alternative(glob, file))
+                .map(|glob| alternative(glob, reading))
                 .collect(),
         }
     }

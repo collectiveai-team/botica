@@ -64,6 +64,13 @@ fn a_periphery_glob_that_selects_some_forced_files_fails_however_narrow_it_is() 
         "/docs/.claude/**",
         "/docs/.cl*/**",
         "/docs/**/.cla[u]de/**",
+        "/*.github",
+        "/*.gitlab",
+        "/.githu?",
+        "/.githu?/workflows/ci.yml",
+        "/docs/",
+        "docs/v1.0/",
+        "{a,b}{c,d}{e,f}{g,h}{i,j}/.github/workflows/ci.yml",
         "docs/**/*.png",
         "/docs/.claude",
         "/docs/**/.claude",
@@ -92,6 +99,7 @@ fn a_periphery_glob_that_selects_no_forced_file_loads() {
         "/docs/**",
         "docs/api/v2/**",
         "{docs,tests}/guide/**",
+        "{a,b}{c,d}{e,f}{g,h}/x.txt",
     ] {
         accepted(&periphery(glob));
     }
@@ -159,6 +167,9 @@ fn a_generated_glob_that_selects_some_protected_files_fails_however_narrow_it_is
         "/.gith*",
         "/prek.t[]o]ml",
         "src/**/*.pb.go",
+        "/*.github",
+        "/gen.v1/",
+        "/.githu?",
     ] {
         let message = problems(&generated(glob));
 

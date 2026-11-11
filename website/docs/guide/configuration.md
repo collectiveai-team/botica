@@ -92,8 +92,8 @@ The configuration fails to load when:
 - an owner is not `@user`, `@org/team`, `@org/group/team` or an email address, or `paths` is empty;
 - a name of `[review.classifier]` `required-checks` is blank, `dir` is not a plain directory
   without wildcards, or a key of the table is unknown;
-- a glob is blank, starts with `#` or `!`, has spaces around it or is invalid, or two entries list
-  the same glob;
+- a glob is blank, starts with `#` or `!`, has spaces around it or is invalid, or the same glob is
+  listed twice, in one entry or in two;
 - the table has entries and none is `platform`;
 - an entry of `periphery` can select a path that is `platform` whatever the entries say:
   `botica.toml`, `pyproject.toml` at the root, `.github/review/**`, `.gitlab/review/**` and the
@@ -110,7 +110,8 @@ A glob with no `/` is read at every depth, as in a `.gitignore`: `README.md` als
 
 The checks of the globs read each glob as a pattern and not as a list of files, and answer a doubt
 with a refusal. A `periphery` folder is written `docs/**`: `docs`, `docs/` and `/docs` can select
-the `AGENTS.md` inside the folder and fail. A glob with a character class (`[...]`), an escape
+the `AGENTS.md` inside the folder and fail, and so does a wildcard that may be a folder, such as
+`/*.github`. A glob with a character class (`[...]`), an escape
 (`\`), more than 4 groups of braces or more than 32 commas is read as selecting everything, so it
 fails in `periphery` and in `generated`. A name with a dot, such as `docs/v1.0`, is read as a file.
 

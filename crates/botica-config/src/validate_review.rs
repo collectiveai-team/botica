@@ -206,12 +206,13 @@ impl ForcedPath {
     /// a path inside it. For a name or a folder at any depth it covers it when it picks files by
     /// name and can pick that one, or when it spells the name out: `docs/**` leaves `AGENTS.md`
     /// to the list, and `docs/.claude/**` does not leave `.claude`.
-    fn covered_by(&self, glob: &Glob) -> bool {
+    fn covered_by(&self, glob: &Glob, as_folder: &Glob) -> bool {
         match self.shape {
             Forced::AtAnyDepth => {
                 glob.overlaps(&self.glob) && (glob.picks_files() || glob.names(&self.leaf))
             }
-            Forced::Folder | Forced::NameAtRoot => glob.overlaps(&self.glob),
+            Forced::Folder => glob.overlaps(&self.glob) || as_folder.overlaps(&self.glob),
+            Forced::NameAtRoot => glob.overlaps(&self.glob),
         }
     }
 }
@@ -235,7 +236,11 @@ fn periphery_over_forced(found: &mut Vec<ConfigIssue>, config: &ReviewConfig) {
         }
         for (path_index, text) in area.paths.iter().enumerate() {
             let glob = Glob::parse(text);
-            if let Some(path) = forced.iter().find(|path| path.covered_by(&glob)) {
+            let as_folder = Glob::folder(text);
+            let covered = forced
+                .iter()
+                .find(|path| path.covered_by(&glob, &as_folder));
+            if let Some(path) = covered {
                 found.push(issue(
                     format!("review.areas[{index}].paths[{path_index}]"),
                     format!("`{text}` covers `{}`, which is `platform` whatever the entries say: leave it to a `platform` entry, or write the folder as `x/**`", path.text),
@@ -261,7 +266,11 @@ fn generated_over_protected(found: &mut Vec<ConfigIssue>, config: &ReviewConfig)
     }
     for (index, text) in config.generated.iter().enumerate() {
         let generated = Glob::parse(text);
-        if let Some((rule, _)) = protected.iter().find(|(_, glob)| generated.overlaps(glob)) {
+        let as_folder = Glob::folder(text);
+        let clash = protected.iter().find(|(rule, glob)| {
+            generated.overlaps(glob) || (rule.ends_with("/**") && as_folder.overlaps(glob))
+        });
+        if let Some((rule, _)) = clash {
             found.push(issue(
                 format!("review.generated[{index}]"),
                 format!("`{text}` can select a path of `{rule}`, which a person has to review: a change to it counts in full"),

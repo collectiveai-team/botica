@@ -28,7 +28,21 @@ fn a_generated_glob_cannot_match_a_path_that_a_person_has_to_review() {
 
 #[test]
 fn a_generated_glob_must_be_a_glob() {
-    assert!(problems("[review]\ngenerated = [\"{a\"]\n").contains("review.generated[0]"));
+    let message = problems("[review]\ngenerated = [\"{a\"]\n");
+
+    assert!(
+        message.contains("review.generated[0]: invalid glob"),
+        "{message}"
+    );
+    for blank in ["", " ", "#a", "!a"] {
+        let message = problems(&format!("[review]\ngenerated = [\"{blank}\"]\n"));
+        assert!(
+            message.contains("review.generated[0]") && message.contains("is not a glob of paths"),
+            "`{blank}`: {message}"
+        );
+    }
+    let message = problems("[review]\ngenerated = [\" a\"]\n");
+    assert!(message.contains("has spaces around it"), "{message}");
 }
 
 #[test]
