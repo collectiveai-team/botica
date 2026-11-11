@@ -26,6 +26,7 @@ mod external_weakened;
 mod fingerprints;
 mod git;
 mod import_layers;
+mod inside;
 mod judged;
 mod lockfiles;
 mod messages;
@@ -353,26 +354,11 @@ impl Setup {
         })
     }
 
-    /// What the run gives the history, once its findings are final.
-    fn run_record<'a>(
-        &'a self,
-        started: SystemTime,
-        mode: record::Mode,
-        evaluated: Vec<String>,
-        diagnostics: &'a [Diagnostic],
-    ) -> record::Run<'a> {
-        record::Run {
-            started,
-            mode,
-            project_root: &self.project_root,
+    /// Which paths of findings are inside the project.
+    fn inside(&self) -> inside::Inside<'_> {
+        inside::Inside {
+            root: &self.project_root,
             prefix: self.prefix.as_deref(),
-            resolution: &self.resolution,
-            rules_fingerprint: self.rules_fingerprint.clone(),
-            history: &self.history,
-            evaluated,
-            baselined: std::collections::BTreeMap::new(),
-            failed: Vec::new(),
-            diagnostics,
         }
     }
 }
@@ -393,12 +379,13 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         fingerprints::stamp(
             format,
             recording,
-            None,
+            &setup.inside(),
             fingerprints::Read::Messages,
             &mut diagnostics,
         );
         if recording {
-            record::write(&setup.run_record(started, record::Mode::Message, rules, &diagnostics));
+            let run = record::Run::of(&setup, started, record::Mode::Message, rules, &diagnostics);
+            record::write(&run);
         }
         write_report(&args, format, &setup, &diagnostics, &[])?;
         return Ok(exit_code(&[], &diagnostics, &args));
@@ -462,7 +449,7 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     fingerprints::stamp(
         format,
         recording,
-        setup.prefix.as_deref(),
+        &setup.inside(),
         fingerprints::Read::Files {
             sources: &sources,
             root: &root,
@@ -470,17 +457,17 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         },
         &mut diagnostics,
     );
-    if let Some(evaluated) = &setup.evaluated {
-        let mut run = setup.run_record(
-            started,
-            record::Mode::of_files(&args, &setup.project_root, setup.prefix.as_deref()),
-            evaluated.slugs(),
-            &diagnostics,
-        );
-        run.add_extensions(extensions_finished, failed_rules);
-        run.add_baselined(&baselined);
-        record::write(&run);
-    }
+    record::files(
+        &args,
+        &setup,
+        started,
+        &diagnostics,
+        record::Silenced {
+            extensions_finished,
+            failed_rules,
+            baselined: &baselined,
+        },
+    );
     write_report(&args, format, &setup, &diagnostics, &errors)?;
     if args.timings {
         timings::print_rules(setup.engine.rule_times());
@@ -553,7 +540,7 @@ fn run_judged(
     fingerprints::stamp(
         format,
         setup.evaluated.is_some(),
-        setup.prefix.as_deref(),
+        &setup.inside(),
         fingerprints::Read::Files {
             sources: &[],
             root: &root,
@@ -567,7 +554,8 @@ fn run_judged(
         );
     }
     if setup.evaluated.is_some() {
-        record::write(&setup.run_record(
+        record::write(&record::Run::of(
+            setup,
             started,
             record::Mode::Judged,
             Vec::new(),

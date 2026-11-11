@@ -1,8 +1,10 @@
 //! `botica lint --record` (ADR 0019): what a run appends to the history of the project, and the
 //! rules that it evaluated.
 
-use super::baseline::from_root;
-use super::{git, LintArgs};
+use super::{git, LintArgs, Setup};
+use source::{branch, head, is_object_name, origin};
+
+mod source;
 use crate::output::eprintln;
 use botica_catalog::{Kind, Scope};
 use botica_config::{HistoryConfig, Resolution};
@@ -72,18 +74,6 @@ fn is_the_root(paths: &[std::path::PathBuf], project_root: &Path) -> bool {
     }
 }
 
-/// Who started the run: CI before a hook, so that `prek run` inside a CI job counts as CI.
-fn origin() -> &'static str {
-    let is = |name: &str, value: &str| std::env::var(name).is_ok_and(|found| found == value);
-    if is("GITHUB_ACTIONS", "true") || is("GITLAB_CI", "true") {
-        "ci"
-    } else if is("PRE_COMMIT", "1") {
-        "hook"
-    } else {
-        "cli"
-    }
-}
-
 /// The rules of a run that the plan gave at least one file, marked as the engine asks for the
 /// plan of each file, with no lock.
 pub(super) struct Evaluated {
@@ -92,6 +82,8 @@ pub(super) struct Evaluated {
     with_astgrep: bool,
     index: HashMap<String, usize>,
     marks: Vec<AtomicBool>,
+    /// While set, a plan that the engine asks for is not a file that the run lints.
+    paused: AtomicBool,
 }
 
 impl Evaluated {
@@ -117,14 +109,30 @@ impl Evaluated {
             with_astgrep,
             index,
             marks,
+            paused: AtomicBool::new(false),
         }
+    }
+
+    /// Runs `task` without marking: what it asks of the planner lints no file.
+    pub(super) fn paused<T>(&self, task: impl FnOnce() -> T) -> T {
+        self.paused.store(true, Ordering::Relaxed);
+        let done = task();
+        self.paused.store(false, Ordering::Relaxed);
+        done
     }
 
     /// Marks the native and ast-grep rules of scope `file` that run on the file at `path`,
     /// relative to the working directory, with the same selection as `project::planner`: the rules
-    /// that the configuration applies there. An extension rule counts once its processes finish.
+    /// that the configuration applies at the path that the planner builds, `<prefix>/<path>` as
+    /// written. An extension rule counts once its processes finish.
     pub(super) fn mark(&self, path: &str) {
-        let at_root = from_root(self.prefix.as_deref(), path);
+        if self.paused.load(Ordering::Relaxed) {
+            return;
+        }
+        let at_root = match self.prefix.as_deref() {
+            Some(prefix) => format!("{prefix}/{path}"),
+            None => path.to_owned(),
+        };
         for file_rule in self.resolution.rules_for(&at_root, language_of(path)) {
             if matches!(file_rule.rule.scope, Some(Scope::Project | Scope::Commit)) {
                 continue;
@@ -170,7 +178,7 @@ pub(super) struct Run<'a> {
     pub started: SystemTime,
     pub mode: Mode,
     pub project_root: &'a Path,
-    pub prefix: Option<&'a str>,
+    pub inside: super::inside::Inside<'a>,
     pub resolution: &'a Resolution,
     pub rules_fingerprint: String,
     pub history: &'a HistoryConfig,
@@ -183,7 +191,30 @@ pub(super) struct Run<'a> {
     pub diagnostics: &'a [Diagnostic],
 }
 
-impl Run<'_> {
+impl<'a> Run<'a> {
+    /// What the run of `setup` gives the history, once its findings are final.
+    pub(super) fn of(
+        setup: &'a Setup,
+        started: SystemTime,
+        mode: Mode,
+        evaluated: Vec<String>,
+        diagnostics: &'a [Diagnostic],
+    ) -> Self {
+        Self {
+            started,
+            mode,
+            project_root: &setup.project_root,
+            inside: setup.inside(),
+            resolution: &setup.resolution,
+            rules_fingerprint: setup.rules_fingerprint.clone(),
+            history: &setup.history,
+            evaluated,
+            baselined: BTreeMap::new(),
+            failed: Vec::new(),
+            diagnostics,
+        }
+    }
+
     /// Adds the extension rules whose processes all finished, and the rules of the findings of a
     /// `--ext` command that failed.
     pub(super) fn add_extensions(&mut self, finished: Vec<String>, failed: Vec<String>) {
@@ -197,6 +228,34 @@ impl Run<'_> {
             *self.baselined.entry(diagnostic.rule.clone()).or_default() += 1;
         }
     }
+}
+
+/// What a run that linted files learned besides its findings.
+pub(super) struct Silenced<'a> {
+    /// The extension rules whose processes all finished.
+    pub extensions_finished: Vec<String>,
+    /// The rules of the findings of a `--ext` command that failed.
+    pub failed_rules: Vec<String>,
+    /// The findings that the baseline hid.
+    pub baselined: &'a [Diagnostic],
+}
+
+/// Records a run that linted files, when the run records.
+pub(super) fn files(
+    args: &LintArgs,
+    setup: &Setup,
+    started: SystemTime,
+    diagnostics: &[Diagnostic],
+    silenced: Silenced<'_>,
+) {
+    let Some(evaluated) = &setup.evaluated else {
+        return;
+    };
+    let mode = Mode::of_files(args, &setup.project_root, setup.prefix.as_deref());
+    let mut run = Run::of(setup, started, mode, evaluated.slugs(), diagnostics);
+    run.add_extensions(silenced.extensions_finished, silenced.failed_rules);
+    run.add_baselined(silenced.baselined);
+    write(&run);
 }
 
 /// Appends the run to the history. A history that cannot be written is a warning: the findings
@@ -246,19 +305,16 @@ fn finding_line(
     run_id: &str,
     diagnostic: &Diagnostic,
 ) -> FindingLine {
-    // A path outside the root (`../x.py` from the root, `/home/…`) has no path inside it: decision
-    // 7 drops such a path, leaves `path` empty and hashes the message instead of the lines of a
-    // file outside the checkout (decision 5).
-    let path = within_root(run.prefix, &diagnostic.path);
-    let whole = matches!(run.mode, Mode::Message) || path.is_none();
-    let fingerprint = match (&diagnostic.fingerprint, path.is_some()) {
-        (Some(fingerprint), true) => fingerprint.clone(),
-        _ if matches!(run.mode, Mode::Message) => diagnostic
-            .fingerprint
-            .clone()
-            .unwrap_or_else(|| key.of_message(&diagnostic.rule, "", &diagnostic.message)),
-        _ => key.of_message(&diagnostic.rule, "", &diagnostic.message),
+    // A path outside the root (`../x.py` from the root, `/home/…`, a link out of it) is dropped
+    // (decision 7), and `fingerprints::stamp` hashed the message of its finding (decision 5).
+    let path = match run.mode {
+        Mode::Message => None,
+        _ => run.inside.path(&diagnostic.path),
     };
+    let fingerprint = diagnostic
+        .fingerprint
+        .clone()
+        .unwrap_or_else(|| key.of_message(&diagnostic.rule, "", &diagnostic.message));
     FindingLine {
         v: history::VERSION,
         run_id: run_id.to_owned(),
@@ -268,37 +324,11 @@ fn finding_line(
             .map(|entry| entry.rule.code.clone()),
         slug: diagnostic.rule.clone(),
         severity: diagnostic.severity.as_str().to_owned(),
-        path: if whole {
-            String::new()
-        } else {
-            path.unwrap_or_default()
-        },
-        line: if whole { 0 } else { diagnostic.line },
+        line: if path.is_some() { diagnostic.line } else { 0 },
+        path: path.unwrap_or_default(),
         fingerprint,
         occurrence: 0,
     }
-}
-
-/// The path of a finding from the root of the project, with `/` separators; `None` when it is
-/// empty, absolute or leaves the root.
-fn within_root(prefix: Option<&str>, path: &str) -> Option<String> {
-    let path = path.replace('\\', "/");
-    if path.is_empty() || path.starts_with('/') || Path::new(&path).has_root() {
-        return None;
-    }
-    if path.as_bytes().get(1) == Some(&b':') {
-        return None;
-    }
-    let mut depth = prefix.map_or(0, |prefix| prefix.split('/').count());
-    for part in path.split('/') {
-        match part {
-            "." | "" => {}
-            ".." if depth == 0 => return None,
-            ".." => depth -= 1,
-            _ => depth += 1,
-        }
-    }
-    Some(from_root(prefix, &path)).filter(|path| !path.is_empty())
 }
 
 /// The entry of each rule evaluated, with the findings that the run reports and those that the
@@ -334,40 +364,4 @@ fn rules(run: &Run<'_>) -> BTreeMap<String, RuleEntry> {
         }
     }
     rules
-}
-
-/// The commit under review in CI: the head of the pull request on GitHub, the head of the source
-/// branch of a pipeline for merged results on GitLab.
-fn head() -> Option<String> {
-    let github = std::env::var("GITHUB_EVENT_NAME")
-        .is_ok_and(|event| event.starts_with("pull_request"))
-        .then(|| std::env::var("GITHUB_EVENT_PATH").ok())
-        .flatten()
-        .and_then(|path| std::fs::read(path).ok())
-        .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
-        .and_then(|event| {
-            event["pull_request"]["head"]["sha"]
-                .as_str()
-                .map(str::to_owned)
-        });
-    github
-        .or_else(|| set("CI_MERGE_REQUEST_SOURCE_BRANCH_SHA"))
-        .filter(|sha| is_object_name(sha))
-}
-
-fn branch() -> Option<String> {
-    set("GITHUB_HEAD_REF")
-        .or_else(|| git::answer(&["branch", "--show-current"]))
-        .or_else(|| set("CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"))
-        .or_else(|| set("CI_COMMIT_REF_NAME"))
-}
-
-/// The value of the variable `name`; an empty one counts as unset.
-fn set(name: &str) -> Option<String> {
-    std::env::var(name).ok().filter(|value| !value.is_empty())
-}
-
-/// The object name of a SHA-1 or a SHA-256 repository.
-fn is_object_name(text: &str) -> bool {
-    matches!(text.len(), 40 | 64) && text.bytes().all(|byte| byte.is_ascii_hexdigit())
 }

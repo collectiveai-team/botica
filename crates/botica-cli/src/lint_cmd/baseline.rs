@@ -132,13 +132,12 @@ fn key_of(prefix: Option<&str>, diagnostic: &Diagnostic) -> Option<Key> {
     ))
 }
 
-/// A path seen from the directory `prefix` inside the project, from its root, with `/` separators
-/// whatever the platform wrote.
+/// A path seen from the directory `prefix` inside the project, from its root.
 pub(super) fn from_root(prefix: Option<&str>, path: &str) -> String {
     let mut parts: Vec<&str> = prefix
         .map(|prefix| prefix.split('/').collect())
         .unwrap_or_default();
-    for part in path.split(['/', '\\']) {
+    for part in path.split('/') {
         match part {
             "." | "" => {}
             ".." => {

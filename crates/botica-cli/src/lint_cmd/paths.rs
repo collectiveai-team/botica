@@ -172,7 +172,10 @@ fn lint_diff(args: &LintArgs, setup: &mut Setup, root: &Path, diff: &Diff) -> Re
         .into_iter()
         .filter(|path| !named_and_excluded(&setup.engine, root, Path::new(path)))
         .collect();
-    let bases = diff.bases(&setup.engine, &files)?;
+    let bases = match &setup.evaluated {
+        Some(evaluated) => evaluated.paused(|| diff.bases(&setup.engine, &files))?,
+        None => diff.bases(&setup.engine, &files)?,
+    };
     setup.engine.set_bases(bases);
     let engine = &setup.engine;
     if diff.is_staged() {

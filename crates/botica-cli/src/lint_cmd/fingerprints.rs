@@ -1,7 +1,7 @@
 //! The fingerprint of each finding in the json and sarif output (ADR 0019 decision 5).
 
-use super::baseline::from_root;
 use super::git;
+use super::inside::Inside;
 use crate::output::eprintln;
 use botica_core::fingerprint::FingerprintKey;
 use botica_core::report::Format;
@@ -28,7 +28,7 @@ pub(super) enum Read<'a> {
 pub(super) fn stamp(
     format: Format,
     recording: bool,
-    prefix: Option<&str>,
+    inside: &Inside<'_>,
     read: Read<'_>,
     diagnostics: &mut [Diagnostic],
 ) {
@@ -60,7 +60,7 @@ pub(super) fn stamp(
                 .collect();
             key.stamp(
                 diagnostics,
-                |path| from_root(prefix, path),
+                |path| inside.path(path),
                 |path| match linted.get(path) {
                     Some(source) => source.text().map(str::to_owned),
                     None if staged => {

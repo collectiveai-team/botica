@@ -146,12 +146,7 @@ fn ignore_itself(dir: &Path) -> Result<()> {
     let mut text = String::new();
     file.read_to_string(&mut text)
         .with_context(|| format!("cannot read {}", path.display()))?;
-    if text
-        .lines()
-        .map(str::trim)
-        .rfind(|line| !line.is_empty())
-        == Some("*")
-    {
+    if text.lines().map(str::trim).rfind(|line| !line.is_empty()) == Some("*") {
         return Ok(());
     }
     let line: &[u8] = if text.is_empty() || text.ends_with('\n') {

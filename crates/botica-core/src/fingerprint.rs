@@ -80,12 +80,13 @@ impl FingerprintKey {
     }
 
     /// Sets the fingerprint of each finding. `project_path` gives the path of a finding from the
-    /// root of the project, and `text_of` the text that the run linted at the path of a finding,
+    /// root of the project, or `None` for a path outside it, whose finding hashes its message as a
+    /// finding with no path does (decision 5); `text_of` the text that the run linted at the path of a finding,
     /// which is read once for each path and dropped once the findings of that path are done.
     pub fn stamp(
         &self,
         diagnostics: &mut [Diagnostic],
-        project_path: impl Fn(&str) -> String,
+        project_path: impl Fn(&str) -> Option<String>,
         mut text_of: impl FnMut(&str) -> Option<String>,
     ) {
         let mut by_path: HashMap<&str, Vec<usize>> = HashMap::new();
@@ -98,7 +99,11 @@ impl FingerprintKey {
             .collect();
         for (path, indexes) in groups {
             let mut text: Option<Option<Lines>> = None;
-            let at_root = (!path.is_empty()).then(|| project_path(&path));
+            let at_root = if path.is_empty() {
+                None
+            } else {
+                project_path(&path)
+            };
             for index in indexes {
                 let diagnostic = &diagnostics[index];
                 let slug = diagnostic.rule.as_str();
