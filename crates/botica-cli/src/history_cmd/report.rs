@@ -98,7 +98,7 @@ pub fn build(
         counts,
         skipped_lines: history.skipped_lines,
         notes: history.notes.clone(),
-        paired: pairs::pair(history, &paired_window, ancestry),
+        paired: pairs::pair(history, &paired_window, since, ancestry),
         quiet,
         noisy,
         roles,

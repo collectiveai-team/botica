@@ -2,6 +2,7 @@
 
 mod ancestry;
 mod lines;
+mod order;
 mod pairs;
 mod quiet;
 mod read;
@@ -39,8 +40,9 @@ struct ReportArgs {
     /// The format of the report.
     #[arg(long, value_enum, default_value_t = Format::Text)]
     format: Format,
-    /// A folder with one folder for each run of CI, each holding `runs.jsonl`, `findings.jsonl`
-    /// and the `source.json` that says whether the run is trusted. Repeat it for more folders.
+    /// A folder with one folder for each run of CI. A run folder holds `source.json`, which says
+    /// whether the run is trusted, and the files `runs.jsonl` and `findings.jsonl`, either in it
+    /// or in a folder of it for each artifact. Repeat the option for more folders.
     #[arg(long)]
     from: Vec<PathBuf>,
     /// A rule has many suppressions when at least this many of its findings are suppressed.

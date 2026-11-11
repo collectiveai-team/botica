@@ -23,14 +23,15 @@ and with `2` when it could not run.
 |---|---|
 | `--days <n>` | The window: the runs that started in the last `n` days. Default 28. |
 | `--format text\|markdown` | Plain text, or markdown with a heading for each section. Default `text`. |
-| `--from <dir>` | A folder with one folder for each run of CI, each holding `runs.jsonl`, `findings.jsonl` and a `source.json`. Repeat it for more folders. |
+| `--from <dir>` | A folder with one folder for each run of CI. A run folder holds a `source.json` and the two files, in it or in a folder of it for each artifact. Repeat it for more folders. |
 | `--min-suppressed <n>` | A rule has many suppressions from this many suppressed findings. Default 5. |
 | `--min-share <percent>` | A rule has many suppressions from this share of suppressed findings, over reported plus suppressed. Default 50. |
 
 ## What it says
 
 Rules with no findings
-: A rule that is in `rules` of at least one trusted run of the window, of any mode, with `hits`, `suppressed` and
+: A rule that is in `rules` of at least one trusted run of the window, of any mode and branch,
+  counted over the runs that name it, with `hits`, `suppressed` and
   `baselined` at 0 in every run. A rule whose findings are all suppressed or in the baseline is not
   one, and a rule that is absent from `rules` did not run, which is another case. Zero can mean that
   the rule works: the agent may follow it already because `AGENTS.md` lists it. The list is a set of

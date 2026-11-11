@@ -181,13 +181,23 @@ impl Page {
     }
 
     fn not_comparable(&mut self, report: &Report) {
-        if report.paired.heads_unasked > 0 {
-            self.section("Pairing by time");
-            self.line(&format!(
-                "{} heads of CI runs were past the limit of the questions that the report asks \
-                 git, so their runs were paired by time.",
-                report.paired.heads_unasked
-            ));
+        let paired = &report.paired;
+        if paired.heads_unasked > 0 || paired.runs_left_out > 0 {
+            self.section("Pairing limits");
+            if paired.heads_unasked > 0 {
+                self.line(&format!(
+                    "{} heads of CI runs were past the limit of the questions that the report \
+                     asks git, so their runs were paired by time.",
+                    paired.heads_unasked
+                ));
+            }
+            if paired.runs_left_out > 0 {
+                self.line(&format!(
+                    "{} older runs were left out of the pairing, which compares the newest 500 hook \
+                     runs and the newest 500 CI runs of each branch.",
+                    paired.runs_left_out
+                ));
+            }
         }
         let rules = &report.paired.not_comparable;
         if rules.is_empty() {

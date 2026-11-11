@@ -3,7 +3,7 @@
 //! started before the window is dropped as it is read, and a finding of a run that was dropped
 //! never reaches memory.
 
-use super::lines::{self, Finding, Run};
+use super::lines::{self, is_unsafe, Finding, Run};
 use anyhow::{Context, Result};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -335,7 +335,7 @@ fn each_line(file: File, mut each: impl FnMut(&[u8])) {
 
 /// A folder name that can stand for a run: at most 256 bytes and no control character.
 fn is_plain_name(name: &str) -> bool {
-    name.len() <= 256 && !name.chars().any(char::is_control)
+    name.len() <= 256 && !name.chars().any(is_unsafe)
 }
 
 /// A path for a message, with no control character in it.
@@ -343,6 +343,6 @@ fn shown(path: &Path) -> String {
     path.display()
         .to_string()
         .chars()
-        .map(|found| if found.is_control() { '?' } else { found })
+        .map(|found| if is_unsafe(found) { '?' } else { found })
         .collect()
 }

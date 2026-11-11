@@ -1,13 +1,18 @@
 //! The readings that pair a hook run with a CI run (ADR 0019 decision 8): "Caught before the
 //! commit" and "Reached CI".
 
-use super::ancestry::Ancestry;
+use super::ancestry::{Ancestry, Commits};
 use super::lines::Run;
+use super::order::{group, Ancestors, Order};
 use super::read::History;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 /// How many heads the pairing asks git about; a CI run past the limit is paired by time.
 const MAX_HEADS: usize = 500;
+
+/// How many hook runs and how many CI runs of one branch the pairing compares, the newest ones:
+/// every hook run is compared with every CI run of its branch.
+const MAX_PER_BRANCH: usize = 500;
 
 /// Why a rule of two paired runs is left out of the comparison.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -43,15 +48,14 @@ pub struct Paired {
     pub not_comparable: BTreeMap<String, BTreeSet<Reason>>,
     /// The heads that git was not asked about because of the limit.
     pub heads_unasked: usize,
+    /// The older runs of a branch that the pairing left out because of the limit.
+    pub runs_left_out: usize,
 }
 
 /// The fingerprints of the findings of each rule in each run.
 type Held<'a> = HashMap<(usize, &'a str), HashMap<&'a str, HashSet<&'a str>>>;
 
-/// The proper ancestors, among the commits of the runs, of each head that git answered for.
-type Ancestors = HashMap<String, HashSet<String>>;
-
-pub fn pair(history: &History, window: &[&Run], ancestry: &dyn Ancestry) -> Paired {
+pub fn pair(history: &History, window: &[&Run], since: u64, ancestry: &dyn Ancestry) -> Paired {
     let runs_of = |origin: &str, mode: &str| -> Vec<&Run> {
         window
             .iter()
@@ -59,18 +63,23 @@ pub fn pair(history: &History, window: &[&Run], ancestry: &dyn Ancestry) -> Pair
             .filter(|run| run.is(origin, mode) && named(run))
             .collect()
     };
-    let hooks = runs_of("hook", "staged");
-    let ci = runs_of("ci", "diff");
+    let (hooks, left_hooks) = newest(runs_of("hook", "staged"));
+    let (ci, left_ci) = newest(runs_of("ci", "diff"));
     let mut paired = Paired {
-        hook_runs: hooks.len(),
-        ci_runs: ci.len(),
+        hook_runs: hooks.len() + left_hooks,
+        ci_runs: ci.len() + left_ci,
+        runs_left_out: left_hooks + left_ci,
         ..Paired::default()
     };
-    let (ancestors, unasked) = ancestors(&hooks, &ci, ancestry);
+    let (ancestors, unasked) = ancestors(&hooks, &ci, since, ancestry);
     paired.heads_unasked = unasked;
     let order = Order::new(&ci, ancestors);
+    let held = held(history);
+    let holders = holders(&hooks, &held);
     let mut pairing = Pairing {
-        held: held(history),
+        held,
+        by_group: index(&hooks),
+        holders,
         hooks,
         ci,
         order,
@@ -82,96 +91,82 @@ pub fn pair(history: &History, window: &[&Run], ancestry: &dyn Ancestry) -> Pair
     pairing.paired
 }
 
-/// Asks `ancestry` once for each distinct head of the CI runs, and returns the answers and how
-/// many heads the limit left out.
-fn ancestors(hooks: &[&Run], ci: &[&Run], ancestry: &dyn Ancestry) -> (Ancestors, usize) {
+/// The newest [`MAX_PER_BRANCH`] runs of each branch and key, and how many older ones are left out.
+fn newest(mut runs: Vec<&Run>) -> (Vec<&Run>, usize) {
+    runs.sort_by(|a, b| (b.started_at, &b.id).cmp(&(a.started_at, &a.id)));
+    let mut kept_in: HashMap<(&str, Option<&str>), usize> = HashMap::new();
+    let before = runs.len();
+    runs.retain(|run| {
+        let kept = kept_in.entry(group(run)).or_default();
+        *kept += 1;
+        *kept <= MAX_PER_BRANCH
+    });
+    let left = before - runs.len();
+    (runs, left)
+}
+
+/// The positions of the hook runs that hold each fingerprint, by group and rule.
+fn holders<'a>(hooks: &[&'a Run], held: &Held<'a>) -> HashMap<Holder<'a>, Vec<usize>> {
+    let mut found: HashMap<Holder, Vec<usize>> = HashMap::new();
+    for (position, hook) in hooks.iter().enumerate() {
+        let Some(rules) = held.get(&(hook.source, hook.id.as_str())) else {
+            continue;
+        };
+        for (slug, fingerprints) in rules {
+            for fingerprint in fingerprints {
+                found
+                    .entry((group(hook), slug, fingerprint))
+                    .or_default()
+                    .push(position);
+            }
+        }
+    }
+    found
+}
+
+/// A group, a rule and a fingerprint.
+type Holder<'a> = ((&'a str, Option<&'a str>), &'a str, &'a str);
+
+/// The positions of `runs` by their group.
+fn index<'a>(runs: &[&'a Run]) -> HashMap<(&'a str, Option<&'a str>), Vec<usize>> {
+    let mut by_group: HashMap<(&str, Option<&str>), Vec<usize>> = HashMap::new();
+    for (position, run) in runs.iter().enumerate() {
+        by_group.entry(group(run)).or_default().push(position);
+    }
+    by_group
+}
+
+/// Asks `ancestry` once for the commits of the window, and keeps for each distinct head of the CI
+/// runs the commits of the runs that are its proper ancestors. Returns that and how many heads the
+/// limit left out.
+fn ancestors(
+    hooks: &[&Run],
+    ci: &[&Run],
+    since: u64,
+    ancestry: &dyn Ancestry,
+) -> (Ancestors, usize) {
     let heads: BTreeSet<&str> = ci.iter().filter_map(|run| run.checked()).collect();
     let among: HashSet<&str> = hooks
         .iter()
         .filter_map(|run| run.commit.as_deref())
         .chain(heads.iter().copied())
         .collect();
-    let mut answers = Ancestors::new();
-    for head in heads.iter().take(MAX_HEADS) {
-        if let Some(found) = ancestry.ancestors(head, &among) {
-            answers.insert((*head).to_owned(), found);
-        }
-    }
+    let asked: Vec<&str> = heads.iter().copied().take(MAX_HEADS).collect();
+    let commits: Commits = ancestry.commits(&asked, since);
+    let answers = asked
+        .iter()
+        .filter(|head| commits.knows(head))
+        .map(|head| ((*head).to_owned(), commits.ancestors(head, &among)))
+        .collect();
     (answers, heads.len().saturating_sub(MAX_HEADS))
-}
-
-/// Which hook run precedes which CI run (ADR 0019 decision 8): same branch and key, and the
-/// `commit` of the hook run is a proper ancestor of the `head` of the CI run. When it is not, or
-/// the clone lacks a commit, the time of the runs decides, unless a CI run on a newer `head`
-/// started before the hook run.
-struct Order<'a> {
-    ancestors: Ancestors,
-    /// The start of the earliest CI run of the same branch and key whose `head` is a proper
-    /// descendant of the `head` of each CI run, by the position of the run in `ci`.
-    newer: Vec<Option<u64>>,
-    ci: Vec<&'a Run>,
-}
-
-impl<'a> Order<'a> {
-    fn new(ci: &[&'a Run], ancestors: Ancestors) -> Self {
-        let mut order = Self {
-            ancestors,
-            newer: Vec::new(),
-            ci: ci.to_vec(),
-        };
-        let mut by_group: HashMap<(&str, Option<&str>), Vec<usize>> = HashMap::new();
-        for (position, run) in ci.iter().enumerate() {
-            by_group.entry(group(run)).or_default().push(position);
-        }
-        order.newer = vec![None; ci.len()];
-        for positions in by_group.values() {
-            for &old in positions {
-                order.newer[old] = positions
-                    .iter()
-                    .filter(|&&other| order.is_ancestor(ci[old].checked(), ci[other].checked()))
-                    .map(|&other| ci[other].started_at)
-                    .min();
-            }
-        }
-        order
-    }
-
-    fn is_ancestor(&self, older: Option<&str>, newer: Option<&str>) -> bool {
-        match (older, newer) {
-            (Some(older), Some(newer)) if older != newer => self
-                .ancestors
-                .get(newer)
-                .is_some_and(|found| found.contains(older)),
-            _ => false,
-        }
-    }
-
-    /// Whether `hook` precedes the CI run at `position` of `ci`.
-    fn precedes(&self, hook: &Run, position: usize) -> bool {
-        let run = self.ci[position];
-        if group(hook) != group(run) {
-            return false;
-        }
-        if let (Some(commit), Some(head)) = (hook.commit.as_deref(), run.checked()) {
-            if commit == head {
-                return false;
-            }
-            if self.is_ancestor(Some(commit), Some(head)) {
-                return true;
-            }
-        }
-        hook.started_at < run.started_at
-            && self.newer[position].is_none_or(|at| at >= hook.started_at)
-    }
-}
-
-/// What two runs share to be paired: the branch, and the key of their fingerprints.
-fn group(run: &Run) -> (&str, Option<&str>) {
-    (branch(run), run.key_id.as_deref())
 }
 
 struct Pairing<'a> {
     held: Held<'a>,
+    /// The positions in `hooks` of the hook runs of each group.
+    by_group: HashMap<(&'a str, Option<&'a str>), Vec<usize>>,
+    /// The positions in `hooks` of the hook runs of a group that hold a fingerprint of a rule.
+    holders: HashMap<Holder<'a>, Vec<usize>>,
     hooks: Vec<&'a Run>,
     ci: Vec<&'a Run>,
     order: Order<'a>,
@@ -192,7 +187,7 @@ impl<'a> Pairing<'a> {
             paired_hooks += 1;
             for slug in hook.rules.keys() {
                 if comparable(slug, hook, after, &mut self.paired) {
-                    self.count(hook, &[after], slug);
+                    self.count(hook, after, slug);
                 }
             }
         }
@@ -204,28 +199,48 @@ impl<'a> Pairing<'a> {
     fn reached(&mut self) -> usize {
         let mut paired_ci = 0;
         for (position, run) in self.ci.clone().into_iter().enumerate() {
-            let before: Vec<&Run> = self
-                .hooks
-                .iter()
-                .copied()
-                .filter(|hook| self.order.precedes(hook, position))
-                .collect();
+            let before: Vec<usize> = self
+                .by_group
+                .get(&group(run))
+                .map(|positions| {
+                    positions
+                        .iter()
+                        .copied()
+                        .filter(|&hook| self.order.precedes(self.hooks[hook], position))
+                        .collect()
+                })
+                .unwrap_or_default();
             if before.is_empty() {
                 continue;
             }
             paired_ci += 1;
             for slug in run.rules.keys() {
-                let comparable: Vec<&Run> = before
+                let comparable: HashSet<usize> = before
                     .iter()
                     .copied()
-                    .filter(|hook| comparable(slug, hook, run, &mut self.paired))
+                    .filter(|&hook| comparable(slug, self.hooks[hook], run, &mut self.paired))
                     .collect();
                 if !comparable.is_empty() {
-                    self.count(run, &comparable, slug);
+                    let new = self.unheld(run, slug, &comparable);
+                    self.add(Reading::Reached, run, slug, new);
                 }
             }
         }
         paired_ci
+    }
+
+    /// The fingerprints of `slug` in `run` that none of the hook runs at `comparable` holds.
+    fn unheld(&self, run: &Run, slug: &str, comparable: &HashSet<usize>) -> Vec<String> {
+        held_by(&self.held, run, slug)
+            .into_iter()
+            .filter(|fingerprint| {
+                !self
+                    .holders
+                    .get(&(group(run), slug, *fingerprint))
+                    .is_some_and(|holding| holding.iter().any(|hook| comparable.contains(hook)))
+            })
+            .map(str::to_owned)
+            .collect()
     }
 
     /// The earliest CI run of the branch of `hook` that the hook run precedes.
@@ -233,30 +248,27 @@ impl<'a> Pairing<'a> {
         self.ci
             .iter()
             .enumerate()
-            .filter(|(position, _)| self.order.precedes(hook, *position))
+            .filter(|(position, run)| {
+                group(run) == group(hook) && self.order.precedes(hook, *position)
+            })
             .map(|(_, run)| *run)
             .min_by(|a, b| (a.started_at, &a.id).cmp(&(b.started_at, &b.id)))
     }
 
-    /// Counts the findings of `run` for `slug` that none of `others` holds. The reading is
-    /// `Caught` for the finding of a hook run against its CI run, and `Reached` for the finding of
-    /// a CI run against the hook runs before it.
-    fn count(&mut self, run: &Run, others: &[&Run], slug: &str) {
-        let reading = if run.origin == "hook" {
-            Reading::Caught
-        } else {
-            Reading::Reached
-        };
-        let holds: HashSet<&str> = others
-            .iter()
-            .flat_map(|other| held_by(&self.held, other, slug))
-            .collect();
-        let new: Vec<String> = held_by(&self.held, run, slug)
+    /// Counts the findings of the hook run `hook` for `slug` that `after` does not hold.
+    fn count(&mut self, hook: &Run, after: &Run, slug: &str) {
+        let holds: HashSet<&str> = held_by(&self.held, after, slug).into_iter().collect();
+        let new: Vec<String> = held_by(&self.held, hook, slug)
             .into_iter()
             .filter(|fingerprint| !holds.contains(fingerprint))
             .map(str::to_owned)
             .collect();
-        for fingerprint in new {
+        self.add(Reading::Caught, hook, slug, new);
+    }
+
+    /// Counts each fingerprint once for a reading, a rule and a branch.
+    fn add(&mut self, reading: Reading, run: &Run, slug: &str, fingerprints: Vec<String>) {
+        for fingerprint in fingerprints {
             let key = (
                 reading,
                 slug.to_owned(),

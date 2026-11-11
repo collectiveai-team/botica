@@ -195,7 +195,7 @@ const SECTIONS: [&str; 8] = [
     "Runs read",
     "Caught before the commit",
     "Reached CI",
-    "Pairing by time",
+    "Pairing limits",
     "Rules that are not comparable",
     "Rules with no findings",
     "Rules with many suppressions",

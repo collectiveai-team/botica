@@ -106,7 +106,7 @@ pub fn run(source: usize, line: &[u8]) -> Option<Run> {
         mode,
         origin,
         rules,
-        raw: *blake3::hash(line).as_bytes(),
+        raw: *blake3::hash(line.trim_ascii_end()).as_bytes(),
     })
 }
 
@@ -179,12 +179,13 @@ fn is_plain(text: &str, max: usize) -> bool {
 }
 
 /// A control character, or a format character that reorders or hides the text around it (the
-/// marks and overrides of bidirectional text, the zero-width characters and the byte order mark).
-fn is_unsafe(found: char) -> bool {
+/// marks and overrides of bidirectional text, the zero-width space and the byte order mark; the
+/// joiners stay, since names in some scripts and emoji hold them).
+pub fn is_unsafe(found: char) -> bool {
     found.is_control()
         || matches!(
             found,
-            '\u{200B}'..='\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}' | '\u{FEFF}'
+            '\u{200B}' | '\u{200E}' | '\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}' | '\u{FEFF}'
         )
 }
 
@@ -224,10 +225,13 @@ fn no_control(value: &Value) -> bool {
     }
 }
 
+/// The most rules that one run line may name; botica has some hundreds.
+const RULES_MAX: usize = 5_000;
+
 fn rules(value: &Value) -> Option<BTreeMap<String, Entry>> {
-    value
-        .as_object()?
-        .iter()
+    let map = value.as_object()?;
+    (map.len() <= RULES_MAX).then_some(())?;
+    map.iter()
         .map(|(slug, entry)| Some((slug.clone(), entry_of(slug, entry)?)))
         .collect()
 }
