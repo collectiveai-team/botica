@@ -279,3 +279,81 @@ fn the_pairing_compares_the_newest_500_runs_of_a_branch_and_says_how_many_it_lef
         "{text}"
     );
 }
+
+#[test]
+fn a_branch_over_256_bytes_keeps_the_counts_of_its_run_and_leaves_it_unpaired() {
+    let dir = dir("long-branch");
+    let mut run = RunSpec::new(1, "cli", "full")
+        .rule("long-branch-rule", 0, None)
+        .line();
+    run["branch"] = json!("b".repeat(300));
+    local(&dir, &format!("{run}\n"), "");
+
+    let text = stdout(&report(&dir, &[]));
+
+    assert!(!text.contains("failed their checks"), "{text}");
+    assert!(
+        section(&text, "Rules with no findings").contains("long-branch-rule"),
+        "{text}"
+    );
+}
+
+#[test]
+fn a_run_folder_with_no_history_file_is_named() {
+    let dir = dir("empty-run");
+    let run = dir.join("downloads").join("100");
+    fs::create_dir_all(&run).expect("create the run");
+    fs::write(
+        run.join("source.json"),
+        json!({"trusted": true}).to_string(),
+    )
+    .expect("source");
+
+    let text = from(&dir);
+
+    assert!(
+        text.contains("CI run 100 holds no runs.jsonl nor findings.jsonl"),
+        "{text}"
+    );
+}
+
+#[test]
+fn the_report_names_the_folder_of_the_local_history_that_it_read() {
+    let dir = dir("names-folder");
+
+    let text = stdout(&report(&dir, &[]));
+
+    assert!(
+        section(&text, "Runs read").contains(&format!(
+            "local history folder: {}",
+            history_dir(&dir).display()
+        )),
+        "{text}"
+    );
+}
+
+#[test]
+fn the_notes_and_the_unknown_kinds_are_capped_and_the_rest_is_counted() {
+    let dir = dir("capped");
+    let runs: String = (1..=30)
+        .map(|n| {
+            let mut run = RunSpec::new(n, "cli", "full").line();
+            run["mode"] = json!(format!("mode-{}", "x".repeat(n as usize)));
+            format!("{run}\n")
+        })
+        .collect();
+    local(&dir, &runs, "");
+
+    let text = stdout(&report(&dir, &[]));
+
+    let read = section(&text, "Runs read");
+    assert_eq!(
+        read.matches("that this report does not know").count(),
+        20,
+        "{text}"
+    );
+    assert!(
+        read.contains("more kinds of unknown runs are not shown"),
+        "{text}"
+    );
+}

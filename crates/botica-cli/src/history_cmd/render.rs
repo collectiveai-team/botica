@@ -12,6 +12,9 @@ pub enum Format {
     Markdown,
 }
 
+/// How many unknown kinds of run and how many notes the report prints.
+const SHOWN: usize = 20;
+
 pub fn render(report: &Report, format: Format) -> String {
     let mut page = Page {
         out: String::new(),
@@ -85,6 +88,10 @@ impl Page {
     fn sources(&mut self, report: &Report) {
         let counts = &report.counts;
         self.section("Runs read");
+        if let Some(dir) = &report.local_dir {
+            let dir = self.value(&dir.display().to_string());
+            self.item(&format!("local history folder: {dir}"));
+        }
         self.item(&format!("{} runs of the local history", counts.local));
         self.item(&format!(
             "{} runs of CI from trusted sources",
@@ -95,22 +102,31 @@ impl Page {
              nothing else",
             counts.ci_untrusted
         ));
-        for (kind, count) in &counts.unknown {
+        for (kind, count) in counts.unknown.iter().take(SHOWN) {
             let kind = self.value(kind);
             self.item(&format!(
                 "{count} runs of a mode or origin that this report does not know ({kind}): they \
                  enter no reading"
             ));
         }
+        self.more(counts.unknown.len(), "kinds of unknown runs");
         if report.skipped_lines > 0 {
             self.item(&format!(
                 "{} lines failed their checks (ADR 0019 decision 9.4) and were skipped",
                 report.skipped_lines
             ));
         }
-        for note in &report.notes {
+        for note in report.notes.iter().take(SHOWN) {
             let note = self.value(note);
             self.item(&format!("note: {note}"));
+        }
+        self.more(report.notes.len(), "notes");
+    }
+
+    /// Says how many of `total` items the report left out, when it printed [`SHOWN`].
+    fn more(&mut self, total: usize, what: &str) {
+        if total > SHOWN {
+            self.item(&format!("{} more {what} are not shown", total - SHOWN));
         }
     }
 
@@ -194,7 +210,8 @@ impl Page {
             if paired.runs_left_out > 0 {
                 self.line(&format!(
                     "{} older runs were left out of the pairing, which compares the newest 500 hook \
-                     runs and the newest 500 CI runs of each branch.",
+                     runs and the newest 500 CI runs of each branch. A commit older than the window \
+                     by a week is not in the graph of commits, and its runs are paired by time.",
                     paired.runs_left_out
                 ));
             }
@@ -225,8 +242,9 @@ impl Page {
     fn quiet(&mut self, report: &Report) {
         self.section("Rules with no findings");
         self.line(&format!(
-            "Rules that ran in at least one of the {} runs of the window and had no finding, no \
-             suppressed finding and no baselined finding in any of them. Zero can mean that the \
+            "Rules that ran in at least one of the {} trusted runs of the window, of any mode and \
+             branch, and had no finding, no suppressed finding and no baselined finding in any of \
+             the runs that name them. Zero can mean that the \
              rule works: the agent may follow it already because `AGENTS.md` lists it. A rule \
              with no findings is a candidate for review, and a person decides to retire it.",
             report.counts.rule_runs

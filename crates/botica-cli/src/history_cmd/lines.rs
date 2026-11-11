@@ -87,8 +87,12 @@ pub fn run(source: usize, line: &[u8]) -> Option<Run> {
     let started_at = map.get("started_at")?.as_u64()?;
     let commit = optional(&map, "commit", |value| hex_of(value, &[40, 64]))?;
     let head = optional(&map, "head", |value| hex_of(value, &[40, 64]))?;
-    let branch =
-        optional(&map, "branch", |value| plain(value, 256))?.filter(|name| !name.is_empty());
+    // The writer records any branch name. A name that fails its check leaves the run unpaired
+    // and keeps its counts, instead of dropping the whole line.
+    let branch = map
+        .get("branch")
+        .and_then(|value| plain(value, 256))
+        .filter(|name| !name.is_empty());
     let key_id = optional(&map, "key_id", |value| hex_of(value, &[8]))?;
     optional(&map, "rules_fingerprint", |value| hex_of(value, &[64]))?;
     optional(&map, "detail", |value| detail(value).then_some(()))?;

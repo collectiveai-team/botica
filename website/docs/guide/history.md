@@ -66,6 +66,15 @@ lint` computes that hash it records `null`, which the report reads as not compar
 rule under "Rules that are not comparable" and counts none of its findings, and it does not
 invent a hash.
 
+## Limits
+
+The report bounds its work. It reads each file up to 50 MB and 2 GB in all, and names a file past a
+limit. It keeps the runs of the window and a run line that names at most 5,000 rules. It asks git once
+for the commits of the window, a week more, up to 200,000, and finds ancestors in memory; a commit
+that is not in that graph pairs by the time of its run. It pairs the newest 500 hook runs and the
+newest 500 CI runs of each branch and says how many older runs it left out. It prints at most 20
+unknown kinds of run and 20 notes, and says how many more there are.
+
 ## Trust
 
 A run in `.botica/history/` counts as trusted for the person who wrote it, and the report names it

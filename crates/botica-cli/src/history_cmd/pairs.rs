@@ -79,6 +79,7 @@ pub fn pair(history: &History, window: &[&Run], since: u64, ancestry: &dyn Ances
     let mut pairing = Pairing {
         held,
         by_group: index(&hooks),
+        ci_by_group: index(&ci),
         holders,
         hooks,
         ci,
@@ -165,6 +166,8 @@ struct Pairing<'a> {
     held: Held<'a>,
     /// The positions in `hooks` of the hook runs of each group.
     by_group: HashMap<(&'a str, Option<&'a str>), Vec<usize>>,
+    /// The positions in `ci` of the CI runs of each group.
+    ci_by_group: HashMap<(&'a str, Option<&'a str>), Vec<usize>>,
     /// The positions in `hooks` of the hook runs of a group that hold a fingerprint of a rule.
     holders: HashMap<Holder<'a>, Vec<usize>>,
     hooks: Vec<&'a Run>,
@@ -185,9 +188,9 @@ impl<'a> Pairing<'a> {
                 continue;
             };
             paired_hooks += 1;
-            for slug in hook.rules.keys() {
-                if comparable(slug, hook, after, &mut self.paired) {
-                    self.count(hook, after, slug);
+            for slug in self.with_findings(hook) {
+                if comparable(&slug, hook, after, &mut self.paired) {
+                    self.count(hook, after, &slug);
                 }
             }
         }
@@ -214,15 +217,15 @@ impl<'a> Pairing<'a> {
                 continue;
             }
             paired_ci += 1;
-            for slug in run.rules.keys() {
+            for slug in self.with_findings(run) {
                 let comparable: HashSet<usize> = before
                     .iter()
                     .copied()
-                    .filter(|&hook| comparable(slug, self.hooks[hook], run, &mut self.paired))
+                    .filter(|&hook| comparable(&slug, self.hooks[hook], run, &mut self.paired))
                     .collect();
                 if !comparable.is_empty() {
-                    let new = self.unheld(run, slug, &comparable);
-                    self.add(Reading::Reached, run, slug, new);
+                    let new = self.unheld(run, &slug, &comparable);
+                    self.add(Reading::Reached, run, &slug, new);
                 }
             }
         }
@@ -243,15 +246,21 @@ impl<'a> Pairing<'a> {
             .collect()
     }
 
+    /// The rules of `run` that have a finding in it: a rule with none has nothing to pair.
+    fn with_findings(&self, run: &Run) -> Vec<String> {
+        self.held
+            .get(&(run.source, run.id.as_str()))
+            .map(|rules| rules.keys().map(|slug| (*slug).to_owned()).collect())
+            .unwrap_or_default()
+    }
+
     /// The earliest CI run of the branch of `hook` that the hook run precedes.
     fn earliest(&self, hook: &Run) -> Option<&'a Run> {
-        self.ci
+        self.ci_by_group
+            .get(&group(hook))?
             .iter()
-            .enumerate()
-            .filter(|(position, run)| {
-                group(run) == group(hook) && self.order.precedes(hook, *position)
-            })
-            .map(|(_, run)| *run)
+            .filter(|&&position| self.order.precedes(hook, position))
+            .map(|&position| self.ci[position])
             .min_by(|a, b| (a.started_at, &a.id).cmp(&(b.started_at, &b.id)))
     }
 

@@ -33,6 +33,8 @@ pub struct History {
     pub findings: Vec<Finding>,
     pub notes: Vec<String>,
     pub skipped_lines: usize,
+    /// The folder of the local history that the reader looked in.
+    pub local_dir: Option<PathBuf>,
 }
 
 impl History {
@@ -75,6 +77,7 @@ impl Reader {
     fn add_local(&mut self, root: &Path) {
         let dot = root.join(".botica");
         let dir = dot.join("history");
+        self.history.local_dir = Some(dir.clone());
         if self.is_plain_dir(&dot) && self.is_plain_dir(&dir) {
             self.folders.push((dir, LOCAL));
         }
@@ -112,10 +115,25 @@ impl Reader {
                 continue;
             }
             let source = self.source_of(&name, &entry.path());
+            let before = self.folders.len();
             self.folders.push((entry.path(), source));
             self.add_artifacts(&entry.path(), source);
+            if !self.has_history(before) {
+                self.note(format!(
+                    "CI run {name} holds no runs.jsonl nor findings.jsonl"
+                ));
+            }
         }
         Ok(())
+    }
+
+    /// Whether one of the folders added since `from` holds a history file.
+    fn has_history(&self, from: usize) -> bool {
+        self.folders[from..].iter().any(|(folder, _)| {
+            ["runs.jsonl", "findings.jsonl"]
+                .iter()
+                .any(|name| std::fs::symlink_metadata(folder.join(name)).is_ok())
+        })
     }
 
     /// The artifacts of a run are the folders `<id>/<name>`, which hold the two files; a run
