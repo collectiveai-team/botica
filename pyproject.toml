@@ -323,8 +323,8 @@ extend-ignores = ["crates/botica-core/src/external_config/ruff_rules.tsv", "cata
 # Written by tools, so the size of a change does not count them. `.abide/rubric.json` is generated
 # too, but `.abide/**` is `platform` and cannot be listed here.
 generated = [
-  "uv.lock",
-  "Cargo.lock",
+  "/uv.lock",
+  "/Cargo.lock",
   "schema/botica.schema.json",
   "catalog/rules/history.toml",
   "crates/botica-core/src/external_config/ruff_rules.tsv",
@@ -339,8 +339,10 @@ required-checks = ["lint, type-check & test", "zizmor", "no-ai-coauthorship", "v
 [[tool.botica.review.areas]]
 name = "critical"
 paths = [
-  "catalog/recipes/files/github/workflows/**",
-  "catalog/recipes/files/gitlab/**",
+  "catalog/recipes/files/github*/**",
+  "catalog/recipes/files/gitlab*/**",
+  "catalog/recipes/files/claude-settings.json",
+  "catalog/recipes/files/opencode.jsonc",
   "crates/botica-core/src/fingerprint.rs",
   "crates/botica-core/src/history.rs",
 ]
@@ -361,6 +363,7 @@ paths = [
   "scripts/**",
   "distribution/**",
   "docs/botica-release.md",
+  "docs/agents/**",
   "**/AGENTS.md",
   "**/SKILL.md",
 ]
@@ -377,6 +380,9 @@ paths = [
   "schema/**",
   "standards/**",
   "skills/**",
+  "website/overrides/**",
+  "website/docs/javascripts/**",
+  "GLOSSARY.md",
 ]
 
 [[tool.botica.review.areas]]
@@ -386,9 +392,7 @@ paths = [
   "website/**",
   "tests/**",
   "bench/**",
-  "README.md",
-  "GLOSSARY.md",
-  "LICENSE",
+  "/README.md",
 ]
 
 [tool.pyrefly]

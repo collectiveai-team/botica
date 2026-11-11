@@ -87,25 +87,32 @@ entry matches belongs to `core`, so a project with no entries has no change at t
 
 The configuration fails to load when:
 
-- a `tier` is under the floor of its name, `approvals` of `critical` is 0, or an entry of
-  `critical` or `platform` has no `owners`;
-- a glob is blank, starts with `#` or `!`, or is invalid, or two entries list the same glob;
+- a `tier` is under the floor of its name, `approvals` is 0 in any area but `periphery`, or an
+  entry of `critical` or `platform` has no `owners`;
+- an owner is not `@user`, `@org/team` or an email address, or `paths` is empty;
+- a glob is blank, starts with `#` or `!`, has spaces around it or is invalid, or two entries list
+  the same glob;
 - the table has entries and none is `platform`;
-- an entry of `periphery` covers a path that is `platform` whatever the entries say: `botica.toml`,
-  `.github/review/**`, `.gitlab/review/**` and the folder of `dir`, `skills-lock.json`,
-  `.github/workflows/**`, `.github/actions/**`, `.gitlab-ci.yml`, `.github/CODEOWNERS`,
-  `.gitlab/CODEOWNERS`, `.gitattributes`, `prek.toml`, `.abide/**`, and at any depth `AGENTS.md`,
-  `CLAUDE.md`, `.claude/**`, `.mcp.json`, `.cursorrules`, `INVARIANTS.md`, `REVIEW.md` and
-  `SKILL.md`. Whether two globs overlap is decided on a sample path of each, so an overlap that
-  no sample reaches goes unnoticed.
+- an entry of `periphery` can select a path that is `platform` whatever the entries say:
+  `botica.toml`, `pyproject.toml` at the root, `.github/review/**`, `.gitlab/review/**` and the
+  folder of `dir`, `skills-lock.json`, `.github/workflows/**`, `.github/actions/**`,
+  `.gitlab-ci.yml`, `.github/CODEOWNERS`, `.gitlab/CODEOWNERS`, `.gitattributes`, `prek.toml`,
+  `.abide/**`, and at any depth `AGENTS.md`, `CLAUDE.md`, `.claude/**`, `.mcp.json`,
+  `.cursorrules`, `INVARIANTS.md`, `REVIEW.md` and `SKILL.md`. The check compares the globs, not
+  the files of the checkout, so `.github/workflows/*.yml` and `docs/**/AGENTS.md` fail too. An
+  entry that ends in `**`, as `docs/**`, leaves a forced file inside it to the list and is not
+  an error.
+
+A glob with no `/` is read at every depth, as in a `.gitignore`: `README.md` also selects
+`.github/review/README.md`, which is `platform`. Write `/README.md` for the file at the root.
 
 The other keys of `[review]`:
 
 | Key | Meaning | Default |
 |---|---|---|
-| `dir` | the folder of the review roles, from the root, as a plain directory | `.github/review` or `.gitlab/review` |
+| `dir` | the folder of the review roles, from the root, as a plain directory with no wildcard | `.github/review` or `.gitlab/review` |
 | `roles` | the roles that CI expects: `spec`, `security`, `tests`, `architecture`, `contracts`, `performance`, `refute` | all seven |
-| `generated` | globs of generated files, which the size of a change does not count; one that matches a path of `critical`, `platform` or the forced list fails to load | none |
+| `generated` | globs of generated files, which the size of a change does not count; one that can select a path of `critical`, `platform` or the forced list fails to load, so write `/uv.lock` and not `uv.lock` | none |
 
 `[review.classifier]` holds the settings that ADR 0018 gives the classifier, which a later change
 adds. A value out of its bound fails to load:

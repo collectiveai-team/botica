@@ -3,7 +3,7 @@
 mod common;
 
 use botica_config::{AreaName, ClassifierMode, Config, ReviewRole, Tier};
-use common::review::{accepted, catalog, parse, problems, with_platform};
+use common::review::{accepted, catalog, parse, problems, with_platform, PLATFORM};
 
 #[test]
 fn without_the_table_there_are_no_areas_and_the_classifier_has_its_starting_values() {
@@ -58,32 +58,47 @@ fn the_example_of_the_adr_parses_and_validates() {
 
 #[test]
 fn the_table_is_read_from_the_tool_table_of_a_pyproject() {
-    let text = "[project]\nname = \"x\"\n\n[tool.botica.review]\ngenerated = [\"uv.lock\"]\n\n\
+    let text = "[project]\nname = \"x\"\n\n[tool.botica.review]\ngenerated = [\"/uv.lock\"]\n\n\
                 [[tool.botica.review.areas]]\nname = \"platform\"\npaths = [\"ci/**\"]\nowners = [\"@me\"]\n";
 
     let config = Config::from_pyproject(text)
         .expect("parses")
         .expect("has the table");
 
-    assert_eq!(config.review.generated, ["uv.lock"]);
+    assert_eq!(config.review.generated, ["/uv.lock"]);
     assert_eq!(config.review.areas[0].owners, ["@me"]);
     config.validate(&catalog()).expect("valid");
 }
 
 #[test]
 fn a_key_or_a_name_that_the_table_does_not_know_is_an_error_that_names_it() {
-    assert!(problems("[review]\nowners = []\n").contains("owners"));
-    assert!(problems("[review.classifier]\nthreshold = 1\n").contains("threshold"));
-    assert!(
-        problems("[[review.areas]]\nname = \"core\"\npaths = [\"a\"]\nreviewers = []\n")
-            .contains("reviewers")
-    );
-    assert!(
-        problems("[[review.areas]]\nname = \"important\"\npaths = [\"a\"]\n").contains("important")
-    );
-    assert!(problems("[review]\nroles = [\"style\"]\n").contains("style"));
-    assert!(problems("[review.classifier]\nmode = \"auto\"\n").contains("auto"));
-    assert!(problems("[[review.areas]]\npaths = [\"a\"]\n").contains("name"));
+    for (text, marker) in [
+        ("[review]\nowners = []\n", "unknown field `owners`"),
+        (
+            "[review.classifier]\nthreshold = 1\n",
+            "unknown field `threshold`",
+        ),
+        (
+            "[[review.areas]]\nname = \"core\"\npaths = [\"a\"]\nreviewers = []\n",
+            "unknown field `reviewers`",
+        ),
+        (
+            "[[review.areas]]\nname = \"important\"\npaths = [\"a\"]\n",
+            "unknown variant `important`",
+        ),
+        ("[review]\nroles = [\"style\"]\n", "unknown variant `style`"),
+        (
+            "[review.classifier]\nmode = \"auto\"\n",
+            "unknown variant `auto`",
+        ),
+        (
+            "[[review.areas]]\npaths = [\"a\"]\n",
+            "missing field `name`",
+        ),
+    ] {
+        let message = problems(text);
+        assert!(message.contains(marker), "{marker}: {message}");
+    }
 }
 
 #[test]
@@ -121,8 +136,19 @@ fn critical_asks_for_at_least_one_approval() {
 
     assert!(message.contains("review.areas[1].approvals"), "{message}");
     accepted(&with_platform(
-        "[[review.areas]]\nname = \"core\"\npaths = [\"a/**\"]\napprovals = 0\n",
+        "[[review.areas]]\nname = \"periphery\"\npaths = [\"a/**\"]\napprovals = 0\n",
     ));
+    for name in ["platform", "core"] {
+        let message = problems(&format!(
+            "[[review.areas]]\nname = \"{name}\"\npaths = [\"a/**\"]\nowners = [\"@o\"]\napprovals = 0\n\n{}",
+            if name == "platform" {
+                "[[review.areas]]\nname = \"core\"\npaths = [\"b/**\"]\n"
+            } else {
+                PLATFORM
+            }
+        ));
+        assert!(message.contains(".approvals"), "{name}: {message}");
+    }
 }
 
 #[test]
@@ -148,7 +174,10 @@ fn an_owner_is_a_user_a_team_or_an_address_with_no_blanks() {
         "[[review.areas]]\nname = \"core\"\npaths = [\"a/**\"]\n\
          owners = [\"@user\", \"@org/team\", \"dev@example.com\"]\n",
     ));
-    for bad in ["", "user", "@a b", "@a\\n@b"] {
+    for bad in [
+        "", "user", "@", "@org/", "@/team", "@a b", "@a\\n@b", "@a;rm", "#x@y", "@a/b/c", "a@",
+        "@@a", "a@b",
+    ] {
         let message = problems(&with_platform(&format!(
             "[[review.areas]]\nname = \"core\"\npaths = [\"a/**\"]\nowners = [\"{bad}\"]\n"
         )));
@@ -165,7 +194,7 @@ fn the_paths_of_an_entry_are_required_and_are_globs_that_select_something() {
         "[[review.areas]]\nname = \"core\"\npaths = []\n"
     ))
     .contains("review.areas[1].paths"));
-    for bad in ["", "   ", "!a/**", "# a", "a\\nb"] {
+    for bad in ["", "   ", "!a/**", "# a", "a\\nb", " **/*", "a/** ", "  *"] {
         let message = problems(&with_platform(&format!(
             "[[review.areas]]\nname = \"core\"\npaths = [\"{bad}\"]\n"
         )));
@@ -238,7 +267,7 @@ fn a_periphery_entry_cannot_cover_the_paths_that_are_platform_whatever_the_entri
         );
     }
     accepted(&with_platform(
-        "[[review.areas]]\nname = \"periphery\"\npaths = [\"docs/**\", \"website/docs/**\", \"README.md\", \"tests/**\"]\n",
+        "[[review.areas]]\nname = \"periphery\"\npaths = [\"docs/**\", \"website/docs/**\", \"/README.md\", \"tests/**\"]\n",
     ));
 }
 

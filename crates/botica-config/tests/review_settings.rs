@@ -21,7 +21,7 @@ fn a_generated_glob_cannot_match_a_path_that_a_person_has_to_review() {
         );
     }
     accepted(&format!(
-        "[review]\ngenerated = [\"uv.lock\", \"schema/*.json\", \"src/**/*.pb.go\"]\n\n{}",
+        "[review]\ngenerated = [\"/uv.lock\", \"schema/botica.schema.json\", \"src/gen/api.pb.go\"]\n\n{}",
         with_platform("[[review.areas]]\nname = \"core\"\npaths = [\"src/**\"]\n")
     ));
 }
@@ -35,14 +35,15 @@ fn a_generated_glob_must_be_a_glob() {
 fn the_classifier_takes_the_bounds_of_the_adr() {
     let config = accepted(
         "[review.classifier]\nmode = \"enforce\"\nrequired-checks = [\"test\"]\nquestion-max = 0.3\n\
-         impact-min = 0.7\nmin-confidence = 0.7\nmax-changed-lines = 1000\n",
+         impact-min = 0.75\nmin-confidence = 0.8\nmax-changed-lines = 1000\n",
     );
 
     let classifier = &config.review.classifier;
     assert_eq!(classifier.mode, ClassifierMode::Enforce);
     assert_eq!(classifier.required_checks, ["test"]);
     assert_eq!(classifier.question_max, 0.3);
-    assert_eq!(classifier.impact_min, 0.7);
+    assert_eq!(classifier.impact_min, 0.75);
+    assert_eq!(classifier.min_confidence, 0.8);
     assert_eq!(classifier.max_changed_lines, 1000);
     for (key, value) in [
         ("question-max", "0.31"),
@@ -75,7 +76,21 @@ fn a_required_check_has_a_name() {
 #[test]
 fn the_folder_of_the_roles_is_a_plain_directory() {
     accepted("[review]\ndir = \"policy/review\"\n");
-    for bad in ["", "/policy", "policy/", "./policy", "../policy", "a//b"] {
+    for bad in [
+        "",
+        "/policy",
+        "policy/",
+        "./policy",
+        "../policy",
+        "a//b",
+        "[",
+        "*",
+        "po*cy",
+        "!x",
+        "#r",
+        "a?b",
+        "{a,b}",
+    ] {
         let message = problems(&format!("[review]\ndir = \"{bad}\"\n"));
         assert!(message.contains("review.dir"), "`{bad}`: {message}");
     }
@@ -98,7 +113,7 @@ fn the_roles_that_ci_expects_are_the_ones_the_table_names() {
 #[test]
 fn the_globs_that_match_no_file_are_listed_with_where_they_are_written() {
     let config = accepted(&format!(
-        "[review]\ngenerated = [\"uv.lock\", \"gone.lock\"]\n\n{PLATFORM}\n\
+        "[review]\ngenerated = [\"/uv.lock\", \"/gone.lock\"]\n\n{PLATFORM}\n\
          [[review.areas]]\nname = \"core\"\npaths = [\"src/**\", \"old/**\"]\n"
     ));
     let files = ["ci/build.yml", "src/main.rs", "uv.lock", "README.md"];
@@ -112,7 +127,7 @@ fn the_globs_that_match_no_file_are_listed_with_where_they_are_written() {
     assert_eq!(
         found,
         [
-            ("review.generated[1]", "gone.lock"),
+            ("review.generated[1]", "/gone.lock"),
             ("review.areas[1].paths[1]", "old/**"),
         ]
     );

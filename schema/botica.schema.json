@@ -177,20 +177,25 @@
           "description": "`U`: the probability that a mistake shows first to the team or to whoever develops the\nrepository, at least. Not under 0.7.",
           "type": "number",
           "format": "double",
-          "default": 0.9
+          "default": 0.9,
+          "maximum": 1.0,
+          "minimum": 0.7
         },
         "max-changed-lines": {
           "description": "Larger changes go to a person. At most 1000.",
           "type": "integer",
           "format": "uint32",
           "default": 400,
+          "maximum": 1000,
           "minimum": 0
         },
         "min-confidence": {
           "description": "A `choice` answer with less confidence than this goes to a person. Not under 0.7.",
           "type": "number",
           "format": "double",
-          "default": 0.7
+          "default": 0.7,
+          "maximum": 1.0,
+          "minimum": 0.7
         },
         "mode": {
           "$ref": "#/$defs/ClassifierMode"
@@ -199,7 +204,9 @@
           "description": "`u`: a question answers `true` with a probability under this one. At most 0.3.",
           "type": "number",
           "format": "double",
-          "default": 0.1
+          "default": 0.1,
+          "maximum": 0.3,
+          "minimum": 0.0
         },
         "required-checks": {
           "description": "The checks that must be present and green. An empty list sends every pull request to a\nperson.",

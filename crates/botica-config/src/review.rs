@@ -143,13 +143,17 @@ pub struct ClassifierConfig {
     /// person.
     pub required_checks: Vec<String>,
     /// `u`: a question answers `true` with a probability under this one. At most 0.3.
+    #[schemars(range(min = 0.0, max = 0.3))]
     pub question_max: f64,
     /// `U`: the probability that a mistake shows first to the team or to whoever develops the
     /// repository, at least. Not under 0.7.
+    #[schemars(range(min = 0.7, max = 1.0))]
     pub impact_min: f64,
     /// A `choice` answer with less confidence than this goes to a person. Not under 0.7.
+    #[schemars(range(min = 0.7, max = 1.0))]
     pub min_confidence: f64,
     /// Larger changes go to a person. At most 1000.
+    #[schemars(range(max = 1000))]
     pub max_changed_lines: u32,
 }
 
@@ -191,8 +195,9 @@ pub struct ReviewConfig {
 /// reviewed, built and merged, or are loaded by an agent as instructions (ADR 0018 decision 1).
 /// A name with no `/` matches at every depth, as in a `.gitignore`, so a `botica.toml` of a
 /// subfolder counts too.
-const FORCED_PLATFORM: [&str; 20] = [
+const FORCED_PLATFORM: [&str; 21] = [
     "botica.toml",
+    "/pyproject.toml",
     ".github/review/**",
     ".gitlab/review/**",
     "skills-lock.json",

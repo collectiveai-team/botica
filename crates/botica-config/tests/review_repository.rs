@@ -2,8 +2,8 @@
 
 mod common;
 
-use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 use botica_config::{load_file, AreaName};
 use common::embedded;
@@ -12,34 +12,31 @@ fn checkout() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-/// The files of the checkout from its root, without what git ignores and the folders of tools.
-fn files(root: &Path, dir: &Path, found: &mut Vec<String>) {
-    for entry in fs::read_dir(dir).expect("read the directory").flatten() {
-        let path = entry.path();
-        let name = entry.file_name().to_string_lossy().into_owned();
-        if matches!(
-            name.as_str(),
-            ".git" | "target" | ".worktrees" | ".tmp" | ".scratch" | ".venv" | "node_modules"
-        ) {
-            continue;
-        }
-        if path.is_dir() {
-            files(root, &path, found);
-        } else if let Ok(relative) = path.strip_prefix(root) {
-            found.push(relative.to_string_lossy().replace('\\', "/"));
-        }
-    }
+/// The files that git tracks, from the root of the checkout: untracked and ignored files of a
+/// working copy do not change the answer.
+fn tracked_files() -> Vec<String> {
+    let output = Command::new("git")
+        .args(["ls-files", "-z"])
+        .current_dir(checkout())
+        .output()
+        .expect("run git");
+    assert!(output.status.success(), "git ls-files failed");
+    String::from_utf8(output.stdout)
+        .expect("paths are UTF-8")
+        .split('\0')
+        .filter(|path| !path.is_empty())
+        .map(str::to_owned)
+        .collect()
 }
 
 #[test]
-fn the_areas_of_this_repository_are_valid_and_every_glob_matches_a_file() {
+fn the_areas_of_this_repository_are_valid_and_every_glob_matches_a_tracked_file() {
     let loaded = load_file(&checkout().join("pyproject.toml")).expect("pyproject.toml loads");
     loaded
         .config
         .validate(&embedded())
         .unwrap_or_else(|error| panic!("the review table is invalid:\n{error}"));
-    let mut all = Vec::new();
-    files(&checkout(), &checkout(), &mut all);
+    let all = tracked_files();
     let all: Vec<&str> = all.iter().map(String::as_str).collect();
 
     let unmatched = loaded.config.review.unmatched_paths(&all);
@@ -48,17 +45,28 @@ fn the_areas_of_this_repository_are_valid_and_every_glob_matches_a_file() {
 }
 
 #[test]
-fn this_repository_declares_a_periphery_so_that_a_change_can_reach_the_low_tier() {
+fn a_documentation_file_is_periphery_and_a_workflow_is_platform() {
     let loaded = load_file(&checkout().join("pyproject.toml")).expect("pyproject.toml loads");
+    let areas = &loaded.config.review.areas;
+    let name_of = |path: &str| {
+        areas
+            .iter()
+            .filter(|area| {
+                area.paths.iter().any(|glob| {
+                    botica_config::PathMatcher::new(std::slice::from_ref(glob))
+                        .expect("valid glob")
+                        .is_match(path)
+                })
+            })
+            .map(|area| area.name)
+            .collect::<Vec<_>>()
+    };
 
-    let names: Vec<AreaName> = loaded.config.review.areas.iter().map(|a| a.name).collect();
-
-    for name in [
-        AreaName::Critical,
-        AreaName::Platform,
-        AreaName::Core,
-        AreaName::Periphery,
-    ] {
-        assert!(names.contains(&name), "{name:?}");
-    }
+    assert_eq!(name_of("website/docs/guide/lint.md"), [AreaName::Periphery]);
+    assert_eq!(name_of(".github/workflows/ci.yml"), [AreaName::Platform]);
+    assert_eq!(
+        name_of("catalog/recipes/files/github-go/workflows/go.yml"),
+        [AreaName::Critical, AreaName::Core]
+    );
+    assert_eq!(name_of("crates/botica-config/src/lib.rs"), [AreaName::Core]);
 }

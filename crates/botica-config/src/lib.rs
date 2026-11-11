@@ -1,6 +1,7 @@
 mod command_line;
 mod discover;
 mod entry;
+mod glob_overlap;
 mod inline;
 mod issue;
 mod matcher;

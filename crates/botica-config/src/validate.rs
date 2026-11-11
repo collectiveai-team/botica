@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use botica_catalog::{Catalog, Ecosystem, OptionSpec, OptionType, Rule};
 
 use crate::issue::{issue, ConfigError, ConfigIssue};
-use crate::matcher::PathMatcher;
+use crate::matcher::{is_plain_dir, PathMatcher};
 use crate::model::{Config, Override, RuleConfig};
 use crate::selector::{check_rule, Selector};
 use crate::validate_review::review;
@@ -43,13 +43,6 @@ fn selectors(found: &mut Vec<ConfigIssue>, catalog: &Catalog, key: &str, values:
             found.push(issue(format!("{key}[{index}]"), message));
         }
     }
-}
-
-/// A directory from the project root with nothing around it: no empty part, `.` or `..`.
-pub(crate) fn is_plain_dir(value: &str) -> bool {
-    value
-        .split('/')
-        .all(|part| !part.is_empty() && part != "." && part != "..")
 }
 
 /// A directory of code is written as the directory it is, from the project root, with nothing
