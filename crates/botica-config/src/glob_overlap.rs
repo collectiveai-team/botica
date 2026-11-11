@@ -1,11 +1,14 @@
 //! Whether two globs can select the same path, decided on the globs and not on sample paths.
 //!
-//! The globs are the ones of a `.gitignore` as `PathMatcher` reads them. A `[...]` class is read
-//! as `?` and braces with too many alternatives as `**`, so a doubt is answered with an overlap:
-//! the callers refuse a configuration on an overlap.
+//! The globs are the ones of a `.gitignore` as `PathMatcher` reads them. A doubt is answered with
+//! an overlap, since the callers refuse a configuration on an overlap: a glob with a character
+//! class, an escape or too many braces is read as `**`, and a last name that may be a folder
+//! selects what is inside it.
 
-/// The most alternatives that braces expand to; a glob with more is read as `**`.
-const MAX_ALTERNATIVES: usize = 64;
+/// A glob with more groups of braces, or more commas in them, is read as `**`: the expansion
+/// grows with the product of the alternatives of the groups.
+const MAX_BRACE_GROUPS: usize = 4;
+const MAX_BRACE_COMMAS: usize = 32;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Token {
@@ -60,20 +63,21 @@ fn expand_braces(glob: &str) -> Vec<String> {
     ends.push(close);
     let mut all = Vec::new();
     for (start, end) in starts.into_iter().zip(ends) {
-        for rest in expand_braces(&format!("{head}{}{tail}", &glob[start..end])) {
-            all.push(rest);
-            if all.len() > MAX_ALTERNATIVES {
-                return vec!["**".to_owned()];
-            }
-        }
+        all.extend(expand_braces(&format!("{head}{}{tail}", &glob[start..end])));
     }
     all
 }
 
+/// Whether the glob has something that this module does not follow exactly.
+fn too_complex(glob: &str) -> bool {
+    glob.contains(['[', '\\'])
+        || glob.matches('{').count() > MAX_BRACE_GROUPS
+        || glob.matches(',').count() > MAX_BRACE_COMMAS
+}
+
 fn tokens(segment: &str) -> Vec<Token> {
     let mut out = Vec::new();
-    let mut chars = segment.chars();
-    while let Some(c) = chars.next() {
+    for c in segment.chars() {
         match c {
             '*' => {
                 if out.last() != Some(&Token::Star) {
@@ -81,26 +85,27 @@ fn tokens(segment: &str) -> Vec<Token> {
                 }
             }
             '?' => out.push(Token::One),
-            '[' => {
-                let rest = chars.as_str();
-                match rest.find(']') {
-                    Some(end) if end > 0 => {
-                        chars = rest[end + 1..].chars();
-                        out.push(Token::One);
-                    }
-                    _ => out.push(Token::Literal('[')),
-                }
-            }
-            '\\' => out.extend(chars.next().map(Token::Literal)),
             other => out.push(Token::Literal(other)),
         }
     }
     out
 }
 
-/// A glob with no `/` in it matches at every depth, as in a `.gitignore`. A last name with no
-/// wildcard may be a directory, so what is inside it is selected too, unless `file` says that the
-/// glob names a file or the name has an extension (`README.md`, and not `docs` or `.github`).
+/// A name that ends in a literal extension (`uv.lock`, `*.md`, and not `docs`, `.github`, `s*` or
+/// `*.lock*`): it is read as a file. A folder named `a.b` is a case that this reading misses.
+fn names_a_file(name: &[Token]) -> bool {
+    let dot = name.iter().rposition(|t| *t == Token::Literal('.'));
+    dot.is_some_and(|at| at > 0 && at + 1 < name.len())
+        && name
+            .iter()
+            .rev()
+            .take_while(|t| **t != Token::Literal('.'))
+            .all(|t| matches!(t, Token::Literal(_)))
+}
+
+/// A glob with no `/` in it matches at every depth, as in a `.gitignore`. A last name may be a
+/// folder, so what is inside it is selected too, unless `file` says that the glob names a file or
+/// the name looks like one.
 fn alternative(glob: &str, file: bool) -> Alternative {
     let glob = glob.trim_end_matches('/');
     let anchored = glob.contains('/');
@@ -118,13 +123,10 @@ fn alternative(glob: &str, file: bool) -> Alternative {
     if !anchored {
         segments.insert(0, Segment::AnyDepth);
     }
-    let literal_last = matches!(
-        segments.last(),
-        Some(Segment::Name(name))
-            if name.iter().all(|t| matches!(t, Token::Literal(_)))
-                && !name.iter().skip(1).any(|t| *t == Token::Literal('.'))
-    );
-    if literal_last && !file {
+    let ends_with_a_file =
+        matches!(segments.last(), Some(Segment::Name(name)) if names_a_file(name));
+    let ends_with_a_name = matches!(segments.last(), Some(Segment::Name(_)));
+    if ends_with_a_name && !ends_with_a_file && !file {
         segments.push(Segment::AnyDepth);
     }
     segments
@@ -213,11 +215,17 @@ impl Glob {
     }
 
     fn build(text: &str, file: bool) -> Self {
+        if too_complex(text) {
+            return Self {
+                alternatives: vec![vec![Segment::AnyDepth]],
+                picks_files: true,
+            };
+        }
         let expanded = expand_braces(text);
         Self {
             picks_files: expanded
                 .iter()
-                .any(|glob| !glob.trim_end_matches('/').ends_with("**")),
+                .any(|glob| !glob.ends_with('/') && !glob.ends_with("**")),
             alternatives: expanded
                 .iter()
                 .map(|glob| alternative(glob, file))
@@ -236,5 +244,20 @@ impl Glob {
     /// names.
     pub(crate) fn picks_files(&self) -> bool {
         self.picks_files
+    }
+
+    /// Whether a name of the glob, between two `/`, can be the name `forced` and spells part of it
+    /// out: `docs/.claude/**` and `docs/.cl*/**` name the folder `.claude`, and `docs/**` and
+    /// `crates/*/tests/**` do not, since a `*` alone says nothing about the name.
+    pub(crate) fn names(&self, forced: &str) -> bool {
+        let forced = tokens(forced);
+        self.alternatives.iter().any(|a| {
+            a.iter().any(|segment| match segment {
+                Segment::Name(name) => {
+                    name.iter().any(|t| matches!(t, Token::Literal(_))) && intersect(name, &forced)
+                }
+                Segment::AnyDepth => false,
+            })
+        })
     }
 }

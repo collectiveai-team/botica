@@ -172,10 +172,10 @@ fn critical_and_platform_need_owners_and_the_other_areas_do_not() {
 fn an_owner_is_a_user_a_team_or_an_address_with_no_blanks() {
     accepted(&with_platform(
         "[[review.areas]]\nname = \"core\"\npaths = [\"a/**\"]\n\
-         owners = [\"@user\", \"@org/team\", \"dev@example.com\"]\n",
+         owners = [\"@user\", \"@org/team\", \"@org/group/team\", \"dev@example.com\", \"a_b+c@x-y.org\"]\n",
     ));
     for bad in [
-        "", "user", "@", "@org/", "@/team", "@a b", "@a\\n@b", "@a;rm", "#x@y", "@a/b/c", "a@",
+        "", "user", "@", "@org/", "@/team", "@a b", "@a\\n@b", "@a;rm", "#x@y", "@a/b/c/d", "a@",
         "@@a", "a@b",
     ] {
         let message = problems(&with_platform(&format!(
@@ -294,21 +294,21 @@ fn the_folder_of_the_roles_is_platform_too() {
 }
 
 #[test]
-fn the_forced_platform_paths_are_the_ones_of_the_adr() {
-    let globs = parse("").review.forced_platform_globs();
-
-    for expected in [
-        "botica.toml",
+fn the_forced_platform_paths_are_the_ones_of_the_adr_and_pyproject_toml() {
+    let mut globs = parse("").review.forced_platform_globs();
+    let mut expected = vec![
+        "/botica.toml",
+        "/pyproject.toml",
         ".github/review/**",
         ".gitlab/review/**",
-        "skills-lock.json",
+        "/skills-lock.json",
         ".github/workflows/**",
         ".github/actions/**",
-        ".gitlab-ci.yml",
+        "/.gitlab-ci.yml",
         ".github/CODEOWNERS",
         ".gitlab/CODEOWNERS",
-        ".gitattributes",
-        "prek.toml",
+        "/.gitattributes",
+        "/prek.toml",
         ".abide/**",
         "**/AGENTS.md",
         "**/CLAUDE.md",
@@ -318,7 +318,10 @@ fn the_forced_platform_paths_are_the_ones_of_the_adr() {
         "**/INVARIANTS.md",
         "**/REVIEW.md",
         "**/SKILL.md",
-    ] {
-        assert!(globs.iter().any(|glob| glob == expected), "{expected}");
-    }
+    ];
+
+    globs.sort();
+    expected.sort_unstable();
+
+    assert_eq!(globs, expected);
 }

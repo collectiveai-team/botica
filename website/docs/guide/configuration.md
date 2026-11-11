@@ -50,7 +50,7 @@ for the roles. botica reads and checks the table; the commands that use it come 
 ```toml
 # botica.toml; in pyproject.toml the tables are [tool.botica.review] and [[tool.botica.review.areas]]
 [review]
-generated = ["uv.lock", "schema/*.json"]
+generated = ["/uv.lock", "schema/botica.schema.json"]
 
 [review.classifier]
 required-checks = ["test", "lint"]
@@ -77,7 +77,7 @@ An entry of `[[review.areas]]` has these keys:
 |---|---|---|
 | `name` | `critical`, `platform`, `core` or `periphery` | required |
 | `paths` | globs, written as in a `.gitignore` | required |
-| `owners` | `@user`, `@org/team` or an email address | none; required for `critical` and `platform` |
+| `owners` | `@user`, `@org/team`, `@org/group/team` or an email address | none; required for `critical` and `platform` |
 | `tier` | `low`, `medium` or `high` | the floor of the name |
 | `approvals` | the approvals that the paths ask for | 1; 0 for `periphery` |
 
@@ -89,7 +89,9 @@ The configuration fails to load when:
 
 - a `tier` is under the floor of its name, `approvals` is 0 in any area but `periphery`, or an
   entry of `critical` or `platform` has no `owners`;
-- an owner is not `@user`, `@org/team` or an email address, or `paths` is empty;
+- an owner is not `@user`, `@org/team`, `@org/group/team` or an email address, or `paths` is empty;
+- a name of `[review.classifier]` `required-checks` is blank, `dir` is not a plain directory
+  without wildcards, or a key of the table is unknown;
 - a glob is blank, starts with `#` or `!`, has spaces around it or is invalid, or two entries list
   the same glob;
 - the table has entries and none is `platform`;
@@ -106,12 +108,18 @@ The configuration fails to load when:
 A glob with no `/` is read at every depth, as in a `.gitignore`: `README.md` also selects
 `.github/review/README.md`, which is `platform`. Write `/README.md` for the file at the root.
 
+The checks of the globs read each glob as a pattern and not as a list of files, and answer a doubt
+with a refusal. A `periphery` folder is written `docs/**`: `docs`, `docs/` and `/docs` can select
+the `AGENTS.md` inside the folder and fail. A glob with a character class (`[...]`), an escape
+(`\`), more than 4 groups of braces or more than 32 commas is read as selecting everything, so it
+fails in `periphery` and in `generated`. A name with a dot, such as `docs/v1.0`, is read as a file.
+
 The other keys of `[review]`:
 
 | Key | Meaning | Default |
 |---|---|---|
 | `dir` | the folder of the review roles, from the root, as a plain directory with no wildcard | `.github/review` or `.gitlab/review` |
-| `roles` | the roles that CI expects: `spec`, `security`, `tests`, `architecture`, `contracts`, `performance`, `refute` | all seven |
+| `roles` | the roles that CI expects: `spec`, `security`, `tests`, `architecture`, `contracts`, `performance`, `refute`; `[]` expects none | all seven |
 | `generated` | globs of generated files, which the size of a change does not count; one that can select a path of `critical`, `platform` or the forced list fails to load, so write `/uv.lock` and not `uv.lock` | none |
 
 `[review.classifier]` holds the settings that ADR 0018 gives the classifier, which a later change

@@ -389,7 +389,7 @@ paths = [
 name = "periphery"
 paths = [
   "docs/**",
-  "website/**",
+  "website/docs/**",
   "tests/**",
   "bench/**",
   "/README.md",

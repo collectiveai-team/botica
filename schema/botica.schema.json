@@ -405,11 +405,12 @@
           }
         },
         "paths": {
-          "description": "Globs of the paths of the area, as in `applies.paths` of a `REVIEW.md`.",
+          "description": "Globs of the paths of the area, as in `applies.paths` of a `REVIEW.md`. At least one.",
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "minItems": 1
         },
         "tier": {
           "description": "Default: the floor of the area. A lower tier than the floor is an error.",

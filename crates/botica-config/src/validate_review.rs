@@ -98,15 +98,15 @@ fn handle_char(c: char) -> bool {
     c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.')
 }
 
-/// What CODEOWNERS reads as an owner: `@user`, `@org/team` or an email address.
+/// What CODEOWNERS reads as an owner: `@user`, `@org/team` (GitLab also `@org/group/team`) or an
+/// email address.
 fn is_owner(owner: &str) -> bool {
     if let Some(handle) = owner.strip_prefix('@') {
-        let mut parts = handle.split('/');
-        let valid =
-            |part: Option<&str>| part.is_some_and(|p| !p.is_empty() && p.chars().all(handle_char));
-        let user = parts.next();
-        let team = parts.next();
-        return valid(user) && (team.is_none() || valid(team)) && parts.next().is_none();
+        let parts: Vec<&str> = handle.split('/').collect();
+        return parts.len() <= 3
+            && parts
+                .iter()
+                .all(|part| !part.is_empty() && part.chars().all(handle_char));
     }
     let Some((local, domain)) = owner.split_once('@') else {
         return false;
@@ -160,68 +160,85 @@ fn duplicate_globs(found: &mut Vec<ConfigIssue>, areas: &[ReviewArea]) {
     }
 }
 
-/// The paths that are `platform` whatever the entries say, as the shapes they come in: a folder at
-/// the root (`x/**`), a name or a folder at any depth (`**/x`, `**/x/**`) and a name at the root.
+/// The paths that are `platform` whatever the entries say, by the shape of their glob: a folder
+/// at the root (`x/**`), a name or a folder at any depth (`**/x`, `**/x/**`) and a name at the
+/// root (`/x`).
 enum Forced {
     Folder,
     AtAnyDepth,
     NameAtRoot,
 }
 
-impl Forced {
-    fn of(glob: &str) -> Self {
-        if glob.starts_with("**/") {
-            Self::AtAnyDepth
-        } else if glob.ends_with("/**") {
-            Self::Folder
+struct ForcedPath {
+    text: String,
+    shape: Forced,
+    glob: Glob,
+    /// The name that `**/` gives every depth to, as in `AGENTS.md` or `.claude`.
+    leaf: String,
+}
+
+impl ForcedPath {
+    fn of(text: String) -> Self {
+        let shape = if text.starts_with("**/") {
+            Forced::AtAnyDepth
+        } else if text.ends_with("/**") {
+            Forced::Folder
         } else {
-            Self::NameAtRoot
+            Forced::NameAtRoot
+        };
+        let glob = match shape {
+            Forced::Folder => Glob::parse(&text),
+            Forced::AtAnyDepth | Forced::NameAtRoot => Glob::file(&text),
+        };
+        let leaf = text
+            .trim_start_matches("**/")
+            .trim_end_matches("/**")
+            .to_owned();
+        Self {
+            text,
+            shape,
+            glob,
+            leaf,
         }
     }
 
-    /// The glob as the overlap reads it: a name of the root is a file, anchored with a leading `/`.
-    fn parsed(glob: &str) -> Glob {
-        match Self::of(glob) {
-            Self::NameAtRoot if !glob.starts_with('/') => Glob::file(&format!("/{glob}")),
-            Self::NameAtRoot | Self::AtAnyDepth => Glob::file(glob),
-            Self::Folder => Glob::parse(glob),
+    /// Whether a glob of `periphery` covers this path. A glob covers a folder when it can select
+    /// a path inside it. For a name or a folder at any depth it covers it when it picks files by
+    /// name and can pick that one, or when it spells the name out: `docs/**` leaves `AGENTS.md`
+    /// to the list, and `docs/.claude/**` does not leave `.claude`.
+    fn covered_by(&self, glob: &Glob) -> bool {
+        match self.shape {
+            Forced::AtAnyDepth => {
+                glob.overlaps(&self.glob) && (glob.picks_files() || glob.names(&self.leaf))
+            }
+            Forced::Folder | Forced::NameAtRoot => glob.overlaps(&self.glob),
         }
     }
 }
 
-/// `botica.toml` fails to load when an entry of `periphery` covers a forced path (ADR 0018
-/// decision 1). An entry covers a folder when it selects a path inside it, and a name when it
-/// picks files by name and can pick that one. An entry that ends in `**`, as `docs/**`, picks a
-/// folder and not names, so a forced file inside it stays `platform` by the list and is not an
-/// error. A name with no `/` is read at every depth, as in a `.gitignore`: `README.md` selects
-/// `.github/review/README.md` too, and `/README.md` is the file at the root.
-fn periphery_over_forced(found: &mut Vec<ConfigIssue>, config: &ReviewConfig) {
-    let forced: Vec<(String, Forced, Glob)> = config
+fn forced_paths(config: &ReviewConfig) -> Vec<ForcedPath> {
+    config
         .forced_platform_globs()
         .into_iter()
-        .map(|glob| {
-            let parsed = Forced::parsed(&glob);
-            let shape = Forced::of(&glob);
-            (glob, shape, parsed)
-        })
-        .collect();
+        .map(ForcedPath::of)
+        .collect()
+}
+
+/// `botica.toml` fails to load when an entry of `periphery` covers a forced path (ADR 0018
+/// decision 1). The forced list holds whatever the entries say, so this check refuses an entry
+/// that says otherwise instead of leaving it to be ignored.
+fn periphery_over_forced(found: &mut Vec<ConfigIssue>, config: &ReviewConfig) {
+    let forced = forced_paths(config);
     for (index, area) in config.areas.iter().enumerate() {
         if area.name != AreaName::Periphery {
             continue;
         }
         for (path_index, text) in area.paths.iter().enumerate() {
             let glob = Glob::parse(text);
-            let covered = forced.iter().find(|(rule, shape, forced)| match shape {
-                Forced::AtAnyDepth => {
-                    let at_root = Glob::file(&format!("/{}", &rule[3..]));
-                    (glob.picks_files() && glob.overlaps(forced)) || glob.overlaps(&at_root)
-                }
-                Forced::Folder | Forced::NameAtRoot => glob.overlaps(forced),
-            });
-            if let Some((rule, _, _)) = covered {
+            if let Some(path) = forced.iter().find(|path| path.covered_by(&glob)) {
                 found.push(issue(
                     format!("review.areas[{index}].paths[{path_index}]"),
-                    format!("`{text}` covers `{rule}`, which is `platform` whatever the entries say: leave it to a `platform` entry, or anchor the glob with a leading `/`"),
+                    format!("`{text}` covers `{}`, which is `platform` whatever the entries say: leave it to a `platform` entry, or write the folder as `x/**`", path.text),
                 ));
             }
         }
@@ -233,13 +250,9 @@ fn periphery_over_forced(found: &mut Vec<ConfigIssue>, config: &ReviewConfig) {
 /// person has to read. A glob with no `/` is read at every depth, so `uv.lock` can select
 /// `.github/workflows/uv.lock`: write `/uv.lock` for the file at the root.
 fn generated_over_protected(found: &mut Vec<ConfigIssue>, config: &ReviewConfig) {
-    let mut protected: Vec<(String, Glob)> = config
-        .forced_platform_globs()
+    let mut protected: Vec<(String, Glob)> = forced_paths(config)
         .into_iter()
-        .map(|glob| {
-            let parsed = Forced::parsed(&glob);
-            (glob, parsed)
-        })
+        .map(|path| (path.text, path.glob))
         .collect();
     for area in &config.areas {
         if matches!(area.name, AreaName::Critical | AreaName::Platform) {
@@ -247,7 +260,7 @@ fn generated_over_protected(found: &mut Vec<ConfigIssue>, config: &ReviewConfig)
         }
     }
     for (index, text) in config.generated.iter().enumerate() {
-        let generated = Glob::file(text);
+        let generated = Glob::parse(text);
         if let Some((rule, _)) = protected.iter().find(|(_, glob)| generated.overlaps(glob)) {
             found.push(issue(
                 format!("review.generated[{index}]"),

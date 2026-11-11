@@ -61,7 +61,8 @@ impl AreaName {
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct ReviewArea {
     pub name: AreaName,
-    /// Globs of the paths of the area, as in `applies.paths` of a `REVIEW.md`.
+    /// Globs of the paths of the area, as in `applies.paths` of a `REVIEW.md`. At least one.
+    #[schemars(length(min = 1))]
     pub paths: Vec<String>,
     /// The people or teams that answer for the paths. Required for `critical` and `platform`.
     #[serde(default)]
@@ -193,21 +194,21 @@ pub struct ReviewConfig {
 
 /// Paths that are `platform` whatever the entries say, since they decide how a pull request is
 /// reviewed, built and merged, or are loaded by an agent as instructions (ADR 0018 decision 1).
-/// A name with no `/` matches at every depth, as in a `.gitignore`, so a `botica.toml` of a
-/// subfolder counts too.
+/// A leading `/` anchors a name to the root, as in a `.gitignore`, and `**/` gives it every depth:
+/// the ADR writes `**/` for the files that count at every depth and nothing for the others.
 const FORCED_PLATFORM: [&str; 21] = [
-    "botica.toml",
+    "/botica.toml",
     "/pyproject.toml",
     ".github/review/**",
     ".gitlab/review/**",
-    "skills-lock.json",
+    "/skills-lock.json",
     ".github/workflows/**",
     ".github/actions/**",
-    ".gitlab-ci.yml",
+    "/.gitlab-ci.yml",
     ".github/CODEOWNERS",
     ".gitlab/CODEOWNERS",
-    ".gitattributes",
-    "prek.toml",
+    "/.gitattributes",
+    "/prek.toml",
     ".abide/**",
     "**/AGENTS.md",
     "**/CLAUDE.md",
