@@ -89,8 +89,8 @@ pub fn fingerprint(
 ) -> Result<String> {
     let mut hasher = blake3::Hasher::new();
     hasher.update(env!("CARGO_PKG_VERSION").as_bytes());
-    // The shape of the stored findings: v2 added where each diagnostic ends, v3 the findings that
-    // a suppression comment silenced.
+    // Bump this marker when the stored shape of a file's findings changes, so that old caches are
+    // discarded.
     hasher.update(b"diagnostic-v3");
     hasher.update(&[u8::from(with_astgrep)]);
     hasher.update(config.as_bytes());
