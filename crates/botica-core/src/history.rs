@@ -135,18 +135,32 @@ fn directory(dir: &Path) -> Result<()> {
     }
 }
 
-/// Writes the `.gitignore` with `*` that keeps the history out of git, when it is missing.
+/// Makes the `.gitignore` of the history end with a line `*`, which keeps the history out of git
+/// whatever the lines above it say, and leaves one that already ends so as it is.
 fn ignore_itself(dir: &Path) -> Result<()> {
     let path = dir.join(".gitignore");
     let mut file = open(
         &path,
         OpenOptions::new().read(true).append(true).create(true),
     )?;
-    if file.metadata()?.len() == 0 {
-        file.write_all(b"*\n")
-            .with_context(|| format!("cannot write {}", path.display()))?;
+    let mut text = String::new();
+    file.read_to_string(&mut text)
+        .with_context(|| format!("cannot read {}", path.display()))?;
+    if text
+        .lines()
+        .map(str::trim)
+        .rfind(|line| !line.is_empty())
+        == Some("*")
+    {
+        return Ok(());
     }
-    Ok(())
+    let line: &[u8] = if text.is_empty() || text.ends_with('\n') {
+        b"*\n"
+    } else {
+        b"\n*\n"
+    };
+    file.write_all(line)
+        .with_context(|| format!("cannot write {}", path.display()))
 }
 
 /// Takes the exclusive lock of `lock`, waiting at most [`LOCK_WAIT`] for another run.

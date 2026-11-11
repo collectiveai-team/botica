@@ -46,6 +46,10 @@ fn an_extension_rule_that_reported_and_then_failed_is_absent_with_its_findings_r
 
     let rules = &runs(&dir)[0]["rules"];
     assert!(rules.get("acme/by-sh").is_none(), "{rules}");
+    assert!(
+        findings(&dir).iter().any(|f| f["slug"] == "acme/by-sh"),
+        "its findings are reported, so they are recorded"
+    );
 }
 
 #[test]
@@ -135,6 +139,8 @@ fn a_diff_run_counts_in_baselined_only_the_hidden_findings_on_the_lines_it_adds(
     git(&dir, &["commit", "--quiet", "-m", "baseline"]);
     write(&dir, "new.py", &nested.replace("nested", "other"));
     write_baseline_with_both(&dir);
+    // `old.py` changes below its function: the diff holds the file, not the lines of the finding.
+    write(&dir, "old.py", &format!("{nested}\n\nx = 1\n"));
 
     lint(&dir, &["--record", "--diff", "HEAD"]);
 
@@ -152,7 +158,7 @@ fn write_baseline_with_both(dir: &Path) {
 
 #[test]
 fn a_run_with_the_ast_grep_rules_lists_them_and_one_without_does_not() {
-    let dir = project("astgrep", None);
+    let dir = project("astgrep", Some("extend-select = [\"no-dict-alias\"]\n"));
     let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_botica"));
     command
         .args(["lint", "--record"])
@@ -161,21 +167,92 @@ fn a_run_with_the_ast_grep_rules_lists_them_and_one_without_does_not() {
         .env_remove("GITHUB_ACTIONS")
         .env_remove("GITLAB_CI")
         .env_remove("PRE_COMMIT");
-    command.output().expect("run botica");
+    let output = command.output().expect("run botica");
+    assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
     lint(&dir, &["--record"]);
 
     let runs = runs(&dir);
-    let with = runs[0]["rules"].as_object().expect("rules").len();
-    let without = runs[1]["rules"].as_object().expect("rules").len();
+    assert_eq!(
+        runs[0]["rules"]["no-dict-alias"]["hits"], 0,
+        "{}",
+        runs[0]["rules"]
+    );
     assert!(
-        with > without,
-        "{} against {}",
-        runs[0]["rules"],
+        runs[1]["rules"].get("no-dict-alias").is_none(),
+        "{}",
         runs[1]["rules"]
     );
-    assert_eq!(
-        runs[0]["rules"].get("io-error"),
-        runs[1]["rules"].get("io-error")
+}
+
+#[test]
+fn a_finding_at_an_absolute_path_records_an_empty_path_and_the_hash_of_its_message() {
+    let dir = project("absolute", None);
+    let outside = dir.parent().expect("has a parent").join("absolute-outside");
+    write(&outside, "o.py", UNUSED);
+    let absolute = outside.join("o.py");
+
+    lint(
+        &dir,
+        &["--record", absolute.to_str().expect("UTF-8"), "a.py"],
     );
-    assert_ne!(runs[0]["rules"], Value::Null);
+    write(&outside, "o.py", &UNUSED.replace("y = 2", "z = 3"));
+    lint(
+        &dir,
+        &["--record", absolute.to_str().expect("UTF-8"), "a.py"],
+    );
+
+    let found = findings(&dir);
+    let outside_lines: Vec<&Value> = found.iter().filter(|f| f["path"] == "").collect();
+    assert_eq!(outside_lines.len(), 2, "{found:?}");
+    assert_eq!(outside_lines[0]["line"], 0);
+    assert_eq!(
+        outside_lines[0]["fingerprint"], outside_lines[1]["fingerprint"],
+        "the lines of a file outside the root enter no fingerprint"
+    );
+    assert!(found.iter().any(|f| f["path"] == "a.py"), "{found:?}");
+    let text =
+        std::fs::read_to_string(dir.join(".botica/history/findings.jsonl")).expect("the findings");
+    assert!(!text.contains("absolute-outside"), "{text}");
+}
+
+#[test]
+fn a_finding_one_level_up_from_a_subdirectory_stays_inside_the_root() {
+    let dir = project("prefix-depth", None);
+    write(&dir, "sub/deeper/b.py", UNUSED);
+
+    lint(&dir.join("sub/deeper"), &["--record", "../../a.py", "b.py"]);
+
+    let mut paths: Vec<String> = findings(&dir)
+        .iter()
+        .map(|f| f["path"].as_str().expect("a path").to_owned())
+        .collect();
+    paths.sort();
+    assert_eq!(paths, ["a.py", "sub/deeper/b.py"]);
+}
+
+#[test]
+fn an_ext_command_that_fails_leaves_its_rule_out_of_rules() {
+    let dir = project("ext-failed", None);
+    common::fake_extension(
+        &dir,
+        r#"{"path":"a.py","rule":"ext-rule","severity":"error","start":0,"end":1,"message":"seen"}"#,
+    );
+    let script = std::fs::read_to_string(dir.join("ext.sh"))
+        .expect("the script")
+        .replace(
+            r#"*'"shutdown"'*) printf"#,
+            r#"*'"shutdown"'*) exit 3; printf"#,
+        );
+    assert!(script.contains("exit 3;"), "{script}");
+    write(&dir, "ext.sh", &script);
+
+    let output = lint(&dir, &["--record", "--ext", "sh ext.sh", "a.py"]);
+
+    assert_eq!(output.status.code(), Some(2), "{}", stderr(&output));
+    let rules = &runs(&dir)[0]["rules"];
+    assert!(rules.get("ext-rule").is_none(), "{rules}");
+    assert!(
+        findings(&dir).iter().any(|f| f["slug"] == "ext-rule"),
+        "its findings are reported, so they are recorded"
+    );
 }

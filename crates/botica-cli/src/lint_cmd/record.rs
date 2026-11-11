@@ -121,7 +121,8 @@ impl Evaluated {
     }
 
     /// Marks the native and ast-grep rules of scope `file` that run on the file at `path`,
-    /// relative to the working directory. An extension rule counts once its processes finish.
+    /// relative to the working directory, with the same selection as `project::planner`: the rules
+    /// that the configuration applies there. An extension rule counts once its processes finish.
     pub(super) fn mark(&self, path: &str) {
         let at_root = from_root(self.prefix.as_deref(), path);
         for file_rule in self.resolution.rules_for(&at_root, language_of(path)) {
@@ -132,6 +133,8 @@ impl Evaluated {
                 .implementations
                 .iter()
                 .any(|implementation| match implementation.kind {
+                    // `registry::check_catalog` refuses a native rule that neither the registry
+                    // nor the engine runs, so every native rule that applies here runs.
                     Kind::Native => true,
                     Kind::AstGrep => self.with_astgrep,
                     Kind::Extension | Kind::Judgment | Kind::External => false,
@@ -175,7 +178,25 @@ pub(super) struct Run<'a> {
     pub evaluated: Vec<String>,
     /// The findings that the baseline hid, by rule.
     pub baselined: BTreeMap<String, usize>,
+    /// The rules of an extension that failed: absent from `rules` even with findings.
+    pub failed: Vec<String>,
     pub diagnostics: &'a [Diagnostic],
+}
+
+impl Run<'_> {
+    /// Adds the extension rules whose processes all finished, and the rules of the findings of a
+    /// `--ext` command that failed.
+    pub(super) fn add_extensions(&mut self, finished: Vec<String>, failed: Vec<String>) {
+        self.evaluated.extend(finished);
+        self.failed.extend(failed);
+    }
+
+    /// Counts the findings that the baseline hid, by rule.
+    pub(super) fn add_baselined(&mut self, hidden: &[Diagnostic]) {
+        for diagnostic in hidden {
+            *self.baselined.entry(diagnostic.rule.clone()).or_default() += 1;
+        }
+    }
 }
 
 /// Appends the run to the history. A history that cannot be written is a warning: the findings
@@ -225,13 +246,18 @@ fn finding_line(
     run_id: &str,
     diagnostic: &Diagnostic,
 ) -> FindingLine {
-    // A path outside the root (`../x.py` from the root) has no path inside it: decision 7 drops
-    // such a path and leaves `path` empty.
+    // A path outside the root (`../x.py` from the root, `/home/…`) has no path inside it: decision
+    // 7 drops such a path, leaves `path` empty and hashes the message instead of the lines of a
+    // file outside the checkout (decision 5).
     let path = within_root(run.prefix, &diagnostic.path);
     let whole = matches!(run.mode, Mode::Message) || path.is_none();
-    let fingerprint = match &diagnostic.fingerprint {
-        Some(fingerprint) => fingerprint.clone(),
-        None => key.of_message(&diagnostic.rule, "", &diagnostic.message),
+    let fingerprint = match (&diagnostic.fingerprint, path.is_some()) {
+        (Some(fingerprint), true) => fingerprint.clone(),
+        _ if matches!(run.mode, Mode::Message) => diagnostic
+            .fingerprint
+            .clone()
+            .unwrap_or_else(|| key.of_message(&diagnostic.rule, "", &diagnostic.message)),
+        _ => key.of_message(&diagnostic.rule, "", &diagnostic.message),
     };
     FindingLine {
         v: history::VERSION,
@@ -253,9 +279,14 @@ fn finding_line(
     }
 }
 
-/// The path of a finding from the root of the project, `None` when it is empty or leaves the root.
+/// The path of a finding from the root of the project, with `/` separators; `None` when it is
+/// empty, absolute or leaves the root.
 fn within_root(prefix: Option<&str>, path: &str) -> Option<String> {
-    if path.is_empty() {
+    let path = path.replace('\\', "/");
+    if path.is_empty() || path.starts_with('/') || Path::new(&path).has_root() {
+        return None;
+    }
+    if path.as_bytes().get(1) == Some(&b':') {
         return None;
     }
     let mut depth = prefix.map_or(0, |prefix| prefix.split('/').count());
@@ -267,7 +298,7 @@ fn within_root(prefix: Option<&str>, path: &str) -> Option<String> {
             _ => depth += 1,
         }
     }
-    Some(from_root(prefix, path)).filter(|path| !path.is_empty())
+    Some(from_root(prefix, &path)).filter(|path| !path.is_empty())
 }
 
 /// The entry of each rule evaluated, with the findings that the run reports and those that the
@@ -282,10 +313,11 @@ fn rules(run: &Run<'_>) -> BTreeMap<String, RuleEntry> {
         .collect();
     let counts = |slug: &str| {
         matches!(run.mode, Mode::Judged)
-            || run
-                .resolution
-                .entry(slug)
-                .is_none_or(|entry| !entry.rule.has_extension())
+            || (!run.failed.iter().any(|failed| failed == slug)
+                && run
+                    .resolution
+                    .entry(slug)
+                    .is_none_or(|entry| !entry.rule.has_extension()))
     };
     for diagnostic in run.diagnostics {
         if let Some(entry) = rules.get_mut(&diagnostic.rule) {

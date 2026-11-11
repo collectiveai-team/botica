@@ -89,7 +89,7 @@ on stderr, not a failure: the findings and the exit code are the same, only the 
 `botica lint --record`, or `record = true` in the `[history]` table of the configuration, appends
 each run to `.botica/history/` under the root of the project: one line per finding in
 `findings.jsonl`, then one line for the run in `runs.jsonl`. `--no-record` turns it off for one
-run, and a run of `--write-baseline` records nothing. The design, with every key of a line, is
+run (the last of `--record` and `--no-record` wins), and a run of `--write-baseline` records nothing. The design, with every key of a line, is
 [ADR 0019](https://github.com/collectiveai-team/botica/blob/main/docs/adr/0019-finding-history.md).
 
 ```toml
@@ -111,3 +111,7 @@ its hash, and the value is written nowhere. A value shorter than 32 bytes record
 directory ignores itself in git. A history that cannot be written (a read-only checkout, a
 symbolic link in place of `.botica/history` or of one of its files) is a warning on stderr, and
 the findings and the exit code stay the same.
+
+botica only appends to the two files and never prunes them: each recorded run adds about 180 bytes
+for each finding, so a run with 100,000 findings adds about 18 MB. Delete `.botica/history/` to
+start over.

@@ -186,17 +186,18 @@ fn a_run_with_no_finding_writes_no_findings_file() {
 }
 
 #[test]
-fn a_gitignore_that_holds_something_else_is_left_as_it_is() {
+fn a_gitignore_that_does_not_end_with_a_star_gets_one_after_its_own_lines() {
     let dir = root("own-gitignore");
     let base = dir.join(".botica").join("history");
     fs::create_dir_all(&base).expect("create the history");
-    fs::write(base.join(".gitignore"), "runs.jsonl\n").expect("write it");
+    fs::write(base.join(".gitignore"), "!*").expect("write it");
 
     history::append(&dir, &run("r"), &[]).expect("written");
+    history::append(&dir, &run("s"), &[]).expect("written");
 
     assert_eq!(
         fs::read_to_string(base.join(".gitignore")).expect("read it"),
-        "runs.jsonl\n"
+        "!*\n*\n"
     );
 }
 

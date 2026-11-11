@@ -104,10 +104,11 @@ pub struct LintArgs {
     /// Append the findings and the rules that the run evaluated to `.botica/history/` under the
     /// root of the project (ADR 0019), as `[history] record = true` does. A run of
     /// `--write-baseline` reports no finding and records nothing.
-    #[arg(long, conflicts_with_all = ["no_record", "write_baseline"])]
+    #[arg(long, overrides_with = "no_record", conflicts_with = "write_baseline")]
     record: bool,
-    /// Record nothing, whatever `[history] record` says.
-    #[arg(long)]
+    /// Record nothing, whatever `[history] record` says. The last of `--record` and
+    /// `--no-record` wins.
+    #[arg(long, overrides_with = "record")]
     no_record: bool,
     /// Files per `lint/files` request.
     #[arg(long, default_value_t = 256)]
@@ -370,6 +371,7 @@ impl Setup {
             history: &self.history,
             evaluated,
             baselined: std::collections::BTreeMap::new(),
+            failed: Vec::new(),
             diagnostics,
         }
     }
@@ -419,8 +421,14 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     }
 
     let mut errors = read_errors(unreadable);
+    let mut failed_rules = Vec::new();
     if let Some(command) = &args.ext {
-        errors.extend(run_extension(&args, command, &sources, &mut diagnostics));
+        let start = diagnostics.len();
+        let failed = run_extension(&args, command, &sources, &mut diagnostics);
+        if !failed.is_empty() {
+            failed_rules.extend(diagnostics[start..].iter().map(|d| d.rule.clone()));
+        }
+        errors.extend(failed);
     }
     let mut extensions_finished = Vec::new();
     if setup.has_extensions {
@@ -463,17 +471,14 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         &mut diagnostics,
     );
     if let Some(evaluated) = &setup.evaluated {
-        let mut rules = evaluated.slugs();
-        rules.extend(extensions_finished);
         let mut run = setup.run_record(
             started,
             record::Mode::of_files(&args, &setup.project_root, setup.prefix.as_deref()),
-            rules,
+            evaluated.slugs(),
             &diagnostics,
         );
-        for diagnostic in &baselined {
-            *run.baselined.entry(diagnostic.rule.clone()).or_default() += 1;
-        }
+        run.add_extensions(extensions_finished, failed_rules);
+        run.add_baselined(&baselined);
         record::write(&run);
     }
     write_report(&args, format, &setup, &diagnostics, &errors)?;
