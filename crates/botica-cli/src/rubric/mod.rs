@@ -208,7 +208,7 @@ fn inside(inputs: &Inputs<'_>, rules: &[&Rule]) -> BTreeMap<String, BTreeSet<Str
             }
         }
     }
-    let kept = project::keep_judged(inputs.resolution, None, by_path, inputs.read);
+    let kept = project::keep_judged(inputs.resolution, None, by_path, inputs.read).found;
     let mut inside: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for found in kept {
         inside.entry(found.rule).or_default().insert(found.path);

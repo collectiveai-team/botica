@@ -4,6 +4,9 @@
 use super::{git, LintArgs, Setup};
 use source::{branch, head, is_object_name, origin};
 
+pub(super) use hidden::Hidden;
+
+mod hidden;
 mod source;
 use crate::output::eprintln;
 use botica_catalog::{Kind, Scope};
@@ -186,6 +189,8 @@ pub(super) struct Run<'a> {
     pub evaluated: Vec<String>,
     /// The findings that the baseline hid, by rule.
     pub baselined: BTreeMap<String, usize>,
+    /// The findings that a suppression channel silenced, by rule.
+    pub suppressed: BTreeMap<String, usize>,
     /// The rules of an extension that failed: absent from `rules` even with findings.
     pub failed: Vec<String>,
     pub diagnostics: &'a [Diagnostic],
@@ -210,34 +215,21 @@ impl<'a> Run<'a> {
             history: &setup.history,
             evaluated,
             baselined: BTreeMap::new(),
+            suppressed: BTreeMap::new(),
             failed: Vec::new(),
             diagnostics,
         }
     }
 
-    /// Adds the extension rules whose processes all finished, and the rules of the findings of a
-    /// `--ext` command that failed.
-    pub(super) fn add_extensions(&mut self, finished: Vec<String>, failed: Vec<String>) {
-        self.evaluated.extend(finished);
-        self.failed.extend(failed);
+    /// Adds the extension rules whose processes all finished, the rules of the findings of a
+    /// `--ext` command that failed, and the counts of the findings that the run did not report.
+    pub(super) fn add_hidden(&mut self, hidden: &Hidden) {
+        self.evaluated
+            .extend(hidden.extensions_finished.iter().cloned());
+        self.failed.extend(hidden.failed_rules.iter().cloned());
+        self.baselined = hidden::by_rule(&hidden.baselined);
+        self.suppressed = hidden::by_rule(&hidden.silenced);
     }
-
-    /// Counts the findings that the baseline hid, by rule.
-    pub(super) fn add_baselined(&mut self, hidden: &[Diagnostic]) {
-        for diagnostic in hidden {
-            *self.baselined.entry(diagnostic.rule.clone()).or_default() += 1;
-        }
-    }
-}
-
-/// What a run that linted files learned besides its findings.
-pub(super) struct Silenced<'a> {
-    /// The extension rules whose processes all finished.
-    pub extensions_finished: Vec<String>,
-    /// The rules of the findings of a `--ext` command that failed.
-    pub failed_rules: Vec<String>,
-    /// The findings that the baseline hid.
-    pub baselined: &'a [Diagnostic],
 }
 
 /// Records a run that linted files, when the run records.
@@ -246,15 +238,37 @@ pub(super) fn files(
     setup: &Setup,
     started: SystemTime,
     diagnostics: &[Diagnostic],
-    silenced: Silenced<'_>,
+    mut hidden: Hidden,
 ) {
     let Some(evaluated) = &setup.evaluated else {
         return;
     };
     let mode = Mode::of_files(args, &setup.project_root, setup.prefix.as_deref());
+    hidden.settle(&setup.resolution, setup.prefix.as_deref());
     let mut run = Run::of(setup, started, mode, evaluated.slugs(), diagnostics);
-    run.add_extensions(silenced.extensions_finished, silenced.failed_rules);
-    run.add_baselined(silenced.baselined);
+    run.add_hidden(&hidden);
+    write(&run);
+}
+
+/// Records a `judged` run: the findings of the judge that the run reports, and those that an
+/// `ignore-file` comment silenced, which `keeps` filters as it filters the reported ones.
+pub(super) fn judged(
+    setup: &Setup,
+    started: SystemTime,
+    judged: &super::judged::Judged,
+    keeps: impl Fn(&Diagnostic) -> bool,
+) {
+    let mut hidden = Hidden::new(judged.silenced.clone());
+    hidden.keep_only(keeps);
+    hidden.settle(&setup.resolution, setup.prefix.as_deref());
+    let mut run = Run::of(
+        setup,
+        started,
+        Mode::Judged,
+        Vec::new(),
+        &judged.diagnostics,
+    );
+    run.add_hidden(&hidden);
     write(&run);
 }
 
@@ -331,8 +345,8 @@ fn finding_line(
     }
 }
 
-/// The entry of each rule evaluated, with the findings that the run reports and those that the
-/// baseline hid. A rule with findings counts as evaluated, except an extension rule whose
+/// The entry of each rule evaluated, with the findings that the run reports, those that a comment
+/// silenced and those that the baseline hid. A rule with findings counts as evaluated, except an extension rule whose
 /// processes did not all finish (decision 3). In a `judged` run these are the rules of the judge
 /// that found something.
 fn rules(run: &Run<'_>) -> BTreeMap<String, RuleEntry> {
@@ -361,6 +375,13 @@ fn rules(run: &Run<'_>) -> BTreeMap<String, RuleEntry> {
             entry.baselined += count;
         } else if counts(slug) {
             rules.entry(slug.clone()).or_default().baselined += count;
+        }
+    }
+    for (slug, count) in &run.suppressed {
+        if let Some(entry) = rules.get_mut(slug) {
+            entry.suppressed += count;
+        } else if counts(slug) {
+            rules.entry(slug.clone()).or_default().suppressed += count;
         }
     }
     rules

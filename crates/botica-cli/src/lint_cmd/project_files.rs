@@ -13,7 +13,7 @@ use botica_core::external_weakened::EXTERNAL_CONFIG_WEAKENED;
 use botica_core::import_layers::IMPORT_LAYERS;
 use botica_core::lockfiles::LOCKFILE_COMMITTED;
 use botica_core::recipe_conflict::RECIPE_CONFLICT;
-use botica_core::{walk, Diagnostic};
+use botica_core::{walk, Diagnostic, Findings};
 
 use super::recipe_conflict::{self, ProjectRecipes};
 use super::{
@@ -35,22 +35,27 @@ pub const RULES: [&str; 8] = [
 ];
 
 /// What the native rules of project scope find, once for the whole project at `root`, shown from
-/// the directory `prefix` inside it. `recipes` is what the configuration says of the recipes.
+/// the directory `prefix` inside it. `recipes` is what the configuration says of the recipes. The
+/// findings that a suppression comment silenced come apart.
 pub fn findings(
     resolution: &Arc<Resolution>,
     recipes: &ProjectRecipes,
     root: &Path,
     prefix: Option<&str>,
-) -> Vec<Diagnostic> {
+) -> Findings {
     let mut found = external::findings(resolution, root, prefix);
-    found.extend(external_weakened::findings(resolution, root, prefix));
+    let weakened = external_weakened::findings(resolution, root, prefix);
+    found.extend(weakened.found);
     found.extend(settings_schema::findings(resolution, root, prefix));
     found.extend(import_layers::findings(resolution, root, prefix));
     found.extend(lockfiles::findings(resolution, root, prefix));
     found.extend(recipe_conflict::findings(resolution, recipes, root, prefix));
     found.extend(agents_refs::findings(resolution, root, prefix));
     found.extend(botica_version::findings(resolution, recipes, root, prefix));
-    found
+    Findings {
+        found,
+        silenced: weakened.silenced,
+    }
 }
 
 /// The paths from `root` and the texts of the files that a walk of the project reaches and that

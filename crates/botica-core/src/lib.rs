@@ -38,7 +38,7 @@ pub use buffer::Buffer;
 pub use coverage::NoCoverageExclusion;
 pub use diagnostic::{Diagnostic, Measure, Severity};
 pub use document::Document;
-pub use engine::{Engine, Exclusion, Inclusion, NativePlanner, PathTest, Plan};
+pub use engine::{Engine, Exclusion, Findings, Inclusion, NativePlanner, PathTest, Plan};
 pub use extension_run::{extensions_of, language_of, ExtensionRun};
 pub use layout::{CodeDir, NoArtifactsInPackage, NoNotebooks, NoTestsInPackage};
 pub use native::{FileSizeGuard, NativeRule, Needs, NoUtils};

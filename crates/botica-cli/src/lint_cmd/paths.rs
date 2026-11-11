@@ -5,7 +5,7 @@ use anyhow::Result;
 use botica_core::cache::{lint_files_cached, Cache};
 use botica_core::registry::IO_ERROR;
 use botica_core::walk::{self, SourceFile, Unreadable, Walked};
-use botica_core::{Diagnostic, Engine, Severity};
+use botica_core::{Diagnostic, Engine, Findings, Severity};
 use std::path::{Path, PathBuf};
 
 /// What linting the paths produced, before the extension and the post-process.
@@ -13,6 +13,8 @@ pub(super) struct Linted {
     /// The texts of the files read; empty when nobody needs them (no extension, no cache).
     pub(super) sources: Vec<SourceFile>,
     pub(super) diagnostics: Vec<Diagnostic>,
+    /// The findings that a suppression channel silenced.
+    pub(super) silenced: Vec<Diagnostic>,
     pub(super) io_errors: Vec<Diagnostic>,
     /// Files the walk found and could not read.
     pub(super) unreadable: Vec<Unreadable>,
@@ -72,6 +74,7 @@ impl Reached {
             let walked = walk::walk_and_lint(&setup.engine, root, path);
             self.walked.read += walked.read;
             self.walked.diagnostics.extend(walked.diagnostics);
+            self.walked.silenced.extend(walked.silenced);
             self.walked.unreadable.extend(walked.unreadable);
             walked.asked_for
         } else {
@@ -117,9 +120,12 @@ pub(super) fn lint_paths(
         let mut diagnostics = named.diagnostics;
         diagnostics.extend(reached.walked.diagnostics);
         diagnostics.sort_by(|a, b| (&a.path, a.start, &a.rule).cmp(&(&b.path, b.start, &b.rule)));
+        let mut silenced = named.silenced;
+        silenced.extend(reached.walked.silenced);
         Ok(Linted {
             sources: Vec::new(),
             diagnostics,
+            silenced,
             io_errors,
             unreadable: merged(named.unreadable, reached.walked.unreadable),
             files_read: named.read + reached.walked.read,
@@ -134,7 +140,7 @@ pub(super) fn lint_paths(
             &setup.config_key,
         )?;
         let mut cache = Cache::load(dir, &fingerprint);
-        let (diagnostics, stats) = lint_files_cached(engine, &sources, &mut cache);
+        let (found, stats) = lint_files_cached(engine, &sources, &mut cache);
         // A cache that cannot be written (a read-only checkout, a full disk) only costs speed.
         if let Err(error) = cache.save() {
             eprintln!("botica: warning: the result cache was not saved: {error:#}");
@@ -147,7 +153,8 @@ pub(super) fn lint_paths(
         }
         Ok(Linted {
             sources,
-            diagnostics,
+            diagnostics: found.found,
+            silenced: found.silenced,
             io_errors,
             unreadable,
             files_read: 0,
@@ -157,6 +164,7 @@ pub(super) fn lint_paths(
         Ok(Linted {
             sources,
             diagnostics: walked.diagnostics,
+            silenced: walked.silenced,
             io_errors,
             unreadable: merged(walked.unreadable, reached.walked.unreadable),
             files_read: 0,
@@ -180,14 +188,15 @@ fn lint_diff(args: &LintArgs, setup: &mut Setup, root: &Path, diff: &Diff) -> Re
     let engine = &setup.engine;
     if diff.is_staged() {
         let sources = Diff::staged(&files);
-        let diagnostics = sources
-            .iter()
-            .flat_map(|file| engine.lint_bytes(&file.path, &file.bytes))
-            .collect();
+        let mut found = Findings::default();
+        for file in &sources {
+            found.extend(engine.lint_bytes(&file.path, &file.bytes));
+        }
         return Ok(Linted {
             files_read: sources.len(),
             sources,
-            diagnostics,
+            diagnostics: found.found,
+            silenced: found.silenced,
             io_errors: Vec::new(),
             unreadable: Vec::new(),
         });
@@ -201,6 +210,7 @@ fn lint_diff(args: &LintArgs, setup: &mut Setup, root: &Path, diff: &Diff) -> Re
     Ok(Linted {
         sources,
         diagnostics: walked.diagnostics,
+        silenced: walked.silenced,
         io_errors: Vec::new(),
         unreadable: walked.unreadable,
         files_read: named.len(),

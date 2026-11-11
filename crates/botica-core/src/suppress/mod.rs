@@ -279,59 +279,72 @@ impl Policy {
 
     /// Drops from `found` what the comments of the file at `path` silence: the findings of a
     /// judge, which botica reads apart from the rules it runs. It adds no finding about the
-    /// comments.
-    pub fn silence(&self, path: &str, text: &str, found: &mut Vec<Diagnostic>) {
-        self.filter(&Document::new(path, text), &Pass::Silence, found);
+    /// comments, and returns the findings that it dropped.
+    pub fn silence(&self, path: &str, text: &str, found: &mut Vec<Diagnostic>) -> Vec<Diagnostic> {
+        self.filter(&Document::new(path, text), &Pass::Silence, found)
     }
 
     /// Drops from `found`, the findings of the extension rules in the file at `path`, what its
     /// comments silence, and adds a finding about each comment that names an active extension
     /// rule and silences nothing. `ran` says whether the extension rule read the file: `None`
-    /// when its process failed, and then its comments are not reported.
+    /// when its process failed, and then its comments are not reported. It returns the findings
+    /// that the comments silenced.
     pub fn report_extensions(
         &self,
         path: &str,
         text: &str,
         ran: &dyn Fn(&str) -> Option<bool>,
         found: &mut Vec<Diagnostic>,
-    ) {
-        self.filter(&Document::new(path, text), &Pass::Extensions(ran), found);
+    ) -> Vec<Diagnostic> {
+        self.filter(&Document::new(path, text), &Pass::Extensions(ran), found)
     }
 
     /// Drops from `found`, the findings of the rules of project scope in the file at `path` that
     /// a comment may silence, what its comments silence, and adds a finding about each comment
-    /// that names one of those rules and silences nothing.
-    pub fn report_project(&self, path: &str, text: &str, found: &mut Vec<Diagnostic>) {
-        self.filter(&Document::new(path, text), &Pass::Project, found);
+    /// that names one of those rules and silences nothing. It returns the findings that the
+    /// comments silenced.
+    pub fn report_project(
+        &self,
+        path: &str,
+        text: &str,
+        found: &mut Vec<Diagnostic>,
+    ) -> Vec<Diagnostic> {
+        self.filter(&Document::new(path, text), &Pass::Project, found)
     }
 
-    /// Drops what the comments of the file silence and adds the findings about the comments.
+    /// Drops what the comments of the file silence and adds the findings about the comments. It
+    /// returns the findings that the comments silenced, the findings about the comments included.
     pub(crate) fn apply(
         &self,
         doc: &Document<'_>,
         is_active: &dyn Fn(&str) -> bool,
         found: &mut Vec<Diagnostic>,
-    ) {
-        self.filter(doc, &Pass::Walk(is_active), found);
+    ) -> Vec<Diagnostic> {
+        self.filter(doc, &Pass::Walk(is_active), found)
     }
 
-    fn filter(&self, doc: &Document<'_>, pass: &Pass<'_>, found: &mut Vec<Diagnostic>) {
+    fn filter(
+        &self,
+        doc: &Document<'_>,
+        pass: &Pass<'_>,
+        found: &mut Vec<Diagnostic>,
+    ) -> Vec<Diagnostic> {
         let Some(syntax) = Syntax::of(doc.path) else {
-            return;
+            return Vec::new();
         };
         let Some(text) = doc.text() else {
-            return;
+            return Vec::new();
         };
         if !self.has_marker(text) {
-            return;
+            return Vec::new();
         }
         let scanned = scan(text, syntax);
         let directives = self.directives(doc.path, text, &scanned.comments);
         if directives.is_empty() {
-            return;
+            return Vec::new();
         }
         let (mut directives, malformed) = self.resolve(directives, doc);
-        let (mut kept, file_level) = Self::unsilenced(
+        let (mut kept, file_level, mut silenced) = Self::unsilenced(
             std::mem::take(found),
             &mut directives,
             &scanned.strings,
@@ -347,9 +360,12 @@ impl Policy {
                 self.unused_finding(doc, severity, directive, pass, &file_level)
             }));
         }
-        let (about, _) = Self::unsilenced(about, &mut directives, &scanned.strings, doc);
+        let (about, _, silenced_about) =
+            Self::unsilenced(about, &mut directives, &scanned.strings, doc);
         kept.extend(about);
+        silenced.extend(silenced_about);
         *found = kept;
+        silenced
     }
 
     /// The directives in the comments of the file at `path`.
@@ -370,19 +386,21 @@ impl Policy {
         directives
     }
 
-    /// The findings that no directive silences, marking the tokens that silence the others, and
-    /// the rules of the kept findings about a whole file.
+    /// The findings that no directive silences, marking the tokens that silence the others, the
+    /// rules of the kept findings about a whole file, and the findings that a directive silences.
     fn unsilenced(
         found: Vec<Diagnostic>,
         directives: &mut [Found],
         strings: &[Range<usize>],
         doc: &Document<'_>,
-    ) -> (Vec<Diagnostic>, HashSet<String>) {
+    ) -> (Vec<Diagnostic>, HashSet<String>, Vec<Diagnostic>) {
         let mut kept = Vec::with_capacity(found.len());
         let mut file_level = HashSet::new();
+        let mut silenced = Vec::new();
         for diagnostic in found {
             let line = Self::effective_line(&diagnostic, strings, doc);
             if Self::silenced(directives, &diagnostic, line) {
+                silenced.push(diagnostic);
                 continue;
             }
             if diagnostic.file_level {
@@ -390,7 +408,7 @@ impl Policy {
             }
             kept.push(diagnostic);
         }
-        (kept, file_level)
+        (kept, file_level, silenced)
     }
 }
 

@@ -5,7 +5,7 @@ use botica_catalog::Scope;
 use botica_config::Resolution;
 use botica_core::report::RuleDoc;
 use botica_core::suppress::{Policy, INVALID, UNUSED};
-use botica_core::{postprocess, registry, Diagnostic, Severity};
+use botica_core::{postprocess, registry, Diagnostic, Findings, Severity};
 
 use super::verdicts;
 
@@ -76,22 +76,27 @@ fn reporting(resolution: &Resolution, slug: &str) -> Option<Severity> {
 
 /// What the project keeps of findings of judgment rules, grouped by path: those that no
 /// `ignore-file` comment of their file silences and that the configuration applies at their path
-/// and in their language, with the severity it names there. `read` gives the text of a file.
+/// and in their language, with the severity it names there. `read` gives the text of a file. The
+/// findings that an `ignore-file` comment silenced come apart.
 pub fn keep_judged(
     resolution: &Arc<Resolution>,
     prefix: Option<&str>,
     by_path: BTreeMap<String, Vec<Diagnostic>>,
     read: impl Fn(&str) -> Option<String>,
-) -> Vec<Diagnostic> {
+) -> Findings {
     let policy = suppression_policy(resolution);
     let mut found = Vec::new();
+    let mut silenced = Vec::new();
     for (path, mut findings) in by_path {
         if let Some(text) = read(&path) {
-            policy.silence(&path, &text, &mut findings);
+            silenced.extend(policy.silence(&path, &text, &mut findings));
         }
         found.extend(findings);
     }
-    postprocess::apply(found, verdicts(resolution, prefix))
+    Findings {
+        found: postprocess::apply(found, verdicts(resolution, prefix)),
+        silenced,
+    }
 }
 
 /// The catalog's rules as the output formats describe them.

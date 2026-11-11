@@ -5,6 +5,7 @@ use crate::native::{NativeRule, Needs};
 use crate::suppress::Policy;
 use crate::timings::{RuleTime, TimedKind, Timings};
 use botica_astgrep::{AstGrepSet, Buffer as Tree};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// For a path relative to the project root: the indexes of the native rules that apply to it.
@@ -45,6 +46,21 @@ pub struct Inclusion {
     pub asks_for: PathTest,
     /// Something below this directory may be asked for.
     pub may_hold: PathTest,
+}
+
+/// What linting gave: the findings, and those that a suppression channel silenced.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Findings {
+    pub found: Vec<Diagnostic>,
+    #[serde(default)]
+    pub silenced: Vec<Diagnostic>,
+}
+
+impl Findings {
+    pub fn extend(&mut self, other: Findings) {
+        self.found.extend(other.found);
+        self.silenced.extend(other.silenced);
+    }
 }
 
 pub struct Engine {
@@ -245,11 +261,14 @@ impl Engine {
     /// Lints text the caller already holds. Does no I/O.
     pub fn lint_source(&self, path: &str, text: &str) -> Vec<Diagnostic> {
         match self.plan(path) {
-            Some(plan) => self.lint_document(
-                &Document::new(path, text).with_base(self.base_of(path)),
-                &plan,
-                None,
-            ),
+            Some(plan) => {
+                self.lint_document(
+                    &Document::new(path, text).with_base(self.base_of(path)),
+                    &plan,
+                    None,
+                )
+                .found
+            }
             None => Vec::new(),
         }
     }
@@ -267,20 +286,24 @@ impl Engine {
     /// Lints a buffer: as `lint_source` its text, re-using its syntax tree.
     pub fn lint_buffer(&self, buffer: &Buffer) -> Vec<Diagnostic> {
         match self.plan(&buffer.path) {
-            Some(plan) => self.lint_document(
-                &Document::new(&buffer.path, buffer.text()).with_base(self.base_of(&buffer.path)),
-                &plan,
-                buffer.tree.as_ref(),
-            ),
+            Some(plan) => {
+                self.lint_document(
+                    &Document::new(&buffer.path, buffer.text())
+                        .with_base(self.base_of(&buffer.path)),
+                    &plan,
+                    buffer.tree.as_ref(),
+                )
+                .found
+            }
             None => Vec::new(),
         }
     }
 
     /// Lints a file as it was read, UTF-8 or not. Does no I/O.
-    pub fn lint_bytes(&self, path: &str, bytes: &[u8]) -> Vec<Diagnostic> {
+    pub fn lint_bytes(&self, path: &str, bytes: &[u8]) -> Findings {
         match self.plan(path) {
             Some(plan) => self.lint_bytes_planned(path, bytes, &plan),
-            None => Vec::new(),
+            None => Findings::default(),
         }
     }
 
@@ -288,7 +311,7 @@ impl Engine {
     ///
     /// A file that is not UTF-8 gets only the native rules that do not need its text: ast-grep
     /// cannot parse it and the suppression comments cannot be read.
-    pub fn lint_bytes_planned(&self, path: &str, bytes: &[u8], plan: &Plan) -> Vec<Diagnostic> {
+    pub fn lint_bytes_planned(&self, path: &str, bytes: &[u8], plan: &Plan) -> Findings {
         self.lint_document(
             &Document::from_bytes(path, bytes).with_base(self.base_of(path)),
             plan,
@@ -297,7 +320,7 @@ impl Engine {
     }
 
     /// What the rules that go by the name alone find in a file that looks binary and is not read.
-    pub fn lint_unread(&self, path: &str, plan: &Plan) -> Vec<Diagnostic> {
+    pub fn lint_unread(&self, path: &str, plan: &Plan) -> Findings {
         let doc = Document::from_bytes(path, &[]);
         let mut out = Vec::new();
         for &index in &plan.native {
@@ -306,15 +329,13 @@ impl Engine {
             }
         }
         out.sort_by(|a, b| (a.start, &a.rule).cmp(&(b.start, &b.rule)));
-        out
+        Findings {
+            found: out,
+            silenced: Vec::new(),
+        }
     }
 
-    fn lint_document(
-        &self,
-        doc: &Document<'_>,
-        plan: &Plan,
-        tree: Option<&Tree>,
-    ) -> Vec<Diagnostic> {
+    fn lint_document(&self, doc: &Document<'_>, plan: &Plan, tree: Option<&Tree>) -> Findings {
         let path = doc.path;
         let text = doc.text();
         let mut out = Vec::new();
@@ -351,6 +372,7 @@ impl Engine {
                 message: hit.message,
             });
         }
+        let mut silenced = Vec::new();
         if let (Some(policy), Some(_)) = (&self.suppressions, text) {
             let is_active = |slug: &str| {
                 plan.native
@@ -358,14 +380,17 @@ impl Engine {
                     .any(|&index| self.native[index].id() == slug)
                     || (plan.astgrep && policy.is_astgrep(slug))
             };
-            match &self.timings {
+            silenced = match &self.timings {
                 Some(timings) => timings.measure(timings.suppressions_slot(), || {
-                    policy.apply(doc, &is_active, &mut out);
+                    policy.apply(doc, &is_active, &mut out)
                 }),
                 None => policy.apply(doc, &is_active, &mut out),
-            }
+            };
         }
         out.sort_by(|a, b| (a.start, &a.rule).cmp(&(b.start, &b.rule)));
-        out
+        Findings {
+            found: out,
+            silenced,
+        }
     }
 }

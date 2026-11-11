@@ -102,9 +102,10 @@ A finding line holds the rule, its severity, the path from the root, the line an
 of the finding, and never its message nor the text of the code. A run line holds its commit, its
 branch, the version of botica, its mode (`full`, `paths`, `diff`, `staged`, `message` or
 `judged`), its origin (`ci` when `GITHUB_ACTIONS` or `GITLAB_CI` is `true`, else `hook` when
-`PRE_COMMIT=1`, else `cli`) and each rule that it evaluated, with the findings that the run
-reports and those that the baseline hid. A rule with no finding is listed too, so a rule that ran
-and found nothing differs from a rule that did not run.
+`PRE_COMMIT=1`, else `cli`) and each rule that it evaluated, with `hits`, the findings that the run
+reports, `suppressed`, the findings that a suppression comment silenced, and `baselined`, those
+that the baseline hid. A silenced finding has no finding line. A rule with no finding is listed
+too, so a rule that ran and found nothing differs from a rule that did not run.
 
 `BOTICA_HISTORY_KEY` keys the fingerprints; the run line names the key by `key_id`, 8 hex digits of
 its hash, and the value is written nowhere. A value shorter than 32 bytes records nothing. The

@@ -90,7 +90,7 @@ pub fn fingerprint(
     let mut hasher = blake3::Hasher::new();
     hasher.update(env!("CARGO_PKG_VERSION").as_bytes());
     // The shape of the stored diagnostics: v2 added where each one ends.
-    hasher.update(b"diagnostic-v2");
+    hasher.update(b"diagnostic-v3");
     hasher.update(&[u8::from(with_astgrep)]);
     hasher.update(config.as_bytes());
     for source in catalog_sources(resolution) {

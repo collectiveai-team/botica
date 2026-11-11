@@ -173,6 +173,8 @@ pub struct Walked {
     pub read: usize,
     /// Sorted by file, position and rule, whatever the threads did.
     pub diagnostics: Vec<Diagnostic>,
+    /// The findings that a suppression channel silenced, in no useful order.
+    pub silenced: Vec<Diagnostic>,
     /// Sorted by path.
     pub unreadable: Vec<Unreadable>,
     /// Of the files linted, the ones `extend-include` asks for, so `walk_asked_for` skips them.
@@ -230,8 +232,9 @@ pub fn walk_and_lint(engine: &Engine, root: &Path, dir: &Path) -> Walked {
                     if builder.engine.is_asked_for(&opened.name) {
                         mine.asked_for.push(opened.name.clone());
                     }
-                    mine.diagnostics
-                        .extend(lint_opened(builder.engine, &opened));
+                    let found = lint_opened(builder.engine, &opened);
+                    mine.diagnostics.extend(found.found);
+                    mine.silenced.extend(found.silenced);
                     mine.read += 1;
                 }
                 Outcome::Failed(failure) => mine.unreadable.push(failure),
@@ -244,6 +247,7 @@ pub fn walk_and_lint(engine: &Engine, root: &Path, dir: &Path) -> Walked {
             if let Ok(mut all) = self.builder.into.lock() {
                 all.read += self.mine.read;
                 all.diagnostics.append(&mut self.mine.diagnostics);
+                all.silenced.append(&mut self.mine.silenced);
                 all.unreadable.append(&mut self.mine.unreadable);
                 all.asked_for.append(&mut self.mine.asked_for);
             }
