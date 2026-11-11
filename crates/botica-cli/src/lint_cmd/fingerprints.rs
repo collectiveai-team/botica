@@ -23,15 +23,16 @@ pub(super) enum Read<'a> {
     Messages,
 }
 
-/// Sets the fingerprint of each finding when the output carries it. A `BOTICA_HISTORY_KEY` that
-/// is too short leaves every fingerprint out, with a warning.
+/// Sets the fingerprint of each finding when the output carries it or the run records. A
+/// `BOTICA_HISTORY_KEY` that is too short leaves every fingerprint out, with a warning.
 pub(super) fn stamp(
     format: Format,
+    recording: bool,
     prefix: Option<&str>,
     read: Read<'_>,
     diagnostics: &mut [Diagnostic],
 ) {
-    if !matches!(format, Format::Json | Format::Sarif) {
+    if !recording && !matches!(format, Format::Json | Format::Sarif) {
         return;
     }
     let key = match FingerprintKey::from_env() {

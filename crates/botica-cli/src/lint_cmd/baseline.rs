@@ -59,25 +59,31 @@ impl Baseline {
     }
 
     /// Leaves out the findings that the baseline holds with a value at least as high, and says in
-    /// the message of the others which value it holds.
-    pub(super) fn apply(&self, prefix: Option<&str>, diagnostics: &mut Vec<Diagnostic>) {
-        diagnostics.retain_mut(|diagnostic| {
-            let Some(key) = key_of(prefix, diagnostic) else {
-                return true;
-            };
-            let Some(&known) = self.values.get(&key) else {
-                return true;
+    /// the message of the others which value it holds. Returns the findings left out.
+    pub(super) fn apply(
+        &self,
+        prefix: Option<&str>,
+        diagnostics: &mut Vec<Diagnostic>,
+    ) -> Vec<Diagnostic> {
+        let mut hidden = Vec::new();
+        for mut diagnostic in std::mem::take(diagnostics) {
+            let known = key_of(prefix, &diagnostic).and_then(|key| self.values.get(&key).copied());
+            let Some(known) = known else {
+                diagnostics.push(diagnostic);
+                continue;
             };
             let value = diagnostic
                 .measure
                 .as_ref()
                 .map_or(0, |measure| measure.value);
             if value <= known {
-                return false;
+                hidden.push(diagnostic);
+                continue;
             }
             diagnostic.message = format!("{} (the baseline holds {known})", diagnostic.message);
-            true
-        });
+            diagnostics.push(diagnostic);
+        }
+        hidden
     }
 }
 

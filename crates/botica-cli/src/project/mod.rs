@@ -174,6 +174,20 @@ impl Project {
 
     /// Everything that can change which diagnostics a file gets, for the result cache.
     pub fn fingerprint(&self) -> String {
+        self.fingerprint_of(&self.loaded.config)
+    }
+
+    /// The same as `fingerprint`, with the configuration less its `[history]` table, so that
+    /// turning recording on does not change it (ADR 0019 decision 3).
+    pub fn fingerprint_without_history(&self) -> String {
+        let config = botica_config::Config {
+            history: botica_config::HistoryConfig::default(),
+            ..self.loaded.config.clone()
+        };
+        self.fingerprint_of(&config)
+    }
+
+    fn fingerprint_of(&self, config: &botica_config::Config) -> String {
         let active: Vec<&str> = self
             .resolution
             .entries()
@@ -183,7 +197,7 @@ impl Project {
             .collect();
         format!(
             "{:?}|{}|{:?}|{}",
-            self.loaded.config,
+            config,
             active.join(","),
             self.code_dirs_for_the_rules(),
             self.catalogs

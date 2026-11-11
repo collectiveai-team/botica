@@ -49,6 +49,12 @@ impl FingerprintKey {
         })
     }
 
+    /// The first 8 hex digits of the blake3 of the key, which name it in the history without
+    /// giving it away.
+    pub fn id(&self) -> String {
+        blake3::hash(&self.key).to_hex()[..8].to_owned()
+    }
+
     /// The key that `BOTICA_HISTORY_KEY` gives this process.
     pub fn from_env() -> Result<Self, ShortKey> {
         Self::new(std::env::var(KEY_VARIABLE).ok().as_deref())

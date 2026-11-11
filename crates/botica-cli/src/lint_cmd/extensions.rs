@@ -20,6 +20,8 @@ use crate::{extension, timings};
 pub(super) struct Ran {
     pub found: Vec<Diagnostic>,
     pub errors: Vec<RunError>,
+    /// The rules whose every process finished.
+    pub finished: Vec<String>,
 }
 
 /// One process: a rule and its implementation, and the files it is sent, as `(path, text)`.
@@ -51,14 +53,16 @@ pub(super) fn run(args: &LintArgs, setup: &Setup, sources: &[SourceFile]) -> Ran
     let mut found = Vec::new();
     let mut errors = Vec::new();
     let mut read = Read::new();
+    let mut failed: BTreeMap<&str, bool> = BTreeMap::new();
     for (job, Done { rule, outcome }) in jobs.iter().zip(done) {
         if args.timings {
             timings::print_extension(&rule.id, &outcome.time);
         }
-        let failed = outcome.failure.is_some();
+        let broke = outcome.failure.is_some();
+        *failed.entry(rule.id.as_str()).or_default() |= broke;
         for (path, _) in &job.files {
             let finished = read.entry((rule.id.as_str(), path)).or_insert(true);
-            *finished &= !failed;
+            *finished &= !broke;
         }
         found.extend(own_findings(rule, outcome.found));
         let warn = setup.pool.launcher().on_timeout == OnTimeout::Warn;
@@ -81,9 +85,15 @@ pub(super) fn run(args: &LintArgs, setup: &Setup, sources: &[SourceFile]) -> Ran
             message: format!("{error:#}"),
         }));
     }
+    let finished = failed
+        .into_iter()
+        .filter(|(_, broke)| !broke)
+        .map(|(slug, _)| slug.to_owned())
+        .collect();
     Ran {
         found: silenced(setup, sources, found, &read),
         errors,
+        finished,
     }
 }
 
