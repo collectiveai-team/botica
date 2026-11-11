@@ -85,7 +85,7 @@ fn silence_drops_the_findings_given_that_a_comment_of_the_file_suppresses_and_ad
     let text = "# botica: ignore-file[BTFLG005] -- a reason\nx = 1  # botica: ignore[flag-rule]\n";
     let mut found = vec![judge_finding("judged-rule"), judge_finding("other-rule")];
 
-    policy.silence("a.py", text, &mut found);
+    let _ = policy.silence("a.py", text, &mut found);
 
     assert_eq!(summarize(&found), ["other-rule@2"]);
 }

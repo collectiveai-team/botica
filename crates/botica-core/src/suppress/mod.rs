@@ -280,6 +280,7 @@ impl Policy {
     /// Drops from `found` what the comments of the file at `path` silence: the findings of a
     /// judge, which botica reads apart from the rules it runs. It adds no finding about the
     /// comments, and returns the findings that it dropped.
+    #[must_use]
     pub fn silence(&self, path: &str, text: &str, found: &mut Vec<Diagnostic>) -> Vec<Diagnostic> {
         self.filter(&Document::new(path, text), &Pass::Silence, found)
     }
@@ -289,6 +290,7 @@ impl Policy {
     /// rule and silences nothing. `ran` says whether the extension rule read the file: `None`
     /// when its process failed, and then its comments are not reported. It returns the findings
     /// that the comments silenced.
+    #[must_use]
     pub fn report_extensions(
         &self,
         path: &str,
@@ -303,6 +305,7 @@ impl Policy {
     /// a comment may silence, what its comments silence, and adds a finding about each comment
     /// that names one of those rules and silences nothing. It returns the findings that the
     /// comments silenced.
+    #[must_use]
     pub fn report_project(
         &self,
         path: &str,

@@ -223,7 +223,8 @@ impl<'a> Run<'a> {
 
     /// Adds the extension rules whose processes all finished, the rules of the findings of a
     /// `--ext` command that failed, and the counts of the findings that the run did not report.
-    pub(super) fn add_hidden(&mut self, hidden: &Hidden) {
+    pub(super) fn add_hidden(&mut self, mut hidden: Hidden, prefix: Option<&str>) {
+        hidden.settle(self.resolution, prefix);
         self.evaluated
             .extend(hidden.extensions_finished.iter().cloned());
         self.failed.extend(hidden.failed_rules.iter().cloned());
@@ -238,15 +239,14 @@ pub(super) fn files(
     setup: &Setup,
     started: SystemTime,
     diagnostics: &[Diagnostic],
-    mut hidden: Hidden,
+    hidden: Hidden,
 ) {
     let Some(evaluated) = &setup.evaluated else {
         return;
     };
     let mode = Mode::of_files(args, &setup.project_root, setup.prefix.as_deref());
-    hidden.settle(&setup.resolution, setup.prefix.as_deref());
     let mut run = Run::of(setup, started, mode, evaluated.slugs(), diagnostics);
-    run.add_hidden(&hidden);
+    run.add_hidden(hidden, setup.prefix.as_deref());
     write(&run);
 }
 
@@ -260,7 +260,6 @@ pub(super) fn judged(
 ) {
     let mut hidden = Hidden::new(judged.silenced.clone());
     hidden.keep_only(keeps);
-    hidden.settle(&setup.resolution, setup.prefix.as_deref());
     let mut run = Run::of(
         setup,
         started,
@@ -268,7 +267,7 @@ pub(super) fn judged(
         Vec::new(),
         &judged.diagnostics,
     );
-    run.add_hidden(&hidden);
+    run.add_hidden(hidden, setup.prefix.as_deref());
     write(&run);
 }
 

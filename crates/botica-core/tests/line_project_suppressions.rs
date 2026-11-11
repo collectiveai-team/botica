@@ -39,7 +39,7 @@ fn weakened(path: &str, text: &str, value: &str) -> Diagnostic {
 /// `rule@line` of what the pass of the rules of project scope leaves of the finding on `value`.
 fn after_the_project_pass(path: &str, text: &str, value: &str) -> Vec<String> {
     let mut found = vec![weakened(path, text, value)];
-    with_the_rule().report_project(path, text, &mut found);
+    let _ = with_the_rule().report_project(path, text, &mut found);
     summarize(&found)
 }
 
@@ -117,7 +117,7 @@ fn a_comment_that_silences_nothing_is_reported_after_the_project_pass() {
         "[tool.uv]\nexclude-newer = \"7 days\"  # botica: ignore[external-config-weakened] -- r\n";
     let mut found = Vec::new();
 
-    with_the_rule().report_project("pyproject.toml", text, &mut found);
+    let _ = with_the_rule().report_project("pyproject.toml", text, &mut found);
 
     assert_eq!(summarize(&found), ["unused-suppression@2"]);
 }

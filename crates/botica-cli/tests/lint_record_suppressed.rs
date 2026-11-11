@@ -134,3 +134,123 @@ fn a_judged_run_counts_the_findings_that_an_ignore_file_comment_silences() {
     assert_eq!(rules["test-through-interface"]["suppressed"], 1, "{rules}");
     assert_eq!(rules["test-through-interface"]["hits"], 0, "{rules}");
 }
+
+#[test]
+fn a_file_reached_twice_counts_its_suppressions_once() {
+    let dir = project("twice", None);
+    write(&dir, "a.py", SILENCED);
+
+    lint(&dir, &["--record", "a.py", "a.py", "."]);
+
+    let rules = rules_of_the_first_run(&dir);
+    assert_eq!(rules["unused-suppression"]["suppressed"], 1, "{rules}");
+}
+
+#[test]
+fn a_rule_that_the_configuration_turns_off_at_a_path_counts_no_suppression_there() {
+    let config = "[[overrides]]\nfiles = [\"legacy/**\"]\nignore = [\"unused-suppression\"]\n";
+    let dir = project("override", Some(config));
+    write(&dir, "legacy/a.py", SILENCED);
+
+    lint(&dir, &["--record"]);
+
+    let rules = rules_of_the_first_run(&dir);
+    assert_eq!(rules["unused-suppression"]["suppressed"], 0, "{rules}");
+}
+
+#[test]
+fn a_rule_of_project_scope_counts_the_findings_that_a_comment_silences() {
+    let dir = common::record::project("project-scope", Some(PROJECT_CONFIG));
+    add_weakened_rule(&dir);
+    write(
+        &dir,
+        "pyproject.toml",
+        "[tool.pyrefly]\npreset = \"basic\"  # botica: ignore[external-config-weakened] -- moves to strict in Q1\n",
+    );
+
+    lint(&dir, &["--record", "--scope", "project"]);
+
+    let rules = rules_of_the_first_run(&dir);
+    assert_eq!(
+        rules["external-config-weakened"]["suppressed"], 1,
+        "{rules}"
+    );
+    assert_eq!(rules["external-config-weakened"]["hits"], 0, "{rules}");
+}
+
+const PROJECT_CONFIG: &str = "preview = true\n\
+    extend-select = [\"acme/pyrefly-strict\", \"external-config-weakened\"]\n\
+    ignore = [\"docstring-matches-signature\", \"ruff-heavy-imports-in-function\"]\n";
+
+/// A catalog `acme` whose rule asks pyrefly for `preset = "strict"`.
+fn add_weakened_rule(dir: &std::path::Path) {
+    let rule = ".botica/rules/acme/checks/pyrefly-strict";
+    write(dir, ".botica/rules/acme/catalog.toml", "code = \"ACME\"\n");
+    write(
+        dir,
+        ".botica/rules/acme/checks/family.toml",
+        "code = \"CHK\"\ndescription = \"The checks that another tool runs\"\n",
+    );
+    write(
+        dir,
+        &format!("{rule}/rule.toml"),
+        "id = \"acme/pyrefly-strict\"\ncode = \"ACMECHK001\"\nsummary = \"s\"\n\
+         status = \"preview\"\ndefault-enabled = false\ndefault-severity = \"error\"\n\n\
+         [[implementations]]\nkind = \"external\"\nlanguages = [\"python\"]\ntool = \"pyrefly\"\n\
+         docs = \"https://pyrefly.org/en/docs/configuration/\"\nconfig = \"config/pyproject.toml\"\n",
+    );
+    write(
+        dir,
+        &format!("{rule}/README.md"),
+        "## Directive\n\nd\n\n## Why\n\nw\n\n## Tool\n\nt\n\n## Configuration\n\nc\n\n\
+         ## Do\n\ndo\n\n## Don't\n\ndont\n\n## Suppression\n\ns\n",
+    );
+    write(
+        dir,
+        &format!("{rule}/config/pyproject.toml"),
+        "[tool.pyrefly]\npreset = \"strict\"\n",
+    );
+}
+
+#[test]
+fn a_judged_diff_run_counts_only_the_suppressions_on_the_lines_it_adds() {
+    let dir = repository("judged-diff");
+    write(
+        &dir,
+        "tests/test_a.py",
+        "# botica: ignore-file[test-through-interface] -- reviewed\ndef test_a():\n    assert a._x\n",
+    );
+    git(&dir, &["add", "tests"]);
+    git(&dir, &["commit", "--quiet", "-m", "tests"]);
+    write(
+        &dir,
+        "botica.toml",
+        "preview = true\nselect = [\"test-through-interface\"]\n",
+    );
+    write(
+        &dir,
+        "judge.sarif",
+        r#"{"version": "2.1.0", "runs": [{"results": [{"ruleId": "test-through-interface", "message": {"text": "m"}, "locations": [{"physicalLocation": {"artifactLocation": {"uri": "tests/test_a.py"}, "region": {"startLine": 3}}}]}]}]}"#,
+    );
+
+    lint(
+        &dir,
+        &["--record", "--judged", "judge.sarif", "--diff", "HEAD"],
+    );
+
+    let rules = rules_of_the_first_run(&dir);
+    assert!(rules.get("test-through-interface").is_none(), "{rules}");
+}
+
+#[test]
+fn the_entry_of_a_rule_has_exactly_hits_suppressed_baselined_and_hash() {
+    let dir = project("keys", None);
+
+    lint(&dir, &["--record"]);
+
+    let entry = rules_of_the_first_run(&dir)["no-utils"].clone();
+    let mut keys: Vec<&String> = entry.as_object().expect("an object").keys().collect();
+    keys.sort();
+    assert_eq!(keys, ["baselined", "hash", "hits", "suppressed"]);
+    assert_eq!(runs(&dir)[0]["v"], 1);
+}
