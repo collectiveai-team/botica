@@ -22,6 +22,8 @@ pub(super) struct Ran {
     pub errors: Vec<RunError>,
     /// The rules whose every process finished.
     pub finished: Vec<String>,
+    /// The findings that a suppression comment silenced.
+    pub silenced: Vec<Diagnostic>,
 }
 
 /// One process: a rule and its implementation, and the files it is sent, as `(path, text)`.
@@ -90,10 +92,12 @@ pub(super) fn run(args: &LintArgs, setup: &Setup, sources: &[SourceFile]) -> Ran
         .filter(|(_, broke)| !broke)
         .map(|(slug, _)| slug.to_owned())
         .collect();
+    let (found, silenced) = silenced(setup, sources, found, &read);
     Ran {
-        found: silenced(setup, sources, found, &read),
+        found,
         errors,
         finished,
+        silenced,
     }
 }
 
@@ -160,13 +164,13 @@ fn execute<'a>(job: &Job<'a>, setup: &Setup, batch: usize) -> Done<'a> {
 
 /// What the comments of the files leave of the findings, and the findings about the comments
 /// that name an extension rule and silence nothing. The engine did not see these findings, so the
-/// comments are read here.
+/// comments are read here. The second list holds the findings that the comments silenced.
 fn silenced(
     setup: &Setup,
     sources: &[SourceFile],
     found: Vec<Diagnostic>,
     read: &Read<'_>,
-) -> Vec<Diagnostic> {
+) -> (Vec<Diagnostic>, Vec<Diagnostic>) {
     let policy = project::suppression_policy(&setup.resolution);
     let mut by_path: BTreeMap<String, Vec<Diagnostic>> = BTreeMap::new();
     for finding in found {
@@ -176,6 +180,7 @@ fn silenced(
             .push(finding);
     }
     let mut kept = Vec::new();
+    let mut dropped = Vec::new();
     for source in sources {
         let path = source.path.as_str();
         let mut findings = by_path.remove(path).unwrap_or_default();
@@ -184,10 +189,10 @@ fn silenced(
                 Some(&finished) => finished.then_some(true),
                 None => Some(false),
             };
-            policy.report_extensions(path, text, &ran, &mut findings);
+            dropped.extend(policy.report_extensions(path, text, &ran, &mut findings));
         }
         kept.extend(findings);
     }
     kept.extend(by_path.into_values().flatten());
-    kept
+    (kept, dropped)
 }

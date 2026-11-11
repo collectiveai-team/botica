@@ -399,6 +399,7 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     let Linted {
         sources,
         mut diagnostics,
+        silenced,
         io_errors,
         unreadable,
         files_read,
@@ -417,20 +418,22 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         }
         errors.extend(failed);
     }
-    let mut extensions_finished = Vec::new();
+    let mut hidden = record::Hidden::new(silenced);
     if setup.has_extensions {
         let ran = extensions::run(&args, &setup, &sources);
         diagnostics.extend(ran.found);
         errors.extend(ran.errors);
-        extensions_finished = ran.finished;
+        hidden.add_extensions(ran.finished, ran.silenced);
     }
     diagnostics.extend(io_errors);
-    diagnostics.extend(project_files::findings(
+    let project = project_files::findings(
         &setup.resolution,
         &setup.recipes,
         &setup.project_root,
         setup.prefix.as_deref(),
-    ));
+    );
+    diagnostics.extend(project.found);
+    hidden.silenced.extend(project.silenced);
     let mut diagnostics = postprocess::apply(
         diagnostics,
         project::verdicts(&setup.resolution, setup.prefix.as_deref()),
@@ -438,13 +441,14 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     if args.write_baseline {
         return write_baseline(&setup, &diagnostics, &errors);
     }
-    let mut baselined = known
+    hidden.baselined = known
         .as_ref()
         .map(|known| known.apply(setup.prefix.as_deref(), &mut diagnostics))
         .unwrap_or_default();
+    hidden.failed_rules = failed_rules;
     if let Some(diff) = &diff {
         diagnostics.retain(|diagnostic| diff.changes.keeps(diagnostic));
-        baselined.retain(|diagnostic| diff.changes.keeps(diagnostic));
+        hidden.keep_only(|diagnostic| diff.changes.keeps(diagnostic));
     }
     fingerprints::stamp(
         format,
@@ -457,17 +461,7 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         },
         &mut diagnostics,
     );
-    record::files(
-        &args,
-        &setup,
-        started,
-        &diagnostics,
-        record::Silenced {
-            extensions_finished,
-            failed_rules,
-            baselined: &baselined,
-        },
-    );
+    record::files(&args, &setup, started, &diagnostics, hidden);
     write_report(&args, format, &setup, &diagnostics, &errors)?;
     if args.timings {
         timings::print_rules(setup.engine.rule_times());
@@ -531,11 +525,8 @@ fn run_judged(
     let mut judged = judged::filter(&setup.resolution, setup.prefix.as_deref(), &text, |path| {
         std::fs::read_to_string(path).ok()
     })?;
-    if let Some(diff) = diff {
-        judged
-            .diagnostics
-            .retain(|diagnostic| diff.changes.keeps(diagnostic));
-    }
+    let keeps = |diagnostic: &Diagnostic| diff.is_none_or(|diff| diff.changes.keeps(diagnostic));
+    judged.diagnostics.retain(&keeps);
     let root = std::env::current_dir()?;
     fingerprints::stamp(
         format,
@@ -554,13 +545,7 @@ fn run_judged(
         );
     }
     if setup.evaluated.is_some() {
-        record::write(&record::Run::of(
-            setup,
-            started,
-            record::Mode::Judged,
-            Vec::new(),
-            &judged.diagnostics,
-        ));
+        record::judged(setup, started, &judged, keeps);
     }
     write_report(args, format, setup, &judged.diagnostics, &[])?;
     Ok(exit_code(&[], &judged.diagnostics, args))

@@ -107,6 +107,8 @@ impl Found {
 /// judgment rule of the catalog.
 pub struct Judged {
     pub diagnostics: Vec<Diagnostic>,
+    /// The findings that an `ignore-file` comment silenced.
+    pub silenced: Vec<Diagnostic>,
     pub left_out: Vec<String>,
 }
 
@@ -261,25 +263,20 @@ pub fn filter(
         }
     }
     let mut diagnostics = sure.change;
-    diagnostics.extend(project::keep_judged(
-        resolution,
-        prefix,
-        sure.by_path,
-        &read,
-    ));
+    let sure = project::keep_judged(resolution, prefix, sure.by_path, &read);
+    diagnostics.extend(sure.found);
+    let mut silenced = sure.silenced;
     let mut lowered = unsure.change;
-    lowered.extend(project::keep_judged(
-        resolution,
-        prefix,
-        unsure.by_path,
-        &read,
-    ));
+    let unsure = project::keep_judged(resolution, prefix, unsure.by_path, &read);
+    lowered.extend(unsure.found);
+    silenced.extend(unsure.silenced);
     for finding in &mut lowered {
         finding.severity = finding.severity.min(Severity::Info);
     }
     diagnostics.extend(lowered);
     Ok(Judged {
         diagnostics,
+        silenced,
         left_out,
     })
 }

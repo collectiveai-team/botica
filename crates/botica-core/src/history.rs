@@ -33,11 +33,14 @@ pub struct RunLine {
     pub rules: BTreeMap<String, RuleEntry>,
 }
 
-/// What a run says of one rule that it evaluated. The findings that a suppression channel
-/// silenced are not counted yet, so the entry has no `suppressed` key.
+/// What a run says of one rule that it evaluated.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub struct RuleEntry {
+    /// The findings that the run reports.
     pub hits: usize,
+    /// The findings that a suppression channel silenced.
+    pub suppressed: usize,
+    /// The findings that the baseline hides.
     pub baselined: usize,
     /// What can change the findings of the rule; `null` until botica computes it, which leaves
     /// the rule out of every comparison.

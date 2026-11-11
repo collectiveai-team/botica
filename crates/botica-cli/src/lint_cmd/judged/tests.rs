@@ -63,8 +63,11 @@ fn judge(config: &str, results: &[String], files: &[(&str, &str)]) -> Judged {
 }
 
 fn summary(judged: &Judged) -> Vec<String> {
-    judged
-        .diagnostics
+    summary_of(&judged.diagnostics)
+}
+
+fn summary_of(found: &[botica_core::Diagnostic]) -> Vec<String> {
+    found
         .iter()
         .map(|d| format!("{}@{}:{} {}", d.rule, d.path, d.line, d.severity.as_str()))
         .collect()
@@ -284,4 +287,8 @@ fn an_ignore_file_comment_silences_a_verdict_of_abide() {
     );
 
     assert!(judged.diagnostics.is_empty());
+    assert_eq!(
+        summary_of(&judged.silenced),
+        ["test-foo@src/a.py:1 warning", "test-foo@src/b.py:1 warning"]
+    );
 }
