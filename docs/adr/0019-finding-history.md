@@ -38,7 +38,8 @@ runs are compared, which origins write it, and how the files of CI jobs are join
 
    A run is recorded when it linted, whatever its exit code. A run that stops on an error of the
    configuration before the lint writes nothing. A history that cannot be written prints a warning
-   and leaves the exit code as it was, as the cache does (`Cache::save`).
+   and leaves the exit code as it was, as `lint_paths` does when `Cache::save` returns an error
+   (`crates/botica-cli/src/lint_cmd/paths.rs`).
 
    The directory is created with a `.gitignore` that holds `*`, as `ensure_directory` in `cache.rs`
    does for the cache; when the directory exists without it, the writer adds it. The writer refuses
@@ -109,22 +110,27 @@ runs are compared, which origins write it, and how the files of CI jobs are join
    `hash` is 16 hex digits of the blake3 of what can change the findings of that one rule:
 
    - the version of botica, and whether the ast-grep rules run (`--no-astgrep`);
-   - the source of the rule: the YAML and the prefilter that `rules::fingerprint` hashes for a rule
-     of the catalog, and for an extension rule its `rule.toml` and the files of its script;
+   - the source of the rule: its `rule.toml`, which holds its `files` and `ignores`; the YAML and
+     the prefilter that `rules::fingerprint` hashes; and for an extension rule the files of its
+     script;
+   - for a rule whose findings carry a measure, the blake3 of the file of `baseline`, since a branch
+     that rewrites the baseline changes which of its findings the run reports;
    - the settings of the rule in the resolved configuration, with the `--config` values of the
      command line applied: `[rules.<id>]`, every `[[overrides]]` whose selectors resolve to the
      rule, and the entries of `replace` that name it;
    - the keys of the configuration that decide which files a rule sees: `languages`,
-     `extend-exclude` and `extend-include`;
+     `extend-exclude` as written in the configuration (before `project::load` adds the folders of
+     the catalogs to it) and `extend-include`;
    - for a rule that reads the code dirs, the code dirs: those that `code-dirs` writes, or those
      that botica detects from the manifests at the root of the project. They are computed for the
      rule whatever other rules are active and whatever the working directory, unlike
      `code_dirs_for_the_rules` in `Project::fingerprint`, which is empty when no rule that reads
      them is active.
 
-   The settings of other rules, the other catalogs of the project, `[recipes]`, `[references]` and
-   `baseline` do not enter it: a change to one rule changes the `hash` of that rule alone. The
-   baseline moves findings between `hits` and `baselined` and not in or out of the run.
+   The settings of other rules, the other catalogs of the project, `[recipes]` and `[references]`
+   do not enter it: a change to one rule changes the `hash` of that rule alone. A finding that the
+   baseline hides or a comment suppresses has no finding line; it counts only in `baselined` or
+   `suppressed`.
 
    `--scope`, `--select`, `--ignore`, `--preview` and the rules that run beside it do not enter it,
    so a rule has the same `hash` in a hook with `--scope file` and in a CI job with no scope when
@@ -171,8 +177,16 @@ runs are compared, which origins write it, and how the files of CI jobs are join
    botica removes the variable from the environment of the extension processes that it starts, so
    that an extension does not receive it by inheritance. An extension runs as the same user and
    can read the environment of its parent (`/proc/<pid>/environ` on Linux), so this does not hide
-   the key from an extension that looks for it; a job that holds the key runs only the extensions
-   of the base branch, as the jobs of ADR 0017 decision 9 do.
+   the key from an extension that looks for it.
+
+   The key keeps the fingerprints from the readers of the artifacts who cannot push to the
+   repository. It does not keep them from a person who can push a branch: the CI job of `botica
+   lint --diff --record` that the paired readings need (decision 8) runs on `pull_request` with
+   the key, and the author of a branch of the repository edits that workflow and the extensions
+   that it runs. A pull request from a fork gets no secret, and `fetch` skips its runs.
+   `[history] require-key = true` makes a run with no variable a history that cannot be written,
+   so that a job where the secret is missing (a fork, or a pull request of Dependabot, which reads
+   the secrets of Dependabot only) records nothing instead of unkeyed lines.
 
    An artifact outlives the code that it was computed from: a secret that a branch committed and a
    force-push removed is gone from the repository and stays in the fingerprints of the artifact
@@ -263,15 +277,18 @@ runs are compared, which origins write it, and how the files of CI jobs are join
    | Noise | for a rule, `suppressed` over `hits` plus `suppressed`, undefined when both are 0; for a role, the findings whose `refutation` is neither `null` nor `confirmed` over the findings whose `refutation` is not `null`, undefined when there are none |
    | A rule with no findings | the rule is in `rules` with `hits`, `suppressed` and `baselined` at 0 in every run of the last N weeks, and in at least one run. A rule whose findings are all suppressed or in the baseline is not one. A rule that is absent from `rules` did not run and is another case |
 
-   A hook run and a CI run are paired when they have the same `branch`, which is not `null`, the CI
+   A hook run and a CI run are paired when they have the same `branch`, which is neither `null` nor
+   empty (a writer records an empty value of each source of `branch` as unset), the CI
    run has `origin` `ci`, and the hook run precedes the CI run. The `commit` of a `staged` run is
    the parent of the commit that the hook checked, so a hook run precedes a CI run when its `commit`
    is a proper ancestor of the `head` of the CI run: an ancestor that is not `head` itself. A CI run
    whose `head` is the `commit` of the hook run checked the code before the change of the hook, and
    is not paired with it. When the clone does not hold the `commit` of the hook run, or holds it off
    the history of `head` (a rebase rewrote it), the hook run precedes the CI run when its
-   `started_at` is earlier than the `started_at` of the CI run. Only those hook runs depend on the
-   clocks of two machines. The pairing reads `head` and never the merge commit of a `pull_request`
+   `started_at` is earlier than the `started_at` of the CI run and no CI run of the branch whose
+   `head` is a proper descendant of the `head` of this CI run started before the hook run. A CI run
+   that runs again on an older `head` thus pairs with no hook run that came after a newer one. Only
+   those hook runs depend on the clocks of two machines. The pairing reads `head` and never the merge commit of a `pull_request`
    run, which a clone does not hold, and it needs a clone that holds the branch.
 
    For "Caught before the commit", the CI run paired with a hook run is the earliest CI run of the
@@ -329,26 +346,30 @@ runs are compared, which origins write it, and how the files of CI jobs are join
       For each kept run, `fetch` writes `<dir>/<id>/source.json` from the answer of the API and not
       from the artifact: the id of the run, `event`, `head_branch` (`ref` on GitLab), `head_sha`,
       the full name of the head repository, the path of the workflow, and `trusted`. A run is
-      `trusted` when its `event` is `push`, `schedule` or `workflow_dispatch` and its `head_branch`
-      is the default branch, or when it is a run of `pull_request_target` of a workflow of
-      `base-workflows`; GitHub loads the file of such a workflow from the default branch
+      `trusted` when its `event` is `push`, `schedule` or `workflow_dispatch`, its `head_branch` is
+      the default branch and its `head_sha` is in the history of the default branch (`git
+      merge-base --is-ancestor <head_sha> origin/<default>` after a fetch), since `head_branch`
+      holds the name of a tag on a push of a tag and a tag can share the name of the default
+      branch. A run of `pull_request_target` of a workflow of `base-workflows` whose
+      `head_repository.full_name` is this repository is `trusted` too; GitHub loads the file of
+      such a workflow from the default branch
       (<https://github.blog/changelog/2025-11-07-actions-pull_request_target-and-environment-branch-protections-changes/>).
-      On GitLab a pipeline is `trusted` when its `source` is `push`, `schedule` or `web` and its
-      `ref` is the default branch.
+      On GitLab a pipeline is `trusted` when its `source` is `push`, `schedule` or `web`, its `tag`
+      is `false`, its `ref` is the default branch and its `sha` is in the history of the default
+      branch.
    3. It lists the artifacts of each kept run first. It skips an artifact whose name does not start
       with `botica-history-`, that has expired, or whose size (`size_in_bytes` on GitHub, `size` on
-      GitLab) is over 50 MB, and stops when the total passes 2 GB; each skip is reported. It
-      downloads each artifact that it keeps by its name, `gh run download <id> --name <name> --dir
-      <dir>/<id>/<name>`, so that an artifact that it skipped is not downloaded. `<dir>` is a new
-      empty directory that it creates outside the checkout with the permissions of its user only.
-      It needs `gh` 2.102.0 or later, since earlier releases follow a symbolic link under the
-      destination while extracting an artifact (GHSA-39wj-f2f4-978v), and stops when `gh` is older.
-      The size of the API is the size of the archive, and an archive can grow when extracted:
-      after each download `fetch` deletes from its folder every file that is not one of the two
-      names or is over 50 MB, and stops when the folder of the run passes 2 GB. On GitLab it
-      downloads the archive of each job through the API into `<dir>/<id>/<job id>`, and extracts
-      only the two file names, refusing a member that is a link, has a `..` component or declares
-      more than 50 MB.
+      GitLab) is over 50 MB, and stops when the total passes 2 GB; each skip is reported. `<dir>`
+      is a new empty directory that it creates outside the checkout with the permissions of its
+      user only. It does not let a tool extract an archive. It saves the archive of each artifact
+      that it keeps as one file, `gh api repos/<repo>/actions/artifacts/<artifact id>/zip` on
+      GitHub and the archive of each job through the API on GitLab, and extracts it itself into
+      `<dir>/<id>/<name>`: only the members named `runs.jsonl` and `findings.jsonl`, refusing a
+      member that is a link or has a `..` component, and stopping a member after 50 MB of extracted
+      bytes whatever size the archive declares, since an archive of a few hundred KB can extract to
+      gigabytes. The run stops when the extracted bytes pass 2 GB in all. Because `gh` writes no
+      file of the artifact, the symbolic links that `gh run download` followed before `gh` 2.102.0
+      (GHSA-39wj-f2f4-978v) play no part.
    4. `botica history report` reads the joined files. It reads only regular files named
       `runs.jsonl` and `findings.jsonl`, each of at most 50 MB and 2 GB in all; a file past a limit
       is skipped and the report names it, so a history that is cut never looks complete. It reads
@@ -375,7 +396,9 @@ runs are compared, which origins write it, and how the files of CI jobs are join
       "A rule with no findings" and the noise of a rule only from the runs whose `source.json` says
       `trusted`, and never from the `branch` or `origin` that a line states, since the job that
       uploaded the line wrote them. The runs of other branches feed the paired readings, which a
-      developer reads for the branches of their own hook runs.
+      developer reads for the branches of their own hook runs. The local `.botica/history/` of the
+      person who runs the report has no `source.json`; the report counts its runs as `trusted` for
+      that person, who wrote them, and names them apart from the runs of CI in its output.
    6. A history longer than the retention of artifacts needs a store that is not an artifact; this
       ADR does not choose it.
 
@@ -400,6 +423,9 @@ runs are compared, which origins write it, and how the files of CI jobs are join
   release or a setting changed between the hook and CI would show its new findings as reached CI.
 - Pairing by `started_at` alone. Rejected: the hook and CI run on two machines with two clocks; the
   ancestry of `head` orders them, and the time is a fallback for a rewritten commit.
+- "Caught before the commit" against the next commit, as spec §6 of the review flow puts it.
+  Rejected: the history holds no run for a commit, only runs of CI, and the next commit that a CI
+  run checked is the `head` of the earliest CI run after the hook run.
 - Joining the files with `cat`. Rejected: a file with no final newline glues its last line to the
   first line of the next file, and the run line that follows is lost with its findings.
 - A fingerprint that includes the line number. Rejected: a finding changes line each time someone
@@ -440,7 +466,10 @@ runs are compared, which origins write it, and how the files of CI jobs are join
   the number of the pull request of a CI run.
 - How a developer receives `BOTICA_HISTORY_KEY`, and the rotation of the key, which starts a new
   `key_id` and leaves the runs before it out of the comparisons.
-- The JSON Schema of the `[history]` table in `schema/botica.schema.json`.
+- A JSON Schema for each kind of line, and the golden files that test the writer across releases.
+  The schema of the `[history]` table is generated from the configuration and changes with the
+  writer, since `crates/botica-config/tests/schema.rs` fails when `schema/botica.schema.json` is
+  out of date.
 
 ## Consequences
 
