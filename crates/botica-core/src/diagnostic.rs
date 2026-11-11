@@ -57,6 +57,10 @@ pub struct Diagnostic {
     #[serde(default)]
     pub file_level: bool,
     pub message: String,
+    /// What follows the finding from one run to the next when its line moves (ADR 0019 decision
+    /// 5), set by `FingerprintKey::stamp` once the findings of a run are final.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fingerprint: Option<String>,
     /// What a rule measured in a function, which the baseline compares with the value it holds.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub measure: Option<Measure>,
@@ -85,6 +89,7 @@ impl Diagnostic {
             end_column: 1,
             file_level: true,
             message,
+            fingerprint: None,
             measure: None,
         }
     }

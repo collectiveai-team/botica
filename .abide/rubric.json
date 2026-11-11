@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "compiledAt": "2026-11-01T06:33:21Z",
-  "compiledBy": "botica 0.18.1",
+  "compiledAt": "2026-11-11T06:04:09Z",
+  "compiledBy": "botica 0.20.2",
   "manual": true,
   "sources": [
     {
@@ -1020,6 +1020,7 @@
         "crates/botica-core/src/extension_run.rs",
         "crates/botica-core/src/external_config.rs",
         "crates/botica-core/src/external_weakened.rs",
+        "crates/botica-core/src/fingerprint.rs",
         "crates/botica-core/src/heavy_imports.rs",
         "crates/botica-core/src/layout.rs",
         "crates/botica-core/src/lib.rs",
@@ -1278,6 +1279,7 @@
         "crates/botica-core/src/extension_run.rs",
         "crates/botica-core/src/external_config.rs",
         "crates/botica-core/src/external_weakened.rs",
+        "crates/botica-core/src/fingerprint.rs",
         "crates/botica-core/src/heavy_imports.rs",
         "crates/botica-core/src/layout.rs",
         "crates/botica-core/src/lib.rs",

@@ -17,7 +17,8 @@ botica lint                    # the current directory
 botica lint src tests/a.py     # directories to walk, or files (as prek passes them)
 botica lint --select file-size-guard,no-utils
 botica lint --output-format json   # text (default), json, sarif, github or markdown; json and sarif carry the
-                                   # code and the standard of the rule of each finding
+                                   # code and the standard of the rule of each finding, and its
+                                   # fingerprint (ADR 0019), which BOTICA_HISTORY_KEY keys
 botica lint --judged judge.sarif   # the findings of a judge, filtered by the configuration and comments;
                                    # the file is SARIF or the report of `abide check --json`
 botica lint --diff origin/main     # the files changed since the merge base, and only the findings on

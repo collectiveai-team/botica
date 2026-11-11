@@ -182,6 +182,7 @@ pub fn check(
                 end_line,
                 end_column,
                 file_level: false,
+                fingerprint: None,
                 measure: None,
                 message: format!(
                     "`@{}` names no file or folder of the repository: fix the path, or remove \

@@ -59,6 +59,7 @@ impl NativeRule for CognitiveComplexity {
                      conditions and loops into functions of their own",
                     function.name, function.complexity, self.max
                 ),
+                fingerprint: None,
                 measure: Some(Measure {
                     name: function.name,
                     value: function.complexity,
