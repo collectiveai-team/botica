@@ -254,3 +254,27 @@ fn the_entry_of_a_rule_has_exactly_hits_suppressed_baselined_and_hash() {
     assert_eq!(keys, ["baselined", "hash", "hits", "suppressed"]);
     assert_eq!(runs(&dir)[0]["v"], 1);
 }
+
+#[test]
+fn a_staged_run_counts_the_suppressions_of_the_staged_text() {
+    let dir = repository("staged");
+    write(&dir, "a.py", SILENCED);
+    git(&dir, &["add", "a.py"]);
+
+    lint(&dir, &["--record", "--staged"]);
+
+    let run = &runs(&dir)[0];
+    assert_eq!(run["mode"], "staged");
+    assert_eq!(run["rules"]["unused-suppression"]["suppressed"], 1, "{run}");
+}
+
+#[test]
+fn a_run_over_one_named_file_counts_its_suppressions() {
+    let dir = project("named", None);
+    write(&dir, "a.py", SILENCED);
+
+    lint(&dir, &["--record", "a.py"]);
+
+    let rules = rules_of_the_first_run(&dir);
+    assert_eq!(rules["unused-suppression"]["suppressed"], 1, "{rules}");
+}
