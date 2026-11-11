@@ -41,10 +41,12 @@ runs are compared, which origins write it, and how the files of CI jobs are join
    and leaves the exit code as it was, as the cache does (`Cache::save`).
 
    The directory is created with a `.gitignore` that holds `*`, as `ensure_directory` in `cache.rs`
-   does for the cache; when the directory exists without it, the writer adds it. The writer opens
-   each file for append and refuses a `.botica`, a `.botica/history` or a file that is a symbolic
-   link or not a regular file, so that a link in a checkout cannot redirect the append. When a file
-   does not end in `\n`, the append starts with one.
+   does for the cache; when the directory exists without it, the writer adds it. The writer refuses
+   a `.botica` or a `.botica/history` that is a symbolic link or not a directory, and opens each of
+   the files it writes there (`runs.jsonl`, `findings.jsonl`, `.gitignore` and `lock`) without
+   following a symbolic link (`O_NOFOLLOW` on Unix), refusing one that is not a regular file, so
+   that a link in a checkout cannot redirect a write. It opens `lock` without truncating it. When a
+   file does not end in `\n`, the append starts with one.
 
    One process of botica is one run. prek can split the files of one hook into several processes
    that run at once, and each of them is a run of its own. The writer holds an exclusive lock on
@@ -75,13 +77,14 @@ runs are compared, which origins write it, and how the files of CI jobs are join
 
    | Key | Value |
    |---|---|
+   | `v` | decision 2 |
    | `run_id` | 16 hex digits: the first 64 bits of the blake3 of the start time in nanoseconds, the process id and a counter of the process |
    | `started_at` | Unix seconds, an integer |
    | `commit` | `git rev-parse HEAD`, or `null` outside git. In `staged` mode this is the parent of the commit that the hook checks |
    | `head` | the commit under review in CI: `pull_request.head.sha` of the file of `GITHUB_EVENT_PATH` on a pull request event of GitHub, `CI_MERGE_REQUEST_SOURCE_BRANCH_SHA` on a GitLab pipeline for merged results, and `commit` otherwise. An empty variable counts as unset; in a plain merge request pipeline of GitLab the checkout is the head of the source branch, so `commit` is that head |
    | `branch` | `GITHUB_HEAD_REF` when it is set (GitHub sets it on `pull_request` and `pull_request_target`, with the branch of the pull request); otherwise `git branch --show-current`; with a detached `HEAD`, `CI_MERGE_REQUEST_SOURCE_BRANCH_NAME` and then `CI_COMMIT_REF_NAME`; otherwise `null` |
    | `botica` | the version of botica |
-   | `rules_fingerprint` | the fingerprint that keys the result cache, computed on the configuration without its `[history]` table. It changes with `--scope`, `--select` and `--ignore`, and decision 8 does not pair runs with it |
+   | `rules_fingerprint` | 64 hex digits, computed as `rules::fingerprint` computes the key of the result cache, on the configuration without its `[history]` table, so that turning recording on does not change it. It differs from the key of the cache of the same run when the configuration has a `[history]` table. It changes with `--scope`, `--select` and `--ignore`; it tells a reader whether two runs ran the same rules, and decision 8 does not pair runs with it |
    | `key_id` | decision 5 |
    | `mode` | decision 6 |
    | `origin` | decision 6 |
@@ -90,8 +93,9 @@ runs are compared, which origins write it, and how the files of CI jobs are join
 
    The entry of a rule in `rules` is `{"hits": h, "suppressed": s, "baselined": b, "hash": x}`.
 
-   A rule is evaluated when the engine applied it to at least one file of the run, after the
-   prefilter and the plan; when it ran, for a rule of project scope; and when it checked at least one
+   A rule is evaluated when the plan gave it at least one file of the run, a file that the
+   prefilter then skipped because it holds no candidate of the rule included, since the prefilter
+   skips only a file where the rule can find nothing; when it ran, for a rule of project scope; and when it checked at least one
    message, for a rule of scope `commit` in a run of mode `message`. A rule that the configuration
    or `--scope` turns off, that the run never reached (the files of a `diff` run held none that the
    rule reads), or whose extension failed is absent from `rules`. This is the denominator: a rule
@@ -107,12 +111,20 @@ runs are compared, which origins write it, and how the files of CI jobs are join
    - the version of botica, and whether the ast-grep rules run (`--no-astgrep`);
    - the source of the rule: the YAML and the prefilter that `rules::fingerprint` hashes for a rule
      of the catalog, and for an extension rule its `rule.toml` and the files of its script;
-   - the settings of the rule in the resolved configuration: `[rules.<id>]` and every
-     `[[overrides]]` whose selectors resolve to the rule;
-   - the settings of the configuration that apply to every rule: the configuration that
-     `Project::fingerprint` hashes, without the keys that select rules (`select`, `extend-select`,
-     `ignore`, `preview`) and without `[history]`, with the `--config` values of the command line
-     applied; the code dirs; and the catalogs of the project.
+   - the settings of the rule in the resolved configuration, with the `--config` values of the
+     command line applied: `[rules.<id>]`, every `[[overrides]]` whose selectors resolve to the
+     rule, and the entries of `replace` that name it;
+   - the keys of the configuration that decide which files a rule sees: `languages`,
+     `extend-exclude` and `extend-include`;
+   - for a rule that reads the code dirs, the code dirs: those that `code-dirs` writes, or those
+     that botica detects from the manifests at the root of the project. They are computed for the
+     rule whatever other rules are active and whatever the working directory, unlike
+     `code_dirs_for_the_rules` in `Project::fingerprint`, which is empty when no rule that reads
+     them is active.
+
+   The settings of other rules, the other catalogs of the project, `[recipes]`, `[references]` and
+   `baseline` do not enter it: a change to one rule changes the `hash` of that rule alone. The
+   baseline moves findings between `hits` and `baselined` and not in or out of the run.
 
    `--scope`, `--select`, `--ignore`, `--preview` and the rules that run beside it do not enter it,
    so a rule has the same `hash` in a hook with `--scope file` and in a CI job with no scope when
@@ -156,7 +168,11 @@ runs are compared, which origins write it, and how the files of CI jobs are join
    is a history that cannot be written (decision 1), so that a short key cannot be guessed offline.
    The run line records `key_id`, the first 8 hex digits of the blake3 of the derived key, or `null`
    with no variable. A reader compares fingerprints only between runs with the same `key_id`.
-   botica removes the variable from the environment of the extension processes that it starts.
+   botica removes the variable from the environment of the extension processes that it starts, so
+   that an extension does not receive it by inheritance. An extension runs as the same user and
+   can read the environment of its parent (`/proc/<pid>/environ` on Linux), so this does not hide
+   the key from an extension that looks for it; a job that holds the key runs only the extensions
+   of the base branch, as the jobs of ADR 0017 decision 9 do.
 
    An artifact outlives the code that it was computed from: a secret that a branch committed and a
    force-push removed is gone from the repository and stays in the fingerprints of the artifact
@@ -173,15 +189,18 @@ runs are compared, which origins write it, and how the files of CI jobs are join
 
    | `mode` | A run that |
    |---|---|
-   | `full` | walks the project |
-   | `paths` | lints the files named on the command line, which is what the hook `botica` of the mirror passes |
+   | `full` | lints with no path on the command line, or with the root of the project as its one path |
+   | `paths` | lints the paths named on the command line otherwise, which is what the hook `botica` of the mirror passes |
    | `diff` | uses `--diff` or `--diff-file` |
    | `staged` | uses `--staged` |
    | `message` | uses `--commit-msg`, `--commits` or `--pr-title` |
-   | `judged` | uses `--judged` |
+   | `judged` | uses `--judged`, with or without `--diff`, `--staged` or `--diff-file` |
    | `reviewed` | uses `--reviewed` (ADR 0017; the flag comes in a later change) |
    | `mutants` | uses `--mutants` (planned; the flag comes in a later change) |
    | `classify` | is a decision of `botica review classify` (ADR 0018) |
+
+   The last row of the table that matches the flags of the run gives the mode, so `--judged --diff
+   <rev>` is `judged` and `--reviewed <dir> --diff <base>` is `reviewed`.
 
    | `origin` | When |
    |---|---|
@@ -202,7 +221,7 @@ runs are compared, which origins write it, and how the files of CI jobs are join
      `reviewed`, `rules` with one entry `review:<role>` whose `hits` is the number of findings, and
      `detail` `{"verdict", "base", "stage"}`. botica takes `base` from `--diff`, resolved to the
      commit of the merge base, and never from the `base` of the role file, which may be a branch
-     name. The `hash` of the entry is the blake3 of the `REVIEW.md` of the role at that commit
+     name. The `hash` of the entry is 16 hex digits of the blake3 of the `REVIEW.md` of the role at that commit
      (`git show <commit>:<dir of [review]>/<role>/REVIEW.md`, ADR 0017 decision 7), and `null` when
      the base has no such file and a local run used the copy of its skill. `verdict` is the one that
      botica computes from the findings and `blocking` (ADR 0017 decision 9), and `stage` is `local`
@@ -213,8 +232,10 @@ runs are compared, which origins write it, and how the files of CI jobs are join
      finding lines, an empty `rules`, and `detail` with the probabilities, the result and whether a
      merge would have happened (ADR 0018 decision 13), and the reasons of the handoff, each as the
      condition of the column `Reason` of ADR 0018 decision 10. The evidence and the steps of the
-     handoff report hold file names, log lines and titles; they stay in the report that its job
-     uploads and are not copied here. The answer of the person and a later revert go to a third
+     handoff report hold file names, log lines and titles; they stay in `handoff.json`, which its
+     job uploads, and are not copied here. ADR 0018 decision 10 says that `handoff.json` enters the
+     history; this ADR reads that as its reasons and its result entering through this run, and the
+     rest of the report staying in its artifact, for the reason of decision 2. The answer of the person and a later revert go to a third
      file, `events.jsonl`, whose keys are decided with that command; each line names the `run_id`
      of the decision.
 
@@ -305,26 +326,44 @@ runs are compared, which origins write it, and how the files of CI jobs are join
       keeps a pipeline whose `source` is `push`, `schedule` or `web`, and one whose `source` is
       `merge_request_event` when the merge request has `source_project_id` equal to
       `target_project_id`; it skips the others.
-   3. It lists the artifacts of each kept run first and skips one whose size (`size_in_bytes` on
-      GitHub, `size` on GitLab) is over 50 MB, and stops when the total passes 2 GB, so that the
-      download cannot fill the disk; each skip is reported. It downloads each run with `gh run
-      download <id> --pattern 'botica-history-*' --dir <dir>/<id>`, where `<dir>` is a new empty
-      directory that it creates outside the checkout with the permissions of its user only, and with
-      `gh` 2.102.0 or later: earlier releases follow a symbolic link under the destination while
-      extracting an artifact (GHSA-39wj-f2f4-978v). It stops when `gh` is older. On GitLab it
-      downloads the archive of each job through the API and extracts only the two file names,
-      refusing a member that is a link or has a `..` component.
+      For each kept run, `fetch` writes `<dir>/<id>/source.json` from the answer of the API and not
+      from the artifact: the id of the run, `event`, `head_branch` (`ref` on GitLab), `head_sha`,
+      the full name of the head repository, the path of the workflow, and `trusted`. A run is
+      `trusted` when its `event` is `push`, `schedule` or `workflow_dispatch` and its `head_branch`
+      is the default branch, or when it is a run of `pull_request_target` of a workflow of
+      `base-workflows`; GitHub loads the file of such a workflow from the default branch
+      (<https://github.blog/changelog/2025-11-07-actions-pull_request_target-and-environment-branch-protections-changes/>).
+      On GitLab a pipeline is `trusted` when its `source` is `push`, `schedule` or `web` and its
+      `ref` is the default branch.
+   3. It lists the artifacts of each kept run first. It skips an artifact whose name does not start
+      with `botica-history-`, that has expired, or whose size (`size_in_bytes` on GitHub, `size` on
+      GitLab) is over 50 MB, and stops when the total passes 2 GB; each skip is reported. It
+      downloads each artifact that it keeps by its name, `gh run download <id> --name <name> --dir
+      <dir>/<id>/<name>`, so that an artifact that it skipped is not downloaded. `<dir>` is a new
+      empty directory that it creates outside the checkout with the permissions of its user only.
+      It needs `gh` 2.102.0 or later, since earlier releases follow a symbolic link under the
+      destination while extracting an artifact (GHSA-39wj-f2f4-978v), and stops when `gh` is older.
+      The size of the API is the size of the archive, and an archive can grow when extracted:
+      after each download `fetch` deletes from its folder every file that is not one of the two
+      names or is over 50 MB, and stops when the folder of the run passes 2 GB. On GitLab it
+      downloads the archive of each job through the API into `<dir>/<id>/<job id>`, and extracts
+      only the two file names, refusing a member that is a link, has a `..` component or declares
+      more than 50 MB.
    4. `botica history report` reads the joined files. It reads only regular files named
       `runs.jsonl` and `findings.jsonl`, each of at most 50 MB and 2 GB in all; a file past a limit
       is skipped and the report names it, so a history that is cut never looks complete. It reads
       each file on its own and does not concatenate them, since a file with no final newline would
       glue its last line to the first line of the next. For each key that it knows it checks that
-      `run_id` and `fingerprint` are 16 hex digits and `key_id` 8 hex digits or `null`; that
-      `severity` and `refutation` are values of their tables, and `mode` and `origin` strings of at
-      most 64 bytes of `[a-z:-]`; that `commit` and `head` are 40 hex digits or `null`; that `path`
-      is relative, has no `..` component and no control character; that a `slug`, a `branch` and a
-      `ref` have no control character and fit in 256 bytes; and that `line`, `started_at` and the
-      counts are non-negative integers. A line that fails is skipped and counted. The report escapes
+      `v` is a non-negative integer; that `run_id`, `fingerprint` and the `hash` of each entry of
+      `rules` are 16 hex digits (`hash` may be `null`), `key_id` 8 hex digits or `null`, and
+      `rules_fingerprint` 64 hex digits; that `severity` and `refutation` are values of their
+      tables, and `mode` and `origin` strings of at most 64 bytes of `[a-z:-]`; that `commit` and
+      `head` are 40 or 64 hex digits (the object names of SHA-1 and SHA-256 repositories) or
+      `null`; that `path` is relative, has no `..` component and no control character; that a
+      `slug`, each key of `rules`, a `code`, a `branch` and a `ref` have no control character and
+      fit in 256 bytes; that `line`, `occurrence`, `started_at` and the counts are non-negative
+      integers; and that `detail` is an object of at most 64 KB whose strings have no control
+      character. A line that fails is skipped and counted. The report escapes
       the values that it prints and runs nothing that a line holds. Inside GitHub Actions it prints
       `::stop-commands::<token>` with a random token before the values and `::<token>::` after
       them, so that no value is read as a workflow command wherever `::` or `##[` sits in a line
@@ -332,10 +371,11 @@ runs are compared, which origins write it, and how the files of CI jobs are join
    5. The history of CI is data from whoever can run a recording workflow. A run of `push` or of a
       `pull_request` of this repository runs the workflow and the extension rules of its branch, so a
       person with write access can upload lines that pass the checks. The report keeps the source
-      of each run (decision 2), so such lines cannot replace a run of another CI run, and it computes
-      "A rule with no findings" and the noise of a rule only from the runs of the default branch and
-      of `base-workflows`, whose workflow comes from the default branch. The runs of other branches
-      feed the paired readings, which a developer reads for the branches of their own hook runs.
+      of each run (decision 2), so such lines cannot replace a run of another CI run. It computes
+      "A rule with no findings" and the noise of a rule only from the runs whose `source.json` says
+      `trusted`, and never from the `branch` or `origin` that a line states, since the job that
+      uploaded the line wrote them. The runs of other branches feed the paired readings, which a
+      developer reads for the branches of their own hook runs.
    6. A history longer than the retention of artifacts needs a store that is not an artifact; this
       ADR does not choose it.
 
