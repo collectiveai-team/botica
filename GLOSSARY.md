@@ -145,3 +145,14 @@ _Avoid_: source root, package dir
 `collectiveai-team/botica-pre-commit`, the repo prek installs the `botica` hook from. Its tag pins
 the wheel of the same version, so a repository needs no `botica` on its PATH.
 _Avoid_: hook repo
+
+**Review area**:
+The paths of a project that need the same people and the same minimum **tier**, declared in an
+entry of `[[review.areas]]` under one of the names `critical`, `platform`, `core` and `periphery`.
+A name may come in several entries. See `docs/adr/0018-risk-tiers-and-classifier.md`.
+_Avoid_: zone, risk class
+
+**Tier**:
+How much review a change needs: `low`, `medium` or `high`. Each area name has a floor, the lowest
+tier that an entry of that name takes.
+_Avoid_: level, risk level

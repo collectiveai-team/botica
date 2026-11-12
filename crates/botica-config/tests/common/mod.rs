@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+pub mod review;
+
 use botica_catalog::Catalog;
 use botica_config::{Config, Reason, Resolution};
 
