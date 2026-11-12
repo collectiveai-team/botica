@@ -169,14 +169,15 @@ hooks = [{ id = "agnix", args = [], priority = 2, exclude = "^catalog/rules/.*/f
 # Selection and exclusions: `[tool.botica]` of `pyproject.toml`. The hooks of the mirror
 # (`distribution/botica-pre-commit/.pre-commit-hooks.yaml`), with the botica of the checkout: a pull
 # request that adds a rule selects it before a release knows it (ADR 0013). `botica-release.yml`
-# runs the mirror on this repository after each release.
+# runs the mirror on this repository after each release. `botica` and `botica-project` add
+# `--record` (ADR 0019): the mirror passes none, and no published release knows the flag yet.
 [[repos]]
 repo = "local"
 
 [[repos.hooks]]
 id = "botica"
 name = "botica"
-entry = "cargo run --quiet --locked -p botica-cli -- lint --scope file --force-exclude"
+entry = "cargo run --quiet --locked -p botica-cli -- lint --scope file --force-exclude --record"
 language = "system"
 types = ["file"]
 verbose = true
@@ -185,7 +186,7 @@ priority = 2
 [[repos.hooks]]
 id = "botica-project"
 name = "botica (rules of project scope)"
-entry = "cargo run --quiet --locked -p botica-cli -- lint --scope project"
+entry = "cargo run --quiet --locked -p botica-cli -- lint --scope project --record"
 language = "system"
 pass_filenames = false
 always_run = true

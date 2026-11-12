@@ -26,5 +26,10 @@ change the line of the rule in `select`, the comments `botica: ignore[<rule>]` a
 `.abide/rubric.json` that botica exports; any other edit takes the label `contract-change`.
 `botica-release.yml` runs the mirror on this repository after each release.
 
+The hooks `botica` and `botica-project` of `prek.toml` pass `--record`, and the job `lint` of
+`ci.yml` runs `botica lint --record` and uploads `.botica/history/` as the artifact
+`botica-history-lint` (ADR 0019). The recipes and the mirror pass no `--record`: the botica of PyPI
+that they run does not know the flag.
+
 The manual of botica is the site, under `website/docs/` (ADR 0012): a change to a command
 updates its page there. The release is in [`botica-release.md`](botica-release.md).

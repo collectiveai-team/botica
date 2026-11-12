@@ -151,3 +151,46 @@ jobs:
           if [ "$ACKNOWLEDGED" = "true" ]; then set -- "$@" --acknowledged; fi
           if [ "$DRAFT" = "true" ]; then set -- "$@" --draft; fi
           uv run --locked python scripts/check_rule_change.py "$BASE" "$@"
+
+  # `botica lint` with the selection of `[tool.botica]`, on the lines that a pull request adds and
+  # on every file of a push, with `--record` (ADR 0019). The job uploads the history as the artifact
+  # `botica-history-lint`, also when the lint fails, for `botica history report`.
+  # BOTICA_HISTORY_KEY is not set, so the fingerprints of the artifact are unkeyed (ADR 0019
+  # decision 5); this repository is public, so a key is a decision of a maintainer.
+  lint:
+    name: lint and record
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Build botica
+        run: cargo build --locked -p botica-cli
+
+      - name: Lint and record
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set --
+          if [ "$EVENT_NAME" = "pull_request" ]; then set -- --diff "origin/$BASE_REF" --output-format github; fi
+          target/debug/botica lint --record "$@"
+
+      # The action skips every file under a folder that starts with a dot, so the files are listed
+      # and `include-hidden-files` is set.
+      - name: Upload the history
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: botica-history-lint
+          path: |
+            .botica/history/runs.jsonl
+            .botica/history/findings.jsonl
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 90
