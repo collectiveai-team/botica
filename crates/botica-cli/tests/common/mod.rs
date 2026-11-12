@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 pub mod builtin;
+pub mod codeowners;
 pub mod external;
 pub mod external_rule;
 pub mod fresh_rule;

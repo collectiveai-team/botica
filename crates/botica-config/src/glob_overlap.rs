@@ -32,7 +32,8 @@ pub(crate) struct Glob {
     picks_files: bool,
 }
 
-fn expand_braces(glob: &str) -> Vec<String> {
+/// The globs that the groups of braces of `glob` stand for: `{a,b}/x` gives `a/x` and `b/x`.
+pub fn expand_braces(glob: &str) -> Vec<String> {
     let Some(open) = glob.find('{') else {
         return vec![glob.to_owned()];
     };
