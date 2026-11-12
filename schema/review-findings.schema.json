@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Review findings",
+  "description": "The file that a review role writes: `.tmp/review/<short-head-sha>/<role>.json` on the machine of the author, and `<role>.json` in the artifact of CI (ADR 0017, decision 5).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["role", "head", "base", "verdict", "findings", "checked", "not_checked", "commands"],
+  "properties": {
+    "role": {
+      "description": "The name of the folder of the role under `.github/review/`.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "head": {
+      "description": "The short or full SHA of the commit under review.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,40}$"
+    },
+    "base": {
+      "description": "The branch or the SHA that the diff is taken from.",
+      "type": "string",
+      "minLength": 1
+    },
+    "verdict": {
+      "description": "`PASS` when no finding reaches `blocking`, `FAIL` when one does, `INCONCLUSIVE` when the role could not do its review.",
+      "enum": ["PASS", "FAIL", "INCONCLUSIVE"]
+    },
+    "findings": {
+      "description": "The most severe first, at most `max-findings`.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "checked": {
+      "description": "What the role reviewed.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "not_checked": {
+      "description": "What the role did not review, and why.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "commands": {
+      "description": "The commands the role ran and what each returned.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/command" }
+    }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "severity",
+        "path",
+        "line",
+        "title",
+        "evidence",
+        "reproduced",
+        "how_to_verify",
+        "fix"
+      ],
+      "properties": {
+        "id": {
+          "description": "The role and a number, such as `security-1`. `review-refute` keeps it.",
+          "type": "string",
+          "minLength": 1
+        },
+        "severity": {
+          "description": "`P0` breaks production, loses data or opens a security hole on the normal path. `P1` is wrong behaviour that a user or a caller reaches. `P2` is wrong on an edge case, or a gap that makes a later bug likely. `P3` is worth knowing and never blocks.",
+          "enum": ["P0", "P1", "P2", "P3"]
+        },
+        "path": {
+          "description": "The file of the finding, from the root of the repository.",
+          "type": "string",
+          "minLength": 1
+        },
+        "line": {
+          "description": "The first line of the finding in `path`, counted from 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "title": {
+          "description": "One sentence that says what is wrong.",
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "description": "What in the code shows it, and the smallest case that breaks it.",
+          "type": "string",
+          "minLength": 1
+        },
+        "reproduced": {
+          "description": "Whether the role ran the case: `yes`, `no` (it ran and the case passed) or `not-tried`.",
+          "enum": ["yes", "no", "not-tried"]
+        },
+        "how_to_verify": {
+          "description": "Commands or steps that a person runs to check the finding. A runner of CI never runs them.",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "fix": {
+          "description": "One sentence, with no patch.",
+          "type": "string"
+        },
+        "refutation": {
+          "description": "Written by `review-refute` only, in `refute.json`.",
+          "enum": ["confirmed", "pre-existing", "unreachable", "not-reproduced", "duplicate"]
+        }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run", "result"],
+      "properties": {
+        "run": {
+          "type": "string",
+          "minLength": 1
+        },
+        "result": {
+          "description": "What the command returned, such as `pass` or `fail`.",
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -281,6 +281,7 @@ sdk = [
 [package.dev-dependencies]
 dev = [
     { name = "cyclopts", marker = "python_full_version >= '3.11'" },
+    { name = "jsonschema", marker = "python_full_version >= '3.11'" },
     { name = "pytest", marker = "python_full_version >= '3.11'" },
     { name = "pytest-randomly", marker = "python_full_version >= '3.11'" },
     { name = "pytest-socket", marker = "python_full_version >= '3.11'" },
@@ -315,6 +316,7 @@ provides-extras = ["sdk"]
 [package.metadata.requires-dev]
 dev = [
     { name = "cyclopts", marker = "python_full_version >= '3.11'", specifier = ">=5.2.0" },
+    { name = "jsonschema", marker = "python_full_version >= '3.11'", specifier = ">=4.26" },
     { name = "pytest", marker = "python_full_version >= '3.11'", specifier = ">=9.0" },
     { name = "pytest-randomly", marker = "python_full_version >= '3.11'", specifier = ">=4.1.0" },
     { name = "pytest-socket", marker = "python_full_version >= '3.11'", specifier = ">=0.8.1" },
@@ -2262,6 +2264,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "rpds-py" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/22/f5/df4e9027acead3ecc63e50fe1e36aca1523e1719559c499951bb4b53188f/referencing-0.37.0.tar.gz", hash = "sha256:44aefc3142c5b842538163acb373e24cce6632bd54bdb01b21ad5863489f50d8", size = 78036, upload-time = "2025-10-13T15:30:48.871Z" }
 wheels = [
