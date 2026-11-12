@@ -4,6 +4,7 @@ use anyhow::{bail, Result};
 use botica_config::{AreaName, ReviewConfig, Tier};
 
 use super::pattern::Pattern;
+use super::target::GITLAB_FIRST;
 use super::Host;
 
 const HEADER: &str = "# Written by `botica review export --format codeowners` from the [[review.areas]] of the\n\
@@ -11,10 +12,6 @@ const HEADER: &str = "# Written by `botica review export --format codeowners` fr
 
 const FORCED_COMMENT: &str =
     "# Always `platform` (ADR 0018 decision 1), with the owners of every `platform` entry.\n";
-
-/// The files that GitLab reads before `.gitlab/CODEOWNERS`, which decide who owns the rest as
-/// much as `.gitlab/CODEOWNERS` does.
-const SHADOWING_CODEOWNERS: [&str; 2] = ["/CODEOWNERS", "/docs/CODEOWNERS"];
 
 /// The areas from the lowest floor to the highest, the order of the sections of GitLab.
 const SECTION_ORDER: [AreaName; 4] = [
@@ -35,15 +32,12 @@ struct Line {
 
 impl Line {
     /// CODEOWNERS takes the last line that matches, so the lines go from the broadest to the
-    /// narrowest: by tier, then by area (`platform` after `core`, which share a floor, since
-    /// `platform` names the people who answer for it), then by the names they spell out, then by
-    /// text, with a file before the folder of the same name. The order of the configuration never
-    /// decides.
-    fn order_key(&self) -> (Tier, usize, usize, String, bool) {
-        let rank = SECTION_ORDER.iter().position(|area| *area == self.area);
+    /// narrowest: by tier, then by the names they spell out, then by text, with a file before the
+    /// folder of the same name. The order of the configuration never decides: two lines with one
+    /// key and other owners are refused.
+    fn order_key(&self) -> (Tier, usize, String, bool) {
         (
             self.tier,
-            rank.unwrap_or_default(),
             self.pattern.literal_depth(),
             self.pattern.stem(),
             self.pattern.is_folder(),
@@ -87,13 +81,11 @@ fn refuse_nested_groups(review: &ReviewConfig) -> Result<()> {
     Ok(())
 }
 
-/// The lines of the entries. On GitHub a line with no owners takes the path from a broader line
-/// before it; GitLab refuses a line with no owners, and each area has its own section there, so
-/// an entry with none adds no line.
+/// The lines of the entries. An entry with no owners writes no line: on GitHub such a line would
+/// take the path from the owners of a broader line before it, and GitLab refuses it.
 fn entry_lines(review: &ReviewConfig, host: Host) -> Result<Vec<Line>> {
     let mut lines = Vec::new();
-    let written = |owners: &[String]| host == Host::Github || !owners.is_empty();
-    for area in review.areas.iter().filter(|area| written(&area.owners)) {
+    for area in review.areas.iter().filter(|area| !area.owners.is_empty()) {
         for glob in &area.paths {
             for pattern in Pattern::read(glob)? {
                 lines.extend(pattern.lines(host).into_iter().map(|pattern| Line {
@@ -110,12 +102,14 @@ fn entry_lines(review: &ReviewConfig, host: Host) -> Result<Vec<Line>> {
 
 /// The paths that are always `platform`, with the owners of every `platform` entry. A forced
 /// path that ends in `**` is a folder and the others name files, so none needs a second line.
+/// The export adds the files that GitLab reads before `.gitlab/CODEOWNERS`, which ADR 0018
+/// decision 1 does not list, since they decide who owns the rest as much as that file does.
 fn forced_lines(review: &ReviewConfig) -> Result<Vec<Line>> {
     let owners = platform_owners(review);
     let globs = review
         .forced_platform_globs()
         .into_iter()
-        .chain(SHADOWING_CODEOWNERS.map(str::to_owned));
+        .chain(GITLAB_FIRST.map(|file| format!("/{file}")));
     let mut lines = Vec::new();
     for glob in globs {
         lines.extend(Pattern::read(&glob)?.into_iter().map(|pattern| Line {

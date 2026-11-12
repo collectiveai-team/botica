@@ -33,15 +33,20 @@ not change the file:
 
 1. by the tier of the entry, from `low` to `high`, so a path that a `critical` entry and a `core`
    entry both select belongs to the owners of `critical`;
-2. for the same tier, `periphery`, `core`, `platform`, then `critical`;
-3. by the number of names that the glob spells out with no wildcard: `/src/` comes before
-   `/src/auth/`, and the `/` at the end of a folder adds none;
-4. by the text of the glob, and a file before the folder of the same name.
+2. for the same tier, by the number of names that the glob spells out with no wildcard, whatever
+   the area: `/src/` comes before `/src/auth/`, and the `/` at the end of a folder adds none;
+3. by the text of the glob, and a file before the folder of the same name.
+
+Two entries of one tier that give the same line with other owners are refused (see below), so the
+order of the configuration never decides.
 
 The paths that are always `platform` (the list in [Configuration](configuration.md#review)) come
 after every entry, with the owners of all the `platform` entries. A `platform` or `critical` entry
-with a higher tier does not take them. The list adds `/CODEOWNERS` and `/docs/CODEOWNERS`, which
-GitLab reads before `.gitlab/CODEOWNERS`.
+with a higher tier does not take them. The export adds `/CODEOWNERS` and `/docs/CODEOWNERS` to that
+list, since GitLab reads them before `.gitlab/CODEOWNERS`.
+
+An entry with no `owners` (`core` or `periphery`) writes no line on either host. On GitHub a line
+with no owner would take its paths from the owners of a broader line before it.
 
 ## How a glob is written
 
@@ -55,6 +60,8 @@ GitHub and GitLab select the same paths with it:
 | `docs/v1/index.md` | `/docs/v1/index.md` | that path from the root |
 | `src/**/auth/**` | `/src/**/auth/` | everything under each `auth` folder below `src` |
 | `{a,b}/**` | `/a/` and `/b/` | one line per alternative |
+| `{q,x/a}` | `/q` and `/x/a` | the `/` of one alternative anchors them all, as in a `.gitignore` |
+| `**` | `*` | every path |
 | `x/**/` | `/x/**/*/` | the folders below `x` and what they hold, and not the files directly in `x` |
 
 A last name that is not followed by `/`, as `db/migr*` or `src/auth`, can name a file or a folder.
@@ -64,17 +71,16 @@ gets that second line too, since GitHub reads `/g/*` as the files directly in `g
 
 ## GitHub
 
-The file is one list. An entry with no `owners` (`core` or `periphery`) still writes its lines, with
-no owner: a path that it selects has no owner, even when a broader line before it has one. GitHub
-has no count of approvals in CODEOWNERS; `approvals` waits for the check of ADR 0018 decision 4.
+The file is one list. GitHub has no count of approvals in CODEOWNERS; `approvals` waits for the
+check of ADR 0018 decision 4.
 
 ## GitLab
 
 The file has one section for each area that has lines, from `periphery` to `critical`. A section
 asks for the largest `approvals` of the entries of its area, as in `[critical][2]`, and an area
 whose entries ask for 0 is optional, `^[periphery]`. The paths that are always `platform` close
-the section of `platform`. GitLab refuses a line with no owner, so an entry with no `owners`
-writes no line.
+the section of `platform`. Since each area has its own section, two entries of different areas can
+give the same line with other owners.
 
 GitLab reads `CODEOWNERS` at the root, then `docs/CODEOWNERS`, then `.gitlab/CODEOWNERS`, and
 takes the first one it finds. Without `--output`, the export refuses to write `.gitlab/CODEOWNERS`
@@ -85,11 +91,19 @@ while one of the first two exists.
 The export fails and writes nothing when:
 
 - the configuration has no `[[review.areas]]`;
-- a glob has a character class (`[...]`), an escape (`\`) or a space, which GitHub and GitLab read
-  in different ways;
+- the configuration is not at the root of the git repository and there is no `--output`: GitHub
+  and GitLab read CODEOWNERS only at the root, and its paths start there;
+- a glob has a character class (`[...]`), an escape (`\`), a space, a `#`, `***` or a character
+  that is not ASCII, which GitHub and GitLab do not read as the configuration does;
+- a glob has an empty alternative, as `{src,}`, or more groups of braces than the configuration
+  follows;
 - an owner is a group of GitLab, `@org/group/team`, and the host is `github`;
 - two entries of the same tier give the same line with other owners, as `src/**` in `core` and
-  `/src/` in another `core` entry: which one wins would depend on the order of the configuration.
+  `/src/` in another `core` entry (on GitLab, in the same area): which one wins would depend on the
+  order of the configuration.
+
+Two globs of one tier that overlap without giving the same line, as `src/**` and `src/auth/**`,
+are not refused: the one that spells out more names comes later and its owners win.
 
 ## In CI
 

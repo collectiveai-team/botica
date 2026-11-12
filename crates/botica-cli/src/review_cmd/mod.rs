@@ -57,11 +57,10 @@ pub(crate) enum Host {
 }
 
 impl Host {
-    fn name(self) -> &'static str {
-        match self {
-            Self::Github => "github",
-            Self::Gitlab => "gitlab",
-        }
+    fn name(self) -> String {
+        self.to_possible_value()
+            .map(|value| value.get_name().to_owned())
+            .unwrap_or_default()
     }
 }
 

@@ -7,6 +7,11 @@ use super::Host;
 
 const ANY_DEPTH: &str = "**";
 
+/// The limits of `botica-config` on braces: past them the expansion grows with the product of the
+/// alternatives of the groups.
+const MAX_BRACE_GROUPS: usize = 4;
+const MAX_BRACE_COMMAS: usize = 32;
+
 /// What a glob selects, with every name anchored to the root: a glob with no `/` starts with
 /// `**`. `folder` says that the pattern selects what is inside the paths that `segments` name.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,30 +21,34 @@ pub(super) struct Pattern {
 }
 
 impl Pattern {
-    /// The patterns of a glob of the table, one per alternative of its braces.
+    /// The patterns of a glob of the table, one per alternative of its braces. A `.gitignore`
+    /// anchors the whole glob when a `/` is in it, so `{q,x/a}` gives `/q` and `/x/a`.
     pub(super) fn read(glob: &str) -> Result<Vec<Self>> {
-        if glob.contains(['[', '\\']) || glob.contains(char::is_whitespace) {
+        if let Some(reason) = unwritable(glob) {
             bail!(
-                "`{glob}` has a character class, an escape or a space, which GitHub and GitLab \
-                 read in different ways in a CODEOWNERS file: write the paths without them"
+                "`{glob}` has {reason}, which GitHub and GitLab do not read as the configuration \
+                 does in a CODEOWNERS file: write the paths without it"
             );
         }
-        Ok(expand_braces(glob)
-            .iter()
-            .map(|alternative| Self::one(alternative))
-            .collect())
+        let folder = glob.ends_with('/');
+        let anchored = glob.trim_end_matches('/').contains('/');
+        let mut patterns = Vec::new();
+        for alternative in expand_braces(glob) {
+            if alternative.trim_end_matches('/').is_empty() {
+                bail!("`{glob}` has an empty alternative, which would give its owners every path");
+            }
+            if alternative.contains(['{', '}', ',']) || (alternative.ends_with('/') && !folder) {
+                bail!(
+                    "`{glob}` has braces that the export cannot write: give each path in a glob \
+                     of its own"
+                );
+            }
+            patterns.push(Self::one(&alternative, anchored, folder));
+        }
+        Ok(patterns)
     }
 
-    fn one(glob: &str) -> Self {
-        let folder = glob.ends_with('/');
-        let glob = glob.trim_end_matches('/');
-        if glob.is_empty() {
-            return Self {
-                segments: Vec::new(),
-                folder: true,
-            };
-        }
-        let anchored = glob.contains('/');
+    fn one(glob: &str, anchored: bool, folder: bool) -> Self {
         let mut segments: Vec<String> = Vec::new();
         if !anchored {
             segments.push(ANY_DEPTH.to_owned());
@@ -131,5 +140,28 @@ impl Pattern {
         } else {
             stem
         }
+    }
+}
+
+/// What in a glob a CODEOWNERS file does not read as a `.gitignore` does.
+fn unwritable(glob: &str) -> Option<&'static str> {
+    if glob.contains('[') {
+        Some("a character class")
+    } else if glob.contains('\\') {
+        Some("an escape")
+    } else if glob.contains(char::is_whitespace) {
+        Some("a space")
+    } else if glob.contains('#') {
+        Some("a `#`, which starts a comment")
+    } else if !glob.is_ascii() {
+        Some("a character that is not ASCII")
+    } else if glob.contains("***") {
+        Some("`***`")
+    } else if glob.matches('{').count() > MAX_BRACE_GROUPS
+        || glob.matches(',').count() > MAX_BRACE_COMMAS
+    {
+        Some("more groups of braces or commas than the configuration follows")
+    } else {
+        None
     }
 }

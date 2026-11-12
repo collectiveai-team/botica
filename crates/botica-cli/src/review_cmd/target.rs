@@ -10,7 +10,7 @@ use crate::output::print;
 
 /// The files that GitLab reads before `.gitlab/CODEOWNERS`, from the root: it takes the first
 /// one it finds.
-const GITLAB_FIRST: [&str; 2] = ["CODEOWNERS", "docs/CODEOWNERS"];
+pub(super) const GITLAB_FIRST: [&str; 2] = ["CODEOWNERS", "docs/CODEOWNERS"];
 
 pub(super) enum Target {
     Stdout,
@@ -29,6 +29,12 @@ impl Target {
                 path: path.to_path_buf(),
                 default: false,
             },
+            None if !root.join(".git").exists() => bail!(
+                "the configuration is in `{}`, which is not the root of the git repository: GitHub \
+                 and GitLab read CODEOWNERS only there, and the paths of the file start there. \
+                 Give the file to write with --output",
+                root.display()
+            ),
             None => Self::File {
                 path: root.join(default_path(host)),
                 default: true,

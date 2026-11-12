@@ -19,7 +19,7 @@ fn github_writes_each_glob_on_one_line_with_its_owners_and_the_forced_paths_last
 
     assert_eq!(
         github_lines(&text),
-        "/src/ @org/core dev@example.com\n/ci/ @org/platform\n"
+        "/ci/ @org/platform\n/src/ @org/core dev@example.com\n"
     );
     let forced = text.split_once(FORCED).expect("the forced block").1;
     for line in [
@@ -36,40 +36,54 @@ fn github_writes_each_glob_on_one_line_with_its_owners_and_the_forced_paths_last
     assert!(text.ends_with("@org/platform\n"), "{text}");
 }
 
+const SHAPES: [&str; 12] = [
+    "**",
+    "a/**/*",
+    "b/",
+    "/c",
+    "d/e",
+    "f",
+    "*.py",
+    "g/*",
+    "h/**/i/**",
+    "{j,k}/**",
+    "db/migr*",
+    "{q,x/a}",
+];
+
 #[test]
 fn each_shape_of_glob_is_written_as_github_reads_it() {
     let dir = project(
         "github-shapes",
-        &format!(
-            "{PLATFORM}{}",
-            entry(
-                "core",
-                &[
-                    "a/**/*",
-                    "b/",
-                    "/c",
-                    "d/e",
-                    "f",
-                    "*.py",
-                    "g/*",
-                    "h/**/i/**",
-                    "{j,k}/**",
-                    "db/migr*",
-                ],
-                &["@o"],
-                ""
-            )
-        ),
+        &format!("{PLATFORM}{}", entry("core", &SHAPES, &["@o"], "")),
     );
 
     let lines = github_lines(&printed(&dir, &[])).to_owned();
 
     assert_eq!(
         lines,
-        "**/*.py @o\n\
-         **/b/ @o\n**/f @o\n/a/ @o\n/c @o\n/db/migr* @o\n/g/* @o\n/g/*/ @o\n\
-         /j/ @o\n/k/ @o\n\
-         /d/e @o\n/h/**/i/ @o\n/ci/ @org/platform\n"
+        "* @o\n**/*.py @o\n\
+         **/b/ @o\n**/f @o\n/a/ @o\n/c @o\n/ci/ @org/platform\n/db/migr* @o\n/g/* @o\n/g/*/ @o\n\
+         /j/ @o\n/k/ @o\n/q @o\n\
+         /d/e @o\n/h/**/i/ @o\n/x/a @o\n"
+    );
+}
+
+#[test]
+fn each_shape_of_glob_is_written_as_gitlab_reads_it() {
+    let dir = project(
+        "gitlab-shapes",
+        &format!("{PLATFORM}{}", entry("core", &SHAPES, &["@o"], "")),
+    );
+
+    let core = gitlab_section(&printed(&dir, &["--host", "gitlab"]), "[core][1]").to_owned();
+
+    assert_eq!(
+        core,
+        "* @o\n**/*.py @o\n**/*.py/ @o\n\
+         **/b/ @o\n**/f @o\n**/f/ @o\n/a/ @o\n/c @o\n/c/ @o\n/db/migr* @o\n/db/migr*/ @o\n\
+         /g/* @o\n/g/*/ @o\n/j/ @o\n/k/ @o\n/q @o\n/q/ @o\n\
+         /d/e @o\n/d/e/ @o\n/h/**/i/ @o\n/x/a @o\n/x/a/ @o"
     );
 }
 
@@ -149,18 +163,18 @@ fn a_file_comes_before_the_folder_of_the_same_name_and_a_trailing_slash_adds_no_
 
     assert_eq!(
         github_lines(&text),
-        "/a/ @wide\n/src @file\n/src/ @wide\n/a/b.md @narrow\n/ci/ @org/platform\n"
+        "/a/ @wide\n/ci/ @org/platform\n/src @file\n/src/ @wide\n/a/b.md @narrow\n"
     );
 }
 
 #[test]
-fn platform_comes_after_core_when_both_have_the_same_tier_and_depth() {
+fn the_depth_decides_before_the_area_within_a_tier() {
     let dir = project(
         "order-area",
         &format!(
             "{}{}",
-            entry("core", &["crates/**"], &[], ""),
-            entry("platform", &["Cargo.toml"], &["@org/platform"], "")
+            entry("platform", &["crates/**"], &["@org/platform"], ""),
+            entry("core", &["crates/app/**"], &["@org/app"], "")
         ),
     );
 
@@ -168,8 +182,28 @@ fn platform_comes_after_core_when_both_have_the_same_tier_and_depth() {
 
     assert_eq!(
         github_lines(&text),
-        "/crates/\n**/Cargo.toml @org/platform\n"
+        "/crates/ @org/platform\n/crates/app/ @org/app\n"
     );
+}
+
+#[test]
+fn an_entry_with_no_owners_writes_no_line_on_either_host() {
+    let dir = project(
+        "no-owners",
+        &format!(
+            "{PLATFORM}{}{}",
+            entry("core", &["src/**"], &["@core"], ""),
+            entry("core", &["src/auth/**"], &[], "tier = \"high\"\n")
+        ),
+    );
+
+    let github = printed(&dir, &[]);
+    let gitlab = printed(&dir, &["--host", "gitlab"]);
+
+    assert_eq!(github_lines(&github), "/ci/ @org/platform\n/src/ @core\n");
+    assert_eq!(gitlab_section(&gitlab, "[core][1]"), "/src/ @core");
+    assert!(!github.contains("/src/auth"), "{github}");
+    assert!(!gitlab.contains("/src/auth"), "{gitlab}");
 }
 
 #[test]
