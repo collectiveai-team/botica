@@ -144,7 +144,7 @@ fn globs(found: &mut Vec<ConfigIssue>, key: &str, values: &[String]) {
     }
 }
 
-/// A glob that two entries share would give one path two owners at once, and the export of CODEOWNERS
+/// Two entries that list the same glob give one path two owners, and the export of CODEOWNERS
 /// keeps one line for it.
 fn duplicate_globs(found: &mut Vec<ConfigIssue>, areas: &[ReviewArea]) {
     let mut seen: BTreeMap<&str, (usize, usize)> = BTreeMap::new();
@@ -160,7 +160,7 @@ fn duplicate_globs(found: &mut Vec<ConfigIssue>, areas: &[ReviewArea]) {
     }
 }
 
-/// The paths that are `platform` whatever the entries say, by the shape of their glob: a folder
+/// The paths that are always `platform`, by the shape of their glob: a folder
 /// at the root (`x/**`), a name or a folder at any depth (`**/x`, `**/x/**`) and a name at the
 /// root (`/x`).
 enum Forced {
@@ -225,9 +225,9 @@ fn forced_paths(config: &ReviewConfig) -> Vec<ForcedPath> {
         .collect()
 }
 
-/// `botica.toml` fails to load when an entry of `periphery` covers a forced path (ADR 0018
-/// decision 1). The forced list holds whatever the entries say, so this check refuses an entry
-/// that says otherwise instead of leaving it to be ignored.
+/// The configuration fails to load when an entry of `periphery` covers a forced path (ADR 0018
+/// decision 1). The forced list wins over the entries, and this check refuses an entry that
+/// contradicts it.
 fn periphery_over_forced(found: &mut Vec<ConfigIssue>, config: &ReviewConfig) {
     let forced = forced_paths(config);
     for (index, area) in config.areas.iter().enumerate() {
@@ -250,10 +250,10 @@ fn periphery_over_forced(found: &mut Vec<ConfigIssue>, config: &ReviewConfig) {
     }
 }
 
-/// `botica.toml` fails to load when a glob of `generated` can select a path of `critical`, of
-/// `platform` or of the forced list, since the size of a change would not count files that a
-/// person has to read. A glob with no `/` is read at every depth, so `uv.lock` can select
-/// `.github/workflows/uv.lock`: write `/uv.lock` for the file at the root.
+/// The configuration fails to load when a glob of `generated` can select a path of `critical`, of
+/// `platform` or of the forced list: the size of a change leaves out generated files, and a person
+/// has to read those paths. A glob with no `/` is read at every depth, so `uv.lock` can select
+/// `.github/workflows/uv.lock`; `/uv.lock` is the file at the root.
 fn generated_over_protected(found: &mut Vec<ConfigIssue>, config: &ReviewConfig) {
     let mut protected: Vec<(String, Glob)> = forced_paths(config)
         .into_iter()

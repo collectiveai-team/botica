@@ -316,12 +316,12 @@ extend-ignores = ["crates/botica-core/src/external_config/ruff_rules.tsv"]
 # them; the schema is written by `cargo test -p botica-config` with BOTICA_UPDATE_SCHEMA.
 extend-ignores = ["crates/botica-core/src/external_config/ruff_rules.tsv", "catalog/rules/history.toml", "pyproject.toml", "schema/botica.schema.json"]
 
-# The review of a change (ADR 0017 and ADR 0018). Areas come from `git log` on main (where fixes and
-# reverts land) and from AGENTS.md (what the binary embeds and what other repositories install).
-# The owner is the only author that git confirms; a team of GitHub replaces it once one is chosen.
+# The review of a change (ADR 0017 and ADR 0018). The areas follow `git log` on main (where fixes and
+# reverts land) and AGENTS.md (what the binary embeds and what other repositories install).
+# `@jedzill4` owns every area: git names no other author. A GitHub team can replace it.
 [tool.botica.review]
-# Written by tools, so the size of a change does not count them. `.abide/rubric.json` is generated
-# too, but `.abide/**` is `platform` and cannot be listed here.
+# Files that tools write, which the size of a change does not count. `.abide/rubric.json` is
+# generated too, but `.abide/**` is `platform` and cannot be listed here.
 generated = [
   "/uv.lock",
   "/Cargo.lock",
@@ -330,8 +330,8 @@ generated = [
   "crates/botica-core/src/external_config/ruff_rules.tsv",
 ]
 
-# The repository has no branch protection, so these are the checks that run on every pull request
-# (no `paths` filter, not skipped for Dependabot).
+# The repository has no branch protection. These are the checks that run on every pull request,
+# with no `paths` filter and no skip for Dependabot.
 [tool.botica.review.classifier]
 required-checks = ["lint, type-check & test", "zizmor", "no-ai-coauthorship", "validate PR title"]
 

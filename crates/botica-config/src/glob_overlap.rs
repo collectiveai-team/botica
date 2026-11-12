@@ -1,9 +1,9 @@
 //! Whether two globs can select the same path, decided on the globs and not on sample paths.
 //!
-//! The globs are the ones of a `.gitignore` as `PathMatcher` reads them. A doubt is answered with
-//! an overlap, since the callers refuse a configuration on an overlap: a glob with a character
-//! class, an escape or too many braces is read as `**`, and a last name that may be a folder
-//! selects what is inside it.
+//! The globs are the ones of a `.gitignore` as `PathMatcher` reads them. The callers refuse a
+//! configuration on an overlap, so the module reports an overlap when it cannot tell. A glob with
+//! a character class, an escape or too many braces is read as `**`, and a last name that may be a
+//! folder selects what is inside it.
 
 /// A glob with more groups of braces, or more commas in them, is read as `**`: the expansion
 /// grows with the product of the alternatives of the groups.

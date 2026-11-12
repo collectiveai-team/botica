@@ -146,7 +146,7 @@
   "additionalProperties": false,
   "$defs": {
     "AreaName": {
-      "description": "The four areas of ADR 0018, each with a floor under which no entry can put its tier.",
+      "description": "The four areas of ADR 0018, each with a floor: the lowest tier that an entry takes.",
       "type": "string",
       "enum": [
         "critical",

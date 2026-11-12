@@ -83,7 +83,7 @@ An entry of `[[review.areas]]` has these keys:
 
 The floor of a name is `high` for `critical`, `medium` for `platform` and `core`, and `low` for
 `periphery`. A name may come in several entries, each with its own paths and owners. A file that no
-entry matches belongs to `core`, so a project with no entries has no change at the `low` tier.
+entry matches belongs to `core`. A project with no entries has no change at the `low` tier.
 
 The configuration fails to load when:
 
@@ -95,25 +95,25 @@ The configuration fails to load when:
 - a glob is blank, starts with `#` or `!`, has spaces around it or is invalid, or the same glob is
   listed twice, in one entry or in two;
 - the table has entries and none is `platform`;
-- an entry of `periphery` can select a path that is `platform` whatever the entries say:
+- an entry of `periphery` can select a path that is always `platform`:
   `botica.toml`, `pyproject.toml` at the root, `.github/review/**`, `.gitlab/review/**` and the
   folder of `dir`, `skills-lock.json`, `.github/workflows/**`, `.github/actions/**`,
   `.gitlab-ci.yml`, `.github/CODEOWNERS`, `.gitlab/CODEOWNERS`, `.gitattributes`, `prek.toml`,
   `.abide/**`, and at any depth `AGENTS.md`, `CLAUDE.md`, `.claude/**`, `.mcp.json`,
-  `.cursorrules`, `INVARIANTS.md`, `REVIEW.md` and `SKILL.md`. The check compares the globs, not
-  the files of the checkout, so `.github/workflows/*.yml` and `docs/**/AGENTS.md` fail too. An
-  entry that ends in `**`, as `docs/**`, leaves a forced file inside it to the list and is not
-  an error.
+  `.cursorrules`, `INVARIANTS.md`, `REVIEW.md` and `SKILL.md`. The check compares the globs with
+  each other and reads no file of the checkout, so `.github/workflows/*.yml` and
+  `docs/**/AGENTS.md` fail too. An entry that ends in `**`, as `docs/**`, is accepted: the list
+  keeps a forced file inside it as `platform`.
 
 A glob with no `/` is read at every depth, as in a `.gitignore`: `README.md` also selects
 `.github/review/README.md`, which is `platform`. Write `/README.md` for the file at the root.
 
-The checks of the globs read each glob as a pattern and not as a list of files, and answer a doubt
-with a refusal. A `periphery` folder is written `docs/**`: `docs`, `docs/` and `/docs` can select
-the `AGENTS.md` inside the folder and fail, and so does a wildcard that may be a folder, such as
-`/*.github`. A glob with a character class (`[...]`), an escape
-(`\`), more than 4 groups of braces or more than 32 commas is read as selecting everything, so it
-fails in `periphery` and in `generated`. A name with a dot, such as `docs/v1.0`, is read as a file.
+The check compares each glob as a pattern. When it cannot tell whether two globs select the same
+path, it refuses the configuration. A `periphery` folder is written `docs/**`: `docs`, `docs/` and
+`/docs` can select the `AGENTS.md` inside the folder and fail, and so does a wildcard that may be a
+folder, such as `/*.github`. A glob with a character class (`[...]`), an escape (`\`), more than 4
+groups of braces or more than 32 commas fails in `periphery` and in `generated`. A name with a dot,
+such as `docs/v1.0`, is read as a file.
 
 The other keys of `[review]`:
 

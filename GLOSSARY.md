@@ -153,6 +153,6 @@ A name may come in several entries. See `docs/adr/0018-risk-tiers-and-classifier
 _Avoid_: zone, risk class
 
 **Tier**:
-How much review a change needs: `low`, `medium` or `high`. Each area name has a floor, and no
-entry puts its tier under it.
+How much review a change needs: `low`, `medium` or `high`. Each area name has a floor, the lowest
+tier that an entry of that name takes.
 _Avoid_: level, risk level

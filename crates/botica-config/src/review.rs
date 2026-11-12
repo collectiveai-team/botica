@@ -22,7 +22,7 @@ impl Tier {
     }
 }
 
-/// The four areas of ADR 0018, each with a floor under which no entry can put its tier.
+/// The four areas of ADR 0018, each with a floor: the lowest tier that an entry takes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum AreaName {
@@ -192,10 +192,10 @@ pub struct ReviewConfig {
     pub classifier: ClassifierConfig,
 }
 
-/// Paths that are `platform` whatever the entries say, since they decide how a pull request is
-/// reviewed, built and merged, or are loaded by an agent as instructions (ADR 0018 decision 1).
-/// A leading `/` anchors a name to the root, as in a `.gitignore`, and `**/` gives it every depth:
-/// the ADR writes `**/` for the files that count at every depth and nothing for the others.
+/// Paths that are always `platform`: they decide how a pull request is reviewed, built and merged,
+/// or an agent loads them as instructions (ADR 0018 decision 1). A leading `/` anchors a name to
+/// the root, as in a `.gitignore`, and `**/` gives it every depth. The ADR writes `**/` for the
+/// files that count at every depth.
 const FORCED_PLATFORM: [&str; 21] = [
     "/botica.toml",
     "/pyproject.toml",
@@ -262,7 +262,7 @@ impl ReviewConfig {
             .unwrap_or_else(|| ReviewRole::ALL.to_vec())
     }
 
-    /// The globs of the paths that are `platform` whatever the entries say, with the folder of
+    /// The globs of the paths that are always `platform`, with the folder of
     /// `dir` when the table sets one.
     pub fn forced_platform_globs(&self) -> Vec<String> {
         let mut globs: Vec<String> = FORCED_PLATFORM
