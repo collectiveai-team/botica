@@ -1,5 +1,5 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Review findings",
   "description": "The file that a review role writes: `.tmp/review/<short-head-sha>/<role>.json` on the machine of the author, and `<role>.json` in the artifact of CI (ADR 0017, decision 5).",
   "type": "object",
@@ -28,7 +28,7 @@
     "findings": {
       "description": "The most severe first, at most `max-findings`.",
       "type": "array",
-      "items": { "$ref": "#/$defs/finding" }
+      "items": { "$ref": "#/definitions/finding" }
     },
     "checked": {
       "description": "What the role reviewed.",
@@ -43,10 +43,10 @@
     "commands": {
       "description": "The commands the role ran and what each returned.",
       "type": "array",
-      "items": { "$ref": "#/$defs/command" }
+      "items": { "$ref": "#/definitions/command" }
     }
   },
-  "$defs": {
+  "definitions": {
     "finding": {
       "type": "object",
       "additionalProperties": false,
@@ -77,8 +77,8 @@
           "minLength": 1
         },
         "line": {
-          "description": "The first line of the finding in `path`, counted from 1.",
-          "type": "integer",
+          "description": "The first line of the finding in `path`, counted from 1, or `null` when the finding has no line (`review-spec` says so when a criterion has no file).",
+          "type": ["integer", "null"],
           "minimum": 1
         },
         "title": {
