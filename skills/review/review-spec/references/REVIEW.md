@@ -3,7 +3,7 @@ role: spec
 applies:
   paths: []
   tiers: [low, medium, high]
-stages: [local, ci]
+stages: [local]
 blocking: P1
 max-findings: 10
 ---

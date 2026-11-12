@@ -3,7 +3,7 @@ role: spec
 applies:
   paths: []
   tiers: [low, medium, high]
-stages: [local, ci]
+stages: [local]
 blocking: P1
 owners: ["@jedzill4"]
 max-findings: 10
@@ -19,8 +19,9 @@ max-findings: 10
 
 ## Check always
 
-- Each acceptance criterion of the issue has code and evidence in the diff: a test, or a command
-  with its result in the description of the pull request.
+- Each acceptance criterion of the issue has code and evidence in the diff: a test that the role
+  ran, or a file of the diff that shows it. A result written in the description of the pull request
+  is not evidence.
 - The description of the pull request links the issue.
 - A criterion that an ADR or a standard sets has the same evidence as one that the issue states.
 - The diff changes nothing that the issue does not explain, except a refactor the change needs and
