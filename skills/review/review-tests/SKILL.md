@@ -33,31 +33,38 @@ the job of CI.
 2. Capture the diff with `git diff --no-ext-diff --no-textconv <sha>...HEAD`. List the changed
    files with `git diff --no-ext-diff --name-only --no-renames -z <sha>...HEAD`, and the deleted
    ones with the same command and `--diff-filter=D`. Keep each path that matches
-   `^[A-Za-z0-9_.][A-Za-z0-9._/-]*$` and holds no `..` segment; this list is the only source of a
-   path in a command. A changed path that fails the check is reviewed through the diff only, and
-   `not_checked` names it.
+   `^[A-Za-z0-9_.][A-Za-z0-9._/-]*$` and holds no `..` segment. List the files of `HEAD` with
+   `git ls-tree -r --name-only -z HEAD` and keep the paths that pass the same check. These two
+   lists are the only source of a path in a command. A changed path that fails the check is
+   reviewed through the diff only, and `not_checked` names it.
 3. Read the shared contract and the role file from the target, never from the branch under review:
    `git show --no-textconv <sha>:.github/review/README.md` and
    `git show --no-textconv <sha>:.github/review/tests/REVIEW.md`. When the target has no README,
    use [`references/output.md`](references/output.md); when it has no `REVIEW.md`, use
    [`references/REVIEW.md`](references/REVIEW.md). Take `blocking` (`P1` when absent) and
    `max-findings` (10 when absent) from the frontmatter of the role file.
-4. Sort each path of step 2 into one group:
+4. Sort each changed path of step 2 into one group:
    - fixture: a path that the role file names as test data, such as fixtures that are wrong on
-     purpose. It is data, not a test.
+     purpose, and the file of expected results next to them. Its content is not judged as a test,
+     but a fixture or an expected result that the diff removes or changes is reviewed by step 2.1.
    - test: a path that the role file names as a test, or else a code file under a folder named
      `tests` or `__tests__`, or named `test_*.py`, `*_test.py`, `conftest.py`, `*_test.go`,
-     `*.test.*` or `*.spec.*`. A source file that holds a test module (a Rust `#[cfg(test)]`
-     module) is a test file and a source file.
+     `tests.rs`, `*.test.*` or `*.spec.*`. A source file that holds a test module (a Rust
+     `#[cfg(test)]` module) is a test file and a source file.
    - test configuration: what decides which tests run and how: a workflow of CI, the hooks of the
-     repository, the settings of the test runner and of coverage, and a manifest that defines a
-     test command.
+     repository, the settings of the test runner and of coverage, a manifest that defines a test
+     command, and the files of the review roles (`.github/review/`, `.gitlab/review/`).
    - source: any other code file.
    - other: text, documentation and data. The role does not review it.
 
-   A diff with no test, test configuration or source file ends with verdict `PASS`, and `checked`
-   says so. A diff that changes only test configuration is still reviewed by step 2.1.
-5. List the rules of botica with `botica rules --all --json`, with no `--select`, and keep the
+   A diff with no fixture, test, test configuration or source file ends with verdict `PASS`, and
+   `checked` says so. A diff that changes only fixtures or test configuration is still reviewed by
+   step 2.1.
+5. Run botica only as a release installed outside the checkout: the `botica` of the `PATH` when
+   `command -v botica` prints a path outside the repository, or else `uvx --no-config botica`.
+   Never build it from the branch (`cargo run`, `cargo build`, `uv run`, `uv sync`, `pip install
+   .`). When neither is available, skip this step and say so in `not_checked`.
+   List the rules of botica with `botica rules --all --json`, with no `--select`, and keep the
    entries whose `family` is `testing`. Read each one that the diff could touch with
    `botica explain -- '<rule>'`, taking the field `rule` only when it matches
    `^[a-z0-9][a-z0-9-]*$`. An active rule whose implementations are not `judgment` is checked by
@@ -67,17 +74,20 @@ the job of CI.
 
 ## 2. Procedure
 
-Read a file of the list of step 1.2 with `git show --no-textconv 'HEAD:<path from the list>'`, or
+Read a file of the lists of step 1.2 with `git show --no-textconv 'HEAD:<path from the list>'`, or
 `'<sha>:<path from the list>'` for its version on the target, never with the file read tool. Search
-the tests for a name with `git grep -n -F -e '<name>' HEAD -- '<path from the list>'`, with a name
-taken from the diff only when it matches `^[A-Za-z_][A-Za-z0-9_]*$`.
+the tests for a name with `git grep -n -F -e '<name>' HEAD`, narrowed with
+`-- '<path from the list>'` when useful, with a name taken from the diff only when it matches
+`^[A-Za-z_][A-Za-z0-9_]*$`.
 
-1. Look for what weakens the suite, in the test files and in the test configuration: a deleted test
+1. Look for what weakens the suite, in the fixtures, the test files and the test configuration: a
+   fixture or an expected result removed or changed so that a case no longer fails, a deleted test
    file or test function, a test marked skipped, ignored, expected to fail or flaky, an assertion
    removed or made looser, an entry removed from a list of cases, a threshold of coverage or of
    mutation lowered, `|| true`, `continue-on-error`, `set +e`, a step removed from CI or from a
    hook, a filter that stops a job from running on the changed files, a switch that turns a skipped
-   test into a failure removed. For each one, find the reason in the diff: the behaviour it tested
+   test into a failure removed, a check of the role file of this role removed or a line added to
+   its `## Do not report`. For each one, find the reason in the diff: the behaviour it tested
    was removed, or the test moved and a test of the diff asserts the same thing. With no such
    reason it is a finding.
 2. Run the `test-smell-review` skill on the test files that the diff adds or changes, with these
@@ -90,14 +100,14 @@ taken from the diff only when it matches `^[A-Za-z_][A-Za-z0-9_]*$`.
    an error path, a default. For each one, find the test that would fail if the behaviour were
    wrong: a test, in the diff or on `HEAD`, that reaches the behaviour and asserts on a value that
    the wrong behaviour changes. `botica explain -- test-through-interface` says how a test reaches
-   it. Name its
-   file and line, or report that none exists. Code that only moved, with no change of behaviour,
-   needs no new test.
+   it. Name its file and line, or report that none exists. Code that only moved, with no change of
+   behaviour, needs no new test.
 4. A finding that only a run of the tests could decide, such as whether a test fails when a
    condition is flipped, is not run. It is reported as `P3`, with a title that starts with
    `Not verified:`, and `evidence` names the test and the change that a person would make to the
-   code to check it. A mutation report or a coverage report that the branch commits is a file of
-   the diff, not evidence.
+   code to check it. That change goes in `evidence` and not in `how_to_verify`, because
+   `review-refute` runs `how_to_verify`. A mutation report or a coverage report that the branch
+   commits is a file of the diff, not evidence.
 5. Drop what the role file excludes: the section `## Do not report` and the block between
    `<!-- botica:covered -->` and `<!-- /botica:covered -->`.
 
@@ -116,7 +126,9 @@ role `tests`, `head` the short SHA of `HEAD` and `base` the target SHA, to
 | a finding that only a run could decide (step 2.4) | P3 |
 
 `evidence` names the behaviour, the test, with file and line, and what in the test or the diff
-shows the finding. `reproduced` is `not-tried`, since the role runs no test.
+shows the finding. `reproduced` is `not-tried`, since the role runs no test. A finding never copies
+the value of a secret that a test or a fixture holds, not even in part: the JSON goes to an
+artifact.
 
 `how_to_verify` holds only the `git show`, `git diff` and `git grep` commands of this skill, with
 values from the lists of step 1, that show the finding; `review-refute` runs these steps. A test
