@@ -234,7 +234,8 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
 ## Not decided
 
 - The names of the signals of `applies.signals` and how botica detects each one.
-- The JSON Schema file of the findings and its path; `botica lint --reviewed` adds it.
+- How `botica lint --reviewed` reads the findings. Their JSON Schema is
+  `schema/review-findings.schema.json`, written in draft-07.
 - The command that writes the `botica:covered` blocks, and the CODEOWNERS file with its entries.
 - The model, the limits of time and cost, and the version of the runner of CI.
 - The tier of a change and the areas that give it (`botica review tier`): this ADR only reads the

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-11-11T07:42:55Z",
+  "compiledAt": "2026-11-12T13:55:52Z",
   "compiledBy": "botica 0.20.2",
   "manual": true,
   "sources": [
@@ -537,6 +537,7 @@
         ".github/pull_request_template.md",
         ".github/ISSUE_TEMPLATE/**",
         ".github/PULL_REQUEST_TEMPLATE/**",
+        ".github/review/**",
         "bench/layout-repos.txt",
         "bench/real-repos.txt",
         "catalog/recipes/files/github/pull_request_template.md",
@@ -1101,6 +1102,7 @@
         ".github/pull_request_template.md",
         ".github/ISSUE_TEMPLATE/**",
         ".github/PULL_REQUEST_TEMPLATE/**",
+        ".github/review/**",
         "bench/ext_bare_except.py",
         "bench/ext_noop.py",
         "bench/ext_stdlib.py",

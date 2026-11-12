@@ -46,6 +46,7 @@ strip = true
 [dependency-groups]
 dev = [
   "cyclopts>=5.2.0",
+  "jsonschema>=4.26",
   "pytest>=9.0",
   # CES-111
   "pytest-randomly>=4.1.0",
