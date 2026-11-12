@@ -24,8 +24,10 @@ max-findings: 10
   extension (`crates/botica-ext/src/lib.rs`, `crates/botica-cli/src/ext_cmd.rs`), and a fingerprint
   is a keyed hash of it (ADR 0019 decision 5). The other programs that botica starts (`git`, `uv`,
   `npx`, a package manager) inherit the environment, the key with it.
-- botica starts a program only from the configuration of the project or the catalog: an extension
-  rule, `uv`, `npx`, `git`. A file under lint, a finding or the text of a diff never becomes a
+- botica starts a program only from the configuration of the project, the catalog, a flag of the
+  command line or the lockfile of the project: an extension rule (also from `lint --ext`), the
+  command of `rules test --abide`, `uv`, `npx`, the package manager that the lockfile names
+  (`pnpm`, `npm`) and `git`. A file under lint, a finding or the text of a diff never becomes a
   program or an argument of one. `botica server` runs extension rules only with `--extensions` or
   the option `extensions` of `initialize` (`crates/botica-cli/src/server_cmd.rs`).
 - botica runs `git` with `GIT_TERMINAL_PROMPT=0`, so that no command waits for a password, and
@@ -58,13 +60,15 @@ max-findings: 10
   `.claude/`, `opencode.jsonc`, `catalog/recipes/files/claude-settings.json`,
   `catalog/recipes/files/opencode.jsonc`, a `SKILL.md`) grants no new permission to run commands
   and exposes no secret.
+- A secret in the diff. The hook `betterleaks` of `prek.toml` scans only the staged changes, so it
+  finds nothing on the checkout of the job `lint, type-check & test` of `tests.yml`, and a commit
+  made with `--no-verify` reaches the pull request unscanned.
 - A skill under `skills/review/` passes no text of the issue, the pull request or the diff to a
   shell command, and puts no command that the issue describes in `how_to_verify`.
 
 ## Do not report
 
 - What zizmor reports on the workflows of `.github/` and of the recipes.
-- A secret that matches a pattern of betterleaks, which the hook reports on each commit.
 - A vulnerability of a dependency of `uv.lock`, which `osv-scanner` reports. `dependency-review`
   runs with `continue-on-error` and blocks nothing, so a new dependency is still reviewed here.
 - A pin of an action to a tag instead of a commit.
@@ -72,8 +76,6 @@ max-findings: 10
   author with values that the test writes.
 
 <!-- botica:covered -->
-- The hook `betterleaks` of `prek.toml`, which the job `lint, type-check & test` of `tests.yml`
-  also runs: secrets in the changes.
 - The job `zizmor` of `zizmor.yml`: the workflows, actions and hooks of the repository.
 - The job `osv-scanner (new in this PR)` of `osv-scanner.yml`: a vulnerability that the pull
   request adds to `uv.lock`.
