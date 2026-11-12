@@ -17,6 +17,7 @@ mod validate_review;
 pub use command_line::CommandLine;
 pub use discover::{discover, load_file, Loaded};
 pub use entry::{Entry, IgnoreOrigin, IgnorePattern, Reason};
+pub use glob_overlap::expand_braces;
 pub use inline::inline_setting;
 pub use issue::{ConfigError, ConfigIssue};
 pub use matcher::PathMatcher;

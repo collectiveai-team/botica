@@ -45,7 +45,9 @@ The `review` table says who answers for each path and how much review a change n
 is [ADR 0018](https://github.com/collectiveai-team/botica/blob/main/docs/adr/0018-risk-tiers-and-classifier.md)
 for the areas and the classifier and
 [ADR 0017](https://github.com/collectiveai-team/botica/blob/main/docs/adr/0017-review-roles.md)
-for the roles. botica reads and checks the table; the commands that use it come in later changes.
+for the roles. botica reads and checks the table, and
+[`botica review export --format codeowners`](review-export.md) writes a CODEOWNERS file from the
+areas; the other commands that use it come in later changes.
 
 ```toml
 # botica.toml; in pyproject.toml the tables are [tool.botica.review] and [[tool.botica.review.areas]]

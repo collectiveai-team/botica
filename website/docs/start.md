@@ -73,5 +73,7 @@ describes each step.
 - [Findings](guide/findings.md): silence a finding, and keep the old ones in a baseline.
 - [prek and CI](guide/prek-and-ci.md): run botica on each commit and each pull request.
 - [History report](guide/history.md): which rules find nothing, and what reaches CI.
+- [CODEOWNERS export](guide/review-export.md): the owners of the areas of `[review]`, for GitHub or
+  GitLab.
 - [Editor](guide/editor.md): the findings in the editor, through `botica server`.
 - [Catalogs of a project](extend/catalogs.md): the rules of a project, in `.botica/rules/`.
