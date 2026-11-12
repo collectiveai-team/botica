@@ -22,7 +22,7 @@ max-findings: 10
 - Each acceptance criterion of the issue has code and evidence in the diff: a test that the role
   ran, or a file of the diff that shows it. A result written in the description of the pull request
   is not evidence.
-- The description of the pull request links the issue.
+- The description of the pull request or its commits link the issue.
 - A criterion that an ADR or a standard sets has the same evidence as one that the issue states.
 - The diff changes nothing that the issue does not explain, except a refactor the change needs and
   the description says so.

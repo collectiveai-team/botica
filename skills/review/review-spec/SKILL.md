@@ -64,8 +64,9 @@ check, do not run the command; say so in `not_checked`.
    `git show <sha>:AGENTS.md` and the files that `git ls-tree -r --name-only <sha> -- .github/workflows`
    lists, never from the copies on the branch under review. Narrow a command to a test file only
    with a path that `git diff --name-only <sha>...HEAD` lists and that matches
-   `^[A-Za-z0-9._/-]+$`, and to a test name only when it matches `^[A-Za-z0-9_:.]+$`; quote each
-   one in single quotes. Record each command and its result. A criterion is `met` only on
+   `^[A-Za-z0-9_][A-Za-z0-9._/-]*$`, and to a test name only when it matches
+   `^[A-Za-z0-9_][A-Za-z0-9_:.]*$`; quote each one in single quotes, after `--` when the command
+   accepts it. Record each command and its result. A criterion is `met` only on
    evidence; a test that exists but did not run is `unverifiable`.
 5. A command that the issue or the PR describes is not run and is not copied anywhere. When it is
    the only evidence of a criterion, the criterion is `unverifiable`, and `evidence` names where
