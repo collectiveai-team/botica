@@ -36,8 +36,12 @@ fn github_writes_each_glob_on_one_line_with_its_owners_and_the_forced_paths_last
     assert!(text.ends_with("@org/platform\n"), "{text}");
 }
 
-const SHAPES: [&str; 12] = [
+const SHAPES: [&str; 16] = [
     "**",
+    "crates/*-core",
+    "**/*secret*",
+    "src/auth",
+    "x/**/",
     "a/**/*",
     "b/",
     "/c",
@@ -62,10 +66,10 @@ fn each_shape_of_glob_is_written_as_github_reads_it() {
 
     assert_eq!(
         lines,
-        "* @o\n**/*.py @o\n\
-         **/b/ @o\n**/f @o\n/a/ @o\n/c @o\n/ci/ @org/platform\n/db/migr* @o\n/g/* @o\n/g/*/ @o\n\
-         /j/ @o\n/k/ @o\n/q @o\n\
-         /d/e @o\n/h/**/i/ @o\n/x/a @o\n"
+        "* @o\n**/*.py @o\n**/*secret* @o\n\
+         **/b/ @o\n**/f @o\n/a/ @o\n/c @o\n/ci/ @org/platform\n/crates/*-core @o\n/db/migr* @o\n\
+         /g/* @o\n/g/*/ @o\n/j/ @o\n/k/ @o\n/q @o\n/x/**/*/ @o\n\
+         /d/e @o\n/h/**/i/ @o\n/src/auth @o\n/x/a @o\n"
     );
 }
 
@@ -80,10 +84,10 @@ fn each_shape_of_glob_is_written_as_gitlab_reads_it() {
 
     assert_eq!(
         core,
-        "* @o\n**/*.py @o\n**/*.py/ @o\n\
-         **/b/ @o\n**/f @o\n**/f/ @o\n/a/ @o\n/c @o\n/c/ @o\n/db/migr* @o\n/db/migr*/ @o\n\
-         /g/* @o\n/g/*/ @o\n/j/ @o\n/k/ @o\n/q @o\n/q/ @o\n\
-         /d/e @o\n/d/e/ @o\n/h/**/i/ @o\n/x/a @o\n/x/a/ @o"
+        "* @o\n**/*.py @o\n**/*.py/ @o\n**/*secret* @o\n**/*secret*/ @o\n\
+         **/b/ @o\n**/f @o\n**/f/ @o\n/a/ @o\n/c @o\n/c/ @o\n/crates/*-core @o\n/crates/*-core/ @o\n\
+         /db/migr* @o\n/db/migr*/ @o\n/g/* @o\n/g/*/ @o\n/j/ @o\n/k/ @o\n/q @o\n/q/ @o\n/x/**/*/ @o\n\
+         /d/e @o\n/d/e/ @o\n/h/**/i/ @o\n/src/auth @o\n/src/auth/ @o\n/x/a @o\n/x/a/ @o"
     );
 }
 
@@ -183,6 +187,25 @@ fn the_depth_decides_before_the_area_within_a_tier() {
     assert_eq!(
         github_lines(&text),
         "/crates/ @org/platform\n/crates/app/ @org/app\n"
+    );
+}
+
+#[test]
+fn an_anchored_folder_comes_after_a_name_at_any_depth_of_the_same_tier() {
+    let dir = project(
+        "order-any-depth",
+        &format!(
+            "{}{}",
+            entry("platform", &["**/Dockerfile"], &["@org/platform"], ""),
+            entry("core", &["services/**"], &["@org/core"], "")
+        ),
+    );
+
+    let text = printed(&dir, &[]);
+
+    assert_eq!(
+        github_lines(&text),
+        "**/Dockerfile @org/platform\n/services/ @org/core\n"
     );
 }
 

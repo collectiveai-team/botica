@@ -53,7 +53,10 @@ fn check_fails_on_a_file_that_differs_or_is_missing_and_writes_nothing() {
 #[test]
 fn gitlab_refuses_the_default_file_while_a_codeowners_file_that_it_reads_first_exists() {
     for first in ["CODEOWNERS", "docs/CODEOWNERS"] {
-        let dir = project(&format!("gitlab-shadowed-{}", first.replace('/', "-")), PLATFORM);
+        let dir = project(
+            &format!("gitlab-shadowed-{}", first.replace('/', "-")),
+            PLATFORM,
+        );
         write(&dir, first, "* @someone\n");
 
         let output = export(&dir, &["--host", "gitlab"]);
@@ -194,6 +197,110 @@ fn an_export_that_cannot_be_written_faithfully_fails() {
         );
         assert!(stdout(&output).is_empty(), "{name}");
     }
+}
+
+#[test]
+fn lines_with_the_same_owners_or_from_other_sections_of_gitlab_are_kept() {
+    let same_owners = project(
+        "same-line-kept",
+        &[
+            PLATFORM.to_owned(),
+            entry("core", &["src/**"], &["@a"], ""),
+            entry("core", &["/src/"], &["@a"], ""),
+        ]
+        .concat(),
+    );
+    let two_areas = project(
+        "same-line-two-sections",
+        &[
+            PLATFORM.to_owned(),
+            entry("critical", &["lib/**"], &["@b"], ""),
+            entry("core", &["/lib/"], &["@c"], "tier = \"high\"\n"),
+        ]
+        .concat(),
+    );
+
+    let github = printed(&same_owners, &[]);
+    let gitlab = printed(&two_areas, &["--host", "gitlab"]);
+
+    assert_eq!(github.matches("/src/ @a\n").count(), 1, "{github}");
+    assert!(gitlab.contains("/lib/ @b\n"), "{gitlab}");
+    assert!(gitlab.contains("/lib/ @c\n"), "{gitlab}");
+}
+
+#[test]
+fn a_trailing_slash_in_one_alternative_and_too_many_braces_are_refused() {
+    for (name, glob, message) in [
+        (
+            "slash-alternative",
+            "{a/,b}",
+            "has braces that the export cannot write",
+        ),
+        (
+            "too-many-braces",
+            "{a,b}/{c,d}/{e,f}/{g,h}/{i,j}",
+            "more groups of braces",
+        ),
+    ] {
+        let dir = project(
+            &format!("refused-{name}"),
+            &format!("{PLATFORM}{}", entry("core", &[glob], &["@o"], "")),
+        );
+
+        let output = export(&dir, &["--output", "-"]);
+
+        assert_eq!(output.status.code(), Some(2), "{name}: {}", stderr(&output));
+        assert!(
+            stderr(&output).contains(message),
+            "{name}: {}",
+            stderr(&output)
+        );
+    }
+}
+
+#[test]
+fn the_forced_paths_take_the_owners_of_every_platform_entry_once() {
+    let dir = project(
+        "platform-owners",
+        &format!(
+            "{PLATFORM}{}",
+            entry(
+                "platform",
+                &["deploy/**"],
+                &["@org/ops", "@org/platform"],
+                ""
+            )
+        ),
+    );
+
+    let text = printed(&dir, &[]);
+
+    assert!(
+        text.ends_with("/docs/CODEOWNERS @org/platform @org/ops\n"),
+        "{text}"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn a_symbolic_link_at_the_file_to_write_is_refused() {
+    let dir = project("symlink", PLATFORM);
+    write(&dir, "elsewhere.txt", "keep\n");
+    fs::create_dir_all(dir.join(".github")).unwrap();
+    std::os::unix::fs::symlink(dir.join("elsewhere.txt"), dir.join(".github/CODEOWNERS")).unwrap();
+
+    let output = export(&dir, &[]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        stderr(&output).contains("is a symbolic link"),
+        "{}",
+        stderr(&output)
+    );
+    assert_eq!(
+        fs::read_to_string(dir.join("elsewhere.txt")).unwrap(),
+        "keep\n"
+    );
 }
 
 #[test]

@@ -23,7 +23,9 @@ botica review export --format codeowners --check          # fail when the file d
 | `--output <file>\|-` | The file to write, or `-` for the standard output. Default: `.github/CODEOWNERS` or `.gitlab/CODEOWNERS` under the root of the project, whatever the working directory. |
 | `--check` | Write nothing, and exit with `2` when the file is missing or differs from what the export would write. It needs a file, not `-`. |
 
-The command exits with `0` when it wrote or checked the file, and with `2` when it could not.
+The command exits with `0` when it wrote or checked the file, and with `2` when it could not. It
+replaces the whole file, including lines written by hand, and refuses to write through a symbolic
+link.
 
 ## The order of the lines
 
@@ -45,8 +47,15 @@ after every entry, with the owners of all the `platform` entries. A `platform` o
 with a higher tier does not take them. The export adds `/CODEOWNERS` and `/docs/CODEOWNERS` to that
 list, since GitLab reads them before `.gitlab/CODEOWNERS`.
 
-An entry with no `owners` (`core` or `periphery`) writes no line on either host. On GitHub a line
-with no owner would take its paths from the owners of a broader line before it.
+An entry with no `owners` (`core` or `periphery`) writes no line on either host, so its paths keep
+the owners of a broader line before it, if there is one. On GitHub a line with no owner would take
+its paths from those owners.
+
+Two globs of one tier that overlap, as `**/Dockerfile` in `platform` and `services/**` in `core`,
+are ordered by the names they spell out and then by their text, not by area: here
+`/services/` comes later, and its owners take `services/api/Dockerfile`. To give such a path to
+the owners of `platform` or `critical`, write that entry with a higher `tier`, or spell out the
+path.
 
 ## How a glob is written
 
@@ -71,8 +80,10 @@ gets that second line too, since GitHub reads `/g/*` as the files directly in `g
 
 ## GitHub
 
-The file is one list. GitHub has no count of approvals in CODEOWNERS; `approvals` waits for the
-check of ADR 0018 decision 4.
+The file is one list. GitHub has no count of approvals in CODEOWNERS and no optional line;
+`approvals` waits for the check of ADR 0018 decision 4. A `periphery` entry with `approvals = 0`
+still writes its lines, so with the code owners review required, its paths need the approval of
+its owners on GitHub.
 
 ## GitLab
 

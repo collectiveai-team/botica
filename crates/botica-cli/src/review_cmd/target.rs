@@ -109,6 +109,12 @@ fn compare(path: &Path, text: &str, command: &str) -> Result<()> {
 }
 
 fn write(path: &Path, text: &str) -> Result<()> {
+    if fs::symlink_metadata(path).is_ok_and(|meta| meta.file_type().is_symlink()) {
+        bail!(
+            "`{}` is a symbolic link: the export writes only a file of its own",
+            path.display()
+        );
+    }
     if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
         fs::create_dir_all(parent)
             .with_context(|| format!("cannot create `{}`", parent.display()))?;
