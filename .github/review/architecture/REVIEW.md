@@ -19,13 +19,16 @@ max-findings: 8
   `botica-lsp`, which `botica server` runs.
 - `botica-core` lints text that it is given and does no I/O unless its feature `fs` is on; only
   `botica-cli` turns it on. Reading files, walking a folder, starting a process and the cache live
-  behind that feature or in `botica-cli`.
+  behind that feature or in `botica-cli`. `botica-catalog` reads a folder of rules
+  (`src/dir.rs`) and `botica-config` reads the configuration of a project (`src/discover.rs`,
+  `src/python.rs`); `botica-astgrep` and `botica-complexity` read nothing.
 - The SDKs under `sdk/` (`python`, `node`, `go`, `rust`) speak to `botica-ext` through the
   extension protocol only, and depend on no crate of the workspace.
 - A command of the command line is a module of `crates/botica-cli/src/` (`lint_cmd`,
   `rules_cmd`, `refs_cmd`, `recipes_cmd`, `review_cmd`, `history_cmd`, `server_cmd`, `ext_cmd`,
-  `explain_cmd`) that `main.rs` dispatches; the logic that two commands share lives in a module of
-  its own or in a crate below the front-ends, not in one command that the other imports.
+  `explain_cmd`) that `main.rs` dispatches. `server_cmd`, `recipes_check`, `rules_eval` and
+  `extension_pool` already import items of `lint_cmd`; this role reports no import between
+  commands that the base branch already has.
 - A rule is one folder `catalog/rules/<family>/<slug>/` with its `rule.toml`; a native rule adds
   its code under `crates/botica-core/src/`, and the catalog is the one list of rules (ADR 0003,
   ADR 0005).
@@ -38,8 +41,7 @@ max-findings: 8
 - A dependency added to the `Cargo.toml` of a crate between crates of the workspace, or an import
   of `botica_<crate>` in a crate whose `Cargo.toml` did not have it, against the direction above.
 - A read of the disk, a walk of a folder or a `Command::new` added to `botica-core` outside the
-  feature `fs`, or to `botica-catalog`, `botica-config`, `botica-astgrep` or `botica-complexity`.
-- A module of one command of `botica-cli` that another command imports.
+  feature `fs`, or to `botica-astgrep` or `botica-complexity`.
 - A new trait, type or module of a crate with one user, and new code that does again what a
   module of `botica-core` or `botica-cli` already does (the walk of `walk/`, the reports of
   `report/`, the git of `lint_cmd/git.rs`).
