@@ -194,3 +194,66 @@ jobs:
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 90
+
+  # The mutants that the lines of a pull request add and the tests do not catch, as findings of
+  # `mutant-survived` (a preview rule, so it is selected here and not in `[tool.botica]`). The job
+  # never blocks: `continue-on-error` keeps a survivor, a timeout or a failure of cargo-mutants from
+  # failing the run, and `timeout-minutes` caps the time. The job uploads `mutants.out/` and the
+  # history as the artifact `botica-mutants`, also when the job is cut off by the cap.
+  # The tests of the workspace run as in `test`, except that the two switches whose tools this job
+  # does not install are unset, so those tests skip themselves instead of failing the baseline.
+  mutants:
+    name: mutants
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants --version 27.1.0 --locked
+
+      - name: Build botica
+        run: cargo build --locked -p botica-cli
+
+      # cargo-mutants exits with 2 when a mutant survives and 3 when a test times out; both leave a
+      # report. Any other code is a failed run.
+      - name: Test the mutants of the change
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git diff "origin/$BASE_REF...HEAD" > pr.diff
+          status=0
+          env -u BOTICA_REQUIRE_RUFF -u BOTICA_REQUIRE_WORKFLOW_LINTERS \
+            cargo mutants --in-diff pr.diff --test-workspace=true --cargo-arg=--locked || status=$?
+          case "$status" in
+            0|2|3) ;;
+            *) exit "$status" ;;
+          esac
+
+      # A change with no Rust line leaves no report.
+      - name: Report the survivors and record them
+        if: ${{ !cancelled() && hashFiles('mutants.out/outcomes.json') != '' }}
+        run: >
+          target/debug/botica lint --mutants mutants.out/outcomes.json --diff-file pr.diff
+          --preview --select mutant-survived --output-format github --record
+
+      - name: Upload the report and the history
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: botica-mutants
+          path: |
+            mutants.out/
+            .botica/history/runs.jsonl
+            .botica/history/findings.jsonl
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 90

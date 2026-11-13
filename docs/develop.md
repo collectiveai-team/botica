@@ -26,6 +26,13 @@ change the line of the rule in `select`, the comments `botica: ignore[<rule>]` a
 `.abide/rubric.json` that botica exports; any other edit takes the label `contract-change`.
 `botica-release.yml` runs the mirror on this repository after each release.
 
+The job `mutants` of `ci.yml` runs on pull requests only and never blocks: it has
+`continue-on-error` and a `timeout-minutes` cap. It runs `cargo mutants --in-diff` on the diff of the
+pull request, with cargo-mutants 27.1.0, then `botica lint --mutants` on the report, and uploads
+`mutants.out/` and `.botica/history/` as the artifact `botica-mutants`. To run it locally:
+`git diff origin/main...HEAD > pr.diff`, `cargo mutants --in-diff pr.diff --test-workspace=true`,
+`botica lint --mutants mutants.out/outcomes.json --diff-file pr.diff --preview --select mutant-survived`.
+
 The hooks `botica` and `botica-project` of `prek.toml` pass `--record`, and the job `lint` of
 `ci.yml` runs `botica lint --record` and uploads `.botica/history/` as the artifact
 `botica-history-lint` (ADR 0019). The recipes and the mirror pass no `--record`: the botica of PyPI
