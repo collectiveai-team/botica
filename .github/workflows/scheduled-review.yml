@@ -88,6 +88,8 @@ jobs:
     timeout-minutes: 300
     strategy:
       fail-fast: false
+      # 64 jobs at a time leave runners for the pull requests that run while this workflow does.
+      max-parallel: 64
       matrix:
         shard: ${{ fromJSON(needs.plan.outputs.shards) }}
     steps:
@@ -150,6 +152,18 @@ jobs:
         run: |
           mapfile -t reports < <(find shards -name outcomes.json | sort)
           echo "found=${#reports[@]}" >> "$GITHUB_OUTPUT"
+          # cargo-mutants rewrites outcomes.json after each mutant, so a shard that the cap cut off
+          # leaves a report with fewer outcomes than the mutants that its `mutants.json` lists.
+          partial=0
+          for report in "${reports[@]}"; do
+            listed=$(jq length "$(dirname "$report")/mutants.json")
+            tested=$(jq '[.outcomes[] | select(.scenario != "Baseline")] | length' "$report")
+            if [ "$listed" -ne "$tested" ]; then
+              echo "::warning::$report tested $tested of $listed mutants"
+              partial=$((partial + 1))
+            fi
+          done
+          echo "partial=$partial" >> "$GITHUB_OUTPUT"
           if [ "${#reports[@]}" -eq 0 ]; then
             echo '{"outcomes": []}' > mutants-all.json
           else
@@ -194,13 +208,18 @@ jobs:
           if-no-files-found: ignore
           retention-days: 90
 
-      - name: Check that every shard left a report
+      - name: Check that every shard tested all of its mutants
         if: ${{ !cancelled() }}
         env:
           FOUND: ${{ steps.join.outputs.found }}
+          PARTIAL: ${{ steps.join.outputs.partial }}
         run: |
           if [ "$FOUND" -ne "$MUTANT_SHARDS" ]; then
             echo "$FOUND of $MUTANT_SHARDS shards left a report; the score covers only those." >&2
+            exit 1
+          fi
+          if [ "$PARTIAL" -ne 0 ]; then
+            echo "$PARTIAL shards stopped before testing all of their mutants; the score covers only what they tested." >&2
             exit 1
           fi
 

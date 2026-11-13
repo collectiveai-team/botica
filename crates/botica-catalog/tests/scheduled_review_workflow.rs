@@ -3,25 +3,16 @@
 //! A `schedule` runs on the default branch only, so no pull request can run the workflow. These
 //! tests read the file and hold the properties that a run would otherwise be the first to show.
 
+mod common;
+
 use std::fs;
 use std::path::Path;
 
+use common::workflows::{repository_workflow as read, steps};
 use serde_yaml::Value;
-
-fn read(file: &str) -> Value {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../.github/workflows")
-        .join(file);
-    let text = fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-    serde_yaml::from_str(&text).unwrap_or_else(|e| panic!("{file} is not YAML: {e}"))
-}
 
 fn scheduled() -> Value {
     read("scheduled-review.yml")
-}
-
-fn steps(job: &Value) -> &[Value] {
-    job["steps"].as_sequence().expect("the steps")
 }
 
 fn runs(job: &Value) -> Vec<&str> {
@@ -254,6 +245,59 @@ fn the_report_joins_every_shard_and_fails_when_one_left_nothing() {
 }
 
 #[test]
+fn the_report_keeps_its_history_and_the_last_check_runs_after_a_failure() {
+    let workflow = scheduled();
+    let job = &workflow["jobs"]["report"];
+    let upload = using(job, "actions/upload-artifact@");
+
+    assert_eq!(upload["if"].as_str(), Some("${{ !cancelled() }}"));
+    assert_eq!(
+        upload["with"]["name"].as_str(),
+        Some("botica-history-scheduled-mutants")
+    );
+    assert_eq!(upload["with"]["include-hidden-files"].as_bool(), Some(true));
+    let paths = upload["with"]["path"].as_str().expect("the paths");
+    for path in [
+        "mutants-all.json",
+        ".botica/history/runs.jsonl",
+        ".botica/history/findings.jsonl",
+    ] {
+        assert!(paths.lines().any(|l| l == path), "{path}: {paths}");
+    }
+    let last = steps(job).last().expect("a last step");
+    assert_eq!(last["if"].as_str(), Some("${{ !cancelled() }}"));
+}
+
+#[test]
+fn only_the_shards_continue_on_error_and_they_leave_runners_for_pull_requests() {
+    let workflow = scheduled();
+
+    for (name, job) in workflow["jobs"].as_mapping().expect("the jobs") {
+        let tolerant = job["continue-on-error"].as_bool() == Some(true);
+        assert_eq!(tolerant, name.as_str() == Some("mutants"), "{name:?}");
+    }
+    let parallel = workflow["jobs"]["mutants"]["strategy"]["max-parallel"]
+        .as_u64()
+        .expect("max-parallel");
+    assert!((1..=128).contains(&parallel), "{parallel}");
+}
+
+#[test]
+fn ci_runs_the_tests_of_this_workflow_on_a_pull_request_that_edits_it() {
+    let ci = read("ci.yml");
+    let paths: Vec<&str> = ci["on"]["pull_request"]["paths"]
+        .as_sequence()
+        .expect("the paths")
+        .iter()
+        .filter_map(Value::as_str)
+        .collect();
+
+    for path in [".github/workflows/scheduled-review.yml", "prek.toml"] {
+        assert!(paths.contains(&path), "{path}");
+    }
+}
+
+#[test]
 fn agnix_runs_through_the_hook_of_prek_toml_over_every_file() {
     let workflow = scheduled();
     let job = &workflow["jobs"]["agnix"];
@@ -272,7 +316,11 @@ fn every_action_is_pinned_to_a_tag_like_the_rest_of_the_repository() {
         for step in steps(job) {
             if let Some(uses) = step["uses"].as_str() {
                 let tag = uses.rsplit('@').next().expect("a reference");
-                assert!(tag.starts_with('v'), "{name:?}: {uses}");
+                let numbers = tag.strip_prefix('v').unwrap_or_default();
+                assert!(
+                    !numbers.is_empty() && numbers.split('.').all(|n| n.parse::<u32>().is_ok()),
+                    "{name:?}: {uses}"
+                );
             }
         }
     }

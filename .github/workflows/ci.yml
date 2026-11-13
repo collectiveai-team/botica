@@ -28,6 +28,9 @@ on:
       - "scripts/check_rule_change.py"
       - "scripts/check_references.sh"
       - ".github/workflows/ci.yml"
+      # A schedule cannot run on a pull request: its test in crates/ is its only check before merge.
+      - ".github/workflows/scheduled-review.yml"
+      - "prek.toml"
   # Allow other workflows (e.g. a wheel release) to gate on this suite.
   workflow_call:
 
