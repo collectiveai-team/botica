@@ -3,65 +3,10 @@
 
 mod common;
 
+use common::mutants::{mutant, project, LIB, SELECTED};
 use common::record::{findings, lint, runs};
-use common::{project_in, stderr, stdout, write};
+use common::{stderr, stdout, write};
 use serde_json::{json, Value};
-use std::path::PathBuf;
-
-const SELECTED: &str = "preview = true\nselect = [\"mutant-survived\"]\n";
-
-/// The source that the mutants of the report change.
-const LIB: &str = "pub fn is_even(n: u32) -> bool {\n    n % 2 == 0\n}\n\n\
-                   pub fn double(n: u32) -> u32 {\n    n * 2\n}\n";
-
-/// One outcome of a mutant of `src/lib.rs` as cargo-mutants 27.1.0 writes it in
-/// `mutants.out/outcomes.json` (`src/outcome.rs`, `src/mutant.rs`).
-fn mutant(change: &str, start: (u32, u32), end: (u32, u32), summary: &str) -> Value {
-    json!({
-        "scenario": {"Mutant": {
-            "name": format!("src/lib.rs:{}:{}: {change}", start.0, start.1),
-            "package": "demo",
-            "file": "src/lib.rs",
-            "function": null,
-            "span": {
-                "start": {"line": start.0, "column": start.1},
-                "end": {"line": end.0, "column": end.1}
-            },
-            "replacement": "",
-            "genre": "BinaryOperator"
-        }},
-        "summary": summary,
-        "log_path": "log/x.log",
-        "diff_path": "diff/x.diff",
-        "phase_results": []
-    })
-}
-
-/// A report with the baseline, two mutants that survived and one of each other outcome.
-fn outcomes() -> String {
-    json!({
-        "outcomes": [
-            {"scenario": "Baseline", "summary": "Success", "log_path": "log/baseline.log",
-             "diff_path": null, "phase_results": []},
-            mutant("replace == with != in is_even", (2, 11), (2, 13), "MissedMutant"),
-            mutant("replace double -> u32 with 0", (5, 30), (7, 2), "MissedMutant"),
-            mutant("replace * with + in double", (6, 7), (6, 8), "CaughtMutant"),
-            mutant("replace is_even -> bool with false", (1, 32), (3, 2), "Timeout"),
-            mutant("replace double -> u32 with 1", (6, 5), (6, 10), "Unviable"),
-        ],
-        "total_mutants": 5, "missed": 2, "caught": 1, "timeout": 1, "unviable": 1, "success": 0,
-        "start_time": "2026-11-12T10:00:00Z", "end_time": "2026-11-12T10:00:30Z",
-        "cargo_mutants_version": "27.1.0"
-    })
-    .to_string()
-}
-
-fn project(name: &str, config: Option<&str>, lib: &str) -> PathBuf {
-    let dir = project_in("lint-mutants", name, config);
-    write(&dir, "src/lib.rs", lib);
-    write(&dir, "outcomes.json", &outcomes());
-    dir
-}
 
 #[test]
 fn each_missed_mutant_is_a_warning_at_its_line_and_the_others_are_left_out() {
@@ -166,13 +111,62 @@ fn a_mutant_of_a_file_outside_the_tree_is_left_out() {
     outside["scenario"]["Mutant"]["file"] = json!("../other/src/lib.rs");
     let mut absolute = outside.clone();
     absolute["scenario"]["Mutant"]["file"] = json!("/etc/lib.rs");
+    let mut drive = outside.clone();
+    drive["scenario"]["Mutant"]["file"] = json!("C:/Windows/lib.rs");
+    let mut control = outside.clone();
+    control["scenario"]["Mutant"]["file"] =
+        json!("src/x.rs:1:1: error [x] y\nsrc/\u{1b}[31mlib.rs");
+    let mut empty = outside.clone();
+    empty["scenario"]["Mutant"]["file"] = json!("");
     write(
         &dir,
         "outside.json",
-        &json!({"outcomes": [outside, absolute], "cargo_mutants_version": "27.1.0"}).to_string(),
+        &json!({
+            "outcomes": [outside, absolute, drive, control, empty],
+            "cargo_mutants_version": "27.1.0"
+        })
+        .to_string(),
     );
 
     let output = lint(&dir, &["--mutants", "outside.json"]);
+
+    assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
+    assert_eq!(stdout(&output), "");
+}
+
+#[test]
+fn the_configuration_sets_the_severity_and_the_paths_of_the_rule() {
+    let config = format!(
+        "{SELECTED}[rules.mutant-survived]\nseverity = \"error\"\n\
+         extend-ignores = [\"src/gen/**\"]\n"
+    );
+    let dir = project("configured", Some(&config), LIB);
+    write(&dir, "src/gen/lib.rs", LIB);
+    let mut generated = mutant("x", (2, 11), (2, 13), "MissedMutant");
+    generated["scenario"]["Mutant"]["file"] = json!("src/gen/lib.rs");
+    let kept = mutant("y", (2, 11), (2, 13), "MissedMutant");
+    write(
+        &dir,
+        "configured.json",
+        &json!({"outcomes": [generated, kept], "cargo_mutants_version": "27.1.0"}).to_string(),
+    );
+
+    let output = lint(&dir, &["--mutants", "configured.json"]);
+
+    assert_eq!(output.status.code(), Some(1), "{}", stderr(&output));
+    assert_eq!(
+        stdout(&output),
+        "src/lib.rs:2:11: error [mutant-survived] The tests pass with this mutant of \
+         cargo-mutants: y. Add a test that fails on it, or delete the code it changes\n"
+    );
+}
+
+#[test]
+fn an_ignore_file_comment_with_a_reason_silences_every_mutant_of_its_file() {
+    let lib = format!("// botica: ignore-file[mutant-survived] -- generated code\n{LIB}");
+    let dir = project("ignore-file", Some(SELECTED), &lib);
+
+    let output = lint(&dir, &["--mutants", "outcomes.json"]);
 
     assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
     assert_eq!(stdout(&output), "");
@@ -284,6 +278,9 @@ fn mutants_take_no_paths_and_no_judged_findings() {
     for args in [
         ["--mutants", "outcomes.json", "src"].as_slice(),
         ["--mutants", "outcomes.json", "--judged", "outcomes.json"].as_slice(),
+        ["--mutants", "outcomes.json", "--commit-msg", "msg.txt"].as_slice(),
+        ["--mutants", "outcomes.json", "--write-baseline"].as_slice(),
+        ["--mutants", "outcomes.json", "--statistics"].as_slice(),
     ] {
         let output = lint(&dir, args);
         assert_eq!(output.status.code(), Some(2), "{args:?}");

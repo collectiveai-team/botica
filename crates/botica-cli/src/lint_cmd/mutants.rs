@@ -63,7 +63,7 @@ const SUCCESS: &str = "Success";
 
 /// The mutants of the report that the tests did not catch. A report whose baseline failed tested
 /// no mutant, and is refused rather than read as a clean run. A mutant whose file is not a
-/// relative path inside the tree, such as `/etc/x.rs` or `../x.rs`, is left out.
+/// relative path inside the tree, such as `/etc/x.rs`, `C:/x.rs` or `../x.rs`, is left out.
 fn survivors(text: &str) -> Result<Vec<Mutant>> {
     let report: Outcomes = serde_json::from_str(text)
         .context("the mutants are not a report of cargo-mutants (`mutants.out/outcomes.json`)")?;
@@ -84,11 +84,14 @@ fn survivors(text: &str) -> Result<Vec<Mutant>> {
     Ok(survivors)
 }
 
-/// Whether `path` is relative and stays inside the tree it is relative to.
+/// Whether `path` is relative, names no drive or URI scheme, holds no control character and stays
+/// inside the tree it is relative to.
 fn inside(path: &str) -> bool {
     !path.is_empty()
         && !path.starts_with('/')
         && !path.contains('\\')
+        && !path.chars().any(char::is_control)
+        && !path.split('/').next().unwrap_or_default().contains(':')
         && path.split('/').all(|part| part != "..")
 }
 

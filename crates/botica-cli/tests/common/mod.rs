@@ -9,6 +9,7 @@ pub mod git_remote;
 pub mod history;
 pub mod judgment;
 pub mod lsp;
+pub mod mutants;
 pub mod new_rule;
 pub mod node;
 pub mod project_catalog;
