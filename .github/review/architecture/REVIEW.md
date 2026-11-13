@@ -65,6 +65,9 @@ max-findings: 8
 <!-- botica:covered -->
 - The job `judgment rules` of `abide.yml`: `separate-orchestration` and `architecture-vocabulary`
   on the Python, TypeScript and JavaScript files of the diff.
+- The hook `botica-project` of `prek.toml`, run by the job `lint, type-check & test` of
+  `tests.yml`: `import-layers`, selected in `[tool.botica]` with no `layers`, so it reports
+  nothing in this repository.
 <!-- /botica:covered -->
 
 ## Evidence

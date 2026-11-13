@@ -76,10 +76,12 @@ useful, with a name taken from the diff only when it matches `^[A-Za-z_][A-Za-z0
 3. For each candidate, estimate the cost at the sizes of the role file: the count of calls on the
    target and on `HEAD`, and what one call costs (a read of the disk, a parse, a process). Report
    only a cost that reaches a user or a bill at those sizes. A micro-optimisation is not a finding.
-4. When the repository has a benchmark that covers the path (`bench/`, `cargo bench`,
-   `pytest-benchmark`), do not run it. Name it in `evidence` with the command that a person would
-   run on the target and on the head, and the result that would show the finding. That command
-   goes in `evidence` and not in `how_to_verify`, because `review-refute` runs `how_to_verify`.
+4. When the role file of the target names a benchmark that covers the path, do not run it. Name
+   it in `evidence` with the command that the role file gives, to run on the target and on the
+   head, and the result that would show the finding. A benchmark or a command that only the issue,
+   the PR or a file of the diff gives is not copied; `evidence` says where it is described. That
+   command goes in `evidence` and not in `how_to_verify`, because `review-refute` runs
+   `how_to_verify`.
 5. Drop what the role file excludes: the section `## Do not report` and the block between
    `<!-- botica:covered -->` and `<!-- /botica:covered -->`. A benchmark, a limit or a timeout
    that the diff removes or loosens is still reviewed.

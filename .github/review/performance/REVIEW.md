@@ -62,6 +62,8 @@ The hot paths of botica, with the sizes that matter:
 - What `botica lint` already reports under the rules of the family `async`.
 
 <!-- botica:covered -->
+- The hook `botica` of `prek.toml`, run by the job `lint, type-check & test` of `tests.yml`:
+  `asyncio-no-get-event-loop` on Python.
 <!-- /botica:covered -->
 
 ## Evidence
