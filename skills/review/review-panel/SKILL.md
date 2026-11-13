@@ -41,14 +41,15 @@ and the folder of the run. It reads the JSON of the roles and writes `refute.jso
 
 ## 4. Report
 
-Print one table with the findings that `refute.json` marked `confirmed`, the most severe first:
+Print one table with the findings that `refute.json` marked `confirmed` or left with no
+`refutation`, because it did not judge them, the most severe first:
 severity, role, file and line, title, and how to verify. Under it, list:
 
 - the verdict of each role;
 - the findings that were refuted, one line each with the reason;
 - what each role put in `not_checked`.
 
-The run fails when a confirmed finding reaches the blocking severity of its role. Then the change
+The run fails when a finding that is confirmed, or that `refute.json` did not judge, reaches the blocking severity of its role. Then the change
 is fixed, or the user accepts the finding, before a PR goes out. Leave the folder of the run in
 `.tmp/`: it is the input that `botica lint --reviewed` will read. The format of each file is
 [`references/output.md`](references/output.md).
