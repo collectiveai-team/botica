@@ -139,7 +139,8 @@ jobs:
         run: cargo install cargo-mutants --version 27.1.0 --locked
 
       # cargo-mutants exits with 2 when a mutant survives and 3 when a test times out; both leave a
-      # report. Any other code is a failed run.
+      # report. Any other code is a failed run. A shard with no mutant (the diff holds fewer mutants
+      # than shards) leaves no report, so the step writes an empty one for `report` to count.
       - name: Test the mutants of the shard
         env:
           SHARD: ${{ matrix.shard }}
@@ -151,6 +152,11 @@ jobs:
             0|2|3) ;;
             *) exit "$status" ;;
           esac
+          if [ ! -f mutants.out/outcomes.json ]; then
+            mkdir -p mutants.out
+            echo '{"outcomes": []}' > mutants.out/outcomes.json
+            echo '[]' > mutants.out/mutants.json
+          fi
 
       - name: Upload the report of the shard
         if: ${{ always() }}

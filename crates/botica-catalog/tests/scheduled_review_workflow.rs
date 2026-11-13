@@ -70,7 +70,6 @@ fn it_only_reads_and_holds_no_secret() {
 
 #[test]
 fn every_job_stays_on_main_and_every_checkout_drops_its_credentials() {
-    // `plan` only runs `jq`, so it has no checkout.
     let workflow = scheduled();
 
     let on_main = |job: &Value| {
@@ -169,6 +168,8 @@ fn the_shards_cover_the_run_and_agree_on_the_denominator() {
         "{cargo}"
     );
     assert!(cargo.contains("--test-workspace=true"), "{cargo}");
+    assert!(cargo.contains("--cargo-arg=--locked"), "{cargo}");
+    assert!(cargo.contains("--sharding round-robin"), "{cargo}");
     assert!(cargo.contains("0|2|3) ;;"), "{cargo}");
     assert!(
         cargo.contains(r#"--in-diff "$RUNNER_TEMP/week/week.diff""#),
@@ -202,9 +203,31 @@ fn the_mutants_are_those_of_the_rust_lines_that_main_changed_in_the_last_week() 
         using(mutants, "actions/download-artifact@")["with"]["name"].as_str(),
         using(plan, "actions/upload-artifact@")["with"]["name"].as_str()
     );
-    assert!(workflow["jobs"]["report"]["if"]
-        .as_str()
-        .is_some_and(|c| c.contains("needs.plan.outputs.rust == 'true'")));
+    assert_eq!(
+        plan["outputs"]["rust"].as_str(),
+        Some("${{ steps.plan.outputs.rust }}")
+    );
+    assert!(steps(plan)
+        .iter()
+        .any(|s| s["id"].as_str() == Some("plan") && s["run"].is_string()));
+    assert_eq!(
+        using(plan, "actions/upload-artifact@")["if"].as_str(),
+        Some("${{ steps.plan.outputs.rust == 'true' }}")
+    );
+    let report = &workflow["jobs"]["report"];
+    let needs: Vec<&str> = report["needs"]
+        .as_sequence()
+        .expect("the needs")
+        .iter()
+        .filter_map(Value::as_str)
+        .collect();
+    assert_eq!(needs, ["plan", "mutants"]);
+    assert_eq!(
+        report["if"].as_str(),
+        Some(
+            "${{ !cancelled() && github.ref == 'refs/heads/main' && needs.plan.outputs.rust == 'true' }}"
+        )
+    );
 }
 
 #[test]

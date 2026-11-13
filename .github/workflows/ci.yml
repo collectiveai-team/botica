@@ -29,6 +29,7 @@ on:
       - "scripts/check_references.sh"
       - ".github/workflows/ci.yml"
       # A schedule cannot run on a pull request: its test in crates/ is its only check before merge.
+      # The test also reads the hook of agnix in prek.toml.
       - ".github/workflows/scheduled-review.yml"
       - "prek.toml"
   # Allow other workflows (e.g. a wheel release) to gate on this suite.
