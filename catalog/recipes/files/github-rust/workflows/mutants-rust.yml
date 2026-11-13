@@ -1,0 +1,81 @@
+name: mutants-rust
+
+# The mutants that the lines of a pull request add and the tests do not catch, as findings of
+# `mutant-survived` (a preview rule, so the job selects it on the command line). cargo-mutants
+# tests only the mutants on the lines of the diff against the base of the pull request.
+#
+# The job never blocks: `continue-on-error` keeps a survivor, a timeout or a failure of
+# cargo-mutants from failing the run, and `timeout-minutes` caps the time. The job uploads
+# `mutants.out/` and the history of botica as the artifact `botica-mutants`, also when the cap cuts
+# it off.
+
+on:
+  pull_request:
+
+concurrency:
+  group: mutants-rust-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  mutants:
+    name: mutants of the change
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 30
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # A rust-toolchain.toml in the repository takes precedence over stable:
+      # rustup installs the toolchain it names on the first cargo command.
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants --version {{ param.cargo-mutants-version }} --locked
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: "0.13.6"
+          enable-cache: false
+
+      # cargo-mutants exits with 2 when a mutant survives and 3 when a test times out; both leave a
+      # report. Any other code is a failed run.
+      - name: Test the mutants of the change
+        run: |
+          git diff "$BASE_SHA...HEAD" > "$RUNNER_TEMP/pr.diff"
+          status=0
+          cargo mutants --in-diff "$RUNNER_TEMP/pr.diff" --cargo-arg=--locked || status=$?
+          case "$status" in
+            0|2|3) ;;
+            *) exit "$status" ;;
+          esac
+
+      # A change with no Rust line leaves no report.
+      - name: Report the survivors and record them
+        if: ${{ !cancelled() && hashFiles('mutants.out/outcomes.json') != '' }}
+        run: >
+          uvx botica@{{ param.botica-version }} lint --mutants mutants.out/outcomes.json
+          --diff-file "$RUNNER_TEMP/pr.diff" --preview --select mutant-survived
+          --output-format github --record
+
+      - name: Upload the report and the history
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: botica-mutants
+          path: |
+            mutants.out/
+            .botica/history/runs.jsonl
+            .botica/history/findings.jsonl
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 90

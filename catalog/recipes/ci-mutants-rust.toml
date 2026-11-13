@@ -1,0 +1,10 @@
+description = "GitHub Actions for a Rust crate or workspace: cargo-mutants tests the mutants of the lines a pull request changes, and botica reports the ones that survive as findings of mutant-survived, without blocking"
+
+[[files]]
+path = ".github/workflows/mutants-rust.yml"
+template = "files/github-rust/workflows/mutants-rust.yml"
+
+[params.cargo-mutants-version]
+description = "The version of cargo-mutants that mutants-rust.yml installs with cargo install"
+kind = "version"
+default = "27.1.0"

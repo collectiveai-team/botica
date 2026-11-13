@@ -1,0 +1,80 @@
+name: mutants-node
+
+# The mutants of the code that a pull request changes, with Stryker in incremental mode: Stryker
+# reuses the results of `reports/stryker-incremental.json` and tests only the mutants of the code
+# and the tests that changed since. A push to main runs it too and keeps the file in the cache of
+# Actions, where the pull requests against main find it; the first run, with no file, tests every
+# mutant. botica reads no report of Stryker, so the job uploads its reports as the artifact
+# `stryker-mutants`.
+#
+# The project installs Stryker and the plugin of its test runner (`pnpm add -D
+# @stryker-mutator/core @stryker-mutator/vitest-runner`, for instance) and configures them in
+# `stryker.config.json`; the job runs the Stryker of the project.
+#
+# The job never blocks: `continue-on-error` keeps a failure of Stryker from failing the run. The
+# step of Stryker stops at its own `timeout-minutes`, so the job still saves what it tested in the
+# cache, and Stryker writes the results of an interrupted run to the incremental file.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: mutants-node-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  mutants:
+    name: mutants of the change
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # The version of pnpm is the `packageManager` of package.json.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install the packages
+        run: pnpm install --frozen-lockfile
+
+      # A pull request reads the caches of its own branch and of its base branch.
+      - name: Restore the incremental file
+        uses: actions/cache/restore@v6
+        with:
+          path: reports/stryker-incremental.json
+          key: stryker-incremental-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            stryker-incremental-${{ github.head_ref || github.ref_name }}-
+            stryker-incremental-${{ github.base_ref || github.ref_name }}-
+
+      - name: Test the mutants of the change
+        timeout-minutes: 30
+        run: pnpm exec stryker run --incremental --reporters clear-text,progress,json,html
+
+      - name: Save the incremental file
+        if: ${{ always() && hashFiles('reports/stryker-incremental.json') != '' }}
+        uses: actions/cache/save@v6
+        with:
+          path: reports/stryker-incremental.json
+          key: stryker-incremental-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
+
+      - name: Upload the reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: stryker-mutants
+          path: reports/
+          if-no-files-found: ignore
+          retention-days: 90
