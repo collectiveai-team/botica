@@ -210,7 +210,7 @@ runs are compared, which origins write it, and how the files of CI jobs are join
    | `message` | uses `--commit-msg`, `--commits` or `--pr-title` |
    | `judged` | uses `--judged`, with or without `--diff`, `--staged` or `--diff-file` |
    | `reviewed` | uses `--reviewed` (ADR 0017; the flag comes in a later change) |
-   | `mutants` | uses `--mutants` (planned; the flag comes in a later change) |
+   | `mutants` | uses `--mutants`, with or without `--diff`, `--staged` or `--diff-file` |
    | `classify` | is a decision of `botica review classify` (ADR 0018) |
 
    The last row of the table that matches the flags of the run gives the mode, so `--judged --diff

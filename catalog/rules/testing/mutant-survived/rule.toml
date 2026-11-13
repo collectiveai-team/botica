@@ -1,0 +1,14 @@
+id = "mutant-survived"
+code = "BTTEST012"
+standard = "CES-124"
+summary = "A mutant of cargo-mutants on a line the change adds fails a test"
+status = "preview"
+tags = ["tests", "mutation"]
+default-enabled = false
+default-severity = "warning"
+
+[[implementations]]
+kind = "external"
+languages = ["rust"]
+tool = "cargo-mutants"
+docs = "https://mutants.rs/"

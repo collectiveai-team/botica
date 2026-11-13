@@ -25,6 +25,10 @@ use crate::suppress::{INVALID, UNUSED};
 
 pub const IO_ERROR: &str = "io-error";
 
+/// The rule of the mutants that survive a run of cargo-mutants, which `botica lint --mutants`
+/// reads from its report.
+pub const MUTANT_SURVIVED: &str = "mutant-survived";
+
 /// The effective options of a rule: its catalog defaults with the configuration on top.
 pub type Options = BTreeMap<String, toml::Value>;
 
@@ -177,11 +181,12 @@ pub fn uses_code_dirs(slug: &str) -> bool {
     })
 }
 
-/// Whether a comment on the line of a finding of `slug`, a rule of project scope, silences it.
-/// The findings of the other rules of project scope are about a file or the project, and only the
-/// configuration silences them.
+/// Whether a comment with a reason on the line of a finding of `slug` silences it, although the
+/// walk never runs the rule: a rule of project scope whose findings sit on a line, or
+/// `mutant-survived`, whose findings come from a report. The findings of the other rules of
+/// project scope are about a file or the project, and only the configuration silences them.
 pub fn silenced_on_its_line(slug: &str) -> bool {
-    slug == EXTERNAL_CONFIG_WEAKENED
+    slug == EXTERNAL_CONFIG_WEAKENED || slug == MUTANT_SURVIVED
 }
 
 fn over_code_dirs<R>(context: &Context) -> Box<dyn NativeRule>
