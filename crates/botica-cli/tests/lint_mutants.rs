@@ -87,6 +87,98 @@ fn each_missed_mutant_is_a_warning_at_its_line_and_the_others_are_left_out() {
 }
 
 #[test]
+fn a_finding_ends_on_the_last_character_of_the_span_of_its_mutant() {
+    let dir = project("range", Some(SELECTED), LIB);
+
+    let output = lint(
+        &dir,
+        &["--mutants", "outcomes.json", "--output-format", "json"],
+    );
+
+    let report: Value = serde_json::from_slice(&output.stdout).expect("the output is JSON");
+    let ranges: Vec<&Value> = report["diagnostics"]
+        .as_array()
+        .expect("a list of findings")
+        .iter()
+        .map(|finding| &finding["range"])
+        .collect();
+    let at = |range: &Value, end: &str| {
+        (
+            range[end]["line"].as_u64().expect("a line"),
+            range[end]["column"].as_u64().expect("a column"),
+        )
+    };
+    assert_eq!(
+        (at(ranges[0], "start"), at(ranges[0], "end")),
+        ((2, 11), (2, 12))
+    );
+    assert_eq!(
+        (at(ranges[1], "start"), at(ranges[1], "end")),
+        ((5, 30), (7, 1))
+    );
+}
+
+#[test]
+fn a_name_without_the_location_of_its_mutant_is_shown_whole_on_one_line() {
+    let dir = project("name", Some(SELECTED), LIB);
+    let mut odd = mutant("x", (2, 11), (2, 13), "MissedMutant");
+    odd["scenario"]["Mutant"]["name"] = json!("replace ==\nsrc/lib.rs:9:9: error [x] with !=");
+    write(
+        &dir,
+        "odd.json",
+        &json!({"outcomes": [odd], "cargo_mutants_version": "27.1.0"}).to_string(),
+    );
+
+    let output = lint(&dir, &["--mutants", "odd.json"]);
+
+    assert_eq!(
+        stdout(&output),
+        "src/lib.rs:2:11: warning [mutant-survived] The tests pass with this mutant of \
+         cargo-mutants: replace == src/lib.rs:9:9: error [x] with !=. Add a test that fails on \
+         it, or delete the code it changes\n"
+    );
+}
+
+#[test]
+fn a_report_whose_baseline_failed_fails_the_run() {
+    let dir = project("baseline", Some(SELECTED), LIB);
+    let report = json!({
+        "outcomes": [{"scenario": "Baseline", "summary": "Failure", "log_path": "log/baseline.log",
+                      "diff_path": null, "phase_results": []}],
+        "cargo_mutants_version": "27.1.0"
+    });
+    write(&dir, "failed.json", &report.to_string());
+
+    let output = lint(&dir, &["--mutants", "failed.json"]);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        stderr(&output).contains("the baseline of cargo-mutants did not pass (`Failure`)"),
+        "{}",
+        stderr(&output)
+    );
+}
+
+#[test]
+fn a_mutant_of_a_file_outside_the_tree_is_left_out() {
+    let dir = project("outside", Some(SELECTED), LIB);
+    let mut outside = mutant("x", (1, 1), (1, 2), "MissedMutant");
+    outside["scenario"]["Mutant"]["file"] = json!("../other/src/lib.rs");
+    let mut absolute = outside.clone();
+    absolute["scenario"]["Mutant"]["file"] = json!("/etc/lib.rs");
+    write(
+        &dir,
+        "outside.json",
+        &json!({"outcomes": [outside, absolute], "cargo_mutants_version": "27.1.0"}).to_string(),
+    );
+
+    let output = lint(&dir, &["--mutants", "outside.json"]);
+
+    assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
+    assert_eq!(stdout(&output), "");
+}
+
+#[test]
 fn a_project_that_does_not_select_the_rule_reports_nothing() {
     let dir = project("unselected", None, LIB);
 
@@ -193,8 +285,44 @@ fn mutants_take_no_paths_and_no_judged_findings() {
         ["--mutants", "outcomes.json", "src"].as_slice(),
         ["--mutants", "outcomes.json", "--judged", "outcomes.json"].as_slice(),
     ] {
-        assert_eq!(lint(&dir, args).status.code(), Some(2), "{args:?}");
+        let output = lint(&dir, args);
+        assert_eq!(output.status.code(), Some(2), "{args:?}");
+        assert!(
+            stderr(&output).contains("cannot be used with"),
+            "{args:?}: {}",
+            stderr(&output)
+        );
     }
+}
+
+#[test]
+fn a_recorded_run_with_a_diff_counts_only_the_suppressions_on_the_lines_it_adds() {
+    let lib = LIB.replace(
+        "    n % 2 == 0\n",
+        "    n % 2 == 0 // botica: ignore[mutant-survived] -- covered by the property tests\n",
+    );
+    let dir = project("record-diff", Some(SELECTED), &lib);
+    write(
+        &dir,
+        "change.diff",
+        "--- a/src/lib.rs\n+++ b/src/lib.rs\n@@ -5,0 +5,3 @@\n+pub fn double(n: u32) -> u32 {\n\
+         +    n * 2\n+}\n",
+    );
+
+    lint(
+        &dir,
+        &[
+            "--mutants",
+            "outcomes.json",
+            "--diff-file",
+            "change.diff",
+            "--record",
+        ],
+    );
+
+    let runs = runs(&dir);
+    assert_eq!(runs[0]["rules"]["mutant-survived"]["hits"], 1);
+    assert_eq!(runs[0]["rules"]["mutant-survived"]["suppressed"], 0);
 }
 
 #[test]

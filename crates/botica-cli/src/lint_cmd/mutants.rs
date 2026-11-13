@@ -12,7 +12,7 @@ use std::process::ExitCode;
 use std::sync::Arc;
 use std::time::SystemTime;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use botica_config::Resolution;
 use botica_core::registry::MUTANT_SURVIVED;
 use botica_core::report::Format;
@@ -59,24 +59,42 @@ struct LineColumn {
 }
 
 const MISSED: &str = "MissedMutant";
+const SUCCESS: &str = "Success";
 
-/// The mutants of the report that the tests did not catch.
+/// The mutants of the report that the tests did not catch. A report whose baseline failed tested
+/// no mutant, and is refused rather than read as a clean run. A mutant whose file is not a
+/// relative path inside the tree, such as `/etc/x.rs` or `../x.rs`, is left out.
 fn survivors(text: &str) -> Result<Vec<Mutant>> {
     let report: Outcomes = serde_json::from_str(text)
         .context("the mutants are not a report of cargo-mutants (`mutants.out/outcomes.json`)")?;
-    Ok(report
-        .outcomes
-        .into_iter()
-        .filter(|outcome| outcome.summary == MISSED)
-        .filter_map(|outcome| match outcome.scenario {
-            Scenario::Mutant(mutant) => Some(mutant),
-            Scenario::Baseline => None,
-        })
-        .collect())
+    let mut survivors = Vec::new();
+    for outcome in report.outcomes {
+        match outcome.scenario {
+            Scenario::Baseline if outcome.summary != SUCCESS => bail!(
+                "the baseline of cargo-mutants did not pass (`{}`): the report tested no mutant",
+                outcome.summary
+            ),
+            Scenario::Baseline => {}
+            Scenario::Mutant(mutant) if outcome.summary == MISSED && inside(&mutant.file) => {
+                survivors.push(mutant);
+            }
+            Scenario::Mutant(_) => {}
+        }
+    }
+    Ok(survivors)
 }
 
-/// What the name of a mutant says after its location: `replace == with != in is_even`.
-fn change_of(mutant: &Mutant) -> &str {
+/// Whether `path` is relative and stays inside the tree it is relative to.
+fn inside(path: &str) -> bool {
+    !path.is_empty()
+        && !path.starts_with('/')
+        && !path.contains('\\')
+        && path.split('/').all(|part| part != "..")
+}
+
+/// What the name of a mutant says after its location, `replace == with != in is_even`, on one
+/// line: a control character of the report becomes a space.
+fn change_of(mutant: &Mutant) -> String {
     let location = format!(
         "{}:{}:{}: ",
         mutant.file, mutant.span.start.line, mutant.span.start.column
@@ -85,6 +103,9 @@ fn change_of(mutant: &Mutant) -> &str {
         .name
         .strip_prefix(location.as_str())
         .unwrap_or(&mutant.name)
+        .chars()
+        .map(|c| if c.is_control() { ' ' } else { c })
+        .collect()
 }
 
 fn diagnostic(mutant: &Mutant, severity: Severity) -> Diagnostic {

@@ -23,7 +23,9 @@ cargo-mutants, or silenced with a comment that gives the reason.
 
 [cargo-mutants](https://mutants.rs/) writes `mutants.out/outcomes.json`, with one outcome for each
 mutant; botica reads the format of cargo-mutants 27.1.0 and reports the outcomes whose `summary` is
-`MissedMutant`. A mutant that times out, or that does not build, is left out. With
+`MissedMutant`. A mutant that times out, or that does not build, is left out, and a report whose
+baseline failed fails the run. The paths of the report are relative to the tree that cargo-mutants
+ran on, so `botica lint --mutants` runs from the root of that tree. With
 `--in-diff`, cargo-mutants makes only the mutants on the lines of a diff, and with `--diff`,
 `--staged` or `--diff-file`, botica keeps only the findings on the lines the change adds:
 

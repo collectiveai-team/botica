@@ -74,8 +74,8 @@ fn reporting(resolution: &Resolution, slug: &str) -> Option<Severity> {
         .map(|entry| Severity::from(entry.severity))
 }
 
-/// What the project keeps of findings of judgment rules, grouped by path: those that no
-/// `ignore-file` comment of their file silences and that the configuration applies at their path
+/// What the project keeps of findings that botica read from a report (a judge, cargo-mutants),
+/// grouped by path: those that no comment of their file silences and that the configuration applies at their path
 /// and in their language, with the severity it names there. `read` gives the text of a file. The
 /// findings that an `ignore-file` comment silenced come apart.
 pub fn keep_judged(
