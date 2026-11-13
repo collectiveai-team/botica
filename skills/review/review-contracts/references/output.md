@@ -55,3 +55,4 @@ writing a finding.
 - `P3`: worth knowing; never blocks.
 
 At most `max-findings` findings (10 when the role file says none), the most severe first.
+`refute.json` holds every finding of the inputs and judges at most `max-findings` of them.
