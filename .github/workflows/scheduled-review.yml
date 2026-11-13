@@ -1,0 +1,223 @@
+name: scheduled review
+
+# The checks of `main` that a pull request is too small or too quick for (spec §5 of the review flow):
+# `botica lint` on every file with `--record`, a full run of cargo-mutants, and agnix on the files that
+# agents read. The workflow only reads: it has no secret, writes no comment and opens no issue.
+# A schedule runs on the default branch only, and the `if` of each job keeps a manual run from another
+# branch out.
+#
+# Mutation: cargo-mutants lists about 7300 mutants in this workspace and each one runs the tests of
+# the workspace (about 2 minutes each on 16 cores), so the run is split in MUTANT_SHARDS shards, one
+# job each; 256 is the most jobs a matrix takes. Each shard runs the baseline too, so a failing
+# baseline of any shard fails the whole report (`botica lint --mutants` refuses it). The shards join
+# in `report`, which reads them with `botica lint --mutants` and prints the score. The score is
+# global: `botica` has no command that groups outcomes by the areas of `[tool.botica.review]`.
+#
+# `agnix` runs through the hook of `prek.toml`, so it keeps the version and the `exclude` of that file.
+# The hook passes no `--strict`: an error fails the job and a warning does not.
+
+on:
+  schedule:
+    # Sunday, before the Monday runs of `pins` and `skills-drift`.
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+concurrency:
+  group: scheduled-review-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  MUTANT_SHARDS: "256"
+
+jobs:
+  # `--record` appends the run of mode `full` of the default branch to the history (ADR 0019). The job
+  # uploads the history as the artifact `botica-history-scheduled-lint`, also when the lint fails.
+  # BOTICA_HISTORY_KEY is not set, as in the job `lint` of `ci.yml`.
+  lint:
+    name: lint and record
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Build botica
+        run: cargo build --locked -p botica-cli
+
+      - name: Lint and record
+        run: target/debug/botica lint --record
+
+      - name: Upload the history
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: botica-history-scheduled-lint
+          path: |
+            .botica/history/runs.jsonl
+            .botica/history/findings.jsonl
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 90
+
+  plan:
+    name: plan the shards
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+    steps:
+      - id: plan
+        run: echo "shards=$(jq -nc --argjson count "$MUTANT_SHARDS" '[range($count)]')" >> "$GITHUB_OUTPUT"
+
+  # A shard never fails the run by itself: `continue-on-error` keeps a survivor, a timeout or a
+  # failure of cargo-mutants from stopping the others, and `report` fails when a shard left no report.
+  # `round-robin` gives each shard a mix of the files, so the shards end at about the same time.
+  mutants:
+    name: mutants, shard ${{ matrix.shard }}
+    needs: plan
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants --version 27.1.0 --locked
+
+      # cargo-mutants exits with 2 when a mutant survives and 3 when a test times out; both leave a
+      # report. Any other code is a failed run.
+      - name: Test the mutants of the shard
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          status=0
+          cargo mutants --test-workspace=true --cargo-arg=--locked \
+            --shard "$SHARD/$MUTANT_SHARDS" --sharding round-robin || status=$?
+          case "$status" in
+            0|2|3) ;;
+            *) exit "$status" ;;
+          esac
+
+      - name: Upload the report of the shard
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutants-shard-${{ matrix.shard }}
+          path: mutants.out/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  report:
+    name: survivors and score
+    needs: mutants
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Build botica
+        run: cargo build --locked -p botica-cli
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: mutants-shard-*
+          path: shards
+
+      - name: Join the reports of the shards
+        id: join
+        run: |
+          mapfile -t reports < <(find shards -name outcomes.json | sort)
+          echo "found=${#reports[@]}" >> "$GITHUB_OUTPUT"
+          if [ "${#reports[@]}" -eq 0 ]; then
+            echo '{"outcomes": []}' > mutants-all.json
+          else
+            jq -s '{outcomes: (map(.outcomes) | add)}' "${reports[@]}" > mutants-all.json
+          fi
+
+      # The summary of a step is capped at 1 MiB, so it takes the first 300 lines; the artifact has all.
+      - name: Report the survivors and record them
+        run: |
+          status=0
+          target/debug/botica lint --mutants mutants-all.json \
+            --preview --select mutant-survived --output-format markdown --record \
+            > survivors.md || status=$?
+          head -n 300 survivors.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+      - name: Score
+        if: ${{ !cancelled() }}
+        run: |
+          jq -r '
+            [.outcomes[] | select(.scenario != "Baseline") | .summary] as $all
+            | ($all | map(select(. == "CaughtMutant")) | length) as $caught
+            | ($all | map(select(. == "MissedMutant")) | length) as $missed
+            | ($all | map(select(. == "Timeout")) | length) as $timeout
+            | ($all | map(select(. == "Unviable")) | length) as $unviable
+            | (if $caught + $missed == 0 then "n/a"
+               else ((10000 * $caught / ($caught + $missed) | round) / 100 | tostring) + "%" end) as $score
+            | "## Mutation score\n\n| caught | missed | timeout | unviable | score |\n| --- | --- | --- | --- | --- |\n| \($caught) | \($missed) | \($timeout) | \($unviable) | \($score) |\n\nThe score is caught / (caught + missed), over the whole workspace."
+          ' mutants-all.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the report and the history
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: botica-history-scheduled-mutants
+          path: |
+            mutants-all.json
+            survivors.md
+            .botica/history/runs.jsonl
+            .botica/history/findings.jsonl
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 90
+
+      - name: Check that every shard left a report
+        if: ${{ !cancelled() }}
+        env:
+          FOUND: ${{ steps.join.outputs.found }}
+        run: |
+          if [ "$FOUND" -ne "$MUTANT_SHARDS" ]; then
+            echo "$FOUND of $MUTANT_SHARDS shards left a report; the score covers only those." >&2
+            exit 1
+          fi
+
+  agnix:
+    name: agnix
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: "0.13.6"
+          enable-cache: false
+
+      - name: Run agnix
+        run: uvx prek run agnix --all-files --verbose

@@ -33,6 +33,16 @@ pull request, with cargo-mutants 27.1.0, then `botica lint --mutants` on the rep
 `git diff origin/main...HEAD > pr.diff`, `cargo mutants --in-diff pr.diff --test-workspace=true`,
 `botica lint --mutants mutants.out/outcomes.json --diff-file pr.diff --preview --select mutant-survived`.
 
+The workflow `scheduled-review.yml` runs every Sunday on `main`, and on demand with `workflow_dispatch`.
+It only reads: no secret, no issue. Its jobs are `botica lint --record` on every file (artifact
+`botica-history-scheduled-lint`), a full run of cargo-mutants split in 256 shards with the same
+version as the job `mutants`, whose `report` job joins the `outcomes.json` of the shards, runs
+`botica lint --mutants` on them and prints the global score, and `agnix` through the hook of
+`prek.toml`. A `schedule` runs on the default branch only, so a pull request cannot run it: the
+test `crates/botica-catalog/tests/scheduled_review_workflow.rs` holds its shape. To run a shard
+locally: `cargo mutants --test-workspace=true --shard 7/2000 --sharding round-robin`, with `TMPDIR`
+set to a short path (the copy of the tree fails when `.tmp/` is inside the worktree).
+
 The hooks `botica` and `botica-project` of `prek.toml` pass `--record`, and the job `lint` of
 `ci.yml` runs `botica lint --record` and uploads `.botica/history/` as the artifact
 `botica-history-lint` (ADR 0019). The recipes and the mirror pass no `--record`: the botica of PyPI
