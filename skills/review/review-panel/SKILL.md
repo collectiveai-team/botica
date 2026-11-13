@@ -41,7 +41,8 @@ and the folder of the run. It reads the JSON of the roles and writes `refute.jso
 
 ## 4. Report
 
-Print one table with the findings that `refute.json` marked `confirmed`, the most severe first:
+Print one table with the findings that `refute.json` marked `confirmed` or left with no
+`refutation`, because it did not judge them, the most severe first:
 severity, role, file and line, title, and how to verify. Under it, list:
 
 - the verdict of each role;

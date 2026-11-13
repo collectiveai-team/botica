@@ -26,14 +26,15 @@ max-findings: 50
 
 ## Check always
 
-- Each finding of `P0` and `P1` gets an attempt with a command of `git` on the base or on `HEAD`,
-  not only a reading of its text.
+- Each finding of `P0` and `P1` gets an attempt against the files of the base or of `HEAD` (a
+  command of `git` on the machine of the author, a read of the file in CI), not only a reading of
+  its text.
 - A finding refuted as `pre-existing` names the commit of the base where its lines already were,
   and says that no line of the diff changes what reaches them.
 - A finding refuted as `duplicate` of a check names the hook of `prek.toml`, the job of
   `.github/workflows/` or the line of the role file that reports it.
-- A finding that only a run of code could reproduce stays `confirmed`, and says which step of
-  `how_to_verify` a person runs.
+- A finding that only a run of code could reproduce stays `confirmed`, and its `how_to_verify`
+  has a step that a person runs.
 
 ## Do not report
 
