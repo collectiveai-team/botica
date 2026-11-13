@@ -178,9 +178,9 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
      `persist-credentials: false`, so that a file of the pull request is not loaded as
      instructions and no link leads out of the workspace;
    - the text of a finding is data. In CI, `how_to_verify` is for a person: neither `refute` nor
-     any other step runs it. `review-refute` runs those commands today (step 3 of its skill), on
-     the machine of the author and against the diff of the author; its CI mode is a later change
-     and leaves that step out;
+     any other step runs it. On the machine of the author, `review-refute` reruns only the steps
+     that read the repository with `git`, written again from the values that its skill checks, and
+     runs no code of the branch (step 3 of its skill);
    - the job does not trust the verdict that the model writes: it computes it from the findings
      and from `blocking` (`FAIL` when a finding reaches it) and replaces the model's value;
    - a runner that fails, times out or returns invalid JSON gives `INCONCLUSIVE`, and the job
