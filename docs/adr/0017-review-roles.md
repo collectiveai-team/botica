@@ -248,9 +248,9 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
   that has none, and an existing one needs a manual merge, since `install` leaves it.
 - A change to `.github/review/` has no effect on its own pull request. A repository adopting the
   flow merges the first `REVIEW.md` before CI runs the roles.
-- The generic `REVIEW.md` files in `skills/review/*/references/` follow decision 4 except for the
-  `botica:covered` block, which none has yet, and `owners`, which is optional. Adding the block
-  belongs to the change that adds `botica review check`.
+- The generic `REVIEW.md` files in `skills/review/*/references/` follow decision 4, with no
+  `owners`, which is optional. Their `botica:covered` block, where a file has one, is empty:
+  filling it belongs to the change that adds `botica review check`.
 - `review-panel` and the workflow `review.yml` run the same roles only while both read
   `botica review plan`. The local fallback to `references/REVIEW.md` in decision 7 is a case where
   a local run and a CI run can differ, for a repository with no file on its base.
