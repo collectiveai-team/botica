@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-11-13T03:14:57Z",
+  "compiledAt": "2026-11-13T05:02:33Z",
   "compiledBy": "botica 0.20.2",
   "manual": true,
   "sources": [
@@ -711,6 +711,9 @@
         "catalog/recipes/ci-gitlab.toml",
         "catalog/recipes/ci-go-gitlab.toml",
         "catalog/recipes/ci-go.toml",
+        "catalog/recipes/ci-mutants-go.toml",
+        "catalog/recipes/ci-mutants-node.toml",
+        "catalog/recipes/ci-mutants-rust.toml",
         "catalog/recipes/ci-node-gitlab.toml",
         "catalog/recipes/ci-node.toml",
         "catalog/recipes/ci-openapi-compat-gitlab.toml",

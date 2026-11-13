@@ -1,0 +1,5 @@
+description = "GitHub Actions for a Node project that uses pnpm: Stryker tests the mutants of the code a pull request changes, reusing the results of the base branch, and uploads its report, without blocking"
+
+[[files]]
+path = ".github/workflows/mutants-node.yml"
+template = "files/github-node/workflows/mutants-node.yml"

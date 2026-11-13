@@ -159,7 +159,7 @@ version:
 
 | Parameter | Recipe | Template | Default |
 | --- | --- | --- | --- |
-| `botica-version` | botica | `prek.toml`, `abide.yml`, `conventional-commits.yml`, `commit-policy.yml` | the release of the binary |
+| `botica-version` | botica | `prek.toml`, `abide.yml`, `conventional-commits.yml`, `commit-policy.yml`, `mutants-rust.yml` | the release of the binary |
 | `jscpd-version` | `base` | `prek.toml` | `5.4.2` |
 | `abide-version` | `base` | `abide.yml` | `0.0.11` |
 | `zizmor-version` | `ci` | `zizmor.yml` | `1.31.1` |
@@ -176,6 +176,8 @@ version:
 
 A hook with a `rev` has no parameter: `prek update` moves it. `prek update` leaves the other
 versions of botica as they are, and `ci-botica-update` moves them with the `rev` of the mirror.
+`cargo-mutants-version` of `ci-mutants-rust` (`27.1.0`) and `gremlins-version` of `ci-mutants-go`
+(`0.6.0`) are the versions that `cargo install` and `go install` build; no script moves them.
 
 ## Built-in recipes
 
@@ -368,10 +370,23 @@ What the recipes cannot say about themselves:
   interface"`, once per repository. A break shows on the pull request as a warning when the label is
   there, and as an error, with a failed job, when it is not. The parameters `griffe-version`
   and `asyncapi-cli-version` set the versions of griffe and `@asyncapi/cli`.
+- `ci-mutants-rust`, `ci-mutants-go` and `ci-mutants-node` each write a workflow that tests the
+  mutants of the code a pull request changes, on every pull request, with `continue-on-error` and a
+  `timeout-minutes`, so it never blocks. `mutants-rust.yml` runs `cargo mutants --in-diff` and
+  then `botica lint --mutants`, which reports each mutant that survives on an added line as a
+  finding of `mutant-survived` and records it in the history; a `botica-version` older than the
+  release that has `--mutants` fails that step, and the job hides the failure. botica reads only
+  the report of cargo-mutants, so `mutants-go.yml` (`gremlins unleash --diff`) and `mutants-node.yml`
+  (`stryker run --incremental`) upload their reports as an artifact and do not call botica.
+  `mutants-node.yml` also runs on a push to main and keeps `reports/stryker-incremental.json` in the
+  cache of Actions, where a pull request finds the results of its base; it runs the Stryker of the
+  project, which installs `@stryker-mutator/core` with the plugin of its test runner and configures
+  them in `stryker.config.json`.
 
 ## GitLab CI
 
-Each recipe `ci-*` that writes `.github/workflows/` has a counterpart `ci-*-gitlab` that writes
+Each recipe `ci-*` that writes `.github/workflows/`, except the three `ci-mutants-*`, has a
+counterpart `ci-*-gitlab` that writes
 `.gitlab-ci.yml` and `.gitlab/ci/` instead, for a project hosted on GitLab rather than GitHub:
 `ci-gitlab`, `ci-python-gitlab`, `ci-rust-gitlab`, `ci-node-gitlab`, `ci-go-gitlab`,
 `ci-docker-gitlab`, `ci-dependency-review-gitlab`, `ci-botica-update-gitlab`, `ci-publish-gitlab`,

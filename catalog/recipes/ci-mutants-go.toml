@@ -1,0 +1,10 @@
+description = "GitHub Actions for a Go module: gremlins tests the mutants of the code a pull request changes and uploads its report, without blocking"
+
+[[files]]
+path = ".github/workflows/mutants-go.yml"
+template = "files/github-go/workflows/mutants-go.yml"
+
+[params.gremlins-version]
+description = "The version of gremlins that mutants-go.yml installs with go install"
+kind = "version"
+default = "0.6.0"
