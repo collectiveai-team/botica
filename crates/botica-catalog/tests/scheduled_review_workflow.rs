@@ -47,7 +47,7 @@ fn it_runs_weekly_and_on_demand_and_never_on_a_pull_request() {
 }
 
 #[test]
-fn it_only_reads_and_holds_no_secret() {
+fn it_only_reads_except_the_job_that_writes_the_issue_and_holds_no_secret() {
     let workflow = scheduled();
     let text = fs::read_to_string(
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.github/workflows/scheduled-review.yml"),
@@ -58,14 +58,17 @@ fn it_only_reads_and_holds_no_secret() {
     assert_eq!(permissions.len(), 1);
     assert_eq!(permissions["contents"].as_str(), Some("read"));
     for (name, job) in workflow["jobs"].as_mapping().expect("the jobs") {
-        assert!(
-            job["permissions"].is_null(),
-            "{name:?} widens the permissions"
-        );
+        if name.as_str() != Some("history-report") {
+            assert!(
+                job["permissions"].is_null(),
+                "{name:?} widens the permissions"
+            );
+        }
     }
     assert!(!text.contains("secrets."));
-    assert!(!text.contains("GITHUB_TOKEN"));
-    assert!(!text.contains("gh issue"));
+    assert!(!text.contains("pull-requests: write"));
+    assert!(!text.contains("contents: write"));
+    assert!(!text.contains("gh pr merge"));
 }
 
 #[test]

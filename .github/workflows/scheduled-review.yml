@@ -1,10 +1,14 @@
 name: scheduled review
 
+# botica: ignore-file[file-size-guard] -- one workflow of the weekly checks: the jobs share `env`, `needs` and the schedule, and the issue is the last job.
+
 # The checks of `main` that a pull request is too small or too quick for (spec §5 of the review flow):
 # `botica lint` on every file with `--record`, cargo-mutants on what changed in the last week, and
-# agnix on the files that agents read. The workflow only reads: it has no secret, writes no comment
-# and opens no issue. A schedule runs on the default branch only, and the `if` of each job keeps a
-# manual run from another branch out.
+# agnix on the files that agents read, and `botica history report` over the history of the last
+# weeks. The workflow only reads, with no secret, except the job `history-report`: it alone has
+# `issues: write` and `actions: read` with the token of the run, and it only opens or edits one issue.
+# Nothing here merges or changes code. A schedule runs on the default branch only, and the `if` of
+# each job keeps a manual run from another branch out.
 #
 # Mutation: cargo-mutants lists about 7300 mutants in this workspace and each one runs the tests of
 # the workspace (about 2 minutes each on 16 cores), which is far more than a week of runners, so the
@@ -35,6 +39,9 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   MUTANT_SHARDS: "4"
+  HISTORY_DAYS: "28"
+  REPORT_MAX_FINDINGS: "20"
+  REPORT_TITLE: Weekly review report
 
 jobs:
   # `--record` appends the run of mode `full` of the default branch to the history (ADR 0019). The job
@@ -281,3 +288,150 @@ jobs:
 
       - name: Run agnix
         run: uvx prek run agnix --all-files --verbose
+
+  # The only job with a write permission. It downloads the history artifacts of the last
+  # HISTORY_DAYS days that `ci.yml` and this workflow recorded on `main`, runs `botica history report`
+  # on them and puts the report in one issue with a fixed title: it edits the open issue with that
+  # title and opens one only when there is none and the report has findings. The text of the report
+  # reaches the issue through a file, never through the shell. It runs after the other jobs, so the
+  # history of this run is in the window, and also when they fail.
+  #
+  # `botica history fetch` does not exist yet (ADR 0019 decision 9.2), so the first step does its
+  # work with `gh`: it keeps only a run of `push`, `schedule` or `workflow_dispatch` of this repository
+  # whose commit is in the history of `main`, writes `source.json` from the answer of the API, and
+  # extracts only `runs.jsonl` and `findings.jsonl` from each archive, at most 50 MB each. A pull
+  # request never feeds the report, which therefore has no hook run nor `diff` run of CI to pair.
+  history-report:
+    name: history report
+    needs: [lint, report, agnix]
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    env:
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Build botica
+        run: cargo build --locked -p botica-cli
+
+      - name: Download the history of CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          dir="$RUNNER_TEMP/ci-history"
+          mkdir -p "$dir"
+          since=$(date -u -d "$HISTORY_DAYS days ago" +%F)
+          runs=0
+          artifacts=0
+          bytes=0
+          for workflow in ci.yml scheduled-review.yml; do
+            gh api --paginate \
+              "repos/$GH_REPO/actions/workflows/$workflow/runs?branch=$BRANCH&created=%3E%3D$since&per_page=100" \
+              | jq -r --arg repo "$GH_REPO" '.workflow_runs[]
+                  | select(.event == "push" or .event == "schedule" or .event == "workflow_dispatch")
+                  | select(.head_repository.full_name == $repo)
+                  | "\(.id) \(.head_sha)"' > "$RUNNER_TEMP/runs.txt"
+            while read -r id sha; do
+              [[ "$id" =~ ^[0-9]+$ && "$sha" =~ ^[0-9a-f]{40}$ ]] || continue
+              git merge-base --is-ancestor "$sha" HEAD || continue
+              kept=0
+              gh api "repos/$GH_REPO/actions/runs/$id/artifacts?per_page=100" \
+                | jq -r '.artifacts[]
+                    | select(.expired == false and .size_in_bytes <= 52428800)
+                    | select(.name | test("^botica-history-[A-Za-z0-9._-]+$"))
+                    | "\(.id) \(.name) \(.size_in_bytes)"' > "$RUNNER_TEMP/artifacts.txt"
+              while read -r artifact name size; do
+                [[ "$artifact" =~ ^[0-9]+$ ]] || continue
+                if [ $((bytes + size)) -gt 2147483648 ]; then
+                  echo "::warning::the artifacts passed 2 GB: $name of run $id is left out"
+                  continue
+                fi
+                bytes=$((bytes + size))
+                gh api "repos/$GH_REPO/actions/artifacts/$artifact/zip" > "$RUNNER_TEMP/artifact.zip"
+                mkdir -p "$dir/$id/$name"
+                for file in runs.jsonl findings.jsonl; do
+                  member=$(unzip -Z1 "$RUNNER_TEMP/artifact.zip" | grep -x -F -e "$file" -e ".botica/history/$file" | head -n 1 || true)
+                  if [ -n "$member" ]; then
+                    unzip -p "$RUNNER_TEMP/artifact.zip" "$member" | head -c 52428800 > "$dir/$id/$name/$file" || true
+                  fi
+                done
+                artifacts=$((artifacts + 1))
+                kept=1
+              done < "$RUNNER_TEMP/artifacts.txt"
+              if [ "$kept" -eq 1 ]; then
+                jq -n --arg id "$id" --arg sha "$sha" '{id: $id, head_sha: $sha, trusted: true}' > "$dir/$id/source.json"
+                runs=$((runs + 1))
+              fi
+            done < "$RUNNER_TEMP/runs.txt"
+          done
+          echo "Downloaded $artifacts artifacts of $runs runs of $BRANCH since $since." >> "$GITHUB_STEP_SUMMARY"
+
+      # `GITHUB_ACTIONS=false` keeps the `::stop-commands::` lines out of the file: they guard the
+      # log of the runner, and the file goes to an issue.
+      - name: Read the history
+        run: |
+          GITHUB_ACTIONS=false target/debug/botica history report \
+            --days "$HISTORY_DAYS" --format markdown --from "$RUNNER_TEMP/ci-history" > "$RUNNER_TEMP/report.md"
+
+      # The first pass counts the items of each section, the second one keeps the first
+      # REPORT_MAX_FINDINGS of each, so that a long list of quiet rules does not push the rules with
+      # many suppressions out. The findings that open an issue are the items of the sections that ask
+      # for a decision; "Caught before the commit" lists what the hooks stopped and opens nothing.
+      - name: Cap the findings
+        id: cap
+        run: |
+          awk -v max="$REPORT_MAX_FINDINGS" -v out="$RUNNER_TEMP/findings.txt" '
+            BEGIN {
+              n = split("Caught before the commit|Reached CI|Rules with no findings|Rules with many suppressions|Findings of the roles that refute did not confirm", names, "|")
+              for (i = 1; i <= n; i++) capped[names[i]] = 1
+              n = split("Reached CI|Rules with no findings|Rules with many suppressions|Findings of the roles that refute did not confirm", names, "|")
+              for (i = 1; i <= n; i++) asks[names[i]] = 1
+            }
+            FNR == 1 { heading = "" }
+            /^## / { heading = substr($0, 4); seen = 0 }
+            NR == FNR { if ((heading in capped) && /^- /) total[heading]++; next }
+            (heading in capped) && /^- / {
+              seen++
+              if (seen == max + 1) print "- " (total[heading] - max) " more are not shown. Run `botica history report` for the full list."
+              if (seen > max) next
+            }
+            { print }
+            END { for (h in total) if (h in asks) sum += total[h]; print sum + 0 > out }
+          ' "$RUNNER_TEMP/report.md" "$RUNNER_TEMP/report.md" > "$RUNNER_TEMP/capped.md"
+          {
+            echo "Output of \`botica history report\` over the last $HISTORY_DAYS days of the runs of \`ci.yml\` and \`scheduled-review.yml\` on \`$BRANCH\`. A person decides what to do with each item."
+            echo
+            cat "$RUNNER_TEMP/capped.md"
+            echo
+            echo "Run: $RUN_URL"
+          } > "$RUNNER_TEMP/issue.md"
+          echo "findings=$(cat "$RUNNER_TEMP/findings.txt")" >> "$GITHUB_OUTPUT"
+        env:
+          BRANCH: ${{ github.ref_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Open or update the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FINDINGS: ${{ steps.cap.outputs.findings }}
+        run: |
+          number=$(gh issue list --state open --search "$REPORT_TITLE in:title" --limit 100 --json number,title \
+            | jq -r --arg title "$REPORT_TITLE" '[.[] | select(.title == $title)][0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue edit "$number" --body-file "$RUNNER_TEMP/issue.md"
+          elif [ "$FINDINGS" -gt 0 ]; then
+            gh issue create --title "$REPORT_TITLE" --body-file "$RUNNER_TEMP/issue.md"
+          else
+            echo "The report has no findings and no issue is open: no issue was opened." >> "$GITHUB_STEP_SUMMARY"
+          fi

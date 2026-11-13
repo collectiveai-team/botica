@@ -34,7 +34,7 @@ pull request, with cargo-mutants 27.1.0, then `botica lint --mutants` on the rep
 `botica lint --mutants mutants.out/outcomes.json --diff-file pr.diff --preview --select mutant-survived`.
 
 The workflow `scheduled-review.yml` runs every Sunday on `main`, and on demand with `workflow_dispatch`.
-It only reads: no secret, no issue. Its jobs are `botica lint --record` on every file (artifact
+It only reads and holds no secret, except the job `history-report` (below). Its jobs are `botica lint --record` on every file (artifact
 `botica-history-scheduled-lint`), cargo-mutants on the Rust lines that `main` changed in the last 7
 days (`--in-diff`, split in 4 shards, with the same version as the job `mutants`; a week with no
 Rust change runs no shard), whose `report` job joins the `outcomes.json` of the shards, runs
@@ -45,6 +45,19 @@ run it: the test `crates/botica-catalog/tests/scheduled_review_workflow.rs` hold
 shard locally: `git diff <commit of 7 days ago> HEAD -- '*.rs' > week.diff`, then
 `cargo mutants --in-diff week.diff --test-workspace=true --shard 0/4 --sharding round-robin`, with
 `TMPDIR` set to a short path (the copy of the tree fails when `.tmp/` is inside the worktree).
+
+The job `history-report` runs after the others and is the only one with `issues: write` and
+`actions: read`, with the `GITHUB_TOKEN` of the run. It downloads the artifacts `botica-history-*` of
+the runs of `ci.yml` and `scheduled-review.yml` on `main` of the last 28 days (`HISTORY_DAYS`) that
+are a `push`, a `schedule` or a `workflow_dispatch` of this repository whose commit is in the history
+of `main`, writes the `source.json` of each run from the answer of the API (`botica history fetch`
+does not exist yet), runs `botica history report --format markdown` and keeps at most 20 items
+(`REPORT_MAX_FINDINGS`) of each section. The report goes to the issue titled `Weekly review report`
+(`REPORT_TITLE`) through `--body-file`: the job edits the open issue with that title, and opens one
+only when none is open and a section that asks for a decision has an item. It merges nothing and
+changes no code. A pull request cannot run it either: `scheduled_review_report.rs` runs its steps
+with bash and a `gh` that answers from files, and `scheduled_review_workflow.rs` holds its
+permissions.
 
 The hooks `botica` and `botica-project` of `prek.toml` pass `--record`, and the job `lint` of
 `ci.yml` runs `botica lint --record` and uploads `.botica/history/` as the artifact
