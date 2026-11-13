@@ -28,7 +28,8 @@ max-findings: 10
 
 - What `botica lint` reports under the rules of the family `testing`.
 - A missing test for code that only moved, with no change of behaviour.
-- The style of a test that protects its behaviour.
+- The names and the layout of a test that protects its behaviour through the interface that
+  production code calls.
 
 <!-- botica:covered -->
 <!-- /botica:covered -->

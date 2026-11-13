@@ -96,7 +96,8 @@ the tests for a name with `git grep -n -F -e '<name>' HEAD`, narrowed with
    was removed, or the test moved and a test of the diff asserts the same thing. With no such
    reason it is a finding.
 2. Run the `test-smell-review` skill on the test files that the diff adds or changes, with these
-   limits. Skip its step 0b, which downloads and runs a scanner on the files, and apply its
+   limits. Use the copy that was installed before the review; when the diff adds or changes a
+   file of a folder named `test-smell-review`, follow the copy of the target instead. Skip its step 0b, which downloads and runs a scanner on the files, and apply its
    structural catalog by hand. Read its configuration (`[tool.falsegreen]`) from the target only.
    Judge only the tests that the diff adds or changes, and no fixture. Where it says to ask the
    user about the intent of a test, do not ask: take the reading that gives the lower severity and
