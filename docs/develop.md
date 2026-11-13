@@ -35,13 +35,16 @@ pull request, with cargo-mutants 27.1.0, then `botica lint --mutants` on the rep
 
 The workflow `scheduled-review.yml` runs every Sunday on `main`, and on demand with `workflow_dispatch`.
 It only reads: no secret, no issue. Its jobs are `botica lint --record` on every file (artifact
-`botica-history-scheduled-lint`), a full run of cargo-mutants split in 256 shards with the same
-version as the job `mutants`, whose `report` job joins the `outcomes.json` of the shards, runs
+`botica-history-scheduled-lint`), cargo-mutants on the Rust lines that `main` changed in the last 7
+days (`--in-diff`, split in 4 shards, with the same version as the job `mutants`; a week with no
+Rust change runs no shard), whose `report` job joins the `outcomes.json` of the shards, runs
 `botica lint --mutants` on them and prints the global score, and `agnix` through the hook of
-`prek.toml`. A `schedule` runs on the default branch only, so a pull request cannot run it: the
-test `crates/botica-catalog/tests/scheduled_review_workflow.rs` holds its shape. To run a shard
-locally: `cargo mutants --test-workspace=true --shard 7/2000 --sharding round-robin`, with `TMPDIR`
-set to a short path (the copy of the tree fails when `.tmp/` is inside the worktree).
+`prek.toml`. The whole workspace has about 7300 mutants at about 2 minutes each, so a full run does
+not fit in a week of runners. A `schedule` runs on the default branch only, so a pull request cannot
+run it: the test `crates/botica-catalog/tests/scheduled_review_workflow.rs` holds its shape. To run a
+shard locally: `git diff <commit of 7 days ago> HEAD -- '*.rs' > week.diff`, then
+`cargo mutants --in-diff week.diff --test-workspace=true --shard 0/4 --sharding round-robin`, with
+`TMPDIR` set to a short path (the copy of the tree fails when `.tmp/` is inside the worktree).
 
 The hooks `botica` and `botica-project` of `prek.toml` pass `--record`, and the job `lint` of
 `ci.yml` runs `botica lint --record` and uploads `.botica/history/` as the artifact

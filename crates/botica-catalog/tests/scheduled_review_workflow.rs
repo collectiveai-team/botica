@@ -149,21 +149,16 @@ fn the_shards_cover_the_run_and_agree_on_the_denominator() {
         .expect("the count")
         .parse()
         .expect("a number");
-    let plan = &workflow["jobs"]["plan"];
     let mutants = &workflow["jobs"]["mutants"];
 
-    assert!(
-        (2..=256).contains(&shards),
-        "a matrix takes 256 jobs at most"
-    );
-    assert!(runs(plan)
+    let matrix: Vec<u64> = mutants["strategy"]["matrix"]["shard"]
+        .as_sequence()
+        .expect("the shards")
         .iter()
-        .any(|r| r.contains(r#"--argjson count "$MUTANT_SHARDS""#) && r.contains("range($count)")));
+        .filter_map(Value::as_u64)
+        .collect();
+    assert_eq!(matrix, (0..shards).collect::<Vec<_>>());
     assert_eq!(mutants["needs"].as_str(), Some("plan"));
-    assert_eq!(
-        mutants["strategy"]["matrix"]["shard"].as_str(),
-        Some("${{ fromJSON(needs.plan.outputs.shards) }}")
-    );
     assert_eq!(mutants["strategy"]["fail-fast"].as_bool(), Some(false));
     let cargo = runs(mutants)
         .into_iter()
@@ -175,7 +170,41 @@ fn the_shards_cover_the_run_and_agree_on_the_denominator() {
     );
     assert!(cargo.contains("--test-workspace=true"), "{cargo}");
     assert!(cargo.contains("0|2|3) ;;"), "{cargo}");
-    assert!(!cargo.contains("--in-diff"), "{cargo}");
+    assert!(
+        cargo.contains(r#"--in-diff "$RUNNER_TEMP/week/week.diff""#),
+        "{cargo}"
+    );
+}
+
+#[test]
+fn the_mutants_are_those_of_the_rust_lines_that_main_changed_in_the_last_week() {
+    let workflow = scheduled();
+    let plan = &workflow["jobs"]["plan"];
+    let mutants = &workflow["jobs"]["mutants"];
+
+    let script = runs(plan).join("\n");
+    assert!(script.contains(r#"--before="7 days ago""#), "{script}");
+    assert!(
+        script.contains(r#"git diff "$base" HEAD -- '*.rs' > week.diff"#),
+        "{script}"
+    );
+    assert!(script.contains("rust=false"), "{script}");
+    assert_eq!(
+        using(plan, "actions/checkout@")["with"]["fetch-depth"].as_u64(),
+        Some(0),
+        "the commit of 7 days ago needs the history"
+    );
+    assert_eq!(
+        mutants["if"].as_str(),
+        Some("needs.plan.outputs.rust == 'true'")
+    );
+    assert_eq!(
+        using(mutants, "actions/download-artifact@")["with"]["name"].as_str(),
+        using(plan, "actions/upload-artifact@")["with"]["name"].as_str()
+    );
+    assert!(workflow["jobs"]["report"]["if"]
+        .as_str()
+        .is_some_and(|c| c.contains("needs.plan.outputs.rust == 'true'")));
 }
 
 #[test]
@@ -217,7 +246,11 @@ fn the_report_joins_every_shard_and_fails_when_one_left_nothing() {
     let workflow = scheduled();
     let job = &workflow["jobs"]["report"];
 
-    assert_eq!(job["needs"].as_str(), Some("mutants"));
+    assert_eq!(
+        job["needs"].as_sequence().map(Vec::len),
+        Some(2),
+        "plan and mutants"
+    );
     assert!(job["if"]
         .as_str()
         .is_some_and(|c| c.starts_with("${{ !cancelled()")));
@@ -279,7 +312,7 @@ fn only_the_shards_continue_on_error_and_they_leave_runners_for_pull_requests() 
     let parallel = workflow["jobs"]["mutants"]["strategy"]["max-parallel"]
         .as_u64()
         .expect("max-parallel");
-    assert!((1..=128).contains(&parallel), "{parallel}");
+    assert!((1..=4).contains(&parallel), "{parallel}");
 }
 
 #[test]

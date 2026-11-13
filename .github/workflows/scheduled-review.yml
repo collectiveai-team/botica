@@ -1,17 +1,20 @@
 name: scheduled review
 
 # The checks of `main` that a pull request is too small or too quick for (spec §5 of the review flow):
-# `botica lint` on every file with `--record`, a full run of cargo-mutants, and agnix on the files that
-# agents read. The workflow only reads: it has no secret, writes no comment and opens no issue.
-# A schedule runs on the default branch only, and the `if` of each job keeps a manual run from another
-# branch out.
+# `botica lint` on every file with `--record`, cargo-mutants on what changed in the last week, and
+# agnix on the files that agents read. The workflow only reads: it has no secret, writes no comment
+# and opens no issue. A schedule runs on the default branch only, and the `if` of each job keeps a
+# manual run from another branch out.
 #
 # Mutation: cargo-mutants lists about 7300 mutants in this workspace and each one runs the tests of
-# the workspace (about 2 minutes each on 16 cores), so the run is split in MUTANT_SHARDS shards, one
-# job each; 256 is the most jobs a matrix takes. Each shard runs the baseline too, so a failing
-# baseline of any shard fails the whole report (`botica lint --mutants` refuses it). The shards join
-# in `report`, which reads them with `botica lint --mutants` and prints the score. The score is
-# global: `botica` has no command that groups outcomes by the areas of `[tool.botica.review]`.
+# the workspace (about 2 minutes each on 16 cores), which is far more than a week of runners, so the
+# run tests only the mutants of the Rust lines that `main` changed in the last 7 days
+# (`--in-diff`). `plan` writes that diff and, when it holds no Rust line, says so and ends the run
+# of the mutants. Otherwise MUTANT_SHARDS shards split the mutants, one job each; each shard runs the
+# baseline too, so a failing baseline of any shard fails the whole report (`botica lint --mutants`
+# refuses it). The shards join in `report`, which reads them with `botica lint --mutants` and prints
+# the score. The score is global: `botica` has no command that groups outcomes by the areas of
+# `[tool.botica.review]`.
 #
 # `agnix` runs through the hook of `prek.toml`, so it keeps the version and the `exclude` of that file.
 # The hook passes no `--strict`: an error fails the job and a warning does not.
@@ -31,7 +34,7 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
-  MUTANT_SHARDS: "256"
+  MUTANT_SHARDS: "4"
 
 jobs:
   # `--record` appends the run of mode `full` of the default branch to the history (ADR 0019). The job
@@ -67,15 +70,41 @@ jobs:
           if-no-files-found: ignore
           retention-days: 90
 
+  # The diff of the Rust files between the last commit that is 7 days old and `HEAD`. A repository
+  # younger than that has no such commit, so the diff starts at the empty tree.
   plan:
-    name: plan the shards
+    name: plan the mutants
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
-      shards: ${{ steps.plan.outputs.shards }}
+      rust: ${{ steps.plan.outputs.rust }}
     steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
       - id: plan
-        run: echo "shards=$(jq -nc --argjson count "$MUTANT_SHARDS" '[range($count)]')" >> "$GITHUB_OUTPUT"
+        run: |
+          base=$(git rev-list -1 --before="7 days ago" HEAD)
+          if [ -z "$base" ]; then
+            base=$(git hash-object -t tree /dev/null)
+          fi
+          git diff "$base" HEAD -- '*.rs' > week.diff
+          if [ -s week.diff ]; then
+            echo "rust=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "rust=false" >> "$GITHUB_OUTPUT"
+            echo "No Rust line changed on main in the last 7 days: nothing to mutate." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload the diff
+        if: ${{ steps.plan.outputs.rust == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutants-diff
+          path: week.diff
+          retention-days: 14
 
   # A shard never fails the run by itself: `continue-on-error` keeps a survivor, a timeout or a
   # failure of cargo-mutants from stopping the others, and `report` fails when a shard left no report.
@@ -83,19 +112,25 @@ jobs:
   mutants:
     name: mutants, shard ${{ matrix.shard }}
     needs: plan
+    if: needs.plan.outputs.rust == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true
-    timeout-minutes: 300
+    timeout-minutes: 350
     strategy:
       fail-fast: false
-      # 64 jobs at a time leave runners for the pull requests that run while this workflow does.
-      max-parallel: 64
+      # One job per shard, and few of them: the pull requests that run meanwhile keep their runners.
+      max-parallel: 4
       matrix:
-        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
+        shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: mutants-diff
+          path: ${{ runner.temp }}/week
 
       - name: Install the Rust toolchain
         run: rustup toolchain install stable --profile minimal
@@ -110,7 +145,7 @@ jobs:
           SHARD: ${{ matrix.shard }}
         run: |
           status=0
-          cargo mutants --test-workspace=true --cargo-arg=--locked \
+          cargo mutants --in-diff "$RUNNER_TEMP/week/week.diff" --test-workspace=true --cargo-arg=--locked \
             --shard "$SHARD/$MUTANT_SHARDS" --sharding round-robin || status=$?
           case "$status" in
             0|2|3) ;;
@@ -128,8 +163,8 @@ jobs:
 
   report:
     name: survivors and score
-    needs: mutants
-    if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
+    needs: [plan, mutants]
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && needs.plan.outputs.rust == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -191,7 +226,7 @@ jobs:
             | ($all | map(select(. == "Unviable")) | length) as $unviable
             | (if $caught + $missed == 0 then "n/a"
                else ((10000 * $caught / ($caught + $missed) | round) / 100 | tostring) + "%" end) as $score
-            | "## Mutation score\n\n| caught | missed | timeout | unviable | score |\n| --- | --- | --- | --- | --- |\n| \($caught) | \($missed) | \($timeout) | \($unviable) | \($score) |\n\nThe score is caught / (caught + missed), over the whole workspace."
+            | "## Mutation score\n\n| caught | missed | timeout | unviable | score |\n| --- | --- | --- | --- | --- |\n| \($caught) | \($missed) | \($timeout) | \($unviable) | \($score) |\n\nThe score is caught / (caught + missed), over the mutants of the Rust lines that main changed in the last 7 days."
           ' mutants-all.json >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the report and the history
