@@ -19,8 +19,8 @@ max-findings: 10
   matches its `paths` filter.
 - The variables `BOTICA_REQUIRE_RUFF`, `BOTICA_REQUIRE_READ_ERRORS`, `BOTICA_REQUIRE_NODE` and
   `BOTICA_REQUIRE_WORKFLOW_LINTERS` in the `env` of `ci.yml` turn a test that skips itself when a
-  tool is missing into a failure. A new test that skips itself when a tool is missing reads a
-  switch of this kind, and `ci.yml` sets it.
+  tool is missing into a failure. The Rust tests read them; `tests.yml` sets none. A new Rust test
+  that skips itself when a tool is missing reads a switch of this kind, and `ci.yml` sets it.
 - `[tool.pytest.ini_options]` of `pyproject.toml` keeps pytest strict (`strict_config`,
   `strict_markers`, `strict_xfail`, `strict_parametrization_ids`,
   `empty_parameter_set_mark = "fail_at_collect"`, `required_plugins`) and the tests off the network
@@ -54,11 +54,14 @@ max-findings: 10
 
 ## Do not report
 
-- The fixtures under `catalog/rules/**/fixtures/` and `crates/botica-complexity/tests/fixtures/`:
-  they are wrong on purpose, and they are test data, not tests.
-- A test under `crates/*/tests/` that starts the `botica` binary: that is the interface of the
-  command line.
-- A rule of the family `testing` that the configuration of `[tool.botica]` leaves out.
+- The content of the fixtures under `catalog/rules/**/fixtures/` and
+  `crates/botica-complexity/tests/fixtures/` judged as tests: they are wrong on purpose, and they
+  are test data. A fixture or an `expected.json` that the diff removes or changes is still
+  reviewed under `## Check always`.
+- That a test under `crates/*/tests/` starts the `botica` binary: that is the interface of the
+  command line. Its assertions are still reviewed.
+- A rule of the family `testing` that the configuration of `[tool.botica]` on the target leaves
+  out. A rule that the diff leaves out is a finding.
 
 <!-- botica:covered -->
 - The hook `botica` of `prek.toml`, run by the job `lint, type-check & test` of `tests.yml`:
