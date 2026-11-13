@@ -374,8 +374,9 @@ What the recipes cannot say about themselves:
   mutants of the code a pull request changes, on every pull request, with `continue-on-error` and a
   `timeout-minutes`, so it never blocks. `mutants-rust.yml` runs `cargo mutants --in-diff` and
   then `botica lint --mutants`, which reports each mutant that survives on an added line as a
-  finding of `mutant-survived` and records it in the history. botica reads only the report of
-  cargo-mutants, so `mutants-go.yml` (`gremlins unleash --diff`) and `mutants-node.yml`
+  finding of `mutant-survived` and records it in the history; a `botica-version` older than the
+  release that has `--mutants` fails that step, and the job hides the failure. botica reads only
+  the report of cargo-mutants, so `mutants-go.yml` (`gremlins unleash --diff`) and `mutants-node.yml`
   (`stryker run --incremental`) upload their reports as an artifact and do not call botica.
   `mutants-node.yml` also runs on a push to main and keeps `reports/stryker-incremental.json` in the
   cache of Actions, where a pull request finds the results of its base; it runs the Stryker of the

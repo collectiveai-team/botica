@@ -156,21 +156,73 @@ fn node_runs_the_stryker_of_the_project_incrementally_and_keeps_its_file_in_the_
         .is_some_and(|r| r.starts_with("pnpm exec stryker run --incremental ")));
     let inner = stryker["timeout-minutes"].as_u64().expect("a cap");
     assert!(inner < job["timeout-minutes"].as_u64().expect("a cap"));
-    let cached: Vec<&str> = steps
-        .iter()
-        .filter_map(|step| step["uses"].as_str())
-        .filter(|uses| uses.starts_with("actions/cache/"))
-        .collect();
-    assert_eq!(cached.len(), 2, "{cached:?}");
-    for step in steps.iter().filter(|step| {
-        step["uses"]
-            .as_str()
-            .is_some_and(|u| u.starts_with("actions/cache/"))
-    }) {
+    let restore = uses(steps, "actions/cache/restore@");
+    let save = uses(steps, "actions/cache/save@");
+    for step in [restore, save] {
         assert_eq!(
             step["with"]["path"].as_str(),
             Some("reports/stryker-incremental.json")
         );
     }
+    assert_eq!(restore["with"]["key"], save["with"]["key"]);
+    let fallbacks = restore["with"]["restore-keys"].as_str().expect("the keys");
+    assert!(
+        fallbacks.contains("stryker-incremental-${{ github.base_ref || github.ref_name }}-"),
+        "{fallbacks}"
+    );
+    assert!(save["if"].as_str().is_some_and(|c| c.contains("always()")));
     assert!(!text(NODE.0, NODE.1).contains("botica@"));
+}
+
+fn uses<'a>(steps: &'a [Value], prefix: &str) -> &'a Value {
+    steps
+        .iter()
+        .find(|step| step["uses"].as_str().is_some_and(|u| u.starts_with(prefix)))
+        .unwrap_or_else(|| panic!("no step uses {prefix}"))
+}
+
+#[test]
+fn every_job_uploads_its_report_also_when_a_step_before_failed() {
+    for (pair, artifact) in [
+        (RUST, "botica-mutants"),
+        (GO, "gremlins-mutants"),
+        (NODE, "stryker-mutants"),
+    ] {
+        let job = job(pair);
+        let steps = job["steps"].as_sequence().expect("the steps");
+        let upload = uses(steps, "actions/upload-artifact@");
+
+        assert_eq!(upload["if"].as_str(), Some("${{ always() }}"), "{}", pair.0);
+        assert_eq!(upload["with"]["name"].as_str(), Some(artifact));
+    }
+}
+
+#[test]
+fn rust_diffs_against_the_base_and_keeps_the_history_in_its_artifact() {
+    let job = job(RUST);
+    let steps = job["steps"].as_sequence().expect("the steps");
+    let upload = uses(steps, "actions/upload-artifact@");
+
+    assert_eq!(steps[0]["with"]["fetch-depth"].as_u64(), Some(0));
+    let paths = upload["with"]["path"].as_str().expect("the paths");
+    for path in [
+        "mutants.out/",
+        ".botica/history/runs.jsonl",
+        ".botica/history/findings.jsonl",
+    ] {
+        assert!(paths.lines().any(|line| line == path), "{path}: {paths}");
+    }
+    assert_eq!(upload["with"]["include-hidden-files"].as_bool(), Some(true));
+    let report = steps
+        .iter()
+        .find(|step| {
+            step["run"]
+                .as_str()
+                .is_some_and(|r| r.contains(" lint --mutants "))
+        })
+        .expect("the step of botica");
+    assert_eq!(
+        report["if"].as_str(),
+        Some("${{ !cancelled() && hashFiles('mutants.out/outcomes.json') != '' }}")
+    );
 }
