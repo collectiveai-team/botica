@@ -30,6 +30,7 @@ mod inside;
 mod judged;
 mod lockfiles;
 mod messages;
+mod mutants;
 mod paths;
 mod project_files;
 pub(crate) mod recipe_conflict;
@@ -72,6 +73,11 @@ pub struct LintArgs {
     /// by the configuration and the `ignore-file` comments.
     #[arg(long, conflicts_with_all = ["paths", "ext", "statistics"])]
     judged: Option<PathBuf>,
+    /// Report the mutants that survived a run of cargo-mutants, read from its
+    /// `mutants.out/outcomes.json`, instead of linting: one finding of `mutant-survived` for each,
+    /// filtered by the configuration and the suppression comments.
+    #[arg(long, value_name = "OUTCOMES", conflicts_with_all = ["paths", "ext", "statistics", "judged"])]
+    mutants: Option<PathBuf>,
     /// Lint the files that changed since the merge base of this revision and `HEAD`, the changes
     /// not committed and the files git does not track included, and keep only the findings on the
     /// lines the change adds. The result cache is off.
@@ -87,20 +93,20 @@ pub struct LintArgs {
     /// Check the commit messages in these files, as git gives one to a `commit-msg` hook, with the
     /// rules of scope `commit` instead of linting files.
     #[arg(long, value_name = "FILE", num_args = 1.., group = "message",
-          conflicts_with_all = ["paths", "judged", "change", "ext"])]
+          conflicts_with_all = ["paths", "judged", "mutants", "change", "ext"])]
     commit_msg: Vec<PathBuf>,
     /// Like `--commit-msg`, for the message of each commit of `git log <RANGE>`.
     #[arg(long, value_name = "RANGE", group = "message",
-          conflicts_with_all = ["paths", "judged", "change", "ext"])]
+          conflicts_with_all = ["paths", "judged", "mutants", "change", "ext"])]
     commits: Option<String>,
     /// Like `--commit-msg`, for the title of a pull request: `--pr-title="$PR_TITLE"`.
     #[arg(long, value_name = "TITLE", group = "message",
-          conflicts_with_all = ["paths", "judged", "change", "ext"])]
+          conflicts_with_all = ["paths", "judged", "mutants", "change", "ext"])]
     pr_title: Option<String>,
     /// Write the findings that carry a measure, such as those of `cognitive-complexity`, to the
     /// file of `baseline` in the configuration, instead of reporting them, and exit with 0. It
     /// runs at the root of the project and takes no paths.
-    #[arg(long, conflicts_with_all = ["paths", "judged", "change", "message", "statistics"])]
+    #[arg(long, conflicts_with_all = ["paths", "judged", "mutants", "change", "message", "statistics"])]
     write_baseline: bool,
     /// Append the findings and the rules that the run evaluated to `.botica/history/` under the
     /// root of the project (ADR 0019), as `[history] record = true` does. A run of
@@ -164,6 +170,7 @@ impl LintArgs {
             fail_on: FailOn::Error,
             ext: None,
             judged: None,
+            mutants: None,
             diff: None,
             staged: false,
             diff_file: None,
@@ -393,6 +400,9 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     let diff = Diff::read(&args)?;
     if let Some(sarif) = &args.judged {
         return run_judged(&args, format, &setup, sarif, diff.as_ref(), started);
+    }
+    if let Some(outcomes) = &args.mutants {
+        return mutants::run(&args, format, &setup, outcomes, diff.as_ref(), started);
     }
     let known = known_findings(&args, &setup)?;
     let root = std::env::current_dir()?;

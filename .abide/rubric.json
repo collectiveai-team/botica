@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-11-12T13:55:52Z",
+  "compiledAt": "2026-11-13T03:14:57Z",
   "compiledBy": "botica 0.20.2",
   "manual": true,
   "sources": [
@@ -614,6 +614,7 @@
         "catalog/rules/structure/no-utils/README.md",
         "catalog/rules/testing/coverage-exclusion-reachable/README.md",
         "catalog/rules/testing/eager-test/README.md",
+        "catalog/rules/testing/mutant-survived/README.md",
         "catalog/rules/testing/no-coverage-exclusion/README.md",
         "catalog/rules/testing/no-coverage-pragma/README.md",
         "catalog/rules/testing/no-tautological-assert/README.md",
@@ -948,6 +949,7 @@
         "catalog/rules/testing/family.toml",
         "catalog/rules/testing/coverage-exclusion-reachable/rule.toml",
         "catalog/rules/testing/eager-test/rule.toml",
+        "catalog/rules/testing/mutant-survived/rule.toml",
         "catalog/rules/testing/no-coverage-exclusion/rule.toml",
         "catalog/rules/testing/no-coverage-pragma/python.yml",
         "catalog/rules/testing/no-coverage-pragma/rule.toml",
@@ -1231,6 +1233,7 @@
         "catalog/rules/structure/no-utils/README.md",
         "catalog/rules/testing/coverage-exclusion-reachable/README.md",
         "catalog/rules/testing/eager-test/README.md",
+        "catalog/rules/testing/mutant-survived/README.md",
         "catalog/rules/testing/no-coverage-exclusion/README.md",
         "catalog/rules/testing/no-coverage-pragma/README.md",
         "catalog/rules/testing/no-tautological-assert/README.md",

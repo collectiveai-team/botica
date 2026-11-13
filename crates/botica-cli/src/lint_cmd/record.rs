@@ -33,6 +33,7 @@ pub(super) enum Mode {
     Staged,
     Message,
     Judged,
+    Mutants,
 }
 
 impl Mode {
@@ -44,6 +45,7 @@ impl Mode {
             Self::Staged => "staged",
             Self::Message => "message",
             Self::Judged => "judged",
+            Self::Mutants => "mutants",
         }
     }
 

@@ -21,6 +21,8 @@ botica lint --output-format json   # text (default), json, sarif, github or mark
                                    # fingerprint (ADR 0019), which BOTICA_HISTORY_KEY keys
 botica lint --judged judge.sarif   # the findings of a judge, filtered by the configuration and comments;
                                    # the file is SARIF or the report of `abide check --json`
+botica lint --mutants mutants.out/outcomes.json   # the mutants that survived cargo-mutants, as
+                                   # findings of mutant-survived (preview, off by default)
 botica lint --diff origin/main     # the files changed since the merge base, and only the findings on
                                    # the lines the change adds (ADR 0009); no result cache
 botica lint --staged               # the same for the changes staged against HEAD, read from the index
@@ -100,8 +102,8 @@ require-key = true   # record nothing when BOTICA_HISTORY_KEY is not set
 
 A finding line holds the rule, its severity, the path from the root, the line and the fingerprint
 of the finding, and never its message nor the text of the code. A run line holds its commit, its
-branch, the version of botica, its mode (`full`, `paths`, `diff`, `staged`, `message` or
-`judged`), its origin (`ci` when `GITHUB_ACTIONS` or `GITLAB_CI` is `true`, else `hook` when
+branch, the version of botica, its mode (`full`, `paths`, `diff`, `staged`, `message`,
+`judged` or `mutants`), its origin (`ci` when `GITHUB_ACTIONS` or `GITLAB_CI` is `true`, else `hook` when
 `PRE_COMMIT=1`, else `cli`) and each rule that it evaluated, with `hits`, the findings that the run
 reports, `suppressed`, the findings that a suppression comment silenced, and `baselined`, those
 that the baseline hid. A silenced finding has no finding line. A rule with no finding is listed
