@@ -94,7 +94,7 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
    | `stages` | `local`, `ci` or both | both |
    | `blocking` | the severity from which a finding fails the role | `P1` |
    | `owners` | the people or teams that answer for the file | none |
-   | `max-findings` | the most findings the role reports, the most severe first | 10 |
+   | `max-findings` | the most findings the role reports, the most severe first; for `refute`, the most it judges | 10 |
 
    A role applies when every key present holds: a changed file matches `paths`, the tier is in
    `tiers`, and at least one of the `signals` is detected. The headings of the body are a
@@ -108,7 +108,7 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
    - top level: `role`, `head`, `base`, `verdict`, `findings`, `checked`, `not_checked`, `commands`;
    - each finding: `id`, `severity`, `path`, `line`, `title`, `evidence`, `reproduced`
      (`yes`, `no` or `not-tried`), `how_to_verify` and `fix`;
-   - `verdict` is `PASS`, `FAIL` or `INCONCLUSIVE`; `FAIL` means a finding at or above `blocking`, and for `refute` a confirmed finding at or above it;
+   - `verdict` is `PASS`, `FAIL` or `INCONCLUSIVE`; `FAIL` means a finding at or above `blocking`, and for `refute` a finding at or above the `blocking` of the role that wrote it, when it is confirmed or has no `refutation`;
    - severity is `P0` (breaks production, loses data or opens a security hole on the normal path),
      `P1` (wrong behaviour that a user or a caller reaches), `P2` (wrong on an edge case, or a gap
      that makes a later bug likely) or `P3` (worth knowing, never blocks);

@@ -26,7 +26,7 @@
       "enum": ["PASS", "FAIL", "INCONCLUSIVE"]
     },
     "findings": {
-      "description": "The most severe first, at most `max-findings`.",
+      "description": "The most severe first, at most `max-findings`; for `refute`, every finding of the inputs.",
       "type": "array",
       "items": { "$ref": "#/definitions/finding" }
     },

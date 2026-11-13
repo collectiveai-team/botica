@@ -53,7 +53,7 @@ artifact that `botica lint --reviewed <dir>` reads.
 | `role` | the name of the role folder |
 | `head`, `base` | the commit under review and the branch or commit the diff starts from |
 | `verdict` | `PASS`, `FAIL` or `INCONCLUSIVE` |
-| `findings` | the most severe first, at most `max-findings` (10 when the `REVIEW.md` sets none) |
+| `findings` | the most severe first, at most `max-findings` (10 when the `REVIEW.md` sets none); `refute.json` holds every finding of the inputs and judges at most `max-findings` |
 | `checked` | what the role reviewed |
 | `not_checked` | what the role did not review, and why |
 | `commands` | each command the role ran, with `pass` or `fail` as the result |
@@ -79,8 +79,8 @@ A role that ends with no valid file counts as `INCONCLUSIVE`.
 ## Verdict
 
 - `PASS`: no finding at or above `blocking` in the `REVIEW.md` of the role (`P1` when it sets none).
-- `FAIL`: at least one finding at or above `blocking`. For `refute`, a confirmed finding at or
-  above it.
+- `FAIL`: at least one finding at or above `blocking`. For `refute`, a finding at or above the
+  `blocking` of the role that wrote it, when it is confirmed or has no `refutation`.
 - `INCONCLUSIVE`: the role could not do its review, for example no issue for `spec` or a test suite
   that does not run. `not_checked` says why.
 

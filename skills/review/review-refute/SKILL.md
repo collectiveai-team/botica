@@ -108,7 +108,9 @@ when useful, with a name taken from the diff or the finding only when it matches
    severe, or the first in the order `spec`, `security`, `tests`, `architecture`, `contracts`,
    `performance`, then the other roles by name, and mark the other `duplicate`. Its `Refute:`
    paragraph names the `id` it repeats, or the hook, the job or the line of the role file that
-   reports it; the schema has no other field for it.
+   reports it; the schema has no other field for it. A finding about a test, a fixture, a check or
+   a hook that the diff deletes, skips or loosens is never `duplicate` by its role file: the
+   check that the role file names is the one the diff takes away.
 5. Otherwise it is `confirmed`. Keep a finding as `confirmed` when you could not decide; refute
    only on evidence that a command of this section printed or that a file and line shows.
 
