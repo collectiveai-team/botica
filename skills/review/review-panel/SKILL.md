@@ -19,7 +19,7 @@ does not see the reasoning of another before `review-refute` reads them all.
    |---|---|
    | `spec` | always |
    | `security` | always |
-   | `tests` | the diff changes source or test files |
+   | `tests` | the diff changes source files, test files or what decides which tests run (CI, hooks, the settings of the test runner, the review roles and their skills) |
    | `architecture` | the diff adds a module, a type that others use, or an import between packages |
    | `contracts` | the diff changes something another program consumes |
    | `performance` | the diff changes a query, a job, a hot path or a loop over large data |

@@ -8,19 +8,33 @@ blocking: P1
 max-findings: 10
 ---
 
+## Invariants
+
+- Each behaviour of the code has a test that fails when the behaviour is wrong.
+- A test is deleted, skipped or loosened only with the behaviour it tested, or when another test
+  asserts the same thing.
+- A threshold of coverage or of mutation, and a check of CI or of a hook, is not lowered or
+  silenced.
+
 ## Check always
 
-- A deleted, skipped or loosened test, and why the diff says it goes.
-- A lowered threshold of coverage or mutation, or a check removed from CI or a hook.
-- Each new behaviour has a test that fails when the behaviour is wrong.
+- A deleted, skipped or loosened test, and the reason the diff gives for it.
+- A lowered threshold, a check removed from CI or from a hook, `|| true` or `continue-on-error` on
+  a step that runs tests.
+- Each new or changed behaviour has a test that reaches it through the interface the rest of the
+  code calls and asserts on a value that a wrong behaviour changes.
 
 ## Do not report
 
-- What `test-smell-review` or a scanner it runs already reported.
-- What `botica lint` reports under BTTEST00x.
+- What `botica lint` reports under the rules of the family `testing`.
 - A missing test for code that only moved, with no change of behaviour.
+- The names and the layout of a test that protects its behaviour through the interface that
+  production code calls.
+
+<!-- botica:covered -->
+<!-- /botica:covered -->
 
 ## Evidence
 
-Each finding names the behaviour and the test, and says whether breaking the code by hand made the
-test fail.
+Each finding names the behaviour and the test, with file and line, and what in the test or the
+diff shows that a wrong behaviour would pass.
