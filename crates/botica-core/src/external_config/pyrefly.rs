@@ -2,9 +2,9 @@
 
 use toml::Value;
 
-/// The kinds of error of pyrefly 1.4.0 whose default severity is `warn` or `info`, from
-/// `ErrorKind::default_severity` in `crates/pyrefly_config/src/error_kind.rs` of the tag `1.4.0`
-/// (<https://github.com/facebook/pyrefly/blob/1.4.0/crates/pyrefly_config/src/error_kind.rs>).
+/// The kinds of error of pyrefly 1.4.1 whose default severity is `warn` or `info`, from
+/// `ErrorKind::default_severity` in `crates/pyrefly_config/src/error_kind.rs` of the tag `1.4.1`
+/// (<https://github.com/facebook/pyrefly/blob/1.4.1/crates/pyrefly_config/src/error_kind.rs>).
 /// `tests::COPIED_FROM` holds the version, and its test fails when the pin of pyrefly in the root
 /// `pyproject.toml`, which Dependabot moves, names another.
 /// Every other kind defaults to `error` or `ignore`, and `true` makes both an error.
@@ -66,7 +66,7 @@ pub(super) fn severity(kind: &str, value: &Value) -> Level {
 #[cfg(test)]
 mod tests {
     /// The version of pyrefly that `DEFAULT_BELOW_ERROR` is copied from.
-    const COPIED_FROM: &str = "1.4.0";
+    const COPIED_FROM: &str = "1.4.1";
 
     #[test]
     fn the_table_is_copied_from_the_pyrefly_that_the_repository_pins() {
