@@ -67,7 +67,7 @@ references = [
   "pydantic-ai-slim==2.58.0",
   "pydantic-settings==2.16.1",
   "pyjwt[crypto]==2.15.1",
-  "pyrefly==1.4.0",
+  "pyrefly==1.4.1",
   # CES-64: `scripts/check_references.sh` runs the tests of the topics with the network blocked.
   "pytest-socket==0.8.1",
   "sqlmodel==0.0.48",
