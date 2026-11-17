@@ -5,6 +5,8 @@ mod boundaries;
 mod common;
 #[path = "review_tier/evidence.rs"]
 mod evidence;
+#[path = "review_tier/source_ancestry.rs"]
+mod source_ancestry;
 
 use std::path::Path;
 use std::process::Command;
@@ -250,11 +252,15 @@ fn conflicts_preserve_branch_classification_without_touching_user_state() {
     );
 }
 
-#[test]
-fn criss_cross_evil_merge_retains_every_ancestor_and_integration_revert() {
+fn criss_cross_repository(
+    name: &str,
+    auth_path: &str,
+    old: &str,
+    hardened: &str,
+) -> (std::path::PathBuf, String, String) {
     let config = format!("{DOCS}\n[[review.areas]]\nname = \"critical\"\npaths = [\"src/auth/**\"]\nowners = [\"@security\"]\n");
-    let dir = repository("criss-cross", Some(&config));
-    common::write(&dir, "src/auth/check.md", "old authentication\n");
+    let dir = repository(name, Some(&config));
+    common::write(&dir, auth_path, old);
     git(&dir, &["add", "."]);
     git(&dir, &["commit", "-m", "Old authentication"]);
     let root = git(&dir, &["rev-parse", "HEAD"]).trim().to_owned();
@@ -264,7 +270,7 @@ fn criss_cross_evil_merge_retains_every_ancestor_and_integration_revert() {
     let p1 = git(&dir, &["rev-parse", "HEAD"]).trim().to_owned();
     let old_tree = git(&dir, &["rev-parse", "HEAD^{tree}"]).trim().to_owned();
     git(&dir, &["switch", "--detach", &root]);
-    common::write(&dir, "src/auth/check.md", "hardened authentication\n");
+    common::write(&dir, auth_path, hardened);
     git(&dir, &["commit", "-am", "P2 authentication"]);
     let p2 = git(&dir, &["rev-parse", "HEAD"]).trim().to_owned();
     common::write(&dir, "docs/start.md", "Start\n");
@@ -306,6 +312,17 @@ fn criss_cross_evil_merge_retains_every_ancestor_and_integration_revert() {
     common::write(&dir, "docs/start.md", "Start updated\n");
     git(&dir, &["add", "."]);
     git(&dir, &["commit", "-m", "Topic documentation"]);
+    (dir, p1, p2)
+}
+
+#[test]
+fn criss_cross_evil_merge_retains_every_ancestor_and_integration_revert() {
+    let (dir, p1, p2) = criss_cross_repository(
+        "criss-cross",
+        "src/auth/check.md",
+        "old authentication\n",
+        "hardened authentication\n",
+    );
     let (output, report) = classify(&dir, "merge");
     assert!(output.status.success(), "{}", common::stderr(&output));
     assert_eq!(report["effective_tier"], "high");

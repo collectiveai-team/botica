@@ -133,3 +133,9 @@ multiple best common ancestors, critical reverts, conflicting integration, speci
 trusted configuration and unsupported methods. Future plan/check acceptance tests will exercise
 their public CLI inputs and observable results. The adversarial review of the accumulated slice
 has not run.
+
+The criss-cross regressions retain the supported Markdown topology case and a Python
+authentication revert under a trusted `critical` area. The Python case exits with 2 and a null
+effective tier because its detector coverage is incomplete. Both ancestor comparisons remain,
+including the high critical comparison; integration evidence identifies the high critical revert
+and the actual merge tree. The schema tests validate that incomplete source-code report.
