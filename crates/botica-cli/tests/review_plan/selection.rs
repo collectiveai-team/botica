@@ -9,6 +9,47 @@ fn an_explicit_empty_tier_list_selects_no_roles() {
 }
 
 #[test]
+fn integration_only_rename_paths_can_select_a_role() {
+    let dir = repository(
+        "plan-integration-path",
+        &ROLE.replace("docs/**", "relocated/**"),
+    );
+    git(&dir, &["switch", "main"]);
+    let original = (0..40)
+        .map(|line| format!("entry-{line} @owner\n"))
+        .collect::<String>();
+    common::write(&dir, "policy/CODEOWNERS", &original);
+    git(&dir, &["add", "."]);
+    git(&dir, &["commit", "-m", "Shared policy"]);
+    let ancestor = git(&dir, &["rev-parse", "HEAD"]);
+    std::fs::create_dir_all(dir.join("relocated")).unwrap();
+    git(&dir, &["mv", "policy/CODEOWNERS", "relocated/CODEOWNERS"]);
+    git(&dir, &["commit", "-m", "Destination rename"]);
+    git(&dir, &["switch", "--detach", &ancestor]);
+    common::write(
+        &dir,
+        "policy/CODEOWNERS",
+        &original.replace("entry-0 @owner", "entry-0 @updated"),
+    );
+    git(&dir, &["commit", "-am", "Change old policy path"]);
+    let (output, report) = consume(&dir, "plan", "local");
+    assert!(output.status.success(), "{report}");
+    assert_eq!(report["selected_roles"], serde_json::json!(["spec"]));
+    assert_eq!(
+        report["roles"][0]["selection"]["matching_paths"],
+        serde_json::json!(["relocated/CODEOWNERS"])
+    );
+    assert_eq!(
+        report["risk"]["branch"]["comparisons"][0]["files"],
+        serde_json::json!(["policy/CODEOWNERS"])
+    );
+    assert_eq!(
+        report["risk"]["integration"]["comparisons"][0]["files"],
+        serde_json::json!(["relocated/CODEOWNERS"])
+    );
+}
+
+#[test]
 fn stage_filters_complete_plans_but_incomplete_risk_never_selects_roles() {
     let dir = repository("plan-stage", ROLE);
     let (output, report) = consume(&dir, "plan", "ci");

@@ -41,10 +41,15 @@ covered:
 - The prose of a page, a standard or an ADR: `plain-writing`, `minimal-comments` and
   `ubiquitous-language` in `.abide/rubric.json` cover it, and `abide.yml` judges them.
 
-<!-- botica:covered -->
+## Coverage notes
+
 - The job `rule contract` of `ci.yml` (`scripts/check_rule_change.py`): a change that adds a rule
   and touches more than the rule needs, or touches more than one standard.
 - The job `validate PR title` of `conventional-commits.yml`: the title of the pull request.
+
+<!-- botica:covered -->
+- job "rule-contract" in ".github/workflows/ci.yml": blake3 63ecc0d75fc1b8d810ebd35704945afd8fa420f763b03a7eb2474fe0188450a7
+- job "validate" in ".github/workflows/conventional-commits.yml": blake3 fcb9188c2b372eb99fcf74bdef25129802d1a8a53ace08f1b22fde9fd9d5032e
 <!-- /botica:covered -->
 
 ## Evidence

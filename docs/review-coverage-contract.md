@@ -51,6 +51,8 @@ expected block; neither edits the destination or working files.
   definition, selected configuration digest, botica version and the sorted destination project
   catalog source fingerprints. Catalog fixtures are excluded, as in ordinary catalog loading;
   other tracked catalog files, including command scripts, are bound even when not parsed.
+- External executables and command inputs outside the catalog are not bound by a rule
+  fingerprint; configured presence does not authenticate those programs.
 - Role and shared-policy identities are separate raw-byte digests in the consumer report.
 
 The block must have one balanced pair of markers. Line endings are normalized to LF for the
