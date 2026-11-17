@@ -10,6 +10,18 @@ Issues and specs for this repo live as markdown files in `.scratch/`.
 - Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
 - Comments and conversation history append to the bottom of the file under a `## Comments` heading
 
+## Delivery plans
+
+For work spanning several tickets, keep `.scratch/<feature-slug>/delivery.md` beside the spec.
+Assign tickets to vertical slices with end-to-end acceptance criteria and explicit contracts.
+Use the plan and record format in
+`skills/engineering/engineering-pr-review/references/delivery.md`.
+
+Tickets record local progress and acceptance evidence. Review each accumulated slice against
+pinned base and head commits, then check the integrated delivery against the spec. Keep ticket
+status, slice review status and delivery readiness separate. A completed ticket does not open a
+pull request. `botica explain pr-small-by-intent` defines publication boundaries and escalation.
+
 ## When a skill says "publish to the issue tracker"
 
 Create a new file under `.scratch/<feature-slug>/` (creating the directory if needed).

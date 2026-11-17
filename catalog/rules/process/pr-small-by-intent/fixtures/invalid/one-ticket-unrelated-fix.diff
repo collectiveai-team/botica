@@ -1,0 +1,18 @@
+fix(cache): invalidate entries when the catalog changes
+
+One ticket tracks this fix. While editing lint, also switch its default output format from
+text to JSON. The cache invalidation does not need an output-format change.
+
+--- a/crates/botica-core/src/cache.rs
++++ b/crates/botica-core/src/cache.rs
+@@ -40,3 +40,4 @@ impl Cache {
+     fn key(&self, path: &Path, text: &[u8]) -> Hash {
+         let mut hasher = Hasher::new();
++        hasher.update(self.catalog_version.as_bytes());
+         hasher.update(text);
+--- a/crates/botica-cli/src/args.rs
++++ b/crates/botica-cli/src/args.rs
+@@ -18,2 +18,2 @@ struct LintArgs {
+-    #[arg(long, default_value = "text")]
++    #[arg(long, default_value = "json")]
+     format: Format,

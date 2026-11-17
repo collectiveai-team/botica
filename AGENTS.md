@@ -93,7 +93,7 @@ Before writing code that a rule covers, run `uvx botica explain <slug>` and
 
 ### process
 
-- BTPROC001 `pr-small-by-intent`: A pull request carries one intent, which one sentence with no "and" states. → https://collectiveai-team.github.io/botica/rules/process/btproc001-pr-small-by-intent/
+- BTPROC001 `pr-small-by-intent`: A pull request carries one intent. → https://collectiveai-team.github.io/botica/rules/process/btproc001-pr-small-by-intent/
 - BTPROC002 `respect-local-repo`: A change keeps the existing, deliberate choices of the repository: its version pins, the configuration of its tools, its dependencies and its layout. → https://collectiveai-team.github.io/botica/rules/process/btproc002-respect-local-repo/
 
 ### testing
@@ -131,6 +131,13 @@ See `docs/agents/domain.md`.
 
 ## Repo Workspace Defaults
 
+- Before multi-ticket work, read `skills/engineering/engineering-pr-review/references/delivery.md`
+  and `botica explain pr-small-by-intent`. Keep a delivery plan beside the spec; implement tickets
+  as local commits, review vertical slices, then check integration before preparing the delivery PR.
+- Apply upstream implementation steps per ticket with targeted tests; schedule their closing
+  adversarial review at the owning slice's checkpoint, without editing installed upstream skills.
+- Preserve code, tests and review evidence when a slice is blocked. Three review rounds with a
+  confirmed P0/P1 require escalation, not automatic deletion or publication as ready.
 - Use `.scratch/` for temporary plans, prd issue drafts, and disposable notes.
 - Use `.tmp/` for generated local artifacts that should not be committed.
 - Use `.worktrees/` for local Git worktrees when needed.

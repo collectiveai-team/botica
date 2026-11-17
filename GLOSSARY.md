@@ -69,6 +69,27 @@ Documentation and the unit of proposals, not something a tool enforces: botica e
 **rules**, and a rule may cite the CES it implements. See `docs/adr/0002-ces-lifecycle-catalog-and-site.md`.
 _Avoid_: rule, convention, lint rule
 
+### Delivery
+
+**Ticket**:
+A unit of tracking and assignment with an acceptance criterion. Several tickets may implement
+one vertical slice. Finishing a ticket records local progress; it does not require a pull request.
+
+**Vertical slice**:
+An end-to-end behaviour with acceptance criteria and explicit contracts. Its implementation
+includes the layers, tests and documentation that the behaviour needs.
+_Avoid_: layer batch
+
+**Review block**:
+The pinned base-to-head diff of a vertical slice, reviewed with its spec, acceptance criteria and
+evidence. Its record names the commits reviewed and the findings still open.
+_Avoid_: ticket review
+
+**Delivery**:
+The integrated change submitted for one intent. A delivery may contain several reviewed vertical
+slices and their tickets. Its default publication is one pull request.
+_Avoid_: ticket PR
+
 ### Botica
 
 **Botica**:

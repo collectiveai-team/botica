@@ -1,12 +1,27 @@
 ---
 name: pr
-description: "Use when writing a PR body. Follow the repository's .github/pull_request_template.md."
+description: "Use when preparing a delivery PR or writing its body. Read the delivery's slice review records and follow the repository's .github/pull_request_template.md."
 ---
 
 Read and use `.github/pull_request_template.md` from the repository the PR targets.
 That file defines the body structure: preserve its headings, order, and required
 fields rather than rewriting the template here. If it is missing, ask the user
 which template to use instead of inventing one.
+
+## Delivery context
+
+Run `botica explain pr-small-by-intent` before choosing the publication boundary. Read the spec,
+delivery plan and slice review records. Follow the local-commit and review procedure in
+`../engineering-pr-review/references/delivery.md` when the delivery has several tickets.
+
+Prepare one PR for the integrated delivery. Do not create a PR just because a ticket or commit is
+complete. If the plan splits the delivery, state the reason for that boundary and the dependencies.
+Closing or rewriting existing PRs requires the user's authorization.
+
+Use the template's existing sections to link the spec, covered tickets and slice review evidence.
+Include the integration checks, unresolved findings and anything not run. Use closing references
+only for tickets whose acceptance criteria the delivery satisfies. If several slices are included,
+show how their behaviours serve the stated intent instead of listing commits without context.
 
 ## Sections
 
