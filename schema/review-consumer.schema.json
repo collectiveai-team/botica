@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Botica review plan and static check",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "command", "status", "inputs", "stage", "selected_roles", "roles", "reasons", "risk"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "command": {"enum": ["plan", "check"]},
+    "status": {"enum": ["complete", "incomplete"]},
+    "stage": {"enum": ["local", "ci"]},
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base", "head", "integration_method", "botica_version", "config"],
+      "properties": {
+        "base": {"$ref": "review-tier.schema.json#/definitions/object_id"},
+        "head": {"$ref": "review-tier.schema.json#/definitions/object_id"},
+        "integration_method": {"enum": ["merge", "squash", "rebase"]},
+        "botica_version": {"type": "string", "minLength": 1},
+        "config": {"$ref": "review-tier.schema.json#/properties/inputs/properties/config"},
+        "stage": {"enum": ["local", "ci"]},
+        "review_directory": {"type": "string", "minLength": 1},
+        "roles_digest": {"$ref": "#/definitions/digest"},
+        "risk_digest": {"$ref": "#/definitions/digest"},
+        "trusted_files": {"type": "array", "items": {"$ref": "#/definitions/source"}}
+      }
+    },
+    "selected_roles": {"type": ["array", "null"], "uniqueItems": true, "items": {"$ref": "#/definitions/role_name"}},
+    "roles": {"type": "array", "items": {"$ref": "#/definitions/consumer_role"}},
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["code", "message"],
+        "properties": {
+          "code": {"type": "string", "minLength": 1},
+          "message": {"type": "string", "minLength": 1},
+          "role": {"$ref": "#/definitions/role_name"}
+        }
+      }
+    },
+    "risk": {"$ref": "review-tier.schema.json"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "complete"}}},
+      "then": {
+        "properties": {
+          "reasons": {"maxItems": 0},
+          "inputs": {"required": ["stage", "review_directory", "roles_digest", "risk_digest", "trusted_files"]},
+          "roles": {"items": {"properties": {"covered": {"properties": {"status": {"const": "current"}}}}}}
+        }
+      },
+      "else": {"properties": {"selected_roles": {"type": "null"}, "reasons": {"minItems": 1}}}
+    },
+    {
+      "if": {"properties": {"command": {"const": "check"}}},
+      "then": {
+        "properties": {"selected_roles": {"type": "null"}},
+        "if": {"properties": {"status": {"const": "complete"}}},
+        "then": {"properties": {"roles": {"items": {"properties": {"skill": {"type": "object", "properties": {"status": {"const": "available"}}}}}}}}
+      }
+    },
+    {
+      "if": {"properties": {"command": {"const": "plan"}, "status": {"const": "complete"}}},
+      "then": {
+        "properties": {
+          "selected_roles": {"type": "array"},
+          "risk": {"properties": {"status": {"const": "complete"}}},
+          "roles": {"items": {"properties": {"selection": {"properties": {"selected": {"type": "boolean"}}}}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"risk": {"properties": {"status": {"const": "incomplete"}}}}},
+      "then": {"properties": {"roles": {"items": {"properties": {"selection": {"properties": {"selected": {"type": "null"}, "tier_matches": {"type": "null"}}}}}}}}
+    }
+  ],
+  "definitions": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "role_name": {"enum": ["spec", "security", "tests", "architecture", "contracts", "performance", "refute"]},
+    "source": {
+      "type": "object", "additionalProperties": false, "required": ["path", "digest"],
+      "properties": {"path": {"type": "string", "minLength": 1}, "digest": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}}
+    },
+    "consumer_role": {
+      "type": "object", "additionalProperties": false,
+      "required": ["role", "definition", "selection", "skill", "covered"],
+      "properties": {
+        "role": {"$ref": "#/definitions/role_name"},
+        "definition": {
+          "allOf": [{"$ref": "#/definitions/source"}, {"properties": {"digest": {"$ref": "#/definitions/digest"}}}]
+        },
+        "selection": {
+          "type": "object", "additionalProperties": false,
+          "required": ["selected", "stage_matches", "paths_match", "matching_paths", "signals_match", "matching_signals", "tier_matches", "effective_tier"],
+          "properties": {
+            "selected": {"type": ["boolean", "null"]},
+            "stage_matches": {"type": "boolean"},
+            "paths_match": {"type": "boolean"},
+            "matching_paths": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+            "signals_match": {"type": "boolean"},
+            "matching_signals": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+            "tier_matches": {"type": ["boolean", "null"]},
+            "effective_tier": {"enum": ["low", "medium", "high", null]}
+          }
+        },
+        "skill": {
+          "type": ["object", "null"], "additionalProperties": false,
+          "required": ["status", "path", "digest"],
+          "properties": {"status": {"const": "available"}, "path": {"type": "string", "minLength": 1}, "digest": {"$ref": "#/definitions/digest"}}
+        },
+        "covered": {
+          "type": "object", "additionalProperties": false,
+          "required": ["status", "expected_block", "references"],
+          "allOf": [
+            {
+              "if": {"properties": {"status": {"enum": ["current", "stale"]}}},
+              "then": {"properties": {"expected_block": {"type": "string", "minLength": 1}}},
+              "else": {"properties": {"expected_block": {"type": "null"}}}
+            }
+          ],
+          "properties": {
+            "status": {"enum": ["current", "stale", "unverified"]},
+            "expected_block": {"type": ["string", "null"]},
+            "references": {
+              "type": "array", "uniqueItems": true,
+              "items": {
+                "type": "object", "additionalProperties": false, "required": ["kind", "file", "id", "digest"],
+                "properties": {
+                  "kind": {"enum": ["rule", "hook", "job"]}, "file": {"type": "string", "minLength": 1},
+                  "id": {"type": "string", "minLength": 1}, "digest": {"$ref": "#/definitions/digest"}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

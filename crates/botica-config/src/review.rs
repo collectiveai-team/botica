@@ -230,6 +230,11 @@ pub struct UnmatchedPath {
 }
 
 impl ReviewConfig {
+    /// Whether an owner is a user/team handle or email accepted by review metadata.
+    pub fn valid_owner(owner: &str) -> bool {
+        crate::validate_review::is_owner(owner)
+    }
+
     /// Validate the review settings independently of historical project settings.
     pub fn validate(&self) -> Result<(), crate::ConfigError> {
         let mut issues = Vec::new();

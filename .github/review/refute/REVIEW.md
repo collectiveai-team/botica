@@ -7,6 +7,7 @@ stages: [local, ci]
 blocking: P1
 owners: ["@jedzill4"]
 max-findings: 50
+covered: {}
 ---
 
 ## Invariants

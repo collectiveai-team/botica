@@ -13,7 +13,7 @@ mod diff;
 static NEXT: AtomicU64 = AtomicU64::new(0);
 
 /// Object-only Git boundary. The isolated repository has no user configuration, index or hooks.
-pub(super) struct Git {
+pub(crate) struct Git {
     dir: PathBuf,
     objects: OsString,
     pub root: PathBuf,
@@ -179,6 +179,7 @@ impl Git {
     fn command(&self) -> Command {
         let mut command = command();
         command
+            .arg("--literal-pathspecs")
             .arg("--git-dir")
             .arg(&self.dir)
             .env("GIT_ALTERNATE_OBJECT_DIRECTORIES", &self.objects)
@@ -221,6 +222,18 @@ impl Git {
             "trusted configuration `{path}` is not a regular file"
         );
         self.read(&["cat-file", "blob", fields[2]]).map(Some)
+    }
+
+    pub fn base_paths(&self) -> Result<Vec<String>> {
+        self.read(&["ls-tree", "-r", "--name-only", "-z", &self.base])?
+            .split(|&byte| byte == 0)
+            .filter(|path| !path.is_empty())
+            .map(|path| {
+                Ok(std::str::from_utf8(path)
+                    .context("non-UTF-8 trusted path")?
+                    .to_owned())
+            })
+            .collect()
     }
 
     pub fn merge_tree(&self) -> Result<Output> {

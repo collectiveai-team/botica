@@ -99,7 +99,7 @@ fn handle_char(c: char) -> bool {
 
 /// What CODEOWNERS reads as an owner: `@user`, `@org/team` (GitLab also `@org/group/team`) or an
 /// email address.
-fn is_owner(owner: &str) -> bool {
+pub(crate) fn is_owner(owner: &str) -> bool {
     if let Some(handle) = owner.strip_prefix('@') {
         let parts: Vec<&str> = handle.split('/').collect();
         return parts.len() <= 3

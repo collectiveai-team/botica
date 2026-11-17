@@ -48,7 +48,8 @@ for the areas and the classifier and
 for the roles. botica reads and checks the table, and
 [`botica review export --format codeowners`](review-export.md) writes a CODEOWNERS file from the
 areas. [`botica review tier`](review-tier.md) reads the destination's settings to assess branch
-risk and integration risk. The plan/check consumers come in later changes.
+risk and integration risk. [Review planning and static checks](review-plan.md) use the destination
+role definitions and explicit coverage declarations.
 
 ```toml
 # botica.toml; in pyproject.toml the tables are [tool.botica.review] and [[tool.botica.review.areas]]

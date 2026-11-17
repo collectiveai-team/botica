@@ -1,8 +1,7 @@
 # Review risk contract
 
-Status: the tier producer is implemented with the detector boundaries below. Public CLI tests
-exercise Git repositories, and schema tests validate produced JSON. The plan/check consumers
-are not implemented yet.
+Status: the tier producer and plan/static-check consumers are implemented with the boundaries
+below. Public CLI tests exercise Git repositories, and schema tests validate produced JSON.
 
 ADR 0018 decision 2 defines branch risk, integration risk and effective risk.
 `schema/review-tier.schema.json` defines the version 1 JSON envelope. Schema validity does not
@@ -105,18 +104,33 @@ Custom, union and binary merge attributes are unsupported. The text-detector inp
 
 ## Consumers
 
-`review plan` reads the effective risk only from a complete classification. It collects paths,
+`review plan` recomputes classification through the producer, reading the effective risk only
+from a complete classification. It collects paths,
 areas and signals from both assessments and every ancestor comparison, rather than only the
 comparison that supplied the highest tier. A lower-tier comparison can still select a role.
 
-Bind a plan to the report's base/head commits, integration method, configuration digest and
-botica version. Also bind it to the trusted role definitions that the plan reads. A changed input
-requires a new plan, not an updated label alone.
+The plan binds the report's base/head commits, integration method, configuration digest and
+botica version. It also records stage, review directory, the digest of the classification and
+the digests of trusted role-folder files, shared README and skills manifest. An absent optional
+shared README or manifest has a null digest. A changed input requires a new plan, not an updated
+label alone. An incomplete classification leaves final `selected_roles` null and exits with 2;
+partial comparison evidence and role criteria remain visible.
+Per-role `selection` fields explain criteria; only a complete plan's top-level `selected_roles`
+is a final selection.
 
-`review check` compares those inputs with the current trusted state before accepting evidence.
-It checks the planned roles, valid outputs, remaining findings and current-head approvals.
-Schema validity does not prove input freshness, that all ancestors were examined, or that
-configuration came from the trusted base. Those are consumer and producer checks.
+`review check` is a static policy check. It reads trusted role frontmatter, checks every path
+glob against the pinned destination/head trees, compares declared coverage with the generated
+block and verifies local installed skill availability. Its complete result means those static
+checks passed, even when the embedded risk classification is incomplete. It never produces a
+final role selection, accepts findings or counts approvals. Role-output validation,
+remaining-finding gates and current-head approval checks belong to future evidence consumers.
+Those consumers must recheck the recorded identities before accepting evidence.
+
+Both commands read roles from the pinned destination, without a head or installed-template
+fallback. All configured roles must have a valid definition. The report format is
+`schema/review-consumer.schema.json`; the bounded coverage declarations and fingerprint rules
+are in [review-coverage-contract.md](review-coverage-contract.md). Schema validity authenticates
+neither a report nor its freshness. A complete plan/static check does not authorize merge.
 
 The labeling workflow must replace or invalidate a previous classification when inputs change.
 An incomplete report cannot leave an earlier `risk:low` label authoritative. Neither a complete
@@ -130,9 +144,10 @@ validation interface in `tests/test_review_tier_schema.py`.
 
 Producer tests use the public CLI with temporary Git repositories: ordinary changes,
 multiple best common ancestors, critical reverts, conflicting integration, special path names,
-trusted configuration and unsupported methods. Future plan/check acceptance tests will exercise
-their public CLI inputs and observable results. The adversarial review of the accumulated slice
-has not run.
+trusted configuration and unsupported methods. Plan/check tests exercise the public CLI with
+trusted-base/head tampering, complete/incomplete classifications, lower-tier ancestor signals,
+coverage freshness, missing references and installed skills. The adversarial review of the
+accumulated slice has not run.
 
 The criss-cross regressions retain the supported Markdown topology case and a Python
 authentication revert under a trusted `critical` area. The Python case exits with 2 and a null

@@ -1,6 +1,7 @@
 //! `botica review`: the commands that read the `review` table of the configuration (ADR 0018).
 
 mod codeowners;
+mod consumers;
 mod pattern;
 mod target;
 mod tier;
@@ -21,6 +22,10 @@ pub struct ReviewArgs {
 
 #[derive(Subcommand)]
 enum ReviewCommand {
+    /// Select review roles using pinned destination policy.
+    Plan(consumers::ConsumerArgs),
+    /// Validate trusted role definitions and local skill availability.
+    Check(consumers::ConsumerArgs),
     /// Assess branch risk and integration risk from pinned Git inputs.
     Tier(tier::TierArgs),
     /// Write the areas of `[[review.areas]]` as a file that a code host reads, as CODEOWNERS.
@@ -69,6 +74,8 @@ impl Host {
 
 pub fn run(args: &ReviewArgs) -> Result<ExitCode> {
     match &args.command {
+        ReviewCommand::Plan(plan) => consumers::run(plan, false),
+        ReviewCommand::Check(check) => consumers::run(check, true),
         ReviewCommand::Tier(tier) => tier::run(tier),
         ReviewCommand::Export(export) => run_export(export).map(|()| ExitCode::SUCCESS),
     }

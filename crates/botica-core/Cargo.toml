@@ -25,6 +25,7 @@ ignore = { workspace = true, optional = true }
 rayon = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
+serde-saphyr = "2"
 toml.workspace = true
 
 [target.'cfg(unix)'.dependencies]

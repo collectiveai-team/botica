@@ -333,6 +333,7 @@ dependencies = [
  "libc",
  "rayon",
  "serde",
+ "serde-saphyr",
  "serde_json",
  "toml",
 ]

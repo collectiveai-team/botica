@@ -7,6 +7,12 @@ stages: [local]
 blocking: P1
 owners: ["@jedzill4"]
 max-findings: 10
+covered:
+  jobs:
+    - file: .github/workflows/ci.yml
+      id: rule-contract
+    - file: .github/workflows/conventional-commits.yml
+      id: validate
 ---
 
 ## Invariants

@@ -65,4 +65,5 @@ The JSON contract is
 [`schema/review-tier.schema.json`](https://github.com/collectiveai-team/botica/blob/main/schema/review-tier.schema.json).
 Detector details and policy history are in
 [`docs/review-risk-contract.md`](https://github.com/collectiveai-team/botica/blob/main/docs/review-risk-contract.md).
-This command does not implement `review plan`, `review check` or automatic merge.
+[Review planning and static checks](review-plan.md) consume this complete/incomplete contract.
+Automatic merge is not implemented by these commands.

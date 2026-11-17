@@ -7,7 +7,7 @@ use clap::{Args, ValueEnum};
 use serde_json::{json, Value};
 
 #[path = "tier_git.rs"]
-mod git;
+pub(super) mod git;
 
 #[derive(Args)]
 pub(super) struct TierArgs {
@@ -18,7 +18,7 @@ pub(super) struct TierArgs {
     #[arg(long, value_enum)]
     integration_method: IntegrationMethod,
     #[arg(long, value_enum, default_value = "text")]
-    format: Format,
+    pub(super) format: Format,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -39,14 +39,15 @@ impl IntegrationMethod {
 }
 
 #[derive(Clone, Copy, ValueEnum)]
-enum Format {
+pub(super) enum Format {
     Json,
     Text,
 }
 
-struct TrustedConfig {
-    source: String,
-    digest: Option<String>,
+pub(super) struct TrustedConfig {
+    pub source: String,
+    pub digest: Option<String>,
+    pub table: Option<toml::Table>,
 }
 
 fn parse_table(bytes: &[u8]) -> Result<toml::Table> {
@@ -122,6 +123,7 @@ fn trusted_config(git: &git::Git, identity: &mut TrustedConfig) -> Result<Review
                 .unwrap_or_default();
             let review: ReviewConfig = review;
             review.validate()?;
+            identity.table = Some(table);
             return Ok(review);
         }
     }
@@ -289,16 +291,26 @@ fn print_text(report: &Value) {
     }
 }
 
-pub(super) fn run(args: &TierArgs) -> Result<ExitCode> {
+pub(super) struct Assessment {
+    pub git: git::Git,
+    pub config: TrustedConfig,
+    pub review: Option<ReviewConfig>,
+    pub report: Value,
+}
+
+pub(super) fn collect(args: &TierArgs) -> Result<Assessment> {
     let git = git::Git::open(&args.diff, &args.head)?;
     let mut config = TrustedConfig {
         source: "unavailable".to_owned(),
         digest: None,
+        table: None,
     };
+    let mut review = None;
     let (branch, integration) = match trusted_config(&git, &mut config) {
-        Ok(review) => {
-            let branch = branch(&git, &review);
-            let integration = integration(&git, &review, args.integration_method);
+        Ok(settings) => {
+            let branch = branch(&git, &settings);
+            let integration = integration(&git, &settings, args.integration_method);
+            review = Some(settings);
             (branch, integration)
         }
         Err(error) => (
@@ -321,17 +333,27 @@ pub(super) fn run(args: &TierArgs) -> Result<ExitCode> {
     let report = json!({
         "schema_version": 1, "status": if done { "complete" } else { "incomplete" },
         "inputs": {
-            "base": git.base, "head": git.head, "integration_method": args.integration_method.name(),
+            "base": &git.base, "head": &git.head, "integration_method": args.integration_method.name(),
             "botica_version": env!("CARGO_PKG_VERSION"),
-            "config": {"source": config.source, "digest": config.digest}
+            "config": {"source": &config.source, "digest": &config.digest}
         },
         "branch": branch, "integration": integration, "effective_tier": tier
     });
+    Ok(Assessment {
+        git,
+        config,
+        review,
+        report,
+    })
+}
+
+pub(super) fn run(args: &TierArgs) -> Result<ExitCode> {
+    let report = collect(args)?.report;
     match args.format {
         Format::Json => println!("{}", serde_json::to_string_pretty(&report)?),
         Format::Text => print_text(&report),
     }
-    Ok(if done {
+    Ok(if report["status"] == "complete" {
         ExitCode::SUCCESS
     } else {
         ExitCode::from(2)

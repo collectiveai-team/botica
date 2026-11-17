@@ -6,6 +6,7 @@ use botica_config::{PathMatcher, ReviewConfig, Tier};
 use serde::Serialize;
 
 mod python;
+pub mod roles;
 mod signals;
 
 /// One changed file, with both paths of a rename and raw text size when available.
