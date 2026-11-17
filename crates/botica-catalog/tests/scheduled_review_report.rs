@@ -345,12 +345,7 @@ fn only_a_run_of_this_repository_on_main_with_a_botica_artifact_is_downloaded_an
     )
     .expect("zip");
     let workdir = root.join("work");
-    fs::create_dir_all(&workdir).expect("the work folder");
-    Command::new("git")
-        .args(["clone", "--quiet", root.to_str().expect("UTF-8"), "work"])
-        .current_dir(&root)
-        .status()
-        .expect("clone");
+    git(&root, &["clone", "--quiet", ".", "work"]);
     let temp = root.join("temp");
     fs::create_dir_all(&temp).expect("the temp folder");
 
