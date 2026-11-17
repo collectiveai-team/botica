@@ -70,6 +70,25 @@ missing.
    the job reads `botica.toml` from the base branch, as ADR 0017 decision 7 says for the rest of
    `[review]`.
 
+   Amended on 2026-11-16 after the ticket 12 reviews: keep branch risk and integration risk
+   separate. Branch risk compares the head against every best common ancestor of the pinned base
+   and head; its tier is the maximum across those comparisons, with all affected paths, areas and
+   signals retained. Integration risk compares the pinned base tip against the result of
+   integrating that head with the intended integration method. Both read the configuration and
+   attributes of the pinned base tip. The effective risk is the maximum of the two completed
+   assessments.
+
+   A partial result has no effective tier and cannot authorize automation. Missing history,
+   conflicts, invalid trusted configuration or an unsupported integration method leave the
+   assessment incomplete and make the command exit with 2. The available comparisons remain
+   evidence, not a successful classification. The first implementation supports merge; squash
+   and rebase must report unsupported until their actual behaviour is implemented. This replaces
+   the discarded implementation's assumption that `git merge-base` returns a unique base.
+
+   The contract and its consumer checks are in
+   [review-risk-contract.md](../review-risk-contract.md). This amendment records the design;
+   the ticket remains unresolved until the producer is implemented and validated.
+
 3. A signal is a name for a fact that botica reads from the diff with no model. This ADR fixes two,
    the ones that ADR 0017 uses as examples. `new-dependency` holds when a manifest or a lockfile
    lists a package that the base did not list (a transitive one included), changes the source,

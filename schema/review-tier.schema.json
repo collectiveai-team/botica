@@ -1,0 +1,180 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Botica review tier",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "inputs", "branch", "integration", "effective_tier"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "status": {"enum": ["complete", "incomplete"]},
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base", "head", "integration_method", "botica_version", "config"],
+      "properties": {
+        "base": {"$ref": "#/definitions/object_id"},
+        "head": {"$ref": "#/definitions/object_id"},
+        "integration_method": {"enum": ["merge", "squash", "rebase"]},
+        "botica_version": {"type": "string", "minLength": 1},
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "digest"],
+          "properties": {
+            "source": {"type": "string", "minLength": 1},
+            "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+          }
+        }
+      }
+    },
+    "branch": {"$ref": "#/definitions/assessment"},
+    "integration": {"$ref": "#/definitions/assessment"},
+    "effective_tier": {"enum": ["low", "medium", "high", null]}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "branch": {"properties": {"status": {"const": "complete"}}},
+          "integration": {"properties": {"status": {"const": "complete"}}}
+        }
+      },
+      "then": {
+        "properties": {
+          "status": {"const": "complete"},
+          "effective_tier": {"$ref": "#/definitions/tier"},
+          "inputs": {"properties": {"integration_method": {"const": "merge"}}}
+        }
+      },
+      "else": {
+        "properties": {"status": {"const": "incomplete"}, "effective_tier": {"type": "null"}}
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "complete"}}},
+      "then": {
+        "if": {
+          "anyOf": [
+            {"properties": {"branch": {"properties": {"tier": {"const": "high"}}}}},
+            {"properties": {"integration": {"properties": {"tier": {"const": "high"}}}}}
+          ]
+        },
+        "then": {"properties": {"effective_tier": {"const": "high"}}},
+        "else": {
+          "if": {
+            "anyOf": [
+              {"properties": {"branch": {"properties": {"tier": {"const": "medium"}}}}},
+              {"properties": {"integration": {"properties": {"tier": {"const": "medium"}}}}}
+            ]
+          },
+          "then": {"properties": {"effective_tier": {"const": "medium"}}},
+          "else": {"properties": {"effective_tier": {"const": "low"}}}
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "object_id": {"type": "string", "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$"},
+    "tier": {"enum": ["low", "medium", "high"]},
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to", "tier", "files", "areas", "signals"],
+      "properties": {
+        "from": {"$ref": "#/definitions/object_id"},
+        "to": {"$ref": "#/definitions/object_id"},
+        "tier": {"$ref": "#/definitions/tier"},
+        "files": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "areas": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"enum": ["critical", "platform", "core", "periphery"]}
+        },
+        "signals": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "assessment": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "tier", "comparisons"],
+          "properties": {
+            "status": {"const": "complete"},
+            "tier": {"$ref": "#/definitions/tier"},
+            "comparisons": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"$ref": "#/definitions/comparison"}
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "comparisons": {"contains": {"properties": {"tier": {"const": "high"}}}}
+                }
+              },
+              "then": {"properties": {"tier": {"const": "high"}}},
+              "else": {
+                "if": {
+                  "properties": {
+                    "comparisons": {"contains": {"properties": {"tier": {"const": "medium"}}}}
+                  }
+                },
+                "then": {"properties": {"tier": {"const": "medium"}}},
+                "else": {"properties": {"tier": {"const": "low"}}}
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "reasons", "comparisons"],
+          "properties": {
+            "status": {"const": "incomplete"},
+            "reasons": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["code", "message"],
+                "properties": {
+                  "code": {
+                    "enum": [
+                      "missing-history",
+                      "no-common-ancestor",
+                      "merge-conflict",
+                      "unsupported-integration-method",
+                      "invalid-config",
+                      "unreadable-diff",
+                      "unsupported-detector",
+                      "integration-failed"
+                    ]
+                  },
+                  "message": {"type": "string", "minLength": 1}
+                }
+              }
+            },
+            "comparisons": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {"$ref": "#/definitions/comparison"}
+            }
+          }
+        }
+      ]
+    }
+  }
+}

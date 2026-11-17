@@ -90,6 +90,20 @@ The integrated change submitted for one intent. A delivery may contain several r
 slices and their tickets. Its default publication is one pull request.
 _Avoid_: ticket PR
 
+### Review risk
+
+**Branch risk**:
+The review floor of the changes from each best common ancestor to the head of a branch.
+Its tier is the highest of those comparisons.
+
+**Integration risk**:
+The review floor of the change from the destination tip to the result of integrating the head
+with the intended method.
+
+**Effective risk**:
+The higher of completed branch risk and integration risk. An incomplete assessment leaves
+effective risk unavailable.
+
 ### Botica
 
 **Botica**:
