@@ -22,7 +22,7 @@
           "required": ["source", "digest"],
           "properties": {
             "source": {"type": "string", "minLength": 1},
-            "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+            "digest": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}
           }
         }
       }
@@ -32,6 +32,16 @@
     "effective_tier": {"enum": ["low", "medium", "high", null]}
   },
   "allOf": [
+    {
+      "if": {"properties": {"inputs": {"properties": {"config": {"properties": {"digest": {"type": "null"}}}}}}},
+      "then": {
+        "properties": {
+          "status": {"const": "incomplete"},
+          "branch": {"properties": {"status": {"const": "incomplete"}, "reasons": {"contains": {"properties": {"code": {"const": "invalid-config"}}}}}},
+          "integration": {"properties": {"status": {"const": "incomplete"}, "reasons": {"contains": {"properties": {"code": {"const": "invalid-config"}}}}}}
+        }
+      }
+    },
     {
       "if": {
         "properties": {
@@ -79,7 +89,7 @@
     "comparison": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["from", "to", "tier", "files", "areas", "signals"],
+      "required": ["from", "to", "tier", "files", "areas", "signals", "evidence", "signal_evidence", "detector_evidence", "size"],
       "properties": {
         "from": {"$ref": "#/definitions/object_id"},
         "to": {"$ref": "#/definitions/object_id"},
@@ -94,12 +104,86 @@
           "uniqueItems": true,
           "items": {"enum": ["critical", "platform", "core", "periphery"]}
         },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["paths", "kind", "status", "added", "deleted", "generated", "matches"],
+            "properties": {
+              "paths": {"$ref": "#/definitions/paths"},
+              "kind": {"enum": ["text", "binary", "symbolic-link", "submodule"]},
+              "status": {"type": "string", "pattern": "^[ACDMRTUXB][0-9]*$"},
+              "added": {"type": ["integer", "null"], "minimum": 0},
+              "deleted": {"type": ["integer", "null"], "minimum": 0},
+              "generated": {"type": "boolean"},
+              "matches": {
+                "type": "array", "minItems": 1,
+                "items": {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["location", "area", "tier", "paths"],
+                  "properties": {
+                    "location": {"type": "string", "minLength": 1},
+                    "area": {"enum": ["critical", "platform", "core", "periphery"]},
+                    "tier": {"$ref": "#/definitions/tier"},
+                    "paths": {"$ref": "#/definitions/paths"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "signal_evidence": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["name", "paths", "detector", "detail"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1},
+              "paths": {"$ref": "#/definitions/paths"},
+              "detector": {"type": "string", "minLength": 1},
+              "detail": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "detector_evidence": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["detector", "status", "paths", "detail"],
+            "properties": {
+              "detector": {"type": "string", "minLength": 1},
+              "status": {"enum": ["supported", "unsupported"]},
+              "paths": {"$ref": "#/definitions/paths"},
+              "detail": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "size": {
+          "type": "object", "additionalProperties": false,
+          "required": ["changed_lines", "non_text_files", "informational_only"],
+          "properties": {
+            "changed_lines": {"type": "integer", "minimum": 0},
+            "non_text_files": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+            "informational_only": {"const": true}
+          }
+        },
         "signals": {
           "type": "array",
           "uniqueItems": true,
           "items": {"type": "string", "minLength": 1}
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"signals": {"contains": {"enum": ["new-dependency", "new-endpoint"]}}}},
+          "then": {"properties": {"tier": {"enum": ["medium", "high"]}}}
+        }
+      ]
+    },
+    "paths": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
     },
     "assessment": {
       "oneOf": [
@@ -118,6 +202,19 @@
             }
           },
           "allOf": [
+            {
+              "properties": {
+                "comparisons": {
+                  "items": {
+                    "properties": {
+                      "detector_evidence": {
+                        "items": {"properties": {"status": {"const": "supported"}}}
+                      }
+                    }
+                  }
+                }
+              }
+            },
             {
               "if": {
                 "properties": {

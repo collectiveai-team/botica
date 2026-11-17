@@ -307,6 +307,8 @@ fn the_forced_platform_paths_are_the_ones_of_the_adr_and_pyproject_toml() {
         "/.gitlab-ci.yml",
         ".github/CODEOWNERS",
         ".gitlab/CODEOWNERS",
+        "/CODEOWNERS",
+        "/docs/CODEOWNERS",
         "/.gitattributes",
         "/prek.toml",
         ".abide/**",

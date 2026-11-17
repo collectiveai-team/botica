@@ -47,7 +47,8 @@ for the areas and the classifier and
 [ADR 0017](https://github.com/collectiveai-team/botica/blob/main/docs/adr/0017-review-roles.md)
 for the roles. botica reads and checks the table, and
 [`botica review export --format codeowners`](review-export.md) writes a CODEOWNERS file from the
-areas; the other commands that use it come in later changes.
+areas. [`botica review tier`](review-tier.md) reads the destination's settings to assess branch
+risk and integration risk. The plan/check consumers come in later changes.
 
 ```toml
 # botica.toml; in pyproject.toml the tables are [tool.botica.review] and [[tool.botica.review.areas]]
@@ -100,12 +101,14 @@ The configuration fails to load when:
 - an entry of `periphery` can select a path that is always `platform`:
   `botica.toml`, `pyproject.toml` at the root, `.github/review/**`, `.gitlab/review/**` and the
   folder of `dir`, `skills-lock.json`, `.github/workflows/**`, `.github/actions/**`,
-  `.gitlab-ci.yml`, `.github/CODEOWNERS`, `.gitlab/CODEOWNERS`, `.gitattributes`, `prek.toml`,
+  `.gitlab-ci.yml`, `.github/CODEOWNERS`, `.gitlab/CODEOWNERS`, `/CODEOWNERS`,
+  `/docs/CODEOWNERS`, `.gitattributes`, `prek.toml`,
   `.abide/**`, and at any depth `AGENTS.md`, `CLAUDE.md`, `.claude/**`, `.mcp.json`,
   `.cursorrules`, `INVARIANTS.md`, `REVIEW.md` and `SKILL.md`. The check compares the globs with
   each other and reads no file of the checkout, so `.github/workflows/*.yml` and
   `docs/**/AGENTS.md` fail too. An entry that ends in `**`, as `docs/**`, is accepted: the list
-  keeps a forced file inside it as `platform`.
+  keeps a forced file inside it as `platform`. Forced paths are ASCII-insensitive; area and
+  generated globs keep their configured case.
 
 A glob with no `/` is read at every depth, as in a `.gitignore`: `README.md` also selects
 `.github/review/README.md`, which is `platform`. Write `/README.md` for the file at the root.
@@ -125,14 +128,16 @@ The other keys of `[review]`:
 | `roles` | the roles that CI expects: `spec`, `security`, `tests`, `architecture`, `contracts`, `performance`, `refute`; `[]` expects none | all seven |
 | `generated` | globs of generated files, which the size of a change does not count; one that can select a path of `critical`, `platform` or the forced list fails to load, so write `/uv.lock` and not `uv.lock` | none |
 
-`[review.classifier]` holds the settings that ADR 0018 gives the classifier, which a later change
-adds. A value out of its bound fails to load:
+`[review.classifier]` holds settings from ADR 0018's original classifier proposal. The
+2026-11-16 policy correction requires human review only for `critical`. These settings do not
+make `review tier` route a change to a person. Size is informational; the legacy size field is
+retained for compatibility. The other validated bounds remain:
 
 | Key | Meaning | Default | Bound |
 |---|---|---|---|
 | `mode` | `shadow` decides and writes the report and never merges; `enforce` merges | `shadow` | |
-| `required-checks` | names of the checks that must be present and green; an empty list sends every change to a person | none | |
+| `required-checks` | names of the checks expected by the proposed classifier | none | |
 | `question-max` | a question answers `true` with a probability under this | 0.1 | 0 to 0.3 |
 | `impact-min` | the probability that a mistake shows first to the team or to whoever develops the repository, at least | 0.9 | 0.7 to 1 |
-| `min-confidence` | a `choice` answer with less confidence goes to a person | 0.7 | 0.7 to 1 |
-| `max-changed-lines` | a larger change goes to a person | 400 | up to 1000 |
+| `min-confidence` | minimum confidence of the proposed classifier | 0.7 | 0.7 to 1 |
+| `max-changed-lines` | legacy field; no size gate or human-review requirement | 400 | unsigned 32-bit integer |

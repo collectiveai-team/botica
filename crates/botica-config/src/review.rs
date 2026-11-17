@@ -153,8 +153,7 @@ pub struct ClassifierConfig {
     /// A `choice` answer with less confidence than this goes to a person. Not under 0.7.
     #[schemars(range(min = 0.7, max = 1.0))]
     pub min_confidence: f64,
-    /// Larger changes go to a person. At most 1000.
-    #[schemars(range(max = 1000))]
+    /// Legacy setting retained for configuration compatibility; size is informational only.
     pub max_changed_lines: u32,
 }
 
@@ -196,7 +195,7 @@ pub struct ReviewConfig {
 /// or an agent loads them as instructions (ADR 0018 decision 1). A leading `/` anchors a name to
 /// the root, as in a `.gitignore`, and `**/` gives it every depth. The ADR writes `**/` for the
 /// files that count at every depth.
-const FORCED_PLATFORM: [&str; 21] = [
+const FORCED_PLATFORM: [&str; 23] = [
     "/botica.toml",
     "/pyproject.toml",
     ".github/review/**",
@@ -207,6 +206,8 @@ const FORCED_PLATFORM: [&str; 21] = [
     "/.gitlab-ci.yml",
     ".github/CODEOWNERS",
     ".gitlab/CODEOWNERS",
+    "/CODEOWNERS",
+    "/docs/CODEOWNERS",
     "/.gitattributes",
     "/prek.toml",
     ".abide/**",
@@ -229,6 +230,27 @@ pub struct UnmatchedPath {
 }
 
 impl ReviewConfig {
+    /// Validate the review settings independently of historical project settings.
+    pub fn validate(&self) -> Result<(), crate::ConfigError> {
+        let mut issues = Vec::new();
+        crate::validate_review::review(&mut issues, self);
+        if issues.is_empty() {
+            Ok(())
+        } else {
+            Err(crate::ConfigError::new(issues))
+        }
+    }
+
+    /// Forced paths use ASCII-insensitive matching at validation and assessment.
+    pub fn is_forced_platform(&self, path: &str) -> bool {
+        let globs: Vec<_> = self
+            .forced_platform_globs()
+            .iter()
+            .map(|g| g.to_ascii_lowercase())
+            .collect();
+        PathMatcher::new(&globs).is_ok_and(|matcher| matcher.is_match(&path.to_ascii_lowercase()))
+    }
+
     /// The globs of `generated` and of the paths of the areas that match none of `files`, which
     /// are paths from the root of the project. A glob that matches nothing is a typo or a path
     /// that moved, and the area it belongs to protects nothing.

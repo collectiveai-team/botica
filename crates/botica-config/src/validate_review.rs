@@ -9,7 +9,6 @@ use crate::review::{AreaName, ReviewArea, ReviewConfig};
 const QUESTION_MAX_LIMIT: f64 = 0.3;
 /// Smallest value that `impact-min` and `min-confidence` take (ADR 0018 decision 8).
 const PROBABILITY_FLOOR: f64 = 0.7;
-const MAX_CHANGED_LINES_LIMIT: u32 = 1000;
 
 pub(crate) fn review(found: &mut Vec<ConfigIssue>, config: &ReviewConfig) {
     directory(found, config.dir.as_deref());
@@ -212,7 +211,12 @@ impl ForcedPath {
                 glob.overlaps(&self.glob) && (glob.picks_files() || glob.names(&self.leaf))
             }
             Forced::Folder => glob.overlaps(&self.glob) || as_folder.overlaps(&self.glob),
-            Forced::NameAtRoot => glob.overlaps(&self.glob),
+            Forced::NameAtRoot => {
+                glob.overlaps(&self.glob)
+                    && (!self.leaf.ends_with("/codeowners")
+                        || glob.picks_files()
+                        || glob.names("codeowners"))
+            }
         }
     }
 }
@@ -221,7 +225,7 @@ fn forced_paths(config: &ReviewConfig) -> Vec<ForcedPath> {
     config
         .forced_platform_globs()
         .into_iter()
-        .map(ForcedPath::of)
+        .map(|path| ForcedPath::of(path.to_ascii_lowercase()))
         .collect()
 }
 
@@ -235,8 +239,8 @@ fn periphery_over_forced(found: &mut Vec<ConfigIssue>, config: &ReviewConfig) {
             continue;
         }
         for (path_index, text) in area.paths.iter().enumerate() {
-            let glob = Glob::parse(text);
-            let as_folder = Glob::folder(text);
+            let glob = Glob::parse(&text.to_ascii_lowercase());
+            let as_folder = Glob::folder(&text.to_ascii_lowercase());
             let covered = forced
                 .iter()
                 .find(|path| path.covered_by(&glob, &as_folder));
@@ -251,14 +255,15 @@ fn periphery_over_forced(found: &mut Vec<ConfigIssue>, config: &ReviewConfig) {
 }
 
 /// The configuration fails to load when a glob of `generated` can select a path of `critical`, of
-/// `platform` or of the forced list: the size of a change leaves out generated files, and a person
-/// has to read those paths. A glob with no `/` is read at every depth, so `uv.lock` can select
+/// `platform` or of the forced list: those paths retain their full assessment evidence.
+/// A glob with no `/` is read at every depth, so `uv.lock` can select
 /// `.github/workflows/uv.lock`; `/uv.lock` is the file at the root.
 fn generated_over_protected(found: &mut Vec<ConfigIssue>, config: &ReviewConfig) {
-    let mut protected: Vec<(String, Glob)> = forced_paths(config)
+    let forced: Vec<(String, Glob)> = forced_paths(config)
         .into_iter()
         .map(|path| (path.text, path.glob))
         .collect();
+    let mut protected = Vec::new();
     for area in &config.areas {
         if matches!(area.name, AreaName::Critical | AreaName::Platform) {
             protected.extend(area.paths.iter().map(|g| (g.clone(), Glob::parse(g))));
@@ -267,13 +272,22 @@ fn generated_over_protected(found: &mut Vec<ConfigIssue>, config: &ReviewConfig)
     for (index, text) in config.generated.iter().enumerate() {
         let generated = Glob::parse(text);
         let as_folder = Glob::folder(text);
-        let clash = protected.iter().find(|(rule, glob)| {
-            generated.overlaps(glob) || (rule.ends_with("/**") && as_folder.overlaps(glob))
-        });
+        let folded = text.to_ascii_lowercase();
+        let clash = forced
+            .iter()
+            .find(|(rule, glob)| {
+                Glob::parse(&folded).overlaps(glob)
+                    || (rule.ends_with("/**") && Glob::folder(&folded).overlaps(glob))
+            })
+            .or_else(|| {
+                protected.iter().find(|(rule, glob)| {
+                    generated.overlaps(glob) || (rule.ends_with("/**") && as_folder.overlaps(glob))
+                })
+            });
         if let Some((rule, _)) = clash {
             found.push(issue(
                 format!("review.generated[{index}]"),
-                format!("`{text}` can select a path of `{rule}`, which a person has to review: a change to it counts in full"),
+                format!("`{text}` can select a protected path of `{rule}`: its assessment evidence counts in full"),
             ));
         }
     }
@@ -305,11 +319,5 @@ fn classifier(found: &mut Vec<ConfigIssue>, config: &ReviewConfig) {
                 format!("must be from {PROBABILITY_FLOOR} to 1"),
             ));
         }
-    }
-    if settings.max_changed_lines > MAX_CHANGED_LINES_LIMIT {
-        found.push(issue(
-            "review.classifier.max-changed-lines",
-            format!("must be at most {MAX_CHANGED_LINES_LIMIT}"),
-        ));
     }
 }

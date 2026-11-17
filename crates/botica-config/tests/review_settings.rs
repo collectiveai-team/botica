@@ -7,7 +7,7 @@ use botica_config::{ClassifierMode, ReviewRole};
 use common::review::{accepted, problems, with_platform, PLATFORM};
 
 #[test]
-fn a_generated_glob_cannot_match_a_path_that_a_person_has_to_review() {
+fn a_generated_glob_cannot_match_a_protected_path() {
     for glob in ["**", ".github/**", "**/*.toml", "ci/**", "db/**", "*.md"] {
         let message = problems(&format!(
             "[review]\ngenerated = [\"{glob}\"]\n\n{}",
@@ -67,7 +67,6 @@ fn the_classifier_takes_the_bounds_of_the_adr() {
         ("impact-min", "1.1"),
         ("min-confidence", "0.69"),
         ("min-confidence", "1.5"),
-        ("max-changed-lines", "1001"),
     ] {
         let message = problems(&format!("[review.classifier]\n{key} = {value}\n"));
         assert!(
@@ -75,6 +74,12 @@ fn the_classifier_takes_the_bounds_of_the_adr() {
             "{key} = {value}: {message}"
         );
     }
+}
+
+#[test]
+fn the_legacy_size_setting_has_no_policy_upper_bound() {
+    let config = accepted("[review.classifier]\nmax-changed-lines = 100000\n");
+    assert_eq!(config.review.classifier.max_changed_lines, 100000);
 }
 
 #[test]

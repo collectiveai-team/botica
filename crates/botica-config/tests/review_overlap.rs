@@ -1,4 +1,4 @@
-//! A glob of `periphery` or of `generated` that can select a path that a person has to review fails
+//! A glob of `periphery` or of `generated` that can select a protected path fails
 //! to load, however narrow the glob is (ADR 0018 decision 1 and decision 6). The overlap is decided
 //! on the globs, and a glob that this check does not follow exactly is read as selecting everything.
 

@@ -3,6 +3,7 @@
 mod codeowners;
 mod pattern;
 mod target;
+mod tier;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -20,6 +21,8 @@ pub struct ReviewArgs {
 
 #[derive(Subcommand)]
 enum ReviewCommand {
+    /// Assess branch risk and integration risk from pinned Git inputs.
+    Tier(tier::TierArgs),
     /// Write the areas of `[[review.areas]]` as a file that a code host reads, as CODEOWNERS.
     Export(ExportArgs),
 }
@@ -66,6 +69,7 @@ impl Host {
 
 pub fn run(args: &ReviewArgs) -> Result<ExitCode> {
     match &args.command {
+        ReviewCommand::Tier(tier) => tier::run(tier),
         ReviewCommand::Export(export) => run_export(export).map(|()| ExitCode::SUCCESS),
     }
 }

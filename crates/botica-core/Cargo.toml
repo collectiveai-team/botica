@@ -18,6 +18,7 @@ botica-astgrep = { path = "../botica-astgrep" }
 blake3 = "1"
 botica-catalog = { path = "../botica-catalog" }
 botica-complexity = { path = "../botica-complexity" }
+botica-config = { path = "../botica-config" }
 botica-ext = { path = "../botica-ext" }
 globset.workspace = true
 ignore = { workspace = true, optional = true }

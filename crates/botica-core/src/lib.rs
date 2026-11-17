@@ -23,6 +23,7 @@ pub mod postprocess;
 pub mod recipe_conflict;
 pub mod registry;
 pub mod report;
+pub mod review;
 pub mod route_auth;
 pub mod suppress;
 mod timings;

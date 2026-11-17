@@ -44,8 +44,8 @@ order of the configuration never decides.
 
 The paths that are always `platform` (the list in [Configuration](configuration.md#review)) come
 after every entry, with the owners of all the `platform` entries. A `platform` or `critical` entry
-with a higher tier does not take them. The export adds `/CODEOWNERS` and `/docs/CODEOWNERS` to that
-list, since GitLab reads them before `.gitlab/CODEOWNERS`.
+with a higher tier does not take them. The list includes `/CODEOWNERS` and `/docs/CODEOWNERS`,
+since GitLab reads them before `.gitlab/CODEOWNERS`.
 
 An entry with no `owners` (`core` or `periphery`) writes no line on either host, so its paths keep
 the owners of a broader line before it, if there is one. On GitHub a line with no owner would take

@@ -325,6 +325,7 @@ dependencies = [
  "botica-astgrep",
  "botica-catalog",
  "botica-complexity",
+ "botica-config",
  "botica-ext",
  "criterion",
  "globset",

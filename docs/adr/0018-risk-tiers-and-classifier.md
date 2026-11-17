@@ -2,6 +2,23 @@
 
 **Status:** proposed
 
+## Policy correction, 2026-11-16
+
+The user superseded the human-routing policy of the original proposal: only a change touching
+`critical` requires human review. A `medium` floor, `platform`, file counts, changed-line counts,
+binary files and the inherited `max-changed-lines = 400` setting create no human-review
+requirement. Size is informational evidence for each comparison. There is no aggregate size
+gate. The legacy size setting remains readable, with no policy upper bound.
+
+The conflicting routing statements in decisions 5 through 13, the original size gate in
+decision 6 and the corresponding consequences below are historical proposals, superseded by this
+correction. They do not define the implemented tier producer's behaviour. A technical failure
+can leave classification incomplete and block automation; it does not require human review.
+Detector uncertainty is recorded explicitly. It is not a fabricated dependency or endpoint
+finding. The current producer contract is `docs/review-risk-contract.md`.
+
+## Original proposal
+
 ADR 0017 defines the roles that review a diff and reads a tier from `botica review tier`, which it
 leaves undecided. Nothing yet says how much review a change needs or when no person has to look at
 it. Today every pull request goes to a person, whatever it touches, except the labeled pull
@@ -55,13 +72,17 @@ missing.
    reviewed, built and merged, or are loaded by an agent as instructions: `botica.toml`,
    `.github/review/**` and `.gitlab/review/**` (and the folder of `[review] dir`),
    `skills-lock.json`, `.github/workflows/**`, `.github/actions/**`, `.gitlab-ci.yml`,
-   `.github/CODEOWNERS`, `.gitlab/CODEOWNERS`, `.gitattributes`, `prek.toml`, `.abide/**`,
+    `.github/CODEOWNERS`, `.gitlab/CODEOWNERS`, `/CODEOWNERS`, `/docs/CODEOWNERS`,
+    `.gitattributes`, `prek.toml`, `.abide/**`,
    `**/AGENTS.md`, `**/CLAUDE.md`, `**/.claude/**`, `**/.mcp.json`, `**/.cursorrules`,
    `**/INVARIANTS.md`, `**/REVIEW.md` and `**/SKILL.md`. The list includes the files that ADR 0017
    decision 7 reads from the base and, at every depth, the files that decision 9 strips from the
    head. An
-   entry of `periphery` cannot cover them, and `botica.toml` fails to load if one does. Their
-   owners and approvals come from the entries of `platform`, and a `botica.toml` that has
+   entry of `periphery` cannot cover them, and `botica.toml` fails to load if one does.
+   Matching against the forced list is ASCII-insensitive; area and generated globs retain their
+   configured case. Root and `docs/` CODEOWNERS were added on 2026-11-16 because GitLab reads
+   them before `.gitlab/CODEOWNERS`. Their owners and approvals come from the entries of
+   `platform`, and a `botica.toml` that has
    `[[review.areas]]` and no `platform` entry fails to load.
 
 2. The tier of a change is the highest floor among its files and its signals. A file that several
@@ -96,9 +117,10 @@ missing.
    by more than a patch, or changes a manifest anywhere outside the lines that list a package (a
    script that runs on install, a build requirement, a setting of a tool). Only a patch version of
    a package already listed, from the same source and with the same constraint, and released at
-   least as long ago as the cooldown of the repository (`.github/dependabot.yml`), is not one. The
-   signal holds as well when botica has no detector for the file or cannot parse it, so a missing
-   detector raises the floor and never lowers it.
+   least as long ago as the cooldown of the repository (`.github/dependabot.yml`), is not one.
+   The earlier proposal to fabricate this signal for a missing detector is superseded on
+   2026-11-16. A missing detector or parse failure is explicit uncertainty and leaves the
+   assessment incomplete, with its collected comparisons retained.
    `new-endpoint` holds when the diff adds a route to a service that the repository exposes. Each
    signal raises the floor to `medium`, selects the roles whose `applies.signals` name it (ADR
    0017), and goes into the state of the classifier. How botica detects each one is a later change.
@@ -129,7 +151,9 @@ missing.
                                                  automatic merge
    ```
 
-6. The gates are code, and Jev does not run when one of them fails. The pull request goes to a
+6. Superseded on 2026-11-16: the following gate proposal is retained as design history, not as
+   implemented policy. Only `critical` now requires human review; size is informational.
+   The original gates were code, and Jev did not run when one failed. The pull request went to a
    person when:
    - the floor is not `low`, or the change touches `critical` or `platform`;
    - the pull request comes from a fork, since ADR 0017 decision 9 runs no role on one;
