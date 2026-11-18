@@ -1,4 +1,4 @@
-"""Execute the shadow workflow's effective-risk label publication with fake GitHub facts."""
+"""Execute workflow publication through a working GitHub adapter and assert its final state."""
 
 import json
 import os
@@ -6,6 +6,20 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from fake_github_cli import Comment, GitHubState, install
+
+
+def test_github_adapter_requires_registered_labels_and_exposes_the_resulting_state():
+    github = GitHubState(labels={"area:core"})
+    with pytest.raises(ValueError, match="label must exist"):
+        github.run(["pr", "edit", "42", "--add-label", "risk:high"])
+    github.run(["label", "create", "risk:high", "--color", "6e7781", "--force"])
+    github.run(["pr", "edit", "42", "--add-label", "risk:high"])
+    assert github.run(["pr", "view", "42", "--json", "labels", "--jq", ".labels[].name"]) == (
+        "area:core\nrisk:high"
+    )
+    github.run(["pr", "edit", "42", "--remove-label", "risk:high"])
+    assert github.labels == {"area:core"}
 
 
 @pytest.mark.parametrize(
@@ -44,29 +58,19 @@ def test_shadow_publishes_only_fresh_effective_risk_without_removing_area_labels
         "<!-- botica:review-handoff -->\n<!-- previous risk marker -->\nBlocked evidence.\n",
     )
     (tmp_path / ".tmp").mkdir()
-    comments = tmp_path / "comments.json"
-    comments.write_text(
-        json.dumps(
-            [
-                {
-                    "user": {"login": "github-actions[bot]"},
-                    "body": f"<!-- botica:review-risk base={'b' * 40} "
+    binary, state_path = install(
+        tmp_path,
+        GitHubState(
+            labels={"risk:medium", "area:core"},
+            comments=[
+                Comment(
+                    author="github-actions[bot]",
+                    body=f"<!-- botica:review-risk base={'b' * 40} "
                     f"head={'a' * 40} tier={prior} -->",
-                }
-            ]
-        )
+                )
+            ],
+        ),
     )
-    binary = tmp_path / "bin"
-    binary.mkdir()
-    gh = binary / "gh"
-    gh.write_text(
-        '#!/bin/sh\nif test "$1" = api; then cat "$COMMENTS";\n'
-        'elif test "$1 $2" = "pr view"; then\n'
-        '  printf "%s\\n" "risk:medium" "area:core"\n'
-        'else\n  printf "%s\\n" "$*" >> "$GH_CALLS"\nfi\n',
-    )
-    gh.chmod(0o755)
-    log = tmp_path / "github-calls"
     result = (
         subprocess.run(  # botica: ignore[test-no-subprocess] -- execute the public workflow seam
             ["bash", "-eo", "pipefail", "-c", script],
@@ -76,8 +80,8 @@ def test_shadow_publishes_only_fresh_effective_risk_without_removing_area_labels
                 "PATH": f"{binary}:{os.environ['PATH']}",
                 "fresh_context": fresh_context,
                 "PR_NUMBER": "42",
-                "GH_CALLS": str(log),
-                "COMMENTS": str(comments),
+                "GITHUB_STATE": str(state_path),
+                "GH_REPO": "owner/repo",
                 "BASE_SHA": "b" * 40,
                 "HEAD_SHA": "a" * 40,
             },
@@ -87,15 +91,10 @@ def test_shadow_publishes_only_fresh_effective_risk_without_removing_area_labels
         )
     )
     assert result.returncode == 0, result.stderr
-    calls = log.read_text() if log.exists() else ""
+    state = GitHubState.load(state_path)
     if fresh_context == "true":
         expected = current_tier if measured else prior or current_tier
-        assert "pr edit 42 --remove-label risk:medium" in calls
-        assert f"pr edit 42 --add-label risk:{expected}" in calls
-        assert calls.index(f"label create risk:{expected}") < calls.index(
-            f"pr edit 42 --add-label risk:{expected}"
-        )
-        assert "area:core" not in calls
+        assert state.labels == {f"risk:{expected}", "area:core"}
         if prior and not measured:
             assert "Retained tier: high" in (output / "handoff.md").read_text()
             assert (
@@ -105,7 +104,7 @@ def test_shadow_publishes_only_fresh_effective_risk_without_removing_area_labels
                 == "high"
             )
     else:
-        assert calls == ""
+        assert state.labels == {"risk:medium", "area:core"}
 
 
 @pytest.mark.parametrize("changed", [True, False])
@@ -119,15 +118,10 @@ def test_publication_invalidates_its_labels_if_the_base_or_head_changes(
     script = start + workflow.rsplit(start, 1)[1].split("\n          comment=", 1)[0]
     script = "\n".join(line[10:] for line in script.splitlines())
     (tmp_path / ".botica/review").mkdir(parents=True)
-    binary = tmp_path / "bin"
-    binary.mkdir()
-    gh = binary / "gh"
-    gh.write_text(
-        '#!/bin/sh\nif test "$1 $2" = "pr view"; then printf "%s\\n" "$CURRENT";\n'
-        'else printf "%s\\n" "$*" >> "$GH_CALLS"; fi\n',
+    binary, state_path = install(
+        tmp_path,
+        GitHubState(labels={"risk:high", "area:core"}, base=("c" if changed else "b") * 40),
     )
-    gh.chmod(0o755)
-    log = tmp_path / "github-calls"
     result = (
         subprocess.run(  # botica: ignore[test-no-subprocess] -- public workflow with racing facts
             ["bash", "-eo", "pipefail", "-c", script],
@@ -138,8 +132,7 @@ def test_publication_invalidates_its_labels_if_the_base_or_head_changes(
                 "PR_NUMBER": "42",
                 "BASE_SHA": "b" * 40,
                 "HEAD_SHA": "a" * 40,
-                "GH_CALLS": str(log),
-                "CURRENT": ("c" if changed else "b") * 40 + ":" + "a" * 40,
+                "GITHUB_STATE": str(state_path),
             },
             capture_output=True,
             text=True,
@@ -147,13 +140,12 @@ def test_publication_invalidates_its_labels_if_the_base_or_head_changes(
         )
     )
     assert result.returncode == 0, result.stderr
-    calls = log.read_text() if log.exists() else ""
+    state = GitHubState.load(state_path)
     if changed:
-        assert "pr edit 42 --add-label risk:incomplete" in calls
-        assert "pr edit 42 --remove-label risk:high" in calls
+        assert state.labels == {"risk:incomplete", "area:core"}
         assert "blocked" in (tmp_path / ".botica/review/handoff.md").read_text()
     else:
-        assert calls == ""
+        assert state.labels == {"risk:high", "area:core"}
 
 
 @pytest.mark.parametrize(
@@ -183,24 +175,19 @@ def test_deterministic_labels_keep_a_pinned_classifier_increase(
     (tmp_path / ".tmp/risk.json").write_text(
         json.dumps({"status": "complete", "effective_tier": "low"}),
     )
-    comments = tmp_path / "comments.json"
-    comments.write_text(
-        json.dumps(
-            [
-                {
-                    "user": {"login": author},
-                    "body": "<!-- botica:review-handoff -->\n"
-                    f"<!-- botica:review-risk base={'b' * 40} "
-                    f"head={head * 40} tier=high -->\n",
-                }
-            ]
-        )
+    binary, state_path = install(
+        tmp_path,
+        GitHubState(
+            labels={"risk:low", "area:core"},
+            comments=[
+                Comment(
+                    author=author,
+                    body="<!-- botica:review-handoff -->\n"
+                    f"<!-- botica:review-risk base={'b' * 40} head={head * 40} tier=high -->\n",
+                )
+            ],
+        ),
     )
-    binary = tmp_path / "bin"
-    binary.mkdir()
-    gh = binary / "gh"
-    gh.write_text('#!/bin/sh\ncat "$COMMENTS"\n')
-    gh.chmod(0o755)
     result = (
         subprocess.run(  # botica: ignore[test-no-subprocess] -- public publication ordering seam
             ["bash", "-eo", "pipefail", "-c", script],
@@ -212,7 +199,7 @@ def test_deterministic_labels_keep_a_pinned_classifier_increase(
                 "BASE_SHA": "b" * 40,
                 "HEAD_SHA": "a" * 40,
                 "GH_REPO": "owner/repo",
-                "COMMENTS": str(comments),
+                "GITHUB_STATE": str(state_path),
             },
             capture_output=True,
             text=True,
