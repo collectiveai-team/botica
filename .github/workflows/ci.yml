@@ -14,7 +14,7 @@ on:
     branches: [main]
   pull_request:
     # `ready_for_review` runs the rule contract again: a draft may propose a standard numbered 0.
-    types: [opened, synchronize, reopened, ready_for_review, unlabeled]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
     paths:
       - "crates/**"
       - "catalog/**"
@@ -36,7 +36,7 @@ on:
   workflow_call:
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}-${{ github.event.action == 'unlabeled' && github.event.label.name != 'botica:stack-member' && 'ignored-label' || 'review' }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}-${{ contains(fromJSON('["labeled","unlabeled"]'), github.event.action) && github.event.label.name != 'botica:stack-member' && (contains(fromJSON('["contract-change","review-flow-standards"]'), github.event.label.name) && 'contract-label' || 'ignored-label') || 'review' }}
   cancel-in-progress: true
 
 permissions:
@@ -51,7 +51,7 @@ env:
 
 jobs:
   test:
-    if: github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member'
+    if: github.event.action != 'labeled' && (github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member')
     name: fmt, clippy & test
     runs-on: ubuntu-latest
     steps:
@@ -102,7 +102,7 @@ jobs:
 
   # The code of the built-in topics, with the versions of the `references` group of pyproject.toml.
   references:
-    if: github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member'
+    if: github.event.action != 'labeled' && (github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member')
     name: code of the topics
     runs-on: ubuntu-latest
     steps:
@@ -130,10 +130,10 @@ jobs:
 
   # A change that adds a rule may only touch what that kind of rule needs (scripts/check_rule_change.py).
   # Anything else is a contract change: label the pull request `contract-change` to accept it.
-  # A change touches at most one standard, and no label accepts more.
+  # The review-flow-standards label acknowledges only CES/122 and CES/134 (ADR 0021).
   rule-contract:
     name: rule contract
-    if: github.event_name == 'pull_request' && (github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member')
+    if: github.event_name == 'pull_request' && (!contains(fromJSON('["labeled","unlabeled"]'), github.event.action) || contains(fromJSON('["botica:stack-member","contract-change","review-flow-standards"]'), github.event.label.name))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -152,10 +152,14 @@ jobs:
           BASE: origin/${{ github.base_ref }}
           ACKNOWLEDGED: ${{ contains(github.event.pull_request.labels.*.name, 'contract-change') }}
           DRAFT: ${{ github.event.pull_request.draft }}
+          REVIEW_FLOW_STANDARDS: ${{ contains(github.event.pull_request.labels.*.name, 'review-flow-standards') }}
         run: |
           set --
           if [ "$ACKNOWLEDGED" = "true" ]; then set -- "$@" --acknowledged; fi
           if [ "$DRAFT" = "true" ]; then set -- "$@" --draft; fi
+          if [ "$REVIEW_FLOW_STANDARDS" = "true" ]; then
+            set -- "$@" --acknowledged-standard CES/122 --acknowledged-standard CES/134
+          fi
           uv run --locked python scripts/check_rule_change.py "$BASE" "$@"
 
   # `botica lint` with the selection of `[tool.botica]`, on the lines that a pull request adds and
@@ -164,7 +168,7 @@ jobs:
   # BOTICA_HISTORY_KEY is not set, so the fingerprints of the artifact are unkeyed (ADR 0019
   # decision 5); this repository is public, so a key is a decision of a maintainer.
   lint:
-    if: github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member'
+    if: github.event.action != 'labeled' && (github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member')
     name: lint and record
     runs-on: ubuntu-latest
     steps:
@@ -211,7 +215,7 @@ jobs:
   # does not install are unset, so those tests skip themselves instead of failing the baseline.
   review-policy:
     name: review policy
-    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false && !contains(github.event.pull_request.labels.*.name, 'botica:stack-member') && (github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member')
+    if: github.event_name == 'pull_request' && github.event.action != 'labeled' && github.event.pull_request.draft == false && !contains(github.event.pull_request.labels.*.name, 'botica:stack-member') && (github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:

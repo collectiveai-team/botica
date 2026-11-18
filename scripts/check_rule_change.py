@@ -9,8 +9,9 @@ The change may also adopt the rule in this repository (ADR 0013): a line that na
 that botica exports, and comments `botica: ignore[<rule>]` or `botica: ignore-file[<rule>]` in any
 file it modifies.
 
-A standard is a file, `standards/<set>/<number>-<slug>.md`. A change touches at most one, and no
-label says otherwise. The number of a standard is the next free one of its set, so two standards of
+A standard is a file, `standards/<set>/<number>-<slug>.md`. A change touches at most one unless
+an explicit acknowledgment names its exact standard set. Contract-change acknowledgment alone
+does not permit multiple standards. The number is the next free one of its set, so two standards of
 a set never share it. A proposal carries its standard as number 0 while it is a draft, and
 `scripts/number_standard.py` numbers it before the merge (ADR 0004).
 """
@@ -327,6 +328,7 @@ def verdict(
     *,
     acknowledged: bool,
     unnumbered: Sequence[tuple[str, str]] = (),
+    acknowledged_standards: Sequence[str] = (),
 ) -> tuple[int, list[str]]:
     """Return the exit code and the report for what the branch changed."""
     if unnumbered:
@@ -343,18 +345,21 @@ def verdict(
     if duplicated:
         head = "These standards share their number with another standard of the same set:"
         return 1, [head, *(f"  {standard}" for standard in duplicated)]
+    standard_lines: list[str] = []
     if len(touched) > 1:
-        head = "This change touches more than one standard; a change touches one:"
-        return 1, [head, *(f"  {standard}" for standard in touched)]
+        if set(touched) != set(acknowledged_standards):
+            head = "This change touches more than one standard; no exact set was acknowledged:"
+            return 1, [head, *(f"  {standard}" for standard in touched)]
+        standard_lines = [f"Acknowledged standard set: {', '.join(sorted(touched))}"]
     if not found:
-        return 0, []
+        return 0, standard_lines
     lines = [
         "This change adds a rule and also touches files outside the contract of that rule:",
         *(f"  {path}" for path in found),
     ]
     if acknowledged:
-        return 0, [*lines, "Acknowledged as a contract change."]
-    return 1, [*lines, "Label the change `contract-change` to acknowledge it."]
+        return 0, [*standard_lines, *lines, "Acknowledged as a contract change."]
+    return 1, [*standard_lines, *lines, "Label the change `contract-change` to acknowledge it."]
 
 
 def check_branch(
@@ -364,6 +369,7 @@ def check_branch(
     catalogs: Sequence[str] = (BUILTIN_CATALOG,),
     acknowledged: bool = False,
     draft: bool = False,
+    acknowledged_standards: Sequence[str] = (),
 ) -> int:
     """Exit code for the changes of `HEAD` since it left `base`: 1 unless acknowledged.
 
@@ -376,6 +382,7 @@ def check_branch(
         violations(changes, root, catalogs, branch_texts(base, root)),
         acknowledged=acknowledged,
         unnumbered=() if draft else unnumbered_standards(changes),
+        acknowledged_standards=acknowledged_standards,
     )
     for line in lines:
         print(line)
@@ -389,10 +396,12 @@ def main(
     catalog: list[str] | None = None,
     acknowledged: bool = False,
     draft: bool = False,
+    acknowledged_standard: list[str] | None = None,
 ) -> None:
     """Check the branch against BASE (a git ref); `--catalog` repeats for more catalogs.
 
     `--draft` accepts a proposed standard numbered 0.
+    Repeat `--acknowledged-standard SET/NUMBER` for an explicitly authorized standard set.
     """
     raise SystemExit(
         check_branch(
@@ -401,6 +410,7 @@ def main(
             catalogs=tuple(catalog) if catalog else (BUILTIN_CATALOG,),
             acknowledged=acknowledged,
             draft=draft,
+            acknowledged_standards=tuple(acknowledged_standard or ()),
         )
     )
 

@@ -265,7 +265,7 @@ def branch_that_touches_standards(root: Path, *paths: str) -> None:
     git(root, "commit", "-q", "-m", "feature")
 
 
-def test_a_branch_cannot_touch_two_standards_and_no_label_changes_that(
+def test_contract_change_acknowledgment_does_not_permit_two_standards(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     branch_that_touches_standards(

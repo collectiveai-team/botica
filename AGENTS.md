@@ -78,7 +78,9 @@ pins `mattpocock/skills#vX.Y.Z`. Bump the tag there to take a new upstream relea
 
 A standard is `standards/<set>/<number>-<slug>.md`, and a rule names it in the `standard` field of
 its `rule.toml`; `standards/CES/index.md` has the convention. A pull request touches one
-standard, and `scripts/check_rule_change.py` fails one that touches two.
+standard by default. `scripts/check_rule_change.py` accepts a larger set only when repeated
+`--acknowledged-standard` arguments name that exact set. ADR 0021 records the review-flow
+delivery's authorized pair and CI label. Numbering checks still apply.
 
 ## Botica rules
 
