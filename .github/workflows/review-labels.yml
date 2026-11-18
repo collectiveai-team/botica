@@ -21,7 +21,7 @@ jobs:
       issues: write
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 30
     steps:
       - name: Invalidate classifications whose destination advanced
         env:
@@ -29,15 +29,23 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           prs=$(gh api --paginate "repos/$GH_REPO/pulls?state=open&base=main&per_page=100" --jq '.[].number')
+          failed=0
           while IFS= read -r pr; do
             test -n "$pr" || continue
-            mapfile -t labels < <(gh pr view "$pr" --json labels --jq '.labels[].name | select(startswith("risk:") or startswith("area:"))')
-            for label in "${labels[@]}"; do
-              gh pr edit "$pr" --remove-label "$label"
-            done
-            gh label create risk:incomplete --color 6e7781 --force
-            gh pr edit "$pr" --add-label risk:incomplete
+            if ! (
+              current_labels=$(gh pr view "$pr" --json labels --jq '.labels[].name | select(startswith("risk:") or startswith("area:"))') || exit 1
+              while IFS= read -r label; do
+                test -n "$label" || continue
+                gh pr edit "$pr" --remove-label "$label" || exit 1
+              done <<< "$current_labels"
+              gh label create risk:incomplete --color 6e7781 --force || exit 1
+              gh pr edit "$pr" --add-label risk:incomplete
+            ); then
+              echo "::error::Destination invalidation failed for PR $pr; labels are not current evidence"
+              failed=1
+            fi
           done <<< "$prs"
+          exit "$failed"
   labels:
     permissions:
       contents: read
@@ -53,8 +61,10 @@ jobs:
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          mapfile -t labels < <(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name | select(startswith("risk:") or startswith("area:"))')
+          current_labels=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name | select(startswith("risk:") or startswith("area:"))')
+          mapfile -t labels <<< "$current_labels"
           for label in "${labels[@]}"; do
+            test -n "$label" || continue
             gh pr edit "$PR_NUMBER" --remove-label "$label"
           done
           gh label create risk:incomplete --color 6e7781 --force
