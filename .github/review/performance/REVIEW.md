@@ -7,6 +7,10 @@ stages: [local, ci]
 blocking: P1
 owners: ["@jedzill4"]
 max-findings: 6
+covered:
+  hooks:
+    - file: prek.toml
+      id: botica
 ---
 
 ## Invariants
@@ -61,9 +65,12 @@ The hot paths of botica, with the sizes that matter:
   `catalog/recipes/files/`: botica does not run it.
 - What `botica lint` already reports under the rules of the family `async`.
 
-<!-- botica:covered -->
+## Coverage notes
 - The hook `botica` of `prek.toml`, run by the job `lint, type-check & test` of `tests.yml`:
   `asyncio-no-get-event-loop` on Python.
+
+<!-- botica:covered -->
+- hook "botica" in "prek.toml": blake3 42b032456b95a74b7fb65915c73732e32258d34d9e5a3dd1f4787e0f385286a3
 <!-- /botica:covered -->
 
 ## Evidence

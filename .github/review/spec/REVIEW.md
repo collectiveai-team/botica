@@ -3,7 +3,7 @@ role: spec
 applies:
   paths: []
   tiers: [low, medium, high]
-stages: [local]
+stages: [local, ci]
 blocking: P1
 owners: ["@jedzill4"]
 max-findings: 10

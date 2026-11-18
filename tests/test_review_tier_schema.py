@@ -44,6 +44,7 @@ def tier_binary() -> Path:
     [
         ("docs/start.md", "Start\n", "merge", 0),
         ("docs/README.txt", "Read this\n", "merge", 0),
+        ("docs/tool.rs", "pub fn answer() -> u8 { 42 }\n", "merge", 0),
         ("tools/environment-dev.txt", "dependency==1.0\n", "merge", 2),
         ("docs/start.md", "Start\n" * 1500, "merge", 0),
         ("docs/start.md", "Start\n", "squash", 2),
@@ -150,6 +151,7 @@ def _assessment(tier: str) -> str:
                     "from": "1" * 40,
                     "to": "2" * 40,
                     "tier": tier,
+                    "bounds": None,
                     "files": ["docs/start.md"],
                     "areas": ["periphery"],
                     "signals": ["docs-only"],

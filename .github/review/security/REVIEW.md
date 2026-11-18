@@ -7,6 +7,14 @@ stages: [local, ci]
 blocking: P1
 owners: ["@jedzill4"]
 max-findings: 10
+covered:
+  jobs:
+    - file: .github/workflows/zizmor.yml
+      id: zizmor
+    - file: .github/workflows/osv-scanner.yml
+      id: osv-scanner-pr
+    - file: .github/workflows/ci.yml
+      id: test
 ---
 
 ## Invariants
@@ -75,7 +83,7 @@ max-findings: 10
 - An argument of `Command::new` in a test under `crates/*/tests/`, which runs on the machine of the
   author with values that the test writes.
 
-<!-- botica:covered -->
+## Coverage notes
 - The job `zizmor` of `zizmor.yml`: the workflows, actions and hooks of the repository.
 - The job `osv-scanner (new in this PR)` of `osv-scanner.yml`: a vulnerability that the pull
   request adds to `uv.lock`.
@@ -83,6 +91,11 @@ max-findings: 10
   `ci.yml`: zizmor and actionlint on the workflows of the recipes.
 - The rules `uv-cooldown`, `cargo-cooldown` and `dependabot-cooldown` of `[tool.botica]` in
   `pyproject.toml`.
+
+<!-- botica:covered -->
+- job "test" in ".github/workflows/ci.yml": blake3 63ecc0d75fc1b8d810ebd35704945afd8fa420f763b03a7eb2474fe0188450a7
+- job "osv-scanner-pr" in ".github/workflows/osv-scanner.yml": blake3 6b6d2c6fb049e2c48589bb0772adb59cd4e6eb64f03e6824350daf22b0200e64
+- job "zizmor" in ".github/workflows/zizmor.yml": blake3 6c65c42969f33ba729e80708bbdb75dc46bc7734c242fd9d584d072831f09b48
 <!-- /botica:covered -->
 
 ## Evidence

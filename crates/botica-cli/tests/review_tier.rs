@@ -66,6 +66,29 @@ paths = ["docs/**"]
 "#;
 
 #[test]
+fn pilot_source_uncertainty_has_a_conservative_medium_bound_without_invented_facts() {
+    let dir = repository("bounded-source", Some(DOCS));
+    common::write(&dir, "docs/tool.rs", "pub fn answer() -> u8 { 42 }\n");
+    git(&dir, &["add", "."]);
+    git(&dir, &["commit", "-m", "Add pilot source"]);
+    let (output, report) = classify(&dir, "merge");
+    assert!(output.status.success(), "{report}");
+    assert_eq!(report["effective_tier"], "medium");
+    for name in ["branch", "integration"] {
+        let comparison = &report[name]["comparisons"][0];
+        assert_eq!(comparison["bounds"]["lower"], "low");
+        assert_eq!(comparison["bounds"]["upper"], "medium");
+        assert_eq!(
+            comparison["bounds"]["possible_signals"],
+            serde_json::json!(["new-dependency", "new-endpoint"])
+        );
+        assert_eq!(comparison["detector_evidence"][0]["status"], "unsupported");
+        assert_eq!(comparison["signals"], serde_json::json!([]));
+        assert_eq!(comparison["signal_evidence"], serde_json::json!([]));
+    }
+}
+
+#[test]
 fn invalid_trusted_review_settings_produce_incomplete_json_with_pinned_inputs() {
     let dir = repository("invalid-review", Some("[review]\nunknown = true\n"));
     let (output, report) = classify(&dir, "merge");

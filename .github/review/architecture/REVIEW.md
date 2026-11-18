@@ -7,6 +7,13 @@ stages: [local, ci]
 blocking: P1
 owners: ["@jedzill4"]
 max-findings: 8
+covered:
+  jobs:
+    - file: .github/workflows/abide.yml
+      id: abide
+  hooks:
+    - file: prek.toml
+      id: botica-project
 ---
 
 ## Invariants
@@ -64,12 +71,16 @@ max-findings: 8
 - The prose of a page, a standard or an ADR: `plain-writing`, `minimal-comments` and
   `ubiquitous-language` in `.abide/rubric.json` cover it.
 
-<!-- botica:covered -->
+## Coverage notes
 - The job `judgment rules` of `abide.yml`: `separate-orchestration` and `architecture-vocabulary`
   on the Python, TypeScript and JavaScript files of the diff.
 - The hook `botica-project` of `prek.toml`, run by the job `lint, type-check & test` of
   `tests.yml`: `import-layers`, selected in `[tool.botica]` with no `layers`, so it reports
   nothing in this repository.
+
+<!-- botica:covered -->
+- hook "botica-project" in "prek.toml": blake3 42b032456b95a74b7fb65915c73732e32258d34d9e5a3dd1f4787e0f385286a3
+- job "abide" in ".github/workflows/abide.yml": blake3 243cdae2d7e8163836adb7113fcaeecb3c98d18632203ad93c6950f41b4b927f
 <!-- /botica:covered -->
 
 ## Evidence

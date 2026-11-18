@@ -100,6 +100,7 @@
             "paths_match": {"type": "boolean"},
             "matching_paths": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
             "signals_match": {"type": "boolean"},
+            "conservative_selection": {"type": "boolean"},
             "matching_signals": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
             "tier_matches": {"type": ["boolean", "null"]},
             "effective_tier": {"enum": ["low", "medium", "high", null]}

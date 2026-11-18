@@ -7,6 +7,14 @@ stages: [local, ci]
 blocking: P1
 owners: ["@jedzill4"]
 max-findings: 8
+covered:
+  jobs:
+    - file: .github/workflows/api-compat-python.yml
+      id: griffe
+    - file: .github/workflows/ci.yml
+      id: test
+    - file: .github/workflows/tests.yml
+      id: test
 ---
 
 ## Invariants
@@ -72,7 +80,7 @@ The contracts of botica, each with the programs and the people that consume it:
 - A new flag, key, field or output with a default that keeps the old result.
 - A change to the text of a message meant for a person, which no program parses.
 
-<!-- botica:covered -->
+## Coverage notes
 - The job `public API of the package` of `api-compat-python.yml` (griffe): the public API of the
   module `botica.sdk` of `sdk/python`.
 - The test `the_published_schema_is_the_generated_one` of `crates/botica-config/tests/schema.rs`,
@@ -86,6 +94,11 @@ The contracts of botica, each with the programs and the people that consume it:
   and `python_sdk.rs`, and of the schema of the review roles in
   `tests/test_review_findings_schema.py`. They check the behaviour of `HEAD`, not that it matches
   the base, so a change of meaning that updates its test is still reviewed here.
+
+<!-- botica:covered -->
+- job "griffe" in ".github/workflows/api-compat-python.yml": blake3 b515598eb2f555582825f8d531e04e15c3e6fcd3a237da58f3581db407f3950e
+- job "test" in ".github/workflows/ci.yml": blake3 63ecc0d75fc1b8d810ebd35704945afd8fa420f763b03a7eb2474fe0188450a7
+- job "test" in ".github/workflows/tests.yml": blake3 6bb7ddce037bad1d6eabcc49a2d0ff37c479d8bd58555570ddeba806d1dfeb5b
 <!-- /botica:covered -->
 
 ## Evidence

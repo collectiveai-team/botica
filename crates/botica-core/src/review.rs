@@ -64,6 +64,13 @@ pub struct DetectorEvidence {
 }
 
 #[derive(Debug, Serialize)]
+pub struct RiskBounds {
+    pub lower: String,
+    pub upper: String,
+    pub possible_signals: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct Comparison {
     pub from: String,
     pub to: String,
@@ -75,6 +82,7 @@ pub struct Comparison {
     pub detector_evidence: Vec<DetectorEvidence>,
     pub evidence: Vec<FileEvidence>,
     pub size: SizeEvidence,
+    pub bounds: Option<RiskBounds>,
 }
 
 /// Documentation filenames supported by the path-only documentation detector.
@@ -246,6 +254,33 @@ pub fn assess(config: &ReviewConfig, from: &str, to: &str, changes: &[ReviewChan
         .iter()
         .map(|signal| signal.name.clone())
         .collect();
+    let uncertain: Vec<_> = detector_evidence
+        .iter()
+        .filter(|detector| detector.status == "unsupported")
+        .collect();
+    let bounded = !uncertain.is_empty()
+        && uncertain.iter().all(|detector| {
+            detector.detector == "dependency-and-endpoint-boundary-v1"
+                && detector.paths.iter().all(|path| path.ends_with(".rs"))
+                && changes
+                    .iter()
+                    .filter(|change| {
+                        change
+                            .paths
+                            .iter()
+                            .any(|path| detector.paths.contains(path))
+                    })
+                    .all(|change| change.kind == "text")
+        });
+    let bounds = bounded.then(|| {
+        let lower = tier.clone();
+        tier = maximum_tier([tier.as_str(), "medium"].into_iter()).to_owned();
+        RiskBounds {
+            lower,
+            upper: tier.clone(),
+            possible_signals: vec!["new-dependency".into(), "new-endpoint".into()],
+        }
+    });
     Comparison {
         from: from.to_owned(),
         to: to.to_owned(),
@@ -257,5 +292,6 @@ pub fn assess(config: &ReviewConfig, from: &str, to: &str, changes: &[ReviewChan
         detector_evidence,
         evidence,
         size,
+        bounds,
     }
 }

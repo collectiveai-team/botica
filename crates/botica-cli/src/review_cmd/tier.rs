@@ -137,7 +137,7 @@ fn incomplete(code: &str, message: impl ToString, comparisons: Vec<Comparison>) 
 }
 
 fn assessment(comparisons: Vec<Comparison>, mut reasons: Vec<Value>) -> Value {
-    reasons.extend(comparisons.iter().flat_map(|comparison| comparison.detector_evidence.iter())
+    reasons.extend(comparisons.iter().filter(|comparison| comparison.bounds.is_none()).flat_map(|comparison| comparison.detector_evidence.iter())
         .filter(|detector| detector.status == "unsupported")
         .map(|detector| json!({"code": "unsupported-detector", "message": format!("{}: {:?}", detector.detail, detector.paths)})));
     if !reasons.is_empty() {

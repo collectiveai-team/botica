@@ -43,6 +43,31 @@ fn repository(name: &str, role: &str) -> std::path::PathBuf {
 
 const ROLE: &str = "---\nrole: spec\napplies:\n  paths: ['docs/**']\n  tiers: [low, medium]\nstages: [local]\ncovered:\n  rules: []\n---\n\n<!-- botica:covered -->\n<!-- /botica:covered -->\n";
 
+#[test]
+fn bounded_source_selects_possible_signal_roles_without_asserting_facts() {
+    let role = ROLE.replace(
+        "tiers: [low, medium]",
+        "tiers: [low]\n  signals: [new-endpoint]",
+    );
+    let dir = repository("bounded-role-selection", &role);
+    common::write(&dir, "docs/tool.rs", "pub fn answer() -> u8 { 42 }\n");
+    git(&dir, &["add", "."]);
+    git(&dir, &["commit", "-m", "Change source"]);
+    let (output, report) = consume(&dir, "plan", "local");
+    assert!(output.status.success(), "{report}");
+    assert_eq!(report["selected_roles"], serde_json::json!(["spec"]));
+    assert_eq!(
+        report["roles"][0]["selection"]["conservative_selection"],
+        true
+    );
+    assert_eq!(
+        report["roles"][0]["selection"]["matching_signals"],
+        serde_json::json!([])
+    );
+    let (_, ci) = consume(&dir, "plan", "ci");
+    assert_eq!(ci["selected_roles"], serde_json::json!([]));
+}
+
 fn consume(dir: &Path, command: &str, stage: &str) -> (std::process::Output, serde_json::Value) {
     let output = common::command(
         dir,

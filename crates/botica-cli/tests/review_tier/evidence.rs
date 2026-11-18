@@ -1,6 +1,26 @@
 use super::*;
 
 #[test]
+fn critical_source_keeps_its_high_floor_under_detector_uncertainty() {
+    let config = format!("{DOCS}\n[[review.areas]]\nname = 'critical'\npaths = ['auth/**']\nowners = ['@security']\n");
+    let dir = repository("bounded-critical", Some(&config));
+    common::write(
+        &dir,
+        "auth/login.rs",
+        "pub fn authorize() -> bool { false }\n",
+    );
+    git(&dir, &["add", "."]);
+    git(&dir, &["commit", "-m", "Change auth"]);
+    let (output, report) = classify(&dir, "merge");
+    assert!(output.status.success(), "{report}");
+    assert_eq!(report["effective_tier"], "high");
+    assert_eq!(
+        report["branch"]["comparisons"][0]["bounds"]["upper"],
+        "high"
+    );
+}
+
+#[test]
 fn large_docs_changes_report_informational_size_without_a_size_gate() {
     let dir = repository("large-docs", Some(DOCS));
     common::write(&dir, "docs/book.md", &"A line.\n".repeat(1500));

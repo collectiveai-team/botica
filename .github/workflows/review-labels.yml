@@ -1,0 +1,61 @@
+name: review labels
+
+on:
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: review-labels-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  labels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Build trusted botica
+        run: cargo build --locked -p botica-cli
+      - name: Assess untrusted head as Git data
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
+          mkdir -p .tmp
+          status=0
+          target/debug/botica review tier --diff "$BASE_SHA" --head "$HEAD_SHA" \
+            --integration-method merge --format json > .tmp/risk.json || status=$?
+          case "$status" in
+            0|2) ;;
+            *) printf '{"status":"incomplete"}\n' > .tmp/risk.json ;;
+          esac
+      - name: Replace risk and area labels for the current head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          current=$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)
+          test "$current" = "$HEAD_SHA" || exit 0
+          labels=$(gh pr view "$PR_NUMBER" --json labels --jq '[.labels[].name]')
+          jq --argjson labels "$labels" '{risk: ., labels: $labels}' .tmp/risk.json \
+            | python scripts/review_labels.py > .tmp/labels.json
+          while IFS= read -r label; do
+            gh pr edit "$PR_NUMBER" --remove-label "$label"
+          done < <(jq -r '.remove[]' .tmp/labels.json)
+          while IFS= read -r label; do
+            gh label create "$label" --color 6e7781 --force
+            gh pr edit "$PR_NUMBER" --add-label "$label"
+          done < <(jq -r '.add[]' .tmp/labels.json)

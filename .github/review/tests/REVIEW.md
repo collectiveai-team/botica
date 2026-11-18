@@ -7,6 +7,17 @@ stages: [local, ci]
 blocking: P1
 owners: ["@jedzill4"]
 max-findings: 10
+covered:
+  hooks:
+    - file: prek.toml
+      id: botica
+    - file: prek.toml
+      id: botica-project
+  jobs:
+    - file: .github/workflows/abide.yml
+      id: abide
+    - file: .github/workflows/ci.yml
+      id: test
 ---
 
 ## Invariants
@@ -63,7 +74,7 @@ max-findings: 10
 - A rule of the family `testing` that the configuration of `[tool.botica]` on the target leaves
   out. A rule that the diff leaves out is a finding.
 
-<!-- botica:covered -->
+## Coverage notes
 - The hook `botica` of `prek.toml`, run by the job `lint, type-check & test` of `tests.yml`:
   `no-tautological-assert` and `test-no-subprocess`.
 - The hook `botica-project` of `prek.toml`, run by the same job: the settings of pytest that
@@ -72,6 +83,12 @@ max-findings: 10
   `test-through-interface` on the Python, TypeScript and JavaScript tests.
 - The test `conformance.rs` of `botica-cli`, run by the job `fmt, clippy & test` of `ci.yml`: the
   findings of each rule on its fixtures against its `expected.json`.
+
+<!-- botica:covered -->
+- hook "botica" in "prek.toml": blake3 42b032456b95a74b7fb65915c73732e32258d34d9e5a3dd1f4787e0f385286a3
+- hook "botica-project" in "prek.toml": blake3 42b032456b95a74b7fb65915c73732e32258d34d9e5a3dd1f4787e0f385286a3
+- job "abide" in ".github/workflows/abide.yml": blake3 243cdae2d7e8163836adb7113fcaeecb3c98d18632203ad93c6950f41b4b927f
+- job "test" in ".github/workflows/ci.yml": blake3 63ecc0d75fc1b8d810ebd35704945afd8fa420f763b03a7eb2474fe0188450a7
 <!-- /botica:covered -->
 
 ## Evidence

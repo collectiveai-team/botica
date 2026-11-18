@@ -150,12 +150,14 @@ impl RoleDefinition {
     pub fn selection(&self, risk: &Value, stage: &str) -> Result<Value> {
         let mut paths = std::collections::BTreeSet::new();
         let mut signals = std::collections::BTreeSet::new();
+        let mut uncertain = false;
         for assessment in ["branch", "integration"] {
             for comparison in risk[assessment]["comparisons"]
                 .as_array()
                 .into_iter()
                 .flatten()
             {
+                uncertain |= comparison["bounds"].is_object();
                 paths.extend(
                     comparison["files"]
                         .as_array()
@@ -184,13 +186,14 @@ impl RoleDefinition {
             .collect();
         let stage_matches = self.stages.iter().any(|s| s == stage);
         let paths_match = self.applies.paths.is_empty() || !matching_paths.is_empty();
-        let signals_match = self.applies.signals.is_empty() || !matching_signals.is_empty();
+        let signals_match =
+            uncertain || self.applies.signals.is_empty() || !matching_signals.is_empty();
         let tier = risk["effective_tier"].as_str();
         let tier_matches = tier.map(|tier| {
             self.applies
                 .tiers
                 .as_ref()
-                .is_none_or(|tiers| tiers.iter().any(|t| t == tier))
+                .is_none_or(|tiers| uncertain || tiers.iter().any(|t| t == tier))
         });
         let selected = if risk["status"] == "complete" {
             tier_matches.map(|tier| stage_matches && paths_match && signals_match && tier)
@@ -200,7 +203,7 @@ impl RoleDefinition {
         Ok(
             json!({"selected": selected, "stage_matches": stage_matches, "paths_match": paths_match,
             "matching_paths": matching_paths, "signals_match": signals_match, "matching_signals": matching_signals,
-            "tier_matches": tier_matches, "effective_tier": tier}),
+            "tier_matches": tier_matches, "effective_tier": tier, "conservative_selection": uncertain}),
         )
     }
 }

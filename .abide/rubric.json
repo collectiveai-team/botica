@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-11-17T02:08:46Z",
+  "compiledAt": "2026-11-18T00:05:49Z",
   "compiledBy": "botica 0.20.2",
   "manual": true,
   "sources": [
@@ -1061,6 +1061,7 @@
         "scripts/check_rule_change.py",
         "scripts/check_skill_drift.py",
         "scripts/number_standard.py",
+        "scripts/review_labels.py",
         "scripts/site_filter.py",
         "scripts/site_language_tabs.py",
         "scripts/site_llms.py",
@@ -1327,6 +1328,7 @@
         "scripts/check_rule_change.py",
         "scripts/check_skill_drift.py",
         "scripts/number_standard.py",
+        "scripts/review_labels.py",
         "scripts/site_filter.py",
         "scripts/site_language_tabs.py",
         "scripts/site_llms.py",

@@ -89,8 +89,22 @@
     "comparison": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["from", "to", "tier", "files", "areas", "signals", "evidence", "signal_evidence", "detector_evidence", "size"],
+      "required": ["from", "to", "tier", "files", "areas", "signals", "evidence", "signal_evidence", "detector_evidence", "size", "bounds"],
       "properties": {
+        "bounds": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object", "additionalProperties": false,
+              "required": ["lower", "upper", "possible_signals"],
+              "properties": {
+                "lower": {"$ref": "#/definitions/tier"},
+                "upper": {"enum": ["medium", "high"]},
+                "possible_signals": {"const": ["new-dependency", "new-endpoint"]}
+              }
+            }
+          ]
+        },
         "from": {"$ref": "#/definitions/object_id"},
         "to": {"$ref": "#/definitions/object_id"},
         "tier": {"$ref": "#/definitions/tier"},
@@ -207,10 +221,12 @@
                 "comparisons": {
                   "items": {
                     "properties": {
-                      "detector_evidence": {
-                        "items": {"properties": {"status": {"const": "supported"}}}
-                      }
+                      "bounds": {}
                     }
+                    ,"anyOf": [
+                      {"properties": {"detector_evidence": {"items": {"properties": {"status": {"const": "supported"}}}}}},
+                      {"properties": {"bounds": {"type": "object"}, "tier": {"enum": ["medium", "high"]}}}
+                    ]
                   }
                 }
               }
