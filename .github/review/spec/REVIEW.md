@@ -48,7 +48,7 @@ covered:
 - The job `validate PR title` of `conventional-commits.yml`: the title of the pull request.
 
 <!-- botica:covered -->
-- job "rule-contract" in ".github/workflows/ci.yml": blake3 b8a53af94096a2301ceb3f70dbeffdcb9b3bdd9c1bf3eb006053730aeddad574
+- job "rule-contract" in ".github/workflows/ci.yml": blake3 de8784186caa7f1b742bd57cc0a53e803772d865d281b8c2deed698fc327dd4e
 - job "validate" in ".github/workflows/conventional-commits.yml": blake3 fcb9188c2b372eb99fcf74bdef25129802d1a8a53ace08f1b22fde9fd9d5032e
 <!-- /botica:covered -->
 

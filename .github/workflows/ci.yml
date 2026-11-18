@@ -36,7 +36,7 @@ on:
   workflow_call:
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}-${{ contains(fromJSON('["labeled","unlabeled"]'), github.event.action) && github.event.label.name != 'botica:stack-member' && (contains(fromJSON('["contract-change","review-flow-standards"]'), github.event.label.name) && 'contract-label' || 'ignored-label') || 'review' }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}-${{ (github.event.action == 'labeled' || github.event.action == 'unlabeled' && github.event.label.name != 'botica:stack-member') && (contains(fromJSON('["contract-change","review-flow-standards"]'), github.event.label.name) && 'contract-label' || 'ignored-label') || 'review' }}
   cancel-in-progress: true
 
 permissions:

@@ -97,7 +97,7 @@ The contracts of botica, each with the programs and the people that consume it:
 
 <!-- botica:covered -->
 - job "griffe" in ".github/workflows/api-compat-python.yml": blake3 b515598eb2f555582825f8d531e04e15c3e6fcd3a237da58f3581db407f3950e
-- job "test" in ".github/workflows/ci.yml": blake3 b8a53af94096a2301ceb3f70dbeffdcb9b3bdd9c1bf3eb006053730aeddad574
+- job "test" in ".github/workflows/ci.yml": blake3 de8784186caa7f1b742bd57cc0a53e803772d865d281b8c2deed698fc327dd4e
 - job "test" in ".github/workflows/tests.yml": blake3 6bb7ddce037bad1d6eabcc49a2d0ff37c479d8bd58555570ddeba806d1dfeb5b
 <!-- /botica:covered -->
 
