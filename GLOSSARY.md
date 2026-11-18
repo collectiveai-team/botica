@@ -104,6 +104,11 @@ with the intended method.
 The higher of completed branch risk and integration risk. An incomplete assessment leaves
 effective risk unavailable.
 
+**Policy bound**:
+The lower and upper review tiers allowed by the configured areas and signal policy
+when some detector facts remain unknown. A complete policy bound does not establish
+that every detector completed or that an unknown fact is absent.
+
 ### Botica
 
 **Botica**:

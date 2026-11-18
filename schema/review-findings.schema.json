@@ -18,7 +18,7 @@
     "head": {
       "description": "The short or full SHA of the commit under review.",
       "type": "string",
-      "pattern": "^[0-9a-f]{7,40}$"
+      "pattern": "^[0-9a-f]{7,64}$"
     },
     "base": {
       "description": "The branch or the SHA that the diff is taken from.",
@@ -111,6 +111,21 @@
         "refutation": {
           "description": "Written by `review-refute` only, in `refute.json`.",
           "enum": ["confirmed", "pre-existing", "unreachable", "not-reproduced", "duplicate"]
+        },
+        "refutation_evidence": {"type": "string", "minLength": 1},
+        "duplicate_of": {"type": "string", "minLength": 1},
+        "refutation_references": {
+          "type": "array", "minItems": 1, "maxItems": 8,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["path", "revision", "line", "quote"],
+            "properties": {
+              "path": {"type": "string", "minLength": 1},
+              "revision": {"type": "string", "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$"},
+              "line": {"type": "integer", "minimum": 1},
+              "quote": {"type": "string", "minLength": 1}
+            }
+          }
         }
       }
     },

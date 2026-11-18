@@ -140,8 +140,7 @@ pub enum ClassifierMode {
 #[serde(deny_unknown_fields, rename_all = "kebab-case", default)]
 pub struct ClassifierConfig {
     pub mode: ClassifierMode,
-    /// The checks that must be present and green. An empty list sends every pull request to a
-    /// person.
+    /// The checks that must be present and green. An empty list blocks automation.
     pub required_checks: Vec<String>,
     /// `u`: a question answers `true` with a probability under this one. At most 0.3.
     #[schemars(range(min = 0.0, max = 0.3))]
@@ -150,7 +149,7 @@ pub struct ClassifierConfig {
     /// repository, at least. Not under 0.7.
     #[schemars(range(min = 0.7, max = 1.0))]
     pub impact_min: f64,
-    /// A `choice` answer with less confidence than this goes to a person. Not under 0.7.
+    /// A `choice` answer with less confidence than this blocks automation. Not under 0.7.
     #[schemars(range(min = 0.7, max = 1.0))]
     pub min_confidence: f64,
     /// Legacy setting retained for configuration compatibility; size is informational only.

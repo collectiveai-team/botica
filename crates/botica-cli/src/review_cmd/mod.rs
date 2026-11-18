@@ -1,11 +1,15 @@
 //! `botica review`: the commands that read the `review` table of the configuration (ADR 0018).
 
+mod automation;
 mod change_context;
 mod classification_history;
 mod classify;
 mod codeowners;
 mod consumers;
+mod evaluate;
 mod evidence;
+mod feedback;
+mod github;
 mod http;
 mod jev;
 mod pattern;
@@ -13,6 +17,7 @@ mod runner;
 mod target;
 mod tier;
 
+use crate::output::println;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -29,6 +34,14 @@ pub struct ReviewArgs {
 
 #[derive(Subcommand)]
 enum ReviewCommand {
+    /// Read the linked issue bodies and PR metadata from GitHub for pinned inputs.
+    Context(github::ContextArgs),
+    /// Record current-head human review observations from GitHub, without approving or merging.
+    Feedback(feedback::FeedbackArgs),
+    /// Measure recorded classifier observations against a pinned labeled set.
+    Evaluate(evaluate::EvaluateArgs),
+    /// Authorize from fresh evidence and a measured destination policy, without merging.
+    Authorize(automation::AutomationArgs),
     /// Select review roles using pinned destination policy.
     Plan(consumers::ConsumerArgs),
     /// Validate trusted role definitions and local skill availability.
@@ -87,11 +100,18 @@ impl Host {
 
 pub fn run(args: &ReviewArgs) -> Result<ExitCode> {
     match &args.command {
+        ReviewCommand::Context(args) => {
+            println!("{}", serde_json::to_string_pretty(&github::context(args)?)?);
+            Ok(ExitCode::SUCCESS)
+        }
         ReviewCommand::Plan(plan) => consumers::run(plan, false),
         ReviewCommand::Check(check) => consumers::run(check, true),
         ReviewCommand::Validate(args) => evidence::run(args),
         ReviewCommand::Run(args) => runner::run(args),
         ReviewCommand::Classify(args) => classify::run(args),
+        ReviewCommand::Feedback(args) => feedback::run(args),
+        ReviewCommand::Evaluate(args) => evaluate::run(args),
+        ReviewCommand::Authorize(args) => automation::run(args),
         ReviewCommand::Tier(tier) => tier::run(tier),
         ReviewCommand::Export(export) => run_export(export).map(|()| ExitCode::SUCCESS),
     }

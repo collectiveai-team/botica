@@ -37,8 +37,9 @@ cites a topic, `botica refs show <slug>` prints the code it expects.
 
 For a review block, invoke `review-panel` on the pinned base-to-head range. Its plan selects the
 roles from trusted destination policy, and refute runs last. Give spec the whole slice's acceptance
-criteria and relevant contracts. Validate the results with `botica lint --reviewed <dir> --diff
-<base-sha>`; an incomplete plan or missing result never becomes a passing gate.
+criteria and relevant contracts in the same JSON context file used by the plan.
+Validate the results with `botica lint --reviewed <dir> --diff <base-sha> --review-head <head-sha>
+--review-context <dir>/context.json`; an incomplete plan or missing result never becomes a passing gate.
 
 For an integrated delivery, read the slice records first. Reuse evidence only for the exact
 reviewed ranges whose relevant contracts remain unchanged. Review uncovered changes and changed

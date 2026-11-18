@@ -208,7 +208,7 @@ jobs:
   # does not install are unset, so those tests skip themselves instead of failing the baseline.
   review-policy:
     name: review policy
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false && !contains(github.event.pull_request.labels.*.name, 'botica:stack-member')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:

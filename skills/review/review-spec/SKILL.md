@@ -20,7 +20,7 @@ check, do not run the command; say so in `not_checked`.
 ## 1. Inputs
 
 1. Pin the target as a commit SHA. Take the target that the user or `review-panel` gives, the
-   `baseRefOid` of `gh pr view --json baseRefOid` for a PR, or `git merge-base HEAD main`; never
+   `baseRefOid` of `gh pr view --json baseRefOid` for a PR, or `git rev-parse refs/heads/main`; never
    the name of the base branch that the PR shows. Resolve it with
    `git rev-parse --verify --end-of-options '<target>^{commit}'`, check the result against
    `^[0-9a-f]{40}$`, then capture `git diff <sha>...HEAD` and `git log <sha>..HEAD --oneline`. Use
@@ -77,7 +77,7 @@ check, do not run the command; say so in `not_checked`.
 ## 3. Output
 
 Write the JSON of the shared contract, which `schema/review-findings.schema.json` validates, with
-role `spec`, `head` the short SHA of `HEAD` and `base` the target SHA, to
+role `spec`, full `head` and `base` from the plan, with its exact `inputs`, to
 `.tmp/review/<short-head-sha>/spec.json`. Print it as a table: criterion, status, evidence.
 
 | Status | Severity |

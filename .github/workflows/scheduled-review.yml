@@ -1,7 +1,5 @@
 name: scheduled review
 
-# botica: ignore-file[file-size-guard] -- one workflow of the weekly checks: the jobs share `env`, `needs` and the schedule, and the issue is the last job.
-
 # The checks of `main` that a pull request is too small or too quick for (spec §5 of the review flow):
 # `botica lint` on every file with `--record`, cargo-mutants on what changed in the last week, and
 # agnix on the files that agents read, and `botica history report` over the history of the last
@@ -329,53 +327,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           BRANCH: ${{ github.ref_name }}
         run: |
-          dir="$RUNNER_TEMP/ci-history"
-          mkdir -p "$dir"
-          since=$(date -u -d "$HISTORY_DAYS days ago" +%F)
-          runs=0
-          artifacts=0
-          bytes=0
-          for workflow in ci.yml scheduled-review.yml; do
-            gh api --paginate \
-              "repos/$GH_REPO/actions/workflows/$workflow/runs?branch=$BRANCH&created=%3E%3D$since&per_page=100" \
-              | jq -r --arg repo "$GH_REPO" '.workflow_runs[]
-                  | select(.event == "push" or .event == "schedule" or .event == "workflow_dispatch")
-                  | select(.head_repository.full_name == $repo)
-                  | "\(.id) \(.head_sha)"' > "$RUNNER_TEMP/runs.txt"
-            while read -r id sha; do
-              [[ "$id" =~ ^[0-9]+$ && "$sha" =~ ^[0-9a-f]{40}$ ]] || continue
-              git merge-base --is-ancestor "$sha" HEAD || continue
-              kept=0
-              gh api "repos/$GH_REPO/actions/runs/$id/artifacts?per_page=100" \
-                | jq -r '.artifacts[]
-                    | select(.expired == false and .size_in_bytes <= 52428800)
-                    | select(.name | test("^botica-history-[A-Za-z0-9._-]+$"))
-                    | "\(.id) \(.name) \(.size_in_bytes)"' > "$RUNNER_TEMP/artifacts.txt"
-              while read -r artifact name size; do
-                [[ "$artifact" =~ ^[0-9]+$ ]] || continue
-                if [ $((bytes + size)) -gt 2147483648 ]; then
-                  echo "::warning::the artifacts passed 2 GB: $name of run $id is left out"
-                  continue
-                fi
-                bytes=$((bytes + size))
-                gh api "repos/$GH_REPO/actions/artifacts/$artifact/zip" > "$RUNNER_TEMP/artifact.zip"
-                mkdir -p "$dir/$id/$name"
-                for file in runs.jsonl findings.jsonl; do
-                  member=$(unzip -Z1 "$RUNNER_TEMP/artifact.zip" | grep -x -F -e "$file" -e ".botica/history/$file" | head -n 1 || true)
-                  if [ -n "$member" ]; then
-                    unzip -p "$RUNNER_TEMP/artifact.zip" "$member" | head -c 52428800 > "$dir/$id/$name/$file" || true
-                  fi
-                done
-                artifacts=$((artifacts + 1))
-                kept=1
-              done < "$RUNNER_TEMP/artifacts.txt"
-              if [ "$kept" -eq 1 ]; then
-                jq -n --arg id "$id" --arg sha "$sha" '{id: $id, head_sha: $sha, trusted: true}' > "$dir/$id/source.json"
-                runs=$((runs + 1))
-              fi
-            done < "$RUNNER_TEMP/runs.txt"
-          done
-          echo "Downloaded $artifacts artifacts of $runs runs of $BRANCH since $since." >> "$GITHUB_STEP_SUMMARY"
+          jq -n --arg repository "$GH_REPO" --arg branch "$BRANCH" \
+            --arg days "$HISTORY_DAYS" --arg directory "$RUNNER_TEMP/ci-history" \
+            '{repository:$repository,branch:$branch,days:$days,directory:$directory}' \
+            | python scripts/review_history_download.py > "$RUNNER_TEMP/download-summary.json"
+          cat "$RUNNER_TEMP/download-summary.json" >> "$GITHUB_STEP_SUMMARY"
 
       # `GITHUB_ACTIONS=false` keeps the `::stop-commands::` lines out of the file: they guard the
       # log of the runner, and the file goes to an issue.
@@ -384,40 +340,23 @@ jobs:
           GITHUB_ACTIONS=false target/debug/botica history report \
             --days "$HISTORY_DAYS" --format markdown --from "$RUNNER_TEMP/ci-history" > "$RUNNER_TEMP/report.md"
 
-      # The first pass counts the items of each section, the second one keeps the first
-      # REPORT_MAX_FINDINGS of each, so that a long list of quiet rules does not push the rules with
-      # many suppressions out. The findings that open an issue are the items of the sections that ask
-      # for a decision; "Caught before the commit" lists what the hooks stopped and opens nothing.
+      # Deduplicate other open issues before applying one budget across all diagnostic sections.
       - name: Cap the findings
         id: cap
         run: |
-          awk -v max="$REPORT_MAX_FINDINGS" -v out="$RUNNER_TEMP/findings.txt" '
-            BEGIN {
-              n = split("Caught before the commit|Reached CI|Rules with no findings|Rules with many suppressions|Findings of the roles that refute did not confirm", names, "|")
-              for (i = 1; i <= n; i++) capped[names[i]] = 1
-              n = split("Reached CI|Rules with no findings|Rules with many suppressions|Findings of the roles that refute did not confirm", names, "|")
-              for (i = 1; i <= n; i++) asks[names[i]] = 1
-            }
-            FNR == 1 { heading = "" }
-            /^## / { heading = substr($0, 4); seen = 0 }
-            NR == FNR { if ((heading in capped) && /^- /) total[heading]++; next }
-            (heading in capped) && /^- / {
-              seen++
-              if (seen == max + 1) print "- " (total[heading] - max) " more are not shown. Run `botica history report` for the full list."
-              if (seen > max) next
-            }
-            { print }
-            END { for (h in total) if (h in asks) sum += total[h]; print sum + 0 > out }
-          ' "$RUNNER_TEMP/report.md" "$RUNNER_TEMP/report.md" > "$RUNNER_TEMP/capped.md"
-          {
-            echo "Output of \`botica history report\` over the last $HISTORY_DAYS days of the runs of \`ci.yml\` and \`scheduled-review.yml\` on \`$BRANCH\`. A person decides what to do with each item."
-            echo
-            cat "$RUNNER_TEMP/capped.md"
-            echo
-            echo "Run: $RUN_URL"
-          } > "$RUNNER_TEMP/issue.md"
-          echo "findings=$(cat "$RUNNER_TEMP/findings.txt")" >> "$GITHUB_OUTPUT"
+          gh api --paginate "repos/$GH_REPO/issues?state=open&per_page=100" \
+            | jq -s 'add | map(select(has("pull_request") | not))' > "$RUNNER_TEMP/open-issues.json"
+          jq -n --rawfile report "$RUNNER_TEMP/report.md" --slurpfile issues "$RUNNER_TEMP/open-issues.json" \
+            --slurpfile coverage "$RUNNER_TEMP/download-summary.json" \
+            --arg title "$REPORT_TITLE" --arg maximum "$REPORT_MAX_FINDINGS" --arg run_url "$RUN_URL" \
+            --arg introduction "Finding-history diagnostics over the last $HISTORY_DAYS days. Only critical code changes require human review; these diagnostics do not change review routing." \
+            '{report:$report,issues:$issues[0],coverage:$coverage[0],title:$title,maximum:$maximum,run_url:$run_url,introduction:$introduction}' \
+            | python scripts/review_weekly_report.py > "$RUNNER_TEMP/weekly-report.json"
+          jq -r '.body' "$RUNNER_TEMP/weekly-report.json" > "$RUNNER_TEMP/issue.md"
+          echo "findings=$(jq -r '.actionable' "$RUNNER_TEMP/weekly-report.json")" >> "$GITHUB_OUTPUT"
+          echo "issue_number=$(jq -r '.issue_number // empty' "$RUNNER_TEMP/weekly-report.json")" >> "$GITHUB_OUTPUT"
         env:
+          GH_TOKEN: ${{ github.token }}
           BRANCH: ${{ github.ref_name }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
@@ -425,13 +364,24 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           FINDINGS: ${{ steps.cap.outputs.findings }}
+          ISSUE_NUMBER: ${{ steps.cap.outputs.issue_number }}
         run: |
-          number=$(gh issue list --state open --search "$REPORT_TITLE in:title" --limit 100 --json number,title \
-            | jq -r --arg title "$REPORT_TITLE" '[.[] | select(.title == $title)][0].number // empty')
-          if [ -n "$number" ]; then
-            gh issue edit "$number" --body-file "$RUNNER_TEMP/issue.md"
+          if [ -n "$ISSUE_NUMBER" ]; then
+            [[ "$ISSUE_NUMBER" =~ ^[0-9]+$ ]]
+            gh issue edit "$ISSUE_NUMBER" --body-file "$RUNNER_TEMP/issue.md"
           elif [ "$FINDINGS" -gt 0 ]; then
             gh issue create --title "$REPORT_TITLE" --body-file "$RUNNER_TEMP/issue.md"
           else
             echo "The report has no findings and no issue is open: no issue was opened." >> "$GITHUB_STEP_SUMMARY"
           fi
+      - name: Preserve weekly report evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: weekly-review-report
+          path: |
+            ${{ runner.temp }}/download-summary.json
+            ${{ runner.temp }}/report.md
+            ${{ runner.temp }}/weekly-report.json
+          if-no-files-found: ignore
+          retention-days: 90

@@ -1,3 +1,4 @@
+use crate::output::println;
 use std::process::ExitCode;
 
 use anyhow::{ensure, Context, Result};

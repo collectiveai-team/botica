@@ -45,11 +45,11 @@ def tier_binary() -> Path:
         ("docs/start.md", "Start\n", "merge", 0),
         ("docs/README.txt", "Read this\n", "merge", 0),
         ("docs/tool.rs", "pub fn answer() -> u8 { 42 }\n", "merge", 0),
-        ("tools/environment-dev.txt", "dependency==1.0\n", "merge", 2),
+        ("tools/environment-dev.txt", "dependency==1.0\n", "merge", 0),
         ("docs/start.md", "Start\n" * 1500, "merge", 0),
         ("docs/start.md", "Start\n", "squash", 2),
         ("package.json", '{"dependencies":{"new-package":"1.0.0"}}', "merge", 0),
-        ("service.unknown", "Unknown endpoint syntax\n", "merge", 2),
+        ("service.unknown", "Unknown endpoint syntax\n", "merge", 0),
         ("botica.toml", "[review]\nunknown = true\n", "merge", 2),
     ],
 )

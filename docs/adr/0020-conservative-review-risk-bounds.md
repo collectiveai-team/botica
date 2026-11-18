@@ -5,7 +5,8 @@ Date: 2026-11-17
 
 ## Decision
 
-For text changes whose unsupported detector inputs are exclusively Rust source paths,
+For text changes whose unsupported inputs belong to the dependency/endpoint boundary
+or npm manifest detectors,
 `review tier` reports an explicit lower and upper bound. The lower bound retains area
 floors and detected facts. The upper bound also includes the medium floor of a possible
 new dependency or endpoint. Critical area floors remain high.
@@ -21,10 +22,16 @@ uncertainty exists. Paths and execution stages still apply. This can run extra r
 
 ## Limits
 
-The supported pilot boundary is text Rust source, documentation, known policy files
-and the existing npm detector. Other unsupported inputs, non-text changes, failed
-integration or unreadable policy retain incomplete status. Python ancestry scenarios
-retain their positive endpoint evidence without gaining a complete risk assessment.
+Amended 2026-11-18: the initial Rust-only boundary unnecessarily blocked CI configuration
+and the Go/Node mutation recipes. The same policy proof applies to text in any language
+and to uncertain npm constraints. Only the two named v1 detectors receive this bound;
+a new detector needs its own justified bound. Non-text changes, unreadable files,
+failed integration and unreadable policy retain incomplete status.
+
+The Python authentication criss-cross scenario now has a complete high policy bound.
+Its high critical evidence, every best common ancestor and unsupported detector
+evidence remain visible. This supersedes its earlier incomplete/null result without
+claiming exact detector certainty. An uncertain comparison never gains a low upper bound.
 
 Size is informational. Only critical areas require human review. A technical failure
 blocks execution or automation without creating a human-review requirement.

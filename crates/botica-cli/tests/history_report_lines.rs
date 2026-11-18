@@ -199,20 +199,22 @@ fn a_file_with_no_final_newline_does_not_glue_its_last_line_to_another_file() {
 #[test]
 fn a_run_of_a_role_feeds_the_noise_of_the_role_and_not_the_rules_with_no_findings() {
     let dir = dir("roles");
-    let run = RunSpec::new(1, "review:security", "reviewed").rule("review:security", 3, None);
+    let run = RunSpec::new(1, "review:security", "reviewed").rule("review:security", 4, None);
     let mut dismissed = finding(1, "review:security", 2);
-    dismissed["refutation"] = json!("not-reproduced");
+    dismissed["refutation"] = json!("duplicate");
+    let mut observation = finding(1, "review:security", 4);
+    observation["refutation"] = json!("unreachable");
     let mut confirmed = finding(1, "review:security", 1);
     confirmed["refutation"] = json!("confirmed");
     let mut unjudged = finding(1, "review:security", 3);
     unjudged["refutation"] = Value::Null;
-    write_local(&dir, &[run], &[confirmed, dismissed, unjudged]);
+    write_local(&dir, &[run], &[confirmed, dismissed, unjudged, observation]);
 
     let text = stdout(&report(&dir, &[]));
 
     let roles = section(&text, "Findings of the roles that refute did not confirm");
     assert!(
-        roles.contains("review:security: 1 of 2 judged findings, 50%"),
+        roles.contains("review:security: 1 of 3 judged findings, 33%"),
         "{text}"
     );
     assert!(

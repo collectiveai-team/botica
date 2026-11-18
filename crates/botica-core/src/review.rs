@@ -5,9 +5,12 @@ use std::collections::BTreeSet;
 use botica_config::{PathMatcher, ReviewConfig, Tier};
 use serde::Serialize;
 
+pub mod automation;
 pub mod classifier;
+pub mod evaluation;
 pub mod execution;
 mod python;
+pub mod questions;
 pub mod results;
 pub mod roles;
 mod signals;
@@ -262,18 +265,12 @@ pub fn assess(config: &ReviewConfig, from: &str, to: &str, changes: &[ReviewChan
         .filter(|detector| detector.status == "unsupported")
         .collect();
     let bounded = !uncertain.is_empty()
+        && changes.iter().all(|change| change.kind == "text")
         && uncertain.iter().all(|detector| {
-            detector.detector == "dependency-and-endpoint-boundary-v1"
-                && detector.paths.iter().all(|path| path.ends_with(".rs"))
-                && changes
-                    .iter()
-                    .filter(|change| {
-                        change
-                            .paths
-                            .iter()
-                            .any(|path| detector.paths.contains(path))
-                    })
-                    .all(|change| change.kind == "text")
+            matches!(
+                detector.detector.as_str(),
+                "dependency-and-endpoint-boundary-v1" | "npm-manifest-v1"
+            )
         });
     let bounds = bounded.then(|| {
         let lower = tier.clone();

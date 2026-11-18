@@ -6,6 +6,19 @@ use serde_json::{json, Value};
 
 pub const MODEL: &str = "jev-1.14.0";
 
+/// The classifier and spec reviewer need an explicit acceptance source, not only an issue link.
+pub fn has_acceptance_context(context: &Value) -> bool {
+    let nonempty = |value: &Value| value.as_str().is_some_and(|text| !text.trim().is_empty());
+    nonempty(&context["title"])
+        && nonempty(&context["description"])
+        && (context["issues"]
+            .as_array()
+            .is_some_and(|issues| issues.iter().any(|issue| nonempty(&issue["body"])))
+            || context["acceptance_criteria"]
+                .as_array()
+                .is_some_and(|criteria| !criteria.is_empty() && criteria.iter().all(nonempty)))
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Probabilities {
@@ -112,12 +125,14 @@ fn gates(plan: &Value, results: &Value, checks: &Value) -> Vec<Value> {
         reasons.push(json!({"code":"incomplete-risk","source":"gate","evidence":plan["risk"]}));
     }
     if results["inputs"] != plan["inputs"]
+        || results["producer_verified"] != true
         || results["status"] != "complete"
         || results["verdict"] != "PASS"
     {
         reasons.push(json!({"code":"review-evidence","source":"gate","evidence":results}));
     }
     if checks["inputs"] != plan["inputs"]
+        || checks["producer_verified"] != true
         || checks["ci"] != "PASS"
         || checks["lint"] != "PASS"
         || (plan["mutation_required"] == true && checks["mutation"] != "PASS")
@@ -185,6 +200,16 @@ fn model_assessment(
     }
 }
 
+/// Evaluate only the model probabilities, for repeated evaluation of recorded responses.
+pub fn probabilities_eligible(answer: &Probabilities, thresholds: &Thresholds) -> Result<bool> {
+    answer.validate()?;
+    thresholds.validate()?;
+    Ok(answer.decision < thresholds.maximum_question
+        && answer.unverifiable < thresholds.maximum_question
+        && answer.contained + answer.team >= thresholds.minimum_contained_team
+        && answer.confidence >= thresholds.minimum_confidence)
+}
+
 /// Evaluate a shadow candidate. Critical human routing is separate from technical blocking.
 pub fn recommend(
     plan: &Value,
@@ -197,6 +222,13 @@ pub fn recommend(
     thresholds.validate()?;
     let human = critical(plan);
     let mut reasons = gates(plan, results, checks);
+    if !has_acceptance_context(&state["context"]) {
+        reasons.push(json!({"code":"missing-acceptance-context","source":"gate","evidence":"Supply title, description and the linked issue body or explicit acceptance criteria."}));
+    }
+    if state["context_verified"] != true {
+        reasons.push(json!({"code":"context-changed","source":"gate",
+            "evidence":"Acceptance context is not verified against current GitHub data."}));
+    }
     if state["change_context_complete"] == false {
         reasons.push(json!({"code":"context-unavailable","source":"gate","evidence":"The full change context could not be collected within its bound."}));
     }
@@ -220,6 +252,7 @@ pub fn recommend(
         json!({"schema_version":1,"mode":"shadow","inputs":plan["inputs"],"effective_tier":plan["risk"]["effective_tier"],
         "human_required":human,"automation_eligible":eligible,"merge_performed":false,
         "recommendation":if human {"human-review"} else if eligible {"automation-candidate"} else {"blocked"},
-        "thresholds":thresholds,"thresholds_calibrated":false,"probabilities":probabilities,"reasons":reasons}),
+        "thresholds":thresholds,"question_digest":super::questions::digest(),"context_verified":state["context_verified"],
+        "thresholds_calibrated":false,"probabilities":probabilities,"reasons":reasons}),
     )
 }

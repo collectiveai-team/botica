@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn criss_cross_python_revert_is_incomplete_with_retained_critical_evidence() {
+fn criss_cross_python_revert_has_a_high_policy_bound_with_retained_critical_evidence() {
     let auth_path = "src/auth/check.py";
     let old = "def authenticated(token):\n    return True\n";
     let hardened = "def authenticated(token):\n    return token == 'trusted'\n";
@@ -9,9 +9,9 @@ fn criss_cross_python_revert_is_incomplete_with_retained_critical_evidence() {
     let ancestors = git(&dir, &["merge-base", "--all", "refs/heads/main", "HEAD"]);
     assert_eq!(ancestors.lines().count(), 2);
     let (output, report) = classify(&dir, "merge");
-    assert_eq!(output.status.code(), Some(2), "{report}");
-    assert_eq!(report["status"], "incomplete");
-    assert!(report["effective_tier"].is_null());
+    assert!(output.status.success(), "{report}");
+    assert_eq!(report["status"], "complete");
+    assert_eq!(report["effective_tier"], "high");
     let comparisons = report["branch"]["comparisons"].as_array().unwrap();
     assert_eq!(comparisons.len(), 2);
     assert!(comparisons
@@ -23,9 +23,10 @@ fn criss_cross_python_revert_is_incomplete_with_retained_critical_evidence() {
         ("branch", critical),
         ("integration", &report["integration"]["comparisons"][0]),
     ] {
-        assert_eq!(report[name]["status"], "incomplete");
-        assert!(report[name]["tier"].is_null());
-        assert_eq!(report[name]["reasons"][0]["code"], "unsupported-detector");
+        assert_eq!(report[name]["status"], "complete");
+        assert_eq!(report[name]["tier"], "high");
+        assert_eq!(comparison["bounds"]["lower"], "high");
+        assert_eq!(comparison["bounds"]["upper"], "high");
         assert_eq!(comparison["tier"], "high");
         assert!(comparison["areas"]
             .as_array()

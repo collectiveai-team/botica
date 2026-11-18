@@ -56,7 +56,7 @@ fn stage_filters_complete_plans_but_incomplete_risk_never_selects_roles() {
     assert!(output.status.success(), "{report}");
     assert_eq!(report["selected_roles"], serde_json::json!([]));
     assert_eq!(report["roles"][0]["selection"]["stage_matches"], false);
-    common::write(&dir, "service.py", "def service():\n    return True\n");
+    common::write(&dir, "service.py", "opaque\0binary");
     git(&dir, &["add", "."]);
     git(&dir, &["commit", "-m", "Unknown source detection"]);
     let (output, report) = consume(&dir, "plan", "local");

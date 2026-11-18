@@ -57,7 +57,7 @@ def _bundled_schema() -> dict[str, Json]:
     [
         ("plan", "docs/start.md", ROLE, 0),
         ("check", "docs/start.md", ROLE, 0),
-        ("plan", "service.py", ROLE, 2),
+        ("plan", "service.py", ROLE, 0),
         ("check", "service.py", ROLE, 0),
         ("plan", "docs/start.md", ROLE.replace("covered: {}", "unknown: true"), 2),
         ("check", "docs/start.md", ROLE.replace("covered: {}", ""), 2),

@@ -1,3 +1,4 @@
+use crate::output::println;
 use std::collections::BTreeMap;
 use std::io::Read;
 use std::path::Path;
@@ -36,7 +37,11 @@ pub(super) fn read_json(path: &Path) -> Result<Value> {
     Ok(serde_json::from_slice(&bytes)?)
 }
 
-pub(super) fn collect(plan: &Value, directory: &Path) -> Result<Value> {
+pub(super) fn collect(
+    assessment: &tier::Assessment,
+    plan: &Value,
+    directory: &Path,
+) -> Result<Value> {
     ensure!(plan["status"] == "complete", "review plan is incomplete");
     ensure!(
         std::fs::symlink_metadata(directory)?.is_dir(),
@@ -53,7 +58,46 @@ pub(super) fn collect(plan: &Value, directory: &Path) -> Result<Value> {
         ensure!(report["role"] == *role, "role filename and report disagree");
         reports.push(report);
     }
-    botica_core::review::results::validate(plan, &reports)
+    let validated = botica_core::review::results::validate(plan, &reports)?;
+    verify_references(assessment, &reports)?;
+    Ok(validated)
+}
+
+fn verify_references(assessment: &tier::Assessment, reports: &[Value]) -> Result<()> {
+    for report in reports.iter().filter(|report| report["role"] == "refute") {
+        for finding in report["findings"].as_array().into_iter().flatten() {
+            for reference in finding["refutation_references"]
+                .as_array()
+                .into_iter()
+                .flatten()
+            {
+                let revision = reference["revision"]
+                    .as_str()
+                    .context("missing reference revision")?;
+                let path = reference["path"]
+                    .as_str()
+                    .context("missing reference path")?;
+                let line = reference["line"]
+                    .as_u64()
+                    .context("missing reference line")?;
+                let quote = reference["quote"].as_str().context("missing code quote")?;
+                let bytes = assessment
+                    .git
+                    .read_limited(&["show", &format!("{revision}:{path}")], 512 * 1024)?;
+                let text = std::str::from_utf8(&bytes).context("reference is not UTF-8")?;
+                ensure!(
+                    line > 0
+                        && !quote.contains(['\r', '\n'])
+                        && text
+                            .lines()
+                            .nth(line as usize - 1)
+                            .is_some_and(|text| text.contains(quote)),
+                    "refutation quote does not match pinned source"
+                );
+            }
+        }
+    }
+    Ok(())
 }
 
 fn record(assessment: &tier::Assessment, plan: &Value, result: &Value) -> Result<()> {
@@ -157,7 +201,7 @@ pub(super) fn validate(
     recording: bool,
 ) -> Result<(Value, Value)> {
     let (assessment, plan) = consumers::collect(args, false)?;
-    let result = collect(&plan, directory)?;
+    let result = collect(&assessment, &plan, directory)?;
     if recording {
         record(&assessment, &plan, &result)?;
     }

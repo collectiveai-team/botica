@@ -1,0 +1,166 @@
+name: review shadow
+
+on:
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows: ["CI", "tests", "role review"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number
+        required: true
+        type: string
+  issues:
+    types: [edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+jobs:
+  resolve:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'issues' || contains(fromJSON('["pull_request","pull_request_target"]'), github.event.workflow_run.event)
+    runs-on: ubuntu-latest
+    outputs:
+      prs: ${{ steps.resolve.outputs.prs }}
+    steps:
+      - name: Resolve associated open PRs without guessing stack fields
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REQUESTED_PR: ${{ inputs.pr }}
+          RUN_HEAD: ${{ github.event.workflow_run.head_sha }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          API_URL: ${{ github.api_url }}
+        run: |
+          if [ -n "$ISSUE_NUMBER" ]; then
+            [[ "$ISSUE_NUMBER" =~ ^[1-9][0-9]*$ ]]
+            prs=$(gh api --paginate "repos/$GH_REPO/issues/$ISSUE_NUMBER/timeline?per_page=100" \
+              | jq -sc --arg repository_url "$API_URL/repos/$GH_REPO" \
+                '[.[][] | select(.event == "cross-referenced" and .source.issue.repository_url == $repository_url and .source.issue.pull_request != null) | .source.issue.number] | unique')
+          elif [ -n "$REQUESTED_PR" ]; then
+            [[ "$REQUESTED_PR" =~ ^[1-9][0-9]*$ ]]
+            prs="[$REQUESTED_PR]"
+          else
+            prs=$(jq -c '[.workflow_run.pull_requests[]?.number] | unique' "$GITHUB_EVENT_PATH")
+            if test "$prs" = '[]'; then
+              [[ "$RUN_HEAD" =~ ^[0-9a-f]{40}$ ]]
+              prs=$(gh api --paginate "repos/$GH_REPO/commits/$RUN_HEAD/pulls?per_page=100" \
+                | jq -sc '[.[][] | select(.state == "open") | .number] | unique')
+            fi
+          fi
+          if test "$prs" = '[]'; then prs='["__skip__"]'; fi
+          echo "prs=$prs" >> "$GITHUB_OUTPUT"
+
+  classify:
+    needs: resolve
+    if: needs.resolve.outputs.prs != '["__skip__"]'
+    strategy:
+      fail-fast: false
+      matrix:
+        pr: ${{ fromJSON(needs.resolve.outputs.prs) }}
+    concurrency:
+      group: review-shadow-${{ matrix.pr }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      checks: read
+      actions: read
+      pull-requests: write
+      issues: read
+    env:
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ matrix.pr }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+      - run: cargo build --locked -p botica-cli
+      - name: Read current PR inputs
+        id: inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          mkdir -p .tmp/results
+          gh api "repos/$GH_REPO/pulls/$PR_NUMBER" > .tmp/pull.json
+          jq -e '.state == "open" and .draft == false' .tmp/pull.json
+          jq -e 'all(.labels[]?; .name != "botica:stack-member")' .tmp/pull.json
+          base=$(jq -r '.base.sha' .tmp/pull.json)
+          head=$(jq -r '.head.sha' .tmp/pull.json)
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "head=$head" >> "$GITHUB_OUTPUT"
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
+          target/debug/botica review context --repository "$GH_REPO" --pr "$PR_NUMBER" \
+            --base "$base" --head "$head" > .tmp/context.json
+      - name: Read only the latest associated role evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ steps.inputs.outputs.base }}
+          HEAD_SHA: ${{ steps.inputs.outputs.head }}
+        run: |
+          gh api --paginate "repos/$GH_REPO/actions/workflows/review.yml/runs?event=pull_request_target&per_page=100" \
+            | jq -s --arg repo "$GH_REPO" --arg head "$HEAD_SHA" --arg base "$BASE_SHA" --argjson pr "$PR_NUMBER" \
+              '[.[].workflow_runs[] | select(.event == "pull_request_target" and .head_repository.full_name == $repo) | select(any(.pull_requests[]?; .number == $pr and .head.sha == $head and .base.sha == $base))] | max_by(.id) // {}' \
+            > .tmp/role-run.json
+          if jq -e '.status == "completed"' .tmp/role-run.json > /dev/null; then
+            run=$(jq -r '.id' .tmp/role-run.json)
+            if gh run download "$run" --name review-evidence --dir .tmp/evidence; then
+              if [ -d .tmp/evidence/.tmp/results ]; then
+                cp .tmp/evidence/.tmp/results/*.json .tmp/results/
+              fi
+            fi
+          fi
+      - name: Classify fresh check conclusions without merging
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
+          BASE_SHA: ${{ steps.inputs.outputs.base }}
+          HEAD_SHA: ${{ steps.inputs.outputs.head }}
+        run: |
+          target/debug/botica review classify --diff "$BASE_SHA" --head "$HEAD_SHA" \
+            --integration-method merge --stage ci --context .tmp/context.json \
+            --results .tmp/results --repository "$GH_REPO" --github-pr "$PR_NUMBER" \
+            --output .botica/review > .tmp/classification.json
+          target/debug/botica review feedback \
+            --handoff .botica/review/handoff.json --repository "$GH_REPO" --github-pr "$PR_NUMBER"
+      - name: Update one evidence comment for current inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ steps.inputs.outputs.base }}
+          HEAD_SHA: ${{ steps.inputs.outputs.head }}
+        run: |
+          current=$(gh pr view "$PR_NUMBER" --json baseRefOid,headRefOid --jq '[.baseRefOid,.headRefOid] | join(":")')
+          test "$current" = "$BASE_SHA:$HEAD_SHA" || exit 0
+          target/debug/botica review context --repository "$GH_REPO" --pr "$PR_NUMBER" \
+            --base "$BASE_SHA" --head "$HEAD_SHA" > .tmp/current-context.json
+          if ! cmp -s .tmp/context.json .tmp/current-context.json; then
+            printf '%s\n' '<!-- botica:review-handoff -->' \
+              'Review recommendation: blocked. The issue or PR context changed during classification. Rerun review for the new acceptance context.' \
+              > .botica/review/handoff.md
+          fi
+          comment=$(gh api --paginate "repos/$GH_REPO/issues/$PR_NUMBER/comments?per_page=100" \
+            | jq -s '[.[][] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- botica:review-handoff -->")))] | min_by(.id).id // empty')
+          jq -Rs '{body:.}' .botica/review/handoff.md > .tmp/comment.json
+          if [ -n "$comment" ]; then
+            gh api --method PATCH "repos/$GH_REPO/issues/comments/$comment" --input .tmp/comment.json
+          else
+            gh api --method POST "repos/$GH_REPO/issues/$PR_NUMBER/comments" --input .tmp/comment.json
+          fi
+      - uses: actions/upload-artifact@v7
+        if: ${{ always() }}
+        with:
+          name: review-shadow-${{ matrix.pr }}
+          path: |
+            .botica/review/
+            .botica/history/
+            .tmp/classification.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 90

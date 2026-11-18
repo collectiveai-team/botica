@@ -11,6 +11,14 @@ pub(super) fn collect(assessment: &tier::Assessment, plan: &Value, limit: usize)
             .into_iter()
             .flatten()
         {
+            anyhow::ensure!(
+                comparison["evidence"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .all(|file| file["kind"] == "text"),
+                "non-text change context is unavailable"
+            );
             pairs.insert((
                 comparison["from"]
                     .as_str()

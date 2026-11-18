@@ -19,6 +19,13 @@ and `head`. `botica lint --reviewed <dir> --diff <target>` recomputes the plan a
 rejects missing results or mismatched inputs. Short SHAs and branch names in the
 example below are explanatory only and cannot pass evidence ingestion.
 
+Review every branch and integration comparison of the plan, not only one merge-base diff.
+Refute preserves each original finding. A dismissal adds `refutation_evidence` and
+`refutation_references` (path, full revision, line, exact quote); `duplicate` also names
+`duplicate_of`. Source quotes are checked against pinned Git objects. A `not-reproduced`
+claim alone never dismisses a finding. `unreachable` and `pre-existing` also remain in the gate.
+Only a duplicate with a retained target of no weaker blocking effect is omitted.
+
 `.tmp/review/<short-head-sha>/<role>.json`:
 
 ```json

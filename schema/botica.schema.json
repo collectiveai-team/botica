@@ -189,7 +189,7 @@
           "minimum": 0
         },
         "min-confidence": {
-          "description": "A `choice` answer with less confidence than this goes to a person. Not under 0.7.",
+          "description": "A `choice` answer with less confidence than this blocks automation. Not under 0.7.",
           "type": "number",
           "format": "double",
           "default": 0.7,
@@ -208,7 +208,7 @@
           "minimum": 0.0
         },
         "required-checks": {
-          "description": "The checks that must be present and green. An empty list sends every pull request to a\nperson.",
+          "description": "The checks that must be present and green. An empty list blocks automation.",
           "type": "array",
           "default": [],
           "items": {

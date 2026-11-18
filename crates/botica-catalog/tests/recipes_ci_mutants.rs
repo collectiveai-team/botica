@@ -61,7 +61,21 @@ fn every_job_runs_on_a_pull_request_without_blocking_it_and_within_a_cap() {
         let written = workflow(pair.0, pair.1);
         let job = &written["jobs"]["mutants"];
 
-        assert!(written["on"]["pull_request"].is_null(), "{}", pair.0);
+        let events = written["on"]["pull_request"]["types"]
+            .as_sequence()
+            .expect("PR events");
+        assert!(
+            events
+                .iter()
+                .any(|event| event.as_str() == Some("ready_for_review")),
+            "{}",
+            pair.0
+        );
+        assert_eq!(job["needs"].as_str(), Some("review-policy"));
+        assert!(written["jobs"]["review-policy"]["if"]
+            .as_str()
+            .unwrap()
+            .contains("draft == false"));
         assert_eq!(written["permissions"]["contents"].as_str(), Some("read"));
         assert_eq!(job["continue-on-error"].as_bool(), Some(true), "{}", pair.0);
         assert!(job["timeout-minutes"].as_u64().is_some(), "{}", pair.0);
@@ -130,7 +144,7 @@ fn go_tests_the_mutants_of_the_diff_with_gremlins_and_uploads_its_report() {
         ]
     );
     assert_eq!(job["steps"][0]["with"]["fetch-depth"].as_u64(), Some(0));
-    assert!(!text(GO.0, GO.1).contains("botica@"));
+    assert!(!runs.iter().any(|run| run.contains("botica@")));
     let upload = job["steps"]
         .as_sequence()
         .expect("the steps")
@@ -171,7 +185,83 @@ fn node_runs_the_stryker_of_the_project_incrementally_and_keeps_its_file_in_the_
         "{fallbacks}"
     );
     assert!(save["if"].as_str().is_some_and(|c| c.contains("always()")));
-    assert!(!text(NODE.0, NODE.1).contains("botica@"));
+    assert!(!runs(job).iter().any(|run| run.contains("botica@")));
+}
+
+#[cfg(unix)]
+#[test]
+fn trusted_recipe_policy_runs_mutation_conservatively_or_uses_a_complete_plan() {
+    use std::fs;
+    use std::os::unix::fs::PermissionsExt;
+    use std::process::Command;
+    let root = std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join("recipe-mutation-policy");
+    fs::create_dir_all(root.join("bin")).unwrap();
+    for (name, script) in [
+        ("git", "#!/bin/sh\nexit 0\n"),
+        (
+            "uvx",
+            r#"#!/bin/sh
+case "$*" in
+  *--help*) test "$FAKE_PLAN_MODE" != legacy; exit $? ;;
+esac
+case "$FAKE_PLAN_MODE" in
+  failure) exit 2 ;;
+  low) echo '{"status":"complete","mutation_required":false}' ;;
+  *) echo '{"status":"complete","mutation_required":true}' ;;
+esac
+"#,
+        ),
+    ] {
+        let file = root.join("bin").join(name);
+        fs::write(&file, script).unwrap();
+        fs::set_permissions(file, fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    for pair in [RUST, GO, NODE] {
+        let written = workflow(pair.0, pair.1);
+        let script = runs(&written["jobs"]["review-policy"])
+            .into_iter()
+            .find(|run| run.contains("review plan"))
+            .unwrap();
+        for (mode, expected) in [
+            ("legacy", "run=true\n"),
+            ("low", "run=false\n"),
+            ("medium", "run=true\n"),
+            ("failure", ""),
+        ] {
+            let output_path = root.join(format!("{}-{mode}.output", pair.0));
+            fs::write(&output_path, "").unwrap();
+            let output = Command::new("bash")
+                .args(["-eo", "pipefail", "-c", &script])
+                .env(
+                    "PATH",
+                    format!(
+                        "{}:{}",
+                        root.join("bin").display(),
+                        std::env::var("PATH").unwrap_or_default()
+                    ),
+                )
+                .env("RUNNER_TEMP", &root)
+                .env("GITHUB_OUTPUT", &output_path)
+                .env("BASE_SHA", "a".repeat(40))
+                .env("HEAD_SHA", "b".repeat(40))
+                .env("PR_NUMBER", "42")
+                .env("FAKE_PLAN_MODE", mode)
+                .output()
+                .unwrap();
+            assert_eq!(
+                output.status.success(),
+                mode != "failure",
+                "{} {mode}",
+                pair.0
+            );
+            assert_eq!(
+                fs::read_to_string(output_path).unwrap(),
+                expected,
+                "{} {mode}",
+                pair.0
+            );
+        }
+    }
 }
 
 fn uses<'a>(steps: &'a [Value], prefix: &str) -> &'a Value {

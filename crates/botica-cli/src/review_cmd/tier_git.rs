@@ -35,6 +35,8 @@ fn command() -> Command {
         .env_remove("OPENAI_API_KEY")
         .env_remove("TYPESAFE_AI_API_KEY")
         .env_remove("BOTICA_HISTORY_KEY")
+        .env_remove("GH_TOKEN")
+        .env_remove("GITHUB_TOKEN")
         .env("GIT_CONFIG_NOSYSTEM", "1")
         .env("GIT_CONFIG_GLOBAL", "/dev/null")
         .env("GIT_ATTR_NOSYSTEM", "1")

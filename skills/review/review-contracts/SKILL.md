@@ -28,7 +28,7 @@ with `git`, and does not check out, stash or edit anything in the working tree.
 ## 1. Inputs
 
 1. Pin the target as a commit SHA. Take the target that the user or `review-panel` gives, the
-   `baseRefOid` of `gh pr view --json baseRefOid` for a PR, or `git merge-base HEAD main`; never
+   `baseRefOid` of `gh pr view --json baseRefOid` for a PR, or `git rev-parse refs/heads/main`; never
    the name of the base branch that the PR shows. Resolve it with
    `git rev-parse --verify --end-of-options '<target>^{commit}'`, check the result against
    `^[0-9a-f]{40}$`, and use that SHA in every later command.
@@ -86,7 +86,7 @@ not start with `-`.
 ## 3. Output
 
 Write the JSON of the shared contract, which `schema/review-findings.schema.json` validates, with
-role `contracts`, `head` the short SHA of `HEAD` and `base` the target SHA, to
+role `contracts`, full `head` and `base` from the plan, with its exact `inputs`, to
 `.tmp/review/<short-head-sha>/contracts.json`. Print it as a table: severity, file and line,
 title.
 

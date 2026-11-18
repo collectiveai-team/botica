@@ -6,6 +6,11 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
+  issues: read
+
+env:
+  GH_REPO: ${{ github.repository }}
 
 concurrency:
   group: role-review-${{ github.event.pull_request.number }}
@@ -13,6 +18,7 @@ concurrency:
 
 jobs:
   plan:
+    if: github.event.pull_request.draft == false && !contains(github.event.pull_request.labels.*.name, 'botica:stack-member')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -31,10 +37,12 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
           mkdir -p .tmp/review
-          jq '{title: .pull_request.title, description: .pull_request.body}' "$GITHUB_EVENT_PATH" > .tmp/context.json
+          target/debug/botica review context --repository "$GH_REPO" --pr "$PR_NUMBER" \
+            --base "$BASE_SHA" --head "$HEAD_SHA" > .tmp/context.json
           target/debug/botica review plan --diff "$BASE_SHA" --head "$HEAD_SHA" \
             --integration-method merge --stage ci --context .tmp/context.json --format json > .tmp/review/plan.json
           roles=$(jq -c '[.selected_roles[] | select(. != "refute")] | if length == 0 then ["__skip__"] else . end' .tmp/review/plan.json)
@@ -50,6 +58,7 @@ jobs:
 
   roles:
     needs: plan
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -74,10 +83,12 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
           chmod +x .tmp/runner/botica
-          jq '{title: .pull_request.title, description: .pull_request.body}' "$GITHUB_EVENT_PATH" > .tmp/context.json
+          .tmp/runner/botica review context --repository "$GH_REPO" --pr "$PR_NUMBER" \
+            --base "$BASE_SHA" --head "$HEAD_SHA" > .tmp/context.json
           .tmp/runner/botica review run --diff "$BASE_SHA" --head "$HEAD_SHA" \
             --integration-method merge --stage ci --context .tmp/context.json --role "$ROLE" --output .tmp/results
       - uses: actions/upload-artifact@v7
@@ -91,7 +102,7 @@ jobs:
 
   refute:
     needs: [plan, roles]
-    if: needs.plan.outputs.refute == 'true'
+    if: needs.plan.outputs.refute == 'true' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -115,10 +126,12 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
           chmod +x .tmp/runner/botica
-          jq '{title: .pull_request.title, description: .pull_request.body}' "$GITHUB_EVENT_PATH" > .tmp/context.json
+          .tmp/runner/botica review context --repository "$GH_REPO" --pr "$PR_NUMBER" \
+            --base "$BASE_SHA" --head "$HEAD_SHA" > .tmp/context.json
           .tmp/runner/botica review run --diff "$BASE_SHA" --head "$HEAD_SHA" \
             --integration-method merge --stage ci --context .tmp/context.json --role refute --output .tmp/results
       - uses: actions/upload-artifact@v7
@@ -136,6 +149,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Reject missing or deferred review as passing evidence
+        if: needs.plan.result != 'success'
+        run: |
+          echo "::error::Review is deferred or its trusted plan failed. No passing review evidence exists."
+          exit 1
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.base.sha }}
@@ -155,10 +173,12 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
           chmod +x .tmp/runner/botica
-          jq '{title: .pull_request.title, description: .pull_request.body}' "$GITHUB_EVENT_PATH" > .tmp/context.json
+          .tmp/runner/botica review context --repository "$GH_REPO" --pr "$PR_NUMBER" \
+            --base "$BASE_SHA" --head "$HEAD_SHA" > .tmp/context.json
           .tmp/runner/botica lint --reviewed .tmp/results --diff "$BASE_SHA" \
             --review-head "$HEAD_SHA" --review-ci --review-context .tmp/context.json --record > .tmp/review-result.json
       - uses: actions/upload-artifact@v7

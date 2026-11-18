@@ -18,6 +18,23 @@ Prepare one PR for the integrated delivery. Do not create a PR just because a ti
 complete. If the plan splits the delivery, state the reason for that boundary and the dependencies.
 Closing or rewriting existing PRs requires the user's authorization.
 
+### Explicit stack mode
+
+Use a remote stack only when the user explicitly requests it or the delivery plan records
+separate delivery boundaries. Preserve the local ticket commits; do not turn each ticket into
+a PR. Pin the integration base and each boundary head before publication.
+
+Create stack members as drafts and label deferred members `botica:stack-member` before
+marking the tip ready. The role and mutation workflows defer expensive work on drafts and
+marked members. The review gate stays incomplete for deferred members, never a passing
+approval inherited from the tip. The tip runs its own planned checks.
+
+Record cumulative local review evidence against the integration base and each boundary's
+evidence in the delivery plan. Do not assume native stack event fields or a first parent prove
+the review base; use the pinned revisions and the observations of ticket 36. A deferred member
+is not individually merge-ready until its own evidence is validated. One integrated PR remains
+the default when those independent delivery boundaries do not exist.
+
 Use the template's existing sections to link the spec, covered tickets and slice review evidence.
 Include the integration checks, unresolved findings and anything not run. Use closing references
 only for tickets whose acceptance criteria the delivery satisfies. If several slices are included,

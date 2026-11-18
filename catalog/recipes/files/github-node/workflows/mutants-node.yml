@@ -19,6 +19,7 @@ on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   group: mutants-node-${{ github.workflow }}-${{ github.ref }}
@@ -28,7 +29,40 @@ permissions:
   contents: read
 
 jobs:
+  review-policy:
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false && !contains(github.event.pull_request.labels.*.name, 'botica:stack-member')
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.plan.outputs.run }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: "0.13.6"
+          enable-cache: false
+      - name: Select mutation from trusted review policy
+        id: plan
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
+          if ! uvx botica@{{ param.botica-version }} review plan --help > /dev/null 2>&1; then
+            echo "::notice::The pinned release has no review planner; mutation runs conservatively without a complete plan."
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          uvx botica@{{ param.botica-version }} review plan --diff "$BASE_SHA" --head "$HEAD_SHA" \
+            --integration-method merge --stage ci --format json > "$RUNNER_TEMP/mutation-plan.json"
+          echo "run=$(jq -r '.mutation_required' "$RUNNER_TEMP/mutation-plan.json")" >> "$GITHUB_OUTPUT"
   mutants:
+    needs: review-policy
+    if: ${{ !cancelled() && (github.event_name == 'push' || needs.review-policy.outputs.run == 'true') }}
     name: mutants of the change
     runs-on: ubuntu-latest
     continue-on-error: true

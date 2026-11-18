@@ -89,7 +89,7 @@ pub fn rules(runs: &[&Run], noise: Noise) -> (Vec<Quiet>, Vec<Noisy>) {
     (quiet, noisy)
 }
 
-/// The findings of each role that `refute` judged and did not confirm, over those it judged.
+/// Validated duplicate dispositions over the findings that refute judged.
 /// `runs` holds the (source, run id) of the runs of the roles that count.
 pub fn roles(history: &History, runs: &HashSet<(usize, &str)>) -> Vec<Role> {
     let mut by_role: BTreeMap<&str, Role> = BTreeMap::new();
@@ -108,7 +108,7 @@ pub fn roles(history: &History, runs: &HashSet<(usize, &str)>) -> Vec<Role> {
         role.judged = role.judged.saturating_add(1);
         role.dismissed = role
             .dismissed
-            .saturating_add(u64::from(refutation != "confirmed"));
+            .saturating_add(u64::from(refutation == "duplicate"));
     }
     by_role.into_values().collect()
 }

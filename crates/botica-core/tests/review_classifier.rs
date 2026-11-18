@@ -30,10 +30,15 @@ fn plan(area: &str, tier: &str) -> Value {
         "risk":{"status":"complete","effective_tier":tier,"branch":{"comparisons":[{"areas":[area]}]},"integration":{"comparisons":[]}}})
 }
 fn evidence() -> Value {
-    json!({"inputs":{"head":"a".repeat(40)},"status":"complete","verdict":"PASS","findings":[]})
+    json!({"inputs":{"head":"a".repeat(40)},"producer_verified":true,"status":"complete","verdict":"PASS","findings":[]})
 }
 fn checks() -> Value {
-    json!({"inputs":{"head":"a".repeat(40)},"ci":"PASS","lint":"PASS","mutation":"PASS","jobs":{"tests":"PASS"}})
+    json!({"inputs":{"head":"a".repeat(40)},"producer_verified":true,"ci":"PASS","lint":"PASS","mutation":"PASS","jobs":{"tests":"PASS"}})
+}
+
+fn state() -> Value {
+    json!({"context_verified":true,"context":{"title":"Return a fixed answer","description":"Implement the decided answer",
+        "acceptance_criteria":["The answer is 42"]}})
 }
 
 #[test]
@@ -46,7 +51,7 @@ fn only_critical_routes_to_human_and_service_failure_never_does() {
         &plan("critical", "high"),
         &evidence(),
         &checks(),
-        &json!({}),
+        &state(),
         &adapter,
         &Thresholds::default(),
     )
@@ -57,7 +62,7 @@ fn only_critical_routes_to_human_and_service_failure_never_does() {
         &plan("core", "medium"),
         &evidence(),
         &checks(),
-        &json!({}),
+        &state(),
         &adapter,
         &Thresholds::default(),
     )
@@ -73,7 +78,7 @@ fn only_critical_routes_to_human_and_service_failure_never_does() {
         &plan("periphery", "low"),
         &evidence(),
         &checks(),
-        &json!({}),
+        &state(),
         &failed,
         &Thresholds::default(),
     )
@@ -92,7 +97,7 @@ fn current_low_risk_evidence_is_a_shadow_candidate_but_stale_checks_never_call_t
         &plan("periphery", "low"),
         &evidence(),
         &checks(),
-        &json!({}),
+        &state(),
         &adapter,
         &Thresholds::default(),
     )
@@ -105,11 +110,42 @@ fn current_low_risk_evidence_is_a_shadow_candidate_but_stale_checks_never_call_t
         &plan("periphery", "low"),
         &evidence(),
         &stale,
-        &json!({}),
+        &state(),
         &adapter,
         &Thresholds::default(),
     )
     .unwrap();
     assert_eq!(report["automation_eligible"], false);
     assert_eq!(adapter.calls.get(), 1);
+}
+
+#[test]
+fn missing_acceptance_context_and_unverified_check_claims_never_call_the_model() {
+    let adapter = InMemoryClassifier {
+        fail: false,
+        calls: Cell::new(0),
+    };
+    let report = recommend(
+        &plan("periphery", "low"),
+        &evidence(),
+        &checks(),
+        &json!({}),
+        &adapter,
+        &Thresholds::default(),
+    )
+    .unwrap();
+    assert_eq!(report["automation_eligible"], false);
+    let mut unverified = checks();
+    unverified["producer_verified"] = json!(false);
+    let report = recommend(
+        &plan("periphery", "low"),
+        &evidence(),
+        &unverified,
+        &state(),
+        &adapter,
+        &Thresholds::default(),
+    )
+    .unwrap();
+    assert_eq!(report["automation_eligible"], false);
+    assert_eq!(adapter.calls.get(), 0);
 }

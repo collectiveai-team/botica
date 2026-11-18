@@ -1,6 +1,18 @@
 use super::*;
 
 #[test]
+fn a_binary_rust_path_never_gets_a_complete_source_bound() {
+    let dir = repository("binary-source-boundary", Some(DOCS));
+    common::write(&dir, "docs/logo.rs", "x\0y");
+    git(&dir, &["add", "."]);
+    git(&dir, &["commit", "-m", "Add binary"]);
+    let (output, report) = classify(&dir, "merge");
+    assert_eq!(output.status.code(), Some(2));
+    assert!(report["effective_tier"].is_null());
+    assert!(report["branch"]["comparisons"][0]["bounds"].is_null());
+}
+
+#[test]
 fn critical_source_keeps_its_high_floor_under_detector_uncertainty() {
     let config = format!("{DOCS}\n[[review.areas]]\nname = 'critical'\npaths = ['auth/**']\nowners = ['@security']\n");
     let dir = repository("bounded-critical", Some(&config));
@@ -36,7 +48,7 @@ fn large_docs_changes_report_informational_size_without_a_size_gate() {
 }
 
 #[test]
-fn unknown_dependency_and_endpoint_support_is_explicit_incomplete_evidence() {
+fn text_detector_uncertainty_is_bounded_without_asserting_dependency_or_endpoint_facts() {
     for path in [
         "tools/dev-requirements.txt",
         "tools/environment-dev.txt",
@@ -57,17 +69,14 @@ fn unknown_dependency_and_endpoint_support_is_explicit_incomplete_evidence() {
         git(&dir, &["add", "."]);
         git(&dir, &["commit", "-m", "Change unknown input"]);
         let (output, report) = classify(&dir, "merge");
-        assert_eq!(output.status.code(), Some(2), "{path}: {report}");
-        assert!(report["effective_tier"].is_null());
-        assert_eq!(
-            report["branch"]["reasons"][0]["code"],
-            "unsupported-detector"
-        );
+        assert!(output.status.success(), "{path}: {report}");
+        assert_eq!(report["effective_tier"], "medium");
         let comparison = &report["branch"]["comparisons"][0];
         assert_eq!(comparison["files"][0], path);
         assert!(comparison["signals"].as_array().unwrap().is_empty());
         assert_eq!(comparison["detector_evidence"][0]["status"], "unsupported");
         assert_eq!(comparison["detector_evidence"][0]["paths"][0], path);
+        assert_eq!(comparison["bounds"]["upper"], "medium");
     }
 }
 

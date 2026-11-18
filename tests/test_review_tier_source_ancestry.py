@@ -91,11 +91,11 @@ paths = ["docs/**"]
         text=True,
         check=False,
     )
-    assert output.returncode == 2, output.stderr
+    assert output.returncode == 0, output.stderr
     report = json.loads(output.stdout)
     validator().validate(report)
-    assert report["status"] == "incomplete"
-    assert report["effective_tier"] is None
+    assert report["status"] == "complete"
+    assert report["effective_tier"] == "high"
     comparisons = report["branch"]["comparisons"]
     assert len(comparisons) == 2
     assert any(c["from"] == p1 and c["tier"] == "low" for c in comparisons)
@@ -104,9 +104,10 @@ paths = ["docs/**"]
         ("branch", critical),
         ("integration", report["integration"]["comparisons"][0]),
     ]:
-        assert report[name]["status"] == "incomplete"
-        assert "tier" not in report[name]
-        assert report[name]["reasons"][0]["code"] == "unsupported-detector"
+        assert report[name]["status"] == "complete"
+        assert report[name]["tier"] == "high"
+        assert comparison["bounds"]["lower"] == "high"
+        assert comparison["bounds"]["upper"] == "high"
         assert comparison["tier"] == "high"
         assert "critical" in comparison["areas"]
         assert auth_path in comparison["files"]

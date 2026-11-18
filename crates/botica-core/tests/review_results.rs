@@ -66,6 +66,41 @@ fn a_model_pass_cannot_hide_a_blocking_finding_or_let_refute_rewrite_it() {
     reports[1]["findings"] = reports[0]["findings"].clone();
     reports[1]["findings"][0]["refutation"] = json!("confirmed");
     assert_eq!(validate(&plan(), &reports).unwrap()["verdict"], "FAIL");
+    reports[1]["findings"][0]["refutation"] = json!("not-reproduced");
+    assert_eq!(validate(&plan(), &reports).unwrap()["verdict"], "FAIL");
+    reports[1]["findings"][0]["refutation"] = json!("unreachable");
+    assert!(validate(&plan(), &reports).is_err());
+    reports[1]["findings"][0]["refutation"] = json!("confirmed");
     reports[1]["findings"][0]["severity"] = json!("P3");
     assert!(validate(&plan(), &reports).is_err());
+}
+
+#[test]
+fn duplicate_cannot_transfer_a_blocking_finding_to_a_weaker_role_threshold() {
+    let mut plan = plan();
+    plan["selected_roles"] = json!(["security", "tests", "refute"]);
+    plan["roles"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"role":"tests","blocking":"P0","max_findings":10}));
+    let finding = json!({"id":"security-1","severity":"P1","path":"src/auth.rs","line":3,
+        "title":"Authorization bypass","evidence":"The public function returns true.",
+        "reproduced":"not-tried","how_to_verify":["Inspect authorize"],"fix":"Check permission"});
+    let mut other = finding.clone();
+    other["id"] = json!("tests-1");
+    let mut reports = vec![result("security"), result("tests"), result("refute")];
+    reports[0]["findings"] = json!([finding]);
+    reports[1]["findings"] = json!([other]);
+    reports[2]["findings"] = json!([finding, other]);
+    reports[2]["findings"][0]["refutation"] = json!("duplicate");
+    reports[2]["findings"][0]["duplicate_of"] = json!("tests-1");
+    reports[2]["findings"][0]["refutation_evidence"] = json!("Same reported behavior");
+    reports[2]["findings"][0]["refutation_references"] = json!([{"path":"src/auth.rs",
+        "line":3,"revision":plan["inputs"]["head"],"quote":"return true"}]);
+    assert!(validate(&plan, &reports)
+        .unwrap_err()
+        .to_string()
+        .contains("blocking effect"));
+    plan["roles"][2]["blocking"] = json!("P1");
+    assert_eq!(validate(&plan, &reports).unwrap()["verdict"], "FAIL");
 }

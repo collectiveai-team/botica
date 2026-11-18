@@ -87,17 +87,16 @@ fn the_report_reads_the_last_four_weeks_of_ci_and_of_this_workflow_with_a_cap_of
     );
     let job = &workflow["jobs"]["history-report"];
     let download = step_run(job, "Download the history of CI");
-    assert!(download.contains("for workflow in ci.yml scheduled-review.yml"));
-    assert!(download.contains("branch=$BRANCH"), "{download}");
-    assert!(download.contains(r#"select(.head_repository.full_name == $repo)"#));
-    assert!(download.contains(
-        r#"select(.event == "push" or .event == "schedule" or .event == "workflow_dispatch")"#
-    ));
+    assert!(download.contains("python scripts/review_history_download.py"));
+    assert!(download.contains(r#"--arg branch "$BRANCH""#), "{download}");
     assert!(
-        download.contains("git merge-base --is-ancestor"),
+        download.contains(r#"--arg days "$HISTORY_DAYS""#),
         "{download}"
     );
-    assert!(download.contains("botica-history-"), "{download}");
+    assert!(
+        download.contains(r#"--arg repository "$GH_REPO""#),
+        "{download}"
+    );
     let read = step_run(job, "Read the history");
     assert!(read.contains(r#"--days "$HISTORY_DAYS""#), "{read}");
     assert!(read.contains("--format markdown"), "{read}");

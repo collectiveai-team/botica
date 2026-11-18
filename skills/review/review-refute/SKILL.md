@@ -32,11 +32,11 @@ only a blame, a search across files or the history of a line could refute stays 
 ## 1. Inputs
 
 1. Pin the target as a commit SHA. Take the target that the user or `review-panel` gives, the
-   `baseRefOid` of `gh pr view --json baseRefOid` for a PR, or `git merge-base HEAD main`; never
+   `baseRefOid` of `gh pr view --json baseRefOid` for a PR, or `git rev-parse refs/heads/main`; never
    the name of the base branch that the PR shows. Resolve it with
    `git rev-parse --verify --end-of-options '<target>^{commit}'`, check the result against
-   `^[0-9a-f]{40}$`, and use that SHA in every later command. Take the short SHA of `HEAD` with
-   `git rev-parse --short HEAD`, checked against `^[0-9a-f]{7,40}$`.
+   `^([0-9a-f]{40}|[0-9a-f]{64})$`, and use that SHA in every later command. Take the full SHA
+   of `HEAD` from the plan, checked against the same pattern.
 2. Capture the diff with `git diff --no-ext-diff --no-textconv <sha>...HEAD`. List the changed
    files with `git diff --no-ext-diff --name-only --no-renames -z <sha>...HEAD`, the files of
    `HEAD` with `git ls-tree -r --name-only -z HEAD` and the files of the target with
@@ -49,8 +49,8 @@ only a blame, a search across files or the history of a line could refute stays 
    use [`references/output.md`](references/output.md); when it has no `REVIEW.md`, use
    [`references/REVIEW.md`](references/REVIEW.md). Take `blocking` (`P1` when absent) and
    `max-findings` (10 when absent) from the frontmatter of the role file.
-4. List the JSON files of the folder of the run, `.tmp/review/<short-head-sha>/`, with the file
-   search tool, and read each one except `refute.json` with the file read tool. Take a file only
+4. Read only the JSON files for the plan's selected non-refute roles from the supplied run
+   directory. Do not treat the saved plan or context as a role result. Take a file only
    when its name, without `.json`, matches `^[a-z][a-z0-9-]*$` and equals its field `role`. A file
    that is not valid JSON or that lacks a field of the shared contract is not judged: `not_checked`
    names it, and the role counts as `INCONCLUSIVE`.
@@ -121,23 +121,27 @@ number, and copy the rest with no `refutation` field, which says that the role d
 ## 3. Output
 
 Write the JSON of the shared contract, which `schema/review-findings.schema.json` validates, with
-role `refute`, `head` the short SHA of `HEAD` and `base` the target SHA, to
+role `refute`, full `head` and `base` from the plan, with its exact `inputs`, to
 `.tmp/review/<short-head-sha>/refute.json`. Print it as a table: id, severity, refutation, title.
 
 `findings` holds every finding of the inputs, the most severe first. Each one keeps its fields as
 the role wrote them, `id` included, and adds `refutation` (`confirmed`, `pre-existing`,
-`unreachable`, `not-reproduced` or `duplicate`); `how_to_verify` changes only by the step for a
-person of step 2.3. Its `evidence` keeps the text of
-the role and adds a paragraph that starts with `Refute:` and gives the command or the file and line
-that decides the refutation. `reproduced` changes only to `yes` when a command of step 2.3 showed
-the finding, or to `no` when it showed the opposite. A finding never copies the value of a secret,
-not even in part: the JSON goes to an artifact.
+`unreachable`, `not-reproduced` or `duplicate`). Preserve every original field unchanged.
+A dismissal adds `refutation_evidence` and one to eight `refutation_references`, each with a
+repository path, full base/head revision, line and exact single-line quote. The consumer checks
+those quotes against pinned Git objects. `pre-existing` needs a reference to the base.
+`duplicate` also names `duplicate_of`, a retained finding of at least equal severity whose
+own role threshold retains the original blocking effect. Other dispositions are observations
+and leave the original finding in the gate: a matching quote is not a semantic proof.
+Resolve them through a new originating-role review or a code fix, not automatic dismissal.
+Put reproduction observations in the role's `commands`, never by rewriting the finding.
+A finding never copies a secret into the artifact.
 
 `commands` lists each command that the role ran, with its result. `checked` lists the roles and the
 findings that the role judged, and `not_checked` the files of step 1.4 it could not read, the
 findings that it judged from the diff only, and the steps of `how_to_verify` that only a person can
 run.
 
-The verdict is `FAIL` when a finding that is `confirmed`, or that the role did not judge, reaches
+The verdict is `FAIL` when any finding other than a validated duplicate reaches
 the `blocking` of the role file of the role that wrote it (step 1.5), `INCONCLUSIVE` when the role could not read the diff, the role file or a file of the inputs, and
 `PASS` otherwise.

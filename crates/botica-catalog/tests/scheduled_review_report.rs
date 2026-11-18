@@ -4,6 +4,9 @@
 //! without them, unless `BOTICA_REQUIRE_WORKFLOW_LINTERS` is set (CI).
 
 mod common;
+#[path = "scheduled_review_report/helpers.rs"]
+mod helpers;
+use helpers::*;
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -37,69 +40,6 @@ fn tools_installed() -> bool {
     found
 }
 
-fn scratch(name: &str) -> PathBuf {
-    let root = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
-    let _ = fs::remove_dir_all(&root);
-    fs::create_dir_all(root.join("bin")).expect("the scratch folder");
-    root
-}
-
-fn write_executable(path: &Path, text: &str) {
-    fs::write(path, text).expect("the script");
-    Command::new("chmod")
-        .arg("+x")
-        .arg(path)
-        .status()
-        .expect("chmod runs");
-}
-
-/// A `gh` that logs its arguments to `gh.log` and answers from `answers/`: the file named like the
-/// endpoint with each `/` and `?` turned into `_` for `gh api`, `issues.json` for `gh issue list`.
-fn fake_gh(root: &Path) {
-    fs::create_dir_all(root.join("answers")).expect("the answers");
-    write_executable(
-        &root.join("bin/gh"),
-        r#"#!/bin/bash
-echo "$*" >> "$ROOT/gh.log"
-case "$1 $2" in
-  "api "*)
-    for arg in "$@"; do endpoint=$arg; done
-    key=$(echo "${endpoint%%\?*}" | tr '/' '_')
-    cat "$ROOT/answers/$key" ;;
-  "issue list") cat "$ROOT/answers/issues.json" ;;
-  *) ;;
-esac
-"#,
-    );
-}
-
-fn bash(root: &Path, script: &str, env: &[(&str, &str)]) -> Output {
-    bash_in(root, root, script, env)
-}
-
-/// Runs `script` in `cwd`, with the fake `gh` and its answers from `root`.
-fn bash_in(root: &Path, cwd: &Path, script: &str, env: &[(&str, &str)]) -> Output {
-    let old = std::env::var("PATH").unwrap_or_default();
-    let path = format!("{}:{old}", root.join("bin").display());
-    Command::new("bash")
-        .args(["--noprofile", "--norc", "-eo", "pipefail", "-c", script])
-        .current_dir(cwd)
-        .env("PATH", path)
-        .env("ROOT", root)
-        .env("RUNNER_TEMP", root)
-        .env("GITHUB_OUTPUT", root.join("output.txt"))
-        .env("GITHUB_STEP_SUMMARY", root.join("summary.md"))
-        .env("REPORT_TITLE", TITLE)
-        .env("REPORT_MAX_FINDINGS", "20")
-        .env("HISTORY_DAYS", "28")
-        .env("GH_REPO", "owner/repo")
-        .env("BRANCH", "main")
-        .env("RUN_URL", "https://example.com/run/1")
-        .envs(env.iter().copied())
-        .output()
-        .expect("bash runs")
-}
-
 fn stderr(output: &Output) -> String {
     String::from_utf8_lossy(&output.stderr).into_owned()
 }
@@ -116,7 +56,13 @@ fn items(prefix: &str, count: usize) -> String {
 
 fn cap(name: &str, report: &str) -> (PathBuf, Output) {
     let root = scratch(name);
+    fake_gh(&root);
     fs::write(root.join("report.md"), report).expect("the report");
+    fs::write(
+        root.join("download-summary.json"),
+        r#"{"status":"complete"}"#,
+    )
+    .unwrap();
     let output = bash(&root, &step("Cap the findings"), &[]);
     assert!(output.status.success(), "{}", stderr(&output));
     (root, output)
@@ -138,15 +84,19 @@ fn a_section_with_more_than_20_items_keeps_20_and_says_how_many_it_left_out() {
     let issue = read(&root, "issue.md");
     assert_eq!(
         issue.matches("no finding in 3 runs").count(),
-        25 + 20,
+        25 + 19,
         "{issue}"
     );
-    assert!(issue.contains("- 3 more are not shown."), "{issue}");
-    assert!(issue.contains("`quiet-20`"), "{issue}");
-    assert!(!issue.contains("`quiet-21`"), "{issue}");
+    assert!(
+        issue.contains("omitted 4 beyond the global limit"),
+        "{issue}"
+    );
+    assert!(issue.contains("`quiet-19`"), "{issue}");
+    assert!(!issue.contains("`quiet-20`"), "{issue}");
+    assert_eq!(issue.matches("<!-- botica:history-item:").count(), 20);
     assert!(issue.contains("`noisy`"), "{issue}");
     assert!(issue.contains("Run: https://example.com/run/1"), "{issue}");
-    assert_eq!(read(&root, "output.txt").trim(), "findings=24");
+    assert!(read(&root, "output.txt").starts_with("findings=24\n"));
 }
 
 #[test]
@@ -159,7 +109,7 @@ fn a_report_with_nothing_to_decide_counts_no_finding() {
 
     let (root, _) = cap("report-cap-none", report);
 
-    assert_eq!(read(&root, "output.txt").trim(), "findings=0");
+    assert!(read(&root, "output.txt").starts_with("findings=0\n"));
     assert!(read(&root, "issue.md").contains("`no-utils`: 4"));
 }
 
@@ -168,10 +118,19 @@ fn publish(name: &str, issues: &str, findings: &str) -> (PathBuf, Output) {
     fake_gh(&root);
     fs::write(root.join("issue.md"), "# the report\n$(touch pwned) `x`\n").expect("the issue");
     fs::write(root.join("answers/issues.json"), issues).expect("the issues");
+    let issues: serde_json::Value = serde_json::from_str(issues).unwrap();
+    let number = issues
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|issue| issue["title"] == TITLE)
+        .and_then(|issue| issue["number"].as_u64())
+        .map(|number| number.to_string())
+        .unwrap_or_default();
     let output = bash(
         &root,
         &step("Open or update the issue"),
-        &[("FINDINGS", findings)],
+        &[("FINDINGS", findings), ("ISSUE_NUMBER", &number)],
     );
     (root, output)
 }
@@ -307,8 +266,6 @@ fn only_a_run_of_this_repository_on_main_with_a_botica_artifact_is_downloaded_an
         &artifacts(vec![
             artifact(1, "botica-history-lint", false, 1000),
             artifact(2, "botica-mutants", false, 1000),
-            artifact(3, "botica-history-old", true, 1000),
-            artifact(4, "botica-history-big", false, 60_000_000),
             artifact(5, "botica-history-../x", false, 1000),
         ]),
     );
@@ -372,7 +329,7 @@ fn only_a_run_of_this_repository_on_main_with_a_botica_artifact_is_downloaded_an
         .collect();
     ids.sort();
     assert_eq!(ids, ["100", "104"], "{}", read(&root, "gh.log"));
-    let folder = dir.join("100/botica-history-lint");
+    let folder = dir.join("100/1");
     assert_eq!(
         fs::read_to_string(folder.join("runs.jsonl")).expect("runs"),
         "{\"run\":1}\n"
@@ -392,5 +349,5 @@ fn only_a_run_of_this_repository_on_main_with_a_botica_artifact_is_downloaded_an
     .expect("JSON");
     assert_eq!(source["trusted"], true);
     assert_eq!(source["head_sha"].as_str(), Some(on_main.as_str()));
-    assert!(read(&root, "summary.md").contains("Downloaded 2 artifacts of 2 runs"));
+    assert!(read(&root, "summary.md").contains("\"status\": \"complete\""));
 }

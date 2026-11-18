@@ -100,8 +100,10 @@ fn fastapi_route_declarations_are_facts_even_when_other_detector_support_is_miss
     git(&dir, &["add", "."]);
     git(&dir, &["commit", "-m", "Add endpoint"]);
     let (output, report) = classify(&dir, "merge");
-    assert_eq!(output.status.code(), Some(2));
+    assert!(output.status.success(), "{report}");
+    assert_eq!(report["effective_tier"], "medium");
     let comparison = &report["branch"]["comparisons"][0];
+    assert_eq!(comparison["bounds"]["upper"], "medium");
     assert_eq!(comparison["signals"], serde_json::json!(["new-endpoint"]));
     assert!(comparison["signal_evidence"][0]["detail"]
         .as_str()
