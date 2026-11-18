@@ -2,22 +2,63 @@ name: review labels
 
 on:
   pull_request_target: # zizmor: ignore[dangerous-triggers]
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+  push:
+    branches: [main]
 
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
 
 concurrency:
-  group: review-labels-${{ github.event.pull_request.number }}
+  group: review-labels-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  invalidate-destination:
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Invalidate classifications whose destination advanced
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          prs=$(gh api --paginate "repos/$GH_REPO/pulls?state=open&base=main&per_page=100" --jq '.[].number')
+          while IFS= read -r pr; do
+            test -n "$pr" || continue
+            mapfile -t labels < <(gh pr view "$pr" --json labels --jq '.labels[].name | select(startswith("risk:") or startswith("area:"))')
+            for label in "${labels[@]}"; do
+              gh pr edit "$pr" --remove-label "$label"
+            done
+            gh label create risk:incomplete --color 6e7781 --force
+            gh pr edit "$pr" --add-label risk:incomplete
+          done <<< "$prs"
   labels:
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Invalidate previous classification before fallible work
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          mapfile -t labels < <(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name | select(startswith("risk:") or startswith("area:"))')
+          for label in "${labels[@]}"; do
+            gh pr edit "$PR_NUMBER" --remove-label "$label"
+          done
+          gh label create risk:incomplete --color 6e7781 --force
+          gh pr edit "$PR_NUMBER" --add-label risk:incomplete
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.base.sha }}
@@ -30,9 +71,14 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
         run: |
-          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
           mkdir -p .tmp
+          if test "$BASE_BRANCH" != main; then
+            printf '{"status":"incomplete"}\n' > .tmp/risk.json
+            exit 0
+          fi
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
           status=0
           target/debug/botica review tier --diff "$BASE_SHA" --head "$HEAD_SHA" \
             --integration-method merge --format json > .tmp/risk.json || status=$?
@@ -46,9 +92,10 @@ jobs:
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          current=$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)
-          test "$current" = "$HEAD_SHA" || exit 0
+          current=$(gh pr view "$PR_NUMBER" --json baseRefOid,headRefOid --jq '[.baseRefOid,.headRefOid] | join(":")')
+          test "$current" = "$BASE_SHA:$HEAD_SHA" || exit 0
           labels=$(gh pr view "$PR_NUMBER" --json labels --jq '[.labels[].name]')
           jq --argjson labels "$labels" '{risk: ., labels: $labels}' .tmp/risk.json \
             | python scripts/review_labels.py > .tmp/labels.json
@@ -59,3 +106,10 @@ jobs:
             gh label create "$label" --color 6e7781 --force
             gh pr edit "$PR_NUMBER" --add-label "$label"
           done < <(jq -r '.add[]' .tmp/labels.json)
+          current=$(gh pr view "$PR_NUMBER" --json baseRefOid,headRefOid --jq '[.baseRefOid,.headRefOid] | join(":")')
+          if test "$current" != "$BASE_SHA:$HEAD_SHA"; then
+            for label in low medium high; do
+              gh pr edit "$PR_NUMBER" --remove-label "risk:$label"
+            done
+            gh pr edit "$PR_NUMBER" --add-label risk:incomplete
+          fi

@@ -31,3 +31,17 @@ def test_complete_risk_replaces_labels_from_both_assessments():
     result = labels.label_decision(report, ["risk:low", "area:periphery"])
     assert result.add == ["area:core", "area:critical", "risk:high"]
     assert result.remove == ["area:periphery", "risk:low"]
+
+
+def test_workflow_invalidates_before_checkout_build_or_fetch_and_checks_both_shas():
+    workflow = (
+        Path(__file__).resolve().parents[1] / ".github/workflows/review-labels.yml"
+    ).read_text()
+    invalidate = workflow.index("Invalidate previous classification")
+    for operation in ["uses: actions/checkout", "cargo build", "git -c core.hooksPath"]:
+        assert invalidate < workflow.index(operation)
+    assert "ready_for_review, edited" in workflow
+    assert "branches: [main]" in workflow
+    assert 'test "$current" = "$BASE_SHA:$HEAD_SHA" || exit 0' in workflow
+    assert 'if test "$current" != "$BASE_SHA:$HEAD_SHA"' in workflow
+    assert "gh api --paginate" in workflow
