@@ -5,10 +5,9 @@ Date: 2026-11-18
 
 ## Decision
 
-The user authorized retaining the CES-122 process change and the risk-review standard in the
-same delivery PR. `scripts/number_standard.py CES` assigned the risk-review proposal CES-134
-after checking the fetched destination's standard numbers. The delivery intent is to implement
-risk-based agent review.
+On 2026-11-18 the user authorized keeping CES-122 and the risk-review standard in one delivery PR.
+`scripts/number_standard.py CES` assigned CES-134 to the risk-review proposal. The fetched
+destination's highest standard number was CES-133. The delivery implements risk-based agent review.
 
 The `review-flow-standards` PR label supplies exactly these arguments to the contract job:
 
@@ -16,15 +15,17 @@ The `review-flow-standards` PR label supplies exactly these arguments to the con
 --acknowledged-standard CES/122 --acknowledged-standard CES/134
 ```
 
-The acknowledged set must equal the standards touched by the change. A third standard fails.
-`contract-change` continues to acknowledge files outside a new rule's contract; it does not
-acknowledge multiple standards. Duplicate numbers and an unnumbered ready PR still fail.
-Other PRs retain the one-standard default unless they receive an explicit exact-set acknowledgment.
+`scripts/check_rule_change.py` requires the acknowledged set to equal the touched set.
+It rejects a third standard under this label. It also rejects duplicate numbers and ready PRs
+with an unnumbered standard. Files outside a new rule's contract require the separate
+`contract-change` acknowledgment. The default remains one standard.
 
-Changes to `contract-change` or `review-flow-standards` rerun only the contract job,
-in a separate concurrency group.
-This acknowledgment permits one delivery boundary. It does not approve the standards' contents,
-authorize a merge, activate automation or claim live-service validation.
+In `.github/workflows/ci.yml`, changes to either acknowledgment label rerun only the contract
+job, in a concurrency group separate from the review run.
+
+The authorization covers keeping both standards in this delivery PR. Approval of their contents
+and permission to merge remain separate decisions. Automation remains disabled; live-service
+validation remains unverified.
 
 ## Evidence
 

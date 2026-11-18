@@ -72,48 +72,48 @@ _Avoid_: rule, convention, lint rule
 ### Delivery
 
 **Ticket**:
-A unit of tracking and assignment with an acceptance criterion. Several tickets may implement
-one vertical slice. Finishing a ticket records local progress; it does not require a pull request.
+A tracked assignment with an acceptance criterion. A vertical slice may contain several tickets.
+Tickets are committed locally before the delivery PR. See CES-122.
 
 **Vertical slice**:
-An end-to-end behaviour with acceptance criteria and explicit contracts. Its implementation
-includes the layers, tests and documentation that the behaviour needs.
+An end-to-end behaviour reviewed against its acceptance criteria. Its review includes the
+implementation and the contracts it shares with other slices. See CES-122.
 _Avoid_: layer batch
 
 **Review block**:
-The pinned base-to-head diff of a vertical slice, reviewed with its spec, acceptance criteria and
-evidence. Its record names the commits reviewed and the findings still open.
+The diff between the pinned base and head commits of a vertical slice. The review record names
+those commits and any open findings. See `skills/engineering/engineering-pr-review/references/delivery.md`.
 _Avoid_: ticket review
 
 **Delivery**:
-The integrated change submitted for one intent. A delivery may contain several reviewed vertical
-slices and their tickets. Its default publication is one pull request.
+The change submitted for one intent after its vertical slices have been integrated and reviewed.
+CES-122 sets one pull request per delivery as the default.
 _Avoid_: ticket PR
 
 ### Review risk
 
 **Branch risk**:
-The review floor of the changes from each best common ancestor to the head of a branch.
-Its tier is the highest of those comparisons.
+The highest review tier among the diffs from each best common ancestor to the branch head.
+See `docs/review-risk-contract.md`.
 
 **Integration risk**:
-The review floor of the change from the destination tip to the result of integrating the head
-with the intended method.
+The review tier of the diff from the destination tip to the integration result, using the
+intended integration method. See `docs/review-risk-contract.md`.
 
 **Effective risk**:
-The higher of completed branch risk and integration risk. An incomplete assessment leaves
-effective risk unavailable. The classifier can raise this floor with observed semantic
-evidence; it records the deterministic tier separately and cannot lower it.
+The higher of completed branch risk and integration risk. It is unavailable when either
+assessment is incomplete. The classifier may only raise this floor with semantic evidence while
+retaining the deterministic tier. See `docs/review-risk-contract.md` and ADR 0018.
 
 **Policy bound**:
-The lower and upper review tiers allowed by the configured areas and signal policy
-when some detector facts remain unknown. A complete policy bound does not establish
-that every detector completed or that an unknown fact is absent.
+The lower and upper review tiers allowed by the configured areas and signal policy when
+detector facts are unknown. The bound describes possible tiers; the detector evidence
+separately records unsupported inputs. See ADR 0020.
 
 **Evidence snapshot**:
-The pinned role results, integration check conclusions and acceptance context used for one
-classification. A candidate requires a matching snapshot after the model responds. It does not
-lock future changes in the code host.
+The inputs pinned for one classification: role results, integration check conclusions and
+acceptance context. They must still match after the model responds before a candidate is
+emitted. Later changes in GitHub remain possible. See `crates/botica-core/src/review/classifier.rs`.
 
 ### Botica
 
@@ -193,7 +193,7 @@ the wheel of the same version, so a repository needs no `botica` on its PATH.
 _Avoid_: hook repo
 
 **Review area**:
-The paths of a project that need the same people and the same minimum **tier**, declared in an
+The paths of a project that need the same people and the same minimum tier, declared in an
 entry of `[[review.areas]]` under one of the names `critical`, `platform`, `core` and `periphery`.
 A name may come in several entries. See `docs/adr/0018-risk-tiers-and-classifier.md`.
 _Avoid_: zone, risk class

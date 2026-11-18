@@ -10,23 +10,22 @@ reformatting sweep, a refactor that the intent does not need and the fix of some
 in pull requests of their own. A refactor that the intent needs first may share the pull request
 when the description says so.
 
-Tickets track work; vertical slices define end-to-end behaviours to review; a delivery integrates
-those slices for one intent. Several tickets may implement one slice, and several slices may
-share a delivery. Completing a ticket does not require a pull request.
+Track work in tickets. Group tickets into vertical slices that can be reviewed as end-to-end
+behaviours. Integrate the reviewed slices into a delivery with one intent.
 
-Implement tickets as local commits with links to their acceptance criteria. Review the accumulated
-diff of each vertical slice against a pinned base and head, with its spec and evidence. Before
-publication, check the integrated change against the whole spec, including the contracts between
-slices. A ticket count, a commit count or a line count does not determine the review boundary.
+Implement tickets as local commits linked to their acceptance criteria. Review each slice's
+accumulated diff between pinned base and head commits against its spec. Record the evidence.
+Before publication, check the integrated delivery against the whole spec and the contracts
+between slices. Choose review boundaries by behaviour, regardless of ticket, commit or line counts.
 
-Publish one pull request per delivery by default. Split it when a part must ship earlier, needs a
-separate approval boundary, or can be delivered and reverted independently; record the reason.
-A dependency between local commits does not require a stack of pull requests.
+Publish one pull request per delivery by default. Record the reason for a split: earlier shipment,
+separate approval, or independent delivery and rollback. Keep dependent local commits in the
+delivery PR unless such a split is needed. A completed ticket may remain unpublished.
 
 After three adversarial review rounds with a confirmed P0 or P1 still open, stop that slice and
-escalate the unresolved finding or design decision. Preserve its code, tests and review evidence.
-Do not publish it as ready; discarding or rewriting the work requires an explicit decision.
-Passing slice reviews does not replace the integration check.
+escalate the unresolved finding or design decision. Preserve the implementation and its tests.
+Retain the review evidence and mark the slice blocked. Discarding or rewriting the work requires
+an explicit decision. Run the integration check even when every slice review passes.
 
 ## Why
 
@@ -35,6 +34,7 @@ reviewer has to sort the lines first, the review takes longer and misses more, a
 both out. Google's guide on small changes gives the same advice:
 <https://google.github.io/eng-practices/review/developer/small-cls.html>.
 
-This repository also limits a pull request to one standard:
-`scripts/check_rule_change.py` fails one that touches two. That contract does not require a pull
-request for each ticket.
+This repository's standard-count check is separate from its ticket tracking.
+`scripts/check_rule_change.py` permits one standard by default. A larger set requires repeated
+`--acknowledged-standard` arguments naming exactly the touched set. ADR 0021 records the
+authorized CES-122/CES-134 delivery.
