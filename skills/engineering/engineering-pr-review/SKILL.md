@@ -1,6 +1,6 @@
 ---
 name: engineering-pr-review
-description: Review a local vertical slice or an integrated delivery with botica and the upstream code-review skill. Use at a slice review checkpoint or before creating, publishing, updating, or marking a pull request ready.
+description: Review a local vertical slice or an integrated delivery with botica and review-panel. Use at a slice review checkpoint or before creating, publishing, updating, or marking a pull request ready.
 ---
 
 # Engineering PR Review
@@ -8,7 +8,7 @@ description: Review a local vertical slice or an integrated delivery with botica
 Use this at a local slice checkpoint and before publishing a delivery. Read
 `botica explain pr-small-by-intent` for the delivery rule and follow
 [`references/delivery.md`](references/delivery.md) for the plan and review records. The review
-procedure is the one of the upstream `code-review` skill. Completing a local ticket records its
+procedure is the one of the authored `review-panel` skill. Completing a local ticket records its
 acceptance evidence; the slice checkpoint reviews the accumulated implementation.
 
 ## 1. Context
@@ -35,9 +35,10 @@ cites a topic, `botica refs show <slug>` prints the code it expects.
 
 ## 3. Review
 
-For a review block, invoke the upstream `code-review` skill on the pinned base-to-head range. Its
-Standards axis reads the documents of step 1. Its Spec axis reads the whole slice's acceptance
-criteria and the relevant spec, including its contracts with other slices.
+For a review block, invoke `review-panel` on the pinned base-to-head range. Its plan selects the
+roles from trusted destination policy, and refute runs last. Give spec the whole slice's acceptance
+criteria and relevant contracts. Validate the results with `botica lint --reviewed <dir> --diff
+<base-sha>`; an incomplete plan or missing result never becomes a passing gate.
 
 For an integrated delivery, read the slice records first. Reuse evidence only for the exact
 reviewed ranges whose relevant contracts remain unchanged. Review uncovered changes and changed
@@ -62,7 +63,7 @@ publishing, write a readiness summary for the integrated delivery:
 ```md
 PR gate:
 - botica lint: findings fixed, findings left and why
-- code-review: Standards and Spec, with the findings left open
+- review-panel: selected roles, refutations and findings left open
 - Review scope: pinned slice ranges, reused evidence and integration review
 - Verification: commands run and results; checks not run
 - Residual risks: what reviewers should inspect

@@ -28,6 +28,23 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
 
 ## Decision
 
+### Amendment, 2026-11-17
+
+The implemented runner in `review_cmd/runner.rs` uses OpenAI tool-free requests.
+This replaces the Claude action proposed in decision 9. It reads object-only Git
+evidence and never checks out or executes the reviewed head. Each non-refute role
+receives a fresh request without the other roles' findings; refute receives their
+completed results in its final request. An unavailable `OPENAI_API_KEY` blocks
+execution. Implementing the workflow does not create or configure that secret.
+
+Role results include the exact full `inputs` object of the trusted plan, full base
+and head IDs. `lint --reviewed` and `review validate` recompute the plan before
+accepting evidence. The consumer recomputes verdicts and rejects rewritten or
+missing refute findings. Inconclusive evidence blocks execution, not human routing.
+Only changes touching a critical area require human review. Size is informational.
+
+The original decisions below retain the history of the proposal where superseded.
+
 1. Two pieces for each role. The skill `review-<role>` holds the procedure; botica writes it and
    `npx skills` installs it into `.agents/skills`. The file `.github/review/<role>/REVIEW.md` holds
    what the role checks in this repository; botica installs a generic version and the owners of

@@ -206,9 +206,51 @@ jobs:
   # history as the artifact `botica-mutants`, also when the job is cut off by the cap.
   # The tests of the workspace run as in `test`, except that the two switches whose tools this job
   # does not install are unset, so those tests skip themselves instead of failing the baseline.
+  review-policy:
+    name: review policy
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      mutation: ${{ steps.plan.outputs.mutation }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Build trusted review planner
+        run: cargo build --locked -p botica-cli
+      - name: Select mutation from the trusted plan
+        id: plan
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
+          mkdir -p .tmp
+          if ! target/debug/botica review plan --help > /dev/null 2>&1; then
+            printf '{"status":"incomplete","reason":"destination planner is not installed","mutation_required":true}\n' > .tmp/review-plan.json
+            echo "mutation=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          target/debug/botica review plan --diff "$BASE_SHA" --head "$HEAD_SHA" \
+            --integration-method merge --stage ci --format json > .tmp/review-plan.json
+          echo "mutation=$(jq -r '.mutation_required' .tmp/review-plan.json)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v7
+        if: ${{ always() }}
+        with:
+          name: mutation-plan
+          path: .tmp/review-plan.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14
+
   mutants:
     name: mutants
-    if: github.event_name == 'pull_request'
+    needs: review-policy
+    if: github.event_name == 'pull_request' && needs.review-policy.outputs.mutation == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 30

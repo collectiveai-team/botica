@@ -4,8 +4,12 @@
   "description": "The file that a review role writes: `.tmp/review/<short-head-sha>/<role>.json` on the machine of the author, and `<role>.json` in the artifact of CI (ADR 0017, decision 5).",
   "type": "object",
   "additionalProperties": false,
-  "required": ["role", "head", "base", "verdict", "findings", "checked", "not_checked", "commands"],
+   "required": ["role", "head", "base", "verdict", "findings", "checked", "not_checked", "commands"],
   "properties": {
+    "inputs": {
+      "description": "The complete inputs object of the current review plan. Required by evidence ingestion.",
+      "type": "object"
+    },
     "role": {
       "description": "The name of the folder of the role under `.github/review/`.",
       "type": "string",

@@ -56,6 +56,7 @@ fn bounded_source_selects_possible_signal_roles_without_asserting_facts() {
     let (output, report) = consume(&dir, "plan", "local");
     assert!(output.status.success(), "{report}");
     assert_eq!(report["selected_roles"], serde_json::json!(["spec"]));
+    assert_eq!(report["mutation_required"], true);
     assert_eq!(
         report["roles"][0]["selection"]["conservative_selection"],
         true

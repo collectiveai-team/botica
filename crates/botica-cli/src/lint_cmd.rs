@@ -78,6 +78,17 @@ pub struct LintArgs {
     /// filtered by the configuration and the suppression comments.
     #[arg(long, value_name = "OUTCOMES", conflicts_with_all = ["paths", "ext", "statistics", "judged"])]
     mutants: Option<PathBuf>,
+    /// Validate role evidence against a fresh trusted review plan instead of linting.
+    #[arg(long, requires = "diff", conflicts_with_all = ["paths", "ext", "statistics", "judged", "mutants", "message", "write_baseline"])]
+    reviewed: Option<PathBuf>,
+    /// The reviewed head, when the trusted checkout is the destination.
+    #[arg(long, default_value = "HEAD", requires = "reviewed")]
+    review_head: String,
+    /// Validate CI role selection rather than local selection.
+    #[arg(long, requires = "reviewed")]
+    review_ci: bool,
+    #[arg(long, requires = "reviewed")]
+    review_context: Option<PathBuf>,
     /// Lint the files that changed since the merge base of this revision and `HEAD`, the changes
     /// not committed and the files git does not track included, and keep only the findings on the
     /// lines the change adds. The result cache is off.
@@ -171,6 +182,10 @@ impl LintArgs {
             ext: None,
             judged: None,
             mutants: None,
+            reviewed: None,
+            review_head: "HEAD".into(),
+            review_ci: false,
+            review_context: None,
             diff: None,
             staged: false,
             diff_file: None,
@@ -371,6 +386,16 @@ impl Setup {
 }
 
 pub fn run(args: LintArgs) -> Result<ExitCode> {
+    if let Some(directory) = &args.reviewed {
+        return crate::review_cmd::reviewed(
+            args.diff.clone().context("--reviewed requires --diff")?,
+            args.review_head.clone(),
+            args.review_ci,
+            args.review_context.clone(),
+            directory,
+            args.record && !args.no_record,
+        );
+    }
     let format = Format::from(args.output_format);
     check_statistics_format(&args, format)?;
     let total = Instant::now();

@@ -32,6 +32,7 @@ fn run(run_id: &str) -> RunLine {
         mode: "full".to_owned(),
         origin: "cli".to_owned(),
         rules: BTreeMap::new(),
+        detail: None,
     }
 }
 
@@ -46,6 +47,8 @@ fn finding(path: &str, line: usize, fingerprint: &str) -> FindingLine {
         line,
         fingerprint: fingerprint.to_owned(),
         occurrence: 0,
+        refutation: None,
+        reference: None,
     }
 }
 

@@ -9,6 +9,9 @@
     "command": {"enum": ["plan", "check"]},
     "status": {"enum": ["complete", "incomplete"]},
     "stage": {"enum": ["local", "ci"]},
+    "mutation_required": {"type": ["boolean", "null"]},
+    "required_checks": {"type": ["array", "null"], "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "untrusted_context": {},
     "inputs": {
       "type": "object",
       "additionalProperties": false,
@@ -23,6 +26,7 @@
         "review_directory": {"type": "string", "minLength": 1},
         "roles_digest": {"$ref": "#/definitions/digest"},
         "risk_digest": {"$ref": "#/definitions/digest"},
+        "context_digest": {"$ref": "#/definitions/digest"},
         "trusted_files": {"type": "array", "items": {"$ref": "#/definitions/source"}}
       }
     },
@@ -88,6 +92,8 @@
       "required": ["role", "definition", "selection", "skill", "covered"],
       "properties": {
         "role": {"$ref": "#/definitions/role_name"},
+        "blocking": {"enum": ["P0", "P1", "P2", "P3"]},
+        "max_findings": {"type": "integer", "minimum": 1},
         "definition": {
           "allOf": [{"$ref": "#/definitions/source"}, {"properties": {"digest": {"$ref": "#/definitions/digest"}}}]
         },

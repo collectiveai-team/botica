@@ -13,6 +13,12 @@ writing a finding.
 
 ## File
 
+Each result also includes `inputs`, copied without modification from the fresh
+`botica review plan` output. Use its full `inputs.base` and `inputs.head` as `base`
+and `head`. `botica lint --reviewed <dir> --diff <target>` recomputes the plan and
+rejects missing results or mismatched inputs. Short SHAs and branch names in the
+example below are explanatory only and cannot pass evidence ingestion.
+
 `.tmp/review/<short-head-sha>/<role>.json`:
 
 ```json

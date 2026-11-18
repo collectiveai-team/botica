@@ -1,8 +1,15 @@
 //! `botica review`: the commands that read the `review` table of the configuration (ADR 0018).
 
+mod change_context;
+mod classification_history;
+mod classify;
 mod codeowners;
 mod consumers;
+mod evidence;
+mod http;
+mod jev;
 mod pattern;
+mod runner;
 mod target;
 mod tier;
 
@@ -26,6 +33,12 @@ enum ReviewCommand {
     Plan(consumers::ConsumerArgs),
     /// Validate trusted role definitions and local skill availability.
     Check(consumers::ConsumerArgs),
+    /// Validate current role results and recompute their verdicts.
+    Validate(evidence::EvidenceArgs),
+    /// Execute planned OpenAI role reviews without tools, then refute.
+    Run(runner::RunArgs),
+    /// Recommend from current evidence in shadow mode, without merging.
+    Classify(classify::ClassifyArgs),
     /// Assess branch risk and integration risk from pinned Git inputs.
     Tier(tier::TierArgs),
     /// Write the areas of `[[review.areas]]` as a file that a code host reads, as CODEOWNERS.
@@ -76,9 +89,25 @@ pub fn run(args: &ReviewArgs) -> Result<ExitCode> {
     match &args.command {
         ReviewCommand::Plan(plan) => consumers::run(plan, false),
         ReviewCommand::Check(check) => consumers::run(check, true),
+        ReviewCommand::Validate(args) => evidence::run(args),
+        ReviewCommand::Run(args) => runner::run(args),
+        ReviewCommand::Classify(args) => classify::run(args),
         ReviewCommand::Tier(tier) => tier::run(tier),
         ReviewCommand::Export(export) => run_export(export).map(|()| ExitCode::SUCCESS),
     }
+}
+
+pub(crate) fn reviewed(
+    diff: String,
+    head: String,
+    ci: bool,
+    context: Option<PathBuf>,
+    directory: &std::path::Path,
+    recording: bool,
+) -> Result<ExitCode> {
+    let args = consumers::ConsumerArgs::evidence(diff, head, ci, context);
+    let (_, result) = evidence::validate(&args, directory, recording)?;
+    evidence::print(&result)
 }
 
 fn run_export(args: &ExportArgs) -> Result<()> {

@@ -310,6 +310,7 @@ fn append(run: &Run<'_>) -> anyhow::Result<()> {
         mode: run.mode.as_str().to_owned(),
         origin: origin().to_owned(),
         rules: rules(run),
+        detail: None,
     };
     history::append(run.project_root, &line, &findings)
 }
@@ -343,6 +344,8 @@ fn finding_line(
         path: path.unwrap_or_default(),
         fingerprint,
         occurrence: 0,
+        refutation: None,
+        reference: None,
     }
 }
 

@@ -16,9 +16,27 @@ mod sources;
 #[derive(Args)]
 pub(super) struct ConsumerArgs {
     #[command(flatten)]
-    inputs: tier::TierArgs,
+    pub(super) inputs: tier::TierArgs,
     #[arg(long, value_enum, default_value = "local")]
     stage: Stage,
+    /// PR and linked-issue context as data, bound to the role evidence.
+    #[arg(long)]
+    pub(super) context: Option<std::path::PathBuf>,
+}
+
+impl ConsumerArgs {
+    pub(super) fn evidence(
+        diff: String,
+        head: String,
+        ci: bool,
+        context: Option<std::path::PathBuf>,
+    ) -> Self {
+        Self {
+            inputs: tier::TierArgs::evidence(diff, head),
+            stage: if ci { Stage::Ci } else { Stage::Local },
+            context,
+        }
+    }
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -83,7 +101,8 @@ fn role(
         None
     };
     Ok((
-        json!({"role": name, "definition": {"path": path, "digest": blake3::hash(&bytes).to_hex().to_string()},
+        json!({"role": name, "blocking":definition.blocking, "max_findings":definition.max_findings,
+        "definition": {"path": path, "digest": blake3::hash(&bytes).to_hex().to_string()},
         "selection": selection, "skill": skill, "covered": covered}),
         reasons,
     ))
@@ -164,17 +183,25 @@ fn policy(assessment: &tier::Assessment, args: &ConsumerArgs, checking: bool) ->
     })
 }
 
-pub(super) fn run(args: &ConsumerArgs, checking: bool) -> Result<ExitCode> {
+pub(super) fn collect(args: &ConsumerArgs, checking: bool) -> Result<(tier::Assessment, Value)> {
     let assessment = tier::collect(&args.inputs)?;
     let Policy {
         roles,
-        inputs,
+        mut inputs,
         mut reasons,
     } = policy(&assessment, args, checking).unwrap_or_else(|error| Policy {
         roles: vec![],
         inputs: assessment.report["inputs"].clone(),
         reasons: vec![json!({"code": "invalid-policy-sources", "message": format!("{error:#}")})],
     });
+    let context = args
+        .context
+        .as_deref()
+        .map(super::evidence::read_json)
+        .transpose()?;
+    inputs["context_digest"] = json!(blake3::hash(&serde_json::to_vec(&context)?)
+        .to_hex()
+        .to_string());
     if assessment.report["status"] != "complete" && !checking {
         reasons.push(json!({"code": "incomplete-risk", "message": "A complete classification is required to select roles"}));
     }
@@ -193,12 +220,19 @@ pub(super) fn run(args: &ConsumerArgs, checking: bool) -> Result<ExitCode> {
     let report = json!({"schema_version": 1, "command": if checking { "check" } else { "plan" },
         "status": if done { "complete" } else { "incomplete" }, "inputs": inputs,
         "stage": args.stage.name(), "selected_roles": selected, "roles": roles, "reasons": reasons,
-        "risk": assessment.report});
+        "mutation_required": if done && !checking { assessment.report["effective_tier"].as_str().map(|tier| tier != "low") } else { None },
+        "required_checks":assessment.review.as_ref().map(|review| &review.classifier.required_checks),
+        "untrusted_context":context,"risk": assessment.report});
+    Ok((assessment, report))
+}
+
+pub(super) fn run(args: &ConsumerArgs, checking: bool) -> Result<ExitCode> {
+    let (_, report) = collect(args, checking)?;
     match args.inputs.format {
         tier::Format::Json => println!("{}", serde_json::to_string_pretty(&report)?),
         tier::Format::Text => print_text(&report),
     }
-    Ok(if done {
+    Ok(if report["status"] == "complete" {
         ExitCode::SUCCESS
     } else {
         ExitCode::from(2)

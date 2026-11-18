@@ -1,0 +1,174 @@
+name: role review
+
+on:
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: role-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      roles: ${{ steps.plan.outputs.roles }}
+      refute: ${{ steps.plan.outputs.refute }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - run: cargo build --locked -p botica-cli
+      - name: Plan from the trusted destination
+        id: plan
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
+          mkdir -p .tmp/review
+          jq '{title: .pull_request.title, description: .pull_request.body}' "$GITHUB_EVENT_PATH" > .tmp/context.json
+          target/debug/botica review plan --diff "$BASE_SHA" --head "$HEAD_SHA" \
+            --integration-method merge --stage ci --context .tmp/context.json --format json > .tmp/review/plan.json
+          roles=$(jq -c '[.selected_roles[] | select(. != "refute")] | if length == 0 then ["__skip__"] else . end' .tmp/review/plan.json)
+          echo "roles=$roles" >> "$GITHUB_OUTPUT"
+          echo "refute=$(jq -r '.selected_roles | index("refute") != null' .tmp/review/plan.json)" >> "$GITHUB_OUTPUT"
+          cp target/debug/botica .tmp/review/botica
+      - uses: actions/upload-artifact@v7
+        with:
+          name: review-plan
+          path: .tmp/review/
+          include-hidden-files: true
+          retention-days: 14
+
+  roles:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        role: ${{ fromJSON(needs.plan.outputs.roles) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: review-plan
+          path: .tmp/runner
+      - name: Review one role without tools or head execution
+        if: matrix.role != '__skip__'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ROLE: ${{ matrix.role }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
+          chmod +x .tmp/runner/botica
+          jq '{title: .pull_request.title, description: .pull_request.body}' "$GITHUB_EVENT_PATH" > .tmp/context.json
+          .tmp/runner/botica review run --diff "$BASE_SHA" --head "$HEAD_SHA" \
+            --integration-method merge --stage ci --context .tmp/context.json --role "$ROLE" --output .tmp/results
+      - uses: actions/upload-artifact@v7
+        if: ${{ always() && matrix.role != '__skip__' }}
+        with:
+          name: review-role-${{ matrix.role }}
+          path: .tmp/results/*.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14
+
+  refute:
+    needs: [plan, roles]
+    if: needs.plan.outputs.refute == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: review-plan
+          path: .tmp/runner
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: review-role-*
+          path: .tmp/results
+          merge-multiple: true
+      - name: Refute in a fresh tool-free request
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
+          chmod +x .tmp/runner/botica
+          jq '{title: .pull_request.title, description: .pull_request.body}' "$GITHUB_EVENT_PATH" > .tmp/context.json
+          .tmp/runner/botica review run --diff "$BASE_SHA" --head "$HEAD_SHA" \
+            --integration-method merge --stage ci --context .tmp/context.json --role refute --output .tmp/results
+      - uses: actions/upload-artifact@v7
+        if: ${{ always() }}
+        with:
+          name: review-role-refute
+          path: .tmp/results/refute.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14
+
+  review-gate:
+    needs: [plan, roles, refute]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: review-plan
+          path: .tmp/runner
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: review-role-*
+          path: .tmp/results
+          merge-multiple: true
+      - name: Validate the whole panel for the pinned change
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
+          chmod +x .tmp/runner/botica
+          jq '{title: .pull_request.title, description: .pull_request.body}' "$GITHUB_EVENT_PATH" > .tmp/context.json
+          .tmp/runner/botica lint --reviewed .tmp/results --diff "$BASE_SHA" \
+            --review-head "$HEAD_SHA" --review-ci --review-context .tmp/context.json --record > .tmp/review-result.json
+      - uses: actions/upload-artifact@v7
+        if: ${{ always() }}
+        with:
+          name: review-evidence
+          path: |
+            .tmp/review-result.json
+            .tmp/results/
+            .botica/history/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 90

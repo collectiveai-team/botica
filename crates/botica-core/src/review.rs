@@ -5,7 +5,10 @@ use std::collections::BTreeSet;
 use botica_config::{PathMatcher, ReviewConfig, Tier};
 use serde::Serialize;
 
+pub mod classifier;
+pub mod execution;
 mod python;
+pub mod results;
 pub mod roles;
 mod signals;
 

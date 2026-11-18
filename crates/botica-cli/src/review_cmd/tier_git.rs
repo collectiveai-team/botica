@@ -1,6 +1,6 @@
 use std::ffi::OsString;
 use std::fs;
-use std::io::{Seek, Write};
+use std::io::{Read, Seek, Write};
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -32,6 +32,9 @@ fn command() -> Command {
         command.env_remove(key);
     }
     command
+        .env_remove("OPENAI_API_KEY")
+        .env_remove("TYPESAFE_AI_API_KEY")
+        .env_remove("BOTICA_HISTORY_KEY")
         .env("GIT_CONFIG_NOSYSTEM", "1")
         .env("GIT_CONFIG_GLOBAL", "/dev/null")
         .env("GIT_ATTR_NOSYSTEM", "1")
@@ -196,6 +199,29 @@ impl Git {
 
     pub fn read(&self, args: &[&str]) -> Result<Vec<u8>> {
         checked(self.output(args)?)
+    }
+
+    pub fn read_limited(&self, args: &[&str], limit: usize) -> Result<Vec<u8>> {
+        let mut child = self
+            .command()
+            .args(args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()?;
+        let mut bytes = Vec::new();
+        let read = child
+            .stdout
+            .take()
+            .context("missing Git output")?
+            .take(limit as u64 + 1)
+            .read_to_end(&mut bytes);
+        if read.is_err() || bytes.len() > limit {
+            let _ = child.kill();
+            let _ = child.wait();
+            bail!("Git evidence exceeded the context limit or could not be read");
+        }
+        ensure!(child.wait()?.success(), "Git evidence unavailable");
+        Ok(bytes)
     }
 
     pub fn text(&self, args: &[&str]) -> Result<String> {

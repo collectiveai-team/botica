@@ -31,6 +31,8 @@ pub struct RunLine {
     pub mode: String,
     pub origin: String,
     pub rules: BTreeMap<String, RuleEntry>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub detail: Option<serde_json::Value>,
 }
 
 /// What a run says of one rule that it evaluated.
@@ -59,6 +61,10 @@ pub struct FindingLine {
     pub line: usize,
     pub fingerprint: String,
     pub occurrence: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub refutation: Option<String>,
+    #[serde(rename = "ref", skip_serializing_if = "Option::is_none")]
+    pub reference: Option<String>,
 }
 
 /// A name for a run that no other run of this or another process takes: 16 hex digits of the

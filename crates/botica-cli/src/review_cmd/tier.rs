@@ -21,6 +21,17 @@ pub(super) struct TierArgs {
     pub(super) format: Format,
 }
 
+impl TierArgs {
+    pub(super) fn evidence(diff: String, head: String) -> Self {
+        Self {
+            diff,
+            head,
+            integration_method: IntegrationMethod::Merge,
+            format: Format::Json,
+        }
+    }
+}
+
 #[derive(Clone, Copy, ValueEnum)]
 enum IntegrationMethod {
     Merge,
