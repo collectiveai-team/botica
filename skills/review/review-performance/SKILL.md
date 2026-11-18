@@ -1,6 +1,6 @@
 ---
 name: review-performance
-description: Review role that looks for the cost a diff adds at scale — queries in a loop, work that grows with the input, unbounded reads and allocations, blocking calls on a hot or async path, and a cache that never expires. Use when reviewing a branch or PR that touches queries, jobs, loops over large data or a hot path, or when review-panel runs the performance role.
+description: Review role that checks added cost at scale, including queries in loops, growing reads and allocations, blocking calls on hot paths and caches without expiry. Use when reviewing a branch or PR that touches queries, jobs, loops over large data or a hot path, or when review-panel runs the performance role.
 ---
 
 # Review: performance

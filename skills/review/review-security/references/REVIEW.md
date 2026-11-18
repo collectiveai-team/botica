@@ -6,6 +6,7 @@ applies:
 stages: [local, ci]
 blocking: P1
 max-findings: 10
+covered: {}
 ---
 
 ## Invariants
@@ -29,6 +30,9 @@ max-findings: 10
 - A theoretical attack that needs access the attacker would already have.
 
 ## Evidence
+
+<!-- botica:covered -->
+<!-- /botica:covered -->
 
 Each finding gives the path from the input to the use, with file and line at each step, and the
 request or file that triggers it. It names a secret by its file, line and kind, never by its value.

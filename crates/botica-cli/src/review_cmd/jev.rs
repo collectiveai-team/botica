@@ -2,7 +2,9 @@
 
 use super::http;
 use anyhow::{ensure, Context, Result};
-use botica_core::review::classifier::{Classifier, Probabilities, MODEL};
+use botica_core::review::classifier::{
+    Classifier, ContextLimit, Probabilities, INPUT_TOKEN_LIMIT, MODEL, REQUEST_BYTE_LIMIT,
+};
 use serde_json::{json, Value};
 
 pub(super) struct Jev<T = http::LiveTransport> {
@@ -25,16 +27,23 @@ impl Jev<http::LiveTransport> {
 
 impl<T: http::ModelTransport> Jev<T> {
     fn ask(&self, state: &Value, questions: Value) -> Result<Value> {
-        let response = self.transport.post(
-            &self.url,
-            &self.key,
-            &json!({"model":MODEL,"state":state,"questions":questions}),
-        )?;
+        let request = json!({"model":MODEL,"state":state,"questions":questions});
+        ensure!(
+            serde_json::to_vec(&request)?.len() <= REQUEST_BYTE_LIMIT,
+            "model request exceeds the local byte limit"
+        );
+        let response = self.transport.post(&self.url, &self.key, &request)?;
         http::reject_credentials(&response, &self.key)?;
         ensure!(
             response["model"] == MODEL,
             "Jev returned an unexpected model"
         );
+        let input_tokens = response["usage"]["input_tokens"]
+            .as_u64()
+            .context("Jev did not report a valid input-token count")?;
+        if input_tokens > INPUT_TOKEN_LIMIT {
+            return Err(ContextLimit { input_tokens }.into());
+        }
         Ok(response)
     }
 }
@@ -119,7 +128,7 @@ mod tests {
 
     #[test]
     fn jev_adapter_reads_real_api_shape_and_rejects_wrong_models_or_probabilities() {
-        let response = json!({"model":MODEL,"answers":{
+        let response = json!({"model":MODEL,"usage":{"input_tokens":100},"answers":{
             "decision":{"type":"noul","noul":0.01},"unverifiable":{"type":"noul","noul":0.02},
             "impact_if_wrong":{"type":"choice","choice":"contained","confidence":0.98,
                 "probabilities":{"contained":0.8,"team":0.19,"users":0.01}}
@@ -135,5 +144,42 @@ mod tests {
         let mut invalid = response;
         invalid["answers"]["decision"]["noul"] = json!(1.2);
         assert!(adapter(invalid).classify(&json!({})).is_err());
+    }
+
+    #[test]
+    fn jev_accepts_only_measured_usage_within_the_token_budget_for_both_operations() {
+        let response = json!({"model":MODEL,"usage":{"input_tokens":32_000},"answers":{
+            "decision":{"type":"noul","noul":0.01},"unverifiable":{"type":"noul","noul":0.02},
+            "impact_if_wrong":{"type":"choice","confidence":0.98,
+                "probabilities":{"contained":0.8,"team":0.19,"users":0.01}}
+        }});
+        for tokens in [31_999, 32_000] {
+            let mut answer = response.clone();
+            answer["usage"]["input_tokens"] = json!(tokens);
+            let adapter = adapter(answer);
+            assert!(adapter
+                .classify(&json!({"diff":"reviewable ".repeat(4_000)}))
+                .is_ok());
+            assert!(adapter.locate(&json!({}), "decision").is_ok());
+            assert!(adapter
+                .classify(&json!({"diff":"x".repeat(REQUEST_BYTE_LIMIT)}))
+                .is_err());
+        }
+        for usage in [
+            json!(32_001),
+            Value::Null,
+            json!(-1),
+            json!(1.5),
+            json!("32000"),
+        ] {
+            let mut answer = response.clone();
+            answer["usage"]["input_tokens"] = usage;
+            let adapter = adapter(answer);
+            assert!(adapter.classify(&json!({})).is_err());
+            assert!(adapter.locate(&json!({}), "decision").is_err());
+        }
+        let mut missing = response;
+        missing.as_object_mut().unwrap().remove("usage");
+        assert!(adapter(missing).classify(&json!({})).is_err());
     }
 }

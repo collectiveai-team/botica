@@ -29,6 +29,10 @@ marking the tip ready. The role and mutation workflows defer expensive work on d
 marked members. The review gate stays incomplete for deferred members, never a passing
 approval inherited from the tip. The tip runs its own planned checks.
 
+Add `Stack: n/m, depends on #<previous-PR>` to each member's description. The first member
+uses `Stack: 1/m, base <destination>` instead of a predecessor. Update these lines when the
+explicit stack changes; they describe its order and grant no inherited approval.
+
 Record cumulative local review evidence against the integration base and each boundary's
 evidence in the delivery plan. Do not assume native stack event fields or a first parent prove
 the review base; use the pinned revisions and the observations of ticket 36. A deferred member

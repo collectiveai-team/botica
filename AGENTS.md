@@ -139,7 +139,7 @@ See `docs/agents/domain.md`.
 - Apply upstream implementation steps per ticket with targeted tests; schedule their closing
   adversarial review at the owning slice's checkpoint, without editing installed upstream skills.
 - Preserve code, tests and review evidence when a slice is blocked. Three review rounds with a
-  confirmed P0/P1 require escalation, not automatic deletion or publication as ready.
+  confirmed P0/P1 require escalation. Keep the slice blocked; deletion requires explicit approval.
 - Use `.scratch/` for temporary plans, prd issue drafts, and disposable notes.
 - Use `.tmp/` for generated local artifacts that should not be committed.
 - Use `.worktrees/` for local Git worktrees when needed.

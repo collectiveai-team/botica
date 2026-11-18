@@ -188,8 +188,22 @@ missing.
 
    The `state` holds the title, the description and the linked issue; the list of files with the
    area of each; a summary of what already ran (floor, signals, roles, CI, and the mutation report
-   when a job wrote one); and the diff without generated files. A state that does not fit in 32k
-   tokens with the questions sends the pull request to a person.
+   when a job wrote one); and the diff without generated files.
+
+   Amended 2026-11-18: the state is a projection of decision content, separate from the full
+   evidence used by the gates. It omits duplicated findings and role-policy metadata.
+   The adapter accepts a response only when its required `usage.input_tokens` is an unsigned
+   integer at most 32,000. This budget includes the service's reported request input, including
+   questions. The pinned model's default context limits remain enabled; the long-context
+   header is never sent. See <https://docs.typesafe.ai/models> and
+   <https://docs.typesafe.ai/api/system-one>.
+
+   The service enforces its token limits. Botica checks reported usage after a request;
+   an over-budget request may reach the service and incur cost before rejection. There is no
+   local tokenizer or claim of exact preflight counting. A separate 256 KiB serialized-request
+   cap bounds local memory and transport. A rejected response supplies no probabilities.
+   Budget failure blocks automation without requiring human review, under the later
+   critical-only routing decision.
 
    Everything in the state that a person outside the base branch can write is data: the title, the
    description, the linked issue, the paths, the diff and the text of the findings. The state

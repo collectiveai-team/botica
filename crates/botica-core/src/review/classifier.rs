@@ -6,6 +6,25 @@ use serde_json::{json, Value};
 
 pub const MODEL: &str = "jev-1.14.0";
 
+/// Maximum reported input-token usage accepted from the pinned model.
+pub const INPUT_TOKEN_LIMIT: u64 = 32_000;
+/// Independent local memory bound for serialized model requests.
+pub const REQUEST_BYTE_LIMIT: usize = 256 * 1024;
+
+/// A measured model response exceeds the accepted input-token budget.
+#[derive(Debug)]
+pub struct ContextLimit {
+    pub input_tokens: u64,
+}
+
+impl std::fmt::Display for ContextLimit {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "model input exceeds the accepted token budget")
+    }
+}
+
+impl std::error::Error for ContextLimit {}
+
 /// The classifier and spec reviewer need an explicit acceptance source, not only an issue link.
 pub fn has_acceptance_context(context: &Value) -> bool {
     let nonempty = |value: &Value| value.as_str().is_some_and(|text| !text.trim().is_empty());
@@ -174,12 +193,11 @@ fn model_assessment(
     thresholds: &Thresholds,
 ) -> Result<(Option<Probabilities>, Vec<Value>)> {
     let serialized = serde_json::to_vec(state)?;
-    // UTF-8 byte count bounds tokens conservatively without truncation or omitted files.
-    if serialized.len() > 32_000 {
+    if serialized.len() > REQUEST_BYTE_LIMIT {
         return Ok((
             None,
             vec![
-                json!({"code":"context-limit","source":"gate","bytes":serialized.len(),"limit":32000}),
+                json!({"code":"context-byte-limit","source":"gate","bytes":serialized.len(),"limit":REQUEST_BYTE_LIMIT}),
             ],
         ));
     }
@@ -196,6 +214,14 @@ fn model_assessment(
             ].into_iter().filter(|(_,_,failed)| *failed).map(|(code,probability,_)|
                 json!({"code":code,"source":"Jev","probability":probability})).collect();
             Ok((Some(answer), reasons))
+        }
+        Err(error) if error.downcast_ref::<ContextLimit>().is_some() => {
+            let limit = error.downcast_ref::<ContextLimit>().unwrap();
+            Ok((
+                None,
+                vec![json!({"code":"context-limit","source":"service",
+                "input_tokens":limit.input_tokens,"limit_tokens":INPUT_TOKEN_LIMIT})],
+            ))
         }
         Err(_) => Ok((
             None,

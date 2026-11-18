@@ -21,7 +21,7 @@ covered:
 - The crates of the workspace depend on each other one way (ADR 0003): `botica-cli` on
   `botica-core`, `botica-config`, `botica-conformance`, `botica-lsp`, `botica-catalog`,
   `botica-astgrep` and `botica-ext`; `botica-lsp` on `botica-core`; `botica-core` on
-  `botica-catalog`, `botica-astgrep`, `botica-complexity` and `botica-ext`; `botica-config` on
+  `botica-catalog`, `botica-astgrep`, `botica-complexity`, `botica-config` and `botica-ext`; `botica-config` on
   `botica-catalog`. No crate depends on `botica-cli`, and only `botica-cli` depends on
   `botica-lsp`, which `botica server` runs.
 - `botica-core` lints text that it is given and does no I/O unless its feature `fs` is on; only

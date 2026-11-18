@@ -197,7 +197,7 @@ fn node_runs_the_stryker_of_the_project_incrementally_and_keeps_its_file_in_the_
 
 #[cfg(unix)]
 #[test]
-fn trusted_recipe_policy_runs_mutation_conservatively_or_uses_a_complete_plan() {
+fn trusted_recipe_policy_runs_mutation_conservatively_or_uses_complete_risk() {
     use std::fs;
     use std::os::unix::fs::PermissionsExt;
     use std::process::Command;
@@ -209,12 +209,19 @@ fn trusted_recipe_policy_runs_mutation_conservatively_or_uses_a_complete_plan() 
             "uvx",
             r#"#!/bin/sh
 case "$*" in
-  *--help*) test "$FAKE_PLAN_MODE" != legacy; exit $? ;;
+  *--help*)
+    case "$FAKE_PLAN_MODE" in
+      legacy) echo "error: unrecognized subcommand 'review'" >&2; exit 2 ;;
+      help-failure) exit 2 ;;
+      *) exit 0 ;;
+    esac ;;
 esac
 case "$FAKE_PLAN_MODE" in
   failure) exit 2 ;;
-  low) echo '{"status":"complete","mutation_required":false}' ;;
-  *) echo '{"status":"complete","mutation_required":true}' ;;
+   low) echo '{"status":"complete","effective_tier":"low"}' ;;
+   malformed) echo '{"status":"complete","effective_tier":"unknown"}' ;;
+   incomplete) echo '{"status":"incomplete","effective_tier":null}' ;;
+   *) echo '{"status":"complete","effective_tier":"medium"}' ;;
 esac
 "#,
         ),
@@ -227,13 +234,16 @@ esac
         let written = workflow(pair.0, pair.1);
         let script = runs(&written["jobs"]["review-policy"])
             .into_iter()
-            .find(|run| run.contains("review plan"))
+            .find(|run| run.contains("review tier"))
             .unwrap();
         for (mode, expected) in [
             ("legacy", "run=true\n"),
             ("low", "run=false\n"),
             ("medium", "run=true\n"),
             ("failure", ""),
+            ("help-failure", ""),
+            ("malformed", ""),
+            ("incomplete", ""),
         ] {
             let output_path = root.join(format!("{}-{mode}.output", pair.0));
             fs::write(&output_path, "").unwrap();
@@ -257,7 +267,7 @@ esac
                 .unwrap();
             assert_eq!(
                 output.status.success(),
-                mode != "failure",
+                matches!(mode, "legacy" | "low" | "medium"),
                 "{} {mode}",
                 pair.0
             );

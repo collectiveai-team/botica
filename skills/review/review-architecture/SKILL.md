@@ -1,6 +1,6 @@
 ---
 name: review-architecture
-description: Review role that checks the structure a diff adds — layers and the direction of dependencies, ports and adapters, abstractions with one user, duplicated concepts, and functions that both order steps and carry them out. Use when reviewing a branch or PR that adds modules or changes boundaries, or when review-panel runs the architecture role.
+description: Review role that checks layers, dependency direction, ports and adapters, abstractions with one user, duplicated concepts and functions that mix orchestration with execution. Use when reviewing a branch or PR that adds modules or changes boundaries, or when review-panel runs the architecture role.
 ---
 
 # Review: architecture

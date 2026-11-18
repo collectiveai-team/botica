@@ -6,6 +6,7 @@ applies:
 stages: [local]
 blocking: P1
 max-findings: 10
+covered: {}
 ---
 
 ## Invariants
@@ -26,5 +27,8 @@ max-findings: 10
 - A criterion that the issue marks as out of scope or for a later issue.
 
 ## Evidence
+
+<!-- botica:covered -->
+<!-- /botica:covered -->
 
 Each finding quotes the criterion and points at the file and line, or says that no line exists.

@@ -1,4 +1,4 @@
-# Conservative review risk bounds
+# Conservative review policy bounds
 
 Status: proposed
 Date: 2026-11-17
@@ -13,8 +13,8 @@ new dependency or endpoint. Critical area floors remain high.
 
 The current risk policy raises risk for these two detector facts only. Their presence
 cannot raise an area floor above medium. This makes medium a conservative upper bound
-when the area floor is low. `complete` means a risk bound is available, not that the
-unsupported detectors established absence of either fact. Detector evidence stays
+when the area floor is low. `complete` means a policy bound is available.
+Unsupported detectors leave those facts unknown. Detector evidence stays
 unsupported, and possible signals never enter the positive facts.
 
 `review plan` conservatively selects signal- and tier-filtered roles when bounded

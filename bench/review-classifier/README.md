@@ -26,7 +26,7 @@ unlabeled, unmeasured or incompatible case. With zero false eligibility among
 300 candidates, the one-sided 95% binomial upper bound is
 `1 - 0.05^(1/300)`, about 0.9936%. This assumes representative independent cases.
 Any observed false eligibility blocks readiness; its conservative upper bound is
-reported as 1 rather than claiming a more precise estimate.
+reported as 1.
 
 This measurement does not prove future safety. Enabling automation remains a
 separate explicit decision, and its workflow is disabled. The seed cannot satisfy

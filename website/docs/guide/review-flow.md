@@ -59,8 +59,12 @@ context. A changed snapshot blocks that recommendation. This is a recorded snaps
 not a lock on future GitHub changes; automation remains disabled.
 
 Jev uses `TYPESAFE_AI_API_KEY`, optional `TYPESAFE_AI_BASE_URL`, pinned model
-`jev-1.14.0`, a 90-second request timeout and a 32,000-byte conservative context
-bound. Responses are bounded to 2 MiB. The destination's thresholds apply. They
+`jev-1.14.0` and a 90-second request timeout. Its state contains compact decision
+evidence and the diff without generated files; full provenance stays in the local gates.
+The adapter accepts at most 32,000 reported input tokens, including the questions.
+This is checked after the request, so a rejected request may incur service cost.
+A separate 256 KiB request cap bounds local memory; it is not a token count.
+Responses are bounded to 2 MiB. The destination's thresholds apply. They
 remain uncalibrated until measured against confirmed labels.
 An observed `decision`, `unverifiable` or user-impact reason raises effective risk
 one tier, capped at high. The deterministic tier remains recorded separately.

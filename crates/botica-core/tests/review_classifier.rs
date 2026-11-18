@@ -152,3 +152,56 @@ fn missing_acceptance_context_and_unverified_check_claims_never_call_the_model()
     assert_eq!(report["automation_eligible"], false);
     assert_eq!(adapter.calls.get(), 0);
 }
+
+#[test]
+fn a_state_larger_than_32000_bytes_can_receive_a_measured_classifier_answer() {
+    let adapter = InMemoryClassifier {
+        fail: false,
+        calls: Cell::new(0),
+    };
+    let mut context = state();
+    context["diff"] = json!("A reviewable change. ".repeat(2_000));
+    let report = recommend(
+        &plan("periphery", "low"),
+        &evidence(),
+        &checks(),
+        &context,
+        &adapter,
+        &Thresholds::default(),
+    )
+    .unwrap();
+    assert_eq!(adapter.calls.get(), 1);
+    assert_eq!(report["recommendation"], "automation-candidate");
+}
+
+#[test]
+fn measured_token_overflow_blocks_without_inventing_probabilities_or_human_review() {
+    struct OverBudget;
+    impl Classifier for OverBudget {
+        fn classify(&self, _: &Value) -> anyhow::Result<Probabilities> {
+            Err(botica_core::review::classifier::ContextLimit {
+                input_tokens: 32_001,
+            }
+            .into())
+        }
+        fn locate(&self, _: &Value, _: &str) -> anyhow::Result<f64> {
+            Ok(0.0)
+        }
+    }
+    let report = recommend(
+        &plan("periphery", "low"),
+        &evidence(),
+        &checks(),
+        &state(),
+        &OverBudget,
+        &Thresholds::default(),
+    )
+    .unwrap();
+    assert_eq!(report["recommendation"], "blocked");
+    assert_eq!(report["human_required"], false);
+    assert_eq!(report["effective_tier"], "low");
+    assert!(report["probabilities"].is_null());
+    assert_eq!(report["reasons"][0]["code"], "context-limit");
+    assert_eq!(report["reasons"][0]["limit_tokens"], 32_000);
+    assert_eq!(report["merge_performed"], false);
+}

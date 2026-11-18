@@ -6,9 +6,13 @@ applies:
 stages: [local, ci]
 blocking: P1
 max-findings: 50
+covered: {}
 ---
 
 ## Check always
+
+<!-- botica:covered -->
+<!-- /botica:covered -->
 
 - Each finding of `P0` and `P1` gets an attempt against the files of the target or of `HEAD` (a
   command of `git` on the machine of the author, a read of the file in CI), not only a reading of

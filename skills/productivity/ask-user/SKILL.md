@@ -45,6 +45,15 @@ Do not triage tickets produced by `/to-tickets`; they are already agent-ready. D
 
 ## Codebase Health
 
+- Review an accumulated change with independent roles and refutation last: `/review-panel`.
+- Check requirements and acceptance evidence: `/review-spec`.
+- Inspect authorization, sensitive data and untrusted inputs: `/review-security`.
+- Check whether tests catch incorrect behaviour: `/review-tests`.
+- Inspect dependency direction and module boundaries: `/review-architecture`.
+- Inspect changes consumed by other programs: `/review-contracts`.
+- Inspect cost growth and blocking operations: `/review-performance`.
+- Challenge review findings against source evidence: `/review-refute`.
+
 - Survey a codebase for deepening opportunities: `/improve-codebase-architecture`.
 - Design a chosen module or seam using deep-module vocabulary: `/codebase-design`.
 - Refactor an existing repo in tested slices, keeping its local conventions, with botica for the rules: `/engineering-refactor`.

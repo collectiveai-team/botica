@@ -14,6 +14,7 @@ pub mod questions;
 pub mod results;
 pub mod roles;
 mod signals;
+pub mod state;
 
 /// One changed file, with both paths of a rename and raw text size when available.
 #[derive(Debug, Clone)]

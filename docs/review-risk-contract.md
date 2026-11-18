@@ -11,8 +11,7 @@ authenticate a report.
 
 Resolve the destination and head to commit IDs before collecting evidence. Read review
 configuration from the destination tip, with the existing botica.toml/pyproject.toml precedence.
-Parse and validate the review settings, rather than requiring unrelated historical settings to
-fit the current whole-project schema.
+Parse and validate the review settings independently of unrelated historical configuration.
 
 The report's inputs identify the base and head commits, requested integration method, botica
 version and configuration source and digest. The digest is BLAKE3 of the selected file's bytes;
@@ -33,10 +32,10 @@ comparison as evidence; an assessment's tier is their maximum. An empty change u
 of medium, so the absence of files does not create an exception to the default risk policy.
 
 For integration risk, compare the destination tip against the synthetic result tree of the
-supported integration method. The comparison's `to` may therefore identify a tree rather than a
-commit. Creating evidence must not change user refs, the index or tracked working-tree files, run hooks, or
+supported integration method. The comparison's `to` may identify a tree or a commit.
+Creating evidence must not change user refs, the index or tracked working-tree files, run hooks, or
 execute code supplied by the reviewed branch. An unsupported merge driver or attribute behaviour
-must leave integration incomplete rather than silently using another strategy.
+leaves integration incomplete.
 
 The initial supported method is merge. A caller must supply the intended method; the local
 command cannot infer a code host's current merge settings from Git history. Squash and rebase
@@ -49,7 +48,7 @@ must complete for `status: "complete"` and a non-null `effective_tier`. Otherwis
 
 If input resolution fails before the commits can be pinned, exit 2 with a diagnostic; do not
 invent object IDs to fit the envelope. A complete classification exits 0 even when its tier is
-high: high risk is a classification, not a command failure.
+high. The exit code reports whether the assessment completed; the tier reports its risk.
 
 ## Runtime evidence and detector boundary
 
@@ -106,8 +105,8 @@ Custom, union and binary merge attributes are unsupported. The text-detector inp
 
 `review plan` recomputes classification through the producer, reading the effective risk only
 from a complete classification. It collects paths,
-areas and signals from both assessments and every ancestor comparison, rather than only the
-comparison that supplied the highest tier. A lower-tier comparison can still select a role.
+areas and signals from both assessments and every ancestor comparison. A lower-tier comparison
+can still select a role.
 
 The plan binds the report's base/head commits, integration method, configuration digest and
 botica version. It also records stage, review directory, the digest of the classification and

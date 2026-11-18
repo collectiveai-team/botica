@@ -52,14 +52,20 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
-          if ! uvx botica@{{ param.botica-version }} review plan --help > /dev/null 2>&1; then
-            echo "::notice::The pinned release has no review planner; mutation runs conservatively without a complete plan."
+          if uvx botica@{{ param.botica-version }} review tier --help > "$RUNNER_TEMP/risk-help.txt" 2>&1; then
+            :
+          elif grep -q '^error: unrecognized subcommand' "$RUNNER_TEMP/risk-help.txt"; then
+            echo "::notice::The pinned release has no risk classifier; mutation runs conservatively."
             echo "run=true" >> "$GITHUB_OUTPUT"
             exit 0
+          else
+            echo "::error::Risk classifier capability check failed."
+            exit 2
           fi
-          uvx botica@{{ param.botica-version }} review plan --diff "$BASE_SHA" --head "$HEAD_SHA" \
-            --integration-method merge --stage ci --format json > "$RUNNER_TEMP/mutation-plan.json"
-          echo "run=$(jq -r '.mutation_required' "$RUNNER_TEMP/mutation-plan.json")" >> "$GITHUB_OUTPUT"
+          uvx botica@{{ param.botica-version }} review tier --diff "$BASE_SHA" --head "$HEAD_SHA" \
+            --integration-method merge --format json > "$RUNNER_TEMP/mutation-risk.json"
+          run=$(jq -r 'if .status == "complete" and (.effective_tier | IN("low", "medium", "high")) then .effective_tier != "low" else error("incomplete mutation risk") end' "$RUNNER_TEMP/mutation-risk.json")
+          echo "run=$run" >> "$GITHUB_OUTPUT"
   mutants:
     needs: review-policy
     if: ${{ !cancelled() && (github.event_name == 'push' || needs.review-policy.outputs.run == 'true') }}

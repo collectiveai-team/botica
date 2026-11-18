@@ -39,8 +39,8 @@ It only reads and holds no secret, except the job `history-report` (below). Its 
 days (`--in-diff`, split in 4 shards, with the same version as the job `mutants`; a week with no
 Rust change runs no shard), whose `report` job joins the `outcomes.json` of the shards, runs
 `botica lint --mutants` on them and prints the global score, and `agnix` through the hook of
-`prek.toml`. The whole workspace has about 7300 mutants at about 2 minutes each, so a full run does
-not fit in a week of runners. A `schedule` runs on the default branch only, so a pull request cannot
+`prek.toml`. The diff and shard caps bound the scheduled work independently of workspace size.
+A `schedule` runs on the default branch only, so a pull request cannot
 run it: the test `crates/botica-catalog/tests/scheduled_review_workflow.rs` holds its shape. To run a
 shard locally: `git diff <commit of 7 days ago> HEAD -- '*.rs' > week.diff`, then
 `cargo mutants --in-diff week.diff --test-workspace=true --shard 0/4 --sharding round-robin`, with

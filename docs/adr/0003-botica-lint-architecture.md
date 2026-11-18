@@ -50,12 +50,17 @@ flowchart TD
   config --> catalog
   core --> astgrep[botica-astgrep]
   core --> ext[botica-ext<br/>extension host]
+  core --> config
   sdk[SDK · python · node · go · rust] -. protocol .-> ext
 ```
 
 The core lints text it is given (`lint_source(path, text, …)`) and does no I/O unless its `fs`
 feature is enabled. That is what lets the same engine serve the CLI, the LSP (unsaved buffers),
 and later WASM or MCP.
+
+Amended 2026-11-18: review policy evaluation in `botica-core/src/review.rs` uses the validated
+types and path matcher of `botica-config`. Configuration discovery and file reads remain in
+the CLI. The dependency supplies policy data; core's default feature set still performs no I/O.
 
 **One rule, one folder, five kinds (ADR 0006 adds `external`).** Every rule lives in `rules/<family>/<slug>/` (the family
 folder holds a `family.toml` with its code; the linter's own rules live in `rules/botica/`) with

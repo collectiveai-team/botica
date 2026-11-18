@@ -1,6 +1,6 @@
 ---
 name: review-tests
-description: Review role that checks whether the tests of a diff would fail when the change is wrong — deleted or weakened tests, assertions that cannot fail, lowered thresholds, skipped or silenced checks, and changed code with no test. Use when reviewing a branch or PR for test quality, or when review-panel runs the tests role.
+description: Review role that checks whether the tests of a diff would fail when the change is wrong. Inspects removed tests, ineffective assertions, lowered thresholds, skipped checks and untested behaviour. Use when reviewing a branch or PR for test quality, or when review-panel runs the tests role.
 ---
 
 # Review: tests

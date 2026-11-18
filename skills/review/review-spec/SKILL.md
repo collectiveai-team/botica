@@ -1,6 +1,6 @@
 ---
 name: review-spec
-description: Review role that checks a diff against the issue or spec it claims to implement — each acceptance criterion against the evidence the change gives for it. Use when reviewing a branch or PR for whether it does what was asked, or when review-panel runs the spec role.
+description: Review role that checks a diff against the issue or spec it claims to implement. Compares each acceptance criterion with the evidence in the change. Use when reviewing a branch or PR for whether it does what was asked, or when review-panel runs the spec role.
 ---
 
 # Review: spec

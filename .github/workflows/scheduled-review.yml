@@ -8,9 +8,7 @@ name: scheduled review
 # Nothing here merges or changes code. A schedule runs on the default branch only, and the `if` of
 # each job keeps a manual run from another branch out.
 #
-# Mutation: cargo-mutants lists about 7300 mutants in this workspace and each one runs the tests of
-# the workspace (about 2 minutes each on 16 cores), which is far more than a week of runners, so the
-# run tests only the mutants of the Rust lines that `main` changed in the last 7 days
+# Mutation is bounded by the Rust lines that `main` changed in the last 7 days
 # (`--in-diff`). `plan` writes that diff and, when it holds no Rust line, says so and ends the run
 # of the mutants. Otherwise MUTANT_SHARDS shards split the mutants, one job each; each shard runs the
 # baseline too, so a failing baseline of any shard fails the whole report (`botica lint --mutants`

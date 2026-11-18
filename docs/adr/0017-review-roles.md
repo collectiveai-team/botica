@@ -218,8 +218,9 @@ The original decisions below retain the history of the proposal where superseded
     `botica rules export --format abide` writes. A role covers a focus and the rubric covers every
     judgment rule, and the two do not share a runner.
 
-11. A later change makes the recipe `base` install `.github/review/README.md`, the generic `REVIEW.md` of each role and
-    the `review-*` skills; `catalog/recipes/base.toml` has none of them yet. `install` writes a file that is missing and leaves an existing one as it
+11. Amended 2026-11-18: the recipe `base` installs `.github/review/README.md`, a generic `REVIEW.md`
+    for each role and the `review-*` skills. Generic coverage declarations are empty until the
+    consumer configures its own checks. `install` writes a file that is missing and leaves an existing one as it
     is (ADR 0006), so a repository that adjusted a `REVIEW.md` keeps it. `review-tests` calls
     `test-smell-review` for the smells of a test.
 

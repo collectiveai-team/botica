@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-11-18T05:14:21Z",
+  "compiledAt": "2026-11-18T06:31:16Z",
   "compiledBy": "botica 0.20.2",
   "manual": true,
   "sources": [
@@ -543,6 +543,7 @@
         "bench/review-classifier/README.md",
         "catalog/recipes/files/github/pull_request_template.md",
         "catalog/recipes/files/github/ISSUE_TEMPLATE/**",
+        "catalog/recipes/files/github/review/**",
         "catalog/recipes/sections/agents-workspace-defaults.md",
         "catalog/recipes/sections/botica-rules.md",
         "catalog/references/ai/README.md",
@@ -1128,6 +1129,7 @@
         "catalog/recipes/files/eslint.config.js",
         "catalog/recipes/files/github/pull_request_template.md",
         "catalog/recipes/files/github/ISSUE_TEMPLATE/**",
+        "catalog/recipes/files/github/review/**",
         "catalog/recipes/files/github/scripts/**",
         "catalog/recipes/files/gitlab/scripts/**",
         "catalog/recipes/sections/agents-workspace-defaults.md",

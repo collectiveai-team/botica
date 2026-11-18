@@ -27,6 +27,11 @@ If both host directories exist, set `dir` explicitly. Configured roles default t
 roles of ADR 0017. Both commands require their destination definitions, without falling back
 to the head or an installed template.
 
+`botica recipe install base` installs generic role definitions and the review skills.
+Commit the definitions on the destination before planning a later change. The templates declare
+empty automated coverage; configure the repository's actual checks before claiming coverage.
+Installation preserves customized policy files and reports differing templates as pending.
+
 ```yaml
 ---
 role: contracts

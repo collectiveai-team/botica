@@ -1,6 +1,6 @@
 ---
 name: review-refute
-description: Review role that tries to refute each finding of the other review roles — whether the diff introduced it, whether an entry point reaches it, whether it reproduces, and whether a check already reports it — and keeps only the findings that survive. Use after the other review-<role> skills ran, or when review-panel reaches its last step.
+description: Review role that challenges findings against the diff, reachable entry points, reproductions and existing checks. Records contrary evidence and validates deterministic duplicates. Use after the other review-<role> skills ran, or when review-panel reaches its last step.
 ---
 
 # Review: refute

@@ -371,13 +371,16 @@ What the recipes cannot say about themselves:
   there, and as an error, with a failed job, when it is not. The parameters `griffe-version`
   and `asyncapi-cli-version` set the versions of griffe and `@asyncapi/cli`.
 - `ci-mutants-rust`, `ci-mutants-go` and `ci-mutants-node` each write a workflow that tests the
-  mutants of the code a pull request changes, on every pull request, with `continue-on-error` and a
-  `timeout-minutes`, so it never blocks. `mutants-rust.yml` runs `cargo mutants --in-diff` and
+  mutants of the code a pull request changes. The mutation job has `continue-on-error` and a
+  `timeout-minutes`. On a ready, non-deferred PR, selection uses `botica review tier` from the
+  pinned destination and runs mutation at medium or high risk. It needs no role definitions.
+  An incomplete risk assessment blocks selection as a technical failure. A release without
+  risk classification runs mutation conservatively. `mutants-rust.yml` runs `cargo mutants --in-diff` and
   then `botica lint --mutants`, which reports each mutant that survives on an added line as a
   finding of `mutant-survived` and records it in the history; a `botica-version` older than the
   release that has `--mutants` fails that step, and the job hides the failure. botica reads only
   the report of cargo-mutants, so `mutants-go.yml` (`gremlins unleash --diff`) and `mutants-node.yml`
-  (`stryker run --incremental`) upload their reports as an artifact and do not call botica.
+  (`stryker run --incremental`) upload their reports as an artifact without botica ingestion.
   `mutants-node.yml` also runs on a push to main and keeps `reports/stryker-incremental.json` in the
   cache of Actions, where a pull request finds the results of its base; it runs the Stryker of the
   project, which installs `@stryker-mutator/core` with the plugin of its test runner and configures

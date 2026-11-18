@@ -6,6 +6,7 @@ applies:
 stages: [local, ci]
 blocking: P1
 max-findings: 8
+covered: {}
 ---
 
 ## Invariants

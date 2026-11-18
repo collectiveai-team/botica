@@ -1,6 +1,6 @@
 ---
 name: review-panel
-description: Runs the review-<role> skills on a diff — picks the roles, runs each in its own subagent, runs review-refute last, and merges what survives into one report. Use when the user asks for a review by roles or a full review of a branch or PR, or before opening a PR whose change is larger than a typo.
+description: Runs the review-<role> skills on a diff. Selects roles from policy, runs independent subagents and refutation last, then reports the validated evidence. Use when the user asks for a review by roles or a full review of a branch or PR, or before opening a PR whose change is larger than a typo.
 ---
 
 # Review panel

@@ -2,7 +2,7 @@
 
 A pull request carries one intent. Tickets track local work; vertical slices are reviewed as
 accumulated diffs; one delivery PR is the default. Split for independent delivery, approval or
-rollback, not ticket or line counts. Unrelated changes get separate PRs. After three review rounds
+rollback. Ticket and line counts are informational. Unrelated changes get separate PRs. After three review rounds
 with a confirmed P0/P1 left, preserve the work and escalate; do not publish it as ready.
 
 ## Why

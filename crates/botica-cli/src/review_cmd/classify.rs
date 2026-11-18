@@ -1,13 +1,14 @@
-use super::{consumers, evidence, jev::Jev};
+use super::{consumers, jev::Jev};
 use crate::output::println;
 use anyhow::Result;
-use botica_core::review::classifier::{
-    handoff_markdown, recommend_current, Classifier, Evidence, Thresholds,
-};
+use botica_core::review::classifier::{handoff_markdown, recommend_current, Evidence};
 use clap::Args;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use std::process::ExitCode;
+
+#[path = "classify_steps.rs"]
+mod steps;
 
 #[derive(Args)]
 pub(super) struct ClassifyArgs {
@@ -38,7 +39,8 @@ fn reason_steps(code: &str) -> (&'static str, &'static str) {
         "unverifiable" => ("Run the changed behavior in base and head and compare observable output.", "Add the missing direct verification evidence."),
         "impact-users" => ("Inspect the published CLI, rule or recipe surface and its consumers.", "Verify the changed public behavior in a disposable repository."),
         "risk-not-low" => ("Inspect both branch and integration risk evidence.", "Keep automation blocked under the low-risk automation policy."),
-        "context-limit" => ("Inspect the exact context byte count; no files were silently removed.", "Provide a review boundary that fits the bounded context."),
+        "context-limit" => ("Inspect the model's reported input-token count against the 32,000-token acceptance budget.", "Use a smaller review boundary. The rejected response supplies no probabilities."),
+        "context-byte-limit" => ("Inspect the local serialized-request byte limit, separately from the model's token budget.", "Use a smaller review boundary without dropping required evidence."),
         "missing-acceptance-context" | "context-unavailable" | "context-changed" => ("Compare the current PR description and linked issue bodies with the review context.", "Refresh context and rerun the affected roles and classification."),
         _ => ("Inspect model availability and the pinned model version; no service error body was retained.", "Retry the configured service. A technical failure does not require human review."),
     }
@@ -99,52 +101,14 @@ fn not_reviewed(plan: &Value, results: &Value, directory: &std::path::Path) -> V
 
 pub(super) fn collect(args: &ClassifyArgs) -> Result<(super::tier::Assessment, Value)> {
     let (assessment, plan) = consumers::collect(&args.plan, false)?;
-    let mut results = evidence::collect(&assessment, &plan, &args.results)
-        .unwrap_or_else(|_| json!({"status":"incomplete","verdict":"INCONCLUSIVE","inputs":null}));
-    let provenance = args.github_pr.and_then(|pr| {
-        super::github::verify_roles(
-            args.repository.as_deref().unwrap_or(""),
-            pr,
-            &assessment,
-            &plan,
-            &results,
-        )
-        .ok()
-    });
-    results["producer_verified"] = json!(provenance.is_some());
-    results["provenance"] = provenance.unwrap_or(Value::Null);
-    let checks = if let Some(pr) = args.github_pr {
-        super::github::checks(args.repository.as_deref().unwrap_or(""), pr, &plan)
-            .unwrap_or_else(|_| json!({"producer_verified":false,"status":"unavailable"}))
-    } else {
-        let mut checks = args
-            .checks
-            .as_deref()
-            .and_then(|path| evidence::read_json(path).ok())
-            .filter(Value::is_object)
-            .unwrap_or_else(|| json!({}));
-        checks["producer_verified"] = json!(false);
-        checks
-    };
-    let context = plan["untrusted_context"].clone();
-    let context_verified = args.github_pr.is_some_and(|pr| {
-        super::github::context_matches(args.repository.as_deref().unwrap_or(""), pr, &plan)
-            .unwrap_or(false)
-    });
-    let diff = super::change_context::collect(&assessment,&plan,96 * 1024)
+    let results = steps::roles(args, &assessment, &plan);
+    let checks = steps::checks(args, &plan);
+    let context_verified = steps::context_current(args, &plan);
+    let diff = super::change_context::classification(&assessment,&plan,256 * 1024)
         .unwrap_or_else(|_| json!({"status":"unavailable","reason":"bounded change context could not be collected"}));
-    let state = json!({"context":context,"plan":plan,"reviews":results,"checks":checks,
-        "context_verified":context_verified,"change_context_complete":diff.is_array(),"diff":diff});
+    let state = botica_core::review::state::build(&plan, &results, &checks, diff, context_verified);
     let adapter = Jev::configured();
-    let thresholds = assessment
-        .review
-        .as_ref()
-        .map(|review| Thresholds {
-            maximum_question: review.classifier.question_max,
-            minimum_contained_team: review.classifier.impact_min,
-            minimum_confidence: review.classifier.min_confidence,
-        })
-        .unwrap_or_default();
+    let thresholds = steps::thresholds(&assessment);
     let current = CurrentEvidence {
         args,
         assessment: &assessment,
@@ -161,66 +125,10 @@ pub(super) fn collect(args: &ClassifyArgs) -> Result<(super::tier::Assessment, V
         &thresholds,
         &current,
     )?;
-    if context_verified
-        && args.github_pr.is_some_and(|pr| {
-            !super::github::context_matches(args.repository.as_deref().unwrap_or(""), pr, &plan)
-                .unwrap_or(false)
-        })
-    {
-        report["automation_eligible"] = json!(false);
-        if report["human_required"] != true {
-            report["recommendation"] = json!("blocked");
-        }
-        report["reasons"].as_array_mut().unwrap().push(json!({"code":"context-changed",
-            "source":"gate","evidence":"The GitHub acceptance context changed during classification."}));
-    }
-    let mut localized = Vec::new();
-    for reason in report["reasons"].as_array().into_iter().flatten() {
-        let code = reason["code"].as_str().unwrap_or("");
-        if !matches!(code, "decision" | "unverifiable") {
-            continue;
-        }
-        let mut paths = std::collections::BTreeSet::new();
-        for comparison in plan["risk"]["branch"]["comparisons"]
-            .as_array()
-            .into_iter()
-            .flatten()
-        {
-            paths.extend(
-                comparison["files"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .filter_map(Value::as_str),
-            );
-        }
-        for path in paths {
-            let content = assessment.git.read_limited(
-                &["show", &format!("{}:{path}", assessment.git.head)],
-                16_000,
-            );
-            let Ok(content) = content else {
-                localized.push(json!({"reason":code,"path":path,"status":"unavailable"}));
-                continue;
-            };
-            let state =
-                json!({"context":context,"path":path,"file":String::from_utf8_lossy(&content)});
-            let probability = adapter.locate(&state, code).ok();
-            localized.push(json!({"reason":code,"path":path,"probability":probability,"status":if probability.is_some() {"measured"} else {"unavailable"}}));
-        }
-    }
-    report["localization"] = json!(localized);
-    report["not_reviewed"] = json!(not_reviewed(&plan, &results, &args.results));
-    report["decision_requested"] = json!(if report["human_required"] == true {
-        "critical-owner-review"
-    } else if report["automation_eligible"] == true {
-        "none-shadow-only"
-    } else {
-        "resolve-evidence-blockers"
-    });
-    report["review_summary"] = results;
-    report["checks"] = checks;
-    handoff(&mut report);
+    steps::invalidate_changed_context(&mut report, args, &plan, context_verified);
+    let localized = steps::localization(&assessment, &plan, &adapter, &report);
+    let gaps = not_reviewed(&plan, &results, &args.results);
+    let report = steps::finish(report, localized, gaps, results, checks);
     Ok((assessment, report))
 }
 

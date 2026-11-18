@@ -1,6 +1,6 @@
 ---
 name: review-contracts
-description: Review role for the changes to what another program consumes that no compatibility job measures — a change of meaning with the same shape, contracts with no schema (migrations, environment variables, CLI flags, file formats, module interfaces) and new contracts with no check. Use when reviewing a branch or PR that touches something others consume, or when review-panel runs the contracts role.
+description: Review role that checks consumer-facing changes outside automated compatibility coverage. Inspects changed meaning, migrations, environment variables, CLI flags, file formats and module interfaces. Use when reviewing a branch or PR that touches something others consume, or when review-panel runs the contracts role.
 ---
 
 # Review: contracts

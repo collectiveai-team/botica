@@ -143,6 +143,14 @@ fn base_installs_the_skills_and_adds_prek_and_the_standards_index_from_its_templ
             ".github/pull_request_template.md <- files/github/pull_request_template.md",
             ".github/ISSUE_TEMPLATE/bug_report.md <- files/github/ISSUE_TEMPLATE/bug_report.md",
             ".github/ISSUE_TEMPLATE/feature_proposal.md <- files/github/ISSUE_TEMPLATE/feature_proposal.md",
+            ".github/review/README.md <- files/github/review/README.md",
+            ".github/review/spec/REVIEW.md <- files/github/review/spec/REVIEW.md",
+            ".github/review/security/REVIEW.md <- files/github/review/security/REVIEW.md",
+            ".github/review/tests/REVIEW.md <- files/github/review/tests/REVIEW.md",
+            ".github/review/architecture/REVIEW.md <- files/github/review/architecture/REVIEW.md",
+            ".github/review/contracts/REVIEW.md <- files/github/review/contracts/REVIEW.md",
+            ".github/review/performance/REVIEW.md <- files/github/review/performance/REVIEW.md",
+            ".github/review/refute/REVIEW.md <- files/github/review/refute/REVIEW.md",
         ]
     );
     assert_eq!(base.sections.len(), 2);
@@ -207,7 +215,7 @@ fn base_python_adds_pyproject_the_python_hooks_and_the_dev_tools_to_what_base_do
     assert!(python.tools[0].packages.contains(&"ruff".to_owned()));
     let resolved = recipes.resolve("base-python").expect("resolves");
     assert!(resolved.skills.iter().all(|skill| skill.from == "base"));
-    assert_eq!(resolved.files.len(), 6);
+    assert_eq!(resolved.files.len(), 14);
     assert_eq!(resolved.sections.len(), 9);
     assert!(resolved.warnings.is_empty());
 }

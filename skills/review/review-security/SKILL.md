@@ -1,6 +1,6 @@
 ---
 name: review-security
-description: Review role that looks for the security holes a diff introduces — authentication and authorization, data of another tenant or user, secrets, injection, unsafe deserialization, path traversal and supply chain. Use when reviewing a branch or PR for security, or when review-panel runs the security role.
+description: Review role that checks a diff for security holes in authentication, authorization, tenant data, secrets, injection, deserialization, paths and dependencies. Use when reviewing a branch or PR for security, or when review-panel runs the security role.
 ---
 
 # Review: security
