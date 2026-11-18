@@ -212,6 +212,7 @@ runs are compared, which origins write it, and how the files of CI jobs are join
    | `reviewed` | uses `--reviewed` (ADR 0017; the flag comes in a later change) |
    | `mutants` | uses `--mutants`, with or without `--diff`, `--staged` or `--diff-file` |
    | `classify` | is a decision of `botica review classify` (ADR 0018) |
+   | `feedback` | records GitHub human review observations for a pinned commit, without authorization |
 
    The last row of the table that matches the flags of the run gives the mode, so `--judged --diff
    <rev>` is `judged` and `--reviewed <dir> --diff <base>` is `reviewed`.
@@ -223,12 +224,13 @@ runs are compared, which origins write it, and how the files of CI jobs are join
    | `cli` | otherwise |
    | `review:<role>` | the run records the findings of one role (decision 7) |
    | `classify` | the run records a decision of the classifier (decision 7) |
+   | `feedback` | the run records human review observations (decision 7) |
 
    `ci` is tested before `hook`, so `prek run` inside a CI job counts as CI. The command that records
    sets `review:<role>` and `classify`; they are never detected. A CI system other than those two
    records `cli` until the detection adds it.
 
-7. Two commands of the review flow record runs of their own, with `detail`:
+7. Three commands of the review flow record runs of their own, with `detail`:
 
    - `botica lint --reviewed <dir> --diff <base>` reads the JSON files of the roles (ADR 0017
      decision 5) and writes one run for each role, with `origin` `review:<role>`, `mode`
@@ -242,16 +244,19 @@ runs are compared, which origins write it, and how the files of CI jobs are join
      or `ci` by the detection of decision 6. The run of `refute` has its `verdict` and no finding
      lines; `--reviewed` copies the `refutation` of `refute.json` onto the finding of the other role
      that it names.
-   - `botica review classify --record` writes one run with `origin` and `mode` `classify`, no
+   - `botica review classify` writes one run with `origin` and `mode` `classify`, no
      finding lines, an empty `rules`, and `detail` with the probabilities, the result and whether a
      merge would have happened (ADR 0018 decision 13), and the reasons of the handoff, each as the
      condition of the column `Reason` of ADR 0018 decision 10. The evidence and the steps of the
      handoff report hold file names, log lines and titles; they stay in `handoff.json`, which its
      job uploads, and are not copied here. ADR 0018 decision 10 says that `handoff.json` enters the
      history; this ADR reads that as its reasons and its result entering through this run, and the
-     rest of the report staying in its artifact, for the reason of decision 2. The answer of the person and a later revert go to a third
-     file, `events.jsonl`, whose keys are decided with that command; each line names the `run_id`
-     of the decision.
+      rest of the report staying in its artifact, for the reason of decision 2.
+   - `botica review feedback` writes one run with `origin` and `mode` `feedback`, no finding
+     lines and an empty `rules`. Its `detail.human_response` records GitHub review IDs, reviewer
+     identities, states and the reviewed commit. A handoff supplies its pinned inputs; `--head`
+     instead records only observations. These observations do not authorize a current head or
+     claim that a classification exists. A later revert is not recorded by this command.
 
    The file of a role is written by a model, so `--reviewed` checks what it copies. It records a
    role only when the name matches `[a-z][a-z-]*` and is a role of the plan of ADR 0017 decision 8.

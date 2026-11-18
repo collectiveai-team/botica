@@ -36,7 +36,7 @@ pub struct ReviewArgs {
 enum ReviewCommand {
     /// Read the linked issue bodies and PR metadata from GitHub for pinned inputs.
     Context(github::ContextArgs),
-    /// Record current-head human review observations from GitHub, without approving or merging.
+    /// Record human review observations for a pinned commit, without approving or merging.
     Feedback(feedback::FeedbackArgs),
     /// Measure recorded classifier observations against a pinned labeled set.
     Evaluate(evaluate::EvaluateArgs),

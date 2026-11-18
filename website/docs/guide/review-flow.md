@@ -62,12 +62,18 @@ Jev uses `TYPESAFE_AI_API_KEY`, optional `TYPESAFE_AI_BASE_URL`, pinned model
 `jev-1.14.0`, a 90-second request timeout and a 32,000-byte conservative context
 bound. Responses are bounded to 2 MiB. The destination's thresholds apply. They
 remain uncalibrated until measured against confirmed labels.
+An observed `decision`, `unverifiable` or user-impact reason raises effective risk
+one tier, capped at high. The deterministic tier remains recorded separately.
+Low confidence and service failures block automation without inventing a risk signal.
+Only critical paths require human review, even when the classifier raises risk.
 
 The command writes `.botica/review/handoff.json` and `handoff.md`, plus a history
 record. Each reason has evidence and verification/resolution steps. Technical
 failures block automation without requiring human review. Only critical changes
 require a human. Labels are informational; network failures can leave remote labels
 stale. Classification and automation must validate the evidence, never labels.
+The Markdown handoff includes localized files, their probabilities and unavailable
+localization evidence. It is the content published in the PR comment.
 
 Shadow mode never merges. No command in this page authorizes enabling automation.
 

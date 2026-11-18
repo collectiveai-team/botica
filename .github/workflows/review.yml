@@ -2,7 +2,7 @@ name: role review
 
 on:
   pull_request_target: # zizmor: ignore[dangerous-triggers]
-    types: [opened, synchronize, reopened, ready_for_review, edited]
+    types: [opened, synchronize, reopened, ready_for_review, edited, unlabeled]
 
 permissions:
   contents: read
@@ -13,12 +13,12 @@ env:
   GH_REPO: ${{ github.repository }}
 
 concurrency:
-  group: role-review-${{ github.event.pull_request.number }}
+  group: role-review-${{ github.event.pull_request.number }}-${{ github.event.action == 'unlabeled' && github.event.label.name != 'botica:stack-member' && 'ignored-label' || 'review' }}
   cancel-in-progress: true
 
 jobs:
   plan:
-    if: github.event.pull_request.draft == false && !contains(github.event.pull_request.labels.*.name, 'botica:stack-member')
+    if: github.event.pull_request.draft == false && !contains(github.event.pull_request.labels.*.name, 'botica:stack-member') && (github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -145,7 +145,7 @@ jobs:
 
   review-gate:
     needs: [plan, roles, refute]
-    if: ${{ always() }}
+    if: ${{ always() && (github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

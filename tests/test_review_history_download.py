@@ -110,6 +110,13 @@ def test_intentionally_skipped_shadow_does_not_create_a_false_coverage_gap(tmp_p
     assert summary["accounted_bytes"] == 0
 
 
+def test_ignored_label_event_does_not_require_a_role_history_artifact(tmp_path: Path):
+    summary = run_download(tmp_path, "review.yml", [], skipped_role=True)
+    assert summary["status"] == "complete"
+    assert summary["missing_runs"] == []
+    assert summary["accounted_bytes"] == 0
+
+
 def run_download(
     root: Path,
     workflow: str,
@@ -117,6 +124,7 @@ def run_download(
     *,
     history: bool = True,
     skipped_shadow: bool = False,
+    skipped_role: bool = False,
 ):
     answers = root / "answers"
     answers.mkdir()
@@ -131,9 +139,9 @@ def run_download(
         "repos_owner_repo_actions_workflows": {
             "workflows": [{"path": f".github/workflows/{name}"} for name in workflows],
         },
-        "repos_owner_repo_actions_runs_7_jobs": {
-            "jobs": [{"name": "survivors and score", "conclusion": "success"}],
-        },
+        "repos_owner_repo_actions_runs_7_jobs": _workflow_jobs(
+            workflow, skipped_shadow, skipped_role
+        ),
         "repos_owner_repo_actions_runs_7_artifacts": {
             "artifacts": [
                 {"id": index, "name": name, "expired": False, "size_in_bytes": 100}
@@ -141,17 +149,6 @@ def run_download(
             ],
         },
     }
-    if workflow == "review-shadow.yml":
-        responses["repos_owner_repo_actions_runs_7_jobs"] = {
-            "jobs": [{"name": f"classify ({pr})", "conclusion": "success"} for pr in [42, 43]],
-        }
-        if skipped_shadow:
-            responses["repos_owner_repo_actions_runs_7_jobs"] = {
-                "jobs": [
-                    {"name": "resolve", "conclusion": "skipped"},
-                    {"name": "classify", "conclusion": "skipped"},
-                ],
-            }
     for name in workflows:
         responses[f"repos_owner_repo_actions_workflows_{name}_runs"] = {
             "workflow_runs": [
@@ -201,3 +198,17 @@ def run_download(
         )
     )
     return json.loads(result.stdout)
+
+
+def _workflow_jobs(workflow: str, skipped_shadow: bool, skipped_role: bool):
+    if skipped_role:
+        return {
+            "jobs": [{"name": name, "conclusion": "skipped"} for name in ["plan", "review-gate"]]
+        }
+    if workflow != "review-shadow.yml":
+        return {"jobs": [{"name": "survivors and score", "conclusion": "success"}]}
+    if skipped_shadow:
+        return {
+            "jobs": [{"name": name, "conclusion": "skipped"} for name in ["resolve", "classify"]]
+        }
+    return {"jobs": [{"name": f"classify ({pr})", "conclusion": "success"} for pr in [42, 43]]}

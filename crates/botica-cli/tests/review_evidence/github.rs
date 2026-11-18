@@ -2,6 +2,67 @@ use super::*;
 use std::os::unix::fs::PermissionsExt;
 
 #[test]
+fn a_deferred_stack_member_cannot_reuse_earlier_passing_evidence_for_eligibility() {
+    let (dir, plan) = configured_fixture(
+        "deferred-member",
+        "[review]\nroles=['spec','refute']\n[review.classifier]\nrequired-checks=['ci']\n",
+    );
+    common::write(
+        &dir,
+        ".tmp/pull.json",
+        &json!({"state":"open","draft":false,
+        "base":{"sha":plan["inputs"]["base"]},"head":{"sha":plan["inputs"]["head"]},
+        "labels":[{"name":"botica:stack-member"}]})
+        .to_string(),
+    );
+    common::write(
+        &dir,
+        ".tmp/bin/gh",
+        "#!/bin/sh\ncat \"$FAKE_GH_ROOT/.tmp/pull.json\"\n",
+    );
+    std::fs::set_permissions(
+        dir.join(".tmp/bin/gh"),
+        std::fs::Permissions::from_mode(0o755),
+    )
+    .unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_botica"))
+        .args([
+            "review",
+            "classify",
+            "--diff",
+            "main",
+            "--integration-method",
+            "merge",
+            "--context",
+            ".tmp/context.json",
+            "--results",
+            ".tmp/results",
+            "--repository",
+            "owner/repo",
+            "--github-pr",
+            "42",
+        ])
+        .current_dir(&dir)
+        .env("FAKE_GH_ROOT", &dir)
+        .env(
+            "PATH",
+            format!(
+                "{}:{}",
+                dir.join(".tmp/bin").display(),
+                std::env::var("PATH").unwrap_or_default()
+            ),
+        )
+        .env_remove("TYPESAFE_AI_API_KEY")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{}", common::stderr(&output));
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["checks"]["producer_verified"], false);
+    assert_eq!(report["automation_eligible"], false);
+    assert_eq!(report["human_required"], false);
+}
+
+#[test]
 fn classification_blocks_nonminimum_failed_pending_and_status_checks() {
     let (dir, plan) = configured_fixture(
         "github-checks",
@@ -26,6 +87,10 @@ fn classification_blocks_nonminimum_failed_pending_and_status_checks() {
         ".tmp/role-runs.json",
         &json!({"workflow_runs":[{
             "id":77,"event":"pull_request_target","head_repository":{"full_name":"owner/repo"},
+            "status":"completed","conclusion":"success","pull_requests":[{"number":42,
+                "head":{"sha":plan["inputs"]["head"]},"base":{"sha":plan["inputs"]["base"]}}]
+        },{
+            "id":78,"event":"pull_request_target","head_repository":{"full_name":"owner/repo"},
             "status":"completed","conclusion":"success","pull_requests":[{"number":42,
                 "head":{"sha":plan["inputs"]["head"]},"base":{"sha":plan["inputs"]["base"]}}]
         }]})
@@ -60,6 +125,8 @@ if test "$1" = run; then
   exit 0
 fi
 case "$2" in
+  */runs/78/jobs*) echo '{"total_count":2,"jobs":[{"name":"plan","conclusion":"skipped"},{"name":"review-gate","conclusion":"skipped"}]}' ;;
+  */runs/77/jobs*) echo '{"total_count":2,"jobs":[{"name":"plan","conclusion":"success"},{"name":"review-gate","conclusion":"success"}]}' ;;
   */workflows/review.yml/runs*) cat "$FAKE_GH_ROOT/.tmp/role-runs.json" ;;
   */runs/77/artifacts*) cat "$FAKE_GH_ROOT/.tmp/artifacts.json" ;;
   */check-runs*) cat "$FAKE_GH_ROOT/.tmp/checks.json" ;;
@@ -204,6 +271,9 @@ esac
             report["review_summary"]["producer_verified"], !tampered,
             "{report}"
         );
+        if !tampered {
+            assert_eq!(report["review_summary"]["provenance"]["run_id"], 77);
+        }
         if tampered {
             assert_eq!(report["automation_eligible"], false);
             assert!(report["reasons"]

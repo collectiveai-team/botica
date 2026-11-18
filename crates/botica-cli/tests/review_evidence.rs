@@ -1,6 +1,9 @@
 //! Freshness and verdict validation through the public review and lint commands.
 
 mod common;
+#[path = "review_evidence/history.rs"]
+mod history;
+use history::assert_readable_history;
 #[cfg(unix)]
 #[path = "review_evidence/github.rs"]
 mod github;
@@ -101,6 +104,7 @@ fn lint_ingests_current_reviews_and_records_each_role_without_running_commands()
     assert_eq!(lines.len(), 2);
     assert!(lines.iter().all(|line| line["mode"] == "reviewed"));
     assert!(lines.iter().any(|line| line["origin"] == "review:spec"));
+    assert_readable_history(&dir, 2);
 }
 
 #[test]
@@ -204,6 +208,15 @@ fn shadow_classification_writes_a_traceable_blocked_report_without_human_routing
         .any(|reason| reason["code"] == "check-evidence"
             && reason["verify"].is_string()
             && reason["resolve"].is_string()));
+    assert_readable_history(&dir, 1);
+    let line = std::fs::read_to_string(dir.join(".botica/history/runs.jsonl")).unwrap();
+    let recorded: Value = serde_json::from_str(line.lines().last().unwrap()).unwrap();
+    assert_eq!(recorded["rules"], json!({}));
+    assert!(recorded["detail"]["reasons"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|reason| reason["code"] == "check-evidence"));
 }
 
 #[test]
@@ -364,4 +377,5 @@ esac
     assert_eq!(recorded["detail"]["observation_only"], true);
     assert!(recorded["detail"]["recommendation"].is_null());
     assert_eq!(recorded["head"], plan["inputs"]["head"]);
+    assert_readable_history(&dir, 2);
 }

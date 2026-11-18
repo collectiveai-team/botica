@@ -165,7 +165,7 @@ fn record(assessment: &tier::Assessment, plan: &Value, result: &Value) -> Result
                     .as_array()
                     .and_then(|roles| roles.iter().find(|role| role["role"] == name))
                     .and_then(|role| role["definition"]["digest"].as_str())
-                    .map(str::to_owned),
+                    .map(|digest| digest.chars().take(16).collect()),
                 ..RuleEntry::default()
             },
         );

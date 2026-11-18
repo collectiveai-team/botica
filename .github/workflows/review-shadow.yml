@@ -17,6 +17,7 @@ permissions:
   contents: read
   pull-requests: read
   issues: read
+  actions: read
 
 jobs:
   resolve:
@@ -34,7 +35,16 @@ jobs:
           RUN_HEAD: ${{ github.event.workflow_run.head_sha }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           API_URL: ${{ github.api_url }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
+          if [ -n "$RUN_ID" ]; then
+            [[ "$RUN_ID" =~ ^[1-9][0-9]*$ ]]
+            jobs=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/jobs?per_page=100")
+            if jq -e '.total_count == (.jobs | length) and (.jobs | length) > 0 and all(.jobs[]; .conclusion == "skipped")' <<< "$jobs" > /dev/null; then
+              echo 'prs=["__skip__"]' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
           if [ -n "$ISSUE_NUMBER" ]; then
             [[ "$ISSUE_NUMBER" =~ ^[1-9][0-9]*$ ]]
             prs=$(gh api --paginate "repos/$GH_REPO/issues/$ISSUE_NUMBER/timeline?per_page=100" \
@@ -62,8 +72,8 @@ jobs:
       matrix:
         pr: ${{ fromJSON(needs.resolve.outputs.prs) }}
     concurrency:
-      group: review-shadow-${{ matrix.pr }}
-      cancel-in-progress: true
+      group: review-publication-${{ matrix.pr }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -71,7 +81,7 @@ jobs:
       checks: read
       actions: read
       pull-requests: write
-      issues: read
+      issues: write
     env:
       GH_REPO: ${{ github.repository }}
       PR_NUMBER: ${{ matrix.pr }}
@@ -107,8 +117,18 @@ jobs:
         run: |
           gh api --paginate "repos/$GH_REPO/actions/workflows/review.yml/runs?event=pull_request_target&per_page=100" \
             | jq -s --arg repo "$GH_REPO" --arg head "$HEAD_SHA" --arg base "$BASE_SHA" --argjson pr "$PR_NUMBER" \
-              '[.[].workflow_runs[] | select(.event == "pull_request_target" and .head_repository.full_name == $repo) | select(any(.pull_requests[]?; .number == $pr and .head.sha == $head and .base.sha == $base))] | max_by(.id) // {}' \
-            > .tmp/role-run.json
+              '[.[].workflow_runs[] | select(.event == "pull_request_target" and .head_repository.full_name == $repo) | select(any(.pull_requests[]?; .number == $pr and .head.sha == $head and .base.sha == $base))] | sort_by(.id) | reverse' \
+            > .tmp/role-runs.json
+          echo '{}' > .tmp/role-run.json
+          while IFS= read -r run; do
+            [[ "$run" =~ ^[1-9][0-9]*$ ]]
+            gh api "repos/$GH_REPO/actions/runs/$run/jobs?per_page=100" > .tmp/role-jobs.json
+            if jq -e '.total_count == (.jobs | length) and any(.jobs[]; .name == "plan") and any(.jobs[]; .name == "review-gate") and all(.jobs[]; .conclusion == "skipped")' .tmp/role-jobs.json > /dev/null; then
+              continue
+            fi
+            jq --argjson run "$run" '.[] | select(.id == $run)' .tmp/role-runs.json > .tmp/role-run.json
+            break
+          done < <(jq -r '.[].id' .tmp/role-runs.json)
           if jq -e '.status == "completed"' .tmp/role-run.json > /dev/null; then
             run=$(jq -r '.id' .tmp/role-run.json)
             if gh run download "$run" --name review-evidence --dir .tmp/evidence; then
@@ -140,9 +160,60 @@ jobs:
           test "$current" = "$BASE_SHA:$HEAD_SHA" || exit 0
           target/debug/botica review context --repository "$GH_REPO" --pr "$PR_NUMBER" \
             --base "$BASE_SHA" --head "$HEAD_SHA" > .tmp/current-context.json
+          fresh_context=true
           if ! cmp -s .tmp/context.json .tmp/current-context.json; then
+            fresh_context=false
             printf '%s\n' '<!-- botica:review-handoff -->' \
               'Review recommendation: blocked. The issue or PR context changed during classification. Rerun review for the new acceptance context.' \
+              > .botica/review/handoff.md
+          fi
+          if test "$fresh_context" = true; then
+            tier=$(jq -r '.effective_tier' .botica/review/handoff.json)
+            published=$(gh api --paginate "repos/$GH_REPO/issues/$PR_NUMBER/comments?per_page=100" \
+              | jq -sr --arg prefix "<!-- botica:review-risk base=$BASE_SHA head=$HEAD_SHA tier=" \
+                '[.[][] | select(.user.login == "github-actions[bot]") | .body | split("\n")[] | select(startswith($prefix)) | ltrimstr($prefix) | rtrimstr(" -->")] | if index("high") then "high" elif index("medium") then "medium" elif index("low") then "low" else "" end')
+            retained=$tier
+            if jq -e '.probabilities == null' .botica/review/handoff.json > /dev/null; then
+              retained=$(jq -nr --arg tier "$tier" --arg prior "$published" \
+                '{"low":0,"medium":1,"high":2} as $rank | if ($rank[$prior] // -1) > ($rank[$tier] // -1) then $prior else $tier end')
+            fi
+            if test "$retained" != "$tier"; then
+              tier=$retained
+              jq --arg tier "$tier" '.publication_risk = {effective_tier:$tier,source:"prior classifier for the same base and head"}' \
+                .botica/review/handoff.json > .tmp/published-handoff.json
+              mv .tmp/published-handoff.json .botica/review/handoff.json
+              {
+                head -n 1 .botica/review/handoff.md
+                printf '<!-- botica:review-risk base=%s head=%s tier=%s -->\n' "$BASE_SHA" "$HEAD_SHA" "$tier"
+                printf 'Retained risk boundary: %s from the prior classifier for these inputs. Current evidence blockers still apply.\n\n' "$tier"
+                tail -n +3 .botica/review/handoff.md
+              } > .tmp/published-handoff.md
+              mv .tmp/published-handoff.md .botica/review/handoff.md
+            fi
+            case "$tier" in
+              low|medium|high)
+                labels=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name')
+                while IFS= read -r label; do
+                  case "$label" in
+                    risk:*) if test "$label" != "risk:$tier"; then gh pr edit "$PR_NUMBER" --remove-label "$label"; fi ;;
+                  esac
+                done <<< "$labels"
+                if ! grep -Fxq "risk:$tier" <<< "$labels"; then
+                  gh label create "risk:$tier" --color 6e7781 --force
+                  gh pr edit "$PR_NUMBER" --add-label "risk:$tier"
+                fi
+                ;;
+            esac
+          fi
+          current=$(gh pr view "$PR_NUMBER" --json baseRefOid,headRefOid --jq '[.baseRefOid,.headRefOid] | join(":")')
+          if test "$current" != "$BASE_SHA:$HEAD_SHA"; then
+            for tier in low medium high; do
+              gh pr edit "$PR_NUMBER" --remove-label "risk:$tier"
+            done
+            gh label create risk:incomplete --color 6e7781 --force
+            gh pr edit "$PR_NUMBER" --add-label risk:incomplete
+            printf '%s\n' '<!-- botica:review-handoff -->' \
+              'Review recommendation: blocked. The base or head changed during publication. Rerun review.' \
               > .botica/review/handoff.md
           fi
           comment=$(gh api --paginate "repos/$GH_REPO/issues/$PR_NUMBER/comments?per_page=100" \

@@ -19,10 +19,10 @@ on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, unlabeled]
 
 concurrency:
-  group: mutants-node-${{ github.workflow }}-${{ github.ref }}
+  group: mutants-node-${{ github.workflow }}-${{ github.ref }}-${{ github.event.action == 'unlabeled' && github.event.label.name != 'botica:stack-member' && 'ignored-label' || 'review' }}
   cancel-in-progress: true
 
 permissions:
@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   review-policy:
-    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false && !contains(github.event.pull_request.labels.*.name, 'botica:stack-member')
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false && !contains(github.event.pull_request.labels.*.name, 'botica:stack-member') && (github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member')
     runs-on: ubuntu-latest
     outputs:
       run: ${{ steps.plan.outputs.run }}

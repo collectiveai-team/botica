@@ -5,11 +5,11 @@ title: Review depth follows the risk of the diff
 
 ## Directive
 
-1. The diff sets the risk of a pull request, and the author does not. The risk is the highest
-   floor among the files of the diff and what botica reads in it (a new dependency, a new
-   endpoint), taken from the configuration of the base branch. A label, a description or a
-   statement of the author leaves it as it is. A classifier can raise the risk and nothing lowers
-   it.
+1. Botica assesses branch risk from every best common ancestor to the head, and integration
+   risk from the destination tip to the integration result. Effective risk is the higher completed
+   assessment. Paths and supported detector facts set the floor under destination-owned policy.
+   Conservative policy bounds keep unknown facts explicit; they do not assert that a detector
+   completed. A label, description or statement of the author cannot lower the floor.
 2. The configuration lists the paths of four areas. `critical` holds authentication, billing,
    migrations and permissions. `platform` holds CI, build, release, infrastructure as code and the
    files that decide how a pull request is reviewed or that an agent loads as instructions. `core`
@@ -18,10 +18,11 @@ title: Review depth follows the risk of the diff
    list for an area belongs to `core`. A file that belongs to several areas takes the highest
    floor, and the files that decide the review or that an agent loads are `platform` whatever
    the configuration says. A pull request touches every area that one of its files belongs to.
-3. A pull request that touches `critical` or `platform` goes to a person, the owner of the area.
-   A model, a rule or a bot cannot lift that requirement. A pull request merges without a person
-   only when it touches `periphery` and nothing else, and ADR 0018 lets it merge: its gates
-   passed, CI included.
+3. Only a pull request that touches `critical` requires human review by the owner of the area.
+   A model, rule or bot cannot lift that requirement. Other areas, non-low risk, size and technical
+   failures do not require a person. They can select more roles or block automation. Any future
+   automation requires complete current evidence and an evaluated destination policy. The
+   implemented automation workflow remains disabled.
 4. A bot can approve a pull request, and a bot approval is not a person's approval. Where an area
    asks for approvals, only the approvals of people count, and the author of the pull request is
    not one of them.
@@ -33,8 +34,9 @@ title: Review depth follows the risk of the diff
 7. A workflow that reviews or classifies a pull request with a model runs only when its author is
    trusted. A trusted author has write access to the repository and opened the pull request from
    a branch of the repository. A pull request from a fork, or from an author without write
-   access, goes to a person. No workflow gives it a secret, and a workflow that holds a secret
-   does not run its code. The risk stays as the diff sets it.
+   access, cannot receive credential-bearing model execution. That restriction blocks execution
+   or automation, without requiring a person unless the change touches `critical`. No workflow
+   gives it a secret, and a workflow that holds a secret does not run its code.
 
 ## Why
 
@@ -63,11 +65,11 @@ as `critical` and `core/` as `core`.
 |---|---|---|
 | a page of `website/docs/` | `periphery` | no person, when ADR 0018 lets it merge |
 | a patch update of a package that the manifest lists, from the same source and the same constraint, released at least as long ago as the cooldown | `periphery` | no person, when ADR 0018 lets it merge |
-| a minor update of a dependency | the area of its manifest, with the floor raised to `medium` by the `new-dependency` signal | at least one person |
-| `.github/workflows/ci.yml` | `platform` | the owner of platform |
+| a minor update of a dependency | the area of its manifest, with the floor raised to `medium` by the `new-dependency` signal | planned roles, no human requirement unless critical |
+| `.github/workflows/ci.yml` | `platform` | planned roles, no human requirement |
 | `db/migrations/0042_add_index.sql` | `critical` | the owner of the area |
-| a public function in `core/` | `core` | at least one person |
-| a page of `website/docs/` and `.github/workflows/ci.yml` | `periphery` and `platform` | the owner of platform |
+| a public function in `core/` | `core` | planned roles, no human requirement |
+| a page of `website/docs/` and `.github/workflows/ci.yml` | `periphery` and `platform` | planned roles, no human requirement |
 
 A pull request whose description says "docs only" and that also edits `.github/workflows/ci.yml`
 is a `platform` change.

@@ -1,6 +1,6 @@
 //! Evidence-gated shadow recommendations. This module cannot merge or alter repository settings.
 
-use anyhow::{ensure, Result};
+use anyhow::{ensure, Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
@@ -121,7 +121,13 @@ fn critical(plan: &Value) -> bool {
 
 fn gates(plan: &Value, results: &Value, checks: &Value) -> Vec<Value> {
     let mut reasons = Vec::new();
-    if plan["status"] != "complete" || plan["risk"]["status"] != "complete" {
+    if plan["status"] != "complete"
+        || plan["risk"]["status"] != "complete"
+        || !matches!(
+            plan["risk"]["effective_tier"].as_str(),
+            Some("low" | "medium" | "high")
+        )
+    {
         reasons.push(json!({"code":"incomplete-risk","source":"gate","evidence":plan["risk"]}));
     }
     if results["inputs"] != plan["inputs"]
@@ -229,7 +235,7 @@ pub fn recommend(
         reasons.push(json!({"code":"context-changed","source":"gate",
             "evidence":"Acceptance context is not verified against current GitHub data."}));
     }
-    if state["change_context_complete"] == false {
+    if state["change_context_complete"] != true {
         reasons.push(json!({"code":"context-unavailable","source":"gate","evidence":"The full change context could not be collected within its bound."}));
     }
     if human {
@@ -241,18 +247,114 @@ pub fn recommend(
         probabilities = answer;
         reasons.extend(found);
     }
-    if plan["risk"]["effective_tier"]
-        .as_str()
-        .is_some_and(|tier| tier != "low")
-    {
-        reasons.push(json!({"code":"risk-not-low","source":"gate","evidence":plan["risk"]["effective_tier"]}));
+    let floor = &plan["risk"]["effective_tier"];
+    let raised = matches!(floor.as_str(), Some("low" | "medium"))
+        && reasons.iter().any(|reason| {
+            reason["source"] == "Jev"
+                && matches!(
+                    reason["code"].as_str(),
+                    Some("decision" | "unverifiable" | "impact-users")
+                )
+        });
+    let effective = if raised {
+        match floor.as_str() {
+            Some("low") => json!("medium"),
+            Some("medium" | "high") => json!("high"),
+            _ => floor.clone(),
+        }
+    } else {
+        floor.clone()
+    };
+    if effective.as_str().is_some_and(|tier| tier != "low") {
+        reasons.push(json!({"code":"risk-not-low","source":"gate","evidence":effective}));
     }
     let eligible = reasons.is_empty();
     Ok(
-        json!({"schema_version":1,"mode":"shadow","inputs":plan["inputs"],"effective_tier":plan["risk"]["effective_tier"],
+        json!({"schema_version":1,"mode":"shadow","inputs":plan["inputs"],"deterministic_tier":floor,
+        "effective_tier":effective,"raised_by_classifier":raised,
+        "risk_evidence":plan["risk"],
         "human_required":human,"automation_eligible":eligible,"merge_performed":false,
         "recommendation":if human {"human-review"} else if eligible {"automation-candidate"} else {"blocked"},
         "thresholds":thresholds,"question_digest":super::questions::digest(),"context_verified":state["context_verified"],
         "thresholds_calibrated":false,"probabilities":probabilities,"reasons":reasons}),
     )
+}
+
+/// Recheck role, check and acceptance evidence after the model responds.
+pub trait Evidence {
+    fn is_current(&self) -> Result<bool>;
+}
+
+/// Produce a recommendation whose eligibility is bound to the final evidence snapshot.
+pub fn recommend_current(
+    plan: &Value,
+    results: &Value,
+    checks: &Value,
+    state: &Value,
+    classifier: &impl Classifier,
+    thresholds: &Thresholds,
+    evidence: &impl Evidence,
+) -> Result<Value> {
+    let mut report = recommend(plan, results, checks, state, classifier, thresholds)?;
+    if report["automation_eligible"] == true && !evidence.is_current().unwrap_or(false) {
+        report["automation_eligible"] = json!(false);
+        report["recommendation"] = json!("blocked");
+        report["reasons"]
+            .as_array_mut()
+            .context("missing reasons")?
+            .push(json!({"code":"evidence-changed","source":"gate",
+                "evidence":"Role, check or acceptance evidence changed during classification."}));
+    }
+    Ok(report)
+}
+
+/// Render the recorded handoff, including model-localized evidence, without executing its content.
+pub fn handoff_markdown(report: &Value) -> String {
+    let mut text = format!("<!-- botica:review-handoff -->\n<!-- botica:review-risk base={} head={} tier={} -->\n# Review recommendation: {}\n\nHuman review required: {}. Shadow mode, no merge performed.\n\n",
+        report["inputs"]["base"].as_str().unwrap_or("unknown"),
+        report["inputs"]["head"].as_str().unwrap_or("unknown"),
+        report["effective_tier"].as_str().unwrap_or("incomplete"),
+        report["recommendation"].as_str().unwrap_or("blocked"), report["human_required"]);
+    text.push_str(&format!("Inputs:\n\n    {}\n\n", report["inputs"]));
+    text.push_str(&format!("## Risk and classifier\n\n    {}\n\n",
+        json!({"deterministic_tier":report["deterministic_tier"],"effective_tier":report["effective_tier"],
+            "raised_by_classifier":report["raised_by_classifier"],"evidence":report["risk_evidence"],
+            "probabilities":report["probabilities"],"thresholds":report["thresholds"]})));
+    text.push_str(&format!(
+        "Decision requested: {}\n\n",
+        report["decision_requested"]
+            .as_str()
+            .unwrap_or("resolve-evidence-blockers")
+    ));
+    text.push_str("## Controls reviewed\n\n");
+    for role in report["review_summary"]["roles"]
+        .as_array()
+        .into_iter()
+        .flatten()
+    {
+        text.push_str(&format!(
+            "    {}\n",
+            json!({"role":role["role"],"verdict":role["verdict"]})
+        ));
+    }
+    text.push_str("\n## Not reviewed\n\n");
+    for item in report["not_reviewed"].as_array().into_iter().flatten() {
+        text.push_str(&format!("    {item}\n"));
+    }
+    text.push_str("\n## Localization\n\n");
+    for item in report["localization"].as_array().into_iter().flatten() {
+        text.push_str(&format!("    {item}\n"));
+    }
+    text.push('\n');
+    for reason in report["reasons"].as_array().into_iter().flatten() {
+        text.push_str(&format!(
+            "## {}\n\nSource: {}\n\nEvidence:\n\n    {}\n\nVerify: {}\n\nResolve: {}\n\n",
+            reason["code"].as_str().unwrap_or("blocked"),
+            reason["source"],
+            reason,
+            reason["verify"].as_str().unwrap_or(""),
+            reason["resolve"].as_str().unwrap_or("")
+        ));
+    }
+    text
 }

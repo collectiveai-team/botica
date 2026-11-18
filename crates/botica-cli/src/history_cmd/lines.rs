@@ -17,8 +17,9 @@ const REFUTATIONS: [&str; 5] = [
 const DETAIL_MAX: usize = 64 * 1024;
 
 /// The `mode` values that ADR 0019 decision 6 defines.
-pub const MODES: [&str; 9] = [
+pub const MODES: [&str; 10] = [
     "full", "paths", "diff", "staged", "message", "judged", "reviewed", "mutants", "classify",
+    "feedback",
 ];
 
 /// What a run says of one rule that it evaluated.
@@ -52,8 +53,10 @@ impl Run {
     /// value enters none of the readings.
     pub fn is_known(&self) -> bool {
         MODES.contains(&self.mode.as_str())
-            && (matches!(self.origin.as_str(), "ci" | "hook" | "cli" | "classify")
-                || self.origin.starts_with("review:"))
+            && (matches!(
+                self.origin.as_str(),
+                "ci" | "hook" | "cli" | "classify" | "feedback"
+            ) || self.origin.starts_with("review:"))
     }
 
     /// Whether a person's hook or a CI job started the run in this mode.

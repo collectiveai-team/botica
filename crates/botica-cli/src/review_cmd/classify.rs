@@ -1,7 +1,9 @@
 use super::{consumers, evidence, jev::Jev};
 use crate::output::println;
 use anyhow::Result;
-use botica_core::review::classifier::{recommend, Classifier, Thresholds};
+use botica_core::review::classifier::{
+    handoff_markdown, recommend_current, Classifier, Evidence, Thresholds,
+};
 use clap::Args;
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -71,42 +73,7 @@ fn write_output(directory: &std::path::Path, report: &Value) -> Result<()> {
         }
     }
     std::fs::write(&json_path, serde_json::to_vec_pretty(report)?)?;
-    let mut text = format!("<!-- botica:review-handoff -->\n# Review recommendation: {}\n\nHuman review required: {}. Shadow mode, no merge performed.\n\n",
-        report["recommendation"].as_str().unwrap_or("blocked"), report["human_required"]);
-    text.push_str(&format!("Inputs:\n\n    {}\n\n", report["inputs"]));
-    text.push_str(&format!(
-        "Decision requested: {}\n\n",
-        report["decision_requested"]
-            .as_str()
-            .unwrap_or("resolve-evidence-blockers")
-    ));
-    text.push_str("## Controls reviewed\n\n");
-    for role in report["review_summary"]["roles"]
-        .as_array()
-        .into_iter()
-        .flatten()
-    {
-        text.push_str(&format!(
-            "    {}\n",
-            json!({"role":role["role"],"verdict":role["verdict"]})
-        ));
-    }
-    text.push_str("\n## Not reviewed\n\n");
-    for item in report["not_reviewed"].as_array().into_iter().flatten() {
-        text.push_str(&format!("    {item}\n"));
-    }
-    text.push('\n');
-    for reason in report["reasons"].as_array().into_iter().flatten() {
-        text.push_str(&format!(
-            "## {}\n\nSource: {}\n\nEvidence:\n\n    {}\n\nVerify: {}\n\nResolve: {}\n\n",
-            reason["code"].as_str().unwrap_or("blocked"),
-            reason["source"],
-            reason,
-            reason["verify"].as_str().unwrap_or(""),
-            reason["resolve"].as_str().unwrap_or("")
-        ));
-    }
-    std::fs::write(&markdown_path, text)?;
+    std::fs::write(&markdown_path, handoff_markdown(report))?;
     Ok(())
 }
 
@@ -178,7 +145,22 @@ pub(super) fn collect(args: &ClassifyArgs) -> Result<(super::tier::Assessment, V
             minimum_confidence: review.classifier.min_confidence,
         })
         .unwrap_or_default();
-    let mut report = recommend(&plan, &results, &checks, &state, &adapter, &thresholds)?;
+    let current = CurrentEvidence {
+        args,
+        assessment: &assessment,
+        plan: &plan,
+        results: &results,
+        checks: &checks,
+    };
+    let mut report = recommend_current(
+        &plan,
+        &results,
+        &checks,
+        &state,
+        &adapter,
+        &thresholds,
+        &current,
+    )?;
     if context_verified
         && args.github_pr.is_some_and(|pr| {
             !super::github::context_matches(args.repository.as_deref().unwrap_or(""), pr, &plan)
@@ -238,40 +220,31 @@ pub(super) fn collect(args: &ClassifyArgs) -> Result<(super::tier::Assessment, V
     });
     report["review_summary"] = results;
     report["checks"] = checks;
-    if report["automation_eligible"] == true && !fresh_evidence(args, &assessment, &plan, &report) {
-        report["automation_eligible"] = json!(false);
-        report["recommendation"] = json!("blocked");
-        report["reasons"].as_array_mut().unwrap().push(json!({"code":"evidence-changed",
-            "source":"gate","evidence":"Role, check or acceptance evidence changed during classification."}));
-        report["decision_requested"] = json!("resolve-evidence-blockers");
-    }
     handoff(&mut report);
     Ok((assessment, report))
 }
 
-fn fresh_evidence(
-    args: &ClassifyArgs,
-    assessment: &super::tier::Assessment,
-    plan: &Value,
-    report: &Value,
-) -> bool {
-    let Some((repository, pr)) = args.repository.as_deref().zip(args.github_pr) else {
-        return false;
-    };
-    let verified = || -> Result<bool> {
-        let roles = super::github::verify_roles(
-            repository,
-            pr,
-            assessment,
-            plan,
-            &report["review_summary"],
-        )?;
-        let checks = super::github::checks(repository, pr, plan)?;
-        Ok(roles == report["review_summary"]["provenance"]
-            && checks == report["checks"]
-            && super::github::context_matches(repository, pr, plan)?)
-    };
-    verified().unwrap_or(false)
+struct CurrentEvidence<'a> {
+    args: &'a ClassifyArgs,
+    assessment: &'a super::tier::Assessment,
+    plan: &'a Value,
+    results: &'a Value,
+    checks: &'a Value,
+}
+
+impl Evidence for CurrentEvidence<'_> {
+    fn is_current(&self) -> Result<bool> {
+        let Some((repository, pr)) = self.args.repository.as_deref().zip(self.args.github_pr)
+        else {
+            return Ok(false);
+        };
+        let roles =
+            super::github::verify_roles(repository, pr, self.assessment, self.plan, self.results)?;
+        let checks = super::github::checks(repository, pr, self.plan)?;
+        Ok(roles == self.results["provenance"]
+            && checks == *self.checks
+            && super::github::context_matches(repository, pr, self.plan)?)
+    }
 }
 
 pub(super) fn run(args: &ClassifyArgs) -> Result<ExitCode> {

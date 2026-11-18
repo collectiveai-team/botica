@@ -1,6 +1,6 @@
 use super::tier;
 use anyhow::{ensure, Result};
-use botica_core::history::{self, RuleEntry, RunLine};
+use botica_core::history::{self, RunLine};
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -18,11 +18,21 @@ pub(super) fn append(root: &Path, report: &Value, origin: &str) -> Result<()> {
         })
         .ok_or_else(|| anyhow::anyhow!("handoff has no full head object ID"))?;
     let started = SystemTime::now();
+    let reasons: Vec<_> = report["reasons"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|reason| {
+            json!({"code":reason["code"],"source":reason["source"],
+            "probability":reason["probability"]})
+        })
+        .collect();
     let detail = json!({"mode":report["mode"],"observation_only":report["observation_only"],
+        "deterministic_tier":report["deterministic_tier"],"effective_tier":report["effective_tier"],
         "inputs":report["inputs"],"recommendation":report["recommendation"],
         "human_required":report["human_required"],"automation_eligible":report["automation_eligible"],
         "merge_performed":false,"probabilities":report["probabilities"],"thresholds":report["thresholds"],
-        "question_digest":report["question_digest"],
+        "question_digest":report["question_digest"],"reasons":reasons,
         "thresholds_calibrated":false,"human_response":report["human_response"]});
     ensure!(
         detail.to_string().len() <= 64 * 1024,
@@ -33,15 +43,6 @@ pub(super) fn append(root: &Path, report: &Value, origin: &str) -> Result<()> {
     )?)
     .to_hex()
     .to_string();
-    let mut rules = BTreeMap::new();
-    rules.insert(
-        "classifier".into(),
-        RuleEntry {
-            hits: usize::from(report["automation_eligible"] != true),
-            hash: Some(hash.clone()),
-            ..RuleEntry::default()
-        },
-    );
     let run = RunLine {
         v: 1,
         run_id: history::run_id(started),
@@ -54,7 +55,7 @@ pub(super) fn append(root: &Path, report: &Value, origin: &str) -> Result<()> {
         key_id: None,
         mode: origin.into(),
         origin: origin.into(),
-        rules,
+        rules: BTreeMap::new(),
         detail: Some(detail),
     };
     history::append(root, &run, &[])

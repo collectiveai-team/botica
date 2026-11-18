@@ -79,7 +79,7 @@ pub fn build(
     let of_rules: Vec<&Run> = trusted
         .iter()
         .copied()
-        .filter(|run| !is_role(run) && run.origin != "classify")
+        .filter(|run| !is_role(run) && !matches!(run.origin.as_str(), "classify" | "feedback"))
         .collect();
     counts.rule_runs = of_rules.len();
     let (quiet, noisy) = quiet::rules(&of_rules, noise);

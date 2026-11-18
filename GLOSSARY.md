@@ -102,12 +102,18 @@ with the intended method.
 
 **Effective risk**:
 The higher of completed branch risk and integration risk. An incomplete assessment leaves
-effective risk unavailable.
+effective risk unavailable. The classifier can raise this floor with observed semantic
+evidence; it records the deterministic tier separately and cannot lower it.
 
 **Policy bound**:
 The lower and upper review tiers allowed by the configured areas and signal policy
 when some detector facts remain unknown. A complete policy bound does not establish
 that every detector completed or that an unknown fact is absent.
+
+**Evidence snapshot**:
+The pinned role results, integration check conclusions and acceptance context used for one
+classification. A candidate requires a matching snapshot after the model responds. It does not
+lock future changes in the code host.
 
 ### Botica
 

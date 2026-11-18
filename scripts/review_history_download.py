@@ -193,7 +193,17 @@ def _expected_artifacts(repo: str, run_id: int, workflow: str) -> set[str]:
             expected.add("botica-history-scheduled-mutants")
     if workflow == "review-shadow.yml":
         return _shadow_artifacts(repo, run_id)
+    if workflow == "review.yml" and _ignored_role_run(repo, run_id):
+        return set()
     return expected
+
+
+def _ignored_role_run(repo: str, run_id: int) -> bool:
+    jobs = list(_pages(f"repos/{repo}/actions/runs/{run_id}/jobs", "jobs"))
+    names = {job["name"] for job in jobs}
+    return {"plan", "review-gate"}.issubset(names) and all(
+        job["conclusion"] == "skipped" for job in jobs
+    )
 
 
 def _shadow_artifacts(repo: str, run_id: int) -> set[str]:

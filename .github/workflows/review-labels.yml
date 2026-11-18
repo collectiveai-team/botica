@@ -47,6 +47,9 @@ jobs:
           done <<< "$prs"
           exit "$failed"
   labels:
+    concurrency:
+      group: review-publication-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     permissions:
       contents: read
       pull-requests: write
@@ -107,7 +110,13 @@ jobs:
           current=$(gh pr view "$PR_NUMBER" --json baseRefOid,headRefOid --jq '[.baseRefOid,.headRefOid] | join(":")')
           test "$current" = "$BASE_SHA:$HEAD_SHA" || exit 0
           labels=$(gh pr view "$PR_NUMBER" --json labels --jq '[.labels[].name]')
-          jq --argjson labels "$labels" '{risk: ., labels: $labels}' .tmp/risk.json \
+          published=$(gh api --paginate "repos/$GH_REPO/issues/$PR_NUMBER/comments?per_page=100" \
+            | jq -sr --arg prefix "<!-- botica:review-risk base=$BASE_SHA head=$HEAD_SHA tier=" \
+              '[.[][] | select(.user.login == "github-actions[bot]") | .body | split("\n")[] | select(startswith($prefix)) | ltrimstr($prefix) | rtrimstr(" -->")] | if index("high") then "high" elif index("medium") then "medium" elif index("low") then "low" else "" end')
+          jq --arg published "$published" \
+            '{"low":0,"medium":1,"high":2} as $rank | if .status == "complete" and ($rank[$published] // -1) > ($rank[.effective_tier] // -1) then .effective_tier = $published else . end' \
+            .tmp/risk.json > .tmp/published-risk.json
+          jq --argjson labels "$labels" '{risk: ., labels: $labels}' .tmp/published-risk.json \
             | python scripts/review_labels.py > .tmp/labels.json
           while IFS= read -r label; do
             gh pr edit "$PR_NUMBER" --remove-label "$label"

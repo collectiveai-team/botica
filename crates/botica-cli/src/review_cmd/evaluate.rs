@@ -72,7 +72,10 @@ fn apply_observation(cases: &mut [EvaluationCase], report: &Value) -> Result<()>
             && report["checks"]["inputs"] == report["inputs"],
         "evaluation observation has incomplete or mismatched evidence"
     );
-    case.floor = report["effective_tier"].as_str().map(str::to_owned);
+    case.floor = report["deterministic_tier"]
+        .as_str()
+        .or_else(|| report["effective_tier"].as_str())
+        .map(str::to_owned);
     case.critical = report["human_required"].as_bool();
     case.inputs_verified = report["checks"]["producer_verified"] == true
         && report["review_summary"]["producer_verified"] == true

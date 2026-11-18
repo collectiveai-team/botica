@@ -71,6 +71,13 @@ fn every_job_runs_on_a_pull_request_without_blocking_it_and_within_a_cap() {
             "{}",
             pair.0
         );
+        assert!(
+            events
+                .iter()
+                .any(|event| event.as_str() == Some("unlabeled")),
+            "{}",
+            pair.0
+        );
         assert_eq!(job["needs"].as_str(), Some("review-policy"));
         assert!(written["jobs"]["review-policy"]["if"]
             .as_str()

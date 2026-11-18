@@ -2,6 +2,9 @@ use botica_core::review::classifier::{recommend, Classifier, Probabilities, Thre
 use serde_json::{json, Value};
 use std::cell::Cell;
 
+#[path = "review_classifier/freshness.rs"]
+mod freshness;
+
 struct InMemoryClassifier {
     fail: bool,
     calls: Cell<u32>,
@@ -37,7 +40,7 @@ fn checks() -> Value {
 }
 
 fn state() -> Value {
-    json!({"context_verified":true,"context":{"title":"Return a fixed answer","description":"Implement the decided answer",
+    json!({"context_verified":true,"change_context_complete":true,"context":{"title":"Return a fixed answer","description":"Implement the decided answer",
         "acceptance_criteria":["The answer is 42"]}})
 }
 
