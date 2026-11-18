@@ -4,7 +4,7 @@ Run `botica review evaluate --dataset bench/review-classifier/cases.jsonl`.
 Add `--observation <handoff.json>` for each recorded classification of a case.
 The command never calls a model, changes a label or enables automation.
 
-The initial seven cases use merged snapshots, not guessed historical event heads.
+The initial seven cases use merged snapshots.
 The merge commits of #220, #222, #226 and #284 were read from GitHub on 2026-11-18;
 their parents are recorded by Git. #316–318 are merged maintenance examples from
 `origin/main`. The three rejected-proposal labels cite their actual reverts. The

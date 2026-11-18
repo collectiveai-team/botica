@@ -99,7 +99,7 @@ are incomplete. An isolated bare repository reads source objects through an alte
 directory and writes synthetic objects only under `.tmp/`. It has no user configuration, hooks,
 filters, external diff or textconv commands. Destination attributes govern diff and merge.
 Custom, union and binary merge attributes are unsupported. The text-detector input limit is
-16 MiB per blob; exceeding it is a technical `unreadable-diff`, not a size gate.
+16 MiB per blob; exceeding it returns a technical `unreadable-diff`. Size remains informational.
 
 ## Consumers
 
@@ -111,8 +111,8 @@ can still select a role.
 The plan binds the report's base/head commits, integration method, configuration digest and
 botica version. It also records stage, review directory, the digest of the classification and
 the digests of trusted role-folder files, shared README and skills manifest. An absent optional
-shared README or manifest has a null digest. A changed input requires a new plan, not an updated
-label alone. An incomplete classification leaves final `selected_roles` null and exits with 2;
+shared README or manifest has a null digest. Changed inputs require a new plan before updating
+informational labels. An incomplete classification leaves final `selected_roles` null and exits with 2;
 partial comparison evidence and role criteria remain visible.
 Per-role `selection` fields explain criteria; only a complete plan's top-level `selected_roles`
 is a final selection.

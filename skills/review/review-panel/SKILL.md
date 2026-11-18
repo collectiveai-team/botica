@@ -42,8 +42,9 @@ and the folder of the run. It reads the JSON of the roles and writes `refute.jso
 ## 4. Report
 
 Print one table with every finding except validated duplicates, the most severe first.
-`unreachable`, `pre-existing` and `not-reproduced` are observations, not automatic dismissals:
-severity, role, file and line, title, and how to verify. Under it, list:
+Include severity, role, file and line, title, and how to verify.
+Keep `unreachable`, `pre-existing` and `not-reproduced` observations attached to their original
+findings, with the original blocking effect. Under the table, list:
 
 - the verdict of each role;
 - the findings that were refuted, one line each with the reason;

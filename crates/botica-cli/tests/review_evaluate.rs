@@ -26,6 +26,7 @@ fn incomplete_or_mismatched_observations_cannot_be_measured_as_candidates() {
         "stale-checks",
         "stale-reviews",
         "blocked-checks",
+        "byte-limit",
         "valid",
     ] {
         let mut report = observation.clone();
@@ -38,6 +39,10 @@ fn incomplete_or_mismatched_observations_cannot_be_measured_as_candidates() {
             "stale-reviews" => report["review_summary"]["inputs"]["head"] = json!("c".repeat(40)),
             "blocked-checks" => {
                 report["reasons"] = json!([{"code":"required-checks","source":"gate"}])
+            }
+            "byte-limit" => {
+                report["reasons"] = json!([{"code":"context-byte-limit","source":"gate"}]);
+                report["probabilities"] = Value::Null;
             }
             _ => {}
         }
@@ -53,7 +58,7 @@ fn incomplete_or_mismatched_observations_cannot_be_measured_as_candidates() {
                 ".tmp/observation.json",
             ],
         );
-        if matches!(invalid, "valid" | "blocked-checks") {
+        if matches!(invalid, "valid" | "blocked-checks" | "byte-limit") {
             assert!(output.status.success(), "{}", common::stderr(&output));
             let measured: Value = serde_json::from_slice(&output.stdout).unwrap();
             assert_eq!(measured["evaluated"], usize::from(invalid == "valid"));
@@ -61,11 +66,20 @@ fn incomplete_or_mismatched_observations_cannot_be_measured_as_candidates() {
                 measured["automation_candidates"],
                 usize::from(invalid == "valid")
             );
-            assert_eq!(
-                measured["unmeasured"],
-                usize::from(invalid == "blocked-checks")
-            );
+            assert_eq!(measured["unmeasured"], usize::from(invalid != "valid"));
             assert_eq!(measured["ready_for_activation"], false);
+            if invalid == "byte-limit" {
+                let mut expected: botica_core::review::evaluation::EvaluationCase =
+                    serde_json::from_value(case.clone()).unwrap();
+                expected.floor = Some("low".to_owned());
+                expected.critical = Some(false);
+                expected.checks_passed = Some(true);
+                expected.reviews_passed = Some(true);
+                expected.context_complete = Some(false);
+                expected.question_digest = Some(botica_core::review::questions::digest());
+                let digest = blake3::hash(&serde_json::to_vec(&vec![expected]).unwrap());
+                assert_eq!(measured["dataset_digest"], digest.to_hex().to_string());
+            }
         } else {
             assert_eq!(
                 output.status.code(),

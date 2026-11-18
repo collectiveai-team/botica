@@ -23,6 +23,20 @@ fn question_of(question: &str) -> Question {
 }
 
 #[test]
+fn plain_writing_question_preserves_the_documented_glossary_label_exception() {
+    let catalog = botica_catalog::Catalog::embedded().unwrap();
+    let rule = catalog.resolve("plain-writing").unwrap();
+    let Some(Question::Boolean { instructions, .. }) = &rule.implementations[0].question else {
+        panic!("plain-writing must ask a boolean question");
+    };
+    assert!(
+        instructions.contains("bold labels of glossary terms"),
+        "{instructions}"
+    );
+    assert!(instructions.contains("bold for emphasis"), "{instructions}");
+}
+
+#[test]
 fn a_boolean_question_may_describe_what_true_and_false_mean() {
     let question = question_of(
         "type = \"boolean\"\ninstructions = \"i\"\n\

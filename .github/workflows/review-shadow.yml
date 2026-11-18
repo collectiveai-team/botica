@@ -185,7 +185,7 @@ jobs:
               {
                 head -n 1 .botica/review/handoff.md
                 printf '<!-- botica:review-risk base=%s head=%s tier=%s -->\n' "$BASE_SHA" "$HEAD_SHA" "$tier"
-                printf 'Retained risk boundary: %s from the prior classifier for these inputs. Current evidence blockers still apply.\n\n' "$tier"
+                printf 'Retained tier: %s from the prior classifier for these inputs. Current evidence blockers still apply.\n\n' "$tier"
                 tail -n +3 .botica/review/handoff.md
               } > .tmp/published-handoff.md
               mv .tmp/published-handoff.md .botica/review/handoff.md

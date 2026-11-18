@@ -109,6 +109,7 @@ fn apply_observation(cases: &mut [EvaluationCase], report: &Value) -> Result<()>
                         "missing-acceptance-context"
                             | "context-unavailable"
                             | "context-limit"
+                            | "context-byte-limit"
                             | "context-changed"
                     )
                 )

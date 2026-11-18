@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "compiledAt": "2026-11-18T06:31:16Z",
+  "compiledAt": "2026-11-18T06:52:03Z",
   "compiledBy": "botica 0.20.2",
   "manual": true,
   "sources": [
@@ -655,7 +655,7 @@
         "type": "model",
         "question": {
           "type": "boolean",
-          "instructions": "Read the prose of the file. Does it carry a sign of model writing: inflated significance, a trailing clause that judges, words that avoid is and has, definition by negation, a sentence that strings three items for rhythm, hedges and vague attribution, bold for emphasis, text addressed to the reader, or a claim with no source? Commands, code, lists of names and a bulleted list of cases are not prose, and the bold label at the start of each decision or option of an ADR is not bold for emphasis.",
+          "instructions": "Read the prose of the file. Does it carry a sign of model writing: inflated significance, a trailing clause that judges, words that avoid is and has, definition by negation, a sentence that strings three items for rhythm, hedges and vague attribution, bold for emphasis, text addressed to the reader, or a claim with no source? Commands, code, lists of names and a bulleted list of cases are not prose, and the bold label at the start of each decision or option of an ADR is not bold for emphasis. Treat bold labels of glossary terms as definitions.",
           "criteria": {
             "true": "the prose carries one or more of the signs",
             "false": "the prose is plain and carries none of the signs"

@@ -97,7 +97,7 @@ def test_shadow_publishes_only_fresh_effective_risk_without_removing_area_labels
         )
         assert "area:core" not in calls
         if prior and not measured:
-            assert "Retained risk boundary: high" in (output / "handoff.md").read_text()
+            assert "Retained tier: high" in (output / "handoff.md").read_text()
             assert (
                 json.loads((output / "handoff.json").read_text())["publication_risk"][
                     "effective_tier"
