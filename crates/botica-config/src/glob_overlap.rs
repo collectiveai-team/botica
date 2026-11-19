@@ -150,20 +150,20 @@ fn alternative(glob: &str, reading: Reading) -> Alternative {
     segments
 }
 
-/// An element of a glob that can stand for several elements of another: `*` in a name, `**` in
-/// a path.
-trait Element {
-    fn wild(&self) -> bool;
-    /// Whether both can stand for the same one element; a wild element is handled apart.
-    fn same(&self, other: &Self) -> bool;
+/// A part of a glob: a token of a name, or a segment of a path. A part that spans many can stand for
+/// several parts of another: `*` in a name, `**` in a path.
+trait GlobPart {
+    fn spans_many(&self) -> bool;
+    /// Whether both can stand for the same one part; a part that spans many is handled apart.
+    fn can_match_one(&self, other: &Self) -> bool;
 }
 
-impl Element for Token {
-    fn wild(&self) -> bool {
+impl GlobPart for Token {
+    fn spans_many(&self) -> bool {
         *self == Self::Star
     }
 
-    fn same(&self, other: &Self) -> bool {
+    fn can_match_one(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Literal(x), Self::Literal(y)) => x == y,
             (Self::Star, _) | (_, Self::Star) => false,
@@ -172,12 +172,12 @@ impl Element for Token {
     }
 }
 
-impl Element for Segment {
-    fn wild(&self) -> bool {
+impl GlobPart for Segment {
+    fn spans_many(&self) -> bool {
         *self == Self::AnyDepth
     }
 
-    fn same(&self, other: &Self) -> bool {
+    fn can_match_one(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Name(x), Self::Name(y)) => intersect(x, y),
             _ => false,
@@ -187,34 +187,34 @@ impl Element for Segment {
 
 type Table = Vec<Vec<bool>>;
 
-/// A wild element at `i` of `a` takes nothing or one more element of `b`.
-fn wild_step<T: Element>(a: &[T], b_len: usize, table: &Table, i: usize, j: usize) -> bool {
-    i < a.len() && a[i].wild() && (table[i + 1][j] || (j < b_len && table[i][j + 1]))
+/// A part of `a` at `i` that spans many takes nothing or one more part of `b`.
+fn a_spans<T: GlobPart>(a: &[T], b_len: usize, table: &Table, i: usize, j: usize) -> bool {
+    i < a.len() && a[i].spans_many() && (table[i + 1][j] || (j < b_len && table[i][j + 1]))
 }
 
-/// A wild element at `j` of `b` takes nothing or one more element of `a`.
-fn wild_step_of_b<T: Element>(b: &[T], a_len: usize, table: &Table, i: usize, j: usize) -> bool {
-    j < b.len() && b[j].wild() && (table[i][j + 1] || (i < a_len && table[i + 1][j]))
+/// A part of `b` at `j` that spans many takes nothing or one more part of `a`.
+fn b_spans<T: GlobPart>(b: &[T], a_len: usize, table: &Table, i: usize, j: usize) -> bool {
+    j < b.len() && b[j].spans_many() && (table[i][j + 1] || (i < a_len && table[i + 1][j]))
 }
 
-fn both_step<T: Element>(a: &[T], b: &[T], table: &Table, i: usize, j: usize) -> bool {
+fn both_match_one<T: GlobPart>(a: &[T], b: &[T], table: &Table, i: usize, j: usize) -> bool {
     match (a.get(i), b.get(j)) {
-        (Some(x), Some(y)) => x.same(y) && table[i + 1][j + 1],
+        (Some(x), Some(y)) => x.can_match_one(y) && table[i + 1][j + 1],
         _ => false,
     }
 }
 
-/// Whether some sequence of elements is selected by both `a` and `b`.
-fn intersect<T: Element>(a: &[T], b: &[T]) -> bool {
+/// Whether some sequence of parts is selected by both `a` and `b`.
+fn intersect<T: GlobPart>(a: &[T], b: &[T]) -> bool {
     let (n, m) = (a.len(), b.len());
     let mut table: Table = vec![vec![false; m + 1]; n + 1];
     table[n][m] = true;
     for i in (0..=n).rev() {
         for j in (0..=m).rev() {
             if i < n || j < m {
-                table[i][j] = wild_step(a, m, &table, i, j)
-                    || wild_step_of_b(b, n, &table, i, j)
-                    || both_step(a, b, &table, i, j);
+                table[i][j] = a_spans(a, m, &table, i, j)
+                    || b_spans(b, n, &table, i, j)
+                    || both_match_one(a, b, &table, i, j);
             }
         }
     }
