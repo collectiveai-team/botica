@@ -44,25 +44,33 @@ fn read(args: &LintArgs) -> Result<Vec<Read>> {
     Ok(messages)
 }
 
+/// What the rules of scope `commit` found in the messages.
+pub(super) struct Checked {
+    pub(super) found: Vec<Diagnostic>,
+    /// The rules that checked at least one message.
+    pub(super) rules: Vec<String>,
+}
+
 /// The findings of the active rules of scope `commit` in the messages the arguments name, at the
 /// severity the configuration gives each rule.
-pub(super) fn findings(args: &LintArgs, resolution: &Resolution) -> Result<Vec<Diagnostic>> {
+pub(super) fn findings(args: &LintArgs, resolution: &Resolution) -> Result<Checked> {
     let rules: Vec<_> = resolution
         .entries()
         .iter()
         .filter(|entry| entry.active && entry.rule.scope == Some(Scope::Commit))
         .filter_map(|entry| {
             registry::build_message(&entry.rule.id, &entry.options)
-                .map(|rule| (rule, Severity::from(entry.severity)))
+                .map(|rule| (entry.rule.id.clone(), rule, Severity::from(entry.severity)))
         })
         .collect();
     let mut found = Vec::new();
-    for read in read(args)? {
+    let messages = read(args)?;
+    for read in &messages {
         let message = Message {
             place: &read.place,
             text: &read.text,
         };
-        for (rule, severity) in &rules {
+        for (_, rule, severity) in &rules {
             let start = found.len();
             rule.check(&message, &mut found);
             for finding in &mut found[start..] {
@@ -70,5 +78,10 @@ pub(super) fn findings(args: &LintArgs, resolution: &Resolution) -> Result<Vec<D
             }
         }
     }
-    Ok(found)
+    let rules = if messages.is_empty() {
+        Vec::new()
+    } else {
+        rules.into_iter().map(|(slug, _, _)| slug).collect()
+    };
+    Ok(Checked { found, rules })
 }

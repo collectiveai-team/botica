@@ -7,7 +7,7 @@ publish.workspace = true
 
 [features]
 default = []
-fs = ["dep:blake3", "dep:ignore", "dep:rayon"]
+fs = ["dep:ignore", "dep:rayon", "dep:libc"]
 
 [dependencies]
 aho-corasick = "1"
@@ -15,16 +15,21 @@ anyhow.workspace = true
 ast-grep-core.workspace = true
 ast-grep-language.workspace = true
 botica-astgrep = { path = "../botica-astgrep" }
-blake3 = { version = "1", optional = true }
+blake3 = "1"
 botica-catalog = { path = "../botica-catalog" }
 botica-complexity = { path = "../botica-complexity" }
+botica-config = { path = "../botica-config" }
 botica-ext = { path = "../botica-ext" }
 globset.workspace = true
 ignore = { workspace = true, optional = true }
 rayon = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
+serde-saphyr = "2"
 toml.workspace = true
+
+[target.'cfg(unix)'.dependencies]
+libc = { version = "0.2", optional = true }
 
 [dev-dependencies]
 criterion.workspace = true

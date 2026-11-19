@@ -1,0 +1,96 @@
+name: mutants-go
+
+# The mutants of the code that a pull request changes, with gremlins: `--diff` tests only the
+# mutants inside the changes against the base of the pull request. botica reads no report of
+# gremlins, so the job uploads its JSON report as the artifact `gremlins-mutants`, and the log lists
+# each mutant that LIVED.
+#
+# The job never blocks: `continue-on-error` keeps a failure of gremlins from failing the run, and
+# `timeout-minutes` caps the time. gremlins sets no threshold of efficacy, so a mutant that lived
+# does not fail it either.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, unlabeled]
+
+concurrency:
+  group: mutants-go-${{ github.workflow }}-${{ github.ref }}-${{ github.event.action == 'unlabeled' && github.event.label.name != 'botica:stack-member' && 'ignored-label' || 'review' }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  review-policy:
+    if: github.event.pull_request.draft == false && !contains(github.event.pull_request.labels.*.name, 'botica:stack-member') && (github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member')
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.plan.outputs.run }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: "0.13.6"
+          enable-cache: false
+      - name: Select mutation from trusted review policy
+        id: plan
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
+          if uvx botica@{{ param.botica-version }} review tier --help > "$RUNNER_TEMP/risk-help.txt" 2>&1; then
+            :
+          elif grep -q '^error: unrecognized subcommand' "$RUNNER_TEMP/risk-help.txt"; then
+            echo "::notice::The pinned release has no risk classifier; mutation runs conservatively."
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          else
+            echo "::error::Risk classifier capability check failed."
+            exit 2
+          fi
+          uvx botica@{{ param.botica-version }} review tier --diff "$BASE_SHA" --head "$HEAD_SHA" \
+            --integration-method merge --format json > "$RUNNER_TEMP/mutation-risk.json"
+          run=$(jq -r 'if .status == "complete" and (.effective_tier | IN("low", "medium", "high")) then .effective_tier != "low" else error("incomplete mutation risk") end' "$RUNNER_TEMP/mutation-risk.json")
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+  mutants:
+    needs: review-policy
+    if: needs.review-policy.outputs.run == 'true'
+    name: mutants of the change
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 30
+    env:
+      BASE_REF: ${{ github.base_ref }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # gremlins compares with the base branch, which the history holds.
+          fetch-depth: 0
+          persist-credentials: false
+
+      # The Go version is the one of go.mod.
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install gremlins
+        run: go install github.com/go-gremlins/gremlins/cmd/gremlins@v{{ param.gremlins-version }}
+
+      - name: Test the mutants of the change
+        run: gremlins unleash --diff "origin/$BASE_REF" --output gremlins.json --output-statuses lct
+
+      - name: Upload the report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: gremlins-mutants
+          path: gremlins.json
+          if-no-files-found: ignore
+          retention-days: 90

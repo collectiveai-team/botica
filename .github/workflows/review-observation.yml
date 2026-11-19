@@ -1,0 +1,14 @@
+name: review observation
+
+on:
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions: {}
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Signal a review event without checking out or executing PR code
+        run: ":"

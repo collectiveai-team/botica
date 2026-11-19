@@ -21,6 +21,19 @@ pub fn workflow(recipe: &str, template: &str) -> Value {
     parse(&text(recipe, template))
 }
 
+/// A workflow of this repository, `.github/workflows/<file>`.
+pub fn repository_workflow(file: &str) -> Value {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../.github/workflows")
+        .join(file);
+    let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    parse(&text)
+}
+
+pub fn steps(job: &Value) -> &[Value] {
+    job["steps"].as_sequence().expect("the steps")
+}
+
 /// The scan of `ci-python` with its lockfile replaced: what the scan of another ecosystem is.
 pub fn osv_scanner_for(lockfile: &str) -> Value {
     parse(

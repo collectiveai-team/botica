@@ -1,0 +1,55 @@
+name: review feedback
+
+on:
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows: ["review observation"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    if: github.event.workflow_run.event == 'pull_request_review' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      GH_REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ github.token }}
+      RUN_HEAD: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - run: cargo build --locked -p botica-cli
+      - name: Query human review observations instead of trusting event artifacts
+        run: |
+          mkdir -p .tmp
+          prs=$(jq -c '[.workflow_run.pull_requests[]?.number] | unique' "$GITHUB_EVENT_PATH")
+          if test "$prs" = '[]'; then
+            [[ "$RUN_HEAD" =~ ^[0-9a-f]{40}$ ]]
+            prs=$(gh api --paginate "repos/$GH_REPO/commits/$RUN_HEAD/pulls?per_page=100" \
+              | jq -sc '[.[][] | .number] | unique')
+          fi
+          jq -e 'length <= 100' <<< "$prs"
+          for pr in $(jq -r '.[]' <<< "$prs"); do
+            [[ "$pr" =~ ^[1-9][0-9]*$ ]]
+            gh api --paginate "repos/$GH_REPO/pulls/$pr/reviews?per_page=100" \
+              | jq -s '[.[][] | select(.user.type == "User") | .commit_id] | unique' > .tmp/review-heads.json
+            jq -e 'length <= 100' .tmp/review-heads.json
+            while IFS= read -r head; do
+              [[ "$head" =~ ^[0-9a-f]{40}$ ]]
+              target/debug/botica review feedback --repository "$GH_REPO" --github-pr "$pr" --head "$head"
+            done < <(jq -r '.[]' .tmp/review-heads.json)
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: review-feedback
+          path: .botica/history/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 90

@@ -89,6 +89,14 @@ pub(super) fn commits(range: &str) -> Result<Vec<(String, String)>> {
         .collect())
 }
 
+/// What git prints for `args`, trimmed; `None` when it fails, prints nothing or is not UTF-8.
+pub(super) fn answer(args: &[&str]) -> Option<String> {
+    let output = run(args).ok()?;
+    let text = String::from_utf8(output.stdout).ok()?;
+    let text = text.trim();
+    (output.status.success() && !text.is_empty()).then(|| text.to_owned())
+}
+
 /// The bytes of `path` at `rev`, or in the index when `rev` is empty; `None` when it is not
 /// there.
 pub(super) fn show(rev: &str, path: &str) -> Option<Vec<u8>> {

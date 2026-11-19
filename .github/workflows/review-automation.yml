@@ -1,0 +1,108 @@
+name: review automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number
+        required: true
+        type: string
+      enabled:
+        description: Request automation after explicit activation approval
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: review-automation-${{ inputs.pr }}
+  cancel-in-progress: false
+
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.policy.outputs.enabled }}
+    steps:
+      - id: policy
+        name: Keep automation disabled pending explicit activation
+        env:
+          REQUESTED_ENABLE: ${{ inputs.enabled }}
+        run: |
+          echo "enabled=false" >> "$GITHUB_OUTPUT"
+          if test "$REQUESTED_ENABLE" = true; then
+            echo "::notice::Automation is disabled in the reviewed workflow policy."
+          fi
+
+  merge:
+    needs: policy
+    if: needs.policy.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      checks: write
+      actions: read
+      pull-requests: write
+      issues: read
+    env:
+      GH_REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ inputs.pr }}
+    steps:
+      - name: Resolve current GitHub-owned inputs
+        id: inputs
+        run: |
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          base=$(gh pr view "$PR_NUMBER" --json baseRefOid --jq .baseRefOid)
+          head=$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "head=$head" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.inputs.outputs.base }}
+          fetch-depth: 0
+          persist-credentials: false
+      - run: cargo build --locked -p botica-cli
+      - name: Read current reviewed evidence
+        env:
+          BASE_SHA: ${{ steps.inputs.outputs.base }}
+          HEAD_SHA: ${{ steps.inputs.outputs.head }}
+        run: |
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
+          mkdir -p .tmp
+          target/debug/botica review context --repository "$GH_REPO" --pr "$PR_NUMBER" \
+            --base "$BASE_SHA" --head "$HEAD_SHA" > .tmp/context.json
+          run=$(gh api --paginate "repos/$GH_REPO/actions/workflows/review.yml/runs?event=pull_request_target&per_page=100" \
+            | jq -s --arg head "$HEAD_SHA" --arg base "$BASE_SHA" --argjson pr "$PR_NUMBER" \
+              '[.[].workflow_runs[] | select(.event == "pull_request_target") | select(any(.pull_requests[]; .number == $pr and .head.sha == $head and .base.sha == $base))] | max_by(.id) | select(.conclusion == "success").id // empty')
+          test -n "$run"
+          gh run download "$run" --name review-evidence --dir .tmp/evidence
+      - name: Authorize against fresh checks and the destination evaluation set
+        env:
+          BASE_SHA: ${{ steps.inputs.outputs.base }}
+          HEAD_SHA: ${{ steps.inputs.outputs.head }}
+          TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
+        run: |
+          target/debug/botica review authorize --diff "$BASE_SHA" --head "$HEAD_SHA" \
+            --integration-method merge --stage ci --context .tmp/context.json \
+            --results .tmp/evidence/.tmp/results --repository "$GH_REPO" --github-pr "$PR_NUMBER" \
+            > .tmp/authorization.json
+          jq -e '.allowed == true and .merge_performed == false' .tmp/authorization.json
+      - name: Request auto-merge only for the authorized head
+        env:
+          BASE_SHA: ${{ steps.inputs.outputs.base }}
+          HEAD_SHA: ${{ steps.inputs.outputs.head }}
+        run: |
+          current=$(gh pr view "$PR_NUMBER" --json baseRefOid,headRefOid --jq '[.baseRefOid,.headRefOid] | join(":")')
+          test "$current" = "$BASE_SHA:$HEAD_SHA"
+          target/debug/botica review context --repository "$GH_REPO" --pr "$PR_NUMBER" \
+            --base "$BASE_SHA" --head "$HEAD_SHA" > .tmp/current-context.json
+          cmp .tmp/context.json .tmp/current-context.json
+          jq -n --arg head "$HEAD_SHA" --rawfile authorization .tmp/authorization.json \
+            '{name:"botica-authorization",head_sha:$head,status:"completed",conclusion:"success",output:{title:"Current review evidence authorized",summary:$authorization}}' \
+            > .tmp/authorization-check.json
+          gh api --method POST "repos/$GH_REPO/check-runs" --input .tmp/authorization-check.json
+          gh pr merge "$PR_NUMBER" --auto --merge --match-head-commit "$HEAD_SHA"

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Review: Refute"
+  short_description: "Try to disprove each review finding"

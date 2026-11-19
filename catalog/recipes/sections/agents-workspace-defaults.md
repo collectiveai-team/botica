@@ -6,6 +6,18 @@
 - Use `.journals/` for local/private session journals when using the `journalist` skill.
 - Preserve unrelated user changes and avoid destructive Git commands unless explicitly requested.
 
+### Delivery workflow
+
+Before planning or implementing work across several tickets, read `botica explain pr-small-by-intent`
+and `.agents/skills/engineering-pr-review/references/delivery.md`. Keep a delivery plan beside the
+spec with slice acceptance criteria, owning tickets, contracts, pinned review ranges and evidence.
+Use upstream planning and implementation skills with that plan without editing their installed
+files. Apply their implementation steps per ticket and schedule their closing adversarial review
+at the owning slice's checkpoint; run targeted tests throughout. Record ticket work as local
+commits, invoke `/engineering-pr-review` at slice checkpoints and for integration, then `/pr` at
+the delivery boundary. Preserve blocked work and review evidence when escalating an unresolved
+finding.
+
 ### Resource Limits For Heavy Commands
 
 Run computationally expensive commands (heavy builds, full test suites, data jobs, memory-hungry tooling) under `systemd-run` so a runaway process cannot exhaust the machine:

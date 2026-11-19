@@ -1,0 +1,3 @@
+interface:
+  display_name: "Review: Tests"
+  short_description: "Check the tests would fail on a wrong change"

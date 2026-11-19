@@ -1,0 +1,293 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Botica review tier",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "inputs", "branch", "integration", "effective_tier"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "status": {"enum": ["complete", "incomplete"]},
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base", "head", "integration_method", "botica_version", "config"],
+      "properties": {
+        "base": {"$ref": "#/definitions/object_id"},
+        "head": {"$ref": "#/definitions/object_id"},
+        "integration_method": {"enum": ["merge", "squash", "rebase"]},
+        "botica_version": {"type": "string", "minLength": 1},
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "digest"],
+          "properties": {
+            "source": {"type": "string", "minLength": 1},
+            "digest": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}
+          }
+        }
+      }
+    },
+    "branch": {"$ref": "#/definitions/assessment"},
+    "integration": {"$ref": "#/definitions/assessment"},
+    "effective_tier": {"enum": ["low", "medium", "high", null]}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"inputs": {"properties": {"config": {"properties": {"digest": {"type": "null"}}}}}}},
+      "then": {
+        "properties": {
+          "status": {"const": "incomplete"},
+          "branch": {"properties": {"status": {"const": "incomplete"}, "reasons": {"contains": {"properties": {"code": {"const": "invalid-config"}}}}}},
+          "integration": {"properties": {"status": {"const": "incomplete"}, "reasons": {"contains": {"properties": {"code": {"const": "invalid-config"}}}}}}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "branch": {"properties": {"status": {"const": "complete"}}},
+          "integration": {"properties": {"status": {"const": "complete"}}}
+        }
+      },
+      "then": {
+        "properties": {
+          "status": {"const": "complete"},
+          "effective_tier": {"$ref": "#/definitions/tier"},
+          "inputs": {"properties": {"integration_method": {"const": "merge"}}}
+        }
+      },
+      "else": {
+        "properties": {"status": {"const": "incomplete"}, "effective_tier": {"type": "null"}}
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "complete"}}},
+      "then": {
+        "if": {
+          "anyOf": [
+            {"properties": {"branch": {"properties": {"tier": {"const": "high"}}}}},
+            {"properties": {"integration": {"properties": {"tier": {"const": "high"}}}}}
+          ]
+        },
+        "then": {"properties": {"effective_tier": {"const": "high"}}},
+        "else": {
+          "if": {
+            "anyOf": [
+              {"properties": {"branch": {"properties": {"tier": {"const": "medium"}}}}},
+              {"properties": {"integration": {"properties": {"tier": {"const": "medium"}}}}}
+            ]
+          },
+          "then": {"properties": {"effective_tier": {"const": "medium"}}},
+          "else": {"properties": {"effective_tier": {"const": "low"}}}
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "object_id": {"type": "string", "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$"},
+    "tier": {"enum": ["low", "medium", "high"]},
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to", "tier", "files", "areas", "signals", "evidence", "signal_evidence", "detector_evidence", "size", "bounds"],
+      "properties": {
+        "bounds": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object", "additionalProperties": false,
+              "required": ["lower", "upper", "possible_signals"],
+              "properties": {
+                "lower": {"$ref": "#/definitions/tier"},
+                "upper": {"enum": ["medium", "high"]},
+                "possible_signals": {"const": ["new-dependency", "new-endpoint"]}
+              }
+            }
+          ]
+        },
+        "from": {"$ref": "#/definitions/object_id"},
+        "to": {"$ref": "#/definitions/object_id"},
+        "tier": {"$ref": "#/definitions/tier"},
+        "files": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "areas": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"enum": ["critical", "platform", "core", "periphery"]}
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["paths", "kind", "status", "added", "deleted", "generated", "matches"],
+            "properties": {
+              "paths": {"$ref": "#/definitions/paths"},
+              "kind": {"enum": ["text", "binary", "symbolic-link", "submodule"]},
+              "status": {"type": "string", "pattern": "^[ACDMRTUXB][0-9]*$"},
+              "added": {"type": ["integer", "null"], "minimum": 0},
+              "deleted": {"type": ["integer", "null"], "minimum": 0},
+              "generated": {"type": "boolean"},
+              "matches": {
+                "type": "array", "minItems": 1,
+                "items": {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["location", "area", "tier", "paths"],
+                  "properties": {
+                    "location": {"type": "string", "minLength": 1},
+                    "area": {"enum": ["critical", "platform", "core", "periphery"]},
+                    "tier": {"$ref": "#/definitions/tier"},
+                    "paths": {"$ref": "#/definitions/paths"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "signal_evidence": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["name", "paths", "detector", "detail"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1},
+              "paths": {"$ref": "#/definitions/paths"},
+              "detector": {"type": "string", "minLength": 1},
+              "detail": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "detector_evidence": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["detector", "status", "paths", "detail"],
+            "properties": {
+              "detector": {"type": "string", "minLength": 1},
+              "status": {"enum": ["supported", "unsupported"]},
+              "paths": {"$ref": "#/definitions/paths"},
+              "detail": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "size": {
+          "type": "object", "additionalProperties": false,
+          "required": ["changed_lines", "non_text_files", "informational_only"],
+          "properties": {
+            "changed_lines": {"type": "integer", "minimum": 0},
+            "non_text_files": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+            "informational_only": {"const": true}
+          }
+        },
+        "signals": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"signals": {"contains": {"enum": ["new-dependency", "new-endpoint"]}}}},
+          "then": {"properties": {"tier": {"enum": ["medium", "high"]}}}
+        }
+      ]
+    },
+    "paths": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "assessment": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "tier", "comparisons"],
+          "properties": {
+            "status": {"const": "complete"},
+            "tier": {"$ref": "#/definitions/tier"},
+            "comparisons": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"$ref": "#/definitions/comparison"}
+            }
+          },
+          "allOf": [
+            {
+              "properties": {
+                "comparisons": {
+                  "items": {
+                    "properties": {
+                      "bounds": {}
+                    }
+                    ,"anyOf": [
+                      {"properties": {"detector_evidence": {"items": {"properties": {"status": {"const": "supported"}}}}}},
+                      {"properties": {"bounds": {"type": "object"}, "tier": {"enum": ["medium", "high"]}}}
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "comparisons": {"contains": {"properties": {"tier": {"const": "high"}}}}
+                }
+              },
+              "then": {"properties": {"tier": {"const": "high"}}},
+              "else": {
+                "if": {
+                  "properties": {
+                    "comparisons": {"contains": {"properties": {"tier": {"const": "medium"}}}}
+                  }
+                },
+                "then": {"properties": {"tier": {"const": "medium"}}},
+                "else": {"properties": {"tier": {"const": "low"}}}
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "reasons", "comparisons"],
+          "properties": {
+            "status": {"const": "incomplete"},
+            "reasons": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["code", "message"],
+                "properties": {
+                  "code": {
+                    "enum": [
+                      "missing-history",
+                      "no-common-ancestor",
+                      "merge-conflict",
+                      "unsupported-integration-method",
+                      "invalid-config",
+                      "unreadable-diff",
+                      "unsupported-detector",
+                      "integration-failed"
+                    ]
+                  },
+                  "message": {"type": "string", "minLength": 1}
+                }
+              }
+            },
+            "comparisons": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {"$ref": "#/definitions/comparison"}
+            }
+          }
+        }
+      ]
+    }
+  }
+}

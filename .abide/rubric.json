@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "compiledAt": "2026-11-01T06:33:21Z",
-  "compiledBy": "botica 0.18.1",
+  "compiledAt": "2026-11-19T18:31:21Z",
+  "compiledBy": "botica 0.20.2",
   "manual": true,
   "sources": [
     {
@@ -14,7 +14,7 @@
       "text": "A function either orders the steps of a task or carries out one of them. The orchestration (the order of the calls and the control flow) does not share a function with the rules of the domain and the I/O; it calls named units that hold them.",
       "source": {
         "path": "AGENTS.md",
-        "line": 91
+        "line": 93
       },
       "scope": [
         "bench/**/*.js",
@@ -226,7 +226,7 @@
       "text": "Layers and packages are named `entrypoints`, `api`, `database`, `impl` and `core`, an interface is a port and its implementation an adapter, and a concept that already has a name gets no synonym.",
       "source": {
         "path": "AGENTS.md",
-        "line": 92
+        "line": 94
       },
       "scope": [
         "bench/**/*.js",
@@ -318,7 +318,7 @@
       "text": "Tests drive the logic through in-memory adapters of the ports of the project: working fakes that implement the same interface as the production adapter. A mock stands in only for a third-party boundary that cannot reasonably be faked. `botica refs show in-memory-adapters` prints an adapter with its port.",
       "source": {
         "path": "AGENTS.md",
-        "line": 101
+        "line": 103
       },
       "scope": [
         "catalog/references/ai/tests/**/*.py",
@@ -366,7 +366,7 @@
       "text": "Tests call the unit under test through the public interface that production code calls, and assert on observable behaviour. A test reads no private attribute, calls no underscore-prefixed member and asserts on no internal state of the unit.",
       "source": {
         "path": "AGENTS.md",
-        "line": 102
+        "line": 104
       },
       "scope": [
         "catalog/references/ai/tests/**/*.js",
@@ -528,7 +528,7 @@
       "text": "Prose says what a thing is and what it does, in plain sentences that a file, a command or an issue of the repository backs, with no inflated words, hedges, trailing judgments, bold emphasis or claims without a source.",
       "source": {
         "path": "AGENTS.md",
-        "line": 108
+        "line": 110
       },
       "scope": [
         "AGENTS.md",
@@ -537,10 +537,13 @@
         ".github/pull_request_template.md",
         ".github/ISSUE_TEMPLATE/**",
         ".github/PULL_REQUEST_TEMPLATE/**",
+        ".github/review/**",
         "bench/layout-repos.txt",
         "bench/real-repos.txt",
+        "bench/review-classifier/README.md",
         "catalog/recipes/files/github/pull_request_template.md",
         "catalog/recipes/files/github/ISSUE_TEMPLATE/**",
+        "catalog/recipes/files/github/review/**",
         "catalog/recipes/sections/agents-workspace-defaults.md",
         "catalog/recipes/sections/botica-rules.md",
         "catalog/references/ai/README.md",
@@ -613,6 +616,7 @@
         "catalog/rules/structure/no-utils/README.md",
         "catalog/rules/testing/coverage-exclusion-reachable/README.md",
         "catalog/rules/testing/eager-test/README.md",
+        "catalog/rules/testing/mutant-survived/README.md",
         "catalog/rules/testing/no-coverage-exclusion/README.md",
         "catalog/rules/testing/no-coverage-pragma/README.md",
         "catalog/rules/testing/no-tautological-assert/README.md",
@@ -651,7 +655,7 @@
         "type": "model",
         "question": {
           "type": "boolean",
-          "instructions": "Read the prose of the file. Does it carry a sign of model writing: inflated significance, a trailing clause that judges, words that avoid is and has, definition by negation, a sentence that strings three items for rhythm, hedges and vague attribution, bold for emphasis, text addressed to the reader, or a claim with no source? Commands, code, lists of names and a bulleted list of cases are not prose, and the bold label at the start of each decision or option of an ADR is not bold for emphasis.",
+          "instructions": "Read the prose of the file. Does it carry a sign of model writing: inflated significance, a trailing clause that judges, words that avoid is and has, definition by negation, a sentence that strings three items for rhythm, hedges and vague attribution, bold for emphasis, text addressed to the reader, or a claim with no source? Commands, code, lists of names and a bulleted list of cases are not prose, and the bold label at the start of each decision or option of an ADR is not bold for emphasis. In a glossary file, the bold label that names each defined term is a definition, not bold for emphasis.",
           "criteria": {
             "true": "the prose carries one or more of the signs",
             "false": "the prose is plain and carries none of the signs"
@@ -664,7 +668,7 @@
       "text": "A comment says only what the code cannot say through its names and its structure: the reason for a choice that looks wrong, an invariant, a workaround with the link to its cause, or the docstring of a public interface.",
       "source": {
         "path": "AGENTS.md",
-        "line": 109
+        "line": 111
       },
       "scope": [
         "Cargo.toml",
@@ -709,6 +713,9 @@
         "catalog/recipes/ci-gitlab.toml",
         "catalog/recipes/ci-go-gitlab.toml",
         "catalog/recipes/ci-go.toml",
+        "catalog/recipes/ci-mutants-go.toml",
+        "catalog/recipes/ci-mutants-node.toml",
+        "catalog/recipes/ci-mutants-rust.toml",
         "catalog/recipes/ci-node-gitlab.toml",
         "catalog/recipes/ci-node.toml",
         "catalog/recipes/ci-openapi-compat-gitlab.toml",
@@ -947,6 +954,7 @@
         "catalog/rules/testing/family.toml",
         "catalog/rules/testing/coverage-exclusion-reachable/rule.toml",
         "catalog/rules/testing/eager-test/rule.toml",
+        "catalog/rules/testing/mutant-survived/rule.toml",
         "catalog/rules/testing/no-coverage-exclusion/rule.toml",
         "catalog/rules/testing/no-coverage-pragma/python.yml",
         "catalog/rules/testing/no-coverage-pragma/rule.toml",
@@ -1020,7 +1028,9 @@
         "crates/botica-core/src/extension_run.rs",
         "crates/botica-core/src/external_config.rs",
         "crates/botica-core/src/external_weakened.rs",
+        "crates/botica-core/src/fingerprint.rs",
         "crates/botica-core/src/heavy_imports.rs",
+        "crates/botica-core/src/history.rs",
         "crates/botica-core/src/layout.rs",
         "crates/botica-core/src/lib.rs",
         "crates/botica-core/src/lockfiles.rs",
@@ -1028,6 +1038,7 @@
         "crates/botica-core/src/postprocess.rs",
         "crates/botica-core/src/recipe_conflict.rs",
         "crates/botica-core/src/registry.rs",
+        "crates/botica-core/src/review.rs",
         "crates/botica-core/src/route_auth.rs",
         "crates/botica-core/src/timings.rs",
         "crates/botica-core/src/env_schema/**",
@@ -1038,6 +1049,7 @@
         "crates/botica-core/src/external_config/tools.rs",
         "crates/botica-core/src/import_layers/**",
         "crates/botica-core/src/report/**",
+        "crates/botica-core/src/review/**",
         "crates/botica-core/src/suppress/**",
         "crates/botica-core/src/walk/**",
         "crates/botica-core/tests/**",
@@ -1051,6 +1063,9 @@
         "scripts/check_rule_change.py",
         "scripts/check_skill_drift.py",
         "scripts/number_standard.py",
+        "scripts/review_history_download.py",
+        "scripts/review_labels.py",
+        "scripts/review_weekly_report.py",
         "scripts/site_filter.py",
         "scripts/site_language_tabs.py",
         "scripts/site_llms.py",
@@ -1090,7 +1105,7 @@
       "text": "Each concept of the domain has one term, the one that `GLOSSARY.md` defines, in the code and in the documentation. `GLOSSARY.md` lists each term with its definition and the words to avoid for it, and the code and the documentation use the term.",
       "source": {
         "path": "AGENTS.md",
-        "line": 110
+        "line": 112
       },
       "scope": [
         "AGENTS.md",
@@ -1099,6 +1114,7 @@
         ".github/pull_request_template.md",
         ".github/ISSUE_TEMPLATE/**",
         ".github/PULL_REQUEST_TEMPLATE/**",
+        ".github/review/**",
         "bench/ext_bare_except.py",
         "bench/ext_noop.py",
         "bench/ext_stdlib.py",
@@ -1109,9 +1125,11 @@
         "bench/mutate_comments.py",
         "bench/parity.py",
         "bench/self_parity.py",
+        "bench/review-classifier/README.md",
         "catalog/recipes/files/eslint.config.js",
         "catalog/recipes/files/github/pull_request_template.md",
         "catalog/recipes/files/github/ISSUE_TEMPLATE/**",
+        "catalog/recipes/files/github/review/**",
         "catalog/recipes/files/github/scripts/**",
         "catalog/recipes/files/gitlab/scripts/**",
         "catalog/recipes/sections/agents-workspace-defaults.md",
@@ -1227,6 +1245,7 @@
         "catalog/rules/structure/no-utils/README.md",
         "catalog/rules/testing/coverage-exclusion-reachable/README.md",
         "catalog/rules/testing/eager-test/README.md",
+        "catalog/rules/testing/mutant-survived/README.md",
         "catalog/rules/testing/no-coverage-exclusion/README.md",
         "catalog/rules/testing/no-coverage-pragma/README.md",
         "catalog/rules/testing/no-tautological-assert/README.md",
@@ -1278,7 +1297,9 @@
         "crates/botica-core/src/extension_run.rs",
         "crates/botica-core/src/external_config.rs",
         "crates/botica-core/src/external_weakened.rs",
+        "crates/botica-core/src/fingerprint.rs",
         "crates/botica-core/src/heavy_imports.rs",
+        "crates/botica-core/src/history.rs",
         "crates/botica-core/src/layout.rs",
         "crates/botica-core/src/lib.rs",
         "crates/botica-core/src/lockfiles.rs",
@@ -1286,6 +1307,7 @@
         "crates/botica-core/src/postprocess.rs",
         "crates/botica-core/src/recipe_conflict.rs",
         "crates/botica-core/src/registry.rs",
+        "crates/botica-core/src/review.rs",
         "crates/botica-core/src/route_auth.rs",
         "crates/botica-core/src/timings.rs",
         "crates/botica-core/src/env_schema/**",
@@ -1296,6 +1318,7 @@
         "crates/botica-core/src/external_config/tools.rs",
         "crates/botica-core/src/import_layers/**",
         "crates/botica-core/src/report/**",
+        "crates/botica-core/src/review/**",
         "crates/botica-core/src/suppress/**",
         "crates/botica-core/src/walk/**",
         "crates/botica-core/tests/**",
@@ -1311,6 +1334,9 @@
         "scripts/check_rule_change.py",
         "scripts/check_skill_drift.py",
         "scripts/number_standard.py",
+        "scripts/review_history_download.py",
+        "scripts/review_labels.py",
+        "scripts/review_weekly_report.py",
         "scripts/site_filter.py",
         "scripts/site_language_tabs.py",
         "scripts/site_llms.py",

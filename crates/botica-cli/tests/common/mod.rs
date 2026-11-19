@@ -1,16 +1,20 @@
 #![allow(dead_code)]
 
 pub mod builtin;
+pub mod codeowners;
 pub mod external;
 pub mod external_rule;
 pub mod fresh_rule;
 pub mod git_remote;
+pub mod history;
 pub mod judgment;
 pub mod lsp;
+pub mod mutants;
 pub mod new_rule;
 pub mod node;
 pub mod project_catalog;
 pub mod recipes;
+pub mod record;
 pub mod refs;
 
 use std::fs;

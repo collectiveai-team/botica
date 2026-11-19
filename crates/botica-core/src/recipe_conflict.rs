@@ -99,6 +99,7 @@ fn on_a_line(
         end_line,
         end_column,
         file_level: false,
+        fingerprint: None,
         measure: None,
         message,
     }

@@ -96,14 +96,18 @@ fn rules_of(found: &[Diagnostic]) -> Vec<&str> {
 
 #[test]
 fn a_file_that_is_not_utf8_is_not_given_to_the_rules_that_need_its_text() {
-    let found = engine_of_each_need().lint_bytes("notes.txt", &latin1(1));
+    let found = engine_of_each_need()
+        .lint_bytes("notes.txt", &latin1(1))
+        .found;
 
     assert_eq!(rules_of(&found), ["needs-bytes", "needs-path"]);
 }
 
 #[test]
 fn a_utf8_file_is_given_to_every_rule() {
-    let found = engine_of_each_need().lint_bytes("notes.txt", "caf\u{e9}\n".as_bytes());
+    let found = engine_of_each_need()
+        .lint_bytes("notes.txt", "caf\u{e9}\n".as_bytes())
+        .found;
 
     assert_eq!(
         rules_of(&found),
@@ -116,7 +120,7 @@ fn file_size_guard_counts_the_lines_of_a_latin1_file() {
     let rules: Vec<Box<dyn NativeRule>> = vec![Box::new(FileSizeGuard::default())];
     let engine = Engine::new(rules, AstGrepSet::default());
 
-    let found = engine.lint_bytes("notes.txt", &latin1(701));
+    let found = engine.lint_bytes("notes.txt", &latin1(701)).found;
 
     assert_eq!(found.len(), 1);
     assert_eq!(found[0].rule, "file-size-guard");
@@ -126,5 +130,8 @@ fn file_size_guard_counts_the_lines_of_a_latin1_file() {
         "{}",
         found[0].message
     );
-    assert!(engine.lint_bytes("notes.txt", &latin1(399)).is_empty());
+    assert!(engine
+        .lint_bytes("notes.txt", &latin1(399))
+        .found
+        .is_empty());
 }

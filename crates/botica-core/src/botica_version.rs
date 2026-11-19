@@ -362,6 +362,7 @@ fn on_its_line(
         end_line,
         end_column,
         file_level: false,
+        fingerprint: None,
         measure: None,
         message,
     }

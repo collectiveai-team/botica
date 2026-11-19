@@ -417,6 +417,7 @@ impl NativeRule for EagerTest {
                     listed.join(", "),
                     self.max
                 ),
+                fingerprint: None,
                 measure: None,
             });
         }

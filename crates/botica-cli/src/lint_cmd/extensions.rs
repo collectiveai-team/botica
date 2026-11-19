@@ -20,6 +20,10 @@ use crate::{extension, timings};
 pub(super) struct Ran {
     pub found: Vec<Diagnostic>,
     pub errors: Vec<RunError>,
+    /// The rules whose every process finished.
+    pub finished: Vec<String>,
+    /// The findings that a suppression comment silenced.
+    pub silenced: Vec<Diagnostic>,
 }
 
 /// One process: a rule and its implementation, and the files it is sent, as `(path, text)`.
@@ -51,14 +55,16 @@ pub(super) fn run(args: &LintArgs, setup: &Setup, sources: &[SourceFile]) -> Ran
     let mut found = Vec::new();
     let mut errors = Vec::new();
     let mut read = Read::new();
+    let mut failed: BTreeMap<&str, bool> = BTreeMap::new();
     for (job, Done { rule, outcome }) in jobs.iter().zip(done) {
         if args.timings {
             timings::print_extension(&rule.id, &outcome.time);
         }
-        let failed = outcome.failure.is_some();
+        let broke = outcome.failure.is_some();
+        *failed.entry(rule.id.as_str()).or_default() |= broke;
         for (path, _) in &job.files {
             let finished = read.entry((rule.id.as_str(), path)).or_insert(true);
-            *finished &= !failed;
+            *finished &= !broke;
         }
         found.extend(own_findings(rule, outcome.found));
         let warn = setup.pool.launcher().on_timeout == OnTimeout::Warn;
@@ -81,9 +87,17 @@ pub(super) fn run(args: &LintArgs, setup: &Setup, sources: &[SourceFile]) -> Ran
             message: format!("{error:#}"),
         }));
     }
+    let finished = failed
+        .into_iter()
+        .filter(|(_, broke)| !broke)
+        .map(|(slug, _)| slug.to_owned())
+        .collect();
+    let (found, silenced) = silenced(setup, sources, found, &read);
     Ran {
-        found: silenced(setup, sources, found, &read),
+        found,
         errors,
+        finished,
+        silenced,
     }
 }
 
@@ -150,13 +164,13 @@ fn execute<'a>(job: &Job<'a>, setup: &Setup, batch: usize) -> Done<'a> {
 
 /// What the comments of the files leave of the findings, and the findings about the comments
 /// that name an extension rule and silence nothing. The engine did not see these findings, so the
-/// comments are read here.
+/// comments are read here. The second list holds the findings that the comments silenced.
 fn silenced(
     setup: &Setup,
     sources: &[SourceFile],
     found: Vec<Diagnostic>,
     read: &Read<'_>,
-) -> Vec<Diagnostic> {
+) -> (Vec<Diagnostic>, Vec<Diagnostic>) {
     let policy = project::suppression_policy(&setup.resolution);
     let mut by_path: BTreeMap<String, Vec<Diagnostic>> = BTreeMap::new();
     for finding in found {
@@ -166,6 +180,7 @@ fn silenced(
             .push(finding);
     }
     let mut kept = Vec::new();
+    let mut dropped = Vec::new();
     for source in sources {
         let path = source.path.as_str();
         let mut findings = by_path.remove(path).unwrap_or_default();
@@ -174,10 +189,10 @@ fn silenced(
                 Some(&finished) => finished.then_some(true),
                 None => Some(false),
             };
-            policy.report_extensions(path, text, &ran, &mut findings);
+            dropped.extend(policy.report_extensions(path, text, &ran, &mut findings));
         }
         kept.extend(findings);
     }
     kept.extend(by_path.into_values().flatten());
-    kept
+    (kept, dropped)
 }

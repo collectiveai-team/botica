@@ -175,6 +175,7 @@ struct JsonDiagnostic<'a> {
     path: &'a str,
     range: Option<Range>,
     message: &'a str,
+    fingerprint: Option<&'a str>,
 }
 
 #[derive(Serialize)]
@@ -226,6 +227,7 @@ impl Serialize for Diagnostics<'_> {
                     },
                 }),
                 message: &d.message,
+                fingerprint: d.fingerprint.as_deref(),
             }
         }))
     }

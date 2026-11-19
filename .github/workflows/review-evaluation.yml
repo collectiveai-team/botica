@@ -1,0 +1,39 @@
+name: classifier evaluation
+
+on:
+  pull_request:
+    paths:
+      - crates/botica-core/src/review/**
+      - crates/botica-cli/src/review_cmd/**
+      - bench/review-classifier/**
+      - .github/workflows/review-evaluation.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: classifier-evaluation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - run: cargo build --locked -p botica-cli
+      - name: Measure recorded evidence without a live model call
+        run: |
+          mkdir -p .tmp
+          target/debug/botica review evaluate --dataset bench/review-classifier/cases.jsonl > .tmp/evaluation.json
+          jq '{cases,evaluated,unlabeled,unmeasured,incompatible,false_eligible,ready_for_activation,activation_performed}' .tmp/evaluation.json
+          echo "This measurement does not enable automation. Missing evidence remains pending." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: classifier-evaluation
+          path: .tmp/evaluation.json
+          include-hidden-files: true
+          retention-days: 90

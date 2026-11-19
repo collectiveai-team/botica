@@ -1,0 +1,134 @@
+name: review labels
+
+on:
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: review-labels-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  invalidate-destination:
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Invalidate classifications whose destination advanced
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          prs=$(gh api --paginate "repos/$GH_REPO/pulls?state=open&base=main&per_page=100" --jq '.[].number')
+          failed=0
+          while IFS= read -r pr; do
+            test -n "$pr" || continue
+            if ! (
+              current_labels=$(gh pr view "$pr" --json labels --jq '.labels[].name | select(startswith("risk:") or startswith("area:"))') || exit 1
+              while IFS= read -r label; do
+                test -n "$label" || continue
+                gh pr edit "$pr" --remove-label "$label" || exit 1
+              done <<< "$current_labels"
+              gh label create risk:incomplete --color 6e7781 --force || exit 1
+              gh pr edit "$pr" --add-label risk:incomplete
+            ); then
+              echo "::error::Destination invalidation failed for PR $pr; labels are not current evidence"
+              failed=1
+            fi
+          done <<< "$prs"
+          exit "$failed"
+  labels:
+    concurrency:
+      group: review-publication-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Invalidate previous classification before fallible work
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          current_labels=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name | select(startswith("risk:") or startswith("area:"))')
+          mapfile -t labels <<< "$current_labels"
+          for label in "${labels[@]}"; do
+            test -n "$label" || continue
+            gh pr edit "$PR_NUMBER" --remove-label "$label"
+          done
+          gh label create risk:incomplete --color 6e7781 --force
+          gh pr edit "$PR_NUMBER" --add-label risk:incomplete
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Build trusted botica
+        run: cargo build --locked -p botica-cli
+      - name: Assess untrusted head as Git data
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+        run: |
+          mkdir -p .tmp
+          if test "$BASE_BRANCH" != main; then
+            printf '{"status":"incomplete"}\n' > .tmp/risk.json
+            exit 0
+          fi
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
+          status=0
+          target/debug/botica review tier --diff "$BASE_SHA" --head "$HEAD_SHA" \
+            --integration-method merge --format json > .tmp/risk.json || status=$?
+          case "$status" in
+            0|2) ;;
+            *) printf '{"status":"incomplete"}\n' > .tmp/risk.json ;;
+          esac
+      - name: Replace risk and area labels for the current head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          current=$(gh pr view "$PR_NUMBER" --json baseRefOid,headRefOid --jq '[.baseRefOid,.headRefOid] | join(":")')
+          test "$current" = "$BASE_SHA:$HEAD_SHA" || exit 0
+          labels=$(gh pr view "$PR_NUMBER" --json labels --jq '[.labels[].name]')
+          published=$(gh api --paginate "repos/$GH_REPO/issues/$PR_NUMBER/comments?per_page=100" \
+            | jq -sr --arg prefix "<!-- botica:review-risk base=$BASE_SHA head=$HEAD_SHA tier=" \
+              '[.[][] | select(.user.login == "github-actions[bot]") | .body | split("\n")[] | select(startswith($prefix)) | ltrimstr($prefix) | rtrimstr(" -->")] | if index("high") then "high" elif index("medium") then "medium" elif index("low") then "low" else "" end')
+          jq --arg published "$published" \
+            '{"low":0,"medium":1,"high":2} as $rank | if .status == "complete" and ($rank[$published] // -1) > ($rank[.effective_tier] // -1) then .effective_tier = $published else . end' \
+            .tmp/risk.json > .tmp/published-risk.json
+          jq --argjson labels "$labels" '{risk: ., labels: $labels}' .tmp/published-risk.json \
+            | python scripts/review_labels.py > .tmp/labels.json
+          while IFS= read -r label; do
+            gh pr edit "$PR_NUMBER" --remove-label "$label"
+          done < <(jq -r '.remove[]' .tmp/labels.json)
+          while IFS= read -r label; do
+            gh label create "$label" --color 6e7781 --force
+            gh pr edit "$PR_NUMBER" --add-label "$label"
+          done < <(jq -r '.add[]' .tmp/labels.json)
+          current=$(gh pr view "$PR_NUMBER" --json baseRefOid,headRefOid --jq '[.baseRefOid,.headRefOid] | join(":")')
+          if test "$current" != "$BASE_SHA:$HEAD_SHA"; then
+            for label in low medium high; do
+              gh pr edit "$PR_NUMBER" --remove-label "risk:$label"
+            done
+            gh pr edit "$PR_NUMBER" --add-label risk:incomplete
+          fi

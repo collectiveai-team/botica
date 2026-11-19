@@ -14,7 +14,7 @@ on:
     branches: [main]
   pull_request:
     # `ready_for_review` runs the rule contract again: a draft may propose a standard numbered 0.
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
     paths:
       - "crates/**"
       - "catalog/**"
@@ -28,11 +28,15 @@ on:
       - "scripts/check_rule_change.py"
       - "scripts/check_references.sh"
       - ".github/workflows/ci.yml"
+      # A schedule cannot run on a pull request: its test in crates/ is its only check before merge.
+      # The test also reads the hook of agnix in prek.toml.
+      - ".github/workflows/scheduled-review.yml"
+      - "prek.toml"
   # Allow other workflows (e.g. a wheel release) to gate on this suite.
   workflow_call:
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}-${{ (github.event.action == 'labeled' || github.event.action == 'unlabeled' && github.event.label.name != 'botica:stack-member') && (contains(fromJSON('["contract-change","review-flow-standards"]'), github.event.label.name) && 'contract-label' || 'ignored-label') || 'review' }}
   cancel-in-progress: true
 
 permissions:
@@ -47,6 +51,7 @@ env:
 
 jobs:
   test:
+    if: github.event.action != 'labeled' && (github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member')
     name: fmt, clippy & test
     runs-on: ubuntu-latest
     steps:
@@ -97,6 +102,7 @@ jobs:
 
   # The code of the built-in topics, with the versions of the `references` group of pyproject.toml.
   references:
+    if: github.event.action != 'labeled' && (github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member')
     name: code of the topics
     runs-on: ubuntu-latest
     steps:
@@ -124,10 +130,10 @@ jobs:
 
   # A change that adds a rule may only touch what that kind of rule needs (scripts/check_rule_change.py).
   # Anything else is a contract change: label the pull request `contract-change` to accept it.
-  # A change touches at most one standard, and no label accepts more.
+  # The review-flow-standards label acknowledges only CES/122 and CES/134 (ADR 0021).
   rule-contract:
     name: rule contract
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && (!contains(fromJSON('["labeled","unlabeled"]'), github.event.action) || contains(fromJSON('["botica:stack-member","contract-change","review-flow-standards"]'), github.event.label.name))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -146,8 +152,163 @@ jobs:
           BASE: origin/${{ github.base_ref }}
           ACKNOWLEDGED: ${{ contains(github.event.pull_request.labels.*.name, 'contract-change') }}
           DRAFT: ${{ github.event.pull_request.draft }}
+          REVIEW_FLOW_STANDARDS: ${{ contains(github.event.pull_request.labels.*.name, 'review-flow-standards') }}
         run: |
           set --
           if [ "$ACKNOWLEDGED" = "true" ]; then set -- "$@" --acknowledged; fi
           if [ "$DRAFT" = "true" ]; then set -- "$@" --draft; fi
+          if [ "$REVIEW_FLOW_STANDARDS" = "true" ]; then
+            set -- "$@" --acknowledged-standard CES/122 --acknowledged-standard CES/134
+          fi
           uv run --locked python scripts/check_rule_change.py "$BASE" "$@"
+
+  # `botica lint` with the selection of `[tool.botica]`, on the lines that a pull request adds and
+  # on every file of a push, with `--record` (ADR 0019). The job uploads the history as the artifact
+  # `botica-history-lint`, also when the lint fails, for `botica history report`.
+  # BOTICA_HISTORY_KEY is not set, so the fingerprints of the artifact are unkeyed (ADR 0019
+  # decision 5); this repository is public, so a key is a decision of a maintainer.
+  lint:
+    if: github.event.action != 'labeled' && (github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member')
+    name: lint and record
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Build botica
+        run: cargo build --locked -p botica-cli
+
+      - name: Lint and record
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set --
+          if [ "$EVENT_NAME" = "pull_request" ]; then set -- --diff "origin/$BASE_REF" --output-format github; fi
+          target/debug/botica lint --record "$@"
+
+      # The action skips every file under a folder that starts with a dot, so the files are listed
+      # and `include-hidden-files` is set.
+      - name: Upload the history
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: botica-history-lint
+          path: |
+            .botica/history/runs.jsonl
+            .botica/history/findings.jsonl
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 90
+
+  # The mutants that the lines of a pull request add and the tests do not catch, as findings of
+  # `mutant-survived` (a preview rule, so it is selected here and not in `[tool.botica]`). The job
+  # never blocks: `continue-on-error` keeps a survivor, a timeout or a failure of cargo-mutants from
+  # failing the run, and `timeout-minutes` caps the time. The job uploads `mutants.out/` and the
+  # history as the artifact `botica-mutants`, also when the job is cut off by the cap.
+  # The tests of the workspace run as in `test`, except that the two switches whose tools this job
+  # does not install are unset, so those tests skip themselves instead of failing the baseline.
+  review-policy:
+    name: review policy
+    if: github.event_name == 'pull_request' && github.event.action != 'labeled' && github.event.pull_request.draft == false && !contains(github.event.pull_request.labels.*.name, 'botica:stack-member') && (github.event.action != 'unlabeled' || github.event.label.name == 'botica:stack-member')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      mutation: ${{ steps.plan.outputs.mutation }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Build trusted review planner
+        run: cargo build --locked -p botica-cli
+      - name: Select mutation from the trusted plan
+        id: plan
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
+          mkdir -p .tmp
+          if ! target/debug/botica review plan --help > /dev/null 2>&1; then
+            printf '{"status":"incomplete","reason":"destination planner is not installed","mutation_required":true}\n' > .tmp/review-plan.json
+            echo "mutation=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          target/debug/botica review plan --diff "$BASE_SHA" --head "$HEAD_SHA" \
+            --integration-method merge --stage ci --format json > .tmp/review-plan.json
+          echo "mutation=$(jq -r '.mutation_required' .tmp/review-plan.json)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v7
+        if: ${{ always() }}
+        with:
+          name: mutation-plan
+          path: .tmp/review-plan.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14
+
+  mutants:
+    name: mutants
+    needs: review-policy
+    if: github.event_name == 'pull_request' && needs.review-policy.outputs.mutation == 'true'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants --version 27.1.0 --locked
+
+      - name: Build botica
+        run: cargo build --locked -p botica-cli
+
+      # cargo-mutants exits with 2 when a mutant survives and 3 when a test times out; both leave a
+      # report. Any other code is a failed run. `--copy-vcs=true` copies `.git` into the scratch tree:
+      # tests such as `review_repository.rs` run `git ls-files`, and without it the unmutated baseline
+      # fails and no mutant is tested.
+      - name: Test the mutants of the change
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git diff "origin/$BASE_REF...HEAD" > pr.diff
+          status=0
+          env -u BOTICA_REQUIRE_RUFF -u BOTICA_REQUIRE_WORKFLOW_LINTERS \
+            cargo mutants --in-diff pr.diff --test-workspace=true --copy-vcs=true --cargo-arg=--locked || status=$?
+          case "$status" in
+            0|2|3) ;;
+            *) exit "$status" ;;
+          esac
+
+      # A change with no Rust line leaves no report.
+      - name: Report the survivors and record them
+        if: ${{ !cancelled() && hashFiles('mutants.out/outcomes.json') != '' }}
+        run: >
+          target/debug/botica lint --mutants mutants.out/outcomes.json --diff-file pr.diff
+          --preview --select mutant-survived --output-format github --record
+
+      - name: Upload the report and the history
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: botica-mutants
+          path: |
+            mutants.out/
+            .botica/history/runs.jsonl
+            .botica/history/findings.jsonl
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 90

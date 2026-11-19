@@ -264,7 +264,7 @@ impl Process for Live<'_> {
             .lint_all([(path, text)], 1)
             .map_err(|error| format!("{error:#}"))?;
         let mut found = own_findings(self.rule, found);
-        self.policy.silence(path, text, &mut found);
+        let _ = self.policy.silence(path, text, &mut found);
         Ok(postprocess::apply(
             found,
             project::verdicts(&self.pool.resolution, self.pool.prefix.as_deref()),

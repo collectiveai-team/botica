@@ -69,6 +69,52 @@ Documentation and the unit of proposals, not something a tool enforces: botica e
 **rules**, and a rule may cite the CES it implements. See `docs/adr/0002-ces-lifecycle-catalog-and-site.md`.
 _Avoid_: rule, convention, lint rule
 
+### Delivery
+
+**Ticket**:
+A tracked assignment with an acceptance criterion. A vertical slice may contain several tickets.
+Tickets are committed locally before the delivery PR. See CES-122.
+
+**Vertical slice**:
+An end-to-end behaviour reviewed against its acceptance criteria. Its review includes the
+implementation and the contracts it shares with other slices. See CES-122.
+_Avoid_: layer batch
+
+**Review block**:
+The diff between the pinned base and head commits of a vertical slice. The review record names
+those commits and any open findings. See `skills/engineering/engineering-pr-review/references/delivery.md`.
+_Avoid_: ticket review
+
+**Delivery**:
+The change submitted for one intent after its vertical slices have been integrated and reviewed.
+CES-122 sets one pull request per delivery as the default.
+_Avoid_: ticket PR
+
+### Review risk
+
+**Branch risk**:
+The highest review tier among the diffs from each best common ancestor to the branch head.
+See `docs/review-risk-contract.md`.
+
+**Integration risk**:
+The review tier of the diff from the destination tip to the integration result, using the
+intended integration method. See `docs/review-risk-contract.md`.
+
+**Effective risk**:
+The higher of completed branch risk and integration risk. It is unavailable when either
+assessment is incomplete. The classifier may only raise this floor with semantic evidence while
+retaining the deterministic tier. See `docs/review-risk-contract.md` and ADR 0018.
+
+**Policy bound**:
+The lower and upper review tiers allowed by the configured areas and signal policy when
+detector facts are unknown. The bound describes possible tiers; the detector evidence
+separately records unsupported inputs. See ADR 0020.
+
+**Evidence snapshot**:
+The inputs pinned for one classification: role results, integration check conclusions and
+acceptance context. They must still match after the model responds before a candidate is
+emitted. Later changes in GitHub remain possible. See `crates/botica-core/src/review/classifier.rs`.
+
 ### Botica
 
 **Botica**:
@@ -145,3 +191,14 @@ _Avoid_: source root, package dir
 `collectiveai-team/botica-pre-commit`, the repo prek installs the `botica` hook from. Its tag pins
 the wheel of the same version, so a repository needs no `botica` on its PATH.
 _Avoid_: hook repo
+
+**Review area**:
+The paths of a project that need the same people and the same minimum tier, declared in an
+entry of `[[review.areas]]` under one of the names `critical`, `platform`, `core` and `periphery`.
+A name may come in several entries. See `docs/adr/0018-risk-tiers-and-classifier.md`.
+_Avoid_: zone, risk class
+
+**Tier**:
+How much review a change needs: `low`, `medium` or `high`. Each area name has a floor, the lowest
+tier that an entry of that name takes.
+_Avoid_: level, risk level

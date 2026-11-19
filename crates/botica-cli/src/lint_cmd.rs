@@ -13,7 +13,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Instant, SystemTime};
 
 mod agents_refs;
 mod baseline;
@@ -23,14 +23,18 @@ mod editor;
 mod extensions;
 mod external;
 mod external_weakened;
+mod fingerprints;
 mod git;
 mod import_layers;
+mod inside;
 mod judged;
 mod lockfiles;
 mod messages;
+mod mutants;
 mod paths;
 mod project_files;
 pub(crate) mod recipe_conflict;
+mod record;
 mod settings_schema;
 
 use diff::Diff;
@@ -66,9 +70,27 @@ pub struct LintArgs {
     ext: Option<String>,
     /// Report the findings of a judge, read from this file (SARIF or the report of
     /// `abide check --json`), instead of linting: the ones of the active judgment rules, filtered
-    /// by the configuration and the `ignore-file` comments.
+    /// by the configuration and the `ignore-file` comments. Given again, for other runs of the
+    /// judge on the same change, a finding keeps its severity only when a majority of the runs
+    /// give it; otherwise it is info.
     #[arg(long, conflicts_with_all = ["paths", "ext", "statistics"])]
-    judged: Option<PathBuf>,
+    judged: Vec<PathBuf>,
+    /// Report the mutants that survived a run of cargo-mutants, read from its
+    /// `mutants.out/outcomes.json`, instead of linting: one finding of `mutant-survived` for each,
+    /// filtered by the configuration and the suppression comments.
+    #[arg(long, value_name = "OUTCOMES", conflicts_with_all = ["paths", "ext", "statistics", "judged"])]
+    mutants: Option<PathBuf>,
+    /// Validate role evidence against a fresh trusted review plan instead of linting.
+    #[arg(long, requires = "diff", conflicts_with_all = ["paths", "ext", "statistics", "judged", "mutants", "message", "write_baseline"])]
+    reviewed: Option<PathBuf>,
+    /// The reviewed head, when the trusted checkout is the destination.
+    #[arg(long, default_value = "HEAD", requires = "reviewed")]
+    review_head: String,
+    /// Validate CI role selection rather than local selection.
+    #[arg(long, requires = "reviewed")]
+    review_ci: bool,
+    #[arg(long, requires = "reviewed")]
+    review_context: Option<PathBuf>,
     /// Lint the files that changed since the merge base of this revision and `HEAD`, the changes
     /// not committed and the files git does not track included, and keep only the findings on the
     /// lines the change adds. The result cache is off.
@@ -84,21 +106,30 @@ pub struct LintArgs {
     /// Check the commit messages in these files, as git gives one to a `commit-msg` hook, with the
     /// rules of scope `commit` instead of linting files.
     #[arg(long, value_name = "FILE", num_args = 1.., group = "message",
-          conflicts_with_all = ["paths", "judged", "change", "ext"])]
+          conflicts_with_all = ["paths", "judged", "mutants", "change", "ext"])]
     commit_msg: Vec<PathBuf>,
     /// Like `--commit-msg`, for the message of each commit of `git log <RANGE>`.
     #[arg(long, value_name = "RANGE", group = "message",
-          conflicts_with_all = ["paths", "judged", "change", "ext"])]
+          conflicts_with_all = ["paths", "judged", "mutants", "change", "ext"])]
     commits: Option<String>,
     /// Like `--commit-msg`, for the title of a pull request: `--pr-title="$PR_TITLE"`.
     #[arg(long, value_name = "TITLE", group = "message",
-          conflicts_with_all = ["paths", "judged", "change", "ext"])]
+          conflicts_with_all = ["paths", "judged", "mutants", "change", "ext"])]
     pr_title: Option<String>,
     /// Write the findings that carry a measure, such as those of `cognitive-complexity`, to the
     /// file of `baseline` in the configuration, instead of reporting them, and exit with 0. It
     /// runs at the root of the project and takes no paths.
-    #[arg(long, conflicts_with_all = ["paths", "judged", "change", "message", "statistics"])]
+    #[arg(long, conflicts_with_all = ["paths", "judged", "mutants", "change", "message", "statistics"])]
     write_baseline: bool,
+    /// Append the findings and the rules that the run evaluated to `.botica/history/` under the
+    /// root of the project (ADR 0019), as `[history] record = true` does. A run of
+    /// `--write-baseline` reports no finding and records nothing.
+    #[arg(long, overrides_with = "no_record", conflicts_with = "write_baseline")]
+    record: bool,
+    /// Record nothing, whatever `[history] record` says. The last of `--record` and
+    /// `--no-record` wins.
+    #[arg(long, overrides_with = "record")]
+    no_record: bool,
     /// Files per `lint/files` request.
     #[arg(long, default_value_t = 256)]
     batch: usize,
@@ -151,7 +182,12 @@ impl LintArgs {
             exit_zero: false,
             fail_on: FailOn::Error,
             ext: None,
-            judged: None,
+            judged: Vec::new(),
+            mutants: None,
+            reviewed: None,
+            review_head: "HEAD".into(),
+            review_ci: false,
+            review_context: None,
             diff: None,
             staged: false,
             diff_file: None,
@@ -159,6 +195,8 @@ impl LintArgs {
             commits: None,
             pr_title: None,
             write_baseline: false,
+            record: false,
+            no_record: true,
             batch: 256,
             no_astgrep: false,
             no_prefilter: false,
@@ -230,6 +268,12 @@ struct Setup {
     baseline: Option<PathBuf>,
     /// What the configuration says of the recipes, for `recipe-conflict`.
     recipes: ProjectRecipes,
+    /// The `[history]` table of the configuration.
+    history: botica_config::HistoryConfig,
+    /// The key of the result cache with the configuration less its `[history]` table.
+    rules_fingerprint: String,
+    /// The rules that the plan gave a file, when the run records.
+    evaluated: Option<Arc<record::Evaluated>>,
 }
 
 impl Setup {
@@ -242,9 +286,27 @@ impl Setup {
         let io_error_active = project.is_active(IO_ERROR);
         let prefix = project.working_prefix();
         let config_key = project.fingerprint();
+        let history = project.loaded.config.history.clone();
+        let rules_fingerprint = if record::asked(args, &history) {
+            rules::fingerprint(
+                with_astgrep,
+                &project.resolution,
+                args.extra_rules.as_deref(),
+                &project.fingerprint_without_history(),
+            )?
+        } else {
+            String::new()
+        };
         let natives = project::natives(&project);
         let recipes = ProjectRecipes::of(&project);
         let resolution = Arc::new(project.resolution);
+        let evaluated = record::asked(args, &history).then(|| {
+            Arc::new(record::Evaluated::new(
+                Arc::clone(&resolution),
+                prefix.clone(),
+                with_astgrep,
+            ))
+        });
         let pool = ExtensionPool::new(
             Arc::clone(&resolution),
             prefix.clone(),
@@ -257,6 +319,16 @@ impl Setup {
             .any(|entry| entry.active && entry.rule.has_extension());
         let policy = project::suppression_policy(&resolution);
         let planner = project::planner(Arc::clone(&resolution), natives.index, prefix.clone());
+        let planner: botica_core::NativePlanner = match &evaluated {
+            Some(evaluated) => {
+                let evaluated = Arc::clone(evaluated);
+                Box::new(move |path| {
+                    evaluated.mark(path);
+                    planner(path)
+                })
+            }
+            None => planner,
+        };
         let exclusion = project::exclusion(Arc::clone(&resolution), prefix.clone());
         let inclusion = project::inclusion(Arc::clone(&resolution), prefix.clone());
         let engine = rules::build_engine(
@@ -300,30 +372,71 @@ impl Setup {
             pool,
             baseline,
             recipes,
+            history,
+            rules_fingerprint,
+            evaluated,
         })
+    }
+
+    /// Which paths of findings are inside the project.
+    fn inside(&self) -> inside::Inside<'_> {
+        inside::Inside {
+            root: &self.project_root,
+            prefix: self.prefix.as_deref(),
+        }
     }
 }
 
 pub fn run(args: LintArgs) -> Result<ExitCode> {
+    if let Some(directory) = &args.reviewed {
+        return crate::review_cmd::reviewed(
+            args.diff.clone().context("--reviewed requires --diff")?,
+            args.review_head.clone(),
+            args.review_ci,
+            args.review_context.clone(),
+            directory,
+            args.record && !args.no_record,
+        );
+    }
     let format = Format::from(args.output_format);
     check_statistics_format(&args, format)?;
     let total = Instant::now();
+    let started = SystemTime::now();
 
     let mut setup = Setup::build(&args)?;
+    let recording = setup.evaluated.is_some();
     if messages::asked(&args) {
-        let diagnostics = messages::findings(&args, &setup.resolution)?;
+        let messages::Checked {
+            found: mut diagnostics,
+            rules,
+        } = messages::findings(&args, &setup.resolution)?;
+        fingerprints::stamp(
+            format,
+            recording,
+            &setup.inside(),
+            fingerprints::Read::Messages,
+            &mut diagnostics,
+        );
+        if recording {
+            let run = record::Run::of(&setup, started, record::Mode::Message, rules, &diagnostics);
+            record::write(&run);
+        }
         write_report(&args, format, &setup, &diagnostics, &[])?;
         return Ok(exit_code(&[], &diagnostics, &args));
     }
     let diff = Diff::read(&args)?;
-    if let Some(sarif) = &args.judged {
-        return run_judged(&args, format, &setup, sarif, diff.as_ref());
+    if !args.judged.is_empty() {
+        return judged::run(&args, format, &setup, &args.judged, diff.as_ref(), started);
+    }
+    if let Some(outcomes) = &args.mutants {
+        return mutants::run(&args, format, &setup, outcomes, diff.as_ref(), started);
     }
     let known = known_findings(&args, &setup)?;
     let root = std::env::current_dir()?;
     let Linted {
         sources,
         mut diagnostics,
+        silenced,
         io_errors,
         unreadable,
         files_read,
@@ -333,21 +446,31 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     }
 
     let mut errors = read_errors(unreadable);
+    let mut failed_rules = Vec::new();
     if let Some(command) = &args.ext {
-        errors.extend(run_extension(&args, command, &sources, &mut diagnostics));
+        let start = diagnostics.len();
+        let failed = run_extension(&args, command, &sources, &mut diagnostics);
+        if !failed.is_empty() {
+            failed_rules.extend(diagnostics[start..].iter().map(|d| d.rule.clone()));
+        }
+        errors.extend(failed);
     }
+    let mut hidden = record::Hidden::new(silenced);
     if setup.has_extensions {
         let ran = extensions::run(&args, &setup, &sources);
         diagnostics.extend(ran.found);
         errors.extend(ran.errors);
+        hidden.add_extensions(ran.finished, ran.silenced);
     }
     diagnostics.extend(io_errors);
-    diagnostics.extend(project_files::findings(
+    let project = project_files::findings(
         &setup.resolution,
         &setup.recipes,
         &setup.project_root,
         setup.prefix.as_deref(),
-    ));
+    );
+    diagnostics.extend(project.found);
+    hidden.silenced.extend(project.silenced);
     let mut diagnostics = postprocess::apply(
         diagnostics,
         project::verdicts(&setup.resolution, setup.prefix.as_deref()),
@@ -355,12 +478,27 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     if args.write_baseline {
         return write_baseline(&setup, &diagnostics, &errors);
     }
-    if let Some(known) = &known {
-        known.apply(setup.prefix.as_deref(), &mut diagnostics);
-    }
+    hidden.baselined = known
+        .as_ref()
+        .map(|known| known.apply(setup.prefix.as_deref(), &mut diagnostics))
+        .unwrap_or_default();
+    hidden.failed_rules = failed_rules;
     if let Some(diff) = &diff {
         diagnostics.retain(|diagnostic| diff.changes.keeps(diagnostic));
+        hidden.keep_only(|diagnostic| diff.changes.keeps(diagnostic));
     }
+    fingerprints::stamp(
+        format,
+        recording,
+        &setup.inside(),
+        fingerprints::Read::Files {
+            sources: &sources,
+            root: &root,
+            staged: diff.as_ref().is_some_and(Diff::is_staged),
+        },
+        &mut diagnostics,
+    );
+    record::files(&args, &setup, started, &diagnostics, hidden);
     write_report(&args, format, &setup, &diagnostics, &errors)?;
     if args.timings {
         timings::print_rules(setup.engine.rule_times());
@@ -409,32 +547,6 @@ fn write_baseline(
         path.display()
     );
     Ok(ExitCode::SUCCESS)
-}
-
-fn run_judged(
-    args: &LintArgs,
-    format: Format,
-    setup: &Setup,
-    sarif: &std::path::Path,
-    diff: Option<&Diff>,
-) -> Result<ExitCode> {
-    let text = std::fs::read_to_string(sarif)
-        .with_context(|| format!("cannot read `{}`", sarif.display()))?;
-    let mut judged = judged::filter(&setup.resolution, setup.prefix.as_deref(), &text, |path| {
-        std::fs::read_to_string(path).ok()
-    })?;
-    if let Some(diff) = diff {
-        judged
-            .diagnostics
-            .retain(|diagnostic| diff.changes.keeps(diagnostic));
-    }
-    for rule in &judged.left_out {
-        eprintln!(
-            "botica: `{rule}` is not a judgment rule of the catalog: its finding is left out"
-        );
-    }
-    write_report(args, format, setup, &judged.diagnostics, &[])?;
-    Ok(exit_code(&[], &judged.diagnostics, args))
 }
 
 fn check_statistics_format(args: &LintArgs, format: Format) -> Result<()> {

@@ -17,7 +17,7 @@ fn list_prints_the_built_in_recipes_with_what_they_extend_and_how_much_they_list
              lockfiles, the rules of botica itself, the skills, .gitignore, the prek hooks, the \
              workflow of abide and the sections of AGENTS.md\n  \
              rules: 14, judgment: 11, exports: 2\n  \
-             skills: 31, files: 5, sections: 2, gitignore: 10, params: 2\n  from: built-in\n"
+             skills: 39, files: 13, sections: 2, gitignore: 10, params: 2\n  from: built-in\n"
         ),
         "{text}"
     );
@@ -75,6 +75,9 @@ fn list_adds_the_recipes_of_the_project_in_the_order_of_their_ids() {
             "ci-gitlab",
             "ci-go",
             "ci-go-gitlab",
+            "ci-mutants-go",
+            "ci-mutants-node",
+            "ci-mutants-rust",
             "ci-node",
             "ci-node-gitlab",
             "ci-openapi-compat",
@@ -216,6 +219,14 @@ fn show_prints_the_rules_of_a_recipe_after_the_ones_it_extends_with_their_code_a
              - .github/pull_request_template.md (template files/github/pull_request_template.md, from base)\n\
              - .github/ISSUE_TEMPLATE/bug_report.md (template files/github/ISSUE_TEMPLATE/bug_report.md, from base)\n\
              - .github/ISSUE_TEMPLATE/feature_proposal.md (template files/github/ISSUE_TEMPLATE/feature_proposal.md, from base)\n\
+             - .github/review/README.md (template files/github/review/README.md, from base)\n\
+             - .github/review/spec/REVIEW.md (template files/github/review/spec/REVIEW.md, from base)\n\
+             - .github/review/security/REVIEW.md (template files/github/review/security/REVIEW.md, from base)\n\
+             - .github/review/tests/REVIEW.md (template files/github/review/tests/REVIEW.md, from base)\n\
+             - .github/review/architecture/REVIEW.md (template files/github/review/architecture/REVIEW.md, from base)\n\
+             - .github/review/contracts/REVIEW.md (template files/github/review/contracts/REVIEW.md, from base)\n\
+             - .github/review/performance/REVIEW.md (template files/github/review/performance/REVIEW.md, from base)\n\
+             - .github/review/refute/REVIEW.md (template files/github/review/refute/REVIEW.md, from base)\n\
              - pyproject.toml (template files/pyproject-base.toml, from base-python)\n\n\
              ## Sections\n\n- AGENTS.md, `## Repo Workspace Defaults` \
              (template sections/agents-workspace-defaults.md, from base)\n\

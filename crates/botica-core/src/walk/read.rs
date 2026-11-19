@@ -1,6 +1,5 @@
 use super::{relative_path, sort, Walked};
-use crate::diagnostic::Diagnostic;
-use crate::engine::{Engine, Plan};
+use crate::engine::{Engine, Findings, Plan};
 use crate::extension_run::language_of;
 use rayon::prelude::*;
 use std::io;
@@ -103,9 +102,9 @@ pub(super) fn open_named<'a>(
 }
 
 /// What the engine finds in a file opened by `open_named`.
-pub(super) fn lint_opened(engine: &Engine, opened: &Opened<'_>) -> Vec<Diagnostic> {
+pub(super) fn lint_opened(engine: &Engine, opened: &Opened<'_>) -> Findings {
     let Some(plan) = &opened.plan else {
-        return Vec::new();
+        return Findings::default();
     };
     if opened.binary {
         engine.lint_unread(&opened.name, plan)
@@ -128,14 +127,20 @@ fn split<T>(outcomes: Vec<Outcome<T>>) -> (Vec<T>, Vec<Unreadable>) {
     (got, failed)
 }
 
-fn walked(found: Vec<Vec<Diagnostic>>, mut unreadable: Vec<Unreadable>) -> Walked {
+fn walked(found: Vec<Findings>, mut unreadable: Vec<Unreadable>) -> Walked {
     let read = found.len();
-    let mut diagnostics: Vec<Diagnostic> = found.into_iter().flatten().collect();
+    let mut diagnostics = Vec::new();
+    let mut silenced = Vec::new();
+    for file in found {
+        diagnostics.extend(file.found);
+        silenced.extend(file.silenced);
+    }
     sort(&mut diagnostics);
     unreadable.sort_by(|a, b| a.path.cmp(&b.path));
     Walked {
         read,
         diagnostics,
+        silenced,
         unreadable,
         asked_for: Vec::new(),
     }
@@ -184,7 +189,7 @@ fn read_into<'a>(path: &Path, buf: &'a mut Vec<u8>) -> io::Result<Option<&'a [u8
 /// Like `read_and_lint` for when nobody needs the texts afterwards (no extension): each file's
 /// text is dropped as soon as it is linted.
 pub fn lint_streaming(engine: &Engine, root: &Path, paths: &[PathBuf]) -> Walked {
-    let outcomes: Vec<Outcome<Vec<Diagnostic>>> = paths
+    let outcomes: Vec<Outcome<Findings>> = paths
         .par_iter()
         .map_init(Vec::new, |buf, path| {
             open_named(engine, root, path, buf, false).map(|opened| lint_opened(engine, &opened))
@@ -216,7 +221,7 @@ pub fn read_all(
 /// Reads and lints each file on the same thread, with no barrier between reading and linting.
 /// Returns the texts too, for extensions.
 pub fn read_and_lint(engine: &Engine, root: &Path, paths: &[PathBuf]) -> (Vec<SourceFile>, Walked) {
-    let outcomes: Vec<Outcome<(SourceFile, Vec<Diagnostic>)>> = paths
+    let outcomes: Vec<Outcome<(SourceFile, Findings)>> = paths
         .par_iter()
         .map_init(Vec::new, |buf, path| {
             open_named(engine, root, path, buf, true).map(|opened| {
@@ -230,6 +235,6 @@ pub fn read_and_lint(engine: &Engine, root: &Path, paths: &[PathBuf]) -> (Vec<So
         })
         .collect();
     let (read, unreadable) = split(outcomes);
-    let (sources, found): (Vec<SourceFile>, Vec<Vec<Diagnostic>>) = read.into_iter().unzip();
+    let (sources, found): (Vec<SourceFile>, Vec<Findings>) = read.into_iter().unzip();
     (sources, walked(found, unreadable))
 }

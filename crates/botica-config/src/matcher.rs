@@ -34,6 +34,13 @@ fn anchored_under(pattern: &str) -> Option<Vec<String>> {
     )
 }
 
+/// A directory from the project root with nothing around it: no empty part, `.` or `..`.
+pub(crate) fn is_plain_dir(value: &str) -> bool {
+    value
+        .split('/')
+        .all(|part| !part.is_empty() && part != "." && part != "..")
+}
+
 impl PathMatcher {
     pub fn new(patterns: &[String]) -> Result<Self, Vec<(usize, String)>> {
         let mut builder = GitignoreBuilder::new("");

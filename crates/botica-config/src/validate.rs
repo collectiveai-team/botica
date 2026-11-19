@@ -3,9 +3,10 @@ use std::collections::BTreeMap;
 use botica_catalog::{Catalog, Ecosystem, OptionSpec, OptionType, Rule};
 
 use crate::issue::{issue, ConfigError, ConfigIssue};
-use crate::matcher::PathMatcher;
+use crate::matcher::{is_plain_dir, PathMatcher};
 use crate::model::{Config, Override, RuleConfig};
 use crate::selector::{check_rule, Selector};
+use crate::validate_review::review;
 
 impl Config {
     pub fn validate(&self, catalog: &Catalog) -> Result<(), ConfigError> {
@@ -23,6 +24,7 @@ impl Config {
             rule_id(&mut found, catalog, &location, new);
         }
         rules(&mut found, catalog, &self.rules);
+        review(&mut found, &self.review);
         for (index, over) in self.overrides.iter().enumerate() {
             overrides(&mut found, catalog, index, over);
         }
@@ -59,10 +61,7 @@ fn code_dirs(found: &mut Vec<ConfigIssue>, configured: Option<&BTreeMap<String, 
             ));
         }
         for (index, value) in values.iter().enumerate() {
-            let plain = value
-                .split('/')
-                .all(|part| !part.is_empty() && part != "." && part != "..");
-            if !plain {
+            if !is_plain_dir(value) {
                 found.push(issue(
                     format!("code-dirs.{name}[{index}]"),
                     format!(

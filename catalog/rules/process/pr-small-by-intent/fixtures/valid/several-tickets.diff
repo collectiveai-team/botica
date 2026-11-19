@@ -1,0 +1,36 @@
+feat(cache): save and restore findings across CLI runs
+
+Spec: a second lint invocation reuses findings saved by the first when the catalog version
+and file content are unchanged. Changing either invalidates the entry.
+
+Ticket 01 implements the disk store. Ticket 02 connects it to lint. Ticket 03 adds the CLI
+acceptance test. Local commits are submitted together for this delivery intent.
+
+--- a/crates/botica-core/src/cache.rs
++++ b/crates/botica-core/src/cache.rs
+@@ -15,0 +16,8 @@ impl Cache {
++    pub fn restore(store: impl CacheStore, catalog_version: &str) -> Self {
++        Self { entries: store.read(catalog_version), catalog_version: catalog_version.into() }
++    }
++
++    pub fn save(&self, store: &impl CacheStore) -> Result<(), StoreError> {
++        store.write(&self.catalog_version, &self.entries)
++    }
++
+--- a/crates/botica-cli/src/lint_cmd.rs
++++ b/crates/botica-cli/src/lint_cmd.rs
+@@ -20,1 +20,3 @@
+-    let cache = Cache::new(version);
++    let cache = Cache::restore(&store, version);
++    let findings = lint(&cache, files)?;
++    cache.save(&store)?;
+--- a/crates/botica-cli/tests/cache.rs
++++ b/crates/botica-cli/tests/cache.rs
+@@ -0,0 +1,7 @@
++#[test]
++fn a_second_invocation_restores_findings_from_disk() {
++    let project = Project::new();
++    let first = project.lint();
++    let second = project.lint();
++    assert_eq!(first.findings(), second.findings());
++}

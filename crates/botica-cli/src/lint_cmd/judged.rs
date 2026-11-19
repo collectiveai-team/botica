@@ -12,7 +12,13 @@ use botica_core::{Diagnostic, Severity};
 use serde::Deserialize;
 use serde_json::Value;
 
+use super::{exit_code, fingerprints, record, write_report, Diff, LintArgs, Setup};
+use crate::output::eprintln;
 use crate::project;
+use botica_core::report::Format;
+use std::path::PathBuf;
+use std::process::ExitCode;
+use std::time::SystemTime;
 
 mod abide;
 
@@ -107,6 +113,8 @@ impl Found {
 /// judgment rule of the catalog.
 pub struct Judged {
     pub diagnostics: Vec<Diagnostic>,
+    /// The findings that an `ignore-file` comment silenced.
+    pub silenced: Vec<Diagnostic>,
     pub left_out: Vec<String>,
 }
 
@@ -162,6 +170,69 @@ fn from_sarif(document: Value) -> Result<Vec<Found>> {
         .collect())
 }
 
+/// The findings of several runs of a judge on one change, as one list. A finding is sure when a
+/// majority of the runs give it as sure, after `act-at`; otherwise it is unsure. A run counts once
+/// for a rule and a path, whatever it repeats. The note gives the verdict of each run in order,
+/// `none` for a run that gave no finding there, so a reader sees how far the runs were apart.
+fn combine(runs: Vec<Vec<Found>>, act_at: impl Fn(&str) -> Option<Probability>) -> Vec<Found> {
+    let count = runs.len();
+    if count == 1 {
+        return runs
+            .into_iter()
+            .flatten()
+            .map(|found| {
+                let act_at = act_at(&found.rule_id);
+                found.under(act_at)
+            })
+            .collect();
+    }
+    type Key = (String, String);
+    /// Whether a run gave the finding as sure, and its probability.
+    type Verdict = (bool, Option<f64>);
+    let mut first: BTreeMap<Key, Found> = BTreeMap::new();
+    let mut verdicts: BTreeMap<Key, Vec<Option<Verdict>>> = BTreeMap::new();
+    for (run, found_in_run) in runs.into_iter().enumerate() {
+        for found in found_in_run {
+            let act_at = act_at(&found.rule_id);
+            let found = found.under(act_at);
+            let key = (found.rule_id.clone(), found.path.clone());
+            let slot = &mut verdicts
+                .entry(key.clone())
+                .or_insert_with(|| vec![None; count])[run];
+            let this = (!found.unsure, found.probability);
+            *slot = Some(match *slot {
+                Some((sure, probability)) if sure || !this.0 => (sure, probability),
+                _ => this,
+            });
+            first.entry(key).or_insert(found);
+        }
+    }
+    first
+        .into_iter()
+        .map(|(key, mut found)| {
+            let verdicts = &verdicts[&key];
+            let sure_runs = verdicts.iter().flatten().filter(|(sure, _)| *sure).count();
+            let shown: Vec<String> = verdicts
+                .iter()
+                .map(|verdict| match verdict {
+                    None => "none".to_owned(),
+                    Some((sure, probability)) => format!(
+                        "{}{}",
+                        probability.map_or_else(|| "?".to_owned(), |p| format!("{p:.2}")),
+                        if *sure { " act" } else { "" }
+                    ),
+                })
+                .collect();
+            found.unsure = sure_runs * 2 <= count;
+            found.note = Some(format!(
+                "{sure_runs} of {count} runs of abide see the change break it; verdicts {}",
+                shown.join(", ")
+            ));
+            found
+        })
+        .collect()
+}
+
 /// The findings of the file of `--judged`: SARIF when it has `runs`, the report of
 /// `abide check --json` when it has `sections`.
 fn read_findings(text: &str) -> Result<Vec<Found>> {
@@ -193,6 +264,7 @@ fn diagnostic(found: Found, summary: &str, rule: &str, severity: Severity) -> Di
         end_line: region.as_ref().and_then(|r| r.end_line).unwrap_or(line),
         end_column: region.as_ref().and_then(|r| r.end_column).unwrap_or(column),
         file_level: region.is_none(),
+        fingerprint: None,
         measure: None,
         message: match found.note {
             Some(note) => format!("{text} ({note})"),
@@ -211,11 +283,13 @@ struct Kept {
 /// Reads the findings of a judge and keeps what the project reports: the findings of its active
 /// judgment rules, at the paths and in the languages they apply to, with their severity (info for
 /// a finding the judge is unsure of), minus what an `ignore-file` comment of the file silences.
-/// `read` gives the text of a file.
+/// `texts` holds one report per run of the judge on the same change; with several, a finding
+/// keeps its severity only when a majority of the runs give it as sure (`combine`). `read` gives
+/// the text of a file.
 pub fn filter(
     resolution: &Arc<Resolution>,
     prefix: Option<&str>,
-    text: &str,
+    texts: &[String],
     read: impl Fn(&str) -> Option<String>,
 ) -> Result<Judged> {
     let mut sure = Kept {
@@ -227,7 +301,23 @@ pub fn filter(
         by_path: BTreeMap::new(),
     };
     let mut left_out = Vec::new();
-    for found in read_findings(text)? {
+    let runs = texts
+        .iter()
+        .map(|text| read_findings(text))
+        .collect::<Result<Vec<_>>>()?;
+    let act_at = |rule: &str| {
+        resolution
+            .entry(rule)
+            .filter(|entry| entry.rule.is_judgment())
+            .and_then(|entry| {
+                entry
+                    .rule
+                    .implementations
+                    .iter()
+                    .find_map(|implementation| implementation.act_at)
+            })
+    };
+    for found in combine(runs, act_at) {
         let Some(entry) = resolution
             .entry(&found.rule_id)
             .filter(|entry| entry.rule.is_judgment())
@@ -235,12 +325,6 @@ pub fn filter(
             left_out.push(found.rule_id);
             continue;
         };
-        let act_at = entry
-            .rule
-            .implementations
-            .iter()
-            .find_map(|implementation| implementation.act_at);
-        let found = found.under(act_at);
         let kept = if found.unsure { &mut unsure } else { &mut sure };
         let finding = diagnostic(
             found,
@@ -260,27 +344,67 @@ pub fn filter(
         }
     }
     let mut diagnostics = sure.change;
-    diagnostics.extend(project::keep_judged(
-        resolution,
-        prefix,
-        sure.by_path,
-        &read,
-    ));
+    let sure = project::keep_judged(resolution, prefix, sure.by_path, &read);
+    diagnostics.extend(sure.found);
+    let mut silenced = sure.silenced;
     let mut lowered = unsure.change;
-    lowered.extend(project::keep_judged(
-        resolution,
-        prefix,
-        unsure.by_path,
-        &read,
-    ));
+    let unsure = project::keep_judged(resolution, prefix, unsure.by_path, &read);
+    lowered.extend(unsure.found);
+    silenced.extend(unsure.silenced);
     for finding in &mut lowered {
         finding.severity = finding.severity.min(Severity::Info);
     }
     diagnostics.extend(lowered);
     Ok(Judged {
         diagnostics,
+        silenced,
         left_out,
     })
+}
+
+/// Reports the findings of the reports of `--judged`, as `botica lint` reports its own.
+pub(super) fn run(
+    args: &LintArgs,
+    format: Format,
+    setup: &Setup,
+    reports: &[PathBuf],
+    diff: Option<&Diff>,
+    started: SystemTime,
+) -> Result<ExitCode> {
+    let texts = reports
+        .iter()
+        .map(|report| {
+            std::fs::read_to_string(report)
+                .with_context(|| format!("cannot read `{}`", report.display()))
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let mut judged = filter(&setup.resolution, setup.prefix.as_deref(), &texts, |path| {
+        std::fs::read_to_string(path).ok()
+    })?;
+    let keeps = |diagnostic: &Diagnostic| diff.is_none_or(|diff| diff.changes.keeps(diagnostic));
+    judged.diagnostics.retain(&keeps);
+    let root = std::env::current_dir()?;
+    fingerprints::stamp(
+        format,
+        setup.evaluated.is_some(),
+        &setup.inside(),
+        fingerprints::Read::Files {
+            sources: &[],
+            root: &root,
+            staged: diff.is_some_and(Diff::is_staged),
+        },
+        &mut judged.diagnostics,
+    );
+    for rule in &judged.left_out {
+        eprintln!(
+            "botica: `{rule}` is not a judgment rule of the catalog: its finding is left out"
+        );
+    }
+    if setup.evaluated.is_some() {
+        record::judged(setup, started, &judged, keeps);
+    }
+    write_report(args, format, setup, &judged.diagnostics, &[])?;
+    Ok(exit_code(&[], &judged.diagnostics, args))
 }
 
 #[cfg(test)]

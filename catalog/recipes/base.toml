@@ -69,6 +69,14 @@ names = [
   "engineering-pr-review",
   "engineering-refactor",
   "pr",
+  "review-panel",
+  "review-spec",
+  "review-security",
+  "review-tests",
+  "review-architecture",
+  "review-contracts",
+  "review-performance",
+  "review-refute",
 ]
 
 [[gitignore]]
@@ -109,6 +117,38 @@ template = "files/github/ISSUE_TEMPLATE/feature_proposal.md"
 path = "AGENTS.md"
 marker = "## Repo Workspace Defaults"
 template = "sections/agents-workspace-defaults.md"
+
+[[files]]
+path = ".github/review/README.md"
+template = "files/github/review/README.md"
+
+[[files]]
+path = ".github/review/spec/REVIEW.md"
+template = "files/github/review/spec/REVIEW.md"
+
+[[files]]
+path = ".github/review/security/REVIEW.md"
+template = "files/github/review/security/REVIEW.md"
+
+[[files]]
+path = ".github/review/tests/REVIEW.md"
+template = "files/github/review/tests/REVIEW.md"
+
+[[files]]
+path = ".github/review/architecture/REVIEW.md"
+template = "files/github/review/architecture/REVIEW.md"
+
+[[files]]
+path = ".github/review/contracts/REVIEW.md"
+template = "files/github/review/contracts/REVIEW.md"
+
+[[files]]
+path = ".github/review/performance/REVIEW.md"
+template = "files/github/review/performance/REVIEW.md"
+
+[[files]]
+path = ".github/review/refute/REVIEW.md"
+template = "files/github/review/refute/REVIEW.md"
 
 [[sections]]
 path = "AGENTS.md"

@@ -1,6 +1,8 @@
 {
   "verdicts": [
     { "file": "valid/one-intent.diff", "band": "clear" },
-    { "file": "invalid/two-intents.diff", "band": "act" }
+    { "file": "valid/several-tickets.diff", "band": "clear" },
+    { "file": "invalid/two-intents.diff", "band": "act" },
+    { "file": "invalid/one-ticket-unrelated-fix.diff", "band": "act" }
   ]
 }

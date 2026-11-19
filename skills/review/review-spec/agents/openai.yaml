@@ -1,0 +1,3 @@
+interface:
+  display_name: "Review: Spec"
+  short_description: "Check the diff against its issue or spec"

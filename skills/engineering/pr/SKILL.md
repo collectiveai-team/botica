@@ -1,12 +1,48 @@
 ---
 name: pr
-description: "Use when writing a PR body. Follow the repository's .github/pull_request_template.md."
+description: "Use when preparing a delivery PR or writing its body. Read the delivery's slice review records and follow the repository's .github/pull_request_template.md."
 ---
 
 Read and use `.github/pull_request_template.md` from the repository the PR targets.
 That file defines the body structure: preserve its headings, order, and required
 fields rather than rewriting the template here. If it is missing, ask the user
 which template to use instead of inventing one.
+
+## Delivery context
+
+Run `botica explain pr-small-by-intent` before choosing the publication boundary. Read the spec,
+delivery plan and slice review records. Follow the local-commit and review procedure in
+`../engineering-pr-review/references/delivery.md` when the delivery has several tickets.
+
+Prepare one PR for the integrated delivery. Do not create a PR just because a ticket or commit is
+complete. If the plan splits the delivery, state the reason for that boundary and the dependencies.
+Closing or rewriting existing PRs requires the user's authorization.
+
+### Explicit stack mode
+
+Use a remote stack only when the user explicitly requests it or the delivery plan records
+separate delivery boundaries. Preserve the local ticket commits; do not turn each ticket into
+a PR. Pin the integration base and each boundary head before publication.
+
+Create stack members as drafts and label deferred members `botica:stack-member` before
+marking the tip ready. The role and mutation workflows defer expensive work on drafts and
+marked members. The review gate stays incomplete for deferred members, never a passing
+approval inherited from the tip. The tip runs its own planned checks.
+
+Add `Stack: n/m, depends on #<previous-PR>` to each member's description. The first member
+uses `Stack: 1/m, base <destination>` instead of a predecessor. Update these lines when the
+explicit stack changes; they describe its order and grant no inherited approval.
+
+Record cumulative local review evidence against the integration base and each boundary's
+evidence in the delivery plan. Do not assume native stack event fields or a first parent prove
+the review base; use the pinned revisions and the observations of ticket 36. A deferred member
+is not individually merge-ready until its own evidence is validated. One integrated PR remains
+the default when those independent delivery boundaries do not exist.
+
+Use the template's existing sections to link the spec, covered tickets and slice review evidence.
+Include the integration checks, unresolved findings and anything not run. Use closing references
+only for tickets whose acceptance criteria the delivery satisfies. If several slices are included,
+show how their behaviours serve the stated intent instead of listing commits without context.
 
 ## Sections
 

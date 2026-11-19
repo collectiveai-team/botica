@@ -1,5 +1,4 @@
-use crate::diagnostic::Diagnostic;
-use crate::engine::Engine;
+use crate::engine::{Engine, Findings};
 use crate::walk::SourceFile;
 use anyhow::{Context, Result};
 use rayon::prelude::*;
@@ -13,7 +12,7 @@ const FILE_NAME: &str = "lint-cache.json";
 #[derive(Serialize, Deserialize, Default)]
 struct Stored {
     fingerprint: String,
-    entries: HashMap<String, Vec<Diagnostic>>,
+    entries: HashMap<String, Findings>,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -101,9 +100,9 @@ pub fn lint_files_cached(
     engine: &Engine,
     files: &[SourceFile],
     cache: &mut Cache,
-) -> (Vec<Diagnostic>, CacheStats) {
+) -> (Findings, CacheStats) {
     let known = &cache.stored.entries;
-    let results: Vec<(String, Vec<Diagnostic>, bool)> = files
+    let results: Vec<(String, Findings, bool)> = files
         .par_iter()
         .map(|file| {
             let key = key(file);
@@ -121,13 +120,14 @@ pub fn lint_files_cached(
         hits,
         misses: results.len() - hits,
     };
-    let mut diagnostics = Vec::new();
+    let mut all = Findings::default();
     let mut entries = HashMap::with_capacity(results.len());
     for (key, found, _) in results {
-        diagnostics.extend(found.iter().cloned());
+        all.extend(found.clone());
         entries.insert(key, found);
     }
     cache.stored.entries = entries;
-    diagnostics.sort_by(|a, b| (&a.path, a.start, &a.rule).cmp(&(&b.path, b.start, &b.rule)));
-    (diagnostics, stats)
+    all.found
+        .sort_by(|a, b| (&a.path, a.start, &a.rule).cmp(&(&b.path, b.start, &b.rule)));
+    (all, stats)
 }

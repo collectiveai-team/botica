@@ -25,6 +25,10 @@ const REQUEST_DEADLINE: Duration = Duration::from_secs(60);
 /// `lint/files` in place of the two above.
 pub const DEADLINE_VARIABLE: &str = "BOTICA_EXTENSION_TIMEOUT";
 
+/// The variable that keys the fingerprints of the history (ADR 0019 decision 5). An extension
+/// process does not inherit it.
+pub const HISTORY_KEY_VARIABLE: &str = "BOTICA_HISTORY_KEY";
+
 #[derive(Debug, Serialize)]
 pub struct FileIn<'a> {
     pub path: &'a str,
@@ -168,7 +172,7 @@ impl ExtensionHost {
     ) -> Result<Self> {
         let (program, args) = command.split_first().context("empty extension command")?;
         let mut process = Command::new(program);
-        process.args(args);
+        process.args(args).env_remove(HISTORY_KEY_VARIABLE);
         if let Some(dir) = dir {
             process.current_dir(dir);
         }

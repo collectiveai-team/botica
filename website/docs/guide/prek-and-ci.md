@@ -60,9 +60,13 @@ and no file: `conventional-commits.yml` runs `botica lint --select conventional-
 ## abide
 
 The workflow `.github/workflows/abide.yml`, which the recipe `base` installs, judges the diff of
-each pull request: `abide check --json --diff`, judged a second time when the first run has a
-finding or fails, then `botica lint --judged` with `--fail-on warning`, and a table of the findings
-(`--output-format markdown`) in the summary of the job.
+each pull request with `abide check --json --diff`. When the first run has a finding, abide
+judges the diff twice more, and `botica lint` takes each report with `--judged`: a finding
+keeps its severity when a majority of the three runs give it, and is info otherwise. A run of
+abide that fails fails the job. The job fails on `--fail-on warning`, and the summary of the job
+has a table of the findings (`--output-format markdown`) with the verdict of each run. The
+workflow passes `--judged` several times, which a `botica-version` older than the release that
+added it rejects.
 It reads the secret `TYPESAFE_AI_API_KEY` and the variable `TYPESAFE_AI_BASE_URL` of the
 repository; a pull request from a fork gets no secret, and the job fails. A pull request of
 Dependabot gets no secret of Actions either, and the job is skipped.

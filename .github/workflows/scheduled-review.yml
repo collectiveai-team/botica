@@ -1,0 +1,385 @@
+name: scheduled review
+
+# The checks of `main` that a pull request is too small or too quick for (spec §5 of the review flow):
+# `botica lint` on every file with `--record`, cargo-mutants on what changed in the last week, and
+# agnix on the files that agents read, and `botica history report` over the history of the last
+# weeks. The workflow only reads, with no secret, except the job `history-report`: it alone has
+# `issues: write` and `actions: read` with the token of the run, and it only opens or edits one issue.
+# Nothing here merges or changes code. A schedule runs on the default branch only, and the `if` of
+# each job keeps a manual run from another branch out.
+#
+# Mutation is bounded by the Rust lines that `main` changed in the last 7 days
+# (`--in-diff`). `plan` writes that diff and, when it holds no Rust line, says so and ends the run
+# of the mutants. Otherwise MUTANT_SHARDS shards split the mutants, one job each; each shard runs the
+# baseline too, so a failing baseline of any shard fails the whole report (`botica lint --mutants`
+# refuses it). The shards join in `report`, which reads them with `botica lint --mutants` and prints
+# the score. The score is global: `botica` has no command that groups outcomes by the areas of
+# `[tool.botica.review]`.
+#
+# `agnix` runs through the hook of `prek.toml`, so it keeps the version and the `exclude` of that file.
+# The hook passes no `--strict`: an error fails the job and a warning does not.
+
+on:
+  schedule:
+    # Sunday, before the Monday runs of `pins` and `skills-drift`.
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+concurrency:
+  group: scheduled-review-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  MUTANT_SHARDS: "4"
+  HISTORY_DAYS: "28"
+  REPORT_MAX_FINDINGS: "20"
+  REPORT_TITLE: Weekly review report
+
+jobs:
+  # `--record` appends the run of mode `full` of the default branch to the history (ADR 0019). The job
+  # uploads the history as the artifact `botica-history-scheduled-lint`, also when the lint fails.
+  # BOTICA_HISTORY_KEY is not set, as in the job `lint` of `ci.yml`.
+  lint:
+    name: lint and record
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Build botica
+        run: cargo build --locked -p botica-cli
+
+      - name: Lint and record
+        run: target/debug/botica lint --record
+
+      - name: Upload the history
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: botica-history-scheduled-lint
+          path: |
+            .botica/history/runs.jsonl
+            .botica/history/findings.jsonl
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 90
+
+  # The diff of the Rust files between the last commit that is 7 days old and `HEAD`. A repository
+  # younger than that has no such commit, so the diff starts at the empty tree.
+  plan:
+    name: plan the mutants
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      rust: ${{ steps.plan.outputs.rust }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - id: plan
+        run: |
+          base=$(git rev-list -1 --before="7 days ago" HEAD)
+          if [ -z "$base" ]; then
+            base=$(git hash-object -t tree /dev/null)
+          fi
+          git diff "$base" HEAD -- '*.rs' > week.diff
+          if [ -s week.diff ]; then
+            echo "rust=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "rust=false" >> "$GITHUB_OUTPUT"
+            echo "No Rust line changed on main in the last 7 days: nothing to mutate." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload the diff
+        if: ${{ steps.plan.outputs.rust == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutants-diff
+          path: week.diff
+          retention-days: 14
+
+  # A shard never fails the run by itself: `continue-on-error` keeps a survivor, a timeout or a
+  # failure of cargo-mutants from stopping the others, and `report` fails when a shard left no report.
+  # `round-robin` gives each shard a mix of the files, so the shards end at about the same time.
+  mutants:
+    name: mutants, shard ${{ matrix.shard }}
+    needs: plan
+    if: needs.plan.outputs.rust == 'true'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      # One job per shard, and few of them: the pull requests that run meanwhile keep their runners.
+      max-parallel: 4
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: mutants-diff
+          path: ${{ runner.temp }}/week
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants --version 27.1.0 --locked
+
+      # cargo-mutants exits with 2 when a mutant survives and 3 when a test times out; both leave a
+      # report. Any other code is a failed run. A shard with no mutant (the diff holds fewer mutants
+      # than shards) leaves no report, so the step writes an empty one for `report` to count.
+      - name: Test the mutants of the shard
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          status=0
+          cargo mutants --in-diff "$RUNNER_TEMP/week/week.diff" --test-workspace=true --copy-vcs=true --cargo-arg=--locked \
+            --shard "$SHARD/$MUTANT_SHARDS" --sharding round-robin || status=$?
+          case "$status" in
+            0|2|3) ;;
+            *) exit "$status" ;;
+          esac
+          if [ ! -f mutants.out/outcomes.json ]; then
+            mkdir -p mutants.out
+            echo '{"outcomes": []}' > mutants.out/outcomes.json
+            echo '[]' > mutants.out/mutants.json
+          fi
+
+      - name: Upload the report of the shard
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutants-shard-${{ matrix.shard }}
+          path: mutants.out/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  report:
+    name: survivors and score
+    needs: [plan, mutants]
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && needs.plan.outputs.rust == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Build botica
+        run: cargo build --locked -p botica-cli
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: mutants-shard-*
+          path: shards
+
+      - name: Join the reports of the shards
+        id: join
+        run: |
+          mapfile -t reports < <(find shards -name outcomes.json | sort)
+          echo "found=${#reports[@]}" >> "$GITHUB_OUTPUT"
+          # cargo-mutants rewrites outcomes.json after each mutant, so a shard that the cap cut off
+          # leaves a report with fewer outcomes than the mutants that its `mutants.json` lists.
+          partial=0
+          for report in "${reports[@]}"; do
+            listed=$(jq length "$(dirname "$report")/mutants.json")
+            tested=$(jq '[.outcomes[] | select(.scenario != "Baseline")] | length' "$report")
+            if [ "$listed" -ne "$tested" ]; then
+              echo "::warning::$report tested $tested of $listed mutants"
+              partial=$((partial + 1))
+            fi
+          done
+          echo "partial=$partial" >> "$GITHUB_OUTPUT"
+          if [ "${#reports[@]}" -eq 0 ]; then
+            echo '{"outcomes": []}' > mutants-all.json
+          else
+            jq -s '{outcomes: (map(.outcomes) | add)}' "${reports[@]}" > mutants-all.json
+          fi
+
+      # The summary of a step is capped at 1 MiB, so it takes the first 300 lines; the artifact has all.
+      - name: Report the survivors and record them
+        run: |
+          status=0
+          target/debug/botica lint --mutants mutants-all.json \
+            --preview --select mutant-survived --output-format markdown --record \
+            > survivors.md || status=$?
+          head -n 300 survivors.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+      - name: Score
+        if: ${{ !cancelled() }}
+        run: |
+          jq -r '
+            [.outcomes[] | select(.scenario != "Baseline") | .summary] as $all
+            | ($all | map(select(. == "CaughtMutant")) | length) as $caught
+            | ($all | map(select(. == "MissedMutant")) | length) as $missed
+            | ($all | map(select(. == "Timeout")) | length) as $timeout
+            | ($all | map(select(. == "Unviable")) | length) as $unviable
+            | (if $caught + $missed == 0 then "n/a"
+               else ((10000 * $caught / ($caught + $missed) | round) / 100 | tostring) + "%" end) as $score
+            | "## Mutation score\n\n| caught | missed | timeout | unviable | score |\n| --- | --- | --- | --- | --- |\n| \($caught) | \($missed) | \($timeout) | \($unviable) | \($score) |\n\nThe score is caught / (caught + missed), over the mutants of the Rust lines that main changed in the last 7 days."
+          ' mutants-all.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the report and the history
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: botica-history-scheduled-mutants
+          path: |
+            mutants-all.json
+            survivors.md
+            .botica/history/runs.jsonl
+            .botica/history/findings.jsonl
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 90
+
+      - name: Check that every shard tested all of its mutants
+        if: ${{ !cancelled() }}
+        env:
+          FOUND: ${{ steps.join.outputs.found }}
+          PARTIAL: ${{ steps.join.outputs.partial }}
+        run: |
+          if [ "$FOUND" -ne "$MUTANT_SHARDS" ]; then
+            echo "$FOUND of $MUTANT_SHARDS shards left a report; the score covers only those." >&2
+            exit 1
+          fi
+          if [ "$PARTIAL" -ne 0 ]; then
+            echo "$PARTIAL shards stopped before testing all of their mutants; the score covers only what they tested." >&2
+            exit 1
+          fi
+
+  agnix:
+    name: agnix
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: "0.13.6"
+          enable-cache: false
+
+      - name: Run agnix
+        run: uvx prek run agnix --all-files --verbose
+
+  # The only job with a write permission. It downloads the history artifacts of the last
+  # HISTORY_DAYS days that `ci.yml` and this workflow recorded on `main`, runs `botica history report`
+  # on them and puts the report in one issue with a fixed title: it edits the open issue with that
+  # title and opens one only when there is none and the report has findings. The text of the report
+  # reaches the issue through a file, never through the shell. It runs after the other jobs, so the
+  # history of this run is in the window, and also when they fail.
+  #
+  # `botica history fetch` does not exist yet (ADR 0019 decision 9.2), so the first step does its
+  # work with `gh`: it keeps only a run of `push`, `schedule` or `workflow_dispatch` of this repository
+  # whose commit is in the history of `main`, writes `source.json` from the answer of the API, and
+  # extracts only `runs.jsonl` and `findings.jsonl` from each archive, at most 50 MB each. A pull
+  # request never feeds the report, which therefore has no hook run nor `diff` run of CI to pair.
+  history-report:
+    name: history report
+    needs: [lint, report, agnix]
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    env:
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Build botica
+        run: cargo build --locked -p botica-cli
+
+      - name: Download the history of CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          jq -n --arg repository "$GH_REPO" --arg branch "$BRANCH" \
+            --arg days "$HISTORY_DAYS" --arg directory "$RUNNER_TEMP/ci-history" \
+            '{repository:$repository,branch:$branch,days:$days,directory:$directory}' \
+            | python scripts/review_history_download.py > "$RUNNER_TEMP/download-summary.json"
+          cat "$RUNNER_TEMP/download-summary.json" >> "$GITHUB_STEP_SUMMARY"
+
+      # `GITHUB_ACTIONS=false` keeps the `::stop-commands::` lines out of the file: they guard the
+      # log of the runner, and the file goes to an issue.
+      - name: Read the history
+        run: |
+          GITHUB_ACTIONS=false target/debug/botica history report \
+            --days "$HISTORY_DAYS" --format markdown --from "$RUNNER_TEMP/ci-history" > "$RUNNER_TEMP/report.md"
+
+      # Deduplicate other open issues before applying one budget across all diagnostic sections.
+      - name: Cap the findings
+        id: cap
+        run: |
+          gh api --paginate "repos/$GH_REPO/issues?state=open&per_page=100" \
+            | jq -s 'add | map(select(has("pull_request") | not))' > "$RUNNER_TEMP/open-issues.json"
+          jq -n --rawfile report "$RUNNER_TEMP/report.md" --slurpfile issues "$RUNNER_TEMP/open-issues.json" \
+            --slurpfile coverage "$RUNNER_TEMP/download-summary.json" \
+            --arg title "$REPORT_TITLE" --arg maximum "$REPORT_MAX_FINDINGS" --arg run_url "$RUN_URL" \
+            --arg introduction "Finding-history diagnostics over the last $HISTORY_DAYS days. Only critical code changes require human review; these diagnostics do not change review routing." \
+            '{report:$report,issues:$issues[0],coverage:$coverage[0],title:$title,maximum:$maximum,run_url:$run_url,introduction:$introduction}' \
+            | python scripts/review_weekly_report.py > "$RUNNER_TEMP/weekly-report.json"
+          jq -r '.body' "$RUNNER_TEMP/weekly-report.json" > "$RUNNER_TEMP/issue.md"
+          echo "findings=$(jq -r '.actionable' "$RUNNER_TEMP/weekly-report.json")" >> "$GITHUB_OUTPUT"
+          echo "issue_number=$(jq -r '.issue_number // empty' "$RUNNER_TEMP/weekly-report.json")" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Open or update the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FINDINGS: ${{ steps.cap.outputs.findings }}
+          ISSUE_NUMBER: ${{ steps.cap.outputs.issue_number }}
+        run: |
+          if [ -n "$ISSUE_NUMBER" ]; then
+            [[ "$ISSUE_NUMBER" =~ ^[0-9]+$ ]]
+            gh issue edit "$ISSUE_NUMBER" --body-file "$RUNNER_TEMP/issue.md"
+          elif [ "$FINDINGS" -gt 0 ]; then
+            gh issue create --title "$REPORT_TITLE" --body-file "$RUNNER_TEMP/issue.md"
+          else
+            echo "The report has no findings and no issue is open: no issue was opened." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Preserve weekly report evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: weekly-review-report
+          path: |
+            ${{ runner.temp }}/download-summary.json
+            ${{ runner.temp }}/report.md
+            ${{ runner.temp }}/weekly-report.json
+          if-no-files-found: ignore
+          retention-days: 90

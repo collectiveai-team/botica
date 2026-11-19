@@ -59,12 +59,15 @@ fn judge(config: &str, results: &[String], files: &[(&str, &str)]) -> Judged {
             .find(|(name, _)| *name == path)
             .map(|(_, text)| (*text).to_owned())
     };
-    filter(&resolution(config), None, &sarif(results), read).expect("the SARIF is read")
+    filter(&resolution(config), None, &[sarif(results)], read).expect("the SARIF is read")
 }
 
 fn summary(judged: &Judged) -> Vec<String> {
-    judged
-        .diagnostics
+    summary_of(&judged.diagnostics)
+}
+
+fn summary_of(found: &[botica_core::Diagnostic]) -> Vec<String> {
+    found
         .iter()
         .map(|d| format!("{}@{}:{} {}", d.rule, d.path, d.line, d.severity.as_str()))
         .collect()
@@ -163,15 +166,20 @@ fn a_result_of_a_rule_that_is_not_judgment_is_left_out_and_named() {
 #[test]
 fn a_sarif_that_is_not_json_is_an_error() {
     let read = |_: &str| None;
-    assert!(filter(&resolution(""), None, "not json", read).is_err());
+    assert!(filter(&resolution(""), None, &["not json".to_owned()], read).is_err());
 }
 
 #[test]
 fn a_document_that_is_neither_sarif_nor_a_report_of_abide_is_an_error() {
     let read = |_: &str| None;
-    let error = filter(&resolution(""), None, "{\"version\": 1}", read)
-        .err()
-        .expect("it is refused");
+    let error = filter(
+        &resolution(""),
+        None,
+        &["{\"version\": 1}".to_owned()],
+        read,
+    )
+    .err()
+    .expect("it is refused");
     assert!(error.to_string().contains("neither SARIF nor"), "{error}");
 }
 
@@ -200,7 +208,7 @@ fn abide(config: &str, sections: &[String], files: &[(&str, &str)]) -> Judged {
             .find(|(name, _)| *name == path)
             .map(|(_, text)| (*text).to_owned())
     };
-    filter(&resolution(config), None, &report, read).expect("the report is read")
+    filter(&resolution(config), None, &[report], read).expect("the report is read")
 }
 
 #[test]
@@ -284,4 +292,8 @@ fn an_ignore_file_comment_silences_a_verdict_of_abide() {
     );
 
     assert!(judged.diagnostics.is_empty());
+    assert_eq!(
+        summary_of(&judged.silenced),
+        ["test-foo@src/a.py:1 warning", "test-foo@src/b.py:1 warning"]
+    );
 }

@@ -175,7 +175,22 @@ def test_the_history_of_this_repository_knows_every_rule_it_records(tmp_path: Pa
     former = set(sr.current_ids(sr.read_events(root)))
 
     assert recorded <= slugs | former, f"events for unknown rules: {sorted(recorded - slugs)}"
-    assert sr.unsealed(root) == []
+    original = (root / sr.HISTORY).read_bytes()
+    events = sr.read_events(root)
+    for path in (root / RULES).glob("*/*/rule.toml"):
+        destination = tmp_path / path.relative_to(root)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(path.read_bytes())
+    (tmp_path / sr.HISTORY).write_bytes(original)
+    latest = max(tuple(map(int, event.version.split("."))) for event in events)
+    next_version = f"{latest[0]}.{latest[1]}.{latest[2] + 1}"
+    pending = sr.unsealed(tmp_path)
+
+    # Pending catalog changes are sealed at release time, not while authoring a rule (ADR 0016).
+    assert sr.stamp(tmp_path, next_version) == pending
+    assert sr.unsealed(tmp_path) == []
+    assert sr.read_events(tmp_path)[: len(events)] == events
+    assert (root / sr.HISTORY).read_bytes() == original
 
 
 def test_a_new_rule_is_sealed_with_its_status_and_its_code(tmp_path: Path):
