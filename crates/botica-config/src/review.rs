@@ -33,7 +33,7 @@ impl Tier {
         }
     }
 
-    /// The next tier up, capped at high (ADR 0018: evidence raises risk one tier).
+    /// The next tier up, capped at high.
     pub const fn raised(self) -> Self {
         match self {
             Self::Low => Self::Medium,

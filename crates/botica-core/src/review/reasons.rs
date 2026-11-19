@@ -2,7 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Why a classification blocks automation or routes a change to a person (ADR 0018).
+/// Why a classification blocks automation or routes a change to a person (ADR 0018). Role
+/// selection reports `IncompleteRisk` too; its other reasons keep string codes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ReasonCode {
