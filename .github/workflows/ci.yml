@@ -277,7 +277,9 @@ jobs:
         run: cargo build --locked -p botica-cli
 
       # cargo-mutants exits with 2 when a mutant survives and 3 when a test times out; both leave a
-      # report. Any other code is a failed run.
+      # report. Any other code is a failed run. `--copy-vcs=true` copies `.git` into the scratch tree:
+      # tests such as `review_repository.rs` run `git ls-files`, and without it the unmutated baseline
+      # fails and no mutant is tested.
       - name: Test the mutants of the change
         env:
           BASE_REF: ${{ github.base_ref }}
@@ -285,7 +287,7 @@ jobs:
           git diff "origin/$BASE_REF...HEAD" > pr.diff
           status=0
           env -u BOTICA_REQUIRE_RUFF -u BOTICA_REQUIRE_WORKFLOW_LINTERS \
-            cargo mutants --in-diff pr.diff --test-workspace=true --cargo-arg=--locked || status=$?
+            cargo mutants --in-diff pr.diff --test-workspace=true --copy-vcs=true --cargo-arg=--locked || status=$?
           case "$status" in
             0|2|3) ;;
             *) exit "$status" ;;

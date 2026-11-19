@@ -30,7 +30,7 @@ The job `mutants` of `ci.yml` runs on pull requests only and never blocks: it ha
 `continue-on-error` and a `timeout-minutes` cap. It runs `cargo mutants --in-diff` on the diff of the
 pull request, with cargo-mutants 27.1.0, then `botica lint --mutants` on the report, and uploads
 `mutants.out/` and `.botica/history/` as the artifact `botica-mutants`. To run it locally:
-`git diff origin/main...HEAD > pr.diff`, `cargo mutants --in-diff pr.diff --test-workspace=true`,
+`git diff origin/main...HEAD > pr.diff`, `cargo mutants --in-diff pr.diff --test-workspace=true --copy-vcs=true`,
 `botica lint --mutants mutants.out/outcomes.json --diff-file pr.diff --preview --select mutant-survived`.
 
 The workflow `scheduled-review.yml` runs every Sunday on `main`, and on demand with `workflow_dispatch`.
@@ -43,7 +43,7 @@ Rust change runs no shard), whose `report` job joins the `outcomes.json` of the 
 A `schedule` runs on the default branch only, so a pull request cannot
 run it: the test `crates/botica-catalog/tests/scheduled_review_workflow.rs` holds its shape. To run a
 shard locally: `git diff <commit of 7 days ago> HEAD -- '*.rs' > week.diff`, then
-`cargo mutants --in-diff week.diff --test-workspace=true --shard 0/4 --sharding round-robin`, with
+`cargo mutants --in-diff week.diff --test-workspace=true --copy-vcs=true --shard 0/4 --sharding round-robin`, with
 `TMPDIR` set to a short path (the copy of the tree fails when `.tmp/` is inside the worktree).
 
 The job `history-report` runs after the others and is the only one with `issues: write` and

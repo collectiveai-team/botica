@@ -149,7 +149,7 @@ jobs:
           SHARD: ${{ matrix.shard }}
         run: |
           status=0
-          cargo mutants --in-diff "$RUNNER_TEMP/week/week.diff" --test-workspace=true --cargo-arg=--locked \
+          cargo mutants --in-diff "$RUNNER_TEMP/week/week.diff" --test-workspace=true --copy-vcs=true --cargo-arg=--locked \
             --shard "$SHARD/$MUTANT_SHARDS" --sharding round-robin || status=$?
           case "$status" in
             0|2|3) ;;

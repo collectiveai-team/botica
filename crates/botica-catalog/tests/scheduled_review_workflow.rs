@@ -171,6 +171,7 @@ fn the_shards_cover_the_run_and_agree_on_the_denominator() {
         "{cargo}"
     );
     assert!(cargo.contains("--test-workspace=true"), "{cargo}");
+    assert!(cargo.contains("--copy-vcs=true"), "{cargo}");
     assert!(cargo.contains("--cargo-arg=--locked"), "{cargo}");
     assert!(cargo.contains("--sharding round-robin"), "{cargo}");
     assert!(cargo.contains("0|2|3) ;;"), "{cargo}");
@@ -339,6 +340,20 @@ fn only_the_shards_continue_on_error_and_they_leave_runners_for_pull_requests() 
         .as_u64()
         .expect("max-parallel");
     assert!((1..=4).contains(&parallel), "{parallel}");
+}
+
+/// Tests such as `crates/botica-config/tests/review_repository.rs` run `git ls-files`; without
+/// `.git` in the scratch tree of cargo-mutants its unmutated baseline fails.
+#[test]
+fn the_mutants_of_a_pull_request_run_with_the_git_directory() {
+    let ci = read("ci.yml");
+    let cargo = runs(&ci["jobs"]["mutants"])
+        .into_iter()
+        .find(|r| r.contains("cargo mutants"))
+        .map(str::to_owned)
+        .expect("the step of cargo-mutants");
+
+    assert!(cargo.contains("--copy-vcs=true"), "{cargo}");
 }
 
 #[test]
