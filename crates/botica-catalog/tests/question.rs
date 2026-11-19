@@ -30,7 +30,7 @@ fn plain_writing_question_limits_the_glossary_exception_to_the_label_a_glossary_
         panic!("plain-writing must ask a boolean question");
     };
     assert!(
-        instructions.contains("the bold label that a glossary defines"),
+        instructions.contains("In a glossary file, the bold label that names each defined term"),
         "{instructions}"
     );
     assert!(
