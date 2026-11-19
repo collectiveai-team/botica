@@ -64,32 +64,42 @@ jobs:
           # Deleted files have nothing left to judge.
           git diff --diff-filter=d "$BASE_SHA"...HEAD > "$RUNNER_TEMP/abide/pr.diff"
           # The probability of a verdict changes from one run to the next, and abide can fail on a
-          # timeout: a run with a finding or a failure is judged once more, and the second decides.
-          for attempt in 1 2; do
+          # timeout. A first run with no finding decides; otherwise abide judges the diff twice more
+          # and botica keeps a finding only when a majority of the runs give it.
+          runs=()
+          for attempt in 1 2 3; do
             status=0
             npx --yes @coldtea/abide@0.0.11 check --json --diff "$RUNNER_TEMP/abide/pr.diff" \
-              > "$RUNNER_TEMP/abide/abide.json" || status=$?
+              > "$RUNNER_TEMP/abide/run-$attempt.json" || status=$?
             # abide exits with 1 when a verdict is in the band act; botica decides.
-            if [ "$status" -le 1 ] && "$BOTICA" lint --judged "$RUNNER_TEMP/abide/abide.json" \
+            if [ "$status" -gt 1 ]; then
+              echo "::notice::run $attempt of abide failed (exit $status)"
+              continue
+            fi
+            runs+=(--judged "$RUNNER_TEMP/abide/run-$attempt.json")
+            if [ "$attempt" -eq 1 ] && "$BOTICA" lint "${runs[@]}" \
               --fail-on warning > /dev/null 2>&1; then
               break
             fi
-            echo "::notice::run $attempt of abide has a finding or failed (exit $status)"
+            if [ "$attempt" -eq 1 ]; then
+              echo "::notice::run 1 of abide has a finding: abide judges the diff twice more"
+            fi
           done
-          if [ "$status" -gt 1 ]; then
+          if [ "${#runs[@]}" -eq 0 ]; then
             exit "$status"
           fi
+          printf '%s\n' "${runs[@]}" > "$RUNNER_TEMP/abide/runs"
 
       - name: Table of the findings
         run: |
           {
             echo "## Judgment rules"
             echo
-            "$BOTICA" lint --judged "$RUNNER_TEMP/abide/abide.json" --output-format markdown \
-              --exit-zero
+            mapfile -t runs < "$RUNNER_TEMP/abide/runs"
+            "$BOTICA" lint "${runs[@]}" --output-format markdown --exit-zero
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail on the findings
         run: |
-          "$BOTICA" lint --judged "$RUNNER_TEMP/abide/abide.json" --output-format github \
-            --fail-on warning
+          mapfile -t runs < "$RUNNER_TEMP/abide/runs"
+          "$BOTICA" lint "${runs[@]}" --output-format github --fail-on warning

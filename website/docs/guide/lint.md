@@ -20,7 +20,9 @@ botica lint --output-format json   # text (default), json, sarif, github or mark
                                    # code and the standard of the rule of each finding, and its
                                    # fingerprint (ADR 0019), which BOTICA_HISTORY_KEY keys
 botica lint --judged judge.sarif   # the findings of a judge, filtered by the configuration and comments;
-                                   # the file is SARIF or the report of `abide check --json`
+                                   # the file is SARIF or the report of `abide check --json`;
+                                   # repeated for runs of a judge on one change, a finding keeps its
+                                   # severity only when a majority of the runs give it
 botica lint --mutants mutants.out/outcomes.json   # the mutants that survived cargo-mutants, as
                                    # findings of mutant-survived (preview, off by default)
 botica lint --diff origin/main     # the files changed since the merge base, and only the findings on
