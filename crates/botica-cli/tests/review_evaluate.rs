@@ -69,15 +69,20 @@ fn incomplete_or_mismatched_observations_cannot_be_measured_as_candidates() {
             assert_eq!(measured["unmeasured"], usize::from(invalid != "valid"));
             assert_eq!(measured["ready_for_activation"], false);
             if invalid == "byte-limit" {
-                let mut expected: botica_core::review::evaluation::EvaluationCase =
-                    serde_json::from_value(case.clone()).unwrap();
-                expected.floor = Some("low".to_owned());
-                expected.critical = Some(false);
-                expected.checks_passed = Some(true);
-                expected.reviews_passed = Some(true);
-                expected.context_complete = Some(false);
-                expected.question_digest = Some(botica_core::review::questions::digest());
-                let digest = blake3::hash(&serde_json::to_vec(&vec![expected]).unwrap());
+                let recorded = format!(
+                    concat!(
+                        r#"[{{"id":"synthetic-1","source":"https://github.com/owner/repo/pull/1","#,
+                        r#""base":"{base}","head":"{head}","label":true,"label_source":"confirmed","#,
+                        r#""label_evidence":"Synthetic test fixture, not evaluation data","#,
+                        r#""floor":"low","critical":false,"checks_passed":true,"reviews_passed":true,"#,
+                        r#""context_complete":false,"inputs_verified":false,"probabilities":null,"#,
+                        r#""question_digest":"{questions}"}}]"#
+                    ),
+                    base = "b".repeat(40),
+                    head = "a".repeat(40),
+                    questions = botica_core::review::questions::digest(),
+                );
+                let digest = blake3::hash(recorded.as_bytes());
                 assert_eq!(measured["dataset_digest"], digest.to_hex().to_string());
             }
         } else {
