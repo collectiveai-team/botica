@@ -70,9 +70,11 @@ pub struct LintArgs {
     ext: Option<String>,
     /// Report the findings of a judge, read from this file (SARIF or the report of
     /// `abide check --json`), instead of linting: the ones of the active judgment rules, filtered
-    /// by the configuration and the `ignore-file` comments.
+    /// by the configuration and the `ignore-file` comments. Given again, for other runs of the
+    /// judge on the same change, a finding keeps its severity only when a majority of the runs
+    /// give it; otherwise it is info.
     #[arg(long, conflicts_with_all = ["paths", "ext", "statistics"])]
-    judged: Option<PathBuf>,
+    judged: Vec<PathBuf>,
     /// Report the mutants that survived a run of cargo-mutants, read from its
     /// `mutants.out/outcomes.json`, instead of linting: one finding of `mutant-survived` for each,
     /// filtered by the configuration and the suppression comments.
@@ -180,7 +182,7 @@ impl LintArgs {
             exit_zero: false,
             fail_on: FailOn::Error,
             ext: None,
-            judged: None,
+            judged: Vec::new(),
             mutants: None,
             reviewed: None,
             review_head: "HEAD".into(),
@@ -423,8 +425,8 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
         return Ok(exit_code(&[], &diagnostics, &args));
     }
     let diff = Diff::read(&args)?;
-    if let Some(sarif) = &args.judged {
-        return run_judged(&args, format, &setup, sarif, diff.as_ref(), started);
+    if !args.judged.is_empty() {
+        return judged::run(&args, format, &setup, &args.judged, diff.as_ref(), started);
     }
     if let Some(outcomes) = &args.mutants {
         return mutants::run(&args, format, &setup, outcomes, diff.as_ref(), started);
@@ -545,45 +547,6 @@ fn write_baseline(
         path.display()
     );
     Ok(ExitCode::SUCCESS)
-}
-
-fn run_judged(
-    args: &LintArgs,
-    format: Format,
-    setup: &Setup,
-    sarif: &std::path::Path,
-    diff: Option<&Diff>,
-    started: SystemTime,
-) -> Result<ExitCode> {
-    let text = std::fs::read_to_string(sarif)
-        .with_context(|| format!("cannot read `{}`", sarif.display()))?;
-    let mut judged = judged::filter(&setup.resolution, setup.prefix.as_deref(), &text, |path| {
-        std::fs::read_to_string(path).ok()
-    })?;
-    let keeps = |diagnostic: &Diagnostic| diff.is_none_or(|diff| diff.changes.keeps(diagnostic));
-    judged.diagnostics.retain(&keeps);
-    let root = std::env::current_dir()?;
-    fingerprints::stamp(
-        format,
-        setup.evaluated.is_some(),
-        &setup.inside(),
-        fingerprints::Read::Files {
-            sources: &[],
-            root: &root,
-            staged: diff.is_some_and(Diff::is_staged),
-        },
-        &mut judged.diagnostics,
-    );
-    for rule in &judged.left_out {
-        eprintln!(
-            "botica: `{rule}` is not a judgment rule of the catalog: its finding is left out"
-        );
-    }
-    if setup.evaluated.is_some() {
-        record::judged(setup, started, &judged, keeps);
-    }
-    write_report(args, format, setup, &judged.diagnostics, &[])?;
-    Ok(exit_code(&[], &judged.diagnostics, args))
 }
 
 fn check_statistics_format(args: &LintArgs, format: Format) -> Result<()> {

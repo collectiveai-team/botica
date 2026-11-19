@@ -189,6 +189,86 @@ fn a_verdict_in_the_band_act_under_the_act_at_of_its_rule_is_reported_as_info() 
     assert_eq!(high.status.code(), Some(1));
 }
 
+fn plain_writing_runs(name: &str, runs: &[(&str, &str)]) -> (Output, String) {
+    let dir = workdir(name);
+    fs::write(
+        dir.join("botica.toml"),
+        "preview = true\nselect = [\"plain-writing\"]\n",
+    )
+    .expect("write the configuration");
+    fs::write(dir.join("a.md"), "Text.\n").expect("write a file");
+    let mut args = Vec::new();
+    for (index, (probability, band)) in runs.iter().enumerate() {
+        let file = format!("run{index}.json");
+        fs::write(
+            dir.join(&file),
+            report("plain-writing", "a.md", probability, band),
+        )
+        .expect("write the report");
+        args.push("--judged".to_owned());
+        args.push(file);
+    }
+    args.extend(["--fail-on".to_owned(), "warning".to_owned()]);
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    let output = botica(&dir, &args);
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    (output, text)
+}
+
+#[test]
+fn a_finding_that_a_majority_of_the_runs_give_keeps_its_severity() {
+    let (output, text) = plain_writing_runs(
+        "majority",
+        &[("0.90", "act"), ("0.88", "act"), ("0.70", "flag")],
+    );
+
+    assert_eq!(output.status.code(), Some(1), "{text}");
+    assert!(
+        text.contains("a.md:1:1: warning [plain-writing]")
+            && text.contains("2 of 3 runs of abide see the change break it; probabilities 0.90 act, 0.88 act, 0.70"),
+        "{text}"
+    );
+}
+
+#[test]
+fn a_finding_that_a_minority_of_the_runs_give_is_info() {
+    for (name, runs) in [
+        (
+            "minority",
+            [("0.90", "act"), ("0.70", "flag"), ("0.50", "clear")],
+        ),
+        (
+            "under-act-at",
+            [("0.90", "act"), ("0.84", "act"), ("0.83", "act")],
+        ),
+    ] {
+        let (output, text) = plain_writing_runs(name, &runs);
+
+        assert_eq!(output.status.code(), Some(0), "{name}: {text}");
+        assert!(
+            text.contains("a.md:1:1: info [plain-writing]"),
+            "{name}: {text}"
+        );
+        assert!(text.contains("1 of 3 runs"), "{name}: {text}");
+    }
+}
+
+#[test]
+fn a_file_that_one_run_leaves_clear_needs_a_majority_of_all_the_runs() {
+    let (output, text) = plain_writing_runs(
+        "two-of-four",
+        &[
+            ("0.90", "act"),
+            ("0.90", "act"),
+            ("0.10", "clear"),
+            ("0.10", "clear"),
+        ],
+    );
+
+    assert_eq!(output.status.code(), Some(0), "{text}");
+    assert!(text.contains("2 of 4 runs"), "{text}");
+}
+
 #[test]
 fn judged_findings_take_no_paths_and_no_extension() {
     let dir = workdir("conflicts");
