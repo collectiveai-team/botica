@@ -68,8 +68,8 @@ fn repository(name: &str, answers: &[(&str, &str)]) -> PathBuf {
     git(&["commit", "-q", "-m", "change"]);
     for (index, (probability, band)) in answers.iter().enumerate() {
         let call = index + 1;
-        if band.starts_with("exit ") {
-            fs::write(root.join(format!("exit-{call}")), &band[5..]).unwrap();
+        if let Some(code) = band.strip_prefix("exit ") {
+            fs::write(root.join(format!("exit-{call}")), code).unwrap();
             fs::write(root.join(format!("answer-{call}.json")), "").unwrap();
             continue;
         }
