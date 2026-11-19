@@ -17,6 +17,16 @@ can leave classification incomplete and block automation; it does not require hu
 Detector uncertainty is recorded explicitly. It is not a fabricated dependency or endpoint
 finding. The current producer contract is `docs/review-risk-contract.md`.
 
+## Classifier raise, 2026-11-19
+
+Decision 9 says that the classifier never sets `high`. The user decided instead that semantic
+evidence raises the effective tier one step, capped at `high`, and never lowers the
+deterministic floor. A `decision`, `unverifiable` or `impact-users` reason from Jev raises `low`
+to `medium` and `medium` to `high`. `low-confidence` and service failures raise nothing.
+`recommend` in `crates/botica-core/src/review/classifier.rs` implements this through
+`Tier::raised`, `crates/botica-core/tests/review_classifier_risk.rs` tests it, and
+`website/docs/guide/review-flow.md` documents it. The statement of decision 9 is historical.
+
 ## Original proposal
 
 ADR 0017 defines the roles that review a diff and reads a tier from `botica review tier`, which it
@@ -238,8 +248,9 @@ missing.
    `medium` for `person`. A pull request with floor `low` that goes to a person becomes `medium`.
    `botica review classify` prints both the floor and the effective tier, the workflow sets
    `risk:*` from the effective tier (in shadow mode too), and `botica review tier` prints the
-   floor only. The classifier never sets `high`, which only an area gives. Only the pull requests
-   of `periphery` can reach `auto`, because a floor above `low` fails a gate before Jev runs.
+   floor only. The classifier never sets `high`, which only an area gives (superseded by the
+   classifier raise of 2026-11-19 above). Only the pull requests of `periphery` can reach `auto`,
+   because a floor above `low` fails a gate before Jev runs.
 
 10. When a pull request goes to a person, botica writes a handoff report so that the person does
     not start from nothing. Each reason carries its source, its evidence and the steps to verify or
