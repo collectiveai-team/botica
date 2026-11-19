@@ -71,6 +71,9 @@ fn parse_table(bytes: &[u8]) -> Result<toml::Table> {
         .context("invalid trusted TOML")
 }
 
+// This repeats the file choice of `botica_config::discover::config_in` on purpose: it reads Git
+// blobs of the destination, parses only `[review]` so that a destination written for another
+// release still reads, and records the source and digest even when parsing fails.
 fn trusted_config(git: &git::Git, identity: &mut TrustedConfig) -> Result<ReviewConfig> {
     let cwd = std::env::current_dir()?;
     let relative = cwd
