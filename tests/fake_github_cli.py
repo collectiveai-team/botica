@@ -74,7 +74,12 @@ class GitHubState:
         raise ValueError("Unsupported GitHub command")
 
     def _comments(self, args: list[str]) -> str:
-        if "--method" in args and args[args.index("--method") + 1] != "GET":
+        method = [
+            value
+            for index, value in enumerate(args)
+            if value.startswith(("--method", "-X")) or args[index - 1] in ("--method", "-X")
+        ]
+        if method and method not in (["--method", "GET"], ["-X", "GET"], ["--method=GET"]):
             raise ValueError("Unsupported API method")
         endpoint = next(value for value in args if value.startswith("repos/"))
         if endpoint.split("?", 1)[0] != f"repos/owner/repo/issues/{self.number}/comments":

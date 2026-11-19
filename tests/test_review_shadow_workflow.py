@@ -28,11 +28,14 @@ def test_github_adapter_requires_registered_labels_and_exposes_the_resulting_sta
     ]
 
 
-@pytest.mark.parametrize("method", ["POST", "PATCH"])
-def test_github_adapter_rejects_comment_writes_it_does_not_store(method: str) -> None:
+@pytest.mark.parametrize(
+    "method",
+    [["--method", "POST"], ["--method", "PATCH"], ["-X", "POST"], ["--method=PATCH"], ["-XPOST"]],
+)
+def test_github_adapter_rejects_comment_writes_it_does_not_store(method: list[str]) -> None:
     github = GitHubState(labels=set(), comments=[Comment("github-actions[bot]", "old")])
     with pytest.raises(ValueError, match="Unsupported API method"):
-        github.run(["api", "--method", method, "repos/owner/repo/issues/42/comments"])
+        github.run(["api", *method, "repos/owner/repo/issues/42/comments"])
     assert github.comments == [Comment("github-actions[bot]", "old")]
 
 
