@@ -173,6 +173,14 @@ fn areas(config: &ReviewConfig, paths: &[String]) -> Vec<AreaEvidence> {
     evidence
 }
 
+/// The comparisons of a recorded risk report, branch first, then integration. Each caller
+/// filters them by its own policy.
+pub fn risk_comparisons(risk: &serde_json::Value) -> impl Iterator<Item = &serde_json::Value> {
+    ["branch", "integration"]
+        .into_iter()
+        .flat_map(move |name| risk[name]["comparisons"].as_array().into_iter().flatten())
+}
+
 /// Return the maximum tier; an empty change has the core floor of medium.
 pub fn maximum_tier(tiers: impl Iterator<Item = Tier>) -> Tier {
     tiers.max().unwrap_or(Tier::Medium)

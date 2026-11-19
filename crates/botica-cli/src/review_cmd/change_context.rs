@@ -43,29 +43,23 @@ pub(super) fn classification(
 
 pub(super) fn collect(assessment: &tier::Assessment, plan: &Value, limit: usize) -> Result<Value> {
     let mut pairs = BTreeSet::new();
-    for name in ["branch", "integration"] {
-        for comparison in plan["risk"][name]["comparisons"]
-            .as_array()
-            .into_iter()
-            .flatten()
-        {
-            anyhow::ensure!(
-                comparison["evidence"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .all(|file| file["kind"] == "text"),
-                "non-text change context is unavailable"
-            );
-            pairs.insert((
-                comparison["from"]
-                    .as_str()
-                    .context("missing comparison base")?,
-                comparison["to"]
-                    .as_str()
-                    .context("missing comparison result")?,
-            ));
-        }
+    for comparison in botica_core::review::risk_comparisons(&plan["risk"]) {
+        anyhow::ensure!(
+            comparison["evidence"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .all(|file| file["kind"] == "text"),
+            "non-text change context is unavailable"
+        );
+        pairs.insert((
+            comparison["from"]
+                .as_str()
+                .context("missing comparison base")?,
+            comparison["to"]
+                .as_str()
+                .context("missing comparison result")?,
+        ));
     }
     let mut changes = Vec::new();
     let mut remaining = limit;

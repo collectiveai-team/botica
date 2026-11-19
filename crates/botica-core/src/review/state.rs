@@ -66,12 +66,7 @@ fn project(value: &Value, fields: &[&str]) -> Value {
 }
 
 fn comparisons(plan: &Value) -> impl Iterator<Item = &Value> {
-    ["branch", "integration"].into_iter().flat_map(move |name| {
-        plan["risk"][name]["comparisons"]
-            .as_array()
-            .into_iter()
-            .flatten()
-    })
+    super::risk_comparisons(&plan["risk"])
 }
 
 fn distinct(values: impl Iterator<Item = Value>) -> Vec<Value> {

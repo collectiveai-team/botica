@@ -125,18 +125,12 @@ impl Thresholds {
 }
 
 fn critical(plan: &Value) -> bool {
-    ["branch", "integration"].iter().any(|assessment| {
-        plan["risk"][assessment]["comparisons"]
+    super::risk_comparisons(&plan["risk"]).any(|comparison| {
+        comparison["areas"]
             .as_array()
             .into_iter()
             .flatten()
-            .any(|comparison| {
-                comparison["areas"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .any(|area| area == "critical")
-            })
+            .any(|area| area == "critical")
     })
 }
 

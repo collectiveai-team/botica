@@ -151,28 +151,22 @@ impl RoleDefinition {
         let mut paths = std::collections::BTreeSet::new();
         let mut signals = std::collections::BTreeSet::new();
         let mut uncertain = false;
-        for assessment in ["branch", "integration"] {
-            for comparison in risk[assessment]["comparisons"]
-                .as_array()
-                .into_iter()
-                .flatten()
-            {
-                uncertain |= comparison["bounds"].is_object();
-                paths.extend(
-                    comparison["files"]
-                        .as_array()
-                        .into_iter()
-                        .flatten()
-                        .filter_map(Value::as_str),
-                );
-                signals.extend(
-                    comparison["signals"]
-                        .as_array()
-                        .into_iter()
-                        .flatten()
-                        .filter_map(Value::as_str),
-                );
-            }
+        for comparison in super::risk_comparisons(risk) {
+            uncertain |= comparison["bounds"].is_object();
+            paths.extend(
+                comparison["files"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(Value::as_str),
+            );
+            signals.extend(
+                comparison["signals"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(Value::as_str),
+            );
         }
         let matcher = PathMatcher::new(&self.applies.paths)
             .map_err(|errors| anyhow::anyhow!("{errors:?}"))?;
