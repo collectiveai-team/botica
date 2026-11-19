@@ -6,7 +6,8 @@ use botica_config::{ReviewConfig, Tier};
 use botica_core::review::reasons::RiskReasonCode;
 use botica_core::review::{assess, maximum_tier, Comparison};
 use clap::{Args, ValueEnum};
-use serde_json::{json, Value};
+use serde::Serialize;
+use serde_json::Value;
 
 #[path = "tier_git.rs"]
 pub(super) mod git;
@@ -145,22 +146,114 @@ fn trusted_config(git: &git::Git, identity: &mut TrustedConfig) -> Result<Review
     Ok(ReviewConfig::default())
 }
 
-fn incomplete(code: RiskReasonCode, message: impl ToString, comparisons: Vec<Comparison>) -> Value {
-    json!({ "status": "incomplete", "reasons": [{"code": code, "message": message.to_string()}], "comparisons": comparisons })
+/// Why an assessment of `schema/review-tier.schema.json` is incomplete.
+#[derive(Serialize)]
+struct RiskReason {
+    code: RiskReasonCode,
+    message: String,
 }
 
-fn assessment(comparisons: Vec<Comparison>, mut reasons: Vec<Value>) -> Value {
-    reasons.extend(comparisons.iter().filter(|comparison| comparison.bounds.is_none()).flat_map(|comparison| comparison.detector_evidence.iter())
-        .filter(|detector| detector.status == "unsupported")
-        .map(|detector| json!({"code": RiskReasonCode::UnsupportedDetector, "message": format!("{}: {:?}", detector.detail, detector.paths)})));
+impl RiskReason {
+    fn new(code: RiskReasonCode, message: impl ToString) -> Self {
+        Self {
+            code,
+            message: message.to_string(),
+        }
+    }
+}
+
+/// The branch or integration assessment of `schema/review-tier.schema.json`.
+#[derive(Serialize)]
+#[serde(tag = "status", rename_all = "lowercase")]
+enum RiskAssessment {
+    Complete {
+        tier: Tier,
+        comparisons: Vec<Comparison>,
+    },
+    Incomplete {
+        reasons: Vec<RiskReason>,
+        comparisons: Vec<Comparison>,
+    },
+}
+
+impl RiskAssessment {
+    fn tier(&self) -> Option<Tier> {
+        match self {
+            Self::Complete { tier, .. } => Some(*tier),
+            Self::Incomplete { .. } => None,
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "lowercase")]
+enum ReportStatus {
+    Complete,
+    Incomplete,
+}
+
+#[derive(Serialize)]
+struct ConfigIdentity<'a> {
+    source: &'a str,
+    digest: &'a Option<String>,
+}
+
+#[derive(Serialize)]
+struct TierInputs<'a> {
+    base: &'a str,
+    head: &'a str,
+    integration_method: &'static str,
+    botica_version: &'static str,
+    config: ConfigIdentity<'a>,
+}
+
+/// The output of `botica review tier --format json` (`schema/review-tier.schema.json`).
+#[derive(Serialize)]
+struct TierReport<'a> {
+    schema_version: u32,
+    status: ReportStatus,
+    inputs: TierInputs<'a>,
+    branch: RiskAssessment,
+    integration: RiskAssessment,
+    effective_tier: Option<Tier>,
+}
+
+fn incomplete(
+    code: RiskReasonCode,
+    message: impl ToString,
+    comparisons: Vec<Comparison>,
+) -> RiskAssessment {
+    RiskAssessment::Incomplete {
+        reasons: vec![RiskReason::new(code, message)],
+        comparisons,
+    }
+}
+
+fn assessment(comparisons: Vec<Comparison>, mut reasons: Vec<RiskReason>) -> RiskAssessment {
+    reasons.extend(
+        comparisons
+            .iter()
+            .filter(|comparison| comparison.bounds.is_none())
+            .flat_map(|comparison| comparison.detector_evidence.iter())
+            .filter(|detector| detector.status == "unsupported")
+            .map(|detector| {
+                RiskReason::new(
+                    RiskReasonCode::UnsupportedDetector,
+                    format!("{}: {:?}", detector.detail, detector.paths),
+                )
+            }),
+    );
     if !reasons.is_empty() {
-        return json!({"status": "incomplete", "reasons": reasons, "comparisons": comparisons});
+        return RiskAssessment::Incomplete {
+            reasons,
+            comparisons,
+        };
     }
     let tier = maximum_tier(comparisons.iter().map(|comparison| comparison.tier));
-    json!({ "status": "complete", "tier": tier, "comparisons": comparisons })
+    RiskAssessment::Complete { tier, comparisons }
 }
 
-fn branch(git: &git::Git, config: &ReviewConfig) -> Value {
+fn branch(git: &git::Git, config: &ReviewConfig) -> RiskAssessment {
     if git.shallow {
         return incomplete(
             RiskReasonCode::MissingHistory,
@@ -204,15 +297,16 @@ fn branch(git: &git::Git, config: &ReviewConfig) -> Value {
     for ancestor in ancestors {
         match git.changes(ancestor, &git.head) {
             Ok(changes) => comparisons.push(assess(config, ancestor, &git.head, &changes)),
-            Err(error) => reasons.push(
-                json!({"code": RiskReasonCode::UnreadableDiff, "message": format!("{ancestor}: {error:#}")}),
-            ),
+            Err(error) => reasons.push(RiskReason::new(
+                RiskReasonCode::UnreadableDiff,
+                format!("{ancestor}: {error:#}"),
+            )),
         }
     }
     assessment(comparisons, reasons)
 }
 
-fn integration(git: &git::Git, config: &ReviewConfig, method: IntegrationMethod) -> Value {
+fn integration(git: &git::Git, config: &ReviewConfig, method: IntegrationMethod) -> RiskAssessment {
     if !matches!(method, IntegrationMethod::Merge) {
         return incomplete(
             RiskReasonCode::UnsupportedIntegrationMethod,
@@ -332,28 +426,31 @@ pub(super) fn collect(args: &TierArgs) -> Result<Assessment> {
             incomplete(RiskReasonCode::InvalidConfig, format!("{error:#}"), vec![]),
         ),
     };
-    let done = branch["status"] == "complete" && integration["status"] == "complete";
-    let tier = if done {
-        Some(maximum_tier([&branch, &integration].into_iter().map(
-            |risk| {
-                risk["tier"]
-                    .as_str()
-                    .and_then(Tier::parse)
-                    .unwrap_or(Tier::Medium)
-            },
-        )))
-    } else {
-        None
-    };
-    let report = json!({
-        "schema_version": 1, "status": if done { "complete" } else { "incomplete" },
-        "inputs": {
-            "base": &git.base, "head": &git.head, "integration_method": args.integration_method.name(),
-            "botica_version": env!("CARGO_PKG_VERSION"),
-            "config": {"source": &config.source, "digest": &config.digest}
+    let effective_tier = branch
+        .tier()
+        .zip(integration.tier())
+        .map(|(branch, integration)| branch.max(integration));
+    let report = serde_json::to_value(TierReport {
+        schema_version: 1,
+        status: if effective_tier.is_some() {
+            ReportStatus::Complete
+        } else {
+            ReportStatus::Incomplete
         },
-        "branch": branch, "integration": integration, "effective_tier": tier
-    });
+        inputs: TierInputs {
+            base: &git.base,
+            head: &git.head,
+            integration_method: args.integration_method.name(),
+            botica_version: env!("CARGO_PKG_VERSION"),
+            config: ConfigIdentity {
+                source: &config.source,
+                digest: &config.digest,
+            },
+        },
+        branch,
+        integration,
+        effective_tier,
+    })?;
     Ok(Assessment {
         git,
         config,
