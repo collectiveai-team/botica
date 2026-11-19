@@ -13,6 +13,7 @@ kind = "judgment"
 languages = ["*"]
 when = "edit"
 why-not-deterministic = "A word list finds the vocabulary, but whether a clause judges, hedges or makes a claim with no source needs a reading of the sentence."
+act-at = 0.85
 
 [implementations.question]
 type = "boolean"

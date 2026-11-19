@@ -123,12 +123,45 @@ fn with_a_diff_a_judged_finding_stays_only_when_the_diff_changes_its_file() {
     assert_eq!(String::from_utf8_lossy(&other.stdout), "");
 }
 
-fn minimal_comments(probability: &str) -> String {
+fn report(rule: &str, file: &str, probability: &str, band: &str) -> String {
     format!(
-        "{{\"root\": \".\", \"sections\": [{{\"phase\": \"edit\", \"files\": [\"a.py\"], \
-         \"verdicts\": [{{\"ruleId\": \"minimal-comments\", \"probability\": {probability}, \
-         \"band\": \"act\"}}]}}], \"spendUsd\": 0, \"all\": false}}"
+        "{{\"root\": \".\", \"sections\": [{{\"phase\": \"edit\", \"files\": [\"{file}\"], \
+         \"verdicts\": [{{\"ruleId\": \"{rule}\", \"probability\": {probability}, \
+         \"band\": \"{band}\"}}]}}], \"spendUsd\": 0, \"all\": false}}"
     )
+}
+
+fn minimal_comments(probability: &str) -> String {
+    report("minimal-comments", "a.py", probability, "act")
+}
+
+#[test]
+fn a_plain_writing_verdict_under_0_85_is_reported_as_info() {
+    let dir = workdir("plain-writing-act-at");
+    fs::write(
+        dir.join("botica.toml"),
+        "preview = true\nselect = [\"plain-writing\"]\n",
+    )
+    .expect("write the configuration");
+    fs::write(dir.join("a.md"), "Text.\n").expect("write a file");
+    fs::write(
+        dir.join("low.json"),
+        report("plain-writing", "a.md", "0.84", "act"),
+    )
+    .expect("write the report");
+    fs::write(
+        dir.join("high.json"),
+        report("plain-writing", "a.md", "0.86", "act"),
+    )
+    .expect("write the report");
+
+    let low = botica(&dir, &["--judged", "low.json", "--fail-on", "warning"]);
+    let high = botica(&dir, &["--judged", "high.json", "--fail-on", "warning"]);
+
+    let text = String::from_utf8_lossy(&low.stdout);
+    assert_eq!(low.status.code(), Some(0), "{text}");
+    assert!(text.contains("a.md:1:1: info [plain-writing]"), "{text}");
+    assert_eq!(high.status.code(), Some(1));
 }
 
 #[test]
