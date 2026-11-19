@@ -12,13 +12,14 @@ skills tree and declared check references without executing them.
 
 ## Code hosts
 
-`review tier`, `plan`, `check`, `run`, `validate` and `export` read Git and local files, so they
-run on any host. Roles are read from `.github/review/` or `.gitlab/review/`, and
-`review export --host gitlab` writes `.gitlab/CODEOWNERS`. The options that read a pull request
-(`review context`, `classify --github-pr`, `feedback --github-pr`, `authorize`) call the GitHub
-API through `gh`, and the review workflows of this repository are GitHub Actions workflows. On
-GitLab, `classify` takes a local `--checks` attestation, which leaves `producer_verified` false
-and automation blocked. The `base` recipe installs the roles under `.github/review/`.
+`review tier`, `plan`, `check`, `validate` and `export` read Git and local files, and `run` adds
+the OpenAI API, so they run on any host. Roles are read from `.github/review/` or
+`.gitlab/review/`, and `review export --host gitlab` writes `.gitlab/CODEOWNERS`. The options that
+read a pull request (`review context`, and `--github-pr` of `classify`, `feedback` and
+`authorize`) call the GitHub API through `gh`, and the review workflows of this repository are
+GitHub Actions workflows. On GitLab, `classify` takes a local `--checks` attestation, which leaves
+`producer_verified` false, and `authorize` without `--github-pr` cannot verify branch protection,
+so automation stays blocked. The `base` recipe installs the roles under `.github/review/`.
 
 ## Execute and validate
 
