@@ -20,6 +20,36 @@ fn schema_codes(value: &Value, found: &mut BTreeSet<String>) {
     }
 }
 
+/// Fails to compile when a variant is added, so that `ALL` gets it too.
+fn listed(code: RiskReasonCode) -> bool {
+    match code {
+        RiskReasonCode::MissingHistory
+        | RiskReasonCode::NoCommonAncestor
+        | RiskReasonCode::MergeConflict
+        | RiskReasonCode::UnsupportedIntegrationMethod
+        | RiskReasonCode::InvalidConfig
+        | RiskReasonCode::UnreadableDiff
+        | RiskReasonCode::UnsupportedDetector
+        | RiskReasonCode::IntegrationFailed => RiskReasonCode::ALL.contains(&code),
+    }
+}
+
+#[test]
+fn every_risk_reason_code_is_in_the_list_of_all() {
+    for code in [
+        RiskReasonCode::MissingHistory,
+        RiskReasonCode::NoCommonAncestor,
+        RiskReasonCode::MergeConflict,
+        RiskReasonCode::UnsupportedIntegrationMethod,
+        RiskReasonCode::InvalidConfig,
+        RiskReasonCode::UnreadableDiff,
+        RiskReasonCode::UnsupportedDetector,
+        RiskReasonCode::IntegrationFailed,
+    ] {
+        assert!(listed(code), "{code:?}");
+    }
+}
+
 #[test]
 fn the_tier_schema_lists_exactly_the_risk_reason_codes() {
     let text = std::fs::read_to_string(

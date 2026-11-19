@@ -22,6 +22,15 @@ fn authorization_requires_explicit_enablement_and_matching_measured_evidence() {
         authorize(true, &inputs, &report, &measured)["allowed"],
         true
     );
+    for tier in [json!("medium"), json!("high"), json!(null), json!("LOW")] {
+        let mut risky = report.clone();
+        risky["effective_tier"] = tier.clone();
+        assert_eq!(
+            authorize(true, &inputs, &risky, &measured)["allowed"],
+            false,
+            "{tier}"
+        );
+    }
     let mut stale = measured;
     stale["question_digest"] = json!("d".repeat(64));
     assert_eq!(authorize(true, &inputs, &report, &stale)["allowed"], false);

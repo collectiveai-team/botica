@@ -27,6 +27,7 @@ fn incomplete_or_mismatched_observations_cannot_be_measured_as_candidates() {
         "stale-reviews",
         "blocked-checks",
         "byte-limit",
+        "risk-not-low-on-low",
         "valid",
     ] {
         let mut report = observation.clone();
@@ -39,6 +40,9 @@ fn incomplete_or_mismatched_observations_cannot_be_measured_as_candidates() {
             "stale-reviews" => report["review_summary"]["inputs"]["head"] = json!("c".repeat(40)),
             "blocked-checks" => {
                 report["reasons"] = json!([{"code":"required-checks","source":"gate"}])
+            }
+            "risk-not-low-on-low" => {
+                report["reasons"] = json!([{"code":"risk-not-low","source":"gate"}])
             }
             "byte-limit" => {
                 report["reasons"] = json!([{"code":"context-byte-limit","source":"gate"}]);
@@ -58,7 +62,10 @@ fn incomplete_or_mismatched_observations_cannot_be_measured_as_candidates() {
                 ".tmp/observation.json",
             ],
         );
-        if matches!(invalid, "valid" | "blocked-checks" | "byte-limit") {
+        if matches!(
+            invalid,
+            "valid" | "blocked-checks" | "byte-limit" | "risk-not-low-on-low"
+        ) {
             assert!(output.status.success(), "{}", common::stderr(&output));
             let measured: Value = serde_json::from_slice(&output.stdout).unwrap();
             assert_eq!(measured["evaluated"], usize::from(invalid == "valid"));
