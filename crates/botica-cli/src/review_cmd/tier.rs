@@ -3,6 +3,7 @@ use std::process::ExitCode;
 
 use anyhow::{ensure, Context, Result};
 use botica_config::{ReviewConfig, Tier};
+use botica_core::review::reasons::RiskReasonCode;
 use botica_core::review::{assess, maximum_tier, Comparison};
 use clap::{Args, ValueEnum};
 use serde_json::{json, Value};
@@ -144,14 +145,14 @@ fn trusted_config(git: &git::Git, identity: &mut TrustedConfig) -> Result<Review
     Ok(ReviewConfig::default())
 }
 
-fn incomplete(code: &str, message: impl ToString, comparisons: Vec<Comparison>) -> Value {
+fn incomplete(code: RiskReasonCode, message: impl ToString, comparisons: Vec<Comparison>) -> Value {
     json!({ "status": "incomplete", "reasons": [{"code": code, "message": message.to_string()}], "comparisons": comparisons })
 }
 
 fn assessment(comparisons: Vec<Comparison>, mut reasons: Vec<Value>) -> Value {
     reasons.extend(comparisons.iter().filter(|comparison| comparison.bounds.is_none()).flat_map(|comparison| comparison.detector_evidence.iter())
         .filter(|detector| detector.status == "unsupported")
-        .map(|detector| json!({"code": "unsupported-detector", "message": format!("{}: {:?}", detector.detail, detector.paths)})));
+        .map(|detector| json!({"code": RiskReasonCode::UnsupportedDetector, "message": format!("{}: {:?}", detector.detail, detector.paths)})));
     if !reasons.is_empty() {
         return json!({"status": "incomplete", "reasons": reasons, "comparisons": comparisons});
     }
@@ -162,32 +163,38 @@ fn assessment(comparisons: Vec<Comparison>, mut reasons: Vec<Value>) -> Value {
 fn branch(git: &git::Git, config: &ReviewConfig) -> Value {
     if git.shallow {
         return incomplete(
-            "missing-history",
+            RiskReasonCode::MissingHistory,
             "Fetch the complete history before assessing branch risk",
             vec![],
         );
     }
     let output = match git.output(&["merge-base", "--all", &git.base, &git.head]) {
         Ok(output) => output,
-        Err(error) => return incomplete("missing-history", error, vec![]),
+        Err(error) => return incomplete(RiskReasonCode::MissingHistory, error, vec![]),
     };
     if output.status.code() == Some(1) && output.stdout.is_empty() && output.stderr.is_empty() {
         return incomplete(
-            "no-common-ancestor",
+            RiskReasonCode::NoCommonAncestor,
             "No common ancestor; fetch missing history if this repository is incomplete",
             vec![],
         );
     }
     if !output.status.success() {
         return incomplete(
-            "missing-history",
+            RiskReasonCode::MissingHistory,
             String::from_utf8_lossy(&output.stderr),
             vec![],
         );
     }
     let ancestors = match std::str::from_utf8(&output.stdout) {
         Ok(ancestors) if !ancestors.trim().is_empty() => ancestors,
-        _ => return incomplete("missing-history", "No readable merge-base evidence", vec![]),
+        _ => {
+            return incomplete(
+                RiskReasonCode::MissingHistory,
+                "No readable merge-base evidence",
+                vec![],
+            )
+        }
     };
     let mut ancestors: Vec<_> = ancestors.lines().collect();
     ancestors.sort_unstable();
@@ -198,7 +205,7 @@ fn branch(git: &git::Git, config: &ReviewConfig) -> Value {
         match git.changes(ancestor, &git.head) {
             Ok(changes) => comparisons.push(assess(config, ancestor, &git.head, &changes)),
             Err(error) => reasons.push(
-                json!({"code": "unreadable-diff", "message": format!("{ancestor}: {error:#}")}),
+                json!({"code": RiskReasonCode::UnreadableDiff, "message": format!("{ancestor}: {error:#}")}),
             ),
         }
     }
@@ -208,34 +215,34 @@ fn branch(git: &git::Git, config: &ReviewConfig) -> Value {
 fn integration(git: &git::Git, config: &ReviewConfig, method: IntegrationMethod) -> Value {
     if !matches!(method, IntegrationMethod::Merge) {
         return incomplete(
-            "unsupported-integration-method",
+            RiskReasonCode::UnsupportedIntegrationMethod,
             format!("{} integration is not supported", method.name()),
             vec![],
         );
     }
     if git.shallow {
         return incomplete(
-            "missing-history",
+            RiskReasonCode::MissingHistory,
             "Fetch the complete history before assessing integration risk",
             vec![],
         );
     }
     let paths = match git.merge_paths() {
         Ok(paths) => paths,
-        Err(error) => return incomplete("unreadable-diff", error, vec![]),
+        Err(error) => return incomplete(RiskReasonCode::UnreadableDiff, error, vec![]),
     };
     if let Err(error) = git.validate_merge_attributes(&paths) {
-        return incomplete("integration-failed", error, vec![]);
+        return incomplete(RiskReasonCode::IntegrationFailed, error, vec![]);
     }
     let output = match git.merge_tree() {
         Ok(output) => output,
-        Err(error) => return incomplete("integration-failed", error, vec![]),
+        Err(error) => return incomplete(RiskReasonCode::IntegrationFailed, error, vec![]),
     };
     if !output.status.success() {
         let code = if output.status.code() == Some(1) {
-            "merge-conflict"
+            RiskReasonCode::MergeConflict
         } else {
-            "integration-failed"
+            RiskReasonCode::IntegrationFailed
         };
         return incomplete(
             code,
@@ -248,11 +255,11 @@ fn integration(git: &git::Git, config: &ReviewConfig, method: IntegrationMethod)
     }
     let tree = match std::str::from_utf8(&output.stdout) {
         Ok(value) => value.trim(),
-        Err(error) => return incomplete("integration-failed", error, vec![]),
+        Err(error) => return incomplete(RiskReasonCode::IntegrationFailed, error, vec![]),
     };
     match git.changes(&git.base, tree) {
         Ok(changes) => assessment(vec![assess(config, &git.base, tree, &changes)], vec![]),
-        Err(error) => incomplete("unreadable-diff", error, vec![]),
+        Err(error) => incomplete(RiskReasonCode::UnreadableDiff, error, vec![]),
     }
 }
 
@@ -321,8 +328,8 @@ pub(super) fn collect(args: &TierArgs) -> Result<Assessment> {
             (branch, integration)
         }
         Err(error) => (
-            incomplete("invalid-config", format!("{error:#}"), vec![]),
-            incomplete("invalid-config", format!("{error:#}"), vec![]),
+            incomplete(RiskReasonCode::InvalidConfig, format!("{error:#}"), vec![]),
+            incomplete(RiskReasonCode::InvalidConfig, format!("{error:#}"), vec![]),
         ),
     };
     let done = branch["status"] == "complete" && integration["status"] == "complete";

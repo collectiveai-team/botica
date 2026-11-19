@@ -1,6 +1,7 @@
 use super::ClassifyArgs;
 use crate::review_cmd::{evidence, github, tier};
 use botica_core::review::classifier::{Classifier, Thresholds};
+use botica_core::review::reasons::ReasonCode;
 use serde_json::{json, Value};
 
 pub(super) fn roles(args: &ClassifyArgs, assessment: &tier::Assessment, plan: &Value) -> Value {
@@ -65,7 +66,7 @@ pub(super) fn invalidate_changed_context(
         if report["human_required"] != true {
             report["recommendation"] = json!("blocked");
         }
-        report["reasons"].as_array_mut().unwrap().push(json!({"code":"context-changed",
+        report["reasons"].as_array_mut().unwrap().push(json!({"code":ReasonCode::ContextChanged,
             "source":"gate","evidence":"The GitHub acceptance context changed during classification."}));
     }
 }
@@ -88,7 +89,7 @@ fn localization_requests(plan: &Value, report: &Value) -> Vec<(String, String)> 
         .into_iter()
         .flatten()
         .filter_map(|reason| reason["code"].as_str())
-        .filter(|code| matches!(*code, "decision" | "unverifiable"))
+        .filter(|code| ReasonCode::parse(code).is_some_and(ReasonCode::localized))
         .flat_map(|code| {
             paths
                 .iter()

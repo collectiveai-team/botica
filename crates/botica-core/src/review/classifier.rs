@@ -1,5 +1,6 @@
 //! Evidence-gated shadow recommendations. This module cannot merge or alter repository settings.
 
+use super::reasons::ReasonCode;
 use anyhow::{ensure, Context, Result};
 use botica_config::Tier;
 use serde::{Deserialize, Serialize};
@@ -148,14 +149,16 @@ fn gates(plan: &Value, results: &Value, checks: &Value) -> Vec<Value> {
             .and_then(Tier::parse)
             .is_none()
     {
-        reasons.push(json!({"code":"incomplete-risk","source":"gate","evidence":plan["risk"]}));
+        reasons.push(
+            json!({"code":ReasonCode::IncompleteRisk,"source":"gate","evidence":plan["risk"]}),
+        );
     }
     if results["inputs"] != plan["inputs"]
         || results["producer_verified"] != true
         || results["status"] != "complete"
         || results["verdict"] != "PASS"
     {
-        reasons.push(json!({"code":"review-evidence","source":"gate","evidence":results}));
+        reasons.push(json!({"code":ReasonCode::ReviewEvidence,"source":"gate","evidence":results}));
     }
     if checks["inputs"] != plan["inputs"]
         || checks["producer_verified"] != true
@@ -163,7 +166,7 @@ fn gates(plan: &Value, results: &Value, checks: &Value) -> Vec<Value> {
         || checks["lint"] != "PASS"
         || (plan["mutation_required"] == true && checks["mutation"] != "PASS")
     {
-        reasons.push(json!({"code":"check-evidence","source":"gate","evidence":checks}));
+        reasons.push(json!({"code":ReasonCode::CheckEvidence,"source":"gate","evidence":checks}));
     }
     let required = plan["required_checks"].as_array();
     if required.is_none_or(|names| {
@@ -173,7 +176,7 @@ fn gates(plan: &Value, results: &Value, checks: &Value) -> Vec<Value> {
                     .is_none_or(|name| checks["jobs"][name] != "PASS")
             })
     }) {
-        reasons.push(json!({"code":"required-checks","source":"gate","evidence":{"required":plan["required_checks"],"observed":checks["jobs"]}}));
+        reasons.push(json!({"code":ReasonCode::RequiredChecks,"source":"gate","evidence":{"required":plan["required_checks"],"observed":checks["jobs"]}}));
     }
     if results["findings"]
         .as_array()
@@ -182,7 +185,7 @@ fn gates(plan: &Value, results: &Value, checks: &Value) -> Vec<Value> {
         .any(|finding| matches!(finding["severity"].as_str(), Some("P0" | "P1" | "P2")))
     {
         reasons.push(
-            json!({"code":"unresolved-finding","source":"gate","evidence":results["findings"]}),
+            json!({"code":ReasonCode::UnresolvedFinding,"source":"gate","evidence":results["findings"]}),
         );
     }
     reasons
@@ -198,7 +201,7 @@ fn model_assessment(
         return Ok((
             None,
             vec![
-                json!({"code":"context-byte-limit","source":"gate","bytes":serialized.len(),"limit":REQUEST_BYTE_LIMIT}),
+                json!({"code":ReasonCode::ContextByteLimit,"source":"gate","bytes":serialized.len(),"limit":REQUEST_BYTE_LIMIT}),
             ],
         ));
     }
@@ -208,10 +211,10 @@ fn model_assessment(
     }) {
         Ok(answer) => {
             let reasons = [
-                ("decision",answer.decision,answer.decision >= thresholds.maximum_question),
-                ("unverifiable",answer.unverifiable,answer.unverifiable >= thresholds.maximum_question),
-                ("impact-users",answer.users,answer.contained + answer.team < thresholds.minimum_contained_team),
-                ("low-confidence",answer.confidence,answer.confidence < thresholds.minimum_confidence),
+                (ReasonCode::Decision,answer.decision,answer.decision >= thresholds.maximum_question),
+                (ReasonCode::Unverifiable,answer.unverifiable,answer.unverifiable >= thresholds.maximum_question),
+                (ReasonCode::ImpactUsers,answer.users,answer.contained + answer.team < thresholds.minimum_contained_team),
+                (ReasonCode::LowConfidence,answer.confidence,answer.confidence < thresholds.minimum_confidence),
             ].into_iter().filter(|(_,_,failed)| *failed).map(|(code,probability,_)|
                 json!({"code":code,"source":"Jev","probability":probability})).collect();
             Ok((Some(answer), reasons))
@@ -220,14 +223,14 @@ fn model_assessment(
             let limit = error.downcast_ref::<ContextLimit>().unwrap();
             Ok((
                 None,
-                vec![json!({"code":"context-limit","source":"service",
+                vec![json!({"code":ReasonCode::ContextLimit,"source":"service",
                 "input_tokens":limit.input_tokens,"limit_tokens":INPUT_TOKEN_LIMIT})],
             ))
         }
         Err(_) => Ok((
             None,
             vec![
-                json!({"code":"classifier-unavailable","source":"service","evidence":"Request failed or response was invalid. No model decision was accepted."}),
+                json!({"code":ReasonCode::ClassifierUnavailable,"source":"service","evidence":"Request failed or response was invalid. No model decision was accepted."}),
             ],
         )),
     }
@@ -256,17 +259,18 @@ pub fn recommend(
     let human = critical(plan);
     let mut reasons = gates(plan, results, checks);
     if !has_acceptance_context(&state["context"]) {
-        reasons.push(json!({"code":"missing-acceptance-context","source":"gate","evidence":"Supply title, description and the linked issue body or explicit acceptance criteria."}));
+        reasons.push(json!({"code":ReasonCode::MissingAcceptanceContext,"source":"gate","evidence":"Supply title, description and the linked issue body or explicit acceptance criteria."}));
     }
     if state["context_verified"] != true {
-        reasons.push(json!({"code":"context-changed","source":"gate",
+        reasons.push(json!({"code":ReasonCode::ContextChanged,"source":"gate",
             "evidence":"Acceptance context is not verified against current GitHub data."}));
     }
     if state["change_context_complete"] != true {
-        reasons.push(json!({"code":"context-unavailable","source":"gate","evidence":"The full change context could not be collected within its bound."}));
+        reasons.push(json!({"code":ReasonCode::ContextUnavailable,"source":"gate","evidence":"The full change context could not be collected within its bound."}));
     }
     if human {
-        reasons.push(json!({"code":"critical-area","source":"gate","evidence":plan["risk"]}));
+        reasons
+            .push(json!({"code":ReasonCode::CriticalArea,"source":"gate","evidence":plan["risk"]}));
     }
     let mut probabilities = None;
     if reasons.is_empty() {
@@ -279,10 +283,10 @@ pub fn recommend(
     let raised = floor_tier.is_some_and(|tier| tier < Tier::High)
         && reasons.iter().any(|reason| {
             reason["source"] == "Jev"
-                && matches!(
-                    reason["code"].as_str(),
-                    Some("decision" | "unverifiable" | "impact-users")
-                )
+                && reason["code"]
+                    .as_str()
+                    .and_then(ReasonCode::parse)
+                    .is_some_and(ReasonCode::raises_risk)
         });
     let effective = match floor_tier {
         Some(tier) if raised => json!(tier.raised()),
@@ -292,7 +296,7 @@ pub fn recommend(
         .as_str()
         .is_some_and(|tier| Tier::parse(tier) != Some(Tier::Low))
     {
-        reasons.push(json!({"code":"risk-not-low","source":"gate","evidence":effective}));
+        reasons.push(json!({"code":ReasonCode::RiskNotLow,"source":"gate","evidence":effective}));
     }
     let eligible = reasons.is_empty();
     Ok(
@@ -328,7 +332,7 @@ pub fn recommend_current(
         report["reasons"]
             .as_array_mut()
             .context("missing reasons")?
-            .push(json!({"code":"evidence-changed","source":"gate",
+            .push(json!({"code":ReasonCode::EvidenceChanged,"source":"gate",
                 "evidence":"Role, check or acceptance evidence changed during classification."}));
     }
     Ok(report)

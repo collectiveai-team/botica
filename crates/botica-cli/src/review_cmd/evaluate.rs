@@ -4,8 +4,9 @@ use anyhow::{ensure, Context, Result};
 use botica_config::Tier;
 use botica_core::review::classifier::Thresholds;
 use botica_core::review::evaluation::{evaluate, EvaluationCase};
+use botica_core::review::reasons::ReasonCode;
 use clap::Args;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -80,23 +81,23 @@ fn apply_observation(cases: &mut [EvaluationCase], report: &Value) -> Result<()>
     case.critical = report["human_required"].as_bool();
     case.inputs_verified = report["checks"]["producer_verified"] == true
         && report["review_summary"]["producer_verified"] == true
-        && reasons.iter().all(|reason| match reason["code"].as_str() {
-            Some("decision" | "unverifiable" | "impact-users" | "low-confidence") => {
-                reason["source"] == "Jev"
-            }
-            Some("critical-area") => report["human_required"] == true,
-            Some("risk-not-low") => report["effective_tier"]
-                .as_str()
-                .and_then(Tier::parse)
-                .is_some_and(|tier| tier > Tier::Low),
-            _ => false,
-        });
+        && reasons.iter().all(
+            |reason| match reason["code"].as_str().and_then(ReasonCode::parse) {
+                Some(code) if code.from_model() => reason["source"] == "Jev",
+                Some(ReasonCode::CriticalArea) => report["human_required"] == true,
+                Some(ReasonCode::RiskNotLow) => report["effective_tier"]
+                    .as_str()
+                    .and_then(Tier::parse)
+                    .is_some_and(|tier| tier > Tier::Low),
+                _ => false,
+            },
+        );
     case.checks_passed = Some(
         report["checks"]["ci"] == "PASS"
             && report["checks"]["lint"] == "PASS"
             && (!reasons
                 .iter()
-                .any(|reason| reason["code"] == "check-evidence")),
+                .any(|reason| reason["code"] == json!(ReasonCode::CheckEvidence))),
     );
     case.reviews_passed = Some(
         report["review_summary"]["status"] == "complete"
@@ -105,16 +106,10 @@ fn apply_observation(cases: &mut [EvaluationCase], report: &Value) -> Result<()>
     case.context_complete = Some(
         report["context_verified"] == true
             && !reasons.iter().any(|reason| {
-                matches!(
-                    reason["code"].as_str(),
-                    Some(
-                        "missing-acceptance-context"
-                            | "context-unavailable"
-                            | "context-limit"
-                            | "context-byte-limit"
-                            | "context-changed"
-                    )
-                )
+                reason["code"]
+                    .as_str()
+                    .and_then(ReasonCode::parse)
+                    .is_some_and(ReasonCode::context_incomplete)
             }),
     );
     case.probabilities = (!report["probabilities"].is_null())

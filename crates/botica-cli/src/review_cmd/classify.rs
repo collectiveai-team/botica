@@ -2,6 +2,7 @@ use super::{consumers, jev::Jev};
 use crate::output::println;
 use anyhow::Result;
 use botica_core::review::classifier::{handoff_markdown, recommend_current, Evidence};
+use botica_core::review::reasons::ReasonCode;
 use clap::Args;
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -29,20 +30,20 @@ pub(super) struct ClassifyArgs {
 }
 
 fn reason_steps(code: &str) -> (&'static str, &'static str) {
-    match code {
-        "critical-area" => ("Inspect the matched critical paths and their owners in the risk evidence.", "Obtain human review from the critical area owner."),
-        "incomplete-risk" => ("Run botica review tier for the pinned destination, head and integration method.", "Resolve missing history, unsupported inputs or integration conflicts."),
-        "review-evidence" | "unresolved-finding" => ("Inspect role verdicts, findings and not_checked for this change.", "Resolve surviving findings and rerun missing or inconclusive roles."),
-        "check-evidence" => ("Inspect CI, lint and mutation attestations and compare their full input binding.", "Rerun the missing or failed checks for the current inputs."),
-        "evidence-changed" => ("Compare the latest role workflow and integration check IDs with the recorded snapshot.", "Wait for current checks and reviews, then rerun classification."),
-        "decision" => ("Compare the located decision with the linked issue and description.", "Record the intended choice in the issue and verify its implementation."),
-        "unverifiable" => ("Run the changed behavior in base and head and compare observable output.", "Add the missing direct verification evidence."),
-        "impact-users" => ("Inspect the published CLI, rule or recipe surface and its consumers.", "Verify the changed public behavior in a disposable repository."),
-        "risk-not-low" => ("Inspect both branch and integration risk evidence.", "Keep automation blocked under the low-risk automation policy."),
-        "context-limit" => ("Inspect the model's reported input-token count against the 32,000-token acceptance budget.", "Use a smaller review boundary. The rejected response supplies no probabilities."),
-        "context-byte-limit" => ("Inspect the local serialized-request byte limit, separately from the model's token budget.", "Use a smaller review boundary without dropping required evidence."),
-        "missing-acceptance-context" | "context-unavailable" | "context-changed" => ("Compare the current PR description and linked issue bodies with the review context.", "Refresh context and rerun the affected roles and classification."),
-        _ => ("Inspect model availability and the pinned model version; no service error body was retained.", "Retry the configured service. A technical failure does not require human review."),
+    match ReasonCode::parse(code) {
+        Some(ReasonCode::CriticalArea) => ("Inspect the matched critical paths and their owners in the risk evidence.", "Obtain human review from the critical area owner."),
+        Some(ReasonCode::IncompleteRisk) => ("Run botica review tier for the pinned destination, head and integration method.", "Resolve missing history, unsupported inputs or integration conflicts."),
+        Some(ReasonCode::ReviewEvidence | ReasonCode::UnresolvedFinding) => ("Inspect role verdicts, findings and not_checked for this change.", "Resolve surviving findings and rerun missing or inconclusive roles."),
+        Some(ReasonCode::CheckEvidence) => ("Inspect CI, lint and mutation attestations and compare their full input binding.", "Rerun the missing or failed checks for the current inputs."),
+        Some(ReasonCode::EvidenceChanged) => ("Compare the latest role workflow and integration check IDs with the recorded snapshot.", "Wait for current checks and reviews, then rerun classification."),
+        Some(ReasonCode::Decision) => ("Compare the located decision with the linked issue and description.", "Record the intended choice in the issue and verify its implementation."),
+        Some(ReasonCode::Unverifiable) => ("Run the changed behavior in base and head and compare observable output.", "Add the missing direct verification evidence."),
+        Some(ReasonCode::ImpactUsers) => ("Inspect the published CLI, rule or recipe surface and its consumers.", "Verify the changed public behavior in a disposable repository."),
+        Some(ReasonCode::RiskNotLow) => ("Inspect both branch and integration risk evidence.", "Keep automation blocked under the low-risk automation policy."),
+        Some(ReasonCode::ContextLimit) => ("Inspect the model's reported input-token count against the 32,000-token acceptance budget.", "Use a smaller review boundary. The rejected response supplies no probabilities."),
+        Some(ReasonCode::ContextByteLimit) => ("Inspect the local serialized-request byte limit, separately from the model's token budget.", "Use a smaller review boundary without dropping required evidence."),
+        Some(ReasonCode::MissingAcceptanceContext | ReasonCode::ContextUnavailable | ReasonCode::ContextChanged) => ("Compare the current PR description and linked issue bodies with the review context.", "Refresh context and rerun the affected roles and classification."),
+        Some(ReasonCode::RequiredChecks | ReasonCode::ClassifierUnavailable | ReasonCode::LowConfidence) | None => ("Inspect model availability and the pinned model version; no service error body was retained.", "Retry the configured service. A technical failure does not require human review."),
     }
 }
 

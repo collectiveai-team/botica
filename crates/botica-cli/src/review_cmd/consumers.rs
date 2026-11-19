@@ -3,6 +3,7 @@ use std::process::ExitCode;
 
 use anyhow::{Context, Result};
 use botica_config::Tier;
+use botica_core::review::reasons::ReasonCode;
 use botica_core::review::roles::RoleDefinition;
 use clap::{Args, ValueEnum};
 use serde_json::{json, Value};
@@ -205,7 +206,7 @@ pub(super) fn collect(args: &ConsumerArgs, checking: bool) -> Result<(tier::Asse
         .to_hex()
         .to_string());
     if assessment.report["status"] != "complete" && !checking {
-        reasons.push(json!({"code": "incomplete-risk", "message": "A complete classification is required to select roles"}));
+        reasons.push(json!({"code": ReasonCode::IncompleteRisk, "message": "A complete classification is required to select roles"}));
     }
     let done = reasons.is_empty();
     let selected = if done && !checking {
