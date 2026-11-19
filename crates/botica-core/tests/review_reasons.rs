@@ -20,8 +20,9 @@ fn schema_codes(value: &Value, found: &mut BTreeSet<String>) {
     }
 }
 
-/// Fails to compile when a variant is added, so that `ALL` gets it too.
-fn listed(code: RiskReasonCode) -> bool {
+/// The number of variants. The match fails to compile when a variant is added, so the count and
+/// the test below are updated with it.
+const fn variants(code: RiskReasonCode) -> usize {
     match code {
         RiskReasonCode::MissingHistory
         | RiskReasonCode::NoCommonAncestor
@@ -30,24 +31,21 @@ fn listed(code: RiskReasonCode) -> bool {
         | RiskReasonCode::InvalidConfig
         | RiskReasonCode::UnreadableDiff
         | RiskReasonCode::UnsupportedDetector
-        | RiskReasonCode::IntegrationFailed => RiskReasonCode::ALL.contains(&code),
+        | RiskReasonCode::IntegrationFailed => 8,
     }
 }
 
 #[test]
-fn every_risk_reason_code_is_in_the_list_of_all() {
-    for code in [
-        RiskReasonCode::MissingHistory,
-        RiskReasonCode::NoCommonAncestor,
-        RiskReasonCode::MergeConflict,
-        RiskReasonCode::UnsupportedIntegrationMethod,
-        RiskReasonCode::InvalidConfig,
-        RiskReasonCode::UnreadableDiff,
-        RiskReasonCode::UnsupportedDetector,
-        RiskReasonCode::IntegrationFailed,
-    ] {
-        assert!(listed(code), "{code:?}");
-    }
+fn the_list_of_all_risk_reason_codes_has_each_variant_once() {
+    let distinct: BTreeSet<String> = RiskReasonCode::ALL
+        .iter()
+        .map(|code| format!("{code:?}"))
+        .collect();
+    assert_eq!(distinct.len(), RiskReasonCode::ALL.len());
+    assert_eq!(
+        RiskReasonCode::ALL.len(),
+        variants(RiskReasonCode::MissingHistory)
+    );
 }
 
 #[test]

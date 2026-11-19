@@ -59,9 +59,9 @@ changes no code. A pull request cannot run it either: `scheduled_review_report.r
 with bash and a `gh` that answers from files, and `scheduled_review_workflow.rs` holds its
 permissions.
 
-`tests/fake_github_cli.py` answers the `gh` commands that `review-shadow.yml` and
-`review-labels.yml` run, from a state file: the labels, the comments and the label events of one
-pull request. It raises on any other command, endpoint, field or write method. No test compares it
+`tests/fake_github_cli.py` answers the `gh` commands of the label publication steps that
+`tests/test_review_shadow_workflow.py` extracts from `review-shadow.yml` and `review-labels.yml`,
+from a state file: the labels, the comments and the label events of one pull request. It raises on any other command, endpoint, field or write method. No test compares it
 with the real `gh`. Such a comparison would run the same commands against a pull request of a
 sandbox repository created for it, never this repository: with a fine-grained token of that
 repository only (`issues: write`, `pull_requests: write`, `metadata: read`) that the person running
