@@ -67,8 +67,14 @@ fn repository(name: &str, answers: &[(&str, &str)]) -> PathBuf {
     git(&["add", "."]);
     git(&["commit", "-q", "-m", "change"]);
     for (index, (probability, band)) in answers.iter().enumerate() {
+        let call = index + 1;
+        if band.starts_with("exit ") {
+            fs::write(root.join(format!("exit-{call}")), &band[5..]).unwrap();
+            fs::write(root.join(format!("answer-{call}.json")), "").unwrap();
+            continue;
+        }
         fs::write(
-            root.join(format!("answer-{}.json", index + 1)),
+            root.join(format!("answer-{call}.json")),
             report(probability, band),
         )
         .unwrap();
@@ -78,6 +84,7 @@ fn repository(name: &str, answers: &[(&str, &str)]) -> PathBuf {
         &npx,
         "#!/bin/bash\ncalls=$(( $(cat \"$ROOT/calls\" 2>/dev/null || echo 0) + 1 ))\n\
          echo \"$calls\" > \"$ROOT/calls\"\ncat \"$ROOT/answer-$calls.json\"\n\
+         [ -f \"$ROOT/exit-$calls\" ] && exit \"$(cat \"$ROOT/exit-$calls\")\"\n\
          grep -q '\"band\": \"act\"' \"$ROOT/answer-$calls.json\" && exit 1\nexit 0\n",
     )
     .unwrap();
@@ -161,4 +168,22 @@ fn a_finding_that_one_of_three_runs_gives_passes_the_job() {
         "{}",
         String::from_utf8_lossy(&failed.stdout)
     );
+}
+
+#[test]
+fn a_run_that_fails_after_a_finding_fails_the_job_without_a_majority_of_one() {
+    for (name, answers) in [
+        ("first-fails", vec![("", "exit 3")]),
+        ("second-fails", vec![("0.90", "act"), ("", "exit 3")]),
+        (
+            "third-fails",
+            vec![("0.90", "act"), ("0.10", "clear"), ("", "exit 3")],
+        ),
+    ] {
+        let root = repository(name, &answers);
+        let judged = run(&root, &step("Judge the diff"));
+
+        assert_eq!(judged.status.code(), Some(3), "{name}");
+        assert_eq!(calls(&root), answers.len().to_string(), "{name}");
+    }
 }

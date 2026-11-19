@@ -58,9 +58,9 @@ jobs:
           fi
           # Deleted files have nothing left to judge.
           git diff --diff-filter=d "$BASE_SHA"...HEAD > "$RUNNER_TEMP/abide/pr.diff"
-          # The probability of a verdict changes from one run to the next, and abide can fail on a
-          # timeout. A first run with no finding decides; otherwise abide judges the diff twice more
-          # and botica keeps a finding only when a majority of the runs give it.
+          # The probability of a verdict changes from one run to the next. A first run with no
+          # finding decides; otherwise abide judges the diff twice more and botica keeps a finding
+          # only when a majority of the three runs give it. A run that fails fails the job.
           runs=()
           for attempt in 1 2 3; do
             status=0
@@ -68,21 +68,17 @@ jobs:
               > "$RUNNER_TEMP/abide/run-$attempt.json" || status=$?
             # abide exits with 1 when a verdict is in the band act; botica decides.
             if [ "$status" -gt 1 ]; then
-              echo "::notice::run $attempt of abide failed (exit $status)"
-              continue
+              echo "::error::run $attempt of abide failed (exit $status)"
+              exit "$status"
             fi
             runs+=(--judged "$RUNNER_TEMP/abide/run-$attempt.json")
-            if [ "$attempt" -eq 1 ] && uvx botica@{{ param.botica-version }} lint "${runs[@]}" \
-              --fail-on warning > /dev/null 2>&1; then
-              break
-            fi
             if [ "$attempt" -eq 1 ]; then
+              if uvx botica@{{ param.botica-version }} lint "${runs[@]}" --fail-on warning > /dev/null 2>&1; then
+                break
+              fi
               echo "::notice::run 1 of abide has a finding: abide judges the diff twice more"
             fi
           done
-          if [ "${#runs[@]}" -eq 0 ]; then
-            exit "$status"
-          fi
           printf '%s\n' "${runs[@]}" > "$RUNNER_TEMP/abide/runs"
 
       - name: Table of the findings

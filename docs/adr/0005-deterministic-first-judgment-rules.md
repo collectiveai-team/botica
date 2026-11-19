@@ -165,8 +165,12 @@ no check at all.
      files a probability near 0.8 on one run and under it on the next; on PR 320 it gave an
      unchanged `GLOSSARY.md` from 0.70 to 0.84 over seven runs. `--judged` repeated takes several
      reports of one change: a finding keeps its severity when a majority of the runs give it after
-     `act-at`, is info otherwise, and its message lists the probability of each run. The workflow
-     judges the diff once, and twice more when the first run has a finding. A verdict names no line, so its
+     `act-at`, is info otherwise, and its message gives the verdict of each run, `none` for a run
+     with no finding of that rule on that path. A run counts once for a rule and a path. The
+     workflow judges the diff once, and twice more when the first run has a finding; a run of abide
+     that fails fails the job, so three valid runs decide a finding. A release of botica before
+     this one takes `--judged` once, so the workflow needs this release or a newer `botica-version`.
+     A verdict names no line, so its
      finding is about the file of its section, the `file` of the verdict, or the whole change for
      a verdict of the `turn` phase with no `file`. `--output-format sarif` writes them as SARIF,
      and `--fail-on warning` fails the run on them, since a judgment rule reports warnings.
