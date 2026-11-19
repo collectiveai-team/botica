@@ -187,8 +187,10 @@ fn combine(runs: Vec<Vec<Found>>, act_at: impl Fn(&str) -> Option<Probability>) 
             .collect();
     }
     type Key = (String, String);
+    /// Whether a run gave the finding as sure, and its probability.
+    type Verdict = (bool, Option<f64>);
     let mut first: BTreeMap<Key, Found> = BTreeMap::new();
-    let mut verdicts: BTreeMap<Key, Vec<Option<(bool, Option<f64>)>>> = BTreeMap::new();
+    let mut verdicts: BTreeMap<Key, Vec<Option<Verdict>>> = BTreeMap::new();
     for (run, found_in_run) in runs.into_iter().enumerate() {
         for found in found_in_run {
             let act_at = act_at(&found.rule_id);
