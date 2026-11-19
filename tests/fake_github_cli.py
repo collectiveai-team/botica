@@ -22,6 +22,7 @@ class GitHubState:
     labels: set[str]
     comments: list[Comment] = field(default_factory=list)
     available_labels: set[str] = field(default_factory=set)
+    events: list[dict[str, str]] = field(default_factory=list)
     base: str = "b" * 40
     head: str = "a" * 40
     number: int = 42
@@ -36,6 +37,7 @@ class GitHubState:
                     "labels": sorted(self.labels),
                     "available_labels": sorted(self.available_labels),
                     "comments": [asdict(comment) for comment in self.comments],
+                    "events": self.events,
                     "base": self.base,
                     "head": self.head,
                     "number": self.number,
@@ -50,6 +52,7 @@ class GitHubState:
             labels=set(stored["labels"]),
             available_labels=set(stored["available_labels"]),
             comments=[Comment(**comment) for comment in stored["comments"]],
+            events=stored["events"],
             base=stored["base"],
             head=stored["head"],
             number=stored["number"],
@@ -97,13 +100,18 @@ class GitHubState:
         raise ValueError("Unsupported pull request fields")
 
     def _edit(self, args: list[str]) -> None:
+        """Change the labels; like GitHub, only a change of the set records a timeline event."""
         for option, label in zip(args[::2], args[1::2], strict=True):
             if option == "--remove-label":
-                self.labels.discard(label)
+                if label in self.labels:
+                    self.labels.remove(label)
+                    self.events.append({"event": "unlabeled", "label": label})
             elif option == "--add-label":
                 if label not in self.available_labels:
                     raise ValueError("A label must exist before it can be attached")
-                self.labels.add(label)
+                if label not in self.labels:
+                    self.labels.add(label)
+                    self.events.append({"event": "labeled", "label": label})
             else:
                 raise ValueError("Unsupported pull request edit")
 

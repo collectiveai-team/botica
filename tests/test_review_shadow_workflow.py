@@ -18,8 +18,14 @@ def test_github_adapter_requires_registered_labels_and_exposes_the_resulting_sta
     assert github.run(["pr", "view", "42", "--json", "labels", "--jq", ".labels[].name"]) == (
         "area:core\nrisk:high"
     )
+    github.run(["pr", "edit", "42", "--add-label", "risk:high"])
+    github.run(["pr", "edit", "42", "--remove-label", "risk:high"])
     github.run(["pr", "edit", "42", "--remove-label", "risk:high"])
     assert github.labels == {"area:core"}
+    assert github.events == [
+        {"event": "labeled", "label": "risk:high"},
+        {"event": "unlabeled", "label": "risk:high"},
+    ]
 
 
 @pytest.mark.parametrize("method", ["POST", "PATCH"])
@@ -37,6 +43,7 @@ def test_github_adapter_rejects_comment_writes_it_does_not_store(method: str) ->
         ("false", "", "high", False),
         ("true", "high", "low", False),
         ("true", "high", "low", True),
+        ("true", "", "medium", True),
     ],
 )
 def test_shadow_publishes_only_fresh_effective_risk_without_removing_area_labels(
@@ -103,6 +110,14 @@ def test_shadow_publishes_only_fresh_effective_risk_without_removing_area_labels
     if fresh_context == "true":
         expected = current_tier if measured else prior or current_tier
         assert state.labels == {f"risk:{expected}", "area:core"}
+        assert state.events == (
+            []
+            if expected == "medium"
+            else [
+                {"event": "unlabeled", "label": "risk:medium"},
+                {"event": "labeled", "label": f"risk:{expected}"},
+            ]
+        )
         if prior and not measured:
             assert "Retained tier: high" in (output / "handoff.md").read_text()
             assert (
@@ -113,6 +128,7 @@ def test_shadow_publishes_only_fresh_effective_risk_without_removing_area_labels
             )
     else:
         assert state.labels == {"risk:medium", "area:core"}
+        assert state.events == []
 
 
 @pytest.mark.parametrize("changed", [True, False])
@@ -151,9 +167,14 @@ def test_publication_invalidates_its_labels_if_the_base_or_head_changes(
     state = GitHubState.load(state_path)
     if changed:
         assert state.labels == {"risk:incomplete", "area:core"}
+        assert state.events == [
+            {"event": "unlabeled", "label": "risk:high"},
+            {"event": "labeled", "label": "risk:incomplete"},
+        ]
         assert "blocked" in (tmp_path / ".botica/review/handoff.md").read_text()
     else:
         assert state.labels == {"risk:high", "area:core"}
+        assert state.events == []
 
 
 @pytest.mark.parametrize(
