@@ -225,7 +225,9 @@ fn a_finding_that_a_majority_of_the_runs_give_keeps_its_severity() {
     assert_eq!(output.status.code(), Some(1), "{text}");
     assert!(
         text.contains("a.md:1:1: warning [plain-writing]")
-            && text.contains("2 of 3 runs of abide see the change break it; probabilities 0.90 act, 0.88 act, 0.70"),
+            && text.contains(
+                "2 of 3 runs of abide see the change break it; verdicts 0.90 act, 0.88 act, 0.70"
+            ),
         "{text}"
     );
 }
@@ -266,7 +268,56 @@ fn a_file_that_one_run_leaves_clear_needs_a_majority_of_all_the_runs() {
     );
 
     assert_eq!(output.status.code(), Some(0), "{text}");
-    assert!(text.contains("2 of 4 runs"), "{text}");
+    assert!(
+        text.contains(
+            "2 of 4 runs of abide see the change break it; verdicts 0.90 act, 0.90 act, none, none"
+        ),
+        "{text}"
+    );
+}
+
+#[test]
+fn a_run_that_repeats_a_finding_counts_once() {
+    let dir = workdir("repeat-in-one-run");
+    fs::write(
+        dir.join("botica.toml"),
+        "preview = true\nselect = [\"plain-writing\"]\n",
+    )
+    .expect("write the configuration");
+    fs::write(dir.join("a.md"), "Text.\nMore.\n").expect("write a file");
+    let at = |line: usize| {
+        format!(
+            "{{\"ruleId\": \"plain-writing\", \"message\": {{\"text\": \"m\"}}, \"locations\": \
+             [{{\"physicalLocation\": {{\"artifactLocation\": {{\"uri\": \"a.md\"}}, \
+             \"region\": {{\"startLine\": {line}}}}}}}]}}"
+        )
+    };
+    let sarif = |results: &[String]| {
+        format!(
+            "{{\"version\": \"2.1.0\", \"runs\": [{{\"results\": [{}]}}]}}",
+            results.join(",")
+        )
+    };
+    fs::write(dir.join("twice.sarif"), sarif(&[at(1), at(2)])).expect("write the SARIF");
+    fs::write(dir.join("none.sarif"), sarif(&[])).expect("write the SARIF");
+
+    let output = botica(
+        &dir,
+        &[
+            "--judged",
+            "twice.sarif",
+            "--judged",
+            "none.sarif",
+            "--judged",
+            "none.sarif",
+            "--fail-on",
+            "warning",
+        ],
+    );
+
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert_eq!(output.status.code(), Some(0), "{text}");
+    assert!(text.contains("1 of 3 runs"), "{text}");
 }
 
 #[test]

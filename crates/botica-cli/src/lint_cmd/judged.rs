@@ -171,8 +171,9 @@ fn from_sarif(document: Value) -> Result<Vec<Found>> {
 }
 
 /// The findings of several runs of a judge on one change, as one list. A finding is sure when a
-/// majority of the runs give it as sure, after `act-at`; otherwise it is unsure. Its note lists
-/// the probability of each run that gave it, so a reader sees how far the runs were apart.
+/// majority of the runs give it as sure, after `act-at`; otherwise it is unsure. A run counts once
+/// for a rule and a path, whatever it repeats. The note gives the verdict of each run in order,
+/// `none` for a run that gave no finding there, so a reader sees how far the runs were apart.
 fn combine(runs: Vec<Vec<Found>>, act_at: impl Fn(&str) -> Option<Probability>) -> Vec<Found> {
     let count = runs.len();
     if count == 1 {
@@ -185,33 +186,45 @@ fn combine(runs: Vec<Vec<Found>>, act_at: impl Fn(&str) -> Option<Probability>) 
             })
             .collect();
     }
-    let mut merged: BTreeMap<(String, String), (Found, Vec<String>, usize)> = BTreeMap::new();
-    for found in runs.into_iter().flatten() {
-        let act_at = act_at(&found.rule_id);
-        let found = found.under(act_at);
-        let shown = found
-            .probability
-            .map_or_else(|| "?".to_owned(), |p| format!("{p:.2}"));
-        let shown = format!("{shown}{}", if found.unsure { "" } else { " act" });
-        let sure = usize::from(!found.unsure);
-        match merged.entry((found.rule_id.clone(), found.path.clone())) {
-            std::collections::btree_map::Entry::Occupied(mut entry) => {
-                let (_, probabilities, sure_runs) = entry.get_mut();
-                probabilities.push(shown);
-                *sure_runs += sure;
-            }
-            std::collections::btree_map::Entry::Vacant(entry) => {
-                entry.insert((found, vec![shown], sure));
-            }
+    type Key = (String, String);
+    let mut first: BTreeMap<Key, Found> = BTreeMap::new();
+    let mut verdicts: BTreeMap<Key, Vec<Option<(bool, Option<f64>)>>> = BTreeMap::new();
+    for (run, found_in_run) in runs.into_iter().enumerate() {
+        for found in found_in_run {
+            let act_at = act_at(&found.rule_id);
+            let found = found.under(act_at);
+            let key = (found.rule_id.clone(), found.path.clone());
+            let slot = &mut verdicts
+                .entry(key.clone())
+                .or_insert_with(|| vec![None; count])[run];
+            let this = (!found.unsure, found.probability);
+            *slot = Some(match *slot {
+                Some((sure, probability)) if sure || !this.0 => (sure, probability),
+                _ => this,
+            });
+            first.entry(key).or_insert(found);
         }
     }
-    merged
-        .into_values()
-        .map(|(mut found, probabilities, sure_runs)| {
+    first
+        .into_iter()
+        .map(|(key, mut found)| {
+            let verdicts = &verdicts[&key];
+            let sure_runs = verdicts.iter().flatten().filter(|(sure, _)| *sure).count();
+            let shown: Vec<String> = verdicts
+                .iter()
+                .map(|verdict| match verdict {
+                    None => "none".to_owned(),
+                    Some((sure, probability)) => format!(
+                        "{}{}",
+                        probability.map_or_else(|| "?".to_owned(), |p| format!("{p:.2}")),
+                        if *sure { " act" } else { "" }
+                    ),
+                })
+                .collect();
             found.unsure = sure_runs * 2 <= count;
             found.note = Some(format!(
-                "{sure_runs} of {count} runs of abide see the change break it; probabilities {}",
-                probabilities.join(", ")
+                "{sure_runs} of {count} runs of abide see the change break it; verdicts {}",
+                shown.join(", ")
             ));
             found
         })
