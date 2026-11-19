@@ -2,6 +2,7 @@ use crate::output::println;
 use std::process::ExitCode;
 
 use anyhow::{Context, Result};
+use botica_config::Tier;
 use botica_core::review::roles::RoleDefinition;
 use clap::{Args, ValueEnum};
 use serde_json::{json, Value};
@@ -221,7 +222,7 @@ pub(super) fn collect(args: &ConsumerArgs, checking: bool) -> Result<(tier::Asse
     let report = json!({"schema_version": 1, "command": if checking { "check" } else { "plan" },
         "status": if done { "complete" } else { "incomplete" }, "inputs": inputs,
         "stage": args.stage.name(), "selected_roles": selected, "roles": roles, "reasons": reasons,
-        "mutation_required": if done && !checking { assessment.report["effective_tier"].as_str().map(|tier| tier != "low") } else { None },
+        "mutation_required": if done && !checking { assessment.report["effective_tier"].as_str().map(|tier| Tier::parse(tier) != Some(Tier::Low)) } else { None },
         "required_checks":assessment.review.as_ref().map(|review| &review.classifier.required_checks),
         "untrusted_context":context,"risk": assessment.report});
     Ok((assessment, report))

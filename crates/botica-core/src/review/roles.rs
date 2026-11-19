@@ -1,7 +1,7 @@
 //! Trusted role metadata and selection, without filesystem access.
 
 use anyhow::{ensure, Context, Result};
-use botica_config::{PathMatcher, ReviewConfig, ReviewRole};
+use botica_config::{PathMatcher, ReviewConfig, ReviewRole, Tier};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
@@ -120,7 +120,7 @@ impl RoleDefinition {
                 .tiers
                 .iter()
                 .flatten()
-                .all(|t| matches!(t.as_str(), "low" | "medium" | "high")),
+                .all(|t| Tier::parse(t).is_some()),
             "invalid applies.tiers"
         );
         ensure!(

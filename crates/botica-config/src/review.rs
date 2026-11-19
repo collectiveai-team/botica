@@ -1,10 +1,12 @@
 use schemars::JsonSchema;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::matcher::PathMatcher;
 
 /// How much review a change needs (ADR 0018).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, JsonSchema)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, JsonSchema,
+)]
 #[serde(rename_all = "lowercase")]
 pub enum Tier {
     Low,
@@ -18,6 +20,24 @@ impl Tier {
             Self::Low => "low",
             Self::Medium => "medium",
             Self::High => "high",
+        }
+    }
+
+    /// The tier that a report or a role spells as `name`; any other text is no tier.
+    pub fn parse(name: &str) -> Option<Self> {
+        match name {
+            "low" => Some(Self::Low),
+            "medium" => Some(Self::Medium),
+            "high" => Some(Self::High),
+            _ => None,
+        }
+    }
+
+    /// The next tier up, capped at high (ADR 0018: evidence raises risk one tier).
+    pub const fn raised(self) -> Self {
+        match self {
+            Self::Low => Self::Medium,
+            Self::Medium | Self::High => Self::High,
         }
     }
 }

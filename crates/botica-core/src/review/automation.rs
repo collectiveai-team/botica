@@ -1,6 +1,7 @@
 //! Authorization data only. The caller owns any GitHub operation; this module never merges.
 
 use super::classifier::{probabilities_eligible, Probabilities, Thresholds};
+use botica_config::Tier;
 use serde_json::{json, Value};
 
 /// Require fresh evidence and a matching measured policy, even after explicit enablement.
@@ -17,7 +18,7 @@ pub fn authorize(enabled: bool, inputs: &Value, report: &Value, evaluation: &Val
             });
     let evidence = report["inputs"] == *inputs
         && report["mode"] == "shadow"
-        && report["effective_tier"] == "low"
+        && report["effective_tier"].as_str().and_then(Tier::parse) == Some(Tier::Low)
         && report["human_required"] == false
         && report["automation_eligible"] == true
         && report["recommendation"] == "automation-candidate"

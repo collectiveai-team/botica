@@ -1,6 +1,7 @@
 //! Evidence-gated shadow recommendations. This module cannot merge or alter repository settings.
 
 use anyhow::{ensure, Context, Result};
+use botica_config::Tier;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
@@ -142,10 +143,10 @@ fn gates(plan: &Value, results: &Value, checks: &Value) -> Vec<Value> {
     let mut reasons = Vec::new();
     if plan["status"] != "complete"
         || plan["risk"]["status"] != "complete"
-        || !matches!(
-            plan["risk"]["effective_tier"].as_str(),
-            Some("low" | "medium" | "high")
-        )
+        || plan["risk"]["effective_tier"]
+            .as_str()
+            .and_then(Tier::parse)
+            .is_none()
     {
         reasons.push(json!({"code":"incomplete-risk","source":"gate","evidence":plan["risk"]}));
     }
@@ -274,7 +275,8 @@ pub fn recommend(
         reasons.extend(found);
     }
     let floor = &plan["risk"]["effective_tier"];
-    let raised = matches!(floor.as_str(), Some("low" | "medium"))
+    let floor_tier = floor.as_str().and_then(Tier::parse);
+    let raised = floor_tier.is_some_and(|tier| tier < Tier::High)
         && reasons.iter().any(|reason| {
             reason["source"] == "Jev"
                 && matches!(
@@ -282,16 +284,14 @@ pub fn recommend(
                     Some("decision" | "unverifiable" | "impact-users")
                 )
         });
-    let effective = if raised {
-        match floor.as_str() {
-            Some("low") => json!("medium"),
-            Some("medium" | "high") => json!("high"),
-            _ => floor.clone(),
-        }
-    } else {
-        floor.clone()
+    let effective = match floor_tier {
+        Some(tier) if raised => json!(tier.raised()),
+        _ => floor.clone(),
     };
-    if effective.as_str().is_some_and(|tier| tier != "low") {
+    if effective
+        .as_str()
+        .is_some_and(|tier| Tier::parse(tier) != Some(Tier::Low))
+    {
         reasons.push(json!({"code":"risk-not-low","source":"gate","evidence":effective}));
     }
     let eligible = reasons.is_empty();

@@ -2,7 +2,7 @@ use crate::output::println;
 use std::process::ExitCode;
 
 use anyhow::{ensure, Context, Result};
-use botica_config::ReviewConfig;
+use botica_config::{ReviewConfig, Tier};
 use botica_core::review::{assess, maximum_tier, Comparison};
 use clap::{Args, ValueEnum};
 use serde_json::{json, Value};
@@ -155,12 +155,7 @@ fn assessment(comparisons: Vec<Comparison>, mut reasons: Vec<Value>) -> Value {
     if !reasons.is_empty() {
         return json!({"status": "incomplete", "reasons": reasons, "comparisons": comparisons});
     }
-    let tier = maximum_tier(
-        comparisons
-            .iter()
-            .map(|comparison| comparison.tier.as_str()),
-    )
-    .to_owned();
+    let tier = maximum_tier(comparisons.iter().map(|comparison| comparison.tier));
     json!({ "status": "complete", "tier": tier, "comparisons": comparisons })
 }
 
@@ -332,13 +327,14 @@ pub(super) fn collect(args: &TierArgs) -> Result<Assessment> {
     };
     let done = branch["status"] == "complete" && integration["status"] == "complete";
     let tier = if done {
-        Some(maximum_tier(
-            [
-                branch["tier"].as_str().unwrap_or("medium"),
-                integration["tier"].as_str().unwrap_or("medium"),
-            ]
-            .into_iter(),
-        ))
+        Some(maximum_tier([&branch, &integration].into_iter().map(
+            |risk| {
+                risk["tier"]
+                    .as_str()
+                    .and_then(Tier::parse)
+                    .unwrap_or(Tier::Medium)
+            },
+        )))
     } else {
         None
     };

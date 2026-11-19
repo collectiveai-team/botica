@@ -32,7 +32,7 @@ pub struct ReviewChange {
 pub struct AreaEvidence {
     pub location: String,
     pub area: String,
-    pub tier: String,
+    pub tier: Tier,
     pub paths: Vec<String>,
 }
 
@@ -72,8 +72,8 @@ pub struct DetectorEvidence {
 
 #[derive(Debug, Serialize)]
 pub struct RiskBounds {
-    pub lower: String,
-    pub upper: String,
+    pub lower: Tier,
+    pub upper: Tier,
     pub possible_signals: Vec<String>,
 }
 
@@ -81,7 +81,7 @@ pub struct RiskBounds {
 pub struct Comparison {
     pub from: String,
     pub to: String,
-    pub tier: String,
+    pub tier: Tier,
     pub files: Vec<String>,
     pub areas: Vec<String>,
     pub signals: Vec<String>,
@@ -141,7 +141,7 @@ fn areas(config: &ReviewConfig, paths: &[String]) -> Vec<AreaEvidence> {
                 evidence.push(AreaEvidence {
                     location: format!("review.areas[{index}]"),
                     area: area.name.name().to_owned(),
-                    tier: area.effective_tier().name().to_owned(),
+                    tier: area.effective_tier(),
                     paths: vec![path.clone()],
                 });
             }
@@ -157,14 +157,14 @@ fn areas(config: &ReviewConfig, paths: &[String]) -> Vec<AreaEvidence> {
             evidence.push(AreaEvidence {
                 location: "forced-platform".to_owned(),
                 area: "platform".to_owned(),
-                tier: tier.name().to_owned(),
+                tier,
                 paths: vec![path.clone()],
             });
         } else if !matched {
             evidence.push(AreaEvidence {
                 location: "default-core".to_owned(),
                 area: "core".to_owned(),
-                tier: "medium".to_owned(),
+                tier: Tier::Medium,
                 paths: vec![path.clone()],
             });
         }
@@ -172,17 +172,9 @@ fn areas(config: &ReviewConfig, paths: &[String]) -> Vec<AreaEvidence> {
     evidence
 }
 
-fn rank(tier: &str) -> u8 {
-    match tier {
-        "high" => 2,
-        "medium" => 1,
-        _ => 0,
-    }
-}
-
 /// Return the maximum tier; an empty change has the core floor of medium.
-pub fn maximum_tier<'a>(tiers: impl Iterator<Item = &'a str>) -> &'a str {
-    tiers.max_by_key(|tier| rank(tier)).unwrap_or("medium")
+pub fn maximum_tier(tiers: impl Iterator<Item = Tier>) -> Tier {
+    tiers.max().unwrap_or(Tier::Medium)
 }
 
 /// Classify paths using the destination's validated review settings.
@@ -231,9 +223,8 @@ pub fn assess(config: &ReviewConfig, from: &str, to: &str, changes: &[ReviewChan
     let mut tier = maximum_tier(
         evidence
             .iter()
-            .flat_map(|file| file.matches.iter().map(|area| area.tier.as_str())),
-    )
-    .to_owned();
+            .flat_map(|file| file.matches.iter().map(|area| area.tier)),
+    );
     let docs_only = !changes.is_empty()
         && changes.iter().all(|change| {
             change.kind == "text" && change.paths.iter().all(|path| is_documentation(path))
@@ -253,9 +244,9 @@ pub fn assess(config: &ReviewConfig, from: &str, to: &str, changes: &[ReviewChan
     if signal_evidence
         .iter()
         .any(|signal| matches!(signal.name.as_str(), "new-dependency" | "new-endpoint"))
-        && tier == "low"
+        && tier == Tier::Low
     {
-        tier = "medium".to_owned();
+        tier = Tier::Medium;
     }
     let names: BTreeSet<_> = signal_evidence
         .iter()
@@ -274,11 +265,11 @@ pub fn assess(config: &ReviewConfig, from: &str, to: &str, changes: &[ReviewChan
             )
         });
     let bounds = bounded.then(|| {
-        let lower = tier.clone();
-        tier = maximum_tier([tier.as_str(), "medium"].into_iter()).to_owned();
+        let lower = tier;
+        tier = tier.max(Tier::Medium);
         RiskBounds {
             lower,
-            upper: tier.clone(),
+            upper: tier,
             possible_signals: vec!["new-dependency".into(), "new-endpoint".into()],
         }
     });

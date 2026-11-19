@@ -1,6 +1,7 @@
 use super::evidence;
 use crate::output::println;
 use anyhow::{ensure, Context, Result};
+use botica_config::Tier;
 use botica_core::review::classifier::Thresholds;
 use botica_core::review::evaluation::{evaluate, EvaluationCase};
 use clap::Args;
@@ -84,9 +85,10 @@ fn apply_observation(cases: &mut [EvaluationCase], report: &Value) -> Result<()>
                 reason["source"] == "Jev"
             }
             Some("critical-area") => report["human_required"] == true,
-            Some("risk-not-low") => {
-                matches!(report["effective_tier"].as_str(), Some("medium" | "high"))
-            }
+            Some("risk-not-low") => report["effective_tier"]
+                .as_str()
+                .and_then(Tier::parse)
+                .is_some_and(|tier| tier > Tier::Low),
             _ => false,
         });
     case.checks_passed = Some(

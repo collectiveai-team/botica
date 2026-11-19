@@ -2,6 +2,7 @@
 
 use super::classifier::{probabilities_eligible, Probabilities, Thresholds};
 use anyhow::{ensure, Result};
+use botica_config::Tier;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::BTreeSet;
@@ -44,14 +45,13 @@ fn prediction(case: &EvaluationCase, thresholds: &Thresholds) -> Result<Option<b
     ) else {
         return Ok(None);
     };
-    ensure!(
-        matches!(floor, "low" | "medium" | "high"),
-        "invalid evaluation risk floor"
-    );
+    let Some(floor) = Tier::parse(floor) else {
+        anyhow::bail!("invalid evaluation risk floor");
+    };
     if !checks || !reviews || !context {
         return Ok(None);
     }
-    if floor != "low" || critical {
+    if floor != Tier::Low || critical {
         return Ok(Some(false));
     }
     case.probabilities
@@ -115,7 +115,7 @@ pub fn evaluate(cases: &[EvaluationCase], thresholds: &Thresholds) -> Result<Val
         false_blocked += usize::from(!predicted && label);
         relevant_negative_labels += usize::from(
             !label
-                && case.floor.as_deref() == Some("low")
+                && case.floor.as_deref().and_then(Tier::parse) == Some(Tier::Low)
                 && case.critical == Some(false)
                 && case.checks_passed == Some(true)
                 && case.reviews_passed == Some(true),
