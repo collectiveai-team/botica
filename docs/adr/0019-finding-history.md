@@ -509,6 +509,9 @@ runs are compared, which origins write it, and how the files of CI jobs are join
   writes runs whose `key_id` is `null`, which no comparison pairs with the keyed runs of CI.
 - The retention of artifacts bounds what `botica history fetch` can read: 90 days by default on
   GitHub.
+- Until `botica history fetch` exists, `scripts/review_history_download.py` downloads the history
+  of this repository for `scheduled-review.yml`, through `gh` only. The GitLab path of decision 9.2
+  and 9.3 has no implementation, and a project on GitLab has no download of its CI history.
 
 The changes that follow, one pull request each: the writer, the fingerprint with fixed test vectors
 of its input and output, and `--record` for the modes that exist; the counts of the engine, the `hash` of each rule and the cache entries that hold
