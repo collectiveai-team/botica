@@ -534,3 +534,9 @@ version = "0.21.0"
 rule = "mutant-survived"
 status = "preview"
 code = "BTTEST012"
+
+[[event]]
+version = "0.22.0"
+rule = "review-coverage-current"
+status = "preview"
+code = "BT008"
