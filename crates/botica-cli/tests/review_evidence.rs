@@ -78,6 +78,39 @@ fn configured_fixture(name: &str, config: &str) -> (PathBuf, Value) {
 }
 
 #[test]
+fn lint_records_the_reviews_only_when_record_is_given_and_no_record_is_not() {
+    for (name, flags) in [
+        ("no-flag", &[][..]),
+        ("no-record", &["--no-record"][..]),
+        ("record-then-no-record", &["--record", "--no-record"][..]),
+    ] {
+        let (dir, _) = fixture(name);
+        let mut args = vec![
+            "lint",
+            "--reviewed",
+            ".tmp/results",
+            "--diff",
+            "main",
+            "--review-context",
+            ".tmp/context.json",
+        ];
+        args.extend_from_slice(flags);
+
+        let output = common::command(&dir, &args);
+
+        assert!(
+            output.status.success(),
+            "{name}: {}",
+            common::stderr(&output)
+        );
+        assert!(
+            !dir.join(".botica/history/runs.jsonl").exists(),
+            "{name} recorded the reviews"
+        );
+    }
+}
+
+#[test]
 fn lint_ingests_current_reviews_and_records_each_role_without_running_commands() {
     let (dir, _) = fixture("record");
     let output = common::command(

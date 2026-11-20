@@ -89,6 +89,23 @@ fn the_history_table_leaves_the_rules_fingerprint_as_it_is() {
 }
 
 #[test]
+fn a_configuration_change_outside_the_history_table_changes_the_rules_fingerprint() {
+    let plain = project("fingerprint-plain", Some("[history]\nrecord = true\n"));
+    let excluding = project(
+        "fingerprint-excluding",
+        Some("extend-exclude = [\"b.py\"]\n[history]\nrecord = true\n"),
+    );
+
+    lint(&plain, &[]);
+    lint(&excluding, &[]);
+
+    assert_ne!(
+        runs(&plain)[0]["rules_fingerprint"],
+        runs(&excluding)[0]["rules_fingerprint"]
+    );
+}
+
+#[test]
 fn the_history_ignores_itself_in_git() {
     let dir = project("ignored", None);
 
