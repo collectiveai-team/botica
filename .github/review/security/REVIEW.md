@@ -93,9 +93,9 @@ covered:
   `pyproject.toml`.
 
 <!-- botica:covered -->
-- job "test" in ".github/workflows/ci.yml": blake3 20a88733589227e64806ce53a8b3177d7576bf43a8b8a2ef09bfc7917429008a
+- job "test" in ".github/workflows/ci.yml": blake3 b4f863f14632f5e0d9a016dda53782b09987da8e78da38395d91ac5184d8e7c8
 - job "osv-scanner-pr" in ".github/workflows/osv-scanner.yml": blake3 6b6d2c6fb049e2c48589bb0772adb59cd4e6eb64f03e6824350daf22b0200e64
-- job "zizmor" in ".github/workflows/zizmor.yml": blake3 6c65c42969f33ba729e80708bbdb75dc46bc7734c242fd9d584d072831f09b48
+- job "zizmor" in ".github/workflows/zizmor.yml": blake3 c498c0b9974b1879d5f9b21b3d7091401c0c233f0bf53ea7ad6de8d35d97fd1d
 <!-- /botica:covered -->
 
 ## Evidence

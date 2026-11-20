@@ -96,9 +96,9 @@ The contracts of botica, each with the programs and the people that consume it:
   the base, so a change of meaning that updates its test is still reviewed here.
 
 <!-- botica:covered -->
-- job "griffe" in ".github/workflows/api-compat-python.yml": blake3 b515598eb2f555582825f8d531e04e15c3e6fcd3a237da58f3581db407f3950e
-- job "test" in ".github/workflows/ci.yml": blake3 20a88733589227e64806ce53a8b3177d7576bf43a8b8a2ef09bfc7917429008a
-- job "test" in ".github/workflows/tests.yml": blake3 6bb7ddce037bad1d6eabcc49a2d0ff37c479d8bd58555570ddeba806d1dfeb5b
+- job "griffe" in ".github/workflows/api-compat-python.yml": blake3 6363549b882b8a9cb74cc31c07e02640a4ffcb391fc1a6f7e3cbf35919596c03
+- job "test" in ".github/workflows/ci.yml": blake3 b4f863f14632f5e0d9a016dda53782b09987da8e78da38395d91ac5184d8e7c8
+- job "test" in ".github/workflows/tests.yml": blake3 1326a78ff29dd76d259b80195960de63098260ce98ef9a9f4180b7d72232393a
 <!-- /botica:covered -->
 
 ## Evidence
