@@ -1,0 +1,13 @@
+id = "review-coverage-current"
+code = "BT008"
+summary = "The coverage block of each review role matches the hook and job files it covers"
+status = "preview"
+scope = "project"
+needs = "bytes"
+run-on = ["cli"]
+default-enabled = false
+default-severity = "error"
+
+[[implementations]]
+kind = "native"
+languages = ["*"]
