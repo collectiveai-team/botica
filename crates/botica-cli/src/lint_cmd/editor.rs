@@ -81,9 +81,11 @@ impl Linter for Editor {
         let root = self.setup.project_root.clone();
         let prefix = self.setup.prefix.clone();
         let recipes = self.setup.recipes.clone();
+        let review = self.setup.review.clone();
         Some(Box::new(move || {
             let found =
-                project_files::findings(&resolution, &recipes, &root, prefix.as_deref()).found;
+                project_files::findings(&resolution, &recipes, &review, &root, prefix.as_deref())
+                    .found;
             postprocess::apply(found, project::verdicts(&resolution, prefix.as_deref()))
         }))
     }

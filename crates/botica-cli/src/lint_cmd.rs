@@ -35,6 +35,7 @@ mod paths;
 mod project_files;
 pub(crate) mod recipe_conflict;
 mod record;
+mod review_coverage;
 mod settings_schema;
 
 use diff::Diff;
@@ -268,6 +269,8 @@ struct Setup {
     baseline: Option<PathBuf>,
     /// What the configuration says of the recipes, for `recipe-conflict`.
     recipes: ProjectRecipes,
+    /// The `[review]` table of the configuration, for `review-coverage-current`.
+    review: botica_config::ReviewConfig,
     /// The `[history]` table of the configuration.
     history: botica_config::HistoryConfig,
     /// The key of the result cache with the configuration less its `[history]` table.
@@ -287,6 +290,7 @@ impl Setup {
         let prefix = project.working_prefix();
         let config_key = project.fingerprint();
         let history = project.loaded.config.history.clone();
+        let review = project.loaded.config.review.clone();
         let rules_fingerprint = if record::asked(args, &history) {
             rules::fingerprint(
                 with_astgrep,
@@ -372,6 +376,7 @@ impl Setup {
             pool,
             baseline,
             recipes,
+            review,
             history,
             rules_fingerprint,
             evaluated,
@@ -466,6 +471,7 @@ pub fn run(args: LintArgs) -> Result<ExitCode> {
     let project = project_files::findings(
         &setup.resolution,
         &setup.recipes,
+        &setup.review,
         &setup.project_root,
         setup.prefix.as_deref(),
     );
