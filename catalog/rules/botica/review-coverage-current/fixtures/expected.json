@@ -15,7 +15,7 @@
           "column": 24
         }
       },
-      "message": "This coverage block is stale: a file it covers changed, or its declarations did. Replace its hook and job lines with these, which botica review check expects\n<!-- botica:covered -->\n- hook \"botica\" in \"prek.toml\": blake3 9ef3d66ecf12f1d092fb203bc7d1032d888be8ff096d1853300c59f0d561448d\n- job \"test\" in \".github/workflows/ci.yml\": blake3 69bcb6104c7dca67aab74939dbdf771b88e33ccb483b65ca4074ed5d9cd0c0ab\n<!-- /botica:covered -->"
+      "message": "This coverage block is stale: a file it covers changed, or its declarations did. Replace its hook and job lines with these, which botica review check expects\n<!-- botica:covered -->\n- hook \"botica\" in \"prek.toml\": blake3 9ef3d66ecf12f1d092fb203bc7d1032d888be8ff096d1853300c59f0d561448d\n- job \"test\" in \".github/workflows/ci.yml\": blake3 57febcbb4076efaba3b27a1e2690273bfdcdfdaf2707c31c8a6269e25478c1be\n<!-- /botica:covered -->"
     }
   ]
 }
