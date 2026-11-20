@@ -65,8 +65,8 @@ judges the diff twice more, and `botica lint` takes each report with `--judged`:
 keeps its severity when a majority of the three runs give it, and is info otherwise. A run of
 abide that fails fails the job. The job fails on `--fail-on warning`, and the summary of the job
 has a table of the findings (`--output-format markdown`) with the verdict of each run. The
-workflow passes `--judged` several times, which a `botica-version` older than the release that
-added it rejects.
+workflow passes `--judged` several times, which a `botica-version` older than 0.21.0
+rejects.
 It reads the secret `TYPESAFE_AI_API_KEY` and the variable `TYPESAFE_AI_BASE_URL` of the
 repository; a pull request from a fork gets no secret, and the job fails. A pull request of
 Dependabot gets no secret of Actions either, and the job is skipped.

@@ -168,8 +168,8 @@ no check at all.
      `act-at`, is info otherwise, and its message gives the verdict of each run, `none` for a run
      with no finding of that rule on that path. A run counts once for a rule and a path. The
      workflow judges the diff once, and twice more when the first run has a finding; a run of abide
-     that fails fails the job, so three valid runs decide a finding. A release of botica before
-     this one takes `--judged` once, so the workflow needs this release or a newer `botica-version`.
+     that fails fails the job, so three valid runs decide a finding. botica 0.20.2 and older
+     take `--judged` once, so the workflow needs a `botica-version` of 0.21.0 or newer.
      A verdict names no line, so its
      finding is about the file of its section, the `file` of the verdict, or the whole change for
      a verdict of the `turn` phase with no `file`. `--output-format sarif` writes them as SARIF,

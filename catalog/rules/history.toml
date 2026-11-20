@@ -528,3 +528,9 @@ version = "0.18.0"
 rule = "botica-version-aligned"
 status = "preview"
 code = "BT007"
+
+[[event]]
+version = "0.21.0"
+rule = "mutant-survived"
+status = "preview"
+code = "BTTEST012"
