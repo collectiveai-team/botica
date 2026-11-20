@@ -79,7 +79,7 @@ covered:
   nothing in this repository.
 
 <!-- botica:covered -->
-- hook "botica-project" in "prek.toml": blake3 42b032456b95a74b7fb65915c73732e32258d34d9e5a3dd1f4787e0f385286a3
+- hook "botica-project" in "prek.toml": blake3 cd4e6e7b7379c140f8e864165955b8b660f14e5ceea2cdd97c06e14747775ca2
 - job "abide" in ".github/workflows/abide.yml": blake3 6d81f84d07502edbfc2764d968f3dd9c2c836bf555f149298ad5087ee4464b96
 <!-- /botica:covered -->
 

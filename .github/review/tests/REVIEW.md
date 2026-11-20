@@ -85,10 +85,10 @@ covered:
   findings of each rule on its fixtures against its `expected.json`.
 
 <!-- botica:covered -->
-- hook "botica" in "prek.toml": blake3 42b032456b95a74b7fb65915c73732e32258d34d9e5a3dd1f4787e0f385286a3
-- hook "botica-project" in "prek.toml": blake3 42b032456b95a74b7fb65915c73732e32258d34d9e5a3dd1f4787e0f385286a3
+- hook "botica" in "prek.toml": blake3 cd4e6e7b7379c140f8e864165955b8b660f14e5ceea2cdd97c06e14747775ca2
+- hook "botica-project" in "prek.toml": blake3 cd4e6e7b7379c140f8e864165955b8b660f14e5ceea2cdd97c06e14747775ca2
 - job "abide" in ".github/workflows/abide.yml": blake3 6d81f84d07502edbfc2764d968f3dd9c2c836bf555f149298ad5087ee4464b96
-- job "test" in ".github/workflows/ci.yml": blake3 20a88733589227e64806ce53a8b3177d7576bf43a8b8a2ef09bfc7917429008a
+- job "test" in ".github/workflows/ci.yml": blake3 b4f863f14632f5e0d9a016dda53782b09987da8e78da38395d91ac5184d8e7c8
 <!-- /botica:covered -->
 
 ## Evidence

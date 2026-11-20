@@ -70,7 +70,7 @@ The hot paths of botica, with the sizes that matter:
   `asyncio-no-get-event-loop` on Python.
 
 <!-- botica:covered -->
-- hook "botica" in "prek.toml": blake3 42b032456b95a74b7fb65915c73732e32258d34d9e5a3dd1f4787e0f385286a3
+- hook "botica" in "prek.toml": blake3 cd4e6e7b7379c140f8e864165955b8b660f14e5ceea2cdd97c06e14747775ca2
 <!-- /botica:covered -->
 
 ## Evidence

@@ -1,7 +1,7 @@
 # MARK: uv-lock
 [[repos]]
 repo = "https://github.com/astral-sh/uv-pre-commit"
-rev = "0.13.6"
+rev = "0.13.8"
 hooks = [{ id = "uv-lock", priority = 0 }]
 
 # MARK: pre-commit-hooks
@@ -48,7 +48,7 @@ priority = 0
 # keeps any matched secret out of the output.
 [[repos]]
 repo = "https://github.com/betterleaks/betterleaks"
-rev = "v1.9.0"
+rev = "v1.10.1"
 hooks = [{ id = "betterleaks", priority = 0 }]
 
 # MARK: agents-conventional-commits
