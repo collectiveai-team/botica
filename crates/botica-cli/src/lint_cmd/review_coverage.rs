@@ -71,9 +71,14 @@ fn read(root: &Path, path: &str) -> Result<Option<Vec<u8>>> {
         let Ok(metadata) = std::fs::symlink_metadata(&full) else {
             return Ok(None);
         };
-        let last = index + 1 == parts.len();
+        // The metadata of a symbolic link is neither a file nor a folder, so a link is refused.
         let kind = metadata.file_type();
-        if kind.is_symlink() || (last && !kind.is_file()) || (!last && !kind.is_dir()) {
+        let regular = if index + 1 == parts.len() {
+            kind.is_file()
+        } else {
+            kind.is_dir()
+        };
+        if !regular {
             bail!("coverage source {path} is not a regular file of the project");
         }
     }
