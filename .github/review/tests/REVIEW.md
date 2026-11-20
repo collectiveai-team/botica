@@ -87,8 +87,8 @@ covered:
 <!-- botica:covered -->
 - hook "botica" in "prek.toml": blake3 42b032456b95a74b7fb65915c73732e32258d34d9e5a3dd1f4787e0f385286a3
 - hook "botica-project" in "prek.toml": blake3 42b032456b95a74b7fb65915c73732e32258d34d9e5a3dd1f4787e0f385286a3
-- job "abide" in ".github/workflows/abide.yml": blake3 243cdae2d7e8163836adb7113fcaeecb3c98d18632203ad93c6950f41b4b927f
-- job "test" in ".github/workflows/ci.yml": blake3 de8784186caa7f1b742bd57cc0a53e803772d865d281b8c2deed698fc327dd4e
+- job "abide" in ".github/workflows/abide.yml": blake3 6d81f84d07502edbfc2764d968f3dd9c2c836bf555f149298ad5087ee4464b96
+- job "test" in ".github/workflows/ci.yml": blake3 20a88733589227e64806ce53a8b3177d7576bf43a8b8a2ef09bfc7917429008a
 <!-- /botica:covered -->
 
 ## Evidence
