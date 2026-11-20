@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "compiledAt": "2026-11-19T18:31:21Z",
-  "compiledBy": "botica 0.20.2",
+  "compiledAt": "2026-11-20T02:38:16Z",
+  "compiledBy": "botica 0.21.1",
   "manual": true,
   "sources": [
     {
@@ -1063,6 +1063,7 @@
         "scripts/check_rule_change.py",
         "scripts/check_skill_drift.py",
         "scripts/number_standard.py",
+        "scripts/refresh_review_coverage.py",
         "scripts/review_history_download.py",
         "scripts/review_labels.py",
         "scripts/review_weekly_report.py",
@@ -1334,6 +1335,7 @@
         "scripts/check_rule_change.py",
         "scripts/check_skill_drift.py",
         "scripts/number_standard.py",
+        "scripts/refresh_review_coverage.py",
         "scripts/review_history_download.py",
         "scripts/review_labels.py",
         "scripts/review_weekly_report.py",

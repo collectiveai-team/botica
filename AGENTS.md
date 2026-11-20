@@ -51,8 +51,8 @@ its SDKs and its benchmarks). The binary embeds `catalog/rules/`, `catalog/refer
   replaced, since prek cannot parse them all, and writes the new `rev` lines back. `sync_pins.py` copies the pins of the actions and of uv into the
   templates of the recipes. `bump_tool_params.py` moves the default version of each tool that a
   template runs with `uvx` or `npx` to its newest release past the cooldown. The weekly `pins`
-  workflow runs the three and opens a pull
-  request.
+  workflow runs the three, writes the coverage blocks of `.github/review/` that its change leaves
+  stale (`refresh_review_coverage.py`), and opens a pull request with the label `automerge`.
 
 Every agent reads `AGENTS.md`; skills install once into `.agents/skills`.
 

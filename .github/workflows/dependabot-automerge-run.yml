@@ -1,7 +1,8 @@
 name: dependabot-automerge-run
 
-# Merges a PR labelled `automerge` (see dependabot-automerge-label.yml) once
-# every tracked workflow has gone green on its head commit.
+# Merges a PR labelled `automerge` (see dependabot-automerge-label.yml, and the
+# pull request of pins.yml) once every tracked workflow has gone green on its
+# head commit.
 #
 # Why not `gh pr merge --auto`: GitHub's auto-merge needs a branch protection
 # rule (or ruleset) that names required status checks, and a private repository

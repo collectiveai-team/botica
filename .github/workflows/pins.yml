@@ -15,6 +15,15 @@ name: pins
 # with write access to contents, pull requests and workflows; `scripts/sync_pins.py` edits the files
 # of `.github/workflows/`, and GitHub rejects that push without the last one): what the token of the
 # workflow pushes or opens runs no workflow, so the checks would not run on the pull request.
+#
+# The roles of `.github/review/` bind the blake3 of the files they cover, `ci.yml` and `prek.toml`
+# among them. A pin moved in one of those leaves the coverage block stale, and once merged
+# `botica review plan` on main returns `incomplete` for every pull request (PR 323). So the job
+# builds botica, runs `botica review check` on the commit of the pins and writes each
+# `expected_block` back with scripts/refresh_review_coverage.py, in the same commit.
+#
+# The pull request gets the label `automerge`: dependabot-automerge-run.yml merges it once the
+# workflows it tracks are green on its head.
 
 on:
   schedule:
@@ -59,6 +68,12 @@ jobs:
       - name: Move the versions of the uvx and npx tools of the recipes
         run: uv run python scripts/bump_tool_params.py
 
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Build botica
+        run: cargo build --locked -p botica-cli
+
       - name: Open or update the pull request
         env:
           GH_TOKEN: ${{ secrets.PINS_TOKEN }}
@@ -75,9 +90,18 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c chore/pins
-          git commit -am "chore: pins to the current releases"
+          git commit -qam "chore: pins to the current releases"
+          # `review check` reads the roles and the covered files from the commit, and exits with
+          # 2 while a role is not ready (a stale block, or a skill this runner does not install).
+          target/debug/botica review check --diff HEAD --head HEAD --integration-method merge \
+            --format json > "$RUNNER_TEMP/review-check.json" || true
+          uv run python scripts/refresh_review_coverage.py "$RUNNER_TEMP/review-check.json"
+          git commit -q --amend --no-edit --all
           git push --force "https://x-access-token:${GH_TOKEN}@github.com/${REPOSITORY}.git" chore/pins
           if ! gh pr view chore/pins --json state --jq .state | grep -q OPEN; then
             gh pr create --head chore/pins --title "chore: pins to the current releases" \
-              --body "Opened by the workflow \`pins\`: \`prek update\`, \`scripts/sync_pins.py\` and \`scripts/bump_tool_params.py\`."
+              --body "Opened by the workflow \`pins\`: \`prek update\`, \`scripts/sync_pins.py\`, \`scripts/bump_tool_params.py\` and \`scripts/refresh_review_coverage.py\`. It merges itself when the tracked checks are green (\`dependabot-automerge-run.yml\`)."
           fi
+          # `gh pr edit --add-label` fails when the label does not exist.
+          gh label create automerge --description "Pull request that merges on its own" 2>/dev/null || true
+          gh pr edit chore/pins --add-label automerge
