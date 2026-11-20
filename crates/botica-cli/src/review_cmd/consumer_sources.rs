@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 
 use anyhow::{ensure, Result};
 use botica_config::ReviewConfig;
+use botica_core::review::coverage;
 use serde_json::{json, Value};
 
 use crate::review_cmd::tier;
@@ -11,18 +12,10 @@ pub(super) fn directory(assessment: &tier::Assessment, review: &ReviewConfig) ->
         return Ok(directory.clone());
     }
     let files = assessment.git.base_paths()?;
-    let github = files.iter().any(|file| file.starts_with(".github/review/"));
-    let gitlab = files.iter().any(|file| file.starts_with(".gitlab/review/"));
-    ensure!(
-        !(github && gitlab),
-        "both review directories exist; configure review.dir explicitly"
-    );
-    Ok(if gitlab {
-        ".gitlab/review"
-    } else {
-        ".github/review"
-    }
-    .to_owned())
+    coverage::role_directory(None, |directory| {
+        let prefix = format!("{directory}/");
+        files.iter().any(|file| file.starts_with(&prefix))
+    })
 }
 
 pub(super) fn bindings(

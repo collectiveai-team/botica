@@ -79,3 +79,69 @@ fn review_dir_moves_the_roles_and_a_symbolic_link_is_refused() {
     );
     assert!(text.contains("is not a regular file"), "{text}");
 }
+
+#[cfg(unix)]
+#[test]
+fn a_symbolic_link_in_a_parent_folder_is_refused_without_showing_what_it_reaches() {
+    let dir = project_in("review-coverage-current", "parent-link", Some(SELECTED));
+    write(&dir, "outside/ci.yml", "secret: [unparsed\n");
+    write(
+        &dir,
+        ".github/review/tests/REVIEW.md",
+        &format!("{ROLE}{}", block(CI)),
+    );
+    std::fs::create_dir_all(dir.join(".github")).unwrap();
+    std::os::unix::fs::symlink("../outside", dir.join(".github/workflows")).unwrap();
+
+    let text = stdout(&botica(&dir, &[]));
+    assert!(
+        text.contains("is not a regular file of the project"),
+        "{text}"
+    );
+    assert!(!text.contains("secret"), "{text}");
+}
+
+#[test]
+fn the_roles_in_gitlab_review_are_read_when_only_that_folder_exists() {
+    let dir = project_in("review-coverage-current", "gitlab", Some(SELECTED));
+    write(&dir, ".github/workflows/ci.yml", CI);
+    write(
+        &dir,
+        ".gitlab/review/tests/REVIEW.md",
+        &format!("{ROLE}{}", block("jobs: {}\n")),
+    );
+
+    let text = stdout(&botica(&dir, &[]));
+    assert!(
+        text.contains(".gitlab/review/tests/REVIEW.md:9:1: error [review-coverage-current]"),
+        "{text}"
+    );
+}
+
+#[test]
+fn both_folders_of_roles_are_reported_as_review_check_refuses_them() {
+    let dir = project_in("review-coverage-current", "both", Some(SELECTED));
+    write(&dir, ".github/workflows/ci.yml", CI);
+    let role = format!("{ROLE}{}", block(CI));
+    write(&dir, ".github/review/tests/REVIEW.md", &role);
+    write(&dir, ".gitlab/review/tests/REVIEW.md", &role);
+
+    let output = botica(&dir, &[]);
+    let text = stdout(&output);
+    assert!(!output.status.success(), "{text}");
+    assert!(text.contains("both review directories exist"), "{text}");
+}
+
+#[test]
+fn a_missing_role_is_reported_at_its_path() {
+    let dir = project_in("review-coverage-current", "missing", Some(SELECTED));
+    write(&dir, ".github/workflows/ci.yml", CI);
+    std::fs::create_dir_all(dir.join(".github/review")).unwrap();
+
+    let text = stdout(&botica(&dir, &[]));
+    assert!(
+        text.contains(".github/review/tests/REVIEW.md:1:1: error [review-coverage-current]"),
+        "{text}"
+    );
+    assert!(text.contains("missing trusted role"), "{text}");
+}

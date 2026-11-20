@@ -6,7 +6,8 @@ use std::sync::Arc;
 
 use anyhow::{bail, Result};
 use botica_config::{Resolution, ReviewConfig};
-use botica_core::review_coverage::{check, Role, REVIEW_COVERAGE_CURRENT};
+use botica_core::review::coverage::role_directory;
+use botica_core::review_coverage::{check, missing, Role, REVIEW_COVERAGE_CURRENT};
 use botica_core::{Diagnostic, Severity};
 
 use super::project_files;
@@ -25,52 +26,56 @@ pub fn findings(
     else {
         return Vec::new();
     };
-    let Some(directory) = directory(review, root) else {
-        return Vec::new();
+    let severity = Severity::from(entry.severity);
+    let mut found = match role_directory(review.dir.as_deref(), |dir| root.join(dir).is_dir()) {
+        Ok(directory) => roles(review, root, &directory, severity),
+        Err(error) => vec![missing(".", &format!("{error:#}"), severity)],
     };
-    let texts: Vec<(String, String)> = review
-        .expected_roles()
-        .iter()
-        .filter_map(|role| {
-            let path = format!("{directory}/{}/REVIEW.md", role.name());
-            let bytes = read(root, &path).ok()??;
-            Some((path, String::from_utf8_lossy(&bytes).into_owned()))
-        })
-        .collect();
+    project_files::seen_from(prefix, &mut found);
+    found
+}
+
+fn roles(
+    review: &ReviewConfig,
+    root: &Path,
+    directory: &str,
+    severity: Severity,
+) -> Vec<Diagnostic> {
+    let mut found = Vec::new();
+    let mut texts = Vec::new();
+    for role in review.expected_roles() {
+        let path = format!("{directory}/{}/REVIEW.md", role.name());
+        match read(root, &path) {
+            Ok(Some(bytes)) => texts.push((path, String::from_utf8_lossy(&bytes).into_owned())),
+            Ok(None) => found.push(missing(&path, "missing trusted role", severity)),
+            Err(error) => found.push(missing(&path, &format!("{error:#}"), severity)),
+        }
+    }
     let roles: Vec<Role<'_>> = texts
         .iter()
         .map(|(path, text)| Role { path, text })
         .collect();
     let read = |path: &str| read(root, path);
-    let mut found = check(&roles, &read, Severity::from(entry.severity));
-    project_files::seen_from(prefix, &mut found);
+    found.extend(check(&roles, &read, severity));
     found
 }
 
-/// The folder of the roles as `botica review check` picks it: `review.dir`, else `.gitlab/review`
-/// when only it exists, else `.github/review`. `None` when both exist, which review check refuses.
-fn directory(review: &ReviewConfig, root: &Path) -> Option<String> {
-    if let Some(directory) = &review.dir {
-        return Some(directory.clone());
-    }
-    let github = root.join(".github/review").is_dir();
-    let gitlab = root.join(".gitlab/review").is_dir();
-    match (github, gitlab) {
-        (true, true) => None,
-        (false, true) => Some(".gitlab/review".to_owned()),
-        _ => Some(".github/review".to_owned()),
-    }
-}
-
 /// The bytes of a regular file of the project, `None` when it is missing. Like the blobs that
-/// review check reads, a symbolic link is refused.
+/// review check reads, a path with a symbolic link in any of its parts is refused, so that a
+/// declared path cannot read outside the project.
 fn read(root: &Path, path: &str) -> Result<Option<Vec<u8>>> {
-    let full = root.join(path);
-    let Ok(metadata) = std::fs::symlink_metadata(&full) else {
-        return Ok(None);
-    };
-    if !metadata.file_type().is_file() {
-        bail!("coverage source {path} is not a regular file");
+    let mut full = root.to_path_buf();
+    let parts: Vec<&str> = path.split('/').collect();
+    for (index, part) in parts.iter().enumerate() {
+        full.push(part);
+        let Ok(metadata) = std::fs::symlink_metadata(&full) else {
+            return Ok(None);
+        };
+        let last = index + 1 == parts.len();
+        let kind = metadata.file_type();
+        if kind.is_symlink() || (last && !kind.is_file()) || (!last && !kind.is_dir()) {
+            bail!("coverage source {path} is not a regular file of the project");
+        }
     }
     Ok(Some(std::fs::read(full)?))
 }

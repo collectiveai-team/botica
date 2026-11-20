@@ -9,6 +9,23 @@ use super::roles::{yaml, Covered};
 pub const OPEN: &str = "<!-- botica:covered -->";
 pub const CLOSE: &str = "<!-- /botica:covered -->";
 
+const GITHUB: &str = ".github/review";
+const GITLAB: &str = ".gitlab/review";
+
+/// The folder of the review roles: `configured` (`review.dir`), else `.gitlab/review` when only it
+/// exists, else `.github/review`. `exists` tells whether the project has files under a folder.
+pub fn role_directory(configured: Option<&str>, exists: impl Fn(&str) -> bool) -> Result<String> {
+    if let Some(directory) = configured {
+        return Ok(directory.to_owned());
+    }
+    let (github, gitlab) = (exists(GITHUB), exists(GITLAB));
+    ensure!(
+        !(github && gitlab),
+        "both review directories exist; configure review.dir explicitly"
+    );
+    Ok(if gitlab { GITLAB } else { GITHUB }.to_owned())
+}
+
 /// The hook and job references of `covered`, each with the blake3 digest of its whole source file.
 /// `read` returns the bytes of a repository-relative path, or `None` when the file is missing.
 pub fn check_references(

@@ -31,6 +31,17 @@ pub fn check(roles: &[Role<'_>], read: Read<'_>, severity: Severity) -> Vec<Diag
         .collect()
 }
 
+/// A finding at the file `path`, for what review check cannot read there: a missing role, a role
+/// that is not a regular file, or both folders of roles.
+pub fn missing(path: &str, error: &str, severity: Severity) -> Diagnostic {
+    Diagnostic::file_level(
+        path,
+        REVIEW_COVERAGE_CURRENT,
+        severity,
+        format!("botica review check cannot read the review roles: {error}"),
+    )
+}
+
 /// What is wrong with the coverage of `role`, and whether the finding sits on its opening marker.
 fn problem(role: &Role<'_>, read: Read<'_>) -> Option<(bool, String)> {
     let name = role.path.rsplit('/').nth(1).unwrap_or_default();
@@ -80,23 +91,7 @@ fn problem(role: &Role<'_>, read: Read<'_>) -> Option<(bool, String)> {
             ))
         }
     };
-    // With rules declared, the rule lines bind the version of botica and its configuration, which
-    // lint does not compute, so only the hook and job lines are compared.
-    let current = |wanted: &String| {
-        if covered.rules.is_empty() {
-            &actual == wanted
-        } else {
-            check_lines(&actual) == check_lines(wanted)
-        }
-    };
-    if expected.iter().any(current) {
-        return None;
-    }
-    let shown = if covered.rules.is_empty() {
-        expected[0].clone()
-    } else {
-        check_lines(&expected[0]).join("\n")
-    };
+    let shown = stale(&actual, &expected, !covered.rules.is_empty())?;
     Some((
         true,
         format!(
@@ -104,6 +99,27 @@ fn problem(role: &Role<'_>, read: Read<'_>) -> Option<(bool, String)> {
              Replace its hook and job lines with these, which botica review check expects\n{shown}"
         ),
     ))
+}
+
+/// The lines to write when `actual` matches none of `expected`. With rules declared, the rule
+/// lines bind the version of botica and its configuration, which lint does not compute, so only
+/// the hook and job lines are compared and shown.
+fn stale(actual: &str, expected: &[String; 2], with_rules: bool) -> Option<String> {
+    let current = |wanted: &String| {
+        if with_rules {
+            check_lines(actual) == check_lines(wanted)
+        } else {
+            actual == wanted
+        }
+    };
+    if expected.iter().any(current) {
+        return None;
+    }
+    Some(if with_rules {
+        check_lines(&expected[0]).join("\n")
+    } else {
+        expected[0].clone()
+    })
 }
 
 /// The block from the bytes of the sources, then from the same bytes with CRLF read as LF: git

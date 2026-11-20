@@ -21,8 +21,9 @@ covered:
 
 The roles are the ones that `roles` in `[review]` of the configuration lists, the seven roles
 when it lists none. Their folder is `dir` in `[review]`, else `.gitlab/review` when only it exists,
-else `.github/review`; botica reads no role when both exist, as `botica review check` refuses
-them. A line binds the blake3 digest of the whole source file, so any edit of `prek.toml` or of a
+else `.github/review`. When both exist, botica reports it at the root of the project, as `botica
+review check` refuses them, and reads no role. A role of that list with no `REVIEW.md` is reported
+at its path. A line binds the blake3 digest of the whole source file, so any edit of `prek.toml` or of a
 workflow makes the blocks that cover it stale. botica also accepts a source checked out with CRLF
 line ends, since git stores it with LF.
 
@@ -32,7 +33,8 @@ configuration, the catalog and the version of botica; botica compares only its h
 and `botica review check` still checks the rule lines.
 
 botica also reports, at the file, what `botica review check` reports as unverified coverage: a role
-with no `covered`, a source file that is missing, is a symbolic link or does not parse, a hook or a
+with no `covered`, a source file that is missing, does not parse, or has a symbolic link in its
+path (botica reads no file outside the project), a hook or a
 job that its file no longer has, a duplicate declaration, and markers that are missing, duplicate
 or out of order.
 
