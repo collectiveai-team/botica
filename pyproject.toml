@@ -71,7 +71,7 @@ references = [
   "pyrefly==1.4.1",
   # CES-64: `scripts/check_references.sh` runs the tests of the topics with the network blocked.
   "pytest-socket==0.8.1",
-  "sqlmodel==0.0.48",
+  "sqlmodel==0.0.49",
   "structlog==26.1.0",
 ]
 
