@@ -347,6 +347,9 @@ paths = [
 ]
 owners = ["@jedzill4"]
 approvals = 1
+# The only maintainer opens the pull requests, so the approval of the author counts (ADR 0018,
+# "Sole maintainer, 2026-11-24").
+author-approves = true
 
 [[tool.botica.review.areas]]
 name = "platform"
@@ -367,6 +370,7 @@ paths = [
   "**/SKILL.md",
 ]
 owners = ["@jedzill4"]
+author-approves = true
 
 # What the binary embeds and publishes: the rules, the recipes, the topics, the protocol of the SDKs
 # and the schema of the configuration.

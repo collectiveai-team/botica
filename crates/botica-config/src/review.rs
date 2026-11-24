@@ -91,6 +91,11 @@ pub struct ReviewArea {
     pub tier: Option<Tier>,
     /// The approvals that the paths ask for. Default: 1, and 0 for `periphery`.
     pub approvals: Option<u32>,
+    /// Count the approval of the author of the pull request when the author is one of `owners`.
+    /// For a project whose only owner is the author, where no other person can approve.
+    /// Default: false.
+    #[serde(default)]
+    pub author_approves: bool,
 }
 
 impl ReviewArea {
