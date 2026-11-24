@@ -327,3 +327,21 @@ fn the_forced_platform_paths_are_the_ones_of_the_adr_and_pyproject_toml() {
 
     assert_eq!(globs, expected);
 }
+
+#[test]
+fn an_area_counts_the_author_only_when_it_says_so_and_names_owners() {
+    let config = accepted(&with_platform(
+        "[[review.areas]]\nname = \"critical\"\npaths = [\"auth/**\"]\nowners = [\"@sole\"]\n\
+         author-approves = true\n",
+    ));
+    assert!(config.review.areas[1].author_approves);
+    assert!(!config.review.areas[0].author_approves);
+
+    let message = problems(
+        "[[review.areas]]\nname = \"core\"\npaths = [\"src/**\"]\nauthor-approves = true\n",
+    );
+    assert!(
+        message.contains("review.areas[0].author-approves"),
+        "{message}"
+    );
+}
