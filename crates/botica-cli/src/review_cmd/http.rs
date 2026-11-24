@@ -46,7 +46,7 @@ pub(super) fn post(url: &str, key: &str, body: &Value) -> Result<Value> {
         .post(url)
         .header("Authorization", &format!("Bearer {key}"))
         .send_json(body)
-        .map_err(|_| anyhow::anyhow!("model HTTP request failed; no response body recorded"))?;
+        .map_err(|error| anyhow::anyhow!("{}", transport_failure(&error)))?;
     let mut bytes = Vec::new();
     response
         .body_mut()
@@ -64,4 +64,49 @@ pub(super) fn post(url: &str, key: &str, body: &Value) -> Result<Value> {
         bail!("model response contains a credential; output rejected");
     }
     serde_json::from_str(text).map_err(|_| anyhow::anyhow!("invalid model JSON response"))
+}
+
+/// Names the failure class and HTTP status only: provider bodies can echo prompts or secrets.
+fn transport_failure(error: &ureq::Error) -> String {
+    let class = match error {
+        ureq::Error::StatusCode(429) => "status 429 (rate limit or quota)".to_owned(),
+        ureq::Error::StatusCode(code @ (401 | 403)) => {
+            format!("status {code} (credential rejected)")
+        }
+        ureq::Error::StatusCode(code) if *code >= 500 => format!("status {code} (provider error)"),
+        ureq::Error::StatusCode(code) => format!("status {code} (request rejected)"),
+        ureq::Error::Timeout(_) => "timeout (transport)".to_owned(),
+        _ => "transport".to_owned(),
+    };
+    format!("model HTTP request failed: {class}; no response body recorded")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn transport_failures_name_only_safe_categories() {
+        for (error, expected) in [
+            (
+                ureq::Error::StatusCode(429),
+                "status 429 (rate limit or quota)",
+            ),
+            (
+                ureq::Error::StatusCode(401),
+                "status 401 (credential rejected)",
+            ),
+            (ureq::Error::StatusCode(502), "status 502 (provider error)"),
+            (
+                ureq::Error::StatusCode(422),
+                "status 422 (request rejected)",
+            ),
+            (ureq::Error::HostNotFound, "transport"),
+        ] {
+            assert_eq!(
+                transport_failure(&error),
+                format!("model HTTP request failed: {expected}; no response body recorded")
+            );
+        }
+    }
 }
