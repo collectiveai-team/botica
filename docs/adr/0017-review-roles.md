@@ -28,6 +28,17 @@ a rule id, a probability and a band, and no message, line or suggestion (`abide-
 
 ## Decision
 
+### Amendment, 2026-11-24
+
+The role runner accepts `--provider nvidia` for NVIDIA NIM. Botica's
+`review.yml` uses that option for roles and refute. The runner sends its
+tool-free requests to NVIDIA's hosted chat-completions endpoint and reads
+`NVIDIA_API_KEY`. The default NVIDIA model is
+`nvidia/nemotron-3.5-super-vl-120b-a12b`, whose
+[API reference](https://build.nvidia.com/nvidia/nemotron-3.5-super-vl-120b-a12b/apireference)
+lists JSON response modes. Local runs still default to OpenAI. Provider
+selection does not change the inputs or validation of role evidence.
+
 ### Amendment, 2026-11-17
 
 The implemented runner in `review_cmd/runner.rs` uses OpenAI tool-free requests.
