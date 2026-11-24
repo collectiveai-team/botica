@@ -88,12 +88,14 @@ jobs:
           enable-cache: false
 
       # cargo-mutants exits with 2 when a mutant survives and 3 when a test times out; both leave a
-      # report. Any other code is a failed run.
+      # report. Any other code is a failed run. `--copy-vcs=true` copies `.git` into the scratch tree,
+      # so a test that runs git does not fail the unmutated baseline and leave no mutant tested.
       - name: Test the mutants of the change
         run: |
           git diff "$BASE_SHA...HEAD" > "$RUNNER_TEMP/pr.diff"
           status=0
-          cargo mutants --in-diff "$RUNNER_TEMP/pr.diff" --cargo-arg=--locked || status=$?
+          cargo mutants --in-diff "$RUNNER_TEMP/pr.diff" --copy-vcs=true --cargo-arg=--locked \
+            || status=$?
           case "$status" in
             0|2|3) ;;
             *) exit "$status" ;;
