@@ -46,7 +46,8 @@ runner adds the role, the full base and head, the exact `inputs` object of the
 current plan and an empty `commands` list, replacing any value the model
 returned for those fields. A failed request reports its HTTP status and class
 (credential, rate limit or quota, request, provider or transport) and never the
-response body. Missing roles, changed policy and stale heads fail validation.
+response body. A rate limit, provider error, timeout or cut-off response is sent
+again, up to three attempts in total; a rejected credential or request is not. Missing roles, changed policy and stale heads fail validation.
 Changing the issue context also invalidates earlier role evidence.
 Verdicts are recomputed from evidence. Refute may add a disposition but may not
 rewrite the original finding. Completed role results survive a later failure.
