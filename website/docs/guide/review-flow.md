@@ -41,8 +41,13 @@ The runner gives the model no tools. Each role gets a separate request; refute
 runs last. CI runs one selected role per matrix job. No head code is built,
 installed or executed by the jobs that receive the credential.
 
-Each result must carry the full base, head and exact `inputs` object from the
-current plan. Missing roles, changed policy and stale heads fail validation.
+The model returns only the verdict, findings, `checked` and `not_checked`. The
+runner adds the role, the full base and head, the exact `inputs` object of the
+current plan and an empty `commands` list, replacing any value the model
+returned for those fields. A failed request reports its HTTP status and class
+(credential, rate limit or quota, request, provider or transport) and never the
+response body. A rate limit, provider error, timeout or cut-off response is sent
+again, up to three attempts in total; a rejected credential or request is not. Missing roles, changed policy and stale heads fail validation.
 Changing the issue context also invalidates earlier role evidence.
 Verdicts are recomputed from evidence. Refute may add a disposition but may not
 rewrite the original finding. Completed role results survive a later failure.
