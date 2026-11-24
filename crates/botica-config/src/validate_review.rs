@@ -68,6 +68,14 @@ fn area_entry(found: &mut Vec<ConfigIssue>, index: usize, area: &ReviewArea) {
             format!("`{name}` asks for at least 1 approval; only `periphery` takes 0"),
         ));
     }
+    if area.author_approves && area.owners.is_empty() {
+        found.push(issue(
+            format!("{base}.author-approves"),
+            format!(
+                "`{name}` counts the approval of an author who is an owner, and lists no owners"
+            ),
+        ));
+    }
     if area.name.needs_owners() && area.owners.is_empty() {
         found.push(issue(
             format!("{base}.owners"),

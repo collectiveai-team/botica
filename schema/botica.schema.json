@@ -392,6 +392,11 @@
           "format": "uint32",
           "minimum": 0
         },
+        "author-approves": {
+          "description": "Count the approval of the author of the pull request when the author is one of `owners`.\nFor a project whose only owner is the author, where no other person can approve.\nDefault: false.",
+          "type": "boolean",
+          "default": false
+        },
         "name": {
           "$ref": "#/$defs/AreaName"
         },
