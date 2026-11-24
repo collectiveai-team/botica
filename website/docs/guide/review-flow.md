@@ -65,7 +65,11 @@ botica review classify --diff <destination> --integration-method merge \
 The context file holds a title, description and linked issue bodies or explicit
 acceptance criteria as JSON data. `review context --repository <owner/repository>
 --pr <number> --base <sha> --head <sha>` fetches closing issue bodies from GitHub.
-A link without its issue body cannot pass spec review.
+A link without its issue body cannot pass spec review. It also reads the
+`## Acceptance criteria` section of the description, with the heading in any
+letter case, up to the next `## ` heading; HTML comments and empty list items do
+not count. Without an issue body or criteria, the spec role is `INCONCLUSIVE`
+and `review-gate` fails as incomplete.
 
 Classification verifies local role results against the latest successful associated
 GitHub role artifact. Offline results remain unverified for automation.
