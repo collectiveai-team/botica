@@ -25,7 +25,8 @@ title: Review depth follows the risk of the diff
    implemented automation workflow remains disabled.
 4. A bot can approve a pull request, and a bot approval is not a person's approval. Where an area
    asks for approvals, only the approvals of people count, and the author of the pull request is
-   not one of them.
+   not one of them, unless the area sets `author-approves = true` and the author is one of its
+   owners. That setting is for a project with one maintainer, where no other person can approve.
 5. One person answers for each pull request: the person who directed the agent that wrote it, or
    the author when no agent wrote it. That person reads the diff before asking for review,
    explains each change and answers the review comments. The agent answers for nothing.
@@ -48,6 +49,11 @@ be the one that needs it.
 A bot and a model both act on the text they read. The owner of an area and the person who
 directed the agent can say why a change is right. An approval records what that person looked at,
 and a commit pushed after it is a change that nobody looked at.
+
+A second reader needs a second person. In a project with one maintainer, the rule that the author
+does not count leaves no approval that can satisfy a `critical` area, and every such change waits
+forever or merges outside the rule. `author-approves` names that case in the configuration, so the
+exception is a decision of the project that a reviewer can read, and the panel of roles still runs.
 
 ADR 0017 and ADR 0018 apply this standard. They define the areas, the floor of each tier, the
 classifier, the gates and the approval bound to the head commit.

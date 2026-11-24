@@ -27,6 +27,21 @@ to `medium` and `medium` to `high`. `low-confidence` and service failures raise 
 `Tier::raised`, `crates/botica-core/tests/review_classifier_risk.rs` tests it, and
 `website/docs/guide/review-flow.md` documents it. The statement of decision 9 is historical.
 
+## Sole maintainer, 2026-11-24
+
+Decision 4 counts no approval from the author of the pull request. In botica, `@jedzill4` is the
+only owner of every area and opens the pull requests, so no approval could satisfy `critical`
+(PR #327). The user decided that a project with one maintainer can count the author. An entry of
+`[[review.areas]]` takes `author-approves = true`, default false, and the approval of the author
+counts toward `approvals` only when the author is one of the `owners` of that entry. An entry that
+sets it with no `owners` fails to load. The approval still belongs to the head commit, and bots
+still do not count. CES-134 directive 4 states the exception.
+
+The check that counts approvals per area does not exist yet (decision 4, Consequences), so the
+setting records the policy that the check will read. GitHub does not let the author of a pull
+request submit an approving review, so that check will need another record of the author's
+approval of the head commit.
+
 ## Original proposal
 
 ADR 0017 defines the roles that review a diff and reads a tier from `botica review tier`, which it
@@ -69,6 +84,7 @@ missing.
    | `owners` | the people or teams that answer for the paths | none; required for `critical` and `platform` |
    | `tier` | `low`, `medium` or `high` | the floor of the table |
    | `approvals` | the approvals that the paths ask for | 1; 0 for `periphery` |
+   | `author-approves` | the approval of an author who is one of `owners` counts (see "Sole maintainer, 2026-11-24") | false |
 
    An area name may appear in several entries, each with its own paths and owners. `botica.toml`
    fails to load when a `tier` is lower than the floor of the table for that name, when
