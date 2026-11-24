@@ -30,11 +30,16 @@ botica lint --reviewed .tmp/review/<new-run> --diff <destination> \
   --review-context .tmp/change.json --record
 ```
 
-The runner uses `OPENAI_API_KEY` with OpenAI's chat-completions API. It gives the
-model no tools. A new request reviews each role; refute runs last. In CI the same
-runner runs one selected role per matrix job. No head code is built, installed or
-executed by the credential-bearing review jobs. A missing credential blocks the
-job. No credential is created by these commands.
+Local runs default to OpenAI and read `OPENAI_API_KEY`. Pass `--provider nvidia`
+to use NVIDIA NIM and `NVIDIA_API_KEY`. The NVIDIA default is
+`nvidia/nemotron-3.5-super-vl-120b-a12b`; `--model` accepts the ID from the
+[NVIDIA API catalog](https://build.nvidia.com/models), without the OpenCode
+provider prefix. Botica's CI selects NVIDIA NIM and reads the `NVIDIA_API_KEY`
+Actions secret. A missing credential blocks execution.
+
+The runner gives the model no tools. Each role gets a separate request; refute
+runs last. CI runs one selected role per matrix job. No head code is built,
+installed or executed by the jobs that receive the credential.
 
 Each result must carry the full base, head and exact `inputs` object from the
 current plan. Missing roles, changed policy and stale heads fail validation.

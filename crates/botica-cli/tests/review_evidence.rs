@@ -3,6 +3,8 @@
 mod common;
 #[path = "review_evidence/history.rs"]
 mod history;
+#[path = "review_evidence/provider.rs"]
+mod provider;
 use history::assert_readable_history;
 #[cfg(unix)]
 #[path = "review_evidence/github.rs"]

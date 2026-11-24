@@ -32,6 +32,7 @@ fn context(dir: &Path) -> Output {
         )
         .env("FAKE_GH_ROOT", dir)
         .env("OPENAI_API_KEY", "synthetic-test-key")
+        .env("NVIDIA_API_KEY", "synthetic-nvidia-key")
         .output()
         .unwrap()
 }
@@ -43,6 +44,7 @@ fn fixture(name: &str, truncated: bool) -> std::path::PathBuf {
         ".tmp/bin/gh",
         r#"#!/bin/sh
 test -z "${OPENAI_API_KEY:-}" || exit 9
+test -z "${NVIDIA_API_KEY:-}" || exit 9
 if test "$2" = graphql; then
   cat "$FAKE_GH_ROOT/.tmp/issues.json"
 else
