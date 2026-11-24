@@ -20,6 +20,7 @@ use crate::layout::{CodeDir, NoArtifactsInPackage, NoNotebooks, NoTestsInPackage
 use crate::lockfiles::LOCKFILE_COMMITTED;
 use crate::native::{FileSizeGuard, NativeRule, NoUtils};
 use crate::recipe_conflict::RECIPE_CONFLICT;
+use crate::review_coverage::REVIEW_COVERAGE_CURRENT;
 use crate::route_auth::{RouteAuth, ROUTE_AUTH};
 use crate::suppress::{INVALID, UNUSED};
 
@@ -51,7 +52,7 @@ enum Provider {
     /// The engine reports these itself while it lints (suppression comments, unreadable files), or
     /// the run once for the whole project (`external-config`, `external-config-weakened`,
     /// `settings-env-schema`, `import-layers`, `recipe-conflict`, `agents-md-refs-exist`,
-    /// `botica-version-aligned`).
+    /// `botica-version-aligned`, `review-coverage-current`).
     Engine,
     /// A rule of scope `commit`, which reads a commit message.
     Message {
@@ -59,7 +60,7 @@ enum Provider {
     },
 }
 
-const NATIVES: [(&str, Provider); 23] = [
+const NATIVES: [(&str, Provider); 24] = [
     (
         CONVENTIONAL_COMMITS,
         Provider::Message {
@@ -166,6 +167,7 @@ const NATIVES: [(&str, Provider); 23] = [
     (RECIPE_CONFLICT, Provider::Engine),
     (AGENTS_MD_REFS_EXIST, Provider::Engine),
     (BOTICA_VERSION_ALIGNED, Provider::Engine),
+    (REVIEW_COVERAGE_CURRENT, Provider::Engine),
 ];
 
 pub fn uses_code_dirs(slug: &str) -> bool {

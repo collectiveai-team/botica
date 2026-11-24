@@ -119,7 +119,7 @@ fn ignore_removes_what_was_selected_and_names_the_selector() {
     );
 }
 
-const PROPOSED: [&str; 31] = [
+const PROPOSED: [&str; 32] = [
     "agents-md-refs-exist",
     "api-request-schema-name",
     "api-response-schema-name",
@@ -144,6 +144,7 @@ const PROPOSED: [&str; 31] = [
     "pnpm-cooldown",
     "pyrefly-strict",
     "recipe-conflict",
+    "review-coverage-current",
     "route-auth",
     "ruff-selection",
     "settings-base-class",
@@ -182,7 +183,7 @@ fn the_preview_rules_run_once_selected_with_preview_on() {
         &catalog,
         "select = []\nextend-select = [\"all\"]\npreview = true",
     );
-    assert_eq!(active(&resolution).len(), 76);
+    assert_eq!(active(&resolution).len(), 77);
     assert_eq!(
         active(&resolve(&catalog, "select = [\"BTSEC\"]\npreview = true")),
         [

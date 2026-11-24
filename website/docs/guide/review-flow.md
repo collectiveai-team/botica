@@ -30,14 +30,24 @@ botica lint --reviewed .tmp/review/<new-run> --diff <destination> \
   --review-context .tmp/change.json --record
 ```
 
-The runner uses `OPENAI_API_KEY` with OpenAI's chat-completions API. It gives the
-model no tools. A new request reviews each role; refute runs last. In CI the same
-runner runs one selected role per matrix job. No head code is built, installed or
-executed by the credential-bearing review jobs. A missing credential blocks the
-job. No credential is created by these commands.
+Local runs default to OpenAI and read `OPENAI_API_KEY`. Pass `--provider nvidia`
+to use NVIDIA NIM and `NVIDIA_API_KEY`. The NVIDIA default is
+`nvidia/nemotron-3.5-super-vl-120b-a12b`; `--model` accepts the ID from the
+[NVIDIA API catalog](https://build.nvidia.com/models), without the OpenCode
+provider prefix. Botica's CI selects NVIDIA NIM and reads the `NVIDIA_API_KEY`
+Actions secret. A missing credential blocks execution.
 
-Each result must carry the full base, head and exact `inputs` object from the
-current plan. Missing roles, changed policy and stale heads fail validation.
+The runner gives the model no tools. Each role gets a separate request; refute
+runs last. CI runs one selected role per matrix job. No head code is built,
+installed or executed by the jobs that receive the credential.
+
+The model returns only the verdict, findings, `checked` and `not_checked`. The
+runner adds the role, the full base and head, the exact `inputs` object of the
+current plan and an empty `commands` list, replacing any value the model
+returned for those fields. A failed request reports its HTTP status and class
+(credential, rate limit or quota, request, provider or transport) and never the
+response body. A rate limit, provider error, timeout or cut-off response is sent
+again, up to three attempts in total; a rejected credential or request is not. Missing roles, changed policy and stale heads fail validation.
 Changing the issue context also invalidates earlier role evidence.
 Verdicts are recomputed from evidence. Refute may add a disposition but may not
 rewrite the original finding. Completed role results survive a later failure.

@@ -79,6 +79,7 @@ fn gh_bytes(args: &[&str]) -> Result<Vec<u8>> {
     let mut child = Command::new("gh")
         .args(args)
         .env_remove("OPENAI_API_KEY")
+        .env_remove("NVIDIA_API_KEY")
         .env_remove("TYPESAFE_AI_API_KEY")
         .env_remove("BOTICA_HISTORY_KEY")
         .stdout(Stdio::piped())

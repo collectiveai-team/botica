@@ -78,19 +78,20 @@ jobs:
       - name: Review one role without tools or head execution
         if: matrix.role != '__skip__'
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
           ROLE: ${{ matrix.role }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
+          env -u NVIDIA_API_KEY git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
           chmod +x .tmp/runner/botica
-          .tmp/runner/botica review context --repository "$GH_REPO" --pr "$PR_NUMBER" \
+          env -u NVIDIA_API_KEY .tmp/runner/botica review context --repository "$GH_REPO" --pr "$PR_NUMBER" \
             --base "$BASE_SHA" --head "$HEAD_SHA" > .tmp/context.json
           .tmp/runner/botica review run --diff "$BASE_SHA" --head "$HEAD_SHA" \
-            --integration-method merge --stage ci --context .tmp/context.json --role "$ROLE" --output .tmp/results
+            --integration-method merge --stage ci --context .tmp/context.json --provider nvidia \
+            --role "$ROLE" --output .tmp/results
       - uses: actions/upload-artifact@v7
         if: ${{ always() && matrix.role != '__skip__' }}
         with:
@@ -122,18 +123,19 @@ jobs:
           merge-multiple: true
       - name: Refute in a fresh tool-free request
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
+          env -u NVIDIA_API_KEY git -c core.hooksPath=/dev/null fetch --no-tags origin "pull/$PR_NUMBER/head"
           chmod +x .tmp/runner/botica
-          .tmp/runner/botica review context --repository "$GH_REPO" --pr "$PR_NUMBER" \
+          env -u NVIDIA_API_KEY .tmp/runner/botica review context --repository "$GH_REPO" --pr "$PR_NUMBER" \
             --base "$BASE_SHA" --head "$HEAD_SHA" > .tmp/context.json
           .tmp/runner/botica review run --diff "$BASE_SHA" --head "$HEAD_SHA" \
-            --integration-method merge --stage ci --context .tmp/context.json --role refute --output .tmp/results
+            --integration-method merge --stage ci --context .tmp/context.json --provider nvidia \
+            --role refute --output .tmp/results
       - uses: actions/upload-artifact@v7
         if: ${{ always() }}
         with:
