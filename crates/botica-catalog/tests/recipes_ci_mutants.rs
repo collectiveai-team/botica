@@ -122,6 +122,7 @@ fn rust_tests_the_mutants_of_the_diff_and_reports_the_survivors_with_botica() {
         "{mutants}"
     );
     assert!(mutants.contains("0|2|3) ;;"), "{mutants}");
+    assert!(mutants.contains("--copy-vcs=true"), "{mutants}");
     let lint = runs
         .iter()
         .find(|run| run.contains(" lint --mutants "))

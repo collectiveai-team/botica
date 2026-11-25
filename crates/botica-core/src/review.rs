@@ -7,6 +7,7 @@ use serde::Serialize;
 
 pub mod automation;
 pub mod classifier;
+pub mod coverage;
 pub mod evaluation;
 pub mod execution;
 mod python;

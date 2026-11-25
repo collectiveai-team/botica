@@ -32,6 +32,7 @@ fn context(dir: &Path) -> Output {
         )
         .env("FAKE_GH_ROOT", dir)
         .env("OPENAI_API_KEY", "synthetic-test-key")
+        .env("NVIDIA_API_KEY", "synthetic-nvidia-key")
         .output()
         .unwrap()
 }
@@ -43,6 +44,7 @@ fn fixture(name: &str, truncated: bool) -> std::path::PathBuf {
         ".tmp/bin/gh",
         r#"#!/bin/sh
 test -z "${OPENAI_API_KEY:-}" || exit 9
+test -z "${NVIDIA_API_KEY:-}" || exit 9
 if test "$2" = graphql; then
   cat "$FAKE_GH_ROOT/.tmp/issues.json"
 else
@@ -105,6 +107,65 @@ fn explicit_acceptance_criteria_in_the_pr_description_survive_without_a_linked_i
     let report: Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(report["acceptance_criteria"], json!(["- The answer is 42"]));
     assert!(botica_core::review::classifier::has_acceptance_context(
+        &report
+    ));
+}
+
+#[test]
+fn the_acceptance_criteria_heading_matches_in_any_letter_case() {
+    for heading in ["## Acceptance Criteria", "## ACCEPTANCE CRITERIA"] {
+        let dir = fixture(
+            &format!(
+                "criteria-case-{}",
+                heading.len() + heading.matches('C').count()
+            ),
+            false,
+        );
+        common::write(&dir, ".tmp/pull.json", &json!({"state":"open","draft":false,
+            "base":{"sha":"b".repeat(40)},"head":{"sha":"a".repeat(40)},
+            "title":"Return 42","body":format!("Implement the answer\n\n{heading}\n- The answer is 42\n\n## Notes\nNot a criterion")}).to_string());
+        common::write(
+            &dir,
+            ".tmp/issues.json",
+            &json!({"data":{"repository":{"pullRequest":{"closingIssuesReferences":{
+            "nodes":[],"pageInfo":{"hasNextPage":false}}}}}})
+            .to_string(),
+        );
+        let output = context(&dir);
+        assert!(output.status.success(), "{}", common::stderr(&output));
+        let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(
+            report["acceptance_criteria"],
+            json!(["- The answer is 42"]),
+            "{heading}"
+        );
+    }
+}
+
+#[test]
+fn the_unfilled_template_section_is_not_acceptance_criteria() {
+    let template = include_str!("../../../.github/pull_request_template.md");
+    let dir = fixture("criteria-template", false);
+    common::write(
+        &dir,
+        ".tmp/pull.json",
+        &json!({"state":"open","draft":false,
+        "base":{"sha":"b".repeat(40)},"head":{"sha":"a".repeat(40)},
+        "title":"Return 42","body":template})
+        .to_string(),
+    );
+    common::write(
+        &dir,
+        ".tmp/issues.json",
+        &json!({"data":{"repository":{"pullRequest":{"closingIssuesReferences":{
+        "nodes":[],"pageInfo":{"hasNextPage":false}}}}}})
+        .to_string(),
+    );
+    let output = context(&dir);
+    assert!(output.status.success(), "{}", common::stderr(&output));
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["acceptance_criteria"], json!([]));
+    assert!(!botica_core::review::classifier::has_acceptance_context(
         &report
     ));
 }

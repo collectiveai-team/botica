@@ -33,6 +33,7 @@ fn command() -> Command {
     }
     command
         .env_remove("OPENAI_API_KEY")
+        .env_remove("NVIDIA_API_KEY")
         .env_remove("TYPESAFE_AI_API_KEY")
         .env_remove("BOTICA_HISTORY_KEY")
         .env_remove("GH_TOKEN")

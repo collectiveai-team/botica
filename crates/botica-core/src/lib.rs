@@ -24,6 +24,7 @@ pub mod recipe_conflict;
 pub mod registry;
 pub mod report;
 pub mod review;
+pub mod review_coverage;
 pub mod route_auth;
 pub mod suppress;
 mod timings;

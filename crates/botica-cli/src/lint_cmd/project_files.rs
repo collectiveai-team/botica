@@ -4,7 +4,7 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use botica_config::Resolution;
+use botica_config::{Resolution, ReviewConfig};
 use botica_core::agents_refs::AGENTS_MD_REFS_EXIST;
 use botica_core::botica_version::BOTICA_VERSION_ALIGNED;
 use botica_core::env_schema::SETTINGS_ENV_SCHEMA;
@@ -13,17 +13,18 @@ use botica_core::external_weakened::EXTERNAL_CONFIG_WEAKENED;
 use botica_core::import_layers::IMPORT_LAYERS;
 use botica_core::lockfiles::LOCKFILE_COMMITTED;
 use botica_core::recipe_conflict::RECIPE_CONFLICT;
+use botica_core::review_coverage::REVIEW_COVERAGE_CURRENT;
 use botica_core::{walk, Diagnostic, Findings};
 
 use super::recipe_conflict::{self, ProjectRecipes};
 use super::{
     agents_refs, botica_version, external, external_weakened, import_layers, lockfiles,
-    settings_schema,
+    review_coverage, settings_schema,
 };
 use crate::project;
 
 /// The native rules of project scope.
-pub const RULES: [&str; 8] = [
+pub const RULES: [&str; 9] = [
     EXTERNAL_CONFIG,
     EXTERNAL_CONFIG_WEAKENED,
     SETTINGS_ENV_SCHEMA,
@@ -32,6 +33,7 @@ pub const RULES: [&str; 8] = [
     RECIPE_CONFLICT,
     AGENTS_MD_REFS_EXIST,
     BOTICA_VERSION_ALIGNED,
+    REVIEW_COVERAGE_CURRENT,
 ];
 
 /// What the native rules of project scope find, once for the whole project at `root`, shown from
@@ -40,6 +42,7 @@ pub const RULES: [&str; 8] = [
 pub fn findings(
     resolution: &Arc<Resolution>,
     recipes: &ProjectRecipes,
+    review: &ReviewConfig,
     root: &Path,
     prefix: Option<&str>,
 ) -> Findings {
@@ -52,6 +55,7 @@ pub fn findings(
     found.extend(recipe_conflict::findings(resolution, recipes, root, prefix));
     found.extend(agents_refs::findings(resolution, root, prefix));
     found.extend(botica_version::findings(resolution, recipes, root, prefix));
+    found.extend(review_coverage::findings(resolution, review, root, prefix));
     Findings {
         found,
         silenced: weakened.silenced,
