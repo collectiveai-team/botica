@@ -9,6 +9,14 @@ call tree, file tree, or Mermaid. Add only the context a reviewer needs. -->
 
 <!-- Link the issue/spec. Use "Closes #..." only when this PR fully resolves it. -->
 
+## Acceptance criteria
+
+<!-- One verifiable statement per line: what the change must do, checkable against the diff
+or the evidence below. The spec review role reads this section; without it, or a linked
+issue that this PR closes, the review stays incomplete. -->
+
+-
+
 ## Evidence
 
 <!-- Give reproducible evidence, not just "tests pass". Include exact commands

@@ -110,3 +110,62 @@ fn explicit_acceptance_criteria_in_the_pr_description_survive_without_a_linked_i
         &report
     ));
 }
+
+#[test]
+fn the_acceptance_criteria_heading_matches_in_any_letter_case() {
+    for heading in ["## Acceptance Criteria", "## ACCEPTANCE CRITERIA"] {
+        let dir = fixture(
+            &format!(
+                "criteria-case-{}",
+                heading.len() + heading.matches('C').count()
+            ),
+            false,
+        );
+        common::write(&dir, ".tmp/pull.json", &json!({"state":"open","draft":false,
+            "base":{"sha":"b".repeat(40)},"head":{"sha":"a".repeat(40)},
+            "title":"Return 42","body":format!("Implement the answer\n\n{heading}\n- The answer is 42\n\n## Notes\nNot a criterion")}).to_string());
+        common::write(
+            &dir,
+            ".tmp/issues.json",
+            &json!({"data":{"repository":{"pullRequest":{"closingIssuesReferences":{
+            "nodes":[],"pageInfo":{"hasNextPage":false}}}}}})
+            .to_string(),
+        );
+        let output = context(&dir);
+        assert!(output.status.success(), "{}", common::stderr(&output));
+        let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(
+            report["acceptance_criteria"],
+            json!(["- The answer is 42"]),
+            "{heading}"
+        );
+    }
+}
+
+#[test]
+fn the_unfilled_template_section_is_not_acceptance_criteria() {
+    let template = include_str!("../../../.github/pull_request_template.md");
+    let dir = fixture("criteria-template", false);
+    common::write(
+        &dir,
+        ".tmp/pull.json",
+        &json!({"state":"open","draft":false,
+        "base":{"sha":"b".repeat(40)},"head":{"sha":"a".repeat(40)},
+        "title":"Return 42","body":template})
+        .to_string(),
+    );
+    common::write(
+        &dir,
+        ".tmp/issues.json",
+        &json!({"data":{"repository":{"pullRequest":{"closingIssuesReferences":{
+        "nodes":[],"pageInfo":{"hasNextPage":false}}}}}})
+        .to_string(),
+    );
+    let output = context(&dir);
+    assert!(output.status.success(), "{}", common::stderr(&output));
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["acceptance_criteria"], json!([]));
+    assert!(!botica_core::review::classifier::has_acceptance_context(
+        &report
+    ));
+}

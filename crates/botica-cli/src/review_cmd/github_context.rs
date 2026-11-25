@@ -29,15 +29,45 @@ pub(crate) fn context(args: &ContextArgs) -> Result<Value> {
     );
     matches(&pull(&args.repository, args.pr)?, &args.base, &args.head)?;
     let description = original["body"].as_str().unwrap_or("");
-    let acceptance = description
-        .split_once("## Acceptance criteria")
-        .map(|(_, section)| section.split("\n## ").next().unwrap_or("").trim())
-        .filter(|section| !section.is_empty());
+    let acceptance = acceptance_criteria(description);
     Ok(
         json!({"title":original["title"],"description":original["body"],"issues":linked["nodes"],
         "acceptance_criteria":acceptance.into_iter().collect::<Vec<_>>(),
         "repository":args.repository,"pr":args.pr,"base":args.base,"head":args.head,"source":"github"}),
     )
+}
+
+/// The body of the `## Acceptance criteria` section of a description, up to the next `## `
+/// heading. The heading matches in any letter case, so `## Acceptance Criteria` counts too.
+/// HTML comments and empty list items are dropped, so the unfilled section of the pull request
+/// template does not count as criteria.
+fn acceptance_criteria(description: &str) -> Option<String> {
+    const HEADING: &str = "## acceptance criteria";
+    let start = description
+        .char_indices()
+        .map(|(index, _)| index)
+        .find(|&index| {
+            description
+                .get(index..index + HEADING.len())
+                .is_some_and(|text| text.eq_ignore_ascii_case(HEADING))
+        })?;
+    let section = &description[start + HEADING.len()..];
+    let section = section.split("\n## ").next().unwrap_or("");
+    let mut text = String::new();
+    let mut rest = section;
+    while let Some(open) = rest.find("<!--") {
+        text.push_str(&rest[..open]);
+        rest = rest[open..]
+            .find("-->")
+            .map_or("", |close| &rest[open + close + 3..]);
+    }
+    text.push_str(rest);
+    let lines: Vec<&str> = text
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.trim_start_matches(['-', '*', '+']).trim().is_empty())
+        .collect();
+    (!lines.is_empty()).then(|| lines.join("\n"))
 }
 
 pub(crate) fn context_matches(repository: &str, pr: u64, plan: &Value) -> Result<bool> {
