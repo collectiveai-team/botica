@@ -64,7 +64,11 @@ not start with `-`.
    event, a column, an environment variable, a flag, an output format, a file format, a public
    function. For each one, name a consumer: another repository, a script of a user, a workflow, a
    stored file, a client, an extension. A contract with no consumer is not one; say so in
-   `checked`.
+   `checked`. Read the release scope in the acceptance criteria of the plan context: a consumer
+   that it does not support, such as a pre-release client or a development database of a first
+   release, is an observed change and goes in `checked`, not a finding. With no release scope in
+   the context, every consumer counts as supported, and `not_checked` says that the scope was
+   missing.
 2. For a contract whose shape stays the same, compare its meaning on the target and on `HEAD`:
    units, defaults, order, what `null`, empty or a missing key means, which error or exit code
    comes back, whether a call can repeat, the order of the events. A change that a consumer that
